@@ -136,7 +136,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         if repository_id:
             if changeset_revision:
                 # Make sure there is not already a review of the revision by the user.
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                 if review_util.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
                                                                                        repository_id=repository_id,
                                                                                        changeset_revision=changeset_revision,
@@ -465,7 +465,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         if repository_id:
-            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
             repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             metadata_revision_hashes = [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
             reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
@@ -511,7 +511,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
-        repository = suc.get_repository_in_tool_shed( trans, repository_id )
+        repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         installable = changeset_revision in [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
         rev, changeset_revision_label = hg_util.get_rev_label_from_changeset_revision( repo, changeset_revision )
@@ -547,7 +547,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                                                                   action='view_or_manage_repository',
                                                                   **kwd ) )
         # The user may not be the current user.  The value of the received id is the encoded user id.
-        user = suc.get_user( trans, kwd[ 'id' ] )
+        user = suc.get_user( trans.app, kwd[ 'id' ] )
         self.repository_reviews_by_user_grid.title = "All repository revision reviews for user '%s'" % user.username
         return self.repository_reviews_by_user_grid( trans, **kwd )
 
@@ -575,7 +575,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
         # The value of the received id is the encoded repository id.
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )
+        repository = suc.get_repository_in_tool_shed( trans.app, kwd[ 'id' ] )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         previous_reviews_dict = review_util.get_previous_repository_reviews( trans, repository, changeset_revision )
@@ -591,7 +591,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "view or manage repository" )
     def view_or_manage_repository( self, trans, **kwd ):
-        repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )
+        repository = suc.get_repository_in_tool_shed( trans.app, kwd[ 'id' ] )
         if trans.user_is_admin() or repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='manage_repository',

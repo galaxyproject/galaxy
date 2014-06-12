@@ -185,7 +185,7 @@ def get_repair_dict( trans, repository ):
     return repair_dict
 
 def get_repo_info_dict( trans, repository_id, changeset_revision ):
-    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+    repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
     repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,

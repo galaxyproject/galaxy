@@ -498,7 +498,7 @@ class RepositoriesController( BaseAPIController ):
 
         repository_id = payload.get( 'repository_id', None )
         if repository_id is not None:
-            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
             start_time = strftime( "%Y-%m-%d %H:%M:%S" )
             log.debug( "%s...resetting metadata on repository %s" % ( start_time, str( repository.name ) ) )
             results = handle_repository( trans, start_time, repository )
@@ -515,7 +515,7 @@ class RepositoriesController( BaseAPIController ):
         :param id: the encoded id of the Repository object
         """
         # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
-        repository = suc.get_repository_in_tool_shed( trans, id )
+        repository = suc.get_repository_in_tool_shed( trans.app, id )
         if repository is None:
             log.debug( "Unable to locate repository record for id %s." % ( str( id ) ) )
             return {}

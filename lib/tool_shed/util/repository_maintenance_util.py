@@ -152,7 +152,7 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
                 category_ids = []
                 category_names = repository_archive_dict.get( 'category_names', [] )
                 for category_name in category_names:
-                    category = suc.get_category_by_name( trans, category_name )
+                    category = suc.get_category_by_name( trans.app, category_name )
                     if category is None:
                         results_message += 'This Tool Shed does not have the category <b>%s</b> so it ' % str( category_name )
                         results_message += 'will not be associated with this repository.'

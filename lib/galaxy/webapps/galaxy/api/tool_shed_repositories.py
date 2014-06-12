@@ -59,7 +59,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Since exported workflows are dictionaries with very few attributes that differentiate them from each
         # other, we'll build the list based on the following dictionary of those few attributes.
         exported_workflows = []
-        repository = suc.get_tool_shed_repository_by_id( trans, id )
+        repository = suc.get_tool_shed_repository_by_id( trans.app, id )
         metadata = repository.metadata
         if metadata:
             exported_workflow_tups = metadata.get( 'workflows', [] )
@@ -142,7 +142,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         index = payload.get( 'index', None )
         if index is None:
             raise HTTPBadRequest( detail="Missing required parameter 'index'." )
-        repository = suc.get_tool_shed_repository_by_id( trans, tool_shed_repository_id )
+        repository = suc.get_tool_shed_repository_by_id( trans.app, tool_shed_repository_id )
         exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
         # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its location (i.e., index) in the list.
         exported_workflow = exported_workflows[ int( index ) ]
@@ -169,7 +169,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         tool_shed_repository_id = kwd.get( 'id', '' )
         if not tool_shed_repository_id:
             raise HTTPBadRequest( detail="Missing required parameter 'id'." )
-        repository = suc.get_tool_shed_repository_by_id( trans, tool_shed_repository_id )
+        repository = suc.get_tool_shed_repository_by_id( trans.app, tool_shed_repository_id )
         exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
         imported_workflow_dicts = []
         for exported_workflow_dict in exported_workflows:
@@ -406,7 +406,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         for repository in query:
             repository_id = trans.security.encode_id( repository.id )
             try:
-                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_installed_repository( trans, repository_id )
+                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_installed_repository( trans.app, repository_id )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans,
                                                                             invalid_file_tups,
@@ -436,7 +436,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param id: the encoded id of the ToolShedRepository object
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
-        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, id )
+        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans.app, id )
         if tool_shed_repository is None:
             log.debug( "Unable to locate tool_shed_repository record for id %s." % ( str( id ) ) )
             return {}

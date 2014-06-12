@@ -97,32 +97,32 @@ def build_repository_ids_select_field( trans, name='repository_ids', multiple=Tr
         repositories_select_field.add_option( option_label, option_value )
     return repositories_select_field
 
-def build_tool_dependencies_select_field( trans, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled_only=False ):
+def build_tool_dependencies_select_field( app, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled_only=False ):
     """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
     tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
     for tool_dependency in tool_shed_repository.tool_dependencies:
         if uninstalled_only:
-            if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                               trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
+            if tool_dependency.status not in [ app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                               app.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                 continue
         else:
-            if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                           trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
+            if tool_dependency.status in [ app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                           app.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                 continue
         option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
-        option_value = trans.security.encode_id( tool_dependency.id )
+        option_value = app.security.encode_id( tool_dependency.id )
         tool_dependencies_select_field.add_option( option_label, option_value )
     return tool_dependencies_select_field
 
-def check_or_update_tool_shed_status_for_installed_repository( trans, repository ):
+def check_or_update_tool_shed_status_for_installed_repository( app, repository ):
     updated = False
-    tool_shed_status_dict = get_tool_shed_status_for_installed_repository( trans.app, repository )
+    tool_shed_status_dict = get_tool_shed_status_for_installed_repository( app, repository )
     if tool_shed_status_dict:
         ok = True
         if tool_shed_status_dict != repository.tool_shed_status:
             repository.tool_shed_status = tool_shed_status_dict
-            trans.install_model.context.add( repository )
-            trans.install_model.context.flush()
+            app.install_model.context.add( repository )
+            app.install_model.context.flush()
             updated = True
     else:
         ok = False
@@ -368,21 +368,24 @@ def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
                     return os.path.abspath( os.path.join( root, name ) )
     return file_path
 
-def get_categories( trans ):
+def get_categories( app ):
     """Get all categories from the database."""
-    return trans.sa_session.query( trans.model.Category ) \
-                           .filter( trans.model.Category.table.c.deleted==False ) \
-                           .order_by( trans.model.Category.table.c.name ) \
-                           .all()
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.Category ) \
+                     .filter( app.model.Category.table.c.deleted==False ) \
+                     .order_by( app.model.Category.table.c.name ) \
+                     .all()
 
-def get_category( trans, id ):
+def get_category( app, id ):
     """Get a category from the database."""
-    return trans.sa_session.query( trans.model.Category ).get( trans.security.decode_id( id ) )
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.Category ).get( app.security.decode_id( id ) )
 
-def get_category_by_name( trans, name ):
+def get_category_by_name( app, name ):
     """Get a category from the database via name."""
+    sa_session = app.model.context.current
     try:
-        return trans.sa_session.query( trans.model.Category ).filter_by( name=name ).one()
+        return sa_session.query( app.model.Category ).filter_by( name=name ).one()
     except sqlalchemy.orm.exc.NoResultFound:
         return None
 
@@ -419,21 +422,22 @@ def get_current_repository_metadata_for_changeset_revision( app, repository, cha
             return repository_metadata
     return None
 
-def get_dependent_downloadable_revisions( trans, repository_metadata ):
+def get_dependent_downloadable_revisions( app, repository_metadata ):
     """
     Return all repository_metadata records that are downloadable and that depend upon the received
     repository_metadata record.
     """
     # This method is called only from the tool shed.
+    sa_session = app.model.context.current
     rm_changeset_revision = repository_metadata.changeset_revision
     rm_repository = repository_metadata.repository
     rm_repository_name = str( rm_repository.name )
     rm_repository_owner = str( rm_repository.user.username )
     dependent_downloadable_revisions = []
-    for repository in trans.sa_session.query( trans.model.Repository ) \
-                                      .filter( and_( trans.model.Repository.table.c.id != rm_repository.id,
-                                                     trans.model.Repository.table.c.deleted == False,
-                                                     trans.model.Repository.table.c.deprecated == False ) ):
+    for repository in sa_session.query( app.model.Repository ) \
+                                .filter( and_( app.model.Repository.table.c.id != rm_repository.id,
+                                               app.model.Repository.table.c.deleted == False,
+                                               app.model.Repository.table.c.deprecated == False ) ):
         downloadable_revisions = repository.downloadable_revisions
         if downloadable_revisions:
             for downloadable_revision in downloadable_revisions:
@@ -454,14 +458,14 @@ def get_dependent_downloadable_revisions( trans, repository_metadata ):
                                 else:
                                     # Make sure the defined changeset_revision is current.
                                     defined_repository_metadata = \
-                                        trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                                                        .filter( trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) \
-                                                        .first()
+                                        sa_session.query( app.model.RepositoryMetadata ) \
+                                                  .filter( app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) \
+                                                  .first()
                                     if defined_repository_metadata is None:
                                         # The defined changeset_revision is not associated with a repository_metadata
                                         # record, so updates must be necessary.
-                                        defined_repository = get_repository_by_name_and_owner( trans.app, name, owner )
-                                        defined_repo = hg_util.get_repo_for_repository( trans.app,
+                                        defined_repository = get_repository_by_name_and_owner( app, name, owner )
+                                        defined_repo = hg_util.get_repo_for_repository( app,
                                                                                         repository=defined_repository,
                                                                                         repo_path=None,
                                                                                         create=False )
@@ -473,20 +477,21 @@ def get_dependent_downloadable_revisions( trans, repository_metadata ):
                                             dependent_downloadable_revisions.append( downloadable_revision )
     return dependent_downloadable_revisions
 
-def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
+def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     installing_repository_ids = []
-    new_status = trans.install_model.ToolShedRepository.installation_status.NEW
-    cloning_status = trans.install_model.ToolShedRepository.installation_status.CLONING
-    setting_tool_versions_status = trans.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
-    installing_dependencies_status = trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-    loading_datatypes_status = trans.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-    for tool_shed_repository in trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                                .filter( or_( trans.install_model.ToolShedRepository.status == new_status,
-                                                              trans.install_model.ToolShedRepository.status == cloning_status,
-                                                              trans.install_model.ToolShedRepository.status == setting_tool_versions_status,
-                                                              trans.install_model.ToolShedRepository.status == installing_dependencies_status,
-                                                              trans.install_model.ToolShedRepository.status == loading_datatypes_status ) ):
-        installing_repository_ids.append( trans.security.encode_id( tool_shed_repository.id ) )
+    new_status = app.install_model.ToolShedRepository.installation_status.NEW
+    cloning_status = app.install_model.ToolShedRepository.installation_status.CLONING
+    setting_tool_versions_status = app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS
+    installing_dependencies_status = app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
+    loading_datatypes_status = app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+    for tool_shed_repository in \
+        app.install_model.context.query( app.install_model.ToolShedRepository ) \
+                                 .filter( or_( app.install_model.ToolShedRepository.status == new_status,
+                                               app.install_model.ToolShedRepository.status == cloning_status,
+                                               app.install_model.ToolShedRepository.status == setting_tool_versions_status,
+                                               app.install_model.ToolShedRepository.status == installing_dependencies_status,
+                                               app.install_model.ToolShedRepository.status == loading_datatypes_status ) ):
+        installing_repository_ids.append( app.security.encode_id( tool_shed_repository.id ) )
     if as_string:
         return ','.join( installing_repository_ids )
     return installing_repository_ids
@@ -723,12 +728,13 @@ def get_repository_and_repository_dependencies_from_repo_info_dict( app, repo_in
         repository = get_repository_by_name_and_owner( app, repository_name, repository_owner )
     return repository, repository_dependencies
 
-def get_repository_by_id( trans, id ):
+def get_repository_by_id( app, id ):
     """Get a repository from the database via id."""
-    if is_tool_shed_client( trans.app ):
-        return trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( id ) )
+    if is_tool_shed_client( app ):
+        return app.install_model.context.query( app.install_model.ToolShedRepository ).get( app.security.decode_id( id ) )
     else:
-        return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
+        sa_session = app.model.context.current
+        return sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
 
 def get_repository_by_name( app, name ):
     """Get a repository from the database via name."""
@@ -851,7 +857,7 @@ def get_repository_file_contents( file_path ):
                                                    beginning_on_size_error=True )
         return safe_str
 
-def get_repository_files( trans, folder_path ):
+def get_repository_files( folder_path ):
     """Return the file hierarchy of a tool shed repository."""
     contents = []
     for item in os.listdir( folder_path ):
@@ -866,7 +872,7 @@ def get_repository_files( trans, folder_path ):
         contents.sort()
     return contents
 
-def get_repository_from_refresh_on_change( trans, **kwd ):
+def get_repository_from_refresh_on_change( app, **kwd ):
     # The changeset_revision_select_field in several grids performs a refresh_on_change which sends in request parameters like
     # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change,
     # so we loop through all of the received values to see which value is not the repository tip.  If we find it, we know the
@@ -876,9 +882,9 @@ def get_repository_from_refresh_on_change( trans, **kwd ):
     for k, v in kwd.items():
         changeset_revision_str = 'changeset_revision_'
         if k.startswith( changeset_revision_str ):
-            repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
-            repository = get_repository_in_tool_shed( trans, repository_id )
-            if repository.tip( trans.app ) != v:
+            repository_id = app.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
+            repository = get_repository_in_tool_shed( app, repository_id )
+            if repository.tip( app ) != v:
                 return v, repository
     # This should never be reached - raise an exception?
     return v, None
@@ -919,9 +925,10 @@ def get_repository_ids_requiring_prior_import_or_install( app, tsr_ids, reposito
                                 prior_tsr_ids.append( encoded_repository_id )
     return prior_tsr_ids
 
-def get_repository_in_tool_shed( trans, id ):
+def get_repository_in_tool_shed( app, id ):
     """Get a repository on the tool shed side from the database via id."""
-    return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
 
 def get_repository_metadata_by_changeset_revision( app, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database."""
@@ -943,9 +950,6 @@ def get_repository_metadata_by_changeset_revision( app, id, changeset_revision )
     elif all_metadata_records:
         return all_metadata_records[ 0 ]
     return None
-
-def get_repository_metadata_by_id( trans, id ):
-    return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
 
 def get_repository_owner( cleaned_repository_url ):
     """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
@@ -996,12 +1000,13 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
 
-def get_skip_tool_test_by_changeset_revision( trans, changeset_revision ):
+def get_skip_tool_test_by_changeset_revision( app, changeset_revision ):
     """Return a skip_tool_test record whose initial_changeset_revision is the received changeset_revision."""
     # There should only be one, but we'll use first() so callers won't have to handle exceptions.
-    return trans.sa_session.query( trans.model.SkipToolTest ) \
-                           .filter( trans.model.SkipToolTest.table.c.initial_changeset_revision == changeset_revision ) \
-                           .first()
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.SkipToolTest ) \
+                     .filter( app.model.SkipToolTest.table.c.initial_changeset_revision == changeset_revision ) \
+                     .first()
 
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
     """
@@ -1026,12 +1031,12 @@ def get_tool_panel_config_tool_path_install_dir( app, repository ):
     tool_path = shed_config_dict[ 'tool_path' ]
     return shed_tool_conf, tool_path, relative_install_dir
 
-def get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf ):
+def get_tool_path_by_shed_tool_conf_filename( app, shed_tool_conf ):
     """
     Return the tool_path config setting for the received shed_tool_conf file by searching the tool box's in-memory list of shed_tool_confs for the
     dictionary whose config_filename key has a value matching the received shed_tool_conf.
     """
-    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+    for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
         config_filename = shed_tool_conf_dict[ 'config_filename' ]
         if config_filename == shed_tool_conf:
             return shed_tool_conf_dict[ 'tool_path' ]
@@ -1045,12 +1050,12 @@ def get_tool_shed_from_clone_url( repository_clone_url ):
     tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
     return tmp_url.split( '/repos/' )[ 0 ].rstrip( '/' )
 
-def get_tool_shed_repository_by_id( trans, repository_id ):
+def get_tool_shed_repository_by_id( app, repository_id ):
     """Return a tool shed repository database record defined by the id."""
     # This method is used only in Galaxy, not the tool shed.
-    return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                      .filter( trans.install_model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
-                                      .first()
+    return app.install_model.context.query( app.install_model.ToolShedRepository ) \
+                                    .filter( app.install_model.ToolShedRepository.table.c.id == app.security.decode_id( repository_id ) ) \
+                                    .first()
 
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     """
@@ -1123,60 +1128,62 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         log.exception( "Error attempting to get tool shed status for installed repository %s: %s" % ( str( repository.name ), str( e ) ) )
         return {}
 
-def get_tool_shed_repository_status_label( trans, tool_shed_repository=None, name=None, owner=None, changeset_revision=None, repository_clone_url=None ):
+def get_tool_shed_repository_status_label( app, tool_shed_repository=None, name=None, owner=None, changeset_revision=None, repository_clone_url=None ):
     """Return a color-coded label for the status of the received tool-shed_repository installed into Galaxy."""
     if tool_shed_repository is None:
         if name is not None and owner is not None and repository_clone_url is not None:
             tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
-            tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( trans.app,
+            tool_shed_repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app,
                                                                                                              tool_shed,
                                                                                                              name,
                                                                                                              owner,
                                                                                                              changeset_revision )
     if tool_shed_repository:
         status_label = tool_shed_repository.status
-        if tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.CLONING,
-                                            trans.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
-                                            trans.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
-                                            trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
-                                            trans.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
-            bgcolor = trans.install_model.ToolShedRepository.states.INSTALLING
-        elif tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.NEW,
-                                              trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
-            bgcolor = trans.install_model.ToolShedRepository.states.UNINSTALLED
-        elif tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.ERROR ]:
-            bgcolor = trans.install_model.ToolShedRepository.states.ERROR
-        elif tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
-            bgcolor = trans.install_model.ToolShedRepository.states.WARNING
-        elif tool_shed_repository.status in [ trans.install_model.ToolShedRepository.installation_status.INSTALLED ]:
+        if tool_shed_repository.status in [ app.install_model.ToolShedRepository.installation_status.CLONING,
+                                            app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
+                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
+                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
+                                            app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
+            bgcolor = app.install_model.ToolShedRepository.states.INSTALLING
+        elif tool_shed_repository.status in [ app.install_model.ToolShedRepository.installation_status.NEW,
+                                              app.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
+            bgcolor = app.install_model.ToolShedRepository.states.UNINSTALLED
+        elif tool_shed_repository.status in [ app.install_model.ToolShedRepository.installation_status.ERROR ]:
+            bgcolor = app.install_model.ToolShedRepository.states.ERROR
+        elif tool_shed_repository.status in [ app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
+            bgcolor = app.install_model.ToolShedRepository.states.WARNING
+        elif tool_shed_repository.status in [ app.install_model.ToolShedRepository.installation_status.INSTALLED ]:
             if tool_shed_repository.repository_dependencies_being_installed:
-                bgcolor = trans.install_model.ToolShedRepository.states.WARNING
-                status_label = '%s, %s' % ( status_label, trans.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES )
+                bgcolor = app.install_model.ToolShedRepository.states.WARNING
+                status_label = '%s, %s' % ( status_label,
+                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES )
             elif tool_shed_repository.missing_repository_dependencies:
-                bgcolor = trans.install_model.ToolShedRepository.states.WARNING
+                bgcolor = app.install_model.ToolShedRepository.states.WARNING
                 status_label = '%s, missing repository dependencies' % status_label
             elif tool_shed_repository.tool_dependencies_being_installed:
-                bgcolor = trans.install_model.ToolShedRepository.states.WARNING
-                status_label = '%s, %s' % (status_label, trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
+                bgcolor = app.install_model.ToolShedRepository.states.WARNING
+                status_label = '%s, %s' % ( status_label,
+                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             elif tool_shed_repository.missing_tool_dependencies:
-                bgcolor = trans.install_model.ToolShedRepository.states.WARNING
+                bgcolor = app.install_model.ToolShedRepository.states.WARNING
                 status_label = '%s, missing tool dependencies' % status_label
             else:
-                bgcolor = trans.install_model.ToolShedRepository.states.OK
+                bgcolor = app.install_model.ToolShedRepository.states.OK
         else:
-            bgcolor = trans.install_model.ToolShedRepository.states.ERROR
+            bgcolor = app.install_model.ToolShedRepository.states.ERROR
     else:
-        bgcolor = trans.install_model.ToolShedRepository.states.WARNING
+        bgcolor = app.install_model.ToolShedRepository.states.WARNING
         status_label = 'unknown status'
     return '<div class="count-box state-color-%s">%s</div>' % ( bgcolor, status_label )
 
-def get_updated_changeset_revisions( trans, name, owner, changeset_revision ):
+def get_updated_changeset_revisions( app, name, owner, changeset_revision ):
     """
     Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
     revision for the repository defined by the received name and owner.
     """
-    repository = get_repository_by_name_and_owner( trans.app, name, owner )
-    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
+    repository = get_repository_by_name_and_owner( app, name, owner )
+    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     # Get the upper bound changeset revision.
     upper_bound_changeset_revision = get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
     # Build the list of changeset revision hashes defining each available update up to, but excluding
@@ -1208,9 +1215,10 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
     text = common_util.tool_shed_get( app, tool_shed_url, url )
     return text
 
-def get_user( trans, id ):
+def get_user( app, id ):
     """Get a user from the database by id."""
-    return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.User ).get( app.security.decode_id( id ) )
 
 def get_user_by_username( app, username ):
     """Get a user from the database by username."""
@@ -1325,7 +1333,6 @@ def have_shed_tool_conf_for_install( app ):
             return True
     return False
 
-
 def is_tool_shed_client( app ):
     """ The tool shed and clients to the tool (i.e. Galaxy) require a lot
     of similar functionality in this file but with small differences. This
@@ -1334,14 +1341,13 @@ def is_tool_shed_client( app ):
     """
     return hasattr( app, "install_model" )
 
-
-def open_repository_files_folder( trans, folder_path ):
+def open_repository_files_folder( folder_path ):
     """
     Return a list of dictionaries, each of which contains information for a file or directory contained
     within a directory in a repository file hierarchy.
     """
     try:
-        files_list = get_repository_files( trans, folder_path )
+        files_list = get_repository_files( folder_path )
     except OSError, e:
         if str( e ).find( 'No such file or directory' ) >= 0:
             # We have a repository with no contents.

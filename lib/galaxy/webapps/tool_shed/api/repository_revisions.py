@@ -141,7 +141,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         # Example URL: http://localhost:9009/api/repository_revisions/repository_dependencies/bb125606ff9ea620
         repository_dependencies_dicts = []
-        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, id )
         if repository_metadata is None:
             log.debug( 'Invalid repository_metadata id received: %s' % str( id ) )
             return repository_dependencies_dicts
@@ -214,12 +214,12 @@ class RepositoryRevisionsController( BaseAPIController ):
         :param id: the encoded id of the `RepositoryMetadata` object
         """
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
-        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, id )
         if repository_metadata is None:
             log.debug( 'Cannot locate repository_metadata with id %s' % str( id ) )
             return {}
         encoded_repository_id = trans.security.encode_id( repository_metadata.repository_id )
-        repository = suc.get_repository_by_id( trans, encoded_repository_id )
+        repository = suc.get_repository_by_id( trans.app, encoded_repository_id )
         repository_metadata_dict = repository_metadata.to_dict( view='element',
                                                                 value_mapper=self.__get_value_mapper( trans ) )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repositories',
@@ -238,7 +238,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         repository_metadata_id = kwd.get( 'id', None )
         if repository_metadata_id is None:
             raise HTTPBadRequest( detail="Missing required parameter 'id'." )
-        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, repository_metadata_id )
         if repository_metadata is None:
             decoded_repository_metadata_id = trans.security.decode_id( repository_metadata_id )
             log.debug( 'Cannot locate repository_metadata with id %s' % str( decoded_repository_metadata_id ) )

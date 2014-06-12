@@ -176,13 +176,13 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     workflow_name = encoding_util.tool_shed_decode( workflow_name )
     if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
-        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, repository_metadata_id )
         repository_id = trans.security.encode_id( repository_metadata.repository_id )
         changeset_revision = repository_metadata.changeset_revision
         metadata = repository_metadata.metadata
     else:
         # We're in Galaxy.
-        repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
+        repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
         changeset_revision = repository.changeset_revision
         metadata = repository.metadata
     # metadata[ 'workflows' ] is a list of tuples where each contained tuple is

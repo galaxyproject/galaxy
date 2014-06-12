@@ -38,7 +38,7 @@ def check_status_and_reset_downloadable( trans, import_results_tups ):
                             flush = True
                     # Do not allow dependent repository revisions to be automatically installed if population
                     # resulted in errors.
-                    dependent_downloadable_revisions = suc.get_dependent_downloadable_revisions( trans, repository_metadata )
+                    dependent_downloadable_revisions = suc.get_dependent_downloadable_revisions( trans.app, repository_metadata )
                     for dependent_downloadable_revision in dependent_downloadable_revisions:
                         if dependent_downloadable_revision.downloadable:
                             dependent_downloadable_revision.downloadable = False

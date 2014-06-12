@@ -1580,7 +1580,8 @@ def get_components_from_repository_dependency_for_installed_repository( trans, r
         tool_shed_repository_id = None
         installation_status = 'unknown'
     if tool_shed_repository_id:
-        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, trans.security.encode_id( tool_shed_repository_id ) )
+        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans.app,
+                                                                   trans.security.encode_id( tool_shed_repository_id ) )
         if tool_shed_repository:
             if tool_shed_repository.missing_repository_dependencies:
                 installation_status = '%s, missing repository dependencies' % installation_status

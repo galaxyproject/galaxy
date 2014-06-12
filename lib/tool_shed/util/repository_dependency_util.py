@@ -269,10 +269,10 @@ def generate_message_for_invalid_repository_dependencies( metadata_dict, error_f
                     message += '</table>'
     return message
 
-def get_key_for_repository_changeset_revision( trans, toolshed_base_url, repository, repository_metadata, all_repository_dependencies ):
+def get_key_for_repository_changeset_revision( app, toolshed_base_url, repository, repository_metadata, all_repository_dependencies ):
     # The received toolshed_base_url must include the port, but doesn't have to include the protocol.
     prior_installation_required, only_if_compiling_contained_td = \
-        get_prior_installation_required_and_only_if_compiling_contained_td( trans,
+        get_prior_installation_required_and_only_if_compiling_contained_td( app,
                                                                             toolshed_base_url,
                                                                             repository,
                                                                             repository_metadata,
@@ -286,7 +286,7 @@ def get_key_for_repository_changeset_revision( trans, toolshed_base_url, reposit
                                                                               only_if_compiling_contained_td=only_if_compiling_contained_td )
     return key
 
-def get_prior_installation_required_and_only_if_compiling_contained_td( trans, toolshed_base_url, repository, repository_metadata,
+def get_prior_installation_required_and_only_if_compiling_contained_td( app, toolshed_base_url, repository, repository_metadata,
                                                                         all_repository_dependencies ):
     """
     This method is called from the tool shed and never Galaxy.  If all_repository_dependencies contains
@@ -312,7 +312,7 @@ def get_prior_installation_required_and_only_if_compiling_contained_td( trans, t
         metadata = repository_metadata.metadata
         current_changeset_revision = str( repository_metadata.changeset_revision )
         # Get the changeset revision to which the current value of required_repository_changeset_revision should be updated if it's not current.
-        text = suc.get_updated_changeset_revisions( trans,
+        text = suc.get_updated_changeset_revisions( app,
                                                     name=str( repository.name ),
                                                     owner=str( repository.user.username ),
                                                     changeset_revision=current_changeset_revision )
@@ -401,7 +401,7 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
         # The value of the received toolshed_base_url must include the port, but doesn't have
         # to include the protocol.
         if 'repository_dependencies' in metadata:
-            current_repository_key = get_key_for_repository_changeset_revision( trans,
+            current_repository_key = get_key_for_repository_changeset_revision( trans.app,
                                                                                 toolshed_base_url,
                                                                                 repository,
                                                                                 repository_metadata,

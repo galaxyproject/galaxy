@@ -43,14 +43,14 @@ class AdminController( BaseUIController, Admin ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 if 'user_id' in kwd:
-                    user = suc.get_user( trans, kwd[ 'user_id' ] )
+                    user = suc.get_user( trans.app, kwd[ 'user_id' ] )
                     kwd[ 'f-email' ] = user.email
                     del kwd[ 'user_id' ]
                 else:
                     # The received id is the repository id, so we need to get the id of the user
                     # that uploaded the repository.
                     repository_id = kwd.get( 'id', None )
-                    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                    repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
@@ -58,7 +58,7 @@ class AdminController( BaseUIController, Admin ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 category_id = kwd.get( 'id', None )
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
                 if kwd[ 'id' ]:
@@ -82,7 +82,7 @@ class AdminController( BaseUIController, Admin ):
             changeset_revision_str = 'changeset_revision_'
             if k.startswith( changeset_revision_str ):
                 repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( tran.apps, repository_id )
                 if repository.tip( trans.app ) != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='browse_repositories',
@@ -103,7 +103,7 @@ class AdminController( BaseUIController, Admin ):
                 # The received id is a RepositoryMetadata object id, so we need to get the
                 # associated Repository and redirect to view_or_manage_repository with the
                 # changeset_revision.
-                repository_metadata = metadata_util.get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, kwd[ 'id' ] )
                 repository = repository_metadata.repository
                 kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
@@ -124,7 +124,7 @@ class AdminController( BaseUIController, Admin ):
             if not name or not description:
                 message = 'Enter a valid name and a description'
                 status = 'error'
-            elif suc.get_category_by_name( trans, name ):
+            elif suc.get_category_by_name( trans.app, name ):
                 message = 'A category with that name already exists'
                 status = 'error'
             else:
@@ -158,7 +158,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             deleted_repositories = ""
             for repository_id in ids:
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository:
                     if not repository.deleted:
                         # Mark all installable repository_metadata records as not installable.
@@ -199,7 +199,7 @@ class AdminController( BaseUIController, Admin ):
             ids = util.listify( id )
             count = 0
             for repository_metadata_id in ids:
-                repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
+                repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, repository_metadata_id )
                 trans.sa_session.delete( repository_metadata )
                 trans.sa_session.flush()
                 count += 1
@@ -225,7 +225,7 @@ class AdminController( BaseUIController, Admin ):
                                                        action='manage_categories',
                                                        message=message,
                                                        status='error' ) )
-        category = suc.get_category( trans, id )
+        category = suc.get_category( trans.app, id )
         original_category_name = str( category.name )
         original_category_description = str( category.description )
         if kwd.get( 'edit_category_button', False ):
@@ -236,7 +236,7 @@ class AdminController( BaseUIController, Admin ):
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif original_category_name != new_name and suc.get_category_by_name( trans, new_name ):
+                elif original_category_name != new_name and suc.get_category_by_name( trans.app, new_name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
@@ -363,7 +363,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_repositories = ""
             for repository_id in ids:
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository:
                     if repository.deleted:
                         # Inspect all repository_metadata records to determine those that are installable, and mark
@@ -412,7 +412,7 @@ class AdminController( BaseUIController, Admin ):
             ids = util.listify( id )
             message = "Deleted %d categories: " % len( ids )
             for category_id in ids:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 category.deleted = True
                 trans.sa_session.add( category )
                 trans.sa_session.flush()
@@ -442,7 +442,7 @@ class AdminController( BaseUIController, Admin ):
             purged_categories = ""
             message = "Purged %d categories: " % len( ids )
             for category_id in ids:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 if category.deleted:
                     # Delete RepositoryCategoryAssociations
                     for rca in category.repositories:
@@ -469,7 +469,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_categories = ""
             for category_id in ids:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 if category.deleted:
                     category.deleted = False
                     trans.sa_session.add( category )

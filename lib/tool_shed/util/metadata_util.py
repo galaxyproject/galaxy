@@ -352,10 +352,10 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         for changeset in repo.changelog:
             changeset_hash = str( repo.changectx( changeset ) )
-            skip_tool_test = suc.get_skip_tool_test_by_changeset_revision( trans, changeset_hash )
+            skip_tool_test = suc.get_skip_tool_test_by_changeset_revision( trans.app, changeset_hash )
             if skip_tool_test:
                 # We found a skip_tool_test record associated with the changeset_revision, so see if it has a valid repository_revision.
-                repository_revision = suc.get_repository_metadata_by_id( trans, trans.security.encode_id( repository_metadata.id ) )
+                repository_revision = get_repository_metadata_by_id( trans.app, trans.security.encode_id( repository_metadata.id ) )
                 if repository_revision:
                     # The skip_tool_test record is associated with a valid repository_metadata record, so proceed.
                     continue
@@ -1117,9 +1117,10 @@ def get_relative_path_to_repository_file( root, name, relative_install_dir, work
             relative_path_to_file = relative_path_to_file[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
     return relative_path_to_file
 
-def get_repository_metadata_by_id( trans, id ):
+def get_repository_metadata_by_id( app, id ):
     """Get repository metadata from the database"""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.RepositoryMetadata ).get( app.security.decode_id( id ) )
 
 def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=False ):
     """Get a specified metadata record for a specified repository in the tool shed."""
@@ -1692,30 +1693,31 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                                 workflows=None )
     return containers_dict
 
-def reset_all_metadata_on_installed_repository( trans, id ):
+def reset_all_metadata_on_installed_repository( app, id ):
     """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
     invalid_file_tups = []
     metadata_dict = {}
-    repository = suc.get_installed_tool_shed_repository( trans.app, id )
-    repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, repository )
-    tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
+    repository = suc.get_installed_tool_shed_repository( app, id )
+    repository_clone_url = common_util.generate_clone_url_for_installed_repository( app, repository )
+    tool_path, relative_install_dir = repository.get_tool_relative_path( app )
     if relative_install_dir:
         original_metadata_dict = repository.metadata
-        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                     repository=repository,
-                                                                                     changeset_revision=repository.changeset_revision,
-                                                                                     repository_clone_url=repository_clone_url,
-                                                                                     shed_config_dict = repository.get_shed_config_dict( trans.app ),
-                                                                                     relative_install_dir=relative_install_dir,
-                                                                                     repository_files_dir=None,
-                                                                                     resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False,
-                                                                                     persist=False )
+        metadata_dict, invalid_file_tups = \
+            generate_metadata_for_changeset_revision( app=app,
+                                                      repository=repository,
+                                                      changeset_revision=repository.changeset_revision,
+                                                      repository_clone_url=repository_clone_url,
+                                                      shed_config_dict = repository.get_shed_config_dict( app ),
+                                                      relative_install_dir=relative_install_dir,
+                                                      repository_files_dir=None,
+                                                      resetting_all_metadata_on_repository=False,
+                                                      updating_installed_repository=False,
+                                                      persist=False )
         repository.metadata = metadata_dict
         if metadata_dict != original_metadata_dict:
-            suc.update_in_shed_tool_config( trans.app, repository )
-            trans.install_model.context.add( repository )
-            trans.install_model.context.flush()
+            suc.update_in_shed_tool_config( app, repository )
+            app.install_model.context.add( repository )
+            app.install_model.context.flush()
             log.debug( 'Metadata has been reset on repository %s.' % repository.name )
         else:
             log.debug( 'Metadata did not need to be reset on repository %s.' % repository.name )
@@ -1761,7 +1763,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                 repository_metadata.tool_versions = tool_versions_dict
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
-    repository = suc.get_repository_in_tool_shed( trans, id )
+    repository = suc.get_repository_in_tool_shed( trans.app, id )
     log.debug( "Resetting all metadata on repository: %s" % repository.name )
     repo_dir = repository.repo_path( trans.app )
     repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
@@ -1881,14 +1883,14 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
             try:
                 if trans.webapp.name == 'tool_shed':
                     # We're in the tool shed.
-                    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                    repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                     owner = str( repository.user.username )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
                 else:
                     # We're in Galaxy.
                     repository = suc.get_installed_tool_shed_repository( trans.app, repository_id )
                     owner = str( repository.owner )
-                    invalid_file_tups, metadata_dict = reset_all_metadata_on_installed_repository( trans, repository_id )
+                    invalid_file_tups, metadata_dict = reset_all_metadata_on_installed_repository( trans.app, repository_id )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
                     log.debug( message )

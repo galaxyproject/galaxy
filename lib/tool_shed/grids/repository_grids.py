@@ -579,7 +579,7 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
         filter = trans.app.repository_grid_filter_manager.get_filter( trans )
         if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE:
             if category_id:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 if category:
                     return trans.sa_session.query( model.Repository ) \
                                            .join( model.RepositoryMetadata.table ) \
@@ -596,7 +596,7 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
                                    .outerjoin( model.Category.table )
         if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
             if category_id:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 if category:
                     return trans.sa_session.query( model.Repository ) \
                                            .filter( model.Repository.type == rt_util.REPOSITORY_SUITE_DEFINITION ) \
@@ -616,7 +616,7 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
         else:
             # The value of filter is None.
             if category_id:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 if category:
                     return trans.sa_session.query( model.Repository ) \
                                            .filter( and_( model.Repository.table.c.deleted == False,

@@ -105,7 +105,7 @@ class UsersController( BaseAPIController ):
         :param id: the encoded id of the User object.
         """
         # Example URL: http://localhost:9009/api/users/f9cad7b01a472135
-        user = suc.get_user( trans, id )
+        user = suc.get_user( trans.app, id )
         if user is None:
             user_dict = dict( message = 'Unable to locate user record for id %s.' % ( str( id ) ),
                               status = 'error' )

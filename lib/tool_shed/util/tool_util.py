@@ -526,20 +526,20 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
                                     app.install_model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
                      .first()
 
-def get_version_lineage_for_tool( trans, repository_id, repository_metadata, guid ):
+def get_version_lineage_for_tool( app, repository_id, repository_metadata, guid ):
     """
     Return the tool version lineage chain in descendant order for the received guid contained in the received
     repsitory_metadata.tool_versions.
     """
-    repository = suc.get_repository_by_id( trans, repository_id )
-    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
+    repository = suc.get_repository_by_id( app, repository_id )
+    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     # Initialize the tool lineage
     version_lineage = [ guid ]
     # Get all ancestor guids of the received guid.
     current_child_guid = guid
     for changeset in hg_util.reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
         ctx = repo.changectx( changeset )
-        rm = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, str( ctx ) )
+        rm = suc.get_repository_metadata_by_changeset_revision( app, repository_id, str( ctx ) )
         if rm:
             parent_guid = rm.tool_versions.get( current_child_guid, None )
             if parent_guid:
@@ -549,9 +549,9 @@ def get_version_lineage_for_tool( trans, repository_id, repository_metadata, gui
     current_parent_guid = guid
     for changeset in hg_util.reversed_lower_upper_bounded_changelog( repo,
                                                                      repository_metadata.changeset_revision,
-                                                                     repository.tip( trans.app ) ):
+                                                                     repository.tip( app ) ):
         ctx = repo.changectx( changeset )
-        rm = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, str( ctx ) )
+        rm = suc.get_repository_metadata_by_changeset_revision( app, repository_id, str( ctx ) )
         if rm:
             tool_versions = rm.tool_versions
             for child_guid, parent_guid in tool_versions.items():
@@ -853,12 +853,14 @@ def is_data_index_sample_file( file_path ):
 
 def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):
     """
-    Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value of tool_config_filename.  The value of changeset_revision
-    is a valid (downloadable) changset revision.  The tool config will be located in the repository manifest between the received valid changeset
-    revision and the first changeset revision in the repository, searching backwards.
+    Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value
+    of tool_config_filename.  The value of changeset_revision is a valid (downloadable)
+    changset revision.  The tool config will be located in the repository manifest between
+    the received valid changeset revision and the first changeset revision in the repository,
+    searching backwards.
     """
     original_tool_data_path = trans.app.config.tool_data_path
-    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+    repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
     repo_files_dir = repository.repo_path( trans.app )
     repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_files_dir, create=False )
     message = ''
@@ -869,7 +871,11 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
     if can_use_disk_file:
         trans.app.config.tool_data_path = work_dir
-        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, repository_id, tool_config_filepath, work_dir )
+        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans,
+                                                                                          repo_files_dir,
+                                                                                          repository_id,
+                                                                                          tool_config_filepath,
+                                                                                          work_dir )
         if tool is not None:
             invalid_files_and_errors_tups = check_tool_input_params( trans.app,
                                                                      repo_files_dir,
@@ -885,7 +891,12 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                                                                displaying_invalid_tool=True )
                 message = concat_messages( message, message2 )
     else:
-        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, repository_id, changeset_revision, tool_config_filename, work_dir )
+        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans,
+                                                                                         repo,
+                                                                                         repository_id,
+                                                                                         changeset_revision,
+                                                                                         tool_config_filename,
+                                                                                         work_dir )
     basic_util.remove_dir( work_dir )
     trans.app.config.tool_data_path = original_tool_data_path
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.

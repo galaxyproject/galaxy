@@ -103,7 +103,7 @@ class InstalledRepositoryGrid( grids.Grid ):
     class StatusColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            return suc.get_tool_shed_repository_status_label( trans, tool_shed_repository )
+            return suc.get_tool_shed_repository_status_label( trans.app, tool_shed_repository )
 
 
     class ToolShedColumn( grids.TextColumn ):

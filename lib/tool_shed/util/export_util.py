@@ -52,7 +52,7 @@ def archive_repository_revision( trans, ui, repository, archive_dir, changeset_r
 
 def export_repository( trans, tool_shed_url, repository_id, repository_name, changeset_revision, file_type,
                        export_repository_dependencies, api=False ):
-    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+    repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
     repositories_archive_filename = generate_repository_archive_filename( tool_shed_url,
                                                                           str( repository.name ),
                                                                           str( repository.user.username ),
@@ -239,7 +239,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
     Return a list of dictionaries defining repositories that are required by the repository associated with the
     received repository_id.
     """
-    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+    repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
     # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
     toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )

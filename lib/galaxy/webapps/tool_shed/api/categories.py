@@ -39,7 +39,7 @@ class CategoriesController( BaseAPIController ):
                 if not description:
                     # Default the description to the name.
                     description = name
-                if suc.get_category_by_name( trans, name ):
+                if suc.get_category_by_name( trans.app, name ):
                     category_dict[ 'message' ] = 'A category with that name already exists'
                     category_dict[ 'status' ] = 'error'
                 else:
@@ -90,7 +90,7 @@ class CategoriesController( BaseAPIController ):
         :param id: the encoded id of the Repository object
         """
         # Example URL: http://localhost:9009/api/categories/f9cad7b01a472135
-        category = suc.get_category( trans, id )
+        category = suc.get_category( trans.app, id )
         if category is None:
             category_dict = dict( message = 'Unable to locate category record for id %s.' % ( str( id ) ),
                                   status = 'error' )
