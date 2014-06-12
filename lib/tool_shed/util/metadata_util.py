@@ -1696,7 +1696,7 @@ def reset_all_metadata_on_installed_repository( trans, id ):
     """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
     invalid_file_tups = []
     metadata_dict = {}
-    repository = suc.get_installed_tool_shed_repository( trans, id )
+    repository = suc.get_installed_tool_shed_repository( trans.app, id )
     repository_clone_url = common_util.generate_clone_url_for_installed_repository( trans.app, repository )
     tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
     if relative_install_dir:
@@ -1886,7 +1886,7 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
                 else:
                     # We're in Galaxy.
-                    repository = suc.get_installed_tool_shed_repository( trans, repository_id )
+                    repository = suc.get_installed_tool_shed_repository( trans.app, repository_id )
                     owner = str( repository.owner )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_installed_repository( trans, repository_id )
                 if invalid_file_tups:

@@ -214,7 +214,14 @@ class InstalledRepositoryGrid( grids.Grid ):
                                         target=None,
                                         url_args=dict( controller='admin_toolshed',
                                                        action='browse_repositories',
-                                                       operation='activate or reinstall' ) ) ]
+                                                       operation='activate or reinstall' ) ),
+                   grids.GridOperation( label="Purge",
+                                        condition=( lambda item: item.is_new ),
+                                        allow_multiple=False,
+                                        target=None,
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='browse_repositories',
+                                                       operation='purge' ) ) ]
     standard_filters = []
     default_filter = dict( deleted="False" )
     num_rows_per_page = 50

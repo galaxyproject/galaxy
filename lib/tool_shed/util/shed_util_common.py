@@ -491,9 +491,9 @@ def get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False ):
         return ','.join( installing_repository_ids )
     return installing_repository_ids
 
-def get_installed_tool_shed_repository( trans, id ):
+def get_installed_tool_shed_repository( app, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
-    return trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( id ) )
+    return app.install_model.context.query( app.install_model.ToolShedRepository ).get( app.security.decode_id( id ) )
 
 def get_latest_changeset_revision( app, repository, repo ):
     repository_tip = repository.tip( app )
