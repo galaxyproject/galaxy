@@ -128,6 +128,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             from galaxy.util import heartbeat
             if heartbeat.Heartbeat:
                 self.heartbeat = heartbeat.Heartbeat( fname=self.config.heartbeat_log )
+                self.heartbeat.daemon = True
                 self.heartbeat.start()
         # Enable the memdump signal catcher if configured and available
         if self.config.use_memdump:
@@ -150,6 +151,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.control_worker = GalaxyQueueWorker(self,
                                                 galaxy.queues.control_queue_from_config(self.config),
                                                 galaxy.queue_worker.control_message_to_task)
+        self.control_worker.daemon = True
         self.control_worker.start()
 
     def shutdown( self ):
