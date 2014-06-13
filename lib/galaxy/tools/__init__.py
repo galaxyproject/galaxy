@@ -2392,7 +2392,18 @@ class Tool( object, Dictifiable ):
                     # Get value of test param and determine current case
                     value, test_param_error = \
                         check_param( trans, input.test_param, test_incoming, context, source=source )
-                    current_case = input.get_current_case( value, trans )
+                    try:
+                        current_case = input.get_current_case( value, trans )
+                    except ValueError, e:
+                        #load default initial value
+                        if not test_param_error:
+                            test_param_error = str( e )
+                        if trans is not None:
+                            history = trans.get_history()
+                        else:
+                            history = None
+                        value = input.test_param.get_initial_value( trans, context, history=history )
+                        current_case = input.get_current_case( value, trans )
                 if current_case != old_current_case:
                     # Current case has changed, throw away old state
                     group_state = state[input.name] = {}
