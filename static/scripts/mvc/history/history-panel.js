@@ -273,7 +273,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
      *  @param {HistoryDatasetAssociation} hda
      */
     _createContentView : function( hda ){
-        var hdaId = hda.id,
+        var hdaId = hda.get( 'id' ),
             historyContentType = hda.get( 'history_content_type' ),
             hdaView = null;
 
@@ -328,7 +328,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 
             // only
             } else {
-                var id = hdaView.model.id;
+                var id = hdaView.model.get( 'id' );
                 historyView.lastSelectedViewId = id;
                 //console.debug( 'lastSelectedViewId:', historyView.lastSelectedViewId );
                 selectedIds = [ id ];
@@ -340,7 +340,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         });
         hdaView.on( 'de-selected', function( hdaView, event ){
             //console.debug( 'de-selected', event );
-            var id = hdaView.model.id;
+            var id = hdaView.model.get( 'id' );
             historyView.selectedHdaIds = _.without( historyView.selectedHdaIds, id );
             //console.debug( 'de-selected', historyView.selectedHdaIds );
         });

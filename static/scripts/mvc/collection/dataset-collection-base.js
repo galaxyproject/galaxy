@@ -144,7 +144,7 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
             contentView.$el.children( '.dataset-body' ).replaceWith( contentView._render_body() );
             contentView.$el.children( '.dataset-body' ).slideDown( contentView.fxSpeed, function(){
                     contentView.expanded = true;
-                    contentView.trigger( 'body-expanded', contentView.model );
+                    contentView.trigger( 'body-expanded', contentView.model.get( 'id' ) );
                 });
         }
         // TODO: Fetch more details like HDA view...
@@ -158,7 +158,7 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
         var hdaView = this;
         this.$el.children( '.dataset-body' ).slideUp( hdaView.fxSpeed, function(){
             hdaView.expanded = false;
-            hdaView.trigger( 'body-collapsed', hdaView.model.id );
+            hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
         });
     },
 

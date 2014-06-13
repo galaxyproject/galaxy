@@ -319,7 +319,7 @@ var HDABaseView = HistoryContentBaseView.extend(
                         title       : "Data Viewer: " + self.model.get('name'),
                         type        : "other",
                         content     : function(parent_elt) {
-                            var new_dataset = new dataset.TabularDataset({id: self.model.get('id')});
+                            var new_dataset = new dataset.TabularDataset({id: self.model.id});
                             $.when(new_dataset.fetch()).then(function() {
                                 dataset.createTabularDatasetChunkedView({
                                     model: new_dataset,
@@ -568,7 +568,7 @@ var HDABaseView = HistoryContentBaseView.extend(
             hdaView.$el.children( '.dataset-body' ).replaceWith( hdaView._render_body() );
             hdaView.$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
                     hdaView.expanded = true;
-                    hdaView.trigger( 'body-expanded', hdaView.model );
+                    hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
                 });
 
             //hdaView.render( false ).$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
@@ -595,7 +595,7 @@ var HDABaseView = HistoryContentBaseView.extend(
         var hdaView = this;
         this.$el.children( '.dataset-body' ).slideUp( hdaView.fxSpeed, function(){
             hdaView.expanded = false;
-            hdaView.trigger( 'body-collapsed', hdaView.model.id );
+            hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
         });
     },
 

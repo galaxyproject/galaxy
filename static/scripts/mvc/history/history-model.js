@@ -236,7 +236,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
             // for symmetry, not actually used by backend of consumed
             // by frontend.
             data[ "dataset_collection_details" ] = hdcaDetailIds.join( ',' );
-        }
+        }            
         return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyData.id + '/contents', { data: data });
     }
 
