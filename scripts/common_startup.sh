@@ -1,5 +1,27 @@
 #!/bin/bash
 
+# explicitly attempt to fetch eggs before running
+FETCH_EGGS=1
+COPY_SAMPLE_FILES=1
+for arg in "$@"; do
+    [ "$arg" = "--skip-eggs" ] && FETCH_EGGS=0
+    [ "$arg" = "--stop-daemon" ] && FETCH_EGGS=0
+    [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
+done
+if [ $FETCH_EGGS -eq 1 ]; then
+    python ./scripts/check_eggs.py -q
+    if [ $? -ne 0 ]; then
+        echo "Some eggs are out of date, attempting to fetch..."
+        python ./scripts/fetch_eggs.py
+        if [ $? -eq 0 ]; then
+            echo "Fetch successful."
+        else
+            echo "Fetch failed."
+            exit 1
+        fi
+    fi
+fi
+
 SAMPLES="
     tool_shed_wsgi.ini.sample
     datatypes_conf.xml.sample
@@ -28,12 +50,14 @@ SAMPLES="
     static/welcome.html.sample
 "
 
-# Create any missing config/location files
-for sample in $SAMPLES; do
-	file=${sample%.sample}
-    if [ ! -f "$file" -a -f "$sample" ]; then
-        echo "Initializing $file from `basename $sample`"
-        cp $sample $file
-    fi
-done
-
+if [ $COPY_SAMPLE_FILES -eq 1 ]; then
+	# Create any missing config/location files
+	for sample in $SAMPLES; do
+		file=${sample%.sample}
+	    if [ ! -f "$file" -a -f "$sample" ]; then
+	        echo "Initializing $file from `basename $sample`"
+	        cp $sample $file
+	    fi
+	done
+fi
+	
