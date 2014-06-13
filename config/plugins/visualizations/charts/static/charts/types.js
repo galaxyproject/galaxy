@@ -15,7 +15,8 @@ define(['plugin/charts/nvd3/bar/config',
         'plugin/charts/jqplot/bar/config',
         'plugin/charts/jqplot/line/config',
         'plugin/charts/jqplot/scatter/config',
-        'plugin/charts/jqplot/boxplot/config'
+        'plugin/charts/jqplot/boxplot/config',
+        'plugin/charts/others/heatmap/config'
         ], function(nvd3_bar,
                     nvd3_bar_stacked,
                     nvd3_bar_horizontal,
@@ -32,7 +33,8 @@ define(['plugin/charts/nvd3/bar/config',
                     jqplot_bar,
                     jqplot_line,
                     jqplot_scatter,
-                    jqplot_boxplot
+                    jqplot_boxplot,
+                    others_heatmap
             ) {
 
 // widget
@@ -56,7 +58,8 @@ return Backbone.Model.extend(
         'nvd3_histogram_discrete'           : nvd3_histogram_discrete,
         'jqplot_line'                       : jqplot_line,
         'jqplot_scatter'                    : jqplot_scatter,
-        'jqplot_boxplot'                    : jqplot_boxplot
+        'jqplot_boxplot'                    : jqplot_boxplot,
+        'others_heatmap'                    : others_heatmap
     }
 });
 

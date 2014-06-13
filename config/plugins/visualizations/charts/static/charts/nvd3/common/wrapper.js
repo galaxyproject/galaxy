@@ -173,39 +173,21 @@ return Backbone.View.extend(
         // result
         var categories = Tools.makeCategories(groups);
         
-        // make axis
-        function makeAxis (id) {
-            var axis        = d3chart[id + 'Axis'];
-            var type        = settings.get(id + '_axis_type');
-            var tick        = settings.get(id + '_axis_tick');
-            var is_category = categories.array[id];
-            
-            // hide axis
-            if (type == 'hide') {
-                axis.tickFormat(function() { return '' });
-                return;
-            }
-            
-            // format values/labels
-            if (type == 'auto') {
-                if (is_category) {
-                    axis.tickFormat(function(value) {
-                        return categories.array[id][value]
-                    });
-                }
-            } else {
-                var formatter = d3.format(tick + type);
-                if (is_category) {
-                    axis.tickFormat(function(value) {
-                        return formatter(categories.array[id][value]);
-                    });
-                } else {
-                    axis.tickFormat(formatter);
-                }
-            }
-        };
-    
         // make axes
+        function makeAxis (id) {
+            Tools.makeAxis({
+                categories  : categories.array[id],
+                type        : settings.get(id + '_axis_type'),
+                precision   : settings.get(id + '_axis_precision'),
+                formatter   : function(formatter) {
+                    if (formatter) {
+                        d3chart[id + 'Axis'].tickFormat(function(value) {
+                           return formatter(value);
+                        });
+                    }
+                }
+            });
+        };
         makeAxis('x');
         makeAxis('y');
     },

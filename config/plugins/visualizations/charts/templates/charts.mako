@@ -29,6 +29,9 @@
         ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.js" )}
         ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.plugins.js" )}
 
+        ## dc
+        ${h.javascript_link( app_root + "plugins/dc/crossfilter.js" )}
+
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
         
@@ -61,12 +64,13 @@
             require.config({
                 baseUrl: config.root + "static/scripts/",
                 paths: {
-                    "plugin"        : "${app_root}"
+                    "plugin"        : "${app_root}",
+                    "d3"            : "libs/d3"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
                     "libs/backbone/backbone": { exports: "Backbone" },
-                    "d3": { exports: "d3"},
+                    "d3": { exports: "d3"}
 
                 }
             });

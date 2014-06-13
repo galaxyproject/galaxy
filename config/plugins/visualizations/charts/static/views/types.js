@@ -138,10 +138,19 @@ return Backbone.View.extend(
             
             // add chart types
             for (var id in this.categories[category]) {
+                // get type
                 var type = this.categories[category][id];
+                
+                // make title
+                var title = type.title + ' (' + type.library + ')';
+                if (type.zoomable) {
+                    title = '<span class="fa fa-search-plus"/>' + title;
+                }
+            
+                // append type to screen
                 $el.append(Utils.wrap(this._template_item({
                     id      : id,
-                    title   : type.title + ' (' + type.library + ')',
+                    title   : title,
                     url     : config.app_root + 'charts/' + this.app.chartPath(id) + '/logo.png'
                 })));
             }

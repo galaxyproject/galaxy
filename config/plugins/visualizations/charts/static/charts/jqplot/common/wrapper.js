@@ -54,7 +54,7 @@ return Backbone.View.extend(
             this._makeAxes(groups, plot_config, chart.settings);
             
             // make custom series call
-            if (makeSeries) {
+            if (makeSeriesLabels) {
                 plot_config.series = makeSeriesLabels(groups, plot_config);
             } else {
                 plot_config.series = this._makeSeriesLabels(groups);
@@ -92,7 +92,6 @@ return Backbone.View.extend(
             var plot = drawGraph();
             
             // catch window resize event
-            var self = this;
             $(window).on('resize', function () {
                 drawGraph();
             });
@@ -126,41 +125,21 @@ return Backbone.View.extend(
             categories = Tools.makeCategories(groups);
         }
                 
-        // make axis
+        // make axes
         function makeAxis (id) {
-            var axis        = plot_config.axes[id + 'axis'].tickOptions;
-            var type        = settings.get(id + '_axis_type');
-            var tick        = settings.get(id + '_axis_tick');
-            var is_category = categories.array[id];
-            
-            // hide axis
-            if (type == 'hide') {
-                axis.formatter = function(format, value) { return '' };
-                return;
-            }
-            
-            // format values/labels
-            if (type == 'auto') {
-                if (is_category) {
-                    axis.formatter = function(format, value) {
-                        return categories.array[id][value] || '';
-                    };
-                }
-            } else {
-                var formatter = d3.format(tick + type);
-                if (is_category) {
-                    axis.formatter = function(format, value) {
-                        return formatter(categories.array[id][value]);
-                    };
-                } else {
-                    axis.formatter = function(format, value) {
-                        return formatter(value);
+            Tools.makeAxis({
+                categories  : categories.array[id],
+                type        : settings.get(id + '_axis_type'),
+                precision   : settings.get(id + '_axis_precision'),
+                formatter   : function(formatter) {
+                    if (formatter) {
+                        plot_config.axes[id + 'axis'].tickOptions.formatter = function(format, value) {
+                           return formatter(value);
+                        };
                     }
                 }
-            }
+            });
         };
-    
-        // make axes
         makeAxis('x');
         makeAxis('y');
     },

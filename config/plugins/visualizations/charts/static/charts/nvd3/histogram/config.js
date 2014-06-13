@@ -21,7 +21,7 @@ return $.extend(true, {}, nvd3_config, {
         y_axis_type : {
             init : 'f'
         },
-        y_axis_tick : {
+        y_axis_precision : {
             init : '.2'
         }
     }

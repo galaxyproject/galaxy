@@ -246,14 +246,63 @@ function makeUniqueCategories(groups, with_index) {
         counter     : counter
     }
 };
+
+// make axis
+function makeAxis (options) {
+    var type        = options.type;
+    var precision   = options.precision;
+    var categories  = options.categories;
+    var formatter   = options.formatter;
     
+    // hide axis
+    if (type == 'hide') {
+        formatter(function() { return '' });
+        return;
+    }
+    
+    // format values/labels
+    if (type == 'auto') {
+        if (categories) {
+            formatter(function(value) {
+                return categories[value] || '';
+            });
+        }
+    } else {
+        var d3format = d3.format(precision + type);
+        if (categories) {
+            formatter(function(value) {
+                var label = categories[value];
+                if (label) {
+                    if (isNaN(label)) {
+                        return label;
+                    } else {
+                        try {
+                            return d3format(label);
+                        } catch (err) {
+                            return label;
+                        }
+                    }
+                } else {
+                    return '';
+                }
+            });
+        } else {
+            formatter(function(value) {
+                return d3format(value);
+            });
+        }
+    }
+};
+       
 // return
 return {
-    panelHelper         : panelHelper,
-    makeCategories      : makeCategories,
-    makeSeries          : makeSeries,
-    getDomains          : getDomains,
-    mapCategories       : mapCategories
+    panelHelper             : panelHelper,
+    makeCategories          : makeCategories,
+    makeUniqueCategories    : makeUniqueCategories,
+    makeSeries              : makeSeries,
+    getDomains              : getDomains,
+    mapCategories           : mapCategories,
+    makeAxis                : makeAxis
 }
 
 });

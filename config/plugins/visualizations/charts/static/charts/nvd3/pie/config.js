@@ -5,8 +5,7 @@ return $.extend(true, {}, {
     category    : 'Area charts',
     library     : 'NVD3',
     tag         : 'svg',
-    keywords    : 'default small',
-    use_panels  : true,
+    keywords    : 'small',
     columns : {
         label : {
             title       : 'Labels',
@@ -20,21 +19,9 @@ return $.extend(true, {}, {
     },
     
     settings : {
-        show_legend : {
-            title       : 'Show legend',
-            info        : 'Would you like to add a legend?',
-            type        : 'select',
-            init        : 'false',
-            data        : [
-                {
-                    label   : 'Yes',
-                    value   : 'true'
-                },
-                {
-                    label   : 'No',
-                    value   : 'false'
-                }
-            ]
+        main_separator : {
+            type        : 'separator',
+            title       : 'Pie chart settings'
         },
        
         donut_ratio : {
@@ -58,6 +45,23 @@ return $.extend(true, {}, {
                 {
                     label   : '0%',
                     value   : '0'
+                }
+            ]
+        },
+        
+        show_legend : {
+            title       : 'Show legend',
+            info        : 'Would you like to add a legend?',
+            type        : 'radiobutton',
+            init        : 'false',
+            data        : [
+                {
+                    label   : 'Yes',
+                    value   : 'true'
+                },
+                {
+                    label   : 'No',
+                    value   : 'false'
                 }
             ]
         },
@@ -99,7 +103,7 @@ return $.extend(true, {}, {
         label_outside : {
             title       : 'Show outside',
             info        : 'Would you like to show labels outside the donut?',
-            type        : 'select',
+            type        : 'radiobutton',
             init        : 'false',
             data        : [
                 {
@@ -111,6 +115,11 @@ return $.extend(true, {}, {
                     value   : 'false'
                 }
             ]
+        },
+        
+        use_panels : {
+            init        : 'true',
+            hide        : true
         }
     }
 });

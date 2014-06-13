@@ -207,7 +207,7 @@ return Backbone.View.extend(
         this.chart.groups.each(function(group) {
             var title = group.get('key', '');
             if (title == '') {
-                title = 'Chart data';
+                title = 'Data label';
             }
             self.tabs.title(group.id, ++counter + ': ' + title);
         });
