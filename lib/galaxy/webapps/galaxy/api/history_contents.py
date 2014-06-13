@@ -102,8 +102,10 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             contents_kwds[ 'deleted' ] = kwd.get( 'deleted', None )
             contents_kwds[ 'visible' ] = kwd.get( 'visible', None )
             # details param allows a mixed set of summary and detailed hdas
-            #TODO: this is getting convoluted due to backwards compat
-            details = kwd.get( 'details', None ) or []
+            # Ever more convoluted due to backwards compat..., details
+            # should be considered deprecated in favor of more specific
+            # dataset_details (and to be implemented dataset_collection_details).
+            details = kwd.get( 'details', None ) or kwd.get( 'dataset_details', None ) or []
             if details and details != 'all':
                 details = util.listify( details )
 
