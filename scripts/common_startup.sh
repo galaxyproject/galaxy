@@ -8,19 +8,6 @@ for arg in "$@"; do
     [ "$arg" = "--stop-daemon" ] && FETCH_EGGS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
 done
-if [ $FETCH_EGGS -eq 1 ]; then
-    python ./scripts/check_eggs.py -q
-    if [ $? -ne 0 ]; then
-        echo "Some eggs are out of date, attempting to fetch..."
-        python ./scripts/fetch_eggs.py
-        if [ $? -eq 0 ]; then
-            echo "Fetch successful."
-        else
-            echo "Fetch failed."
-            exit 1
-        fi
-    fi
-fi
 
 SAMPLES="
     tool_shed_wsgi.ini.sample
@@ -60,4 +47,17 @@ if [ $COPY_SAMPLE_FILES -eq 1 ]; then
 	    fi
 	done
 fi
-	
+
+if [ $FETCH_EGGS -eq 1 ]; then
+    python ./scripts/check_eggs.py -q
+    if [ $? -ne 0 ]; then
+        echo "Some eggs are out of date, attempting to fetch..."
+        python ./scripts/fetch_eggs.py
+        if [ $? -eq 0 ]; then
+            echo "Fetch successful."
+        else
+            echo "Fetch failed."
+            exit 1
+        fi
+    fi
+fi	
