@@ -162,7 +162,7 @@
           <!-- Following command can be used to tweak docker command. -->
           <!-- <param id="docker_cmd">/usr/local/custom_docker/docker</param> -->
           <!-- Following can be used to connect to docke server in different
-               ways (translated as -H argument to docker client).
+               ways (translated as -H argument to docker client). -->
           <!-- <param id="docker_host">unix:///var/run/docker.sock</param> -->
           <!-- <param id="docker_host">:5555</param> -->
           <!-- <param id="docker_host">:5555</param> -->
