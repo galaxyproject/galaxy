@@ -217,20 +217,44 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     def create( self, trans, history_id, payload, **kwd ):
         """
         create( self, trans, history_id, payload, **kwd )
-        * POST /api/histories/{history_id}/contents
+        * POST /api/histories/{history_id}/contents/{type}
             create a new HDA by copying an accessible LibraryDataset
 
         :type   history_id: str
         :param  history_id: encoded id string of the new HDA's History
+        :type   type: str
+        :param  type: Type of history content - 'dataset' (default) or
+                      'dataset_collection'.
         :type   payload:    dict
         :param  payload:    dictionary structure containing::
-            copy from library:
+            copy from library (for type 'dataset'):
             'source'    = 'library'
             'content'   = [the encoded id from the library dataset]
 
-            copy from HDA:
+            copy from history dataset (for type 'dataset'):
             'source'    = 'hda'
             'content'   = [the encoded id from the HDA]
+
+            copy from history dataset collection (for type 'dataset_collection')
+            'source'    = 'hdca'
+            'content'   = [the encoded id from the HDCA]
+
+            create new history dataset collection (for type 'dataset_collection')
+            'source'              = 'new_collection'
+            'collection_type'     = For example, "list", "paired", "list:paired".
+            'name'                = Name of new dataset collection.
+            'element_identifiers' = Recursive list structure defining collection.
+                                    Each element must have 'src' which can be
+                                    'hda', 'ldda', 'hdca', or 'new_collection',
+                                    as well as a 'name' which is the name of
+                                    element (e.g. "forward" or "reverse" for
+                                    paired datasets, or arbitrary sample names
+                                    for instance for lists). For all src's except
+                                    'new_collection' - a encoded 'id' attribute
+                                    must be included wiht element as well.
+                                    'new_collection' sources must defined a
+                                    'collection_type' and their own list of
+                                    (potentially) nested 'element_identifiers'.
 
         ..note:
             Currently, a user can only copy an HDA from a history that the user owns.
@@ -238,6 +262,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         :rtype:     dict
         :returns:   dictionary containing detailed information for the new HDA
         """
+        # TODO: Flush out create new collection documentation above, need some
+        # examples. See also bioblend and API tests for specific examples.
+
         # get the history, if anon user and requesting current history - allow it
         if( ( trans.user == None )
         and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
