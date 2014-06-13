@@ -99,6 +99,12 @@ class ContainerFinder(object):
         return asbool(destination_info.get("%s_enabled" % container_type, False))
 
 
+class NullContainerFinder(object):
+
+    def find_container(self, tool_info, destination_info, job_info):
+        return []
+
+
 class ContainerRegistry():
 
     def __init__(self):

@@ -16,6 +16,7 @@ from galaxy.tools import Tool
 from galaxy.util import parse_xml
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.jobs import NoopQueue
+from galaxy.tools.deps.containers import NullContainerFinder
 
 
 class UsesApp( object ):
@@ -126,6 +127,7 @@ class MockApp( object ):
         self.security_agent = GalaxyRBACAgent( self.model )
         self.tool_data_tables = {}
         self.dataset_collections_service = None
+        self.container_finder = NullContainerFinder()
 
 
 class MockContext(object):

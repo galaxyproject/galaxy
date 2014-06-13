@@ -53,14 +53,14 @@ def parse_requirements_from_xml( xml_root ):
     ...     contents_document = '''<tool><requirements>%s</requirements></tool>'''
     ...     root = ElementTree.fromstring( contents_document % contents )
     ...     return parse_requirements_from_xml( root )
-    >>> reqs = load_requirements('''<requirement>bwa</requirement>''')
+    >>> reqs, containers = load_requirements('''<requirement>bwa</requirement>''')
     >>> reqs[0].name
     'bwa'
     >>> reqs[0].version is None
     True
     >>> reqs[0].type
     'package'
-    >>> reqs = load_requirements('''<requirement type="binary" version="1.3.3">cufflinks</requirement>''')
+    >>> reqs, containers = load_requirements('''<requirement type="binary" version="1.3.3">cufflinks</requirement>''')
     >>> reqs[0].name
     'cufflinks'
     >>> reqs[0].version

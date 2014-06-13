@@ -153,7 +153,7 @@
           <!-- <param id="docker_sudo">false</param> -->
           <!-- Following option can be used to tweak sudo command used by
                default. -->
-          <!-- <param id="docker_sudo_cmd">/usr/bin/sudo --extra_param</param> -->
+          <!-- <param id="docker_sudo_cmd">/usr/bin/sudo -extra_param</param> -->
           <!-- By default, docker container will not have any networking
                enabled. host networking can be bridged by uncommenting next option
                http://docs.docker.io/reference/run/#network-settings
