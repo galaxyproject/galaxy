@@ -34,6 +34,9 @@ class ToolDataTableManager( object ):
     def __getitem__( self, key ):
         return self.data_tables.__getitem__( key )
 
+    def __setitem__( self, key, value ):
+        return self.data_tables.__setitem__( key, value )
+
     def __contains__( self, key ):
         return self.data_tables.__contains__( key )
 
@@ -42,6 +45,9 @@ class ToolDataTableManager( object ):
             return self[ name ]
         except KeyError:
             return default
+
+    def set( self, name, value ):
+        self[ name ] = value
 
     def get_tables( self ):
         return self.data_tables
