@@ -240,7 +240,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'content'   = [the encoded id from the HDCA]
 
             create new history dataset collection (for type 'dataset_collection')
-            'source'              = 'new_collection'
+            'source'              = 'new_collection' (default 'source' if type is
+                                    'dataset_collection' - no need to specify this)
             'collection_type'     = For example, "list", "paired", "list:paired".
             'name'                = Name of new dataset collection.
             'element_identifiers' = Recursive list structure defining collection.
