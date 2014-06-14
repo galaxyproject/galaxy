@@ -68,7 +68,7 @@ define(["libs/underscore"], function(_) {
             // show input fields
             $svg.find('.highcharts-button').show();
         });
-       
+        
         // do the post
         _post($el, screenshot_url, {
             filename    : name || 'chart',

@@ -5,7 +5,7 @@ return $.extend(true, {}, config_default, {
     category    : 'Others',
     query_limit : 2000,
     library     : 'Custom',
-    tag         : 'div',
+    tag         : 'svg',
     keywords    : 'small',
     zoomable    : true,
     columns     : {
@@ -24,6 +24,12 @@ return $.extend(true, {}, config_default, {
         z : {
             title       : 'Observation',
             is_numeric  : true
+        }
+    },
+    settings    : {
+        use_panels : {
+            init        : 'false',
+            hide        : true
         }
     }
 });

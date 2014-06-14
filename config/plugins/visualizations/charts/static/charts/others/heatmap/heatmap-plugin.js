@@ -6,15 +6,30 @@ return Backbone.View.extend({
     
     // options
     optionsDefault: {
-        font_size           : 12,
-        font_family         : 'Verdana',
-        font_style          : {
-            'font-weight'   : 'normal',
-            'font-family'   : 'Verdana'
+        margin: {
+            top                 : 40,
+            right               : 70,
+            bottom              : 70,
+            left                : 70
         },
-        background_color    : '#FFFFF8',
-        debug_color         : '#FFFFFF',
-        color_set           : ['#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#253494','#081d58']
+        style: {
+            'font-weight'       : 'normal',
+            'font-family'       : 'Verdana',
+            'font-size'         : '12'
+        },
+        legend: {
+            width               : 15,
+            size                : 0.9,
+            style : {
+                'font-weight'   : 'normal',
+                'font-family'   : 'Verdana',
+                'font-size'     : '11'
+            },
+            limit               : 7
+        },
+        background_color        : '#FFFFF8',
+        debug_color             : '#FFFFFF',
+        color_set               : ['#ffffd9','#edf8b1','#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#253494','#081d58','#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#253494','#081d58']
     },
     
     // initialize
@@ -40,9 +55,9 @@ return Backbone.View.extend({
         this.yScale = d3.scale.linear().domain([0, this.categories.array.y.length]);
         
         // color scale
+        this.zMin = d3.min(this.data, function(d) { return d.z; });
         this.zMax = d3.max(this.data, function(d) { return d.z; });
-        this.zScale = d3.scale.quantize().domain([0, this.zMax]);
-        this.zScale.range(this.options.color_set);
+        this.zScale = d3.scale.quantize().domain([this.zMin, this.zMax]).range(this.options.color_set);
         
         // create axis
         this.xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
@@ -79,6 +94,7 @@ return Backbone.View.extend({
         var chart       = this.chart;
         var data        = this.data;
         var self        = this;
+        this.data       = data;
         
         // get/reset container
         var container = $('#' + this.canvas_id);
@@ -96,28 +112,48 @@ return Backbone.View.extend({
         this.xAxis.tickValues(d3.range(xTickStart, xTickEnd, 1));
         this.yAxis.tickValues(d3.range(yTickStart, yTickEnd, 1));
         
-        // set margin and heights
-        var margin = {top: 40, right: 20, bottom: 70, left: 70},
-        width = parseInt(container.width()) - margin.left - margin.right,
-        height = parseInt(container.height()) - margin.top - margin.bottom;
+        // get margins
+        var margin = this.options.margin;
         
-        // default font size
-        var font_size = this.options.font_size;
+        // configure dimensions
+        this.height = parseInt(container.height()) - margin.top - margin.bottom;
+        this.width  = parseInt(container.width()) - margin.left - margin.right;
         
-        //
         // set range
-        //
-        this.xScale.range([0, width]);
-        this.yScale.range([height, 0]);
+        this.xScale.range([0, this.width]);
+        this.yScale.range([this.height, 0]);
 
-        //
-        // draw boxes
-        //
         // get box properties
-        var rowCount = yDomain[1] - yDomain[0],
-            colCount = xDomain[1] - xDomain[0],
-            boxWidth = Math.max(1, Math.floor(width / colCount)),
-            boxHeight = Math.max(1, Math.floor(height / rowCount));
+        this.rowCount = yDomain[1] - yDomain[0];
+        this.colCount = xDomain[1] - xDomain[0];
+        this.boxWidth = Math.max(1, Math.floor(this.width / this.colCount));
+        this.boxHeight = Math.max(1, Math.floor(this.height / this.rowCount));
+        
+        // create group
+        var svg = this.svg = d3.select('#' + this.canvas_id)
+            .append('g')
+                .attr('class', 'heatmap')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        
+        // build elements
+        this._buildBoxes();
+        this._buildX();
+        this._buildY();
+        this._buildLegend();
+    },
+    
+    // y axis
+    _buildBoxes: function() {
+        // link this
+        var self = this;
+        
+        // collect parameters
+        var height      = this.height;
+        var width       = this.width;
+        var margin      = this.options.margin;
+        var svg         = this.svg;
+        var boxWidth    = this.boxWidth;
+        var boxHeight   = this.boxHeight;
         
         // box location
         function _locator(d) {
@@ -128,17 +164,6 @@ return Backbone.View.extend({
         function _color (d) {
             return self.zScale(d.z);
         };
-        
-        //
-        // create svg
-        //
-        var svg = d3.select('#' + this.canvas_id)
-            .append('svg')
-                .attr('width', width + margin.left + margin.right)
-                .attr('height', height + margin.top + margin.bottom)
-            .append('g')
-                .attr('class', 'heatmap')
-                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
         
         // set background color
         var gBackground = svg.append('rect')
@@ -160,100 +185,183 @@ return Backbone.View.extend({
             .attr('clip-path', 'url(#clip)');
             
         // add boxes to chart area
-        var boxes = chartBody.selectAll('g.box-group').data(data, function(d, i) {
+        var boxes = chartBody.selectAll('g.box-group').data(this.data, function(d, i) {
             return d.x + '\0' + d.y;
         });
         var gEnter = boxes.enter().append('g')
             .attr('class', 'box-group');
         gEnter.append('rect')
-            .attr('class','heat-box')
-            .attr('fill', 'red');
+            .attr('class','heat-box');
         boxes.selectAll('rect')
             .attr('rx', 1)
             .attr('ry', 1)
             .attr('fill', _color)
             .attr('width', boxWidth)
             .attr('height', boxHeight)
-            .attr('transform', _locator);
+            .attr('transform', _locator)
+            .append('svg:title')
+            .text(function(d) { return d.x; });
         boxes.exit().remove();
-
+    },
+    
+    // x axis
+    _buildX : function() {
+        // link this
+        var self = this;
+        
+        // collect parameters
+        var height      = this.height;
+        var width       = this.width;
+        var margin      = this.options.margin;
+        var svg         = this.svg;
+        var font_size   = this.options.style['font-size'];
+        var boxWidth    = this.boxWidth;
+        
         // draw x axis
         this.gxAxis = svg.append('g')
             .attr('class', 'x axis')
             .style('stroke-width', 1)
             .attr('transform', 'translate(0,' + height + ')')
             .call(this.xAxis);
-        
-        // draw y axis
-        this.gyAxis = svg.append('g')
-            .attr('class', 'y axis')
-            .style('stroke-width', 1)
-            .call(this.yAxis);
-        
+            
         // fix text
         var xFontSize = Math.min(boxWidth, font_size);
         this.gxAxis.selectAll('text')
-            .style(this.options.font_style)
+            .style(this.options.style)
             .style({'font-size': xFontSize + 'px'})
             .attr('transform', function(d) {
                 var y = -this.getBBox().height - 10;
                 var x = -xFontSize + boxWidth/2;
                 return 'rotate(-90)translate(' + y + ',' + x + ')';
             });
-    
-        // fix text
-        var yFontSize = Math.min(boxHeight, font_size);
-        this.gyAxis.selectAll('text')
-            .style(this.options.font_style)
-            .style({'font-size': yFontSize + 'px'})
-            .attr('y', -boxHeight/2);
-        
+            
         // set background color
-        var gBackgroundBottom = svg.append('rect')
+        var gxAxisLabelBackground = svg.append('rect')
             .attr('width', width)
             .attr('height', font_size + 3)
             .attr('y', height + margin.bottom - font_size - 3)
             .attr('fill', this.options.debug_color);
             
         // axis label
-        this.gxLabel = svg.append('text')
+        this.gxAxisLabel = svg.append('text')
             .attr('class', 'x label')
-            .style(this.options.font_style)
+            .style(this.options.style)
             .text(this.chart.settings.get('x_axis_label'))
             .attr('transform', function(d) {
                 var y = height + margin.bottom - font_size/3;
                 var x = (width - this.getBBox().width)/2;
                 return 'translate(' + x + ',' + y + ')';
             });
-        
-        // set background color
-        var gBackgroundLeft = svg.append('rect')
-            .attr('width', font_size)
-            .attr('height', height)
-            .attr('x', -margin.left)
-            .attr('fill', this.options.debug_color);
-        
-        // axis label
-        this.gyLabel = svg.append('text')
-            .attr('class', 'y label')
-            .style(this.options.font_style)
-            .text(this.chart.settings.get('y_axis_label'))
-            .attr('transform', function(d) {
-                var x = -margin.left + font_size-2;
-                var y = -(height + this.getBBox().width)/2;
-                return 'rotate(-90)translate(' + y + ',' + x + ')';
-            });
             
         // chart title
-        this.gxLabel = svg.append('text')
+        this.gxTickLabel = svg.append('text')
             .attr('class', 'title')
-            .style(this.options.font_style)
+            .style(this.options.style)
             .style({'font-size' : 1.5*font_size})
             .text(this.chart.get('title'))
             .attr('transform', function(d) {
                 var y = -margin.top/2;
                 var x = (width - this.getBBox().width)/2;
                 return 'translate(' + x + ',' + y + ')';
+            });
+    },
+    
+    // y axis
+    _buildY : function() {
+        // link this
+        var self = this;
+        
+        // collect parameters
+        var height      = this.height;
+        var width       = this.width;
+        var margin      = this.options.margin;
+        var svg         = this.svg;
+        var font_size   = this.options.style['font-size'];
+        var boxHeight   = this.boxHeight;
+        
+        // draw y axis
+        this.gyAxis = svg.append('g')
+            .attr('class', 'y axis')
+            .style('stroke-width', 1)
+            .call(this.yAxis);
+
+    
+        // fix text
+        var yFontSize = Math.min(boxHeight, font_size);
+        this.gyAxis.selectAll('text')
+            .style(this.options.style)
+            .style({'font-size': yFontSize + 'px'})
+            .attr('y', -boxHeight/2);
+        
+        // set background color
+        var gyAxisLabelBackground = svg.append('rect')
+            .attr('width', font_size)
+            .attr('height', height)
+            .attr('x', -margin.left)
+            .attr('fill', this.options.debug_color);
+            
+        // axis label
+        this.gyAxisLabel = svg.append('text')
+            .attr('class', 'y label')
+            .style(this.options.style)
+            .text(this.chart.settings.get('y_axis_label'))
+            .attr('transform', function(d) {
+                var x = -margin.left + font_size-2;
+                var y = -(height + this.getBBox().width)/2;
+                return 'rotate(-90)translate(' + y + ',' + x + ')';
+            });
+    },
+
+    // legend
+    _buildLegend : function() {
+        // link this
+        var self = this;
+        
+        // collect parameters
+        var height      = this.height;
+        var width       = this.width;
+        var margin      = this.options.margin;
+        var font_size   = this.options.legend.style['font-size'];
+        var limit       = this.options.legend.limit;
+                
+        // identify legend dimensions
+        var legendSize  = this.options.legend.size;
+        var legendWidth = this.options.legend.width;
+        var legendElements = this.zScale.range().length;
+        var legendElementHeight = legendSize * height / legendElements;
+        var legendHeight = legendElements * legendElementHeight;
+        
+        // create legend elements
+        var legend = this.svg.selectAll('.legend')
+            .data(d3.range(this.zMin, this.zMax, (this.zMax-this.zMin) / legendElements).reverse())
+            .enter().append('g')
+                .attr('class', 'legend')
+                .attr('transform', function(d, i) {
+                    var x = width + 10;
+                    var y = ((height - legendHeight) / 2) + (i * legendElementHeight);
+                    return 'translate(' + x + ',' + y + ')';
+                });
+
+        legend.append('rect')
+            .attr('width', legendWidth)
+            .attr('height', legendElementHeight)
+            .style('fill', function(z) {
+                return self.zScale(z);
+            });
+
+        legend.append('text')
+            .attr('x', legendWidth + 4)
+            .attr('y', function() {
+                return (legendElementHeight+this.getBBox().height)/2;
+            })
+            .style(this.options.legend.style)
+            .text(function(d) {
+                var str = String(d);
+                if (str.length > limit) {
+                    return str.substr(0, limit-2) + '..';
+                } else {
+                    return str;
+                }
             });
     },
     
