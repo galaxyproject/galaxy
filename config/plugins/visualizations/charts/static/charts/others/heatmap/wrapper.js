@@ -56,7 +56,13 @@ return Backbone.View.extend({
         this.redraw();
                     
         // add zoom
-        this._addZoom();
+        Tools.addZoom({
+            xAxis       : this.xAxis,
+            yAxis       : this.yAxis,
+            redraw      : function() { self.redraw() },
+            svg         : d3.select('#' + this.canvas_id),
+            discrete    : true
+        });
         
         // return
         return true;
@@ -183,65 +189,6 @@ return Backbone.View.extend({
             .attr('y', -boxHeight/2 + boxHeight);
     },
     
-    // add zoom handler
-    _addZoom: function() {
-        // link this
-        var self = this;
-        
-        // min/max boundaries
-        var x_boundary = this.xScale.domain().slice();
-        var y_boundary = this.yScale.domain().slice();
-        
-        // create d3 zoom handler
-        var d3zoom = d3.behavior.zoom();
-        
-        // fix domain
-        function fixDomain(domain, boundary) {
-            domain[0] = parseInt(domain[0]);
-            domain[1] = parseInt(domain[1]);
-            domain[0] = Math.max(domain[0], boundary[0]);
-            domain[1] = Math.max(0, Math.min(domain[1], boundary[1]));
-            return domain;
-        };
-        
-        // zoom event handler
-        function zoomed() {
-            var yDomain = fixDomain(self.yScale.domain(), y_boundary);
-            if (Math.abs(yDomain[1]-yDomain[0]) > 30) {
-                self.yScale.domain(yDomain);
-                self.gyAxis.call(self.yAxis);
-            }
-            var xDomain = fixDomain(self.xScale.domain(), x_boundary);
-            if (Math.abs(xDomain[1]-xDomain[0]) > 30) {
-                self.xScale.domain(xDomain);
-                self.gxAxis.call(self.xAxis);
-            }
-            self.redraw();
-        };
-
-        // zoom event handler
-        function unzoomed() {
-            self.xScale.domain(x_boundary);
-            self.yScale.domain(y_boundary);
-            self.redraw();
-            d3zoom.scale(1);
-            d3zoom.translate([0,0]);
-        };
-        
-        // initialize wrapper
-        d3zoom.x(this.xScale)
-              .y(this.yScale)
-              .scaleExtent([1, 10])
-              .on('zoom', zoomed);
-              
-        // clip edges
-        //svg.clipEdge(true);
-              
-        // add handler
-        var svg = d3.select('#' + this.canvas_id);
-        svg.call(d3zoom).on('dblclick.zoom', unzoomed);
-    },
-
     // create axes formatting
     _makeAxes: function(d3chart, settings) {
         // make axes
@@ -259,8 +206,8 @@ return Backbone.View.extend({
                 }
             });
         };
-        //makeAxis('x');
-        //makeAxis('y');
+        makeAxis('x');
+        makeAxis('y');
     },
     
     // handle error

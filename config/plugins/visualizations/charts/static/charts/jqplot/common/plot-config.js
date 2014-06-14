@@ -8,18 +8,10 @@ return function(chart) {
     var settings = chart.settings;
     var plot_config = {
         enablePlugins: true,
-        seriesColors: function() {
-            var colors = [];
-            var colorScale = d3.scale.category20();
-            for (var i = 0; i < chart.groups.length; i++) {
-                colors.push(colorScale(i));
-            }
-            return colors;
-        }(),
-       
+        seriesColors: d3.scale.category20().range(),
         seriesDefaults: {
             renderer                : $.jqplot.LineRenderer,
-            //lineWidth               : 1,                    // Width of the line in pixels.
+            //lineWidth             : 1,                    // Width of the line in pixels.
             shadow                  : false,                // show shadow or not.
             showLine                : true,                 // whether to render the line segments or not.
        

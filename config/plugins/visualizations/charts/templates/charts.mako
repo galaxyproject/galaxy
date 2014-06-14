@@ -29,9 +29,6 @@
         ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.js" )}
         ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.plugins.js" )}
 
-        ## dc
-        ${h.javascript_link( app_root + "plugins/dc/crossfilter.js" )}
-
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
         

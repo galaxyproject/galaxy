@@ -80,9 +80,21 @@ return Backbone.View.extend(
                       .call(d3chart);
                     
                 // add zoom/pan handler
-                var zoom_mode = chart.definition.zoomable;
-                if (zoom_mode == 'axis' || zoom_mode == 'svg') {
-                    self._addZoom(d3chart, canvas, zoom_mode);
+                if (chart.definition.zoomable) {
+                    // clip edges
+                    if (d3chart.clipEdge) {
+                        d3chart.clipEdge(true);
+                    }
+        
+                    // add zoom
+                    Tools.addZoom({
+                        xAxis  : d3chart.xAxis,
+                        yAxis  : d3chart.yAxis,
+                        yDomain: d3chart.yDomain,
+                        xDomain: d3chart.xDomain,
+                        redraw : function() { d3chart.update() },
+                        svg    : canvas
+                    });
                 }
 
                 // refresh on window resize
@@ -95,84 +107,11 @@ return Backbone.View.extend(
         return true;
     },
     
-    // add zoom handler
-    _addZoom: function(nvd3_model, svg, zoom_mode) {
-        // clip edges
-        if (nvd3_model.clipEdge) {
-            nvd3_model.clipEdge(true);
-        }
-        
-        // get canvas dimensions
-        var width = parseInt(svg.style('width'));
-        var height = parseInt(svg.style('height'));
-        
-        // create x scales
-        var x_domain = nvd3_model.xAxis.scale().domain();
-        var x = d3.scale.linear()
-            .domain(x_domain)
-            .range([0, width]);
-        
-        // create y scale
-        var y_domain = nvd3_model.yAxis.scale().domain();
-        var y = d3.scale.linear()
-            .domain(y_domain)
-            .range([height, 0]);
-        
-        // min/max boundaries
-        var x_boundary = nvd3_model.xScale().domain().slice();
-        var y_boundary = nvd3_model.yScale().domain().slice();
-        
-        // create d3 zoom handler
-        var d3zoom = d3.behavior.zoom();
-        
-        // fix domain
-        function fixDomain(domain, boundary) {
-            domain[0] = Math.max(domain[0], boundary[0]);
-            domain[1] = Math.min(domain[1], boundary[1]);
-            return domain;
-        };
-        
-        // zoom event handler
-        function zoomed() {
-            if (zoom_mode == 'axis') {
-                nvd3_model.xDomain(fixDomain(x.domain(), x_boundary));
-                nvd3_model.yDomain(fixDomain(y.domain(), y_boundary));
-                nvd3_model.update();
-            } else {
-                var translate = d3.event.translate;
-                svg.select('.nvd3').attr("transform", "translate(" + translate + ")  scale(" + d3.event.scale + ")");
-            }
-        };
-
-        // zoom event handler
-        function unzoomed() {
-            if (zoom_mode == 'axis') {
-                nvd3_model.xDomain(x_boundary);
-                nvd3_model.yDomain(y_boundary);
-                nvd3_model.update();
-                d3zoom.scale(1);
-                d3zoom.translate([0,0]);
-            } else {
-                var translate = d3.event.translate;
-                svg.select('.nvd3').attr("transform", "translate([0,0]) scale(1)");
-            }
-        };
-
-        // initialize wrapper
-        d3zoom.x(x)
-              .y(y)
-              .scaleExtent([1, 10])
-              .on("zoom", zoomed);
-            
-        // add handler
-        svg.call(d3zoom).on("dblclick.zoom", unzoomed);
-    },
-
     // create axes formatting
     _makeAxes: function(d3chart, groups, settings) {
         // result
         var categories = Tools.makeCategories(groups);
-        
+                    
         // make axes
         function makeAxis (id) {
             Tools.makeAxis({
