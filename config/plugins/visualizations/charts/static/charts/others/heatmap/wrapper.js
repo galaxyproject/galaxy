@@ -11,6 +11,10 @@ return Backbone.View.extend({
             
     // render
     draw : function(process_id, chart, request_dictionary) {
+        // backup chart
+        this.chart = chart;
+        
+        // distribute data groups on svgs and handle process
         var self = this;
         var plot = Tools.panelHelper({
             app                 : this.app,
@@ -26,14 +30,14 @@ return Backbone.View.extend({
     
     // render
     render : function(canvas_id, groups) {
+        // categories
+        this.categories = Tools.makeUniqueCategories(groups);
+        
         // collect parameters
         this.canvas_id  = canvas_id;
         this.data       = groups[0].values;
         this.color_set  = ['#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#253494','#081d58'];
         
-        // result
-        var categories = Tools.makeUniqueCategories(groups);
-    
         // get limits
         this.xMax = d3.max(this.data, function(d) { return d.x; });
         this.yMax = d3.max(this.data, function(d) { return d.y; });
@@ -45,7 +49,19 @@ return Backbone.View.extend({
         this.xScale = d3.scale.linear().domain([0, this.xMax]);
         this.yScale = d3.scale.linear().domain([0, this.yMax]);
         this.zScale = d3.scale.ordinal().domain([0, this.zMax]);
-            
+        
+        // create axis
+        this.xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
+        this.yAxis = d3.svg.axis().scale(this.yScale).orient('left');
+        
+        // set ticks
+        this.xAxis.tickValues(d3.range(this.xScale.domain()[0], this.xScale.domain()[1], 1));
+        this.yAxis.tickValues(d3.range(this.yScale.domain()[0], this.yScale.domain()[1], 1));
+        
+        // make categories
+        this._makeTickFormat('x');
+        this._makeTickFormat('y');
+                
         // refresh on window resize
         var self = this;
         $(window).on('resize', function () {
@@ -87,35 +103,20 @@ return Backbone.View.extend({
         height = parseInt(container.height()) - margin.top - margin.bottom;
         
         //
-        // create svg
-        //
-        var svg = d3.select('#' + this.canvas_id)
-            .append('svg')
-                .attr('width', width + margin.left + margin.right)
-                .attr('height', height + margin.top + margin.bottom)
-            .append('g')
-                .attr('class', 'heatmap')
-                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        
-        //
         // set range
         //
         this.xScale.range([0, width]);
         this.yScale.range([height, 0]);
         this.zScale.range(color_set);
 
-        // get domain
-        var xDomain = this.xScale.domain();
-        var yDomain = this.yScale.domain();
-        
         //
         // draw boxes
         //
         // get box properties
         var rowCount = this.yScale.domain()[1] - this.yScale.domain()[0],
             colCount = this.xScale.domain()[1] - this.xScale.domain()[0],
-            boxWidth = Math.max(1, Math.min(Math.floor(width / colCount), 20)),
-            boxHeight = Math.max(1, Math.min(Math.floor(height / rowCount), 20));
+            boxWidth = Math.max(1, Math.floor(width / colCount)),
+            boxHeight = Math.max(1, Math.floor(height / rowCount));
         
         // box location
         function _locator(d) {
@@ -127,6 +128,17 @@ return Backbone.View.extend({
             return self.zScale(d.z);
         };
         
+        //
+        // create svg
+        //
+        var svg = d3.select('#' + this.canvas_id)
+            .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+            .append('g')
+                .attr('class', 'heatmap')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
         // clip path
         var clip = svg.append('clipPath')
             .attr('id', 'clip')
@@ -159,8 +171,6 @@ return Backbone.View.extend({
         boxes.exit().remove();
 
         // draw x axis
-        this.xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
-        this.xAxis.tickValues(d3.range(xDomain[0], xDomain[1], 1));
         this.gxAxis = svg.append('g')
             .attr('class', 'x axis')
             .style('stroke-width', 0)
@@ -168,8 +178,6 @@ return Backbone.View.extend({
             .call(this.xAxis);
             
         // draw y axis
-        this.yAxis = d3.svg.axis().scale(this.yScale).orient('left');
-        this.yAxis.tickValues(d3.range(yDomain[0], yDomain[1], 1));
         this.gyAxis = svg.append('g')
             .attr('class', 'y axis')
             .style('stroke-width', 0)
@@ -190,24 +198,21 @@ return Backbone.View.extend({
     },
     
     // create axes formatting
-    _makeAxes: function(d3chart, settings) {
-        // make axes
-        function makeAxis (id) {
-            Tools.makeAxis({
-                categories  : categories.array[id],
-                type        : settings.get(id + '_axis_type'),
-                precision   : settings.get(id + '_axis_precision'),
-                formatter   : function(formatter) {
-                    if (formatter) {
-                        d3chart[id + 'Axis']().tickFormat(function(value) {
-                           return formatter(value);
-                        });
-                    }
+    _makeTickFormat: function(id) {
+        var settings = this.chart.settings;
+        var self = this;
+        Tools.makeTickFormat({
+            categories  : self.categories.array[id],
+            type        : settings.get(id + '_axis_type'),
+            precision   : settings.get(id + '_axis_precision'),
+            formatter   : function(formatter) {
+                if (formatter) {
+                    self[id + 'Axis'].tickFormat(function(value) {
+                       return formatter(value);
+                    });
                 }
-            });
-        };
-        makeAxis('x');
-        makeAxis('y');
+            }
+        });
     },
     
     // handle error

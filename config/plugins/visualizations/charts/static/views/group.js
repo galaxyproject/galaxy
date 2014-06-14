@@ -193,7 +193,7 @@ return Backbone.View.extend(
         }
         
         // set initial value
-        if (is_unique) {
+        if (is_unique && this.chart.groups.first()) {
             select.value(this.chart.groups.first().get(id));
         } else {
             select.value(this.group.get(id));

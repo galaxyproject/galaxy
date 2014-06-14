@@ -248,7 +248,7 @@ function makeUniqueCategories(groups, with_index) {
 };
 
 // make axis
-function makeAxis (options) {
+function makeTickFormat (options) {
     var type        = options.type;
     var precision   = options.precision;
     var categories  = options.categories;
@@ -296,6 +296,9 @@ function makeAxis (options) {
 
 // add zoom handler
 function addZoom(options) {
+    // scaleExtent
+    var scaleExtent = 10;
+    
     // parameters
     var yAxis       = options.yAxis;
     var xAxis       = options.xAxis;
@@ -323,11 +326,11 @@ function addZoom(options) {
     // fix domain
     function fixDomain(domain, boundary) {
         if (discrete) {
-            domain[0] = parseInt(domain[0]);
-            domain[1] = parseInt(domain[1]);
+            domain[0] = Math.floor(domain[0]);
+            domain[1] = Math.ceil(domain[1]);
         }
-        domain[0] = Math.max(domain[0], boundary[0]);
-        domain[1] = Math.max(0, Math.min(domain[1], boundary[1]));
+        domain[0] = Math.min(Math.max(domain[0], boundary[0]), boundary[1] - boundary[1]/scaleExtent);
+        domain[1] = Math.max(boundary[0] + boundary[1]/scaleExtent, Math.min(domain[1], boundary[1]));
         return domain;
     };
     
@@ -350,7 +353,7 @@ function addZoom(options) {
     // initialize wrapper
     d3zoom.x(xScale)
           .y(yScale)
-          .scaleExtent([1, 10])
+          .scaleExtent([1, scaleExtent])
           .on('zoom', zoomed);
           
     // add handler
@@ -365,7 +368,7 @@ return {
     makeSeries              : makeSeries,
     getDomains              : getDomains,
     mapCategories           : mapCategories,
-    makeAxis                : makeAxis,
+    makeTickFormat          : makeTickFormat,
     addZoom                 : addZoom
 }
 

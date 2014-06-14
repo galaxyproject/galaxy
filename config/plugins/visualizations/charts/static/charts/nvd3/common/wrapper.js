@@ -113,8 +113,8 @@ return Backbone.View.extend(
         var categories = Tools.makeCategories(groups);
                     
         // make axes
-        function makeAxis (id) {
-            Tools.makeAxis({
+        function makeTickFormat (id) {
+            Tools.makeTickFormat({
                 categories  : categories.array[id],
                 type        : settings.get(id + '_axis_type'),
                 precision   : settings.get(id + '_axis_precision'),
@@ -127,8 +127,8 @@ return Backbone.View.extend(
                 }
             });
         };
-        makeAxis('x');
-        makeAxis('y');
+        makeTickFormat('x');
+        makeTickFormat('y');
     },
     
     // handle error
