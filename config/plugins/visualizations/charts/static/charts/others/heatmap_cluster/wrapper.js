@@ -15,7 +15,9 @@ return Backbone.View.extend({
         this.chart = chart;
         
         // create heatmap
-        this.heatmap = new HeatMap(app, { chart : chart });
+        this.heatmap = new HeatMap(app, {
+            chart : chart
+        });
         
         // distribute data groups on svgs and handle process
         var self = this;

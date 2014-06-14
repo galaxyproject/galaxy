@@ -297,7 +297,7 @@ function makeTickFormat (options) {
 // add zoom handler
 function addZoom(options) {
     // scaleExtent
-    var scaleExtent = 10;
+    var scaleExtent = 100;
     
     // parameters
     var yAxis       = options.yAxis;
@@ -306,7 +306,6 @@ function addZoom(options) {
     var yDomain     = options.yDomain || yAxis.scale().domain;
     var redraw      = options.redraw;
     var svg         = options.svg;
-    var discrete    = options.discrete;
     
     // scales
     var xScale = xAxis.scale();
@@ -325,10 +324,6 @@ function addZoom(options) {
        
     // fix domain
     function fixDomain(domain, boundary) {
-        if (discrete) {
-            domain[0] = Math.floor(domain[0]);
-            domain[1] = Math.ceil(domain[1]);
-        }
         domain[0] = Math.min(Math.max(domain[0], boundary[0]), boundary[1] - boundary[1]/scaleExtent);
         domain[1] = Math.max(boundary[0] + boundary[1]/scaleExtent, Math.min(domain[1], boundary[1]));
         return domain;
