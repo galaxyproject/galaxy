@@ -1,12 +1,27 @@
 // dependencies
-define(['plugin/charts/tools'], function(Tools) {
+define(['plugin/charts/tools', 'utils/utils'], function(Tools, Utils) {
 
 // widget
 return Backbone.View.extend({
+    
+    // options
+    optionsDefault: {
+        font_size           : 12,
+        font_family         : 'Verdana',
+        font_style          : {
+            'font-weight'   : 'normal',
+            'font-family'   : 'Verdana'
+        },
+        background_color    : '#FFFFF8',
+        debug_color         : '#FFFFFF',
+        color_set           : ['#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#253494','#081d58']
+    },
+    
     // initialize
     initialize: function(app, options) {
         this.app    = app;
         this.chart  = options.chart;
+        this.options = Utils.merge (this.optionsDefault, options);
     },
             
     // render
@@ -17,25 +32,21 @@ return Backbone.View.extend({
         // collect parameters
         this.canvas_id  = canvas_id;
         this.data       = groups[0].values;
-        this.color_set  = ['#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#253494','#081d58'];
-        
-        // get limits
-        this.zMax = d3.max(this.data, function(d) { return d.z; });
         
         //
         // domains/scales
         //
         this.xScale = d3.scale.linear().domain([0, this.categories.array.x.length]);
         this.yScale = d3.scale.linear().domain([0, this.categories.array.y.length]);
-        this.zScale = d3.scale.ordinal().domain([0, this.zMax]);
+        
+        // color scale
+        this.zMax = d3.max(this.data, function(d) { return d.z; });
+        this.zScale = d3.scale.quantize().domain([0, this.zMax]);
+        this.zScale.range(this.options.color_set);
         
         // create axis
         this.xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
         this.yAxis = d3.svg.axis().scale(this.yScale).orient('left');
-        
-        // set ticks
-        this.xAxis.tickValues(d3.range(this.xScale.domain()[0], this.xScale.domain()[1], 1));
-        this.yAxis.tickValues(d3.range(this.yScale.domain()[0], this.yScale.domain()[1], 1));
         
         // make categories
         this._makeTickFormat('x');
@@ -67,31 +78,44 @@ return Backbone.View.extend({
         // get parameters
         var chart       = this.chart;
         var data        = this.data;
-        var color_set   = this.color_set;
         var self        = this;
         
         // get/reset container
         var container = $('#' + this.canvas_id);
         container.empty();
         
+        // get domain
+        var xDomain = this.xScale.domain();
+        var yDomain = this.yScale.domain();
+        
+        // set ticks
+        var xTickStart = Math.ceil(xDomain[0]);
+        var xTickEnd   = Math.floor(xDomain[1]);
+        var yTickStart = Math.ceil(yDomain[0]);
+        var yTickEnd   = Math.floor(yDomain[1]);
+        this.xAxis.tickValues(d3.range(xTickStart, xTickEnd, 1));
+        this.yAxis.tickValues(d3.range(yTickStart, yTickEnd, 1));
+        
         // set margin and heights
-        var margin = {top: 20, right: 90, bottom: 90, left: 100},
+        var margin = {top: 40, right: 20, bottom: 70, left: 70},
         width = parseInt(container.width()) - margin.left - margin.right,
         height = parseInt(container.height()) - margin.top - margin.bottom;
+        
+        // default font size
+        var font_size = this.options.font_size;
         
         //
         // set range
         //
         this.xScale.range([0, width]);
         this.yScale.range([height, 0]);
-        this.zScale.range(color_set);
 
         //
         // draw boxes
         //
         // get box properties
-        var rowCount = this.yScale.domain()[1] - this.yScale.domain()[0],
-            colCount = this.xScale.domain()[1] - this.xScale.domain()[0],
+        var rowCount = yDomain[1] - yDomain[0],
+            colCount = xDomain[1] - xDomain[0],
             boxWidth = Math.max(1, Math.floor(width / colCount)),
             boxHeight = Math.max(1, Math.floor(height / rowCount));
         
@@ -117,10 +141,10 @@ return Backbone.View.extend({
                 .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
         
         // set background color
-        var background = svg.append('rect')
+        var gBackground = svg.append('rect')
             .attr('width', width)
             .attr('height', height)
-            .attr('fill', '#FFFFF8');
+            .attr('fill', this.options.background_color);
 
         // clip path
         var clip = svg.append('clipPath')
@@ -159,7 +183,7 @@ return Backbone.View.extend({
             .style('stroke-width', 1)
             .attr('transform', 'translate(0,' + height + ')')
             .call(this.xAxis);
-            
+        
         // draw y axis
         this.gyAxis = svg.append('g')
             .attr('class', 'y axis')
@@ -167,8 +191,9 @@ return Backbone.View.extend({
             .call(this.yAxis);
         
         // fix text
-        var xFontSize = Math.min(boxWidth, 12);
+        var xFontSize = Math.min(boxWidth, font_size);
         this.gxAxis.selectAll('text')
+            .style(this.options.font_style)
             .style({'font-size': xFontSize + 'px'})
             .attr('transform', function(d) {
                 var y = -this.getBBox().height - 10;
@@ -177,10 +202,59 @@ return Backbone.View.extend({
             });
     
         // fix text
-        var yFontSize = Math.min(boxHeight, 12);
+        var yFontSize = Math.min(boxHeight, font_size);
         this.gyAxis.selectAll('text')
+            .style(this.options.font_style)
             .style({'font-size': yFontSize + 'px'})
             .attr('y', -boxHeight/2);
+        
+        // set background color
+        var gBackgroundBottom = svg.append('rect')
+            .attr('width', width)
+            .attr('height', font_size + 3)
+            .attr('y', height + margin.bottom - font_size - 3)
+            .attr('fill', this.options.debug_color);
+            
+        // axis label
+        this.gxLabel = svg.append('text')
+            .attr('class', 'x label')
+            .style(this.options.font_style)
+            .text(this.chart.settings.get('x_axis_label'))
+            .attr('transform', function(d) {
+                var y = height + margin.bottom - font_size/3;
+                var x = (width - this.getBBox().width)/2;
+                return 'translate(' + x + ',' + y + ')';
+            });
+        
+        // set background color
+        var gBackgroundLeft = svg.append('rect')
+            .attr('width', font_size)
+            .attr('height', height)
+            .attr('x', -margin.left)
+            .attr('fill', this.options.debug_color);
+        
+        // axis label
+        this.gyLabel = svg.append('text')
+            .attr('class', 'y label')
+            .style(this.options.font_style)
+            .text(this.chart.settings.get('y_axis_label'))
+            .attr('transform', function(d) {
+                var x = -margin.left + font_size-2;
+                var y = -(height + this.getBBox().width)/2;
+                return 'rotate(-90)translate(' + y + ',' + x + ')';
+            });
+            
+        // chart title
+        this.gxLabel = svg.append('text')
+            .attr('class', 'title')
+            .style(this.options.font_style)
+            .style({'font-size' : 1.5*font_size})
+            .text(this.chart.get('title'))
+            .attr('transform', function(d) {
+                var y = -margin.top/2;
+                var x = (width - this.getBBox().width)/2;
+                return 'translate(' + x + ',' + y + ')';
+            });
     },
     
     // create axes formatting

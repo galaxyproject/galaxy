@@ -3,7 +3,7 @@ define(['plugin/charts/forms/default'], function(config_default) {
 return $.extend(true, {}, config_default, {
     title       : 'Heatmap',
     category    : 'Others',
-    query_limit : 1000,
+    query_limit : 2000,
     library     : 'Custom',
     tag         : 'div',
     keywords    : 'small',
