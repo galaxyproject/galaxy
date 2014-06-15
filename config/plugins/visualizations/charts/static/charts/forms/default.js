@@ -68,17 +68,10 @@ return {
                     }
                 },
                 {
-                    label   : 'Rounded',
-                    value   : 'r',
-                    operations  : {
-                        show    : ['x_axis_precision']
-                    }
-                },
-                {
                     label   : 'SI-prefix',
                     value   : 's',
                     operations  : {
-                        show    : ['x_axis_precision']
+                        hide    : ['x_axis_precision']
                     }
                 }
             ]
@@ -91,27 +84,27 @@ return {
             data        : [
                 {
                     label   : '0.00001',
-                    value   : '.5'
+                    value   : '5'
                 },
                 {
                     label   : '0.0001',
-                    value   : '.4'
+                    value   : '4'
                 },
                 {
                     label   : '0.001',
-                    value   : '.3'
+                    value   : '3'
                 },
                 {
                     label   : '0.01',
-                    value   : '.2'
+                    value   : '2'
                 },
                 {
                     label   : '0.1',
-                    value   : '.1'
+                    value   : '1'
                 },
                 {
                     label   : '1',
-                    value   : '1'
+                    value   : '0'
                 }
             ]
 
@@ -176,17 +169,10 @@ return {
                     }
                 },
                 {
-                    label   : 'Rounded',
-                    value   : 'r',
-                    operations  : {
-                        show    : ['y_axis_precision']
-                    }
-                },
-                {
                     label   : 'SI-prefix',
                     value   : 's',
                     operations  : {
-                        show    : ['y_axis_precision']
+                        hide    : ['y_axis_precision']
                     }
                 }
             ]
@@ -199,27 +185,27 @@ return {
             data        : [
                 {
                     label   : '0.00001',
-                    value   : '.5'
+                    value   : '5'
                 },
                 {
                     label   : '0.0001',
-                    value   : '.4'
+                    value   : '4'
                 },
                 {
                     label   : '0.001',
-                    value   : '.3'
+                    value   : '3'
                 },
                 {
                     label   : '0.01',
-                    value   : '.2'
+                    value   : '2'
                 },
                 {
                     label   : '0.1',
-                    value   : '.1'
+                    value   : '1'
                 },
                 {
                     label   : '1',
-                    value   : '1'
+                    value   : '0'
                 }
             ]
 

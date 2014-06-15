@@ -268,7 +268,15 @@ function makeTickFormat (options) {
             });
         }
     } else {
-        var d3format = d3.format(precision + type);
+        var d3format = function(d) {
+            switch (type) {
+                case 's' :
+                    var prefix = d3.formatPrefix(d);
+                    return prefix.scale(d).toFixed() + prefix.symbol;
+                default :
+                    return d3.format('.' + precision + type)(d);
+            }
+        };
         if (categories) {
             formatter(function(value) {
                 var label = categories[value];
