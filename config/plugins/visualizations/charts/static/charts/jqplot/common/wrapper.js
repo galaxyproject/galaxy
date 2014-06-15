@@ -127,7 +127,7 @@ return Backbone.View.extend(
                 
         // make axes
         function makeAxis (id) {
-            Tools.makeAxis({
+            Tools.makeTickFormat({
                 categories  : categories.array[id],
                 type        : settings.get(id + '_axis_type'),
                 precision   : settings.get(id + '_axis_precision'),
