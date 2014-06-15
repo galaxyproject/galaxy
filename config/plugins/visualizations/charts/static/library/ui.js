@@ -1,6 +1,6 @@
 // dependencies
-define(['utils/utils', 'plugin/library/ui-select', 'mvc/ui/ui-modal'],
-        function(Utils, Select, Modal) {
+define(['utils/utils', 'plugin/library/ui-select', 'plugin/library/ui-button-menu', 'mvc/ui/ui-modal'],
+        function(Utils, Select, ButtonMenu, Modal) {
 
 // plugin
 var Image = Backbone.View.extend(
@@ -61,6 +61,40 @@ var Label = Backbone.View.extend(
 });
 
 // plugin
+var Icon = Backbone.View.extend(
+{
+    // options
+    optionsDefault: {
+        float       : 'right',
+        icon        : '',
+        tooltip     : '',
+        placement   : 'bottom',
+        title       : '',
+        cls         : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // get options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+        
+        // add tooltip
+        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
+    },
+    
+    // element
+    _template: function(options) {
+        return  '<div>' +
+                    '<span class="fa ' + options.icon + '" class="ui-icon"/>&nbsp;' +
+                    options.title +
+                '</div>';
+    }
+});
+
+// plugin
 var Button = Backbone.View.extend(
 {
     // options
@@ -100,50 +134,17 @@ var Button = Backbone.View.extend(
 });
 
 // plugin
-var Icon = Backbone.View.extend(
-{
-    // options
-    optionsDefault: {
-        float       : 'right',
-        icon        : '',
-        tooltip     : '',
-        placement   : 'bottom',
-        title       : '',
-        cls         : ''
-    },
-    
-    // initialize
-    initialize : function(options) {
-        // get options
-        this.options = Utils.merge(options, this.optionsDefault);
-            
-        // create new element
-        this.setElement(this._template(this.options));
-        
-        // add tooltip
-        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
-    },
-    
-    // element
-    _template: function(options) {
-        return  '<div>' +
-                    '<span class="fa ' + options.icon + '" class="ui-icon"/>&nbsp;' +
-                    options.title +
-                '</div>';
-    }
-});
-
-// plugin
 var ButtonIcon = Backbone.View.extend(
 {
     // options
     optionsDefault: {
-        title   : '',
         id      : null,
+        title   : '',
         float   : 'right',
         cls     : 'icon-btn',
         icon    : '',
-        tooltip : ''
+        tooltip : '',
+        onclick : null
     },
     
     // initialize
@@ -303,162 +304,6 @@ var Searchbox = Backbone.View.extend(
                         '</button>' +
                     '</form>' +
                 '</div>';
-    }
-});
-
-// tab
-var ButtonMenu = Backbone.View.extend(
-{
-    // main options
-    optionsDefault:
-    {
-        id              : '',
-        title           : '',
-        target          : '',
-        href            : '',
-        onunload        : null,
-        onclick         : null,
-        visible         : true,
-        icon            : null,
-        tag             : ''
-    },
-    
-    // optional sub menu
-    $menu: null,
-    
-    // initialize
-    initialize: function (options)
-    {
-        // get options
-        this.options = Utils.merge(options, this.optionsDefault);
-        
-        // add template for tab
-        this.setElement($(this._template(this.options)));
-        
-        // find root
-        var $root = $(this.el).find('.root');
-        
-        // link head
-        var self = this;
-        $root.on('click', function(e)
-        {
-            // prevent default
-            e.preventDefault();
-            
-            // add click event
-            if(self.options.onclick) {
-                self.options.onclick();
-            }
-        });
-        
-        // visiblity
-        if (!this.options.visible)
-            this.hide();
-    },
-    
-    // show
-    show: function()
-    {
-        $(this.el).show();
-    },
-        
-    // hide
-    hide: function()
-    {
-        $(this.el).hide();
-    },
-    
-    // add menu item
-    addMenu: function (options)
-    {
-        // menu option defaults
-        var menuOptions = {
-            title       : '',
-            target      : '',
-            href        : '',
-            onclick     : null,
-            divider     : false,
-            icon        : null,
-            cls         : 'button-menu btn-group'
-        }
-    
-        // get options
-        menuOptions = Utils.merge(options, menuOptions);
-        
-        // check if submenu element is available
-        if (!this.$menu)
-        {
-            // insert submenu element into root
-            $(this.el).append(this._templateMenu());
-            
-            // update element link
-            this.$menu = $(this.el).find('.menu');
-        }
-        
-        // create
-        var $item = $(this._templateMenuItem(menuOptions));
-        
-        // add events
-        $item.on('click', function(e)
-        {
-            // prevent default
-            e.preventDefault();
-            
-            // add click event
-            if(menuOptions.onclick) {
-                menuOptions.onclick();
-            }
-        });
-        
-        // append menu
-        this.$menu.append($item);
-        
-        // append divider
-        if (menuOptions.divider)
-            this.$menu.append($(this._templateDivider()));
-    },
-    
-    // fill template header
-    _templateMenuItem: function (options)
-    {
-        var tmpl =  '<li>' +
-                        '<a href="' + options.href + '" target="' + options.target + '">';
-                
-        if (options.icon)
-            tmpl +=         '<i class="fa ' + options.icon + '"></i>';
-        
-        tmpl +=             ' ' + options.title +
-                        '</a>' +
-                    '</li>';
-        return tmpl;
-    },
-    
-    // fill template header
-    _templateMenu: function ()
-    {
-        return '<ul class="menu dropdown-menu pull-right" role="menu"></ul>';
-    },
-    
-    _templateDivider: function()
-    {
-        return '<li class="divider"></li>';
-    },
-    
-    // fill template
-    _template: function (options)
-    {
-        // start template
-        var tmpl =  '<div id="' + options.id + '" class="ui-button-menu ' + options.cls + '">' +
-                        '<button type="button" class="root btn btn-default dropdown-toggle" data-toggle="dropdown">';
-        
-        if (options.icon)
-            tmpl +=         '<i class="fa ' + options.icon + '"></i>';
-         
-                        '</button>' +
-                    '</div>';
-        
-        // return template
-        return tmpl;
     }
 });
 

@@ -24,6 +24,49 @@ return Backbone.View.extend(
         // message element
         this.message = new Ui.Message();
         
+        // button menu
+        var picture_button_menu = new Ui.ButtonMenu({
+            icon    : 'fa-camera',
+            title   : 'Screenshot',
+            tooltip : 'Download as PNG or SVG file'
+        });
+        
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-png',
+            title       : 'Save as PNG',
+            icon        : 'fa-file-o',
+            onclick     : function() {
+                self._wait (self.chart, function() {
+                    Screenshot.createPNG({
+                        $el     : self.viewport_view.$el,
+                        title   : self.chart.get('title'),
+                        error   : function(err) {
+                            self.message.update({ message: err, status: 'danger' });
+                        }
+                    });
+                });
+            }
+        });
+        
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-svg',
+            title       : 'Save as SVG',
+            icon        : 'fa-file-text-o',
+            onclick     : function() {
+                self._wait (self.chart, function() {
+                    Screenshot.createSVG({
+                        $el     : self.viewport_view.$el,
+                        title   : self.chart.get('title'),
+                        error   : function(err) {
+                            self.message.update({ message: err, status: 'danger' });
+                        }
+                    });
+                });
+            }
+        });
+        
         // create portlet
         this.portlet = new Portlet.View({
             icon : 'fa-bar-chart-o',
@@ -40,22 +83,7 @@ return Backbone.View.extend(
                         });
                     }
                 }),
-                picture_button: new Ui.ButtonIcon({
-                    icon    : 'fa-camera',
-                    tooltip : 'Download as PNG-file.',
-                    title   : 'Screenshot',
-                    onclick : function() {
-                        self._wait (self.chart, function() {
-                            Screenshot.create({
-                                $el     : self.viewport_view.$el,
-                                title   : self.chart.get('title'),
-                                error   : function(err) {
-                                    self.message.update({ message: 'Please reduce your chart to a single panel and try again.', status: 'danger' });
-                                }
-                            });
-                        });
-                    }
-                })
+                picture_button_menu: picture_button_menu
             }
         });
         

@@ -1,8 +1,9 @@
 // dependencies
 define(["libs/underscore"], function(_) {
-
-    // screenshot
-    function create (options) {
+    //
+    // PNG export
+    //
+    function createPNG (options) {
         if (options.$el.find('svg').length > 0) {
             _fromSVGtoPNG (options);
         } else {
@@ -21,7 +22,7 @@ define(["libs/underscore"], function(_) {
         } catch (err) {
             console.debug('FAILED - Screenshot::_fromCanvas() - ' + err);
             if (options.error) {
-                options.error(err);
+                options.error('Please reduce your chart to a single panel and try again.');
             }
         }
     };
@@ -36,7 +37,6 @@ define(["libs/underscore"], function(_) {
        
         // serialize svg
         var serializer = new XMLSerializer();
-        var self = this;
        
         // create canvas
         var canvas = document.createElement('canvas');
@@ -133,6 +133,61 @@ define(["libs/underscore"], function(_) {
         return imageData;
     };
 
+    //
+    // SVG export
+    //
+    function createSVG (options) {
+        if (options.$el.find('svg').length == 0) {
+            if (options.error) {
+                options.error('No SVG found. This chart type does not support SVG export.');
+                return;
+            }
+        }
+       
+        // get parameters
+        var $el = options.$el;
+       
+        // get svg dimensions
+        var nsvgs  = $el.find('svg').length;
+        var height = parseInt($el.find('svg').first().css('height'));
+        var width  = parseInt($el.find('svg').first().css('width'));
+       
+        // serialize svg
+        var serializer = new XMLSerializer();
+
+        // get svg element
+        var $composite = $('<svg/>');
+        
+        // configure svg
+        $composite.attr({
+            version : '1.1',
+            xmlns   : 'http://www.w3.org/2000/svg',
+            width   : width*nsvgs,
+            height  : height
+        });
+   
+        // write all svgs
+        var xmlString   = '';
+        var offsetX     = 0;
+        $el.find('svg').each(function() {
+            var $svg = $(this);
+            
+            // create group and append to composite svg
+            var $g = $('<g transform="translate(' + offsetX + ', 0)">');
+            $g.append($svg.clone().find('g').first());
+            $composite.append($g);
+            
+            // shift offset for multipanel charts
+            offsetX += width;
+        });
+       
+        // create xml string
+        var xmlString = serializer.serializeToString($composite[0]);
+       
+        // download data uri
+        window.location.href = 'data:none/none;base64,' + btoa(xmlString);
+    };
+
     // css inliner
     function _inline ($target) {
         for (var sheet_id in document.styleSheets) {
@@ -153,7 +208,8 @@ define(["libs/underscore"], function(_) {
     
 // return
 return {
-    create: create
+    createPNG: createPNG,
+    createSVG: createSVG
 };
 
 });

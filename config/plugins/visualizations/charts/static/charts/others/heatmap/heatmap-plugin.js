@@ -55,7 +55,7 @@ return Backbone.View.extend({
         this.zMin = d3.min(this.data, function(d) { return d.z; });
         this.zMax = d3.max(this.data, function(d) { return d.z; });
         this.zScale = d3.scale.quantize().domain([this.zMin, this.zMax]).range(this.color_set);
-        
+
         // create axis
         this.xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
         this.yAxis = d3.svg.axis().scale(this.yScale).orient('left');
