@@ -28,7 +28,7 @@ return $.extend(true, {}, config_default, {
     },
     settings    : {
         use_panels : {
-            init        : 'false',
+            init        : 'true',
             hide        : true
         },
         color_set : {

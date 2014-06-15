@@ -1,3 +1,19 @@
+.charts-tooltip {   
+  position: absolute;           
+  text-align: center;           
+  padding: 3px 5px 3px 5px;            
+  font: 12px sans-serif;        
+  background: white;   
+  border: 1px solid gray;      
+  border-radius: 4px;           
+  pointer-events: none; 
+}
+
+.charts-tooltip-first {
+  font-weight: bold;
+  text-align: left;
+  padding-right: 5px;
+}  
 
 .charts-grid .item {
 	padding: 5px;

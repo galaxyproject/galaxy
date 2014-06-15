@@ -27,7 +27,7 @@ return Backbone.View.extend({
             },
             limit               : 7
         },
-        background_color        : '#FFFFF8',
+        background_color        : '#FFFFFF',
         debug_color             : '#FFFFFF'
     },
     
@@ -68,7 +68,13 @@ return Backbone.View.extend({
         // make categories
         this._makeTickFormat('x');
         this._makeTickFormat('y');
-                
+        
+        // add tooltip
+        this.tooltip = d3.select('.charts-viewport-container').append('div')
+            .attr('class', 'charts-tooltip')
+            .style(this.options.style)
+            .style('opacity', 0);
+        
         // refresh on window resize
         var self = this;
         $(window).on('resize', function () {
@@ -187,7 +193,7 @@ return Backbone.View.extend({
             .attr('clip-path', 'url(#clip)');
             
         // add boxes to chart area
-        var boxes = chartBody.selectAll('g.box-group').data(this.data, function(d, i) {
+        var boxes = chartBody.selectAll('box-group').data(this.data, function(d, i) {
             return d.x + '\0' + d.y;
         });
         var gEnter = boxes.enter().append('g')
@@ -200,9 +206,20 @@ return Backbone.View.extend({
             .attr('fill', _color)
             .attr('width', boxWidth)
             .attr('height', boxHeight)
-            .attr('transform', _locator)
-            .append('svg:title')
-            .text(function(d) { return d.x; });
+            .attr('transform', _locator);
+        
+        // add tooltip events
+        boxes.selectAll('rect')
+        .on('mouseover', function(d) {
+            self.tooltip.style('opacity', 0.9);
+            self.tooltip .html(self._templateTooltip(d))
+                .style('left', (d3.event.pageX) + 'px')
+                .style('top', (d3.event.pageY - 28) + 'px');
+            })
+        .on('mouseout', function(d) {
+            self.tooltip.style('opacity', 0);
+        });
+
         boxes.exit().remove();
     },
     
@@ -329,7 +346,7 @@ return Backbone.View.extend({
         var legendSize  = this.options.legend.size;
         var legendWidth = this.options.legend.width;
         var legendElements = this.zScale.range().length;
-        var legendElementHeight = legendSize * height / legendElements;
+        var legendElementHeight = Math.max(legendSize * height / legendElements, font_size);
         var legendHeight = legendElements * legendElementHeight / 2;
         
         // create legend elements
@@ -397,6 +414,31 @@ return Backbone.View.extend({
     // handle error
     _handleError: function(err) {
         this.chart.state('failed', err);
+    },
+    
+    // templates
+    _templateTooltip: function(d) {
+        // collect data values
+        var x = this.categories.array.x[d.x];
+        var y = this.categories.array.y[d.y];
+        var z = d.z;
+        
+        // create tooltip
+        var tmpl =  '<table>' +
+                        '<tr>' +
+                            '<td class="charts-tooltip-first">Row:</td>' +
+                            '<td>' + y + '</td>' +
+                        '</tr>' +
+                        '<tr>' +
+                            '<td class="charts-tooltip-first">Column:</td>' +
+                            '<td>' + x + '</td>' +
+                        '</tr>' +
+                        '<tr>' +
+                            '<td class="charts-tooltip-first">Value:</td>' +
+                            '<td>' + z + '</td>' +
+                        '</tr>' +
+                    '</table>';
+        return tmpl;
     }
 });
 
