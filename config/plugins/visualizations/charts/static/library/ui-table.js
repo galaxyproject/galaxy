@@ -99,7 +99,7 @@ var View = Backbone.View.extend(
 
     // delete all
     delAll: function() {
-        this.$tbody.html('');
+        this.$tbody.empty();
         this.row_count = 0;
         this._refresh();
     },

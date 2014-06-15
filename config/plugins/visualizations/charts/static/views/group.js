@@ -180,6 +180,11 @@ return Backbone.View.extend(
         // update selection list
         select.update(columns);
         
+        // set initial value
+        if (is_unique && this.chart.groups.first()) {
+            this.group.set(id, this.chart.groups.first().get(id));
+        }
+        
         // update current value
         if (!select.exists(this.group.get(id))) {
             // get first value
@@ -192,14 +197,11 @@ return Backbone.View.extend(
             this.group.set(id, first);
         }
         
-        // set initial value
-        if (is_unique && this.chart.groups.first()) {
-            select.value(this.chart.groups.first().get(id));
-        } else {
-            select.value(this.group.get(id));
-        }
+        // set group value
+        select.value(this.group.get(id));
         
         // link group with select field
+        this.group.off('change:' + id);
         this.group.on('change:' + id, function(){
             select.value(self.group.get(id));
         });
