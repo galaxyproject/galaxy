@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/charts/tools', 'utils/utils'], function(Tools, Utils) {
+define(['plugin/charts/tools', 'utils/utils', 'plugin/charts/others/heatmap/heatmap-parameters'], function(Tools, Utils, HeatmapParameters) {
 
 // widget
 return Backbone.View.extend({
@@ -15,7 +15,7 @@ return Backbone.View.extend({
         style: {
             'font-weight'       : 'normal',
             'font-family'       : 'Verdana',
-            'font-size'         : '12'
+            'font-size'         : 12
         },
         legend: {
             width               : 15,
@@ -23,13 +23,12 @@ return Backbone.View.extend({
             style : {
                 'font-weight'   : 'normal',
                 'font-family'   : 'Verdana',
-                'font-size'     : '11'
+                'font-size'     : 11
             },
             limit               : 7
         },
         background_color        : '#FFFFF8',
-        debug_color             : '#FFFFFF',
-        color_set               : ['#ffffd9','#edf8b1','#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#253494','#081d58','#ffffd9','#edf8b1','#c7e9b4','#7fcdbb','#41b6c4','#1d91c0','#225ea8','#253494','#081d58']
+        debug_color             : '#FFFFFF'
     },
     
     // initialize
@@ -41,6 +40,9 @@ return Backbone.View.extend({
             
     // render
     render : function(canvas_id, groups) {
+        // get color set
+        this.color_set = HeatmapParameters.colorSets[this.chart.settings.get('color_set')];
+        
         // categories
         this.categories = Tools.makeUniqueCategories(groups);
         
@@ -57,7 +59,7 @@ return Backbone.View.extend({
         // color scale
         this.zMin = d3.min(this.data, function(d) { return d.z; });
         this.zMax = d3.max(this.data, function(d) { return d.z; });
-        this.zScale = d3.scale.quantize().domain([this.zMin, this.zMax]).range(this.options.color_set);
+        this.zScale = d3.scale.quantize().domain([this.zMin, this.zMax]).range(this.color_set);
         
         // create axis
         this.xAxis = d3.svg.axis().scale(this.xScale).orient('bottom');
@@ -285,7 +287,6 @@ return Backbone.View.extend({
             .style('stroke-width', 1)
             .call(this.yAxis);
 
-    
         // fix text
         var yFontSize = Math.min(boxHeight, font_size);
         this.gyAxis.selectAll('text')
@@ -329,11 +330,11 @@ return Backbone.View.extend({
         var legendWidth = this.options.legend.width;
         var legendElements = this.zScale.range().length;
         var legendElementHeight = legendSize * height / legendElements;
-        var legendHeight = legendElements * legendElementHeight;
+        var legendHeight = legendElements * legendElementHeight / 2;
         
         // create legend elements
         var legend = this.svg.selectAll('.legend')
-            .data(d3.range(this.zMin, this.zMax, (this.zMax-this.zMin) / legendElements).reverse())
+            .data(d3.range(this.zMin, this.zMax, 2 * (this.zMax-this.zMin) / legendElements).reverse())
             .enter().append('g')
                 .attr('class', 'legend')
                 .attr('transform', function(d, i) {
@@ -362,6 +363,16 @@ return Backbone.View.extend({
                 } else {
                     return str;
                 }
+            });
+            
+        this.svg.append('text')
+            .style(this.options.legend.style)
+            .style({'font-size' : 9, 'font-weight': 'bold'})
+            .text('Legend')
+            .attr('transform', function(d, i) {
+                var x = width + (margin.right - this.getBBox().width) / 2;
+                var y = ((height - legendHeight) / 2) - 10;
+                return 'translate(' + x + ',' + y + ')';
             });
     },
     
