@@ -80,7 +80,7 @@ return Backbone.View.extend(
                       .call(d3chart);
                     
                 // add zoom/pan handler
-                if (chart.definition.zoomable) {
+                if (chart.definition.zoomable && chart.definition.zoomable != 'native') {
                     // clip edges
                     if (d3chart.clipEdge) {
                         d3chart.clipEdge(true);
