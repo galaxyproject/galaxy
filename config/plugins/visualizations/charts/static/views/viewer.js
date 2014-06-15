@@ -35,7 +35,6 @@ return Backbone.View.extend(
                     tooltip : 'Customize this chart',
                     title   : 'Editor',
                     onclick : function() {
-                        // attempt to load chart editor
                         self._wait (self.chart, function() {
                             self.app.go('editor');
                         });
@@ -43,14 +42,12 @@ return Backbone.View.extend(
                 }),
                 picture_button: new Ui.ButtonIcon({
                     icon    : 'fa-camera',
-                    tooltip : 'SVGs are converted to PDF via ' + self.app.config.get('screenshot_url') + ' and CANVAS-based charts to PNG-files.',
+                    tooltip : 'Download as PNG-file.',
                     title   : 'Screenshot',
                     onclick : function() {
-                        // attempt to load chart editor
                         self._wait (self.chart, function() {
                             Screenshot.create({
                                 $el     : self.viewport_view.$el,
-                                url     : self.app.config.get('screenshot_url'),
                                 title   : self.chart.get('title'),
                                 error   : function(err) {
                                     self.message.update({ message: 'Please reduce your chart to a single panel and try again.', status: 'danger' });

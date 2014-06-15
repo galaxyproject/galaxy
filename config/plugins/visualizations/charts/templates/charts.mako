@@ -21,6 +21,10 @@
         ## shared css
         ${h.css( 'base' )}
 
+        ## canvg
+        ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
+        ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}
+
         ## nvd3
         ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
 

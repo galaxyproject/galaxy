@@ -14,9 +14,6 @@ return Backbone.View.extend({
         // backup chart
         this.chart = chart;
         
-        // create heatmap
-        this.heatmap = new HeatMap(app, { chart : chart });
-        
         // distribute data groups on svgs and handle process
         var self = this;
         var plot = Tools.panelHelper({
@@ -26,7 +23,12 @@ return Backbone.View.extend({
             chart               : chart,
             request_dictionary  : request_dictionary,
             render              : function(canvas_id, groups) {
-                                    return self.heatmap.render(canvas_id, groups)
+                                    this.heatmap = new HeatMap(app, {
+                                        chart       : chart,
+                                        canvas_id   : canvas_id,
+                                        groups      : groups
+                                    });
+                                    return true;
                                   }
         });
     }

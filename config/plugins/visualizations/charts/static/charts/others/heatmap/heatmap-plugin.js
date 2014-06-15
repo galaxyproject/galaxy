@@ -33,26 +33,21 @@ return Backbone.View.extend({
     
     // initialize
     initialize: function(app, options) {
-        this.app    = app;
-        this.chart  = options.chart;
-        this.options = Utils.merge (this.optionsDefault, options);
-    },
-            
-    // render
-    render : function(canvas_id, groups) {
+        // collect parameters
+        this.app            = app;
+        this.chart          = options.chart;
+        this.canvas_id      = options.canvas_id;
+        this.group          = options.groups[0];
+        this.data           = options.groups[0].values;
+        this.options        = Utils.merge (this.optionsDefault, options);
+        
         // get color set
         this.color_set = HeatmapParameters.colorSets[this.chart.settings.get('color_set')];
         
         // categories
-        this.categories = Tools.makeUniqueCategories(groups);
+        this.categories = Tools.makeUniqueCategories([this.group]);
         
-        // collect parameters
-        this.canvas_id  = canvas_id;
-        this.data       = groups[0].values;
-        
-        //
         // domains/scales
-        //
         this.xScale = d3.scale.linear().domain([0, this.categories.array.x.length]);
         this.yScale = d3.scale.linear().domain([0, this.categories.array.y.length]);
         
@@ -70,7 +65,7 @@ return Backbone.View.extend({
         this._makeTickFormat('y');
         
         // add tooltip
-        this.tooltip = d3.select('.charts-viewport-container').append('div')
+        this.tooltip = d3.select('.charts-viewport').append('div')
             .attr('class', 'charts-tooltip')
             .style(this.options.style)
             .style('opacity', 0);
@@ -91,9 +86,6 @@ return Backbone.View.extend({
             redraw      : function() { self.redraw() },
             svg         : d3.select('#' + this.canvas_id)
         });
-        
-        // return
-        return true;
     },
         
     // redraw
@@ -277,7 +269,7 @@ return Backbone.View.extend({
             .attr('class', 'title')
             .style(this.options.style)
             .style({'font-size' : 1.5*font_size})
-            .text(this.chart.get('title'))
+            .text(this.group.key)
             .attr('transform', function(d) {
                 var y = -margin.top/2;
                 var x = (width - this.getBBox().width)/2;

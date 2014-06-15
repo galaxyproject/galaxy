@@ -4,7 +4,7 @@ define(["libs/underscore"], function(_) {
     // screenshot
     function create (options) {
         if (options.$el.find('svg').length > 0) {
-            _fromSVG (options);
+            _fromSVGtoPNG (options);
         } else {
             _fromCanvas (options);
         }
@@ -27,7 +27,7 @@ define(["libs/underscore"], function(_) {
     };
     
     // from svg
-    function _fromSVG (options) {
+    function _fromSVGtoPNG (options) {
        
         // get parameters
         var $el = options.$el;
@@ -36,20 +36,35 @@ define(["libs/underscore"], function(_) {
        
         // serialize svg
         var serializer = new XMLSerializer();
-        var xmlString = '';
         var self = this;
-        var height = 0;
-        var width  = 0;
+       
+        // create canvas
+        var canvas = document.createElement('canvas');
+        var $canvas = $(canvas);
+       
+        // get svg dimensions
+        var nsvgs  = $el.find('svg').length;
+        var first = $el.find('svg').first();
+        var height = parseInt(first.css('height'));
+        var width  = parseInt(first.css('width'));
+       
+        // set canvas dimensions
+        $canvas.attr('width', width*nsvgs);
+        $canvas.attr('height', height);
+       
+        // check context support
+        if (!canvas.getContext || !canvas.getContext('2d')) {
+            alert ("Your browser doesn't support this feature, please use a modern browser");
+        }
+       
+        // context
+        var ctx = canvas.getContext('2d');
+       
+        // write all svgs
+        var offsetX = 0;
         $el.find('svg').each(function() {
             // get svg element
             var $svg = $(this);
-            
-            // inline all styles
-            _inline($svg);
-            
-            // get height/width
-            height = parseInt($svg.css('height'));
-            width = parseInt($svg.css('width'));
             
             // configure svg
             $svg.attr({
@@ -58,31 +73,66 @@ define(["libs/underscore"], function(_) {
                 width   : width,
                 height  : height
             });
-            
-            // hide input fields
-            $svg.find('.highcharts-button').hide();
-            
+
             // create xml string
-            xmlString += serializer.serializeToString(this);
+            var xmlString = serializer.serializeToString(this);
             
-            // show input fields
-            $svg.find('.highcharts-button').show();
+            // draw into canvas
+            ctx.drawSvg(xmlString, offsetX, 0, width, height)
+            
+            // shift offset for multipanel charts
+            offsetX += width;
         });
-        
-        // do the post
-        _post($el, screenshot_url, {
-            filename    : name || 'chart',
-            type        : 'application/pdf',
-            height      : height,
-            width       : width,
-            scale       : 2,
-            svg         : xmlString
-        });
-        
-        // return string
-        return xmlString;
+       
+        // post image
+        window.location.href = _canvasToImage(canvas, canvas.getContext('2d'), 'white').replace('image/png', 'image/octet-stream');
     };
     
+    function _canvasToImage(canvas, context, backgroundColor)
+    {
+        //cache height and width		
+        var w = canvas.width;
+        var h = canvas.height;
+     
+        var data;
+     
+        if(backgroundColor)
+        {
+            //get the current ImageData for the canvas.
+            data = context.getImageData(0, 0, w, h);
+     
+            //store the current globalCompositeOperation
+            var compositeOperation = context.globalCompositeOperation;
+     
+            //set to draw behind current content
+            context.globalCompositeOperation = "destination-over";
+     
+            //set background color
+            context.fillStyle = backgroundColor;
+     
+            //draw background / rect on entire canvas
+            context.fillRect(0,0,w,h);
+        }
+     
+        //get the image data from the canvas
+        var imageData = canvas.toDataURL("image/png");
+     
+        if(backgroundColor)
+        {
+            //clear the canvas
+            context.clearRect (0,0,w,h);
+     
+            //restore it with original / cached ImageData
+            context.putImageData(data, 0,0);
+     
+            //reset the globalCompositeOperation to what it was
+            context.globalCompositeOperation = compositeOperation;
+        }
+     
+        //return the Base64 encoded data url string
+        return imageData;
+    };
+
     // css inliner
     function _inline ($target) {
         for (var sheet_id in document.styleSheets) {
@@ -101,41 +151,6 @@ define(["libs/underscore"], function(_) {
         }
     };
     
-    // post operator
-    function _post ($el, url, data) {
-        // create the form
-        var form = $el.find('#viewport-form');
-        if (form.length === 0) {
-            form = $('<form>', {
-                id      : 'viewport-form',
-                method  : 'post',
-                action  : url,
-                display : 'none'
-            });
-            $el.append(form);
-        }
-
-        // reset form
-        form.empty();
-
-        // add the data
-        for (name in data) {
-            var input = $('<input/>', {
-                type    : 'hidden',
-                name    : name,
-                value   : data[name]
-            });
-            form.append(input);
-        }
-        
-        // submit
-        try {
-            form.submit();
-        } catch(err) {
-            console.log(err);
-        }
-    };
-
 // return
 return {
     create: create
