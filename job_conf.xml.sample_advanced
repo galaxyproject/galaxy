@@ -37,7 +37,7 @@
           <!-- If using message queue driven LWR - the LWR will generally
                initiate file transfers so a the URL of this Galaxy instance
                must be configured. -->
-          <param id="galaxy_url">http://localhost:8080/</param>
+          <param id="galaxy_url">http://localhost:8080</param>
           <!-- If multiple managers configured on the LWR, specify which one
                this plugin targets. -->
           <!-- <param id="manager">_default_</param> -->

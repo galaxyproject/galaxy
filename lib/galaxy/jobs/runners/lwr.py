@@ -106,7 +106,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers, runner_param_specs=LWR_PARAM_SPECS, **kwds )
         self._init_worker_threads()
-        self.galaxy_url = self.runner_params.galaxy_url
+        galaxy_url = self.runner_params.galaxy_url
+        if galaxy_url:
+            galaxy_url.rstrip("/")
+        self.galaxy_url = galaxy_url
         self.__init_client_manager()
         if self.runner_params.url:
             # This is a message queue driven runner, don't monitor
