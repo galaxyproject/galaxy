@@ -12,9 +12,22 @@ define([
  *  @constructs
  */
 var HistoryContent = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
+    idAttribute : 'type_id',
 
     /** fetch location of this HDA's history in the api */
     urlRoot: galaxy_config.root + 'api/histories/',
+
+    constructor : function( attrs, options ){
+        attrs.type_id = HistoryContent.typeIdStr( attrs.history_content_type, attrs.id );
+        Backbone.Model.apply( this, arguments );
+    },
+
+    initialize : function( attrs, options ){
+        // assumes type won't change
+        this.on( 'change:id', this._createTypeId );
+        //TODO: not sure this covers all the bases...
+    },
+
     /** full url spec. for this HDA */
     url : function(){
         return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get('history_content_type') + 's/' + this.get( 'id' );
@@ -138,9 +151,18 @@ var HistoryContent = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
             term = term.replace( /"/g, '' );
             return model.matches( term );
         });
-    }
+    },
+
+    _createTypeId : function(){
+        this.set( 'type_id', TypeIdModel.typeIdStr( this.get( 'history_content_type' ), this.get( 'id' ) ) );
+    },
 
 } );
+
+/** create a type + id string for use in mixed collections */
+HistoryContent.typeIdStr = function _typeId( type, id ){
+    return [ type, id ].join( '-' );
+};
 
 //==============================================================================
 /** @class (HDA) model for a Galaxy dataset
@@ -228,7 +250,7 @@ var HistoryDatasetAssociation = HistoryContent.extend(
     initialize : function( data ){
         this.log( this + '.initialize', this.attributes );
         this.log( '\tparent history_id: ' + this.get( 'history_id' ) );
-        
+
         //!! this state is not in trans.app.model.Dataset.states - set it here -
         if( !this.get( 'accessible' ) ){
             this.set( 'state', HistoryDatasetAssociation.STATES.NOT_VIEWABLE );
@@ -482,7 +504,7 @@ var HDACollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
      *  @returns array of encoded ids
      */
     ids : function(){
-        return this.map( function( hda ){ return hda.id; });
+        return this.map( function( hda ){ return hda.get('id'); });
     },
 
     /** Get hdas that are not ready
@@ -614,7 +636,9 @@ var HDACollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
         // see Backbone.Collection.set and _prepareModel
         var collection = this;
         models = _.map( models, function( model ){
-            var existing = collection.get( model.id );
+            var attrs = model.attributes || model; // Handle raw json or Backbone model.
+            var typeId = HistoryContent.typeIdStr( attrs.history_content_type, attrs.id );
+            var existing = collection.get( typeId );
             if( !existing ){ return model; }
 
             // merge the models _BEFORE_ calling the superclass version
@@ -643,7 +667,7 @@ var HDACollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
             this.chain().each( function( hda ) {
                 // TODO: Handle duplicate names.
                 var name = hda.attributes.name;
-                var id = hda.id;
+                var id = hda.get('id');
                 var content_type = hda.attributes.history_content_type;
                 if( content_type == "dataset" ) {
                     if( full_collection_type != "list" ) {
