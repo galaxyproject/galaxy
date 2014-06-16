@@ -139,7 +139,11 @@ return Backbone.View.extend({
         this._buildBoxes();
         this._buildX();
         this._buildY();
-        this._buildLegend();
+        
+        // show legend only if requested
+        if (this.chart.settings.get('show_legend') == 'true') {
+            this._buildLegend();
+        }
     },
     
     // y axis
