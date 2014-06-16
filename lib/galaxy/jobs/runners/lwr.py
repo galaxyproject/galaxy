@@ -108,7 +108,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         self._init_worker_threads()
         galaxy_url = self.runner_params.galaxy_url
         if galaxy_url:
-            galaxy_url.rstrip("/")
+            galaxy_url = galaxy_url.rstrip("/")
         self.galaxy_url = galaxy_url
         self.__init_client_manager()
         if self.runner_params.url:
