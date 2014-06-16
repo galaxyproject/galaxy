@@ -1972,7 +1972,7 @@ class AdminToolshed( AdminGalaxy ):
                                     # we set from_tip to True to make sure we get the entire set of changeset revisions
                                     # from the Tool Shed.
                                     new_repository_db_record, installed_changeset_revision = \
-                                        suc.repository_was_previously_installed( trans,
+                                        suc.repository_was_previously_installed( trans.app,
                                                                                  tool_shed_url,
                                                                                  new_name,
                                                                                  repo_info_tuple,
