@@ -264,6 +264,10 @@ def get_rev_label_from_changeset_revision( repo, changeset_revision, include_dat
         label = "-1:%s" % changeset_revision
     return rev, label
 
+def pull_repository( repo, repository_clone_url, ctx_rev ):
+    """Pull changes from a remote repository to a local one."""
+    commands.pull( get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
+
 def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision,

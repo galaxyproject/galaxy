@@ -723,7 +723,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # Update repository files for browsing.
         hg_util.update_repository( repo )
         changeset_revision = repository.tip( trans.app )
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=True )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
+                                                                                              id,
+                                                                                              changeset_revision,
+                                                                                              metadata_only=True )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repository=repository,
@@ -970,7 +973,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                               id,
                                                                                               repository.tip( trans.app ),
                                                                                               metadata_only=True )
@@ -1106,7 +1109,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if message:
             status = 'error'
         tool_state = tool_util.new_state( trans, tool, invalid=False )
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                               repository_id,
                                                                                               changeset_revision,
                                                                                               metadata_only=True )
@@ -1195,7 +1198,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         metadata = repository_metadata.metadata
         # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
         repository_dependencies = \
-            repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
+            repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
                                                                                            repository=repository,
                                                                                            repository_metadata=repository_metadata,
                                                                                            toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
@@ -1206,7 +1209,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Only display repository dependencies if they exist.
             exclude = [ 'datatypes', 'invalid_repository_dependencies', 'invalid_tool_dependencies', 'invalid_tools',
                         'readme_files', 'tool_dependencies', 'tools', 'tool_test_results', 'workflows', 'data_manager' ]
-            containers_dict = container_util.build_repository_containers_for_tool_shed( trans,
+            containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
                                                                                         repository,
                                                                                         changeset_revision,
                                                                                         repository_dependencies,
@@ -1691,7 +1694,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if repository_metadata:
                     metadata = repository_metadata.metadata
                     if metadata:
-                        return readme_util.build_readme_files_dict( trans,
+                        return readme_util.build_readme_files_dict( trans.app,
                                                                     repository,
                                                                     changeset_revision,
                                                                     repository_metadata.metadata )
@@ -1720,7 +1723,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             metadata = repository_metadata.metadata
             if metadata:
                 repository_dependencies = \
-                    repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
+                    repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
                                                                                                    repository=repository,
                                                                                                    repository_metadata=repository_metadata,
                                                                                                    toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
@@ -1889,7 +1892,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                after_changeset_revision=changeset_revision )
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
-        repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
+        repo_info_dict = repository_util.create_repo_info_dict( app=trans.app,
                                                                 repository_clone_url=repository_clone_url,
                                                                 changeset_revision=changeset_revision,
                                                                 ctx_rev=str( ctx.rev() ),
@@ -1921,7 +1924,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         break
             if 'workflows' in metadata:
                 includes_workflows = True
-            readme_files_dict = readme_util.build_readme_files_dict( trans, repository, changeset_revision, metadata )
+            readme_files_dict = readme_util.build_readme_files_dict( trans.app, repository, changeset_revision, metadata )
         # See if the repo_info_dict was populated with repository_dependencies or tool_dependencies.
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False
@@ -2349,7 +2352,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 metadata = repository_metadata.metadata
                 # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
                 repository_dependencies = \
-                    repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
+                    repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
                                                                                                    repository=repository,
                                                                                                    repository_metadata=repository_metadata,
                                                                                                    toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
@@ -2389,7 +2392,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         skip_tool_tests_check_box = CheckboxField( 'skip_tool_tests', checked=skip_tool_tests_checked )
         categories = suc.get_categories( trans.app )
         selected_categories = [ rca.category_id for rca in repository.categories ]
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans,
+        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
                                                                                     repository,
                                                                                     changeset_revision,
                                                                                     repository_dependencies,
@@ -2547,7 +2550,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
             toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
             repository_dependencies = \
-                repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
+                repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
                                                                                                repository=repository,
                                                                                                repository_metadata=repository_metadata,
                                                                                                toolshed_base_url=toolshed_base_url,
@@ -2581,7 +2584,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
+                                                                                    repository,
+                                                                                    changeset_revision,
+                                                                                    repository_dependencies,
+                                                                                    repository_metadata )
         return trans.fill_template( '/webapps/tool_shed/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     containers_dict=containers_dict,
@@ -2661,7 +2668,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( kwd.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                               id,
                                                                                               changeset_revision,
                                                                                               metadata_only=True )
@@ -2770,7 +2777,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 status = "error"
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         changeset_revision = repository.tip( trans.app )
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                               id,
                                                                                               changeset_revision,
                                                                                               metadata_only=True )
@@ -2941,7 +2948,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository = None
         if repository:
             repository_id = trans.security.encode_id( repository.id )
-            repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+            repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                              repository_id,
                                                                                                              changeset_revision )
             if not repository_metadata:
@@ -2950,7 +2957,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
                 if upper_bound_changeset_revision:
                     changeset_revision = upper_bound_changeset_revision
-                    repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                    repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                                      repository_id,
                                                                                                                      changeset_revision )
             if repository_metadata:
@@ -3098,7 +3105,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             'has_metadata' : has_metadata }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                               id,
                                                                                               repository.tip( trans.app ),
                                                                                               metadata_only=True )
@@ -3142,7 +3149,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             diffs.append( basic_util.to_html_string( diff ) )
         modified, added, removed, deleted, unknown, ignored, clean = repo.status( node1=ctx_parent.node(), node2=ctx.node() )
         anchors = modified + added + removed + deleted + unknown + ignored + clean
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans, id, ctx_str, metadata_only=True )
+        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
+                                                                                              id,
+                                                                                              ctx_str,
+                                                                                              metadata_only=True )
         # For rendering the prev button.
         if ctx_parent:
             ctx_parent_date = hg_util.get_readable_ctx_date( ctx_parent )
@@ -3243,7 +3253,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
             repository_dependencies = \
-                repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
+                repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
                                                                                                repository=repository,
                                                                                                repository_metadata=repository_metadata,
                                                                                                toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
@@ -3265,7 +3275,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             else:
                 message += malicious_error
             status = 'error'
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans,
+        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
                                                                                     repository,
                                                                                     changeset_revision,
                                                                                     repository_dependencies,

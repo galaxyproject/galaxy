@@ -10,9 +10,9 @@ import threading
 import logging
 from galaxy import util
 from galaxy.tools import ToolSection
+from tool_shed.galaxy_install import install_manager
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import basic_util
-from tool_shed.util import common_install_util
 from tool_shed.util import common_util
 from tool_shed.util import datatype_util
 from tool_shed.util import hg_util
@@ -446,12 +446,11 @@ class ToolMigrationManager( object ):
                                                     self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from disk.
             tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
-            installed_tool_dependencies = \
-                common_install_util.install_specified_tool_dependencies( app=self.app,
-                                                                         tool_shed_repository=tool_shed_repository,
-                                                                         tool_dependencies_config=tool_dependencies_config,
-                                                                         tool_dependencies=tool_dependencies,
-                                                                         from_tool_migration_manager=True )
+            itdm = install_manager.InstallToolDependencyManager( self.app )
+            installed_tool_dependencies = itdm.install_specified_tool_dependencies( tool_shed_repository=tool_shed_repository,
+                                                                                    tool_dependencies_config=tool_dependencies_config,
+                                                                                    tool_dependencies=tool_dependencies,
+                                                                                    from_tool_migration_manager=True )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'

@@ -10,7 +10,8 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
 
-from tool_shed.galaxy_install import repository_util
+from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -235,7 +236,13 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         self.__ensure_can_install_repos( trans )
-        installed_tool_shed_repositories = repository_util.install( trans.app, tool_shed_url, name, owner, changeset_revision, payload )
+        install_repository_manager = InstallRepositoryManager( trans.app )
+        installed_tool_shed_repositories = install_repository_manager.install( trans.app,
+                                                                               tool_shed_url,
+                                                                               name,
+                                                                               owner,
+                                                                               changeset_revision,
+                                                                               payload )
 
         def to_dict( tool_shed_repository ):
             tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
@@ -341,8 +348,13 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         tool_shed_repositories = []
-        tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app, tool_shed_url, name, owner, changeset_revision )
-        repair_dict = repository_util.get_repair_dict( trans, tool_shed_repository )
+        tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app,
+                                                                                                   tool_shed_url,
+                                                                                                   name,
+                                                                                                   owner,
+                                                                                                   changeset_revision )
+        rrm = RepairRepositoryManager( trans.app )
+        repair_dict = rrm.get_repair_dict( tool_shed_repository )
         ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
         ordered_repo_info_dicts = repair_dict.get( 'ordered_repo_info_dicts', [] )
         if ordered_tsr_ids and ordered_repo_info_dicts:
@@ -350,9 +362,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
                 repo_info_dict = ordered_repo_info_dicts[ index ]
                 # TODO: handle errors in repair_dict.
-                repair_dict = repository_util.repair_tool_shed_repository( trans,
-                                                                           repository,
-                                                                           encoding_util.tool_shed_encode( repo_info_dict ) )
+                repair_dict = rrm.repair_tool_shed_repository( repository,
+                                                               encoding_util.tool_shed_encode( repo_info_dict ) )
                 repository_dict = repository.to_dict( value_mapper=self.__get_value_mapper( trans, repository ) )
                 repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                         action='show',

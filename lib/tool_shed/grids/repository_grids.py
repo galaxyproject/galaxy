@@ -1466,7 +1466,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                             if required_repository and not required_repository.deleted:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
                                 required_repository_metadata = \
-                                    metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                    metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                                required_repository_id,
                                                                                                               changeset_revision )
                                 if not required_repository_metadata:
@@ -1479,7 +1479,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                                                       repo,
                                                                                       changeset_revision )
                                     required_repository_metadata = \
-                                        metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                        metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
                                                                                                                    required_repository_id,
                                                                                                                    updated_changeset_revision )
                                 required_repository_metadata_id = trans.security.encode_id( required_repository_metadata.id )

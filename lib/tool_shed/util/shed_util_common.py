@@ -1485,6 +1485,23 @@ def set_prior_installation_required( app, repository, required_repository ):
             return str( required_rd_tup[ 4 ] )
     return 'False'
 
+def set_repository_attributes( app, repository, status, error_message, deleted, uninstalled, remove_from_disk=False ):
+    if remove_from_disk:
+        relative_install_dir = repository.repo_path( app )
+        if relative_install_dir:
+            clone_dir = os.path.abspath( relative_install_dir )
+            try:
+                shutil.rmtree( clone_dir )
+                log.debug( "Removed repository installation directory: %s" % str( clone_dir ) )
+            except Exception, e:
+                log.debug( "Error removing repository installation directory %s: %s" % ( str( clone_dir ), str( e ) ) )
+    repository.error_message = error_message
+    repository.status = status
+    repository.deleted = deleted
+    repository.uninstalled = uninstalled
+    app.install_model.context.add( repository )
+    app.install_model.context.flush()
+
 def tool_shed_from_repository_clone_url( repository_clone_url ):
     """Given a repository clone URL, return the tool shed that contains the repository."""
     return common_util.remove_protocol_and_user_from_clone_url( repository_clone_url ).split( '/repos/' )[ 0 ].rstrip( '/' )

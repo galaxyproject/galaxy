@@ -244,7 +244,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
     # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
     toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
     repository_dependencies = \
-        repository_dependency_util.get_repository_dependencies_for_changeset_revision( trans=trans,
+        repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
                                                                                        repository=repository,
                                                                                        repository_metadata=repository_metadata,
                                                                                        toolshed_base_url=toolshed_base_url,

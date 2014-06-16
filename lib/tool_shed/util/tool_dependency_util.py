@@ -13,7 +13,7 @@ from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
-def add_installation_directories_to_tool_dependencies( trans, tool_dependencies ):
+def add_installation_directories_to_tool_dependencies( app, tool_dependencies ):
     """
     Determine the path to the installation directory for each of the received tool dependencies.  This path will be
     displayed within the tool dependencies container on the select_tool_panel_section or reselect_tool_panel_section
@@ -29,8 +29,8 @@ def add_installation_directories_to_tool_dependencies( trans, tool_dependencies 
         dependency_name = requirements_dict[ 'name' ]
         version = requirements_dict[ 'version' ]
         type = requirements_dict[ 'type' ]
-        if trans.app.config.tool_dependency_dir:
-            root_dir = trans.app.config.tool_dependency_dir
+        if app.config.tool_dependency_dir:
+            root_dir = app.config.tool_dependency_dir
         else:
             root_dir = '<set your tool_dependency_dir in your Galaxy configuration file>'
         install_dir = os.path.join( root_dir,
@@ -230,8 +230,11 @@ def get_download_url_for_platform( url_templates, platform_info_dict ):
             return url_template
     return None
 
-def get_installed_and_missing_tool_dependencies_for_installed_repository( trans, repository, all_tool_dependencies ):
-    """Return the lists of installed tool dependencies and missing tool dependencies for a Tool Shed repository that has been installed into Galaxy."""
+def get_installed_and_missing_tool_dependencies_for_installed_repository( app, repository, all_tool_dependencies ):
+    """
+    Return the lists of installed tool dependencies and missing tool dependencies for a Tool Shed
+    repository that has been installed into Galaxy.
+    """
     if all_tool_dependencies:
         tool_dependencies = {}
         missing_tool_dependencies = {}
@@ -241,7 +244,7 @@ def get_installed_and_missing_tool_dependencies_for_installed_repository( trans,
                     name = td_info_dict[ 'name' ]
                     version = None
                     type = td_info_dict[ 'type' ]
-                    tool_dependency = get_tool_dependency_by_name_type_repository( trans.app, repository, name, type )
+                    tool_dependency = get_tool_dependency_by_name_type_repository( app, repository, name, type )
                     if tool_dependency:
                         td_info_dict[ 'repository_id' ] = repository.id
                         td_info_dict[ 'tool_dependency_id' ] = tool_dependency.id
@@ -251,7 +254,7 @@ def get_installed_and_missing_tool_dependencies_for_installed_repository( trans,
                             tool_dependency_status = 'Never installed'
                         td_info_dict[ 'status' ] = tool_dependency_status
                         val[ index ] = td_info_dict
-                        if tool_dependency.status == trans.install_model.ToolDependency.installation_status.INSTALLED:
+                        if tool_dependency.status == app.install_model.ToolDependency.installation_status.INSTALLED:
                             tool_dependencies[ td_key ] = val
                         else:
                             missing_tool_dependencies[ td_key ] = val
@@ -259,7 +262,7 @@ def get_installed_and_missing_tool_dependencies_for_installed_repository( trans,
                 name = val[ 'name' ]
                 version = val[ 'version' ]
                 type = val[ 'type' ]
-                tool_dependency = get_tool_dependency_by_name_version_type_repository( trans.app, repository, name, version, type )
+                tool_dependency = get_tool_dependency_by_name_version_type_repository( app, repository, name, version, type )
                 if tool_dependency:
                     val[ 'repository_id' ] = repository.id
                     val[ 'tool_dependency_id' ] = tool_dependency.id
@@ -268,7 +271,7 @@ def get_installed_and_missing_tool_dependencies_for_installed_repository( trans,
                     else:
                         tool_dependency_status = 'Never installed'
                     val[ 'status' ] = tool_dependency_status
-                    if tool_dependency.status == trans.install_model.ToolDependency.installation_status.INSTALLED:
+                    if tool_dependency.status == app.install_model.ToolDependency.installation_status.INSTALLED:
                         tool_dependencies[ td_key ] = val
                     else:
                         missing_tool_dependencies[ td_key ] = val
@@ -424,46 +427,6 @@ def handle_tool_dependency_installation_error( app, tool_dependency, error_messa
     sa_session.flush()
     return tool_dependency
 
-def mark_tool_dependency_installed( app, tool_dependency ):
-    if tool_dependency.status not in [ app.install_model.ToolDependency.installation_status.ERROR,
-                                       app.install_model.ToolDependency.installation_status.INSTALLED ]:
-        log.debug( 'Changing status for tool dependency %s from %s to %s.' % \
-            ( str( tool_dependency.name ), str( tool_dependency.status ), str( app.install_model.ToolDependency.installation_status.INSTALLED ) ) )
-        tool_dependency = set_tool_dependency_attributes( app,
-                                                          tool_dependency=tool_dependency,
-                                                          status=app.install_model.ToolDependency.installation_status.INSTALLED,
-                                                          error_message=None,
-                                                          remove_from_disk=False )
-    return tool_dependency
-
-def merge_missing_tool_dependencies_to_installed_container( containers_dict ):
-    """ Merge the list of missing tool dependencies into the list of installed tool dependencies."""
-    missing_td_container_root = containers_dict.get( 'missing_tool_dependencies', None )
-    if missing_td_container_root:
-        # The missing_td_container_root will be a root folder containing a single sub_folder.
-        missing_td_container = missing_td_container_root.folders[ 0 ]
-        installed_td_container_root = containers_dict.get( 'tool_dependencies', None )
-        # The installed_td_container_root will be a root folder containing a single sub_folder.
-        if installed_td_container_root:
-            installed_td_container = installed_td_container_root.folders[ 0 ]
-            installed_td_container.label = 'Tool dependencies'
-            for index, td in enumerate( missing_td_container.tool_dependencies ):
-                # Skip the header row.
-                if index == 0:
-                    continue
-                installed_td_container.tool_dependencies.append( td )
-            installed_td_container_root.folders = [ installed_td_container ]
-            containers_dict[ 'tool_dependencies' ] = installed_td_container_root
-        else:
-            # Change the folder label from 'Missing tool dependencies' to be 'Tool dependencies' for display.
-            root_container = containers_dict[ 'missing_tool_dependencies' ]
-            for sub_container in root_container.folders:
-                # There should only be 1 subfolder.
-                sub_container.label = 'Tool dependencies'
-            containers_dict[ 'tool_dependencies' ] = root_container
-    containers_dict[ 'missing_tool_dependencies' ] = None
-    return containers_dict
-
 def parse_package_elem( package_elem, platform_info_dict=None, include_after_install_actions=True ):
     """
     Parse a <package> element within a tool dependency definition and return a list of action tuples.
@@ -583,7 +546,7 @@ def parse_package_elem( package_elem, platform_info_dict=None, include_after_ins
             continue
     return actions_elem_tuples
 
-def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repository_installed_tool_dependencies,
+def populate_tool_dependencies_dicts( app, tool_shed_url, tool_path, repository_installed_tool_dependencies,
                                       repository_missing_tool_dependencies, required_repo_info_dicts ):
     """
     Return the populated installed_tool_dependencies and missing_tool_dependencies dictionaries for all
@@ -596,14 +559,14 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
     else:
         # Add the install_dir attribute to the tool_dependencies.
         repository_installed_tool_dependencies = \
-            add_installation_directories_to_tool_dependencies( trans=trans,
+            add_installation_directories_to_tool_dependencies( app=app,
                                                                tool_dependencies=repository_installed_tool_dependencies )
     if repository_missing_tool_dependencies is None:
         repository_missing_tool_dependencies = {}
     else:
         # Add the install_dir attribute to the tool_dependencies.
         repository_missing_tool_dependencies = \
-            add_installation_directories_to_tool_dependencies( trans=trans,
+            add_installation_directories_to_tool_dependencies( app=app,
                                                                tool_dependencies=repository_missing_tool_dependencies )
     if required_repo_info_dicts:
         # Handle the tool dependencies defined for each of the repository's repository dependencies.
@@ -613,18 +576,20 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
                     suc.get_repo_info_tuple_contents( repo_info_tuple )
                 if tool_dependencies:
                     # Add the install_dir attribute to the tool_dependencies.
-                    tool_dependencies = add_installation_directories_to_tool_dependencies( trans=trans,
+                    tool_dependencies = add_installation_directories_to_tool_dependencies( app=app,
                                                                                            tool_dependencies=tool_dependencies )
                     # The required_repository may have been installed with a different changeset revision.
                     required_repository, installed_changeset_revision = \
-                        suc.repository_was_previously_installed( trans.app, tool_shed_url, name, repo_info_tuple, from_tip=False )
+                        suc.repository_was_previously_installed( app, tool_shed_url, name, repo_info_tuple, from_tip=False )
                     if required_repository:
                         required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
-                            get_installed_and_missing_tool_dependencies_for_installed_repository( trans, required_repository, tool_dependencies )
+                            get_installed_and_missing_tool_dependencies_for_installed_repository( app,
+                                                                                                  required_repository,
+                                                                                                  tool_dependencies )
                         if required_repository_installed_tool_dependencies:
                             # Add the install_dir attribute to the tool_dependencies.
                             required_repository_installed_tool_dependencies = \
-                                add_installation_directories_to_tool_dependencies( trans=trans,
+                                add_installation_directories_to_tool_dependencies( app=app,
                                                                                    tool_dependencies=required_repository_installed_tool_dependencies )
                             for td_key, td_dict in required_repository_installed_tool_dependencies.items():
                                 if td_key not in repository_installed_tool_dependencies:
@@ -632,7 +597,7 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
                         if required_repository_missing_tool_dependencies:
                             # Add the install_dir attribute to the tool_dependencies.
                             required_repository_missing_tool_dependencies = \
-                                add_installation_directories_to_tool_dependencies( trans=trans,
+                                add_installation_directories_to_tool_dependencies( app=app,
                                                                                    tool_dependencies=required_repository_missing_tool_dependencies )
                             for td_key, td_dict in required_repository_missing_tool_dependencies.items():
                                 if td_key not in repository_missing_tool_dependencies:

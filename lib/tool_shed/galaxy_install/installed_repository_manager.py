@@ -289,6 +289,117 @@ class InstalledRepositoryManager( object ):
             if installed_repository_dict[ 'display_path' ]:
                 datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
 
+    def purge_repository( self, app, repository ):
+        """Purge a repository with status New (a white ghost) from the database."""
+        sa_session = self.app.model.context.current
+        status = 'ok'
+        message = ''
+        purged_tool_versions = 0
+        purged_tool_dependencies = 0
+        purged_required_repositories = 0
+        purged_orphan_repository_repository_dependency_association_records = 0
+        purged_orphan_repository_dependency_records = 0
+        if repository.is_new:
+            # Purge this repository's associated tool versions.
+            if repository.tool_versions:
+                for tool_version in repository.tool_versions:
+                    try:
+                        tool_version_association = tool_version.parent_tool_association
+                        sa_session.delete( tool_version_association )
+                        sa_session.flush()
+                    except Exception, e:
+                        status = 'error'
+                        message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
+                            ( str( repository.name ), str( repository.status ), str( e ) )
+                        return status, message
+                    try:
+                        tool_version_association = tool_version.child_tool_association
+                        sa_session.delete( tool_version_association )
+                        sa_session.flush()
+                    except Exception, e:
+                        status = 'error'
+                        message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
+                            ( str( repository.name ), str( repository.status ), str( e ) )
+                        return status, message
+                    try:
+                        sa_session.delete( tool_version )
+                        sa_session.flush()
+                        purged_tool_versions += 1
+                    except Exception, e:
+                        status = 'error'
+                        message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
+                            ( str( repository.name ), str( repository.status ), str( e ) )
+                        return status, message
+            # Purge this repository's associated tool dependencies.
+            if repository.tool_dependencies:
+                for tool_dependency in repository.tool_dependencies:
+                    try:
+                        sa_session.delete( tool_dependency )
+                        sa_session.flush()
+                        purged_tool_dependencies += 1
+                    except Exception, e:
+                        status = 'error'
+                        message = 'Error attempting to purge tool_dependencies for the repository named %s with status %s: %s.' % \
+                            ( str( repository.name ), str( repository.status ), str( e ) )
+                        return status, message
+            # Purge this repository's associated required repositories.
+            if repository.required_repositories:
+                for rrda in repository.required_repositories:
+                    try:
+                        sa_session.delete( rrda )
+                        sa_session.flush()
+                        purged_required_repositories += 1
+                    except Exception, e:
+                        status = 'error'
+                        message = 'Error attempting to purge required_repositories for the repository named %s with status %s: %s.' % \
+                            ( str( repository.name ), str( repository.status ), str( e ) )
+                        return status, message
+            # Purge any "orphan" repository_dependency records associated with the repository, but not with any
+            # repository_repository_dependency_association records.
+            for orphan_repository_dependency in \
+                sa_session.query( self.app.install_model.RepositoryDependency ) \
+                          .filter( self.app.install_model.RepositoryDependency.table.c.tool_shed_repository_id == repository.id ):
+                # Purge any repository_repository_dependency_association records whose repository_dependency_id is
+                # the id of the orphan repository_dependency record.
+                for orphan_rrda in \
+                    sa_session.query( self.app.install_model.RepositoryRepositoryDependencyAssociation ) \
+                              .filter( self.app.install_model.RepositoryRepositoryDependencyAssociation.table.c.repository_dependency_id == orphan_repository_dependency.id ):
+                    try:
+                        sa_session.delete( orphan_rrda )
+                        sa_session.flush()
+                        purged_orphan_repository_repository_dependency_association_records += 1
+                    except Exception, e:
+                        status = 'error'
+                        message = 'Error attempting to purge repository_repository_dependency_association records associated with '
+                        message += 'an orphan repository_dependency record for the repository named %s with status %s: %s.' % \
+                            ( str( repository.name ), str( repository.status ), str( e ) )
+                        return status, message
+                try:
+                    sa_session.delete( orphan_repository_dependency )
+                    sa_session.flush()
+                    purged_orphan_repository_dependency_records += 1
+                except Exception, e:
+                    status = 'error'
+                    message = 'Error attempting to purge orphan repository_dependency records for the repository named %s with status %s: %s.' % \
+                        ( str( repository.name ), str( repository.status ), str( e ) )
+                    return status, message
+            # Purge the repository.
+            sa_session.delete( repository )
+            sa_session.flush()
+            message = 'The repository named <b>%s</b> with status <b>%s</b> has been purged.<br/>' % \
+                ( str( repository.name ), str( repository.status ) )
+            message += 'Total associated tool_version records purged: %d<br/>' % purged_tool_versions
+            message += 'Total associated tool_dependency records purged: %d<br/>' % purged_tool_dependencies
+            message += 'Total associated repository_repository_dependency_association records purged: %d<br/>' % purged_required_repositories
+            message += 'Total associated orphan repository_repository_dependency_association records purged: %d<br/>' % \
+                purged_orphan_repository_repository_dependency_association_records
+            message += 'Total associated orphan repository_dependency records purged: %d<br/>' % purged_orphan_repository_dependency_records
+        else:
+            status = 'error'
+            message = 'A repository must have the status <b>New</b> in order to be purged.  This repository has '
+            message += ' the status %s.' % str( repository.status )    
+        return status, message
+
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories( self, repository ):
         """
         Remove an entry from self.installed_repository_dependencies_of_installed_repositories.  A side-effect of this method

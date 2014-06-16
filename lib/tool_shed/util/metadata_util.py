@@ -1122,14 +1122,14 @@ def get_repository_metadata_by_id( app, id ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.RepositoryMetadata ).get( app.security.decode_id( id ) )
 
-def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision, metadata_only=False ):
+def get_repository_metadata_by_repository_id_changeset_revision( app, id, changeset_revision, metadata_only=False ):
     """Get a specified metadata record for a specified repository in the tool shed."""
     if metadata_only:
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( app, id, changeset_revision )
         if repository_metadata and repository_metadata.metadata:
             return repository_metadata.metadata
         return None
-    return suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
+    return suc.get_repository_metadata_by_changeset_revision( app, id, changeset_revision )
     
 def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
     repository_metadata_revisions = []
@@ -1602,11 +1602,13 @@ def new_workflow_metadata_required( trans, repository_metadata, metadata_dict ):
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table record is not needed.
     return False
 
-def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository, reinstalling=False, required_repo_info_dicts=None ):
+def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository,
+                                                       reinstalling=False, required_repo_info_dicts=None ):
     """
-    Retrieve necessary information from the received repository's metadata to populate the containers_dict for display.  This method is called only
-    from Galaxy (not the tool shed) when displaying repository dependencies for installed repositories and when displaying them for uninstalled
-    repositories that are being reinstalled.
+    Retrieve necessary information from the received repository's metadata to populate the
+    containers_dict for display.  This method is called only from Galaxy (not the tool shed)
+    when displaying repository dependencies for installed repositories and when displaying
+    them for uninstalled repositories that are being reinstalled.
     """
     metadata = repository.metadata
     if metadata:
@@ -1628,7 +1630,10 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
             else:
-                readme_files_dict = readme_util.build_readme_files_dict( trans, repository, repository.changeset_revision, repository.metadata, tool_path )
+                readme_files_dict = readme_util.build_readme_files_dict( trans.app,
+                                                                         repository,
+                                                                         repository.changeset_revision,
+                                                                         repository.metadata, tool_path )
         else:
             readme_files_dict = None
         # Handle repository dependencies.
@@ -1643,10 +1648,12 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 repository_tool_dependencies = {}
             repository_tool_dependencies.update( repository_invalid_tool_dependencies )
         repository_installed_tool_dependencies, repository_missing_tool_dependencies = \
-            tool_dependency_util.get_installed_and_missing_tool_dependencies_for_installed_repository( trans, repository, repository_tool_dependencies )
+            tool_dependency_util.get_installed_and_missing_tool_dependencies_for_installed_repository( trans,
+                                                                                                       repository,
+                                                                                                       repository_tool_dependencies )
         if reinstalling:
             installed_tool_dependencies, missing_tool_dependencies = \
-                tool_dependency_util.populate_tool_dependencies_dicts( trans=trans,
+                tool_dependency_util.populate_tool_dependencies_dicts( app=trans.app,
                                                                        tool_shed_url=tool_shed_url,
                                                                        tool_path=tool_path,
                                                                        repository_installed_tool_dependencies=repository_installed_tool_dependencies,
@@ -1667,7 +1674,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
             valid_data_managers = metadata['data_manager'].get( 'data_managers', None )
             invalid_data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
             data_managers_errors = metadata['data_manager'].get( 'messages', None )
-        containers_dict = container_util.build_repository_containers_for_galaxy( trans=trans,
+        containers_dict = container_util.build_repository_containers_for_galaxy( app=trans.app,
                                                                                  repository=repository,
                                                                                  datatypes=datatypes,
                                                                                  invalid_tools=invalid_tools,
@@ -1727,6 +1734,7 @@ def reset_all_metadata_on_installed_repository( app, id ):
 
 def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     """Reset all metadata on a single repository in a tool shed."""
+
     def reset_all_tool_versions( trans, id, repo ):
         """Reset tool version lineage for those changeset revisions that include valid tools."""
         changeset_revisions_that_contain_tools = []
@@ -1763,6 +1771,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                 repository_metadata.tool_versions = tool_versions_dict
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
+
     repository = suc.get_repository_in_tool_shed( trans.app, id )
     log.debug( "Resetting all metadata on repository: %s" % repository.name )
     repo_dir = repository.repo_path( trans.app )
