@@ -58,9 +58,10 @@ class InstallToolDependencyManager( object ):
         actions = actions_dict.get( 'actions', None )
         filtered_actions = []
         env_file_builder = EnvFileBuilder( install_dir )
-        install_environment = InstallEnvironment( tool_shed_repository_install_dir=tool_shed_repository_install_dir,
+        install_environment = InstallEnvironment( app=self.app,
+                                                  tool_shed_repository_install_dir=tool_shed_repository_install_dir,
                                                   install_dir=install_dir )
-        step_manager = StepManager()
+        step_manager = StepManager( self.app )
         if actions:
             with install_environment.make_tmp_dir() as work_dir:
                 with lcd( work_dir ):
@@ -76,8 +77,7 @@ class InstallToolDependencyManager( object ):
                         # tool_dependency status in this stage because it should not have been changed based on a
                         # download.
                         tool_dependency, filtered_actions, dir = \
-                            step_manager.execute_step( app=self.app,
-                                                       tool_dependency=tool_dependency,
+                            step_manager.execute_step( tool_dependency=tool_dependency,
                                                        package_name=package_name,
                                                        actions=actions,
                                                        action_type=action_type,
@@ -102,8 +102,7 @@ class InstallToolDependencyManager( object ):
                         with lcd( current_dir ):
                             action_type, action_dict = action_tup
                             tool_dependency, tmp_filtered_actions, tmp_dir = \
-                                step_manager.execute_step( app=self.app,
-                                                           tool_dependency=tool_dependency,
+                                step_manager.execute_step( tool_dependency=tool_dependency,
                                                            package_name=package_name,
                                                            actions=actions,
                                                            action_type=action_type,
@@ -154,7 +153,7 @@ class InstallToolDependencyManager( object ):
         """
         attr_tups_of_dependencies_for_install = [ ( td.name, td.version, td.type ) for td in tool_dependencies ]
         installed_packages = []
-        tag_manager = TagManager()
+        tag_manager = TagManager( self.app )
         # Parse the tool_dependencies.xml config.
         tree, error_message = xml_util.parse_xml( tool_dependencies_config )
         if tree is None:
@@ -192,8 +191,7 @@ class InstallToolDependencyManager( object ):
                     # If the tool_dependency.type is 'set_environment', then the call to process_tag_set() will
                     # handle everything - no additional installation is necessary.
                     tool_dependency, proceed_with_install, action_elem_tuples = \
-                        tag_manager.process_tag_set( self.app,
-                                                     tool_shed_repository,
+                        tag_manager.process_tag_set( tool_shed_repository,
                                                      tool_dependency,
                                                      elem,
                                                      name,
@@ -250,9 +248,9 @@ class InstallToolDependencyManager( object ):
             elems = [ action_elem ]
         else:
             elems = []
-        step_manager = StepManager()
+        step_manager = StepManager( self.app )
         tool_shed_repository_install_dir = self.get_tool_shed_repository_install_dir( tool_shed_repository )
-        install_environment = InstallEnvironment( tool_shed_repository_install_dir, install_dir )
+        install_environment = InstallEnvironment( self.app, tool_shed_repository_install_dir, install_dir )
         for action_elem in elems:
             # Make sure to skip all comments, since they are now included in the XML tree.
             if action_elem.tag != 'action':
@@ -260,8 +258,7 @@ class InstallToolDependencyManager( object ):
             action_dict = {}
             action_type = action_elem.get( 'type', None )
             if action_type is not None:
-                action_dict = step_manager.prepare_step( app=self.app,
-                                                         tool_dependency=tool_dependency,
+                action_dict = step_manager.prepare_step( tool_dependency=tool_dependency,
                                                          action_type=action_type,
                                                          action_elem=action_elem,
                                                          action_dict=action_dict,
@@ -287,7 +284,7 @@ class InstallToolDependencyManager( object ):
         Install a tool dependency package defined by the XML element elem.  The value of tool_dependencies is
         a partial or full list of ToolDependency records associated with the tool_shed_repository.
         """
-        tag_manager = TagManager()
+        tag_manager = TagManager( self.app )
         # The value of package_name should match the value of the "package" type in the tool config's
         # <requirements> tag set, but it's not required.
         package_name = elem.get( 'name', None )
@@ -300,8 +297,7 @@ class InstallToolDependencyManager( object ):
             if tool_dependency is not None:
                 for package_elem in elem:
                     tool_dependency, proceed_with_install, actions_elem_tuples = \
-                        tag_manager.process_tag_set( self.app,
-                                                     tool_shed_repository,
+                        tag_manager.process_tag_set( tool_shed_repository,
                                                      tool_dependency,
                                                      package_elem,
                                                      package_name,

@@ -17,8 +17,6 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 
-from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
-
 log = logging.getLogger( __name__ )
 
 def activate_repository( app, repository ):

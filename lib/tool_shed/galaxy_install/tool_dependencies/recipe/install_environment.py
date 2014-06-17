@@ -35,12 +35,13 @@ class InstallEnvironment( object ):
     """Object describing the environment built up as part of the process of building and installing a package."""
 
 
-    def __init__( self, tool_shed_repository_install_dir, install_dir  ):
+    def __init__( self, app, tool_shed_repository_install_dir, install_dir  ):
         """
         The value of the received tool_shed_repository_install_dir is the root installation directory
         of the repository containing the tool dependency, and the value of the received install_dir is
         the root installation directory of the tool dependency.
         """
+        self.app = app
         self.env_shell_file_paths = []
         self.install_dir = install_dir
         self.tool_shed_repository_install_dir = tool_shed_repository_install_dir
@@ -122,9 +123,9 @@ class InstallEnvironment( object ):
                 log.debug( 'Invalid file %s specified, ignoring template_command action.' % str( env_shell_file_path ) )
         return env_vars
 
-    def handle_command( self, app, tool_dependency, cmd, return_output=False ):
+    def handle_command( self, tool_dependency, cmd, return_output=False ):
         """Handle a command and log the results."""
-        context = app.install_model.context
+        context = self.app.install_model.context
         command = str( cmd )
         output = self.handle_complex_command( command )
         self.log_results( cmd, output, os.path.join( self.install_dir, basic_util.INSTALLATION_LOG ) )
@@ -137,7 +138,7 @@ class InstallEnvironment( object ):
             print "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY )
             stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if output.return_code not in [ 0 ]:
-            tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
+            tool_dependency.status = self.app.install_model.ToolDependency.installation_status.ERROR
             if stderr:
                 tool_dependency.error_message = unicodify( stderr )
             elif stdout:
