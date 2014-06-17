@@ -65,7 +65,7 @@ return Backbone.View.extend({
         this._makeTickFormat('y');
         
         // add tooltip
-        this.tooltip = d3.select('.charts-viewport').append('div')
+        this.tooltip = d3.select('.charts-viewport-container').append('div')
             .attr('class', 'charts-tooltip')
             .style(this.options.style)
             .style('opacity', 0);
@@ -210,12 +210,16 @@ return Backbone.View.extend({
             self.tooltip.style('opacity', 0.9);
             self.tooltip .html(self._templateTooltip(d))
                 .style('left', (d3.event.pageX) + 'px')
-                .style('top', (d3.event.pageY - 28) + 'px');
+                .style('top', (d3.event.pageY - 20) + 'px');
             })
         .on('mouseout', function(d) {
             self.tooltip.style('opacity', 0);
         });
 
+        // initially hide tooltips
+        this.tooltip.style('opacity', 0);
+        
+        // exit
         boxes.exit().remove();
     },
     

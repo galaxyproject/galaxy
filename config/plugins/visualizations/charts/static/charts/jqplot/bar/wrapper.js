@@ -21,15 +21,6 @@ return Backbone.View.extend(
                 $.extend(true, plot_config, {
                     seriesDefaults: {
                         renderer    : $.jqplot.BarRenderer
-                    },
-                    axes: {
-                        xaxis: {
-                            pad     : 1.2
-                        },
-                        
-                        yaxis: {
-                            pad     : 1.2
-                        }
                     }
                 });
             }

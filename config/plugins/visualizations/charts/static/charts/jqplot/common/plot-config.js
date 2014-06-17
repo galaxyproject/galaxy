@@ -11,27 +11,13 @@ return function(chart) {
         seriesColors: d3.scale.category20().range(),
         seriesDefaults: {
             renderer                : $.jqplot.LineRenderer,
-            //lineWidth             : 1,                    // Width of the line in pixels.
+            //lineWidth             : 1,                    // width of the line in pixels.
             shadow                  : false,                // show shadow or not.
             showLine                : true,                 // whether to render the line segments or not.
-       
-            // Show point labels to the right ('e'ast) of each bar.
-            // edgeTolerance of -15 allows labels flow outside the grid
-            // up to 15 pixels.  If they flow out more than that, they 
-            // will be hidden.
-            //pointLabels             : { show: true, location: 'e', edgeTolerance: -15 },
-            // Rotate the bar shadow as if bar is lit from top right.
-            //shadowAngle             : 135,
-            // Here's where we tell the chart it is oriented horizontally.
             rendererOptions: {
                 shadowDepth         : 0,
                 //barDirection      : 'horizontal',
-                //barPadding        : 5,
-                //barMargin         : 2,
-                //barWidth            : Math.max(0.5 / chart.groups.length, 2),
-                barWidth            : 10,
-                //fillToZero        : true,
-                //stackedValue      : true
+                barWidth            : 1
             },
             markerRenderer          : $.jqplot.MarkerRenderer,
             markerOptions: {
@@ -43,9 +29,9 @@ return function(chart) {
                 shadow              : false,                // wether to draw shadow on marker or not.
                 shadowAngle         : 45,                   // angle of the shadow.  Clockwise from x axis.
                 shadowOffset        : 1,                    // offset from the line of the shadow,
-                shadowDepth         : 3,                    // Number of strokes to make when drawing shadow.  Each stroke
+                shadowDepth         : 3,                    // number of strokes to make when drawing shadow.  Each stroke
                                                             // offset by shadowOffset from the last.
-                shadowAlpha         : 0.07                  // Opacity of the shadow
+                shadowAlpha         : 0.07                  // opacity of the shadow
             }
         },
        
@@ -104,7 +90,7 @@ return function(chart) {
         series: []
     };
     
-    // Show the legend and put it outside the grid
+    // show the legend and put it outside the grid
     if (chart.settings.get('show_legend') == 'true') {
         plot_config.legend = {
             renderer                : $.jqplot.EnhancedLegendRenderer,
