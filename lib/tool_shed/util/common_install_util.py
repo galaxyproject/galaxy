@@ -1,12 +1,11 @@
 import copy
+import json
 import logging
 import os
 import urllib
 import urllib2
 from galaxy import util
 from galaxy import web
-from galaxy.util import json
-from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import container_util
@@ -15,7 +14,6 @@ from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
-from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -452,7 +450,7 @@ def get_required_repo_info_dicts( app, tool_shed_url, repo_info_dicts ):
                 response = urllib2.urlopen( request ).read()
                 if response:
                     try:
-                        required_repo_info_dict = json.from_json_string( response )
+                        required_repo_info_dict = json.loads( response )
                     except Exception, e:
                         log.exception( e )
                         return all_repo_info_dicts

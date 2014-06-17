@@ -1,7 +1,8 @@
+import json
 import logging
 import os
 import urllib2
-from galaxy.util import json
+from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from tool_shed.util import encoding_util
@@ -109,12 +110,12 @@ def generate_clone_url_for_installed_repository( app, repository ):
     tool_shed_url = get_tool_shed_url_from_tool_shed_registry( app, str( repository.tool_shed ) )
     return url_join( tool_shed_url, 'repos', str( repository.owner ), str( repository.name ) )
 
-def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
+def generate_clone_url_for_repository_in_tool_shed( user, repository ):
     """Generate the URL for cloning a repository that is in the tool shed."""
     base_url = url_for( '/', qualified=True ).rstrip( '/' )
-    if trans and trans.user:
+    if user:
         protocol, base = base_url.split( '://' )
-        username = '%s@' % trans.user.username
+        username = '%s@' % user.username
         return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
@@ -156,7 +157,7 @@ def get_repository_dependencies( app, tool_shed_url, repository_name, repository
         print "The URL\n%s\nraised the exception:\n%s\n" % ( url, str( e ) )
     if tool_shed_accessible:
         if len( raw_text ) > 2:
-            encoded_text = json.from_json_string( raw_text )
+            encoded_text = json.loads( raw_text )
             repository_dependencies_dict = encoding_util.tool_shed_decode( encoded_text )
     return tool_shed_accessible, repository_dependencies_dict
 
@@ -193,6 +194,27 @@ def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner
                 tool_dependency_type = requirements_dict[ 'type' ]
                 tool_dependencies.append( ( tool_dependency_name, tool_dependency_version, tool_dependency_type ) )
     return tool_shed_accessible, tool_dependencies
+
+def get_tool_shed_repository_ids( as_string=False, **kwd ):
+    tsrid = kwd.get( 'tool_shed_repository_id', None )
+    tsridslist = util.listify( kwd.get( 'tool_shed_repository_ids', None ) )
+    if not tsridslist:
+        tsridslist = util.listify( kwd.get( 'id', None ) )
+    if tsridslist is not None:
+        if tsrid is not None and tsrid not in tsridslist:
+            tsridslist.append( tsrid )
+        if as_string:
+            return ','.join( tsridslist )
+        return tsridslist
+    else:
+        tsridslist = util.listify( kwd.get( 'ordered_tsr_ids', None ) )
+        if tsridslist is not None:
+            if as_string:
+                return ','.join( tsridslist )
+            return tsridslist
+    if as_string:
+        ''
+    return []
 
 def get_tool_shed_url_from_tool_shed_registry( app, tool_shed ):
     """

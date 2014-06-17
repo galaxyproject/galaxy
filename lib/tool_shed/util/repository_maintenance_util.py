@@ -3,9 +3,12 @@ import logging
 import os
 import re
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import import_util
+from tool_shed.util import repository_dependency_util
 from galaxy import util
+from galaxy import web
 from galaxy.web.form_builder import build_select_field
 from galaxy.webapps.tool_shed.model import directory_hash_id
 
@@ -52,6 +55,79 @@ def create_hgrc_file( trans, repository ):
     fp.write( '[extensions]\n' )
     fp.write( 'hgext.purge=' )
     fp.close()
+
+def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None,
+                           repository=None, repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
+    """
+    Return a dictionary that includes all of the information needed to install a repository into a local
+    Galaxy instance.  The dictionary will also contain the recursive list of repository dependencies defined
+    for the repository, as well as the defined tool dependencies.
+
+    This method is called from Galaxy under four scenarios:
+    1. During the tool shed repository installation process via the tool shed's get_repository_information()
+    method.  In this case both the received repository and repository_metadata will be objects, but
+    tool_dependencies and repository_dependencies will be None.
+    2. When getting updates for an install repository where the updates include newly defined repository
+    dependency definitions.  This scenario is similar to 1. above. The tool shed's get_repository_information()
+    method is the caller, and both the received repository and repository_metadata will be objects, but
+    tool_dependencies and repository_dependencies will be None.
+    3. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with no
+    updates available.  In this case, both repository and repository_metadata will be None, but tool_dependencies
+    and repository_dependencies will be objects previously retrieved from the tool shed if the repository includes
+    definitions for them.
+    4. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with updates
+    available.  In this case, this method is reached via the tool shed's get_updated_repository_information()
+    method, and both repository and repository_metadata will be objects but tool_dependencies and
+    repository_dependencies will be None.
+    """
+    repo_info_dict = {}
+    repository = suc.get_repository_by_name_and_owner( app, repository_name, repository_owner )
+    if app.name == 'tool_shed':
+        # We're in the tool shed.
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
+                                                                                 app.security.encode_id( repository.id ),
+                                                                                 changeset_revision )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata:
+                tool_shed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+                # Get a dictionary of all repositories upon which the contents of the received repository depends.
+                repository_dependencies = \
+                    repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=app,
+                                                                                                   repository=repository,
+                                                                                                   repository_metadata=repository_metadata,
+                                                                                                   toolshed_base_url=tool_shed_url,
+                                                                                                   key_rd_dicts_to_be_processed=None,
+                                                                                                   all_repository_dependencies=None,
+                                                                                                   handled_key_rd_dicts=None,
+                                                                                                   circular_repository_dependencies=None )
+                tool_dependencies = metadata.get( 'tool_dependencies', {} )
+    if tool_dependencies:
+        new_tool_dependencies = {}
+        for dependency_key, requirements_dict in tool_dependencies.items():
+            if dependency_key in [ 'set_environment' ]:
+                new_set_environment_dict_list = []
+                for set_environment_dict in requirements_dict:
+                    set_environment_dict[ 'repository_name' ] = repository_name
+                    set_environment_dict[ 'repository_owner' ] = repository_owner
+                    set_environment_dict[ 'changeset_revision' ] = changeset_revision
+                    new_set_environment_dict_list.append( set_environment_dict )
+                new_tool_dependencies[ dependency_key ] = new_set_environment_dict_list
+            else:
+                requirements_dict[ 'repository_name' ] = repository_name
+                requirements_dict[ 'repository_owner' ] = repository_owner
+                requirements_dict[ 'changeset_revision' ] = changeset_revision
+                new_tool_dependencies[ dependency_key ] = requirements_dict
+        tool_dependencies = new_tool_dependencies
+    # Cast unicode to string, with the exception of description, since it is free text and can contain special characters.
+    repo_info_dict[ str( repository.name ) ] = ( repository.description,
+                                                 str( repository_clone_url ),
+                                                 str( changeset_revision ),
+                                                 str( ctx_rev ),
+                                                 str( repository_owner ),
+                                                 repository_dependencies,
+                                                 tool_dependencies )
+    return repo_info_dict
 
 def create_repository( trans, name, type, description, long_description, user_id, category_ids=[] ):
     # Add the repository record to the database.
@@ -181,6 +257,62 @@ def create_repository_and_import_archive( trans, repository_archive_dict, import
             results_message += 'Import not necessary: repository status for this Tool Shed is: %s.' % str( status )
             import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
     return import_results_tups
+
+def get_repo_info_dict( app, user, repository_id, changeset_revision ):
+    repository = suc.get_repository_in_tool_shed( app, repository_id )
+    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
+    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( user, repository )
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
+                                                                             repository_id,
+                                                                             changeset_revision )
+    if not repository_metadata:
+        # The received changeset_revision is no longer installable, so get the next changeset_revision
+        # in the repository's changelog.  This generally occurs only with repositories of type
+        # repository_suite_definition or tool_dependency_definition.
+        next_downloadable_changeset_revision = \
+            suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        if next_downloadable_changeset_revision:
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
+                                                                                     repository_id,
+                                                                                     next_downloadable_changeset_revision )
+    if repository_metadata:
+        # For now, we'll always assume that we'll get repository_metadata, but if we discover our assumption
+        # is not valid we'll have to enhance the callers to handle repository_metadata values of None in the
+        # returned repo_info_dict.
+        metadata = repository_metadata.metadata
+        if 'tools' in metadata:
+            includes_tools = True
+        else:
+            includes_tools = False
+        includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
+        repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
+        repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td = \
+            suc.get_repository_dependency_types( repository_dependencies )
+        if 'tool_dependencies' in metadata:
+            includes_tool_dependencies = True
+        else:
+            includes_tool_dependencies = False
+    else:
+        # Here's where we may have to handle enhancements to the callers. See above comment.
+        includes_tools = False
+        has_repository_dependencies = False
+        has_repository_dependencies_only_if_compiling_contained_td = False
+        includes_tool_dependencies = False
+        includes_tools_for_display_in_tool_panel = False
+    ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
+    repo_info_dict = create_repo_info_dict( app=app,
+                                            repository_clone_url=repository_clone_url,
+                                            changeset_revision=changeset_revision,
+                                            ctx_rev=str( ctx.rev() ),
+                                            repository_owner=repository.user.username,
+                                            repository_name=repository.name,
+                                            repository=repository,
+                                            repository_metadata=repository_metadata,
+                                            tool_dependencies=None,
+                                            repository_dependencies=None )
+    return repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, \
+        has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
 def get_repository_admin_role_name( repository_name, repository_owner ):
     return '%s_%s_admin' % ( str( repository_name ), str( repository_owner ) )

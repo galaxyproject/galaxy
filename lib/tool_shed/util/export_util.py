@@ -256,7 +256,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
     repo_info_dict = {}
     # Cast unicode to string.
     repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
-                                                 common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository ),
+                                                 common_util.generate_clone_url_for_repository_in_tool_shed( trans.user, repository ),
                                                  str( changeset_revision ),
                                                  str( ctx.rev() ),
                                                  str( repository.user.username ),

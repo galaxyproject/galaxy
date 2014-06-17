@@ -20,14 +20,17 @@ from galaxy.model.orm import or_
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
+from tool_shed.util import data_manager_util
+from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
+from tool_shed.util import metadata_util
+from tool_shed.util import repository_dependency_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 
-from tool_shed.galaxy_install import repository_util
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
@@ -488,6 +491,136 @@ class InstallRepositoryManager( object ):
         repo_info_dicts = [ repo_info_dict ]
         return repository_revision_dict, repo_info_dicts
 
+    def handle_repository_contents( self, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir,
+                                    tool_shed=None, tool_section=None, shed_tool_conf=None, reinstalling=False ):
+        """
+        Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy
+        (never the tool shed) when an administrator is installing a new repository or reinstalling an uninstalled repository.
+        """
+        install_model = self.app.install_model
+        shed_config_dict = self.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
+        metadata_dict, invalid_file_tups = \
+            metadata_util.generate_metadata_for_changeset_revision( app=self.app,
+                                                                    repository=tool_shed_repository,
+                                                                    changeset_revision=tool_shed_repository.changeset_revision,
+                                                                    repository_clone_url=repository_clone_url,
+                                                                    shed_config_dict=shed_config_dict,
+                                                                    relative_install_dir=relative_install_dir,
+                                                                    repository_files_dir=None,
+                                                                    resetting_all_metadata_on_repository=False,
+                                                                    updating_installed_repository=False,
+                                                                    persist=True )
+        tool_shed_repository.metadata = metadata_dict
+        # Update the tool_shed_repository.tool_shed_status column in the database.
+        tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, tool_shed_repository )
+        if tool_shed_status_dict:
+            tool_shed_repository.tool_shed_status = tool_shed_status_dict
+        install_model.context.add( tool_shed_repository )
+        install_model.context.flush()
+        if 'tool_dependencies' in metadata_dict and not reinstalling:
+            tool_dependencies = tool_dependency_util.create_tool_dependency_objects( self.app,
+                                                                                     tool_shed_repository,
+                                                                                     relative_install_dir,
+                                                                                     set_status=True )
+        if 'sample_files' in metadata_dict:
+            sample_files = metadata_dict.get( 'sample_files', [] )
+            tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
+            tool_data_table_conf_filename, tool_data_table_elems = \
+                tool_util.install_tool_data_tables( self.app, tool_shed_repository, tool_index_sample_files )
+            if tool_data_table_elems:
+                self.app.tool_data_tables.add_new_entries_from_config_file( tool_data_table_conf_filename,
+                                                                            None,
+                                                                            self.app.config.shed_tool_data_table_config,
+                                                                            persist=True )
+        if 'tools' in metadata_dict:
+            tool_panel_dict = tool_util.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
+            sample_files = metadata_dict.get( 'sample_files', [] )
+            tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
+            tool_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
+            sample_files_copied = [ str( s ) for s in tool_index_sample_files ]
+            repository_tools_tups = suc.get_repository_tools_tups( self.app, metadata_dict )
+            if repository_tools_tups:
+                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
+                repository_tools_tups = tool_util.handle_missing_data_table_entry( self.app,
+                                                                                   relative_install_dir,
+                                                                                   tool_path,
+                                                                                   repository_tools_tups )
+                # Handle missing index files for tool parameters that are dynamically generated select lists.
+                repository_tools_tups, sample_files_copied = tool_util.handle_missing_index_file( self.app,
+                                                                                                  tool_path,
+                                                                                                  sample_files,
+                                                                                                  repository_tools_tups,
+                                                                                                  sample_files_copied )
+                # Copy remaining sample files included in the repository to the ~/tool-data directory of the
+                # local Galaxy instance.
+                tool_util.copy_sample_files( self.app, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied )
+                tool_util.add_to_tool_panel( app=self.app,
+                                             repository_name=tool_shed_repository.name,
+                                             repository_clone_url=repository_clone_url,
+                                             changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                             repository_tools_tups=repository_tools_tups,
+                                             owner=tool_shed_repository.owner,
+                                             shed_tool_conf=shed_tool_conf,
+                                             tool_panel_dict=tool_panel_dict,
+                                             new_install=True )
+        if 'data_manager' in metadata_dict:
+            new_data_managers = data_manager_util.install_data_managers( self.app,
+                                                                         self.app.config.shed_data_manager_config_file,
+                                                                         metadata_dict,
+                                                                         shed_config_dict,
+                                                                         relative_install_dir,
+                                                                         tool_shed_repository,
+                                                                         repository_tools_tups )
+        if 'datatypes' in metadata_dict:
+            tool_shed_repository.status = install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+            if not tool_shed_repository.includes_datatypes:
+                tool_shed_repository.includes_datatypes = True
+            install_model.context.add( tool_shed_repository )
+            install_model.context.flush()
+            files_dir = relative_install_dir
+            if shed_config_dict.get( 'tool_path' ):
+                files_dir = os.path.join( shed_config_dict[ 'tool_path' ], files_dir )
+            datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
+            # Load data types required by tools.
+            converter_path, display_path = \
+                datatype_util.alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, files_dir, override=False )
+            if converter_path or display_path:
+                # Create a dictionary of tool shed repository related information.
+                repository_dict = \
+                    datatype_util.create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
+                                                                                    name=tool_shed_repository.name,
+                                                                                    owner=tool_shed_repository.owner,
+                                                                                    installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                                    tool_dicts=metadata_dict.get( 'tools', [] ),
+                                                                                    converter_path=converter_path,
+                                                                                    display_path=display_path )
+            if converter_path:
+                # Load proprietary datatype converters
+                self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, installed_repository_dict=repository_dict )
+            if display_path:
+                # Load proprietary datatype display applications
+                self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
+
+    def handle_tool_shed_repositories( self, installation_dict, using_api=False ):
+        # The following installation_dict entries are all required.
+        install_repository_dependencies = installation_dict[ 'install_repository_dependencies' ]
+        new_tool_panel_section_label = installation_dict[ 'new_tool_panel_section_label' ]
+        no_changes_checked = installation_dict[ 'no_changes_checked' ]
+        repo_info_dicts = installation_dict[ 'repo_info_dicts' ]
+        tool_panel_section_id = installation_dict[ 'tool_panel_section_id' ]
+        tool_path = installation_dict[ 'tool_path' ]
+        tool_shed_url = installation_dict[ 'tool_shed_url' ]
+        created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
+            repository_dependency_util.create_repository_dependency_objects( app=self.app,
+                                                                             tool_path=tool_path,
+                                                                             tool_shed_url=tool_shed_url,
+                                                                             repo_info_dicts=repo_info_dicts,
+                                                                             install_repository_dependencies=install_repository_dependencies,
+                                                                             no_changes_checked=no_changes_checked,
+                                                                             tool_panel_section_id=tool_panel_section_id,
+                                                                             new_tool_panel_section_label=new_tool_panel_section_label )
+        return created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts
+
     def initiate_repository_installation( self, installation_dict ):
         install_model = self.app.install_model
         # The following installation_dict entries are all required.
@@ -699,9 +832,9 @@ class InstallRepositoryManager( object ):
         cloned_ok, error_message = hg_util.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
         if cloned_ok:
             if reinstalling:
-                # Since we're reinstalling the repository we need to find the latest changeset revision to which it can be updated.
-                changeset_revision_dict = repository_util.get_update_to_changeset_revision_and_ctx_rev( self.app,
-                                                                                                        tool_shed_repository )
+                # Since we're reinstalling the repository we need to find the latest changeset revision to
+                # which it can be updated.
+                changeset_revision_dict = self.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev( tool_shed_repository )
                 current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
                 current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
                 if current_ctx_rev != ctx_rev:
@@ -711,15 +844,14 @@ class InstallRepositoryManager( object ):
                                                             create=False )
                     hg_util.pull_repository( repo, repository_clone_url, current_changeset_revision )
                     hg_util.update_repository( repo, ctx_rev=current_ctx_rev )
-            repository_util.handle_repository_contents( self.app,
-                                                        tool_shed_repository=tool_shed_repository,
-                                                        tool_path=tool_path,
-                                                        repository_clone_url=repository_clone_url,
-                                                        relative_install_dir=relative_install_dir,
-                                                        tool_shed=tool_shed_repository.tool_shed,
-                                                        tool_section=tool_section,
-                                                        shed_tool_conf=shed_tool_conf,
-                                                        reinstalling=reinstalling )
+            self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
+                                             tool_path=tool_path,
+                                             repository_clone_url=repository_clone_url,
+                                             relative_install_dir=relative_install_dir,
+                                             tool_shed=tool_shed_repository.tool_shed,
+                                             tool_section=tool_section,
+                                             shed_tool_conf=shed_tool_conf,
+                                             reinstalling=reinstalling )
             install_model.context.refresh( tool_shed_repository )
             metadata = tool_shed_repository.metadata
             if 'tools' in metadata:

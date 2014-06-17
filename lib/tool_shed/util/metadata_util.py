@@ -1776,7 +1776,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     log.debug( "Resetting all metadata on repository: %s" % repository.name )
     repo_dir = repository.repo_path( trans.app )
     repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
-    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
     # The list of changeset_revisions refers to repository_metadata records that have been created or updated.  When the following loop
     # completes, we'll delete all repository_metadata records for this repository that do not have a changeset_revision value in this list.
     changeset_revisions = []
@@ -1955,7 +1955,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     message = ''
     status = 'done'
     encoded_id = trans.security.encode_id( repository.id )
-    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
     repo_dir = repository.repo_path( trans.app )
     repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,

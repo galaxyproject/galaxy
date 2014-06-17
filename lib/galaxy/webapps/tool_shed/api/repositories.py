@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import tarfile
@@ -6,13 +7,11 @@ from time import strftime
 from galaxy import eggs
 from galaxy import util
 from galaxy import web
-from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from tool_shed.galaxy_install import repository_util
 from tool_shed.util import basic_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -192,7 +191,10 @@ class RepositoriesController( BaseAPIController ):
                 includes_tools_for_display_in_tool_panel, \
                 has_repository_dependencies, \
                 has_repository_dependencies_only_if_compiling_contained_td = \
-                    repository_util.get_repo_info_dict( trans, encoded_repository_id, changeset_revision )
+                    repository_maintenance_util.get_repo_info_dict( trans.app,
+                                                                    trans.user,
+                                                                    encoded_repository_id,
+                                                                    changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
                 log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" % \
@@ -465,7 +467,7 @@ class RepositoriesController( BaseAPIController ):
                 results = handle_repository( trans, repository, results )
         stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 )
+        return json.dumps( results, sort_keys=True, indent=4 )
 
     @web.expose_api
     def reset_metadata_on_repository( self, trans, payload, **kwd ):
@@ -504,7 +506,7 @@ class RepositoriesController( BaseAPIController ):
             results = handle_repository( trans, start_time, repository )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
             results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 )
+        return json.dumps( results, sort_keys=True, indent=4 )
 
     @web.expose_api_anonymous
     def show( self, trans, id, **kwd ):

@@ -31,7 +31,7 @@ from tool_shed.util import search_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
-from tool_shed.galaxy_install import repository_util
+from tool_shed.galaxy_install import install_manager
 from galaxy.webapps.tool_shed.util import ratings_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
@@ -1761,7 +1761,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository_id, changeset_revision = tup
             repo_info_dict, cur_includes_tools, cur_includes_tool_dependencies, cur_includes_tools_for_display_in_tool_panel, \
                 cur_has_repository_dependencies, cur_has_repository_dependencies_only_if_compiling_contained_td = \
-                repository_util.get_repo_info_dict( trans, repository_id, changeset_revision )
+                repository_maintenance_util.get_repo_info_dict( trans.app, trans.user, repository_id, changeset_revision )
             if cur_has_repository_dependencies and not has_repository_dependencies:
                 has_repository_dependencies = True
             if cur_has_repository_dependencies_only_if_compiling_contained_td and not has_repository_dependencies_only_if_compiling_contained_td:
@@ -1881,7 +1881,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         """
         repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
-        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         if not repository_metadata:
@@ -1892,16 +1892,16 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                after_changeset_revision=changeset_revision )
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
-        repo_info_dict = repository_util.create_repo_info_dict( app=trans.app,
-                                                                repository_clone_url=repository_clone_url,
-                                                                changeset_revision=changeset_revision,
-                                                                ctx_rev=str( ctx.rev() ),
-                                                                repository_owner=repository.user.username,
-                                                                repository_name=repository.name,
-                                                                repository=repository,
-                                                                repository_metadata=repository_metadata,
-                                                                tool_dependencies=None,
-                                                                repository_dependencies=None )
+        repo_info_dict = repository_maintenance_util.create_repo_info_dict( app=trans.app,
+                                                                            repository_clone_url=repository_clone_url,
+                                                                            changeset_revision=changeset_revision,
+                                                                            ctx_rev=str( ctx.rev() ),
+                                                                            repository_owner=repository.user.username,
+                                                                            repository_name=repository.name,
+                                                                            repository=repository,
+                                                                            repository_metadata=repository_metadata,
+                                                                            tool_dependencies=None,
+                                                                            repository_dependencies=None )
         includes_data_managers = False
         includes_datatypes = False
         includes_tools = False
