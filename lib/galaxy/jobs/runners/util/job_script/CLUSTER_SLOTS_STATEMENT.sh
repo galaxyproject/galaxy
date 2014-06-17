@@ -6,7 +6,7 @@ if [ -n "$SLURM_NTASKS" ]; then
     GALAXY_SLOTS="$SLURM_NTASKS"
 elif [ -n "$NSLOTS" ]; then
     GALAXY_SLOTS="$NSLOTS"
-elif [ -n "$PBS_NCPUS" ] then
+elif [ -n "$PBS_NCPUS" ]; then
     GALAXY_SLOTS="$PBS_NCPUS"
 elif [ -f "$PBS_NODEFILE" ]; then
     GALAXY_SLOTS=`wc -l < $PBS_NODEFILE`
