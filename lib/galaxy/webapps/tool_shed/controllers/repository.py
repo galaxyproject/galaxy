@@ -887,7 +887,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         """Handle a request from a local Galaxy instance."""
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
-        # If the request originated with the UpdateManager, it will not include a galaxy_url.
+        # If the request originated with the UpdateRepositoryManager, it will not include a galaxy_url.
         galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )

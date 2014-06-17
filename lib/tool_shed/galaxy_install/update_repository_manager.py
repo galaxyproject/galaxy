@@ -3,15 +3,12 @@ Determine if installed tool shed repositories have updates available in their re
 """
 import logging
 import threading
-from galaxy.util import string_as_bool
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import common_util
-from galaxy.model.orm import and_
 
 log = logging.getLogger( __name__ )
 
 
-class UpdateManager( object ):
+class UpdateRepositoryManager( object ):
 
     def __init__( self, app ):
         self.app = app
@@ -24,11 +21,13 @@ class UpdateManager( object ):
         self.seconds_to_sleep = int( app.config.hours_between_check * 3600 )
 
     def __restarter( self ):
-        log.info( 'Update manager restarter starting up...' )
+        log.info( 'Update repository manager restarter starting up...' )
         while self.running:
-            # Make a call to the tool shed for each installed repository to get the latest status information in the tool shed for the
-            # repository.  This information includes items like newer installable repository revisions, current revision updates, whether
-            # the repository revision is the latest installable revision, and whether the repository has been deprecated in the tool shed.
+            # Make a call to the Tool Shed for each installed repository to get the latest
+            # status information in the Tool Shed for the repository.  This information includes
+            # items like newer installable repository revisions, current revision updates, whether
+            # the repository revision is the latest installable revision, and whether the repository
+            # has been deprecated in the Tool Shed.
             for repository in self.context.query( self.app.install_model.ToolShedRepository ) \
                                           .filter( self.app.install_model.ToolShedRepository.table.c.deleted == False ):
                 tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, repository )
@@ -43,7 +42,7 @@ class UpdateManager( object ):
                         repository.tool_shed_status = tool_shed_status_dict
                         self.context.flush()
             self.sleeper.sleep( self.seconds_to_sleep )
-        log.info( 'Update manager restarter shutting down...' )
+        log.info( 'Update repository manager restarter shutting down...' )
 
     def shutdown( self ):
         self.running = False
@@ -51,7 +50,10 @@ class UpdateManager( object ):
 
 
 class Sleeper( object ):
-    """Provides a 'sleep' method that sleeps for a number of seconds *unless* the notify method is called (from a different thread)."""
+    """
+    Provides a 'sleep' method that sleeps for a number of seconds *unless* the notify method
+    is called (from a different thread).
+    """
 
     def __init__( self ):
         self.condition = threading.Condition()

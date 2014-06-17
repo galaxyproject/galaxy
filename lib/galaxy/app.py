@@ -82,10 +82,10 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.data_managers = DataManagers( self )
         # If enabled, poll respective tool sheds to see if updates are available for any installed tool shed repositories.
         if self.config.get_bool( 'enable_tool_shed_check', False ):
-            from tool_shed.galaxy_install import update_manager
-            self.update_manager = update_manager.UpdateManager( self )
+            from tool_shed.galaxy_install import update_repository_manager
+            self.update_repository_manager = update_repository_manager.UpdateRepositoryManager( self )
         else:
-            self.update_manager = None
+            self.update_repository_manager = None
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
@@ -159,8 +159,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.object_store.shutdown()
         if self.heartbeat:
             self.heartbeat.shutdown()
-        if self.update_manager:
-            self.update_manager.shutdown()
+        if self.update_repository_manager is not None:
+            self.update_repository_manager.shutdown()
         if self.control_worker:
             self.control_worker.shutdown()
         try:
