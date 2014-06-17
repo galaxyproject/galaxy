@@ -73,7 +73,8 @@ class LwrExchange(object):
             except (IOError, socket.error), exc:
                 # In testing, errno is None
                 log.warning('Got %s, will retry: %s', exc.__class__.__name__, exc)
-                heartbeat_thread.join()
+                if heartbeat_thread:
+                    heartbeat_thread.join()
 
     def heartbeat(self, connection):
         log.debug('AMQP heartbeat thread alive')
