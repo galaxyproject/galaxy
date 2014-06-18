@@ -239,14 +239,41 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             html: _l( 'Build Dataset List (Experimental)' ), func: function() {
                 panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "list" );
             }
-        } );
+        });
         actions.push( {
             // TODO: Only show quick pair if two things selected.
             html: _l( 'Build Dataset Pair (Experimental)' ), func: function() {
                 panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "paired" );
             }
-        } );
+        });
+        actions.push( {
+            // TODO: Only show quick pair if two things selected.
+            html: _l( 'Build List of Dataset Pairs (Experimental)' ),
+            func: panel._showPairedCollectionModal.bind( panel )
+        });
         return new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), actions );
+    },
+
+    _showPairedCollectionModal : function(){
+        var panel = this,
+            datasets = panel.getSelectedHdaCollection().toJSON().filter( function( content ){
+                return content.history_content_type === 'dataset'
+                    && content.state === hdaModel.HistoryDatasetAssociation.STATES.OK;
+            });
+        if( datasets.length ){
+            require([ 'mvc/collection/paired-collection-creator' ], function( creator ){
+                window.creator = creator.pairedCollectionCreatorModal( datasets, {
+                    historyId : panel.model.id
+                });
+            });
+        } else {
+            //Galaxy.modal.show({
+            //    body : _l( 'No valid datasets were selected' ),
+            //    buttons : {
+            //        'Ok': function(){ Galaxy.modal.hide(); }
+            //    }
+            //});
+        }
     },
 
     // ------------------------------------------------------------------------ hda sub-views
