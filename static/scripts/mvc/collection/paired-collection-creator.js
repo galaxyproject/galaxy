@@ -506,7 +506,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 return creator._pairToJSON( pair );
             })
         };
-        url = 'blarg';
         //console.debug( JSON.stringify( ajaxData ) );
         return jQuery.ajax( url, {
             type        : 'POST',
@@ -533,7 +532,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             //console.info( 'ok', response, message, xhr );
             creator.trigger( 'collection:created', response, message, xhr );
             if( typeof creator.oncreate === 'function' ){
-                creator.oncreate.call( this, x, y, z );
+                creator.oncreate.call( this, response, message, xhr );
             }
         });
     },
