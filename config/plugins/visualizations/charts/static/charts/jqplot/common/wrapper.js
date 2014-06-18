@@ -134,7 +134,7 @@ return Backbone.View.extend(
                 formatter   : function(formatter) {
                     if (formatter) {
                         plot_config.axes[id + 'axis'].tickOptions.formatter = function(format, value) {
-                           return formatter(value);
+                            return formatter(value);
                         };
                     }
                 }

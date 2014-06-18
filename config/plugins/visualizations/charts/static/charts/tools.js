@@ -361,6 +361,9 @@ function addZoom(options) {
           
     // add handler
     svg.call(d3zoom).on('dblclick.zoom', unzoomed);
+    
+    // return
+    return d3zoom;
 };
     
 // return

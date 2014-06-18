@@ -16,8 +16,8 @@ return function(chart) {
             showLine                : true,                 // whether to render the line segments or not.
             rendererOptions: {
                 shadowDepth         : 0,
-                //barDirection      : 'horizontal',
-                barWidth            : 1
+                barWidth            : 3,
+                barPadding          : 3
             },
             markerRenderer          : $.jqplot.MarkerRenderer,
             markerOptions: {
@@ -56,7 +56,6 @@ return function(chart) {
                     angle           : chart.settings.get('use_panels') === 'true' ? 0 : -30,
                     showGridline    : chart.settings.get('x_axis_grid') === 'true'
                 },
-                tickInterval        : 1,
                 pad                 : 0
             },
             yaxis: {
