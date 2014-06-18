@@ -164,8 +164,9 @@ class JobRunnerMapper( object ):
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 
-    def __cache_job_destination( self, params ):
-        raw_job_destination = self.job_wrapper.tool.get_job_destination( params )
+    def __cache_job_destination( self, params, raw_job_destination=None ):
+        if raw_job_destination is None:
+            raw_job_destination = self.job_wrapper.tool.get_job_destination( params )
         #raw_job_destination_id_or_tag = self.job_wrapper.tool.get_job_destination_id_or_tag( params )
         if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
             job_destination = self.__handle_dynamic_job_destination( raw_job_destination )
@@ -183,7 +184,6 @@ class JobRunnerMapper( object ):
             self.__cache_job_destination( params )
         return self.cached_job_destination
 
-    #def get_job_destination_id_or_tag( self, params ):
-    #    if not hasattr( self, 'cached_job_destination_id_or_tag' ):
-    #        self.__cache_job_destination( params )
-    #    return self.cached_job_destination_id_or_tag
+    def cache_job_destination( self, raw_job_destination ):
+        self.__cache_job_destination( None, raw_job_destination=raw_job_destination )
+        return self.cached_job_destination

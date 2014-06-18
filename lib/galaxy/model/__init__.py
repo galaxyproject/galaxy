@@ -295,6 +295,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
     _text_metric = JobMetricText
 
     states = Bunch( NEW = 'new',
+                    RESUBMITTED = 'resubmitted',
                     UPLOAD = 'upload',
                     WAITING = 'waiting',
                     QUEUED = 'queued',
@@ -1299,7 +1300,9 @@ class Dataset( object ):
                     DISCARDED = 'discarded',
                     PAUSED = 'paused',
                     SETTING_METADATA = 'setting_metadata',
-                    FAILED_METADATA = 'failed_metadata' )
+                    FAILED_METADATA = 'failed_metadata',
+                    RESUBMITTED = 'resubmitted' )
+    # failed_metadata and resubmitted are only valid as DatasetInstance states currently
 
     conversion_messages = Bunch( PENDING = "pending",
                                  NO_DATA = "no data",

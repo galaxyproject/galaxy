@@ -128,7 +128,6 @@ class JobHandlerQueue( object ):
                     self.queue.put( ( job.id, job.tool_id ) )
             elif job.job_runner_name is not None and job.job_runner_external_id is not None and job.destination_id is None:
                 # This is the first start after upgrading from URLs to destinations, convert the URL to a destination and persist
-                # TODO: test me extensively
                 job_wrapper = self.job_wrapper( job )
                 job_destination = self.dispatcher.url_to_destination(job.job_runner_name)
                 if job_destination.id is None:
@@ -146,7 +145,17 @@ class JobHandlerQueue( object ):
             else:
                 # Already dispatched and running
                 job_wrapper = self.job_wrapper( job )
-                job_wrapper.job_runner_mapper.cached_job_destination = JobDestination(id=job.destination_id, runner=job.job_runner_name, params=job.destination_params)
+                # Use the persisted destination as its params may differ from
+                # what's in the job_conf xml
+                job_destination = JobDestination(id=job.destination_id, runner=job.job_runner_name, params=job.destination_params)
+                # resubmits are not persisted (it's a good thing) so they
+                # should be added back to the in-memory destination on startup
+                try:
+                    config_job_destination = self.app.job_config.get_destination( job.destination_id )
+                    job_destination.resubmit = config_job_destination.resubmit
+                except KeyError:
+                    log.warning( '(%s) Recovered destination id (%s) does not exist in job config (but this may be normal in the case of a dynamically generated destination)', job.id, job.destination_id )
+                job_wrapper.job_runner_mapper.cached_job_destination = job_destination
                 self.dispatcher.recover( job, job_wrapper )
         if self.sa_session.dirty:
             self.sa_session.flush()
@@ -177,6 +186,7 @@ class JobHandlerQueue( object ):
         """
         # Pull all new jobs from the queue at once
         jobs_to_check = []
+        resubmit_jobs = []
         if self.track_jobs_in_database:
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
@@ -215,6 +225,11 @@ class JobHandlerQueue( object ):
                                  ~model.Job.table.c.id.in_(hda_not_ready),
                                  ~model.Job.table.c.id.in_(ldda_not_ready))) \
                     .order_by(model.Job.id).all()
+            # Fetch all "resubmit" jobs
+            resubmit_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
+                    .filter(and_((model.Job.state == model.Job.states.RESUBMITTED),
+                                (model.Job.handler == self.app.config.server_name))) \
+                    .order_by(model.Job.id).all()
         else:
             # Get job objects and append to watch queue for any which were
             # previously waiting
@@ -233,6 +248,14 @@ class JobHandlerQueue( object ):
                 pass
         # Ensure that we get new job counts on each iteration
         self.__clear_job_count()
+        # Check resubmit jobs first so that limits of new jobs will still be enforced
+        for job in resubmit_jobs:
+            log.debug( '(%s) Job was resubmitted and is being dispatched immediately', job.id )
+            # Reassemble resubmit job destination from persisted value
+            jw = self.job_wrapper( job )
+            jw.job_runner_mapper.cached_job_destination = JobDestination( id=job.destination_id, runner=job.job_runner_name, params=job.destination_params )
+            self.increase_running_job_count(job.user_id, jw.job_destination.id)
+            self.dispatcher.put( jw )
         # Iterate over new and waiting jobs and look for any that are
         # ready to run
         new_waiting_jobs = []
@@ -358,7 +381,11 @@ class JobHandlerQueue( object ):
         # This could have been incremented by a previous job dispatched on this iteration, even if we're not caching
         rval = self.user_job_count.get(user_id, 0)
         if not self.app.config.cache_user_job_count:
-            result = self.sa_session.execute(select([func.count(model.Job.table.c.id)]).where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)), (model.Job.table.c.user_id == user_id))))
+            result = self.sa_session.execute(select([func.count(model.Job.table.c.id)]) \
+                .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED,
+                                                         model.Job.states.RUNNING,
+                                                         model.Job.states.RESUBMITTED)),
+                            (model.Job.table.c.user_id == user_id))))
             for row in result:
                 # there should only be one row
                 rval += row[0]
@@ -369,8 +396,11 @@ class JobHandlerQueue( object ):
         if self.user_job_count is None and self.app.config.cache_user_job_count:
             self.user_job_count = {}
             query = self.sa_session.execute(select([model.Job.table.c.user_id, func.count(model.Job.table.c.user_id)]) \
-                                           .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)), (model.Job.table.c.user_id is not None))) \
-                                           .group_by(model.Job.table.c.user_id))
+                .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED,
+                                                         model.Job.states.RUNNING,
+                                                         model.Job.states.RESUBMITTED)),
+                            (model.Job.table.c.user_id is not None))) \
+                                .group_by(model.Job.table.c.user_id))
             for row in query:
                 self.user_job_count[row[0]] = row[1]
         elif self.user_job_count is None:
@@ -428,6 +458,9 @@ class JobHandlerQueue( object ):
             self.total_job_count_per_destination[destination_id] = self.total_job_count_per_destination.get(destination_id, 0) + 1
 
     def __check_user_jobs( self, job, job_wrapper ):
+        # TODO: Update output datasets' _state = LIMITED or some such new
+        # state, so the UI can reflect what jobs are waiting due to concurrency
+        # limits
         if job.user:
             # Check the hard limit first
             if self.app.job_config.limits.registered_user_concurrent_jobs:

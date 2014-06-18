@@ -57,6 +57,8 @@ class JobDestination( Bunch ):
         self['runner'] = None
         self['legacy'] = False
         self['converted'] = False
+        self['env'] = []
+        self['resubmit'] = []
         # dict is appropriate (rather than a bunch) since keys may not be valid as attributes
         self['params'] = dict()
         super(JobDestination, self).__init__(**kwds)
@@ -187,6 +189,7 @@ class JobConfiguration( object ):
             job_destination = JobDestination(**dict(destination.items()))
             job_destination['params'] = self.__get_params(destination)
             job_destination['env'] = self.__get_envs(destination)
+            job_destination['resubmit'] = self.__get_resubmits(destination)
             self.destinations[id] = (job_destination,)
             if job_destination.tags is not None:
                 for tag in job_destination.tags:
@@ -420,7 +423,7 @@ class JobConfiguration( object ):
     def __get_envs(self, parent):
         """Parses any child <env> tags in to a dictionary suitable for persistence.
 
-        :param parent: Parent element in which to find child <param> tags.
+        :param parent: Parent element in which to find child <env> tags.
         :type parent: ``xml.etree.ElementTree.Element``
 
         :returns: dict
@@ -433,6 +436,23 @@ class JobConfiguration( object ):
                 execute=param.get('exec'),
                 value=param.text,
                 raw=util.asbool(param.get('raw', 'false'))
+            ) )
+        return rval
+
+    def __get_resubmits(self, parent):
+        """Parses any child <resubmit> tags in to a dictionary suitable for persistence.
+
+        :param parent: Parent element in which to find child <resubmit> tags.
+        :type parent: ``xml.etree.ElementTree.Element``
+
+        :returns: dict
+        """
+        rval = []
+        for resubmit in parent.findall('resubmit'):
+            rval.append( dict(
+                condition=resubmit.get('condition'),
+                destination=resubmit.get('destination'),
+                handler=resubmit.get('handler')
             ) )
         return rval
 
@@ -908,6 +928,17 @@ class JobWrapper( object ):
                 self.sa_session.add( dataset_assoc.dataset )
             job.state = job.states.PAUSED
             self.sa_session.add( job )
+
+    def mark_as_resubmitted( self ):
+        job = self.get_job()
+        self.sa_session.refresh( job )
+        # TODO: Enable this code once a UI for resubmitted datasets exists
+        #for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
+        #    dataset._state = model.Dataset.states.RESUBMITTED
+        #    self.sa_session.add( dataset )
+        job.state = model.Job.states.RESUBMITTED
+        self.sa_session.add( job )
+        self.sa_session.flush()
 
     def change_state( self, state, info=False ):
         job = self.get_job()
