@@ -95,8 +95,16 @@ return Backbone.View.extend(
                 wait    : true
             });
             
+            // title
+            var title = data_def.title;
+            
+            // is unique
+            if (data_def.is_unique) {
+                title += '&nbsp;(all data labels)';
+            }
+            
             // add row to table
-            this.table.add(data_def.title, '25%');
+            this.table.add(title, '25%');
             this.table.add(select.$el);
             this.table.append(id);
             

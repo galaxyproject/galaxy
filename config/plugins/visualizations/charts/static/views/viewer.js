@@ -35,7 +35,7 @@ return Backbone.View.extend(
         picture_button_menu.addMenu({
             id          : 'button-png',
             title       : 'Save as PNG',
-            icon        : 'fa-file-o',
+            icon        : 'fa-file',
             onclick     : function() {
                 self._wait (self.chart, function() {
                     Screenshot.createPNG({
@@ -67,6 +67,34 @@ return Backbone.View.extend(
             }
         });
         
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-png',
+            title       : 'Save as PDF',
+            icon        : 'fa-file-o',
+            onclick     : function() {
+                self.app.modal.show({
+                    title   : 'Send chart data for PDF creation',
+                    body    : 'Galaxy does not provide integrated PDF export scripts. You may click \'Continue\' to create the PDF by using a 3rd party service (https://export.highcharts.com).',
+                    buttons : {
+                        'Close' : function() {self.app.modal.hide()},
+                        'Continue' : function() {
+                            self._wait (self.chart, function() {
+                                self.app.modal.hide();
+                                Screenshot.createPDF({
+                                    $el     : self.viewport_view.$el,
+                                    title   : self.chart.get('title'),
+                                    error   : function(err) {
+                                        self.message.update({ message: err, status: 'danger' });
+                                    }
+                                });
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
         // create portlet
         this.portlet = new Portlet.View({
             icon : 'fa-bar-chart-o',
