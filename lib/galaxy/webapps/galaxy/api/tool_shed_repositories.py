@@ -419,7 +419,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             try:
                 invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_installed_repository( trans.app, repository_id )
                 if invalid_file_tups:
-                    message = tool_util.generate_message_for_invalid_tools( trans,
+                    message = tool_util.generate_message_for_invalid_tools( trans.app,
                                                                             invalid_file_tups,
                                                                             repository,
                                                                             None,

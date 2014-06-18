@@ -1,14 +1,11 @@
-import cStringIO
 import gzip
+import json
 import logging
 import os
-import pkg_resources
 import shutil
-import struct
 import tempfile
 from galaxy.datatypes import checkers
 from galaxy.util import asbool
-from galaxy.util import json
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 import tool_shed.util.shed_util_common as suc
@@ -18,23 +15,10 @@ from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 import tool_shed.repository_types.util as rt_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
-from mercurial import commands
-from mercurial.changegroup import readbundle
-from mercurial.changegroup import readexactly
-
 log = logging.getLogger( __name__ )
 
 UNDESIRABLE_DIRS = [ '.hg', '.svn', '.git', '.cvs' ]
 UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
-
-def bundle_to_json( fh ):
-    """Convert the received HG10xx data stream (a mercurial 1.0 bundle created using hg push from the command line) to a json object."""
-    # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
-    hg_unbundle10_obj = readbundle( fh, None )
-    groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
-    return json.to_json_string( groups, indent=4 )
 
 def check_archive( repository, archive ):
     for member in archive.getmembers():
@@ -62,15 +46,16 @@ def check_archive( repository, archive ):
             return False, message
     return True, ''
 
-def check_file_contents_for_email_alerts( trans ):
+def check_file_contents_for_email_alerts( app ):
     """
     See if any admin users have chosen to receive email alerts when a repository is updated.  If so, the file contents of the update must be
     checked for inappropriate content.
     """
-    admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
-    for repository in trans.sa_session.query( trans.model.Repository ) \
-                                      .filter( trans.model.Repository.table.c.email_alerts != None ):
-        email_alerts = json.from_json_string( repository.email_alerts )
+    sa_session = app.model.context.current
+    admin_users = app.config.get( "admin_users", "" ).split( "," )
+    for repository in sa_session.query( app.model.Repository ) \
+                                .filter( app.model.Repository.table.c.email_alerts != None ):
+        email_alerts = json.loads( repository.email_alerts )
         for user_email in email_alerts:
             if user_email in admin_users:
                 return True
@@ -140,14 +125,14 @@ def handle_bz2( repository, uploaded_file_name ):
     bzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
 
-def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_elem, sub_elem_altered, altered, unpopulate=False ):
+def handle_complex_repository_dependency_elem( app, elem, sub_elem_index, sub_elem, sub_elem_altered, altered, unpopulate=False ):
     """
     Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag that defines
     a complex repository dependency.
     """
     # The received sub_elem looks something like the following:
     # <repository name="package_eigen_2_0" owner="test" prior_installation_required="True" />
-    revised, repository_elem, error_message = handle_repository_dependency_elem( trans, sub_elem, unpopulate=unpopulate )
+    revised, repository_elem, error_message = handle_repository_dependency_elem( app, sub_elem, unpopulate=unpopulate )
     if error_message:
         error_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
     if revised:
@@ -157,13 +142,13 @@ def handle_complex_repository_dependency_elem( trans, elem, sub_elem_index, sub_
             altered = True
     return altered, sub_elem_altered, elem, error_message
 
-def handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert,
-                              commit_message, undesirable_dirs_removed, undesirable_files_removed ):
-    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
+def handle_directory_changes( app, host, username, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
+                              new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed ):
+    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     content_alert_str = ''
     files_to_remove = []
     filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
-    if remove_repo_files_not_in_tar and not repository.is_new( trans.app ):
+    if remove_repo_files_not_in_tar and not repository.is_new( app ):
         # We have a repository that is not new (it contains files), so discover those files that are in the
         # repository, but not in the uploaded archive.
         for root, dirs, files in os.walk( full_path ):
@@ -181,9 +166,10 @@ def handle_directory_changes( trans, repository, full_path, filenames_in_archive
                     if full_name not in filenames_in_archive:
                         files_to_remove.append( full_name )
         for repo_file in files_to_remove:
-            # Remove files in the repository (relative to the upload point) that are not in the uploaded archive.
+            # Remove files in the repository (relative to the upload point) that are not in
+            # the uploaded archive.
             try:
-                commands.remove( repo.ui, repo, repo_file, force=True )
+                hg_util.remove_file( repo.ui, repo, repo_file, force=True )
             except Exception, e:
                 log.debug( "Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str( e ))
                 relative_selected_file = repo_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
@@ -204,23 +190,33 @@ def handle_directory_changes( trans, repository, full_path, filenames_in_archive
                     except OSError, e:
                         # The directory is not empty.
                         pass
-    # See if any admin users have chosen to receive email alerts when a repository is updated.  If so, check every uploaded file to ensure
-    # content is appropriate.
-    check_contents = check_file_contents_for_email_alerts( trans )
+    # See if any admin users have chosen to receive email alerts when a repository is updated.
+    # If so, check every uploaded file to ensure content is appropriate.
+    check_contents = check_file_contents_for_email_alerts( app )
     for filename_in_archive in filenames_in_archive:
         # Check file content to ensure it is appropriate.
         if check_contents and os.path.isfile( filename_in_archive ):
             content_alert_str += check_file_content_for_html_and_images( filename_in_archive )
-        commands.add( repo.ui, repo, filename_in_archive )
+        hg_util.add_changeset( repo.ui, repo, filename_in_archive )
         if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
-            # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
-            # to the in-memory trans.app.tool_data_tables dictionary.
-            error, message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
+            # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
+            # by parsing the file and adding new entries to the in-memory app.tool_data_tables
+            # dictionary.
+            error, message = tool_util.handle_sample_tool_data_table_conf_file( app, filename_in_archive )
             if error:
                 return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
-    commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+    hg_util.commit_changeset( repo.ui,
+                              repo,
+                              full_path_to_changeset=full_path,
+                              username=username,
+                              message=commit_message )
     admin_only = len( repository.downloadable_revisions ) != 1
-    suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
+    suc.handle_email_alerts( app,
+                             host,
+                             repository,
+                             content_alert_str=content_alert_str,
+                             new_repo_alert=new_repo_alert,
+                             admin_only=admin_only )
     return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
 
 def handle_missing_repository_attribute( elem ):
@@ -253,7 +249,7 @@ def handle_gzip( repository, uploaded_file_name ):
     gzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
 
-def handle_repository_dependencies_definition( trans, repository_dependencies_config, unpopulate=False ):
+def handle_repository_dependencies_definition( app, repository_dependencies_config, unpopulate=False ):
     """
     Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag.  Populating will occur when a
     dependency definition file is being uploaded to the repository, while depopulating will occur when the repository is being
@@ -269,7 +265,7 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
         for index, elem in enumerate( root ):
             if elem.tag == 'repository':
                 # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
-                revised, elem, error_message = handle_repository_dependency_elem( trans, elem, unpopulate=unpopulate )
+                revised, elem, error_message = handle_repository_dependency_elem( app, elem, unpopulate=unpopulate )
                 if error_message:
                     error_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
                     return False, None, error_message
@@ -280,7 +276,7 @@ def handle_repository_dependencies_definition( trans, repository_dependencies_co
         return altered, root, error_message
     return False, None, error_message
 
-def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
+def handle_repository_dependency_elem( app, elem, unpopulate=False ):
     """Populate or unpopulate repository tags."""
     # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
     # <repository changeset_revision="xxx" name="package_xorg_macros_1_17_1" owner="test" toolshed="yyy">
@@ -342,10 +338,10 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
         # Populate the changeset_revision attribute with the latest installable metadata revision for the defined repository.
         # We use the latest installable revision instead of the latest metadata revision to ensure that the contents of the
         # revision are valid.
-        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        repository = suc.get_repository_by_name_and_owner( app, name, owner )
         if repository:
-            repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
-            lastest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
+            repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
+            lastest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( app, repository, repo )
             if lastest_installable_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                 elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
                 revised = True
@@ -356,7 +352,7 @@ def handle_repository_dependency_elem( trans, elem, unpopulate=False ):
             error_message = 'Unable to locate repository with name %s and owner %s.  ' % ( str( name ), str( owner ) )
     return revised, elem, error_message
 
-def handle_repository_dependency_sub_elem( trans, package_altered, altered, actions_elem, action_index, action_elem, unpopulate=False ):
+def handle_repository_dependency_sub_elem( app, package_altered, altered, actions_elem, action_index, action_elem, unpopulate=False ):
     """
     Populate or unpopulate the toolshed and changeset_revision attributes for each of the following tag sets.
     <action type="set_environment_for_install">
@@ -367,7 +363,7 @@ def handle_repository_dependency_sub_elem( trans, package_altered, altered, acti
     for repo_index, repo_elem in enumerate( action_elem ):
         # Make sure to skip comments and tags that are not <repository>.
         if repo_elem.tag == 'repository':
-            revised, repository_elem, message = handle_repository_dependency_elem( trans, repo_elem, unpopulate=unpopulate )
+            revised, repository_elem, message = handle_repository_dependency_elem( app, repo_elem, unpopulate=unpopulate )
             if message:
                 error_message += 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % message
             if revised:
@@ -379,7 +375,7 @@ def handle_repository_dependency_sub_elem( trans, package_altered, altered, acti
         actions_elem[ action_index ] = action_elem
     return package_altered, altered, actions_elem, error_message
 
-def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopulate=False ):
+def handle_tool_dependencies_definition( app, tool_dependencies_config, unpopulate=False ):
     """
     Populate or unpopulate the tooshed and changeset_revision attributes of each <repository>
     tag defined within a tool_dependencies.xml file.
@@ -401,7 +397,7 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                     if package_elem.tag == 'repository':
                         # We have a complex repository dependency.
                         altered, package_altered, root_elem, message = \
-                            handle_complex_repository_dependency_elem( trans,
+                            handle_complex_repository_dependency_elem( app,
                                                                        root_elem,
                                                                        package_index,
                                                                        package_elem,
@@ -440,7 +436,7 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                                     if last_actions_elem_package_elem.tag == 'repository':
                                                         # We have a complex repository dependency.
                                                         altered, last_actions_package_altered, last_actions_elem, message = \
-                                                            handle_complex_repository_dependency_elem( trans,
+                                                            handle_complex_repository_dependency_elem( app,
                                                                                                        last_actions_elem,
                                                                                                        last_actions_elem_package_index,
                                                                                                        last_actions_elem_package_elem,
@@ -456,7 +452,7 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                                                 # Inspect the sub elements of last_actions_elem to locate all <repository> tags and
                                                 # populate them with toolshed and changeset_revision attributes if necessary.
                                                 last_actions_package_altered, altered, last_actions_elem, message = \
-                                                    handle_repository_dependency_sub_elem( trans,
+                                                    handle_repository_dependency_sub_elem( app,
                                                                                            last_actions_package_altered,
                                                                                            altered,
                                                                                            actions_group_elem,
@@ -468,23 +464,25 @@ def handle_tool_dependencies_definition( trans, tool_dependencies_config, unpopu
                             elif actions_elem.tag == 'actions':
                                 # We are not in an <actions_group> tag set, so we must be in an <actions> tag set.
                                 for action_index, action_elem in enumerate( actions_elem ):
-                                    # Inspect the sub elements of last_actions_elem to locate all <repository> tags and populate them with
-                                    # toolshed and changeset_revision attributes if necessary.
-                                    package_altered, altered, actions_elem, message = handle_repository_dependency_sub_elem( trans,
-                                                                                                                             package_altered,
-                                                                                                                             altered,
-                                                                                                                             actions_elem,
-                                                                                                                             action_index,
-                                                                                                                             action_elem,
-                                                                                                                             unpopulate=unpopulate )
+                                    # Inspect the sub elements of last_actions_elem to locate all <repository> tags
+                                    # and populate them with toolshed and changeset_revision attributes if necessary.
+                                    package_altered, altered, actions_elem, message = \
+                                        handle_repository_dependency_sub_elem( app,
+                                                                               package_altered,
+                                                                               altered,
+                                                                               actions_elem,
+                                                                               action_index,
+                                                                               action_elem,
+                                                                               unpopulate=unpopulate )
                                     if message:
                                         error_message += message
                             else:
                                 package_name = root_elem.get( 'name', '' )
                                 package_version = root_elem.get( 'version', '' )
-                                error_message += 'Version %s of the %s package cannot be installed because ' % ( str( package_version ), str( package_name ) )
-                                error_message += 'the recipe for installing the package is missing either an &lt;actions&gt; tag set or an &lt;actions_group&gt; '
-                                error_message += 'tag set.'
+                                error_message += 'Version %s of the %s package cannot be installed because ' % \
+                                    ( str( package_version ), str( package_name ) )
+                                error_message += 'the recipe for installing the package is missing either an '
+                                error_message += '&lt;actions&gt; tag set or an &lt;actions_group&gt; tag set.'
                             if package_altered:
                                 package_elem[ actions_index ] = actions_elem
             if package_altered:
@@ -534,62 +532,3 @@ def uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=F
     if isbz2:
         handle_bz2( repository, uploaded_file_name )
         return uploaded_file_filename.rstrip( '.bz2' )
-
-def unpack_chunks( hg_unbundle10_obj ):
-    """
-    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which
-    is created when a changeset that is pushed to a Tool Shed repository using hg push from the command line
-    is read using readbundle.
-    """
-    while True:
-        length, = struct.unpack( '>l', readexactly( hg_unbundle10_obj, 4 ) )
-        if length <= 4:
-            # We found a "null chunk", which ends the group.
-            break
-        if length < 84:
-            raise Exception( "negative data length" )
-        node, p1, p2, cs = struct.unpack( '20s20s20s20s', readexactly( hg_unbundle10_obj, 80 ) )
-        yield { 'node': node.encode( 'hex' ),
-                'p1': p1.encode( 'hex' ),
-                'p2': p2.encode( 'hex' ),
-                'cs': cs.encode( 'hex' ),
-                'data': [ patch for patch in unpack_patches( hg_unbundle10_obj, length - 84 ) ] }
-
-def unpack_groups( hg_unbundle10_obj ):
-    """
-    This method provides a generator of parsed groups from a mercurial unbundle10 object which is
-    created when a changeset that is pushed to a Tool Shed repository using hg push from the command
-    line is read using readbundle.
-    """
-    # Process the changelog group.
-    yield [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ]
-    # Process the manifest group.
-    yield [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ]
-    while True:
-        length, = struct.unpack( '>l', readexactly( hg_unbundle10_obj, 4 ) )
-        if length <= 4:
-            # We found a "null meta chunk", which ends the changegroup.
-            break
-        filename = readexactly( hg_unbundle10_obj, length-4 ).encode( 'string_escape' )
-        # Process the file group.
-        yield ( filename, [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ] )
-
-def unpack_patches( hg_unbundle10_obj, remaining ):
-    """
-    This method provides a generator of patches from the data field in a chunk. As there is no delimiter
-    for this data field, a length argument is required.
-    """
-    while remaining >= 12:
-        start, end, blocklen = struct.unpack( '>lll', readexactly( hg_unbundle10_obj, 12 ) )
-        remaining -= 12
-        if blocklen > remaining:
-            raise Exception( "unexpected end of patch stream" )
-        block = readexactly( hg_unbundle10_obj, blocklen )
-        remaining -= blocklen
-        yield { 'start': start,
-                'end': end,
-                'blocklen': blocklen,
-                'block': block.encode( 'string_escape' ) }
-    if remaining > 0:
-        print remaining
-        raise Exception( "unexpected end of patch stream" )

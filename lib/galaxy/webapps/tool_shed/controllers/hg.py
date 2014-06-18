@@ -45,7 +45,7 @@ class HgController( BaseUIController ):
                         repo = hg.repository( ui.ui(), repository.repo_path( trans.app ) )
                         update_repository( repo, ctx_rev=None )
                         # Set metadata using the repository files on disk.
-                        error_message, status = set_repository_metadata( trans, repository )
+                        error_message, status = set_repository_metadata( trans.app, trans.request.host, trans.user, repository )
                         if status == 'ok' and error_message:
                             log.debug( "Successfully reset metadata on repository %s owned by %s, but encountered problem: %s" % \
                                        ( str( repository.name ), str( repository.user.username ), error_message ) )

@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import struct
 
 from datetime import datetime
 from time import gmtime
@@ -14,12 +16,27 @@ from mercurial import cmdutil
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
+from mercurial.changegroup import readbundle
+from mercurial.changegroup import readexactly
 
 from tool_shed.util import basic_util
 
 log = logging.getLogger( __name__ )
 
 INITIAL_CHANGELOG_HASH = '000000000000'
+
+def add_changeset( repo_ui, repo, path_to_filename_in_archive ):
+    commands.add( repo_ui, repo, path_to_filename_in_archive )
+
+def bundle_to_json( fh ):
+    """
+    Convert the received HG10xx data stream (a mercurial 1.0 bundle created using hg push from the
+    command line) to a json object.
+    """
+    # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
+    hg_unbundle10_obj = readbundle( fh, None )
+    groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
+    return json.dumps( groups, indent=4 )
 
 def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
     """
@@ -38,6 +55,9 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
         error_message = 'Error cloning repository: %s' % str( e )
         log.debug( error_message )
         return False, error_message
+
+def commit_changeset( repo_ui, repo, full_path_to_changeset, username, message ):
+    commands.commit( repo_ui, repo, full_path_to_changeset, user=username, message=message )
 
 def copy_file_from_manifest( repo, ctx, filename, dir ):
     """
@@ -268,6 +288,9 @@ def pull_repository( repo, repository_clone_url, ctx_rev ):
     """Pull changes from a remote repository to a local one."""
     commands.pull( get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
 
+def remove_file( repo_ui, repo, selected_file, force=True ):
+    commands.remove( repo_ui, repo, selected_file, force=force )
+
 def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision,
@@ -299,6 +322,65 @@ def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revi
     included_upper_bounds_changeset_revision.
     """
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
+
+def unpack_chunks( hg_unbundle10_obj ):
+    """
+    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which
+    is created when a changeset that is pushed to a Tool Shed repository using hg push from the command line
+    is read using readbundle.
+    """
+    while True:
+        length, = struct.unpack( '>l', readexactly( hg_unbundle10_obj, 4 ) )
+        if length <= 4:
+            # We found a "null chunk", which ends the group.
+            break
+        if length < 84:
+            raise Exception( "negative data length" )
+        node, p1, p2, cs = struct.unpack( '20s20s20s20s', readexactly( hg_unbundle10_obj, 80 ) )
+        yield { 'node': node.encode( 'hex' ),
+                'p1': p1.encode( 'hex' ),
+                'p2': p2.encode( 'hex' ),
+                'cs': cs.encode( 'hex' ),
+                'data': [ patch for patch in unpack_patches( hg_unbundle10_obj, length - 84 ) ] }
+
+def unpack_groups( hg_unbundle10_obj ):
+    """
+    This method provides a generator of parsed groups from a mercurial unbundle10 object which is
+    created when a changeset that is pushed to a Tool Shed repository using hg push from the command
+    line is read using readbundle.
+    """
+    # Process the changelog group.
+    yield [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ]
+    # Process the manifest group.
+    yield [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ]
+    while True:
+        length, = struct.unpack( '>l', readexactly( hg_unbundle10_obj, 4 ) )
+        if length <= 4:
+            # We found a "null meta chunk", which ends the changegroup.
+            break
+        filename = readexactly( hg_unbundle10_obj, length-4 ).encode( 'string_escape' )
+        # Process the file group.
+        yield ( filename, [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ] )
+
+def unpack_patches( hg_unbundle10_obj, remaining ):
+    """
+    This method provides a generator of patches from the data field in a chunk. As there is no delimiter
+    for this data field, a length argument is required.
+    """
+    while remaining >= 12:
+        start, end, blocklen = struct.unpack( '>lll', readexactly( hg_unbundle10_obj, 12 ) )
+        remaining -= 12
+        if blocklen > remaining:
+            raise Exception( "unexpected end of patch stream" )
+        block = readexactly( hg_unbundle10_obj, blocklen )
+        remaining -= blocklen
+        yield { 'start': start,
+                'end': end,
+                'blocklen': blocklen,
+                'block': block.encode( 'string_escape' ) }
+    if remaining > 0:
+        print remaining
+        raise Exception( "unexpected end of patch stream" )
 
 def update_repository( repo, ctx_rev=None ):
     """

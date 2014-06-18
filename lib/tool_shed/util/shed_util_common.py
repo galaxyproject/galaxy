@@ -1231,7 +1231,7 @@ def get_user_by_username( app, username ):
     except Exception, e:
         return None
 
-def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=False, admin_only=False ):
+def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_alert=False, admin_only=False ):
     """
     There are 2 complementary features that enable a tool shed user to receive email notification:
     1. Within User Preferences, they can elect to receive email when the first (or first valid)
@@ -1254,17 +1254,18 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
        user is not an admin user, the email will not include any information about both HTML and image content
        that was included in the change set.
     """
-    repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
+    sa_session = app.model.context.current
+    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None )
-    smtp_server = trans.app.config.smtp_server
+    smtp_server = app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):
         # Send email alert to users that want them.
-        if trans.app.config.email_from is not None:
-            email_from = trans.app.config.email_from
-        elif trans.request.host.split( ':' )[0] == 'localhost':
+        if app.config.email_from is not None:
+            email_from = app.config.email_from
+        elif host.split( ':' )[0] == 'localhost':
             email_from = 'galaxy-no-reply@' + socket.getfqdn()
         else:
-            email_from = 'galaxy-no-reply@' + trans.request.host.split( ':' )[0]
+            email_from = 'galaxy-no-reply@' + host.split( ':' )[0]
         tip_changeset = repo.changelog.tip()
         ctx = repo.changectx( tip_changeset )
         try:
@@ -1278,7 +1279,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
         else:
             template = email_alert_template
         display_date = hg_util.get_readable_ctx_date( ctx )
-        admin_body = string.Template( template ).safe_substitute( host=trans.request.host,
+        admin_body = string.Template( template ).safe_substitute( host=host,
                                                                   sharable_link=sharable_link,
                                                                   repository_name=repository.name,
                                                                   revision='%s:%s' %( str( ctx.rev() ), ctx ),
@@ -1286,7 +1287,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                                                                   description=ctx.description(),
                                                                   username=username,
                                                                   content_alert_str=content_alert_str )
-        body = string.Template( template ).safe_substitute( host=trans.request.host,
+        body = string.Template( template ).safe_substitute( host=host,
                                                             sharable_link=sharable_link,
                                                             repository_name=repository.name,
                                                             revision='%s:%s' %( str( ctx.rev() ), ctx ),
@@ -1294,15 +1295,15 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                                                             description=ctx.description(),
                                                             username=username,
                                                             content_alert_str='' )
-        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+        admin_users = app.config.get( "admin_users", "" ).split( "," )
         frm = email_from
         if new_repo_alert:
             subject = "Galaxy tool shed alert for new repository named %s" % str( repository.name )
             subject = subject[ :80 ]
             email_alerts = []
-            for user in trans.sa_session.query( trans.model.User ) \
-                                        .filter( and_( trans.model.User.table.c.deleted == False,
-                                                       trans.model.User.table.c.new_repo_alert == True ) ):
+            for user in sa_session.query( app.model.User ) \
+                                  .filter( and_( app.model.User.table.c.deleted == False,
+                                                 app.model.User.table.c.new_repo_alert == True ) ):
                 if admin_only:
                     if user.email in admin_users:
                         email_alerts.append( user.email )
@@ -1316,9 +1317,9 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             # Send it
             try:
                 if to in admin_users:
-                    util.send_mail( frm, to, subject, admin_body, trans.app.config )
+                    util.send_mail( frm, to, subject, admin_body, app.config )
                 else:
-                    util.send_mail( frm, to, subject, body, trans.app.config )
+                    util.send_mail( frm, to, subject, body, app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
 

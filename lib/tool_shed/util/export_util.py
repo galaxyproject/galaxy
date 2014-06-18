@@ -151,7 +151,7 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                 if name == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
                     altered, root_elem, error_message = \
-                        commit_util.handle_repository_dependencies_definition( trans, full_path, unpopulate=True )
+                        commit_util.handle_repository_dependencies_definition( trans.app, full_path, unpopulate=True )
                     if error_message:
                         return None, error_message
                     if altered:
@@ -160,7 +160,7 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                 elif name == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                     # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
                     altered, root_elem, error_message = \
-                        commit_util.handle_tool_dependencies_definition( trans, full_path, unpopulate=True )
+                        commit_util.handle_tool_dependencies_definition( trans.app, full_path, unpopulate=True )
                     if error_message:
                         return None, error_message
                     if altered:

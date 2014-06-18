@@ -250,8 +250,8 @@ class RepositoriesController( BaseAPIController ):
             return {}
         capsule_dict[ 'tar_archive' ] = tar_archive
         capsule_dict[ 'capsule_file_name' ] = capsule_file_name
-        capsule_dict = import_util.extract_capsule_files( trans, **capsule_dict )
-        capsule_dict = import_util.validate_capsule( trans, **capsule_dict )
+        capsule_dict = import_util.extract_capsule_files( **capsule_dict )
+        capsule_dict = import_util.validate_capsule( **capsule_dict )
         status = capsule_dict.get( 'status', 'error' )
         if status == 'error':
             log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
@@ -268,7 +268,10 @@ class RepositoriesController( BaseAPIController ):
         # The manifest.xml file has already been validated, so no error_message should be returned here.
         repository_info_dicts, error_message = import_util.get_repository_info_from_manifest( manifest_file_path )
         # Determine the status for each exported repository archive contained within the capsule.
-        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans, repository_info_dicts )
+        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans.app,
+                                                                                         trans.user,
+                                                                                         trans.user_is_admin(),
+                                                                                         repository_info_dicts )
         # Generate a list of repository name / import results message tuples for display after the capsule is imported.
         import_results_tups = []
         # Only create repositories that do not yet exist and that the current user is authorized to create.  The
@@ -277,11 +280,12 @@ class RepositoriesController( BaseAPIController ):
             # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
             repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
             repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
-            import_results_tups = \
-                repository_maintenance_util.create_repository_and_import_archive( trans,
-                                                                                  repository_status_info_dict,
-                                                                                  import_results_tups )
-        import_util.check_status_and_reset_downloadable( trans, import_results_tups )
+            import_results_tups = import_util.create_repository_and_import_archive( trans.app,
+                                                                                    trans.request.host,
+                                                                                    trans.user,
+                                                                                    repository_status_info_dict,
+                                                                                    import_results_tups )
+        import_util.check_status_and_reset_downloadable( trans.app, import_results_tups )
         basic_util.remove_dir( file_path )
         # NOTE: the order of installation is defined in import_results_tups, but order will be lost
         # when transferred to return_dict.
@@ -413,15 +417,22 @@ class RepositoriesController( BaseAPIController ):
             log.debug( "Resetting metadata on repository %s" % str( repository.name ) )
             repository_id = trans.security.encode_id( repository.id )
             try:
-                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
+                invalid_file_tups, metadata_dict = \
+                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
                 if invalid_file_tups:
-                    message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
+                    message = tool_util.generate_message_for_invalid_tools( trans.app,
+                                                                            invalid_file_tups,
+                                                                            repository,
+                                                                            None,
+                                                                            as_html=False )
                     results[ 'unsuccessful_count' ] += 1
                 else:
-                    message = "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), str( repository.user.username ) )
+                    message = "Successfully reset metadata on repository %s owned by %s" % \
+                        ( str( repository.name ), str( repository.user.username ) )
                     results[ 'successful_count' ] += 1
             except Exception, e:
-                message = "Error resetting metadata on repository %s owned by %s: %s" % ( str( repository.name ), str( repository.user.username ), str( e ) )
+                message = "Error resetting metadata on repository %s owned by %s: %s" % \
+                    ( str( repository.name ), str( repository.user.username ), str( e ) )
                 results[ 'unsuccessful_count' ] += 1
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
@@ -486,14 +497,21 @@ class RepositoriesController( BaseAPIController ):
             results = dict( start_time=start_time,
                             repository_status=[] )
             try:
-                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans,
-                                                                                                                trans.security.encode_id( repository.id ) )
+                invalid_file_tups, metadata_dict = \
+                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans,
+                                                                                 trans.security.encode_id( repository.id ) )
                 if invalid_file_tups:
-                    message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
+                    message = tool_util.generate_message_for_invalid_tools( trans.app,
+                                                                            invalid_file_tups,
+                                                                            repository,
+                                                                            None,
+                                                                            as_html=False )
                 else:
-                    message = "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), str( repository.user.username ) )
+                    message = "Successfully reset metadata on repository %s owned by %s" % \
+                        ( str( repository.name ), str( repository.user.username ) )
             except Exception, e:
-                message = "Error resetting metadata on repository %s owned by %s: %s" % ( str( repository.name ), str( repository.user.username ), str( e ) )
+                message = "Error resetting metadata on repository %s owned by %s: %s" % \
+                    ( str( repository.name ), str( repository.user.username ), str( e ) )
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
             return results

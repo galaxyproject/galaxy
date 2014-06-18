@@ -41,7 +41,6 @@ import tool_shed.repository_types.util as rt_util
 from galaxy import eggs
 eggs.require( 'mercurial' )
 
-from mercurial import commands
 from mercurial import mdiff
 from mercurial import patch
 
@@ -849,7 +848,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
                 repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
-                repository_metadata = metadata_util.get_latest_repository_metadata( trans, repository.id, downloadable=True )
+                repository_metadata = metadata_util.get_latest_repository_metadata( trans.app, repository.id, downloadable=True )
                 latest_installable_changeset_revision = repository_metadata.changeset_revision
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
@@ -1017,7 +1016,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if error:
                 status = 'error'
             else:
-                repository, message = repository_maintenance_util.create_repository( trans,
+                repository, message = repository_maintenance_util.create_repository( trans.app,
                                                                                      name,
                                                                                      repository_type,
                                                                                      description,
@@ -1974,7 +1973,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # The manifest.xml file has already been validated, so no error_message should be returned here.
         repository_info_dicts, error_message = import_util.get_repository_info_from_manifest( manifest_file_path )
         # Determine the status for each exported repository archive contained within the capsule.
-        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans, repository_info_dicts )
+        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans.app,
+                                                                                         trans.user,
+                                                                                         trans.user_is_admin(),
+                                                                                         repository_info_dicts )
         if 'import_capsule_button' in kwd:
             # Generate a list of repository name / import results message tuples for display after the capsule is imported.
             import_results_tups = []
@@ -1984,11 +1986,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
                 repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
                 repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
-                import_results_tups = \
-                    repository_maintenance_util.create_repository_and_import_archive( trans,
-                                                                                      repository_status_info_dict,
-                                                                                      import_results_tups )
-            import_util.check_status_and_reset_downloadable( trans, import_results_tups )
+                import_results_tups = import_util.create_repository_and_import_archive( trans.app,
+                                                                                        trans.request.host,
+                                                                                        trans.user,
+                                                                                        repository_status_info_dict,
+                                                                                        import_results_tups )
+            import_util.check_status_and_reset_downloadable( trans.app, import_results_tups )
             basic_util.remove_dir( file_path )
             return trans.fill_template( '/webapps/tool_shed/repository/import_capsule_results.mako',
                                         export_info_dict=export_info_dict,
@@ -2099,7 +2102,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                    tool,
                                                                    [] )
         if invalid_file_tups:
-            message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, {}, as_html=True, displaying_invalid_tool=True )
+            message = tool_util.generate_message_for_invalid_tools( trans.app,
+                                                                    invalid_file_tups,
+                                                                    repository,
+                                                                    {},
+                                                                    as_html=True,
+                                                                    displaying_invalid_tool=True )
         elif error_message:
             message = error_message
         try:
@@ -2459,7 +2467,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     if repository_metadata:
                         metadata = repository_metadata.metadata
         role = repository.admin_role
-        associations_dict = repository_maintenance_util.handle_role_associations( trans, role, repository, **kwd )
+        associations_dict = repository_maintenance_util.handle_role_associations( trans.app,
+                                                                                  role,
+                                                                                  repository,
+                                                                                  **kwd )
         in_users = associations_dict.get( 'in_users', [] )
         out_users = associations_dict.get( 'out_users', [] )
         in_groups = associations_dict.get( 'in_groups', [] )
@@ -2693,7 +2704,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, id, **kwd )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans.app, id )
-            message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
+            message = tool_util.generate_message_for_invalid_tools( trans.app, invalid_file_tups, repository, metadata_dict )
             status = 'error'
         else:
             message = "All repository metadata has been reset.  "
@@ -2733,7 +2744,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 tip = repository.tip( trans.app )
                 for selected_file in selected_files_to_delete:
                     try:
-                        commands.remove( repo.ui, repo, selected_file, force=True )
+                        hg_util.remove_file( repo.ui, repo, selected_file, force=True )
                     except Exception, e:
                         log.debug( "Error removing the following file using the mercurial API:\n %s" % str( selected_file ) )
                         log.debug( "The error was: %s" % str( e ))
@@ -2759,19 +2770,27 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # Commit the change set.
                 if not commit_message:
                     commit_message = 'Deleted selected files'
-                commands.commit( repo.ui, repo, repo_dir, user=trans.user.username, message=commit_message )
-                suc.handle_email_alerts( trans, repository )
+                hg_util.commit_changeset( repo.ui,
+                                          repo,
+                                          full_path_to_changeset=repo_dir,
+                                          username=trans.user.username,
+                                          message=commit_message )
+                suc.handle_email_alerts( trans.app, trans.request.host, repository )
                 # Update the repository files for browsing.
                 hg_util.update_repository( repo )
                 # Get the new repository tip.
                 if tip == repository.tip( trans.app ):
                     message += 'No changes to repository.  '
-                    kwd[ 'message' ] = message
-
                 else:
-                    message += 'The selected files were deleted from the repository.  '
-                    kwd[ 'message' ] = message
-                    metadata_util.set_repository_metadata_due_to_new_tip( trans, repository, **kwd )
+                    status, error_message = metadata_util.set_repository_metadata_due_to_new_tip( trans.app,
+                                                                                                  trans.request.host,
+                                                                                                  trans.user,
+                                                                                                  repository,
+                                                                                                  **kwd )
+                    if error_message:
+                        message = error_message
+                    else:
+                        message += 'The selected files were deleted from the repository.  '
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
@@ -3061,13 +3080,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         status = kwd.get( 'status', 'done' )
         url = kwd.get( 'url', '' )
         if 'upload_capsule_button' in kwd:
-            capsule_dict = import_util.upload_capsule( trans, **kwd )
+            capsule_dict = import_util.upload_capsule( **kwd )
             status = capsule_dict.get( 'status', 'error' )
             if status == 'error':
                 message = capsule_dict.get( 'error_message', '' )
             else:
-                capsule_dict = import_util.extract_capsule_files( trans, **capsule_dict )
-                capsule_dict = import_util.validate_capsule( trans, **capsule_dict )
+                capsule_dict = import_util.extract_capsule_files( **capsule_dict )
+                capsule_dict = import_util.validate_capsule( **capsule_dict )
                 status = capsule_dict.get( 'status', 'error' )
                 if status == 'ok':
                     return trans.response.send_redirect( web.url_for( controller='repository',

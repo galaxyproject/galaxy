@@ -5,50 +5,117 @@ import tarfile
 import tempfile
 import urllib
 from galaxy import util
-from galaxy.datatypes import checkers
 from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
+from tool_shed.util import repository_maintenance_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
 import tool_shed.repository_types.util as rt_util
 
 log = logging.getLogger( __name__ )
 
-def check_status_and_reset_downloadable( trans, import_results_tups ):
+def check_status_and_reset_downloadable( app, import_results_tups ):
     """Check the status of each imported repository and set downloadable to False if errors."""
+    sa_session = app.model.context.current
     flush = False
     for import_results_tup in import_results_tups:
         ok, name_owner, message = import_results_tup
         name, owner = name_owner
         if not ok:
-            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+            repository = suc.get_repository_by_name_and_owner( app, name, owner )
             if repository is not None:
                 # Do not allow the repository to be automatically installed if population resulted in errors.
-                tip_changeset_revision = repository.tip( trans.app )
-                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
-                                                                                         trans.security.encode_id( repository.id ),
+                tip_changeset_revision = repository.tip( app )
+                repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
+                                                                                         app.security.encode_id( repository.id ),
                                                                                          tip_changeset_revision )
                 if repository_metadata:
                     if repository_metadata.downloadable:
                         repository_metadata.downloadable = False
-                        trans.sa_session.add( repository_metadata )
+                        sa_session.add( repository_metadata )
                         if not flush:
                             flush = True
                     # Do not allow dependent repository revisions to be automatically installed if population
                     # resulted in errors.
-                    dependent_downloadable_revisions = suc.get_dependent_downloadable_revisions( trans.app, repository_metadata )
+                    dependent_downloadable_revisions = suc.get_dependent_downloadable_revisions( app, repository_metadata )
                     for dependent_downloadable_revision in dependent_downloadable_revisions:
                         if dependent_downloadable_revision.downloadable:
                             dependent_downloadable_revision.downloadable = False
-                            trans.sa_session.add( dependent_downloadable_revision )
+                            sa_session.add( dependent_downloadable_revision )
                             if not flush:
                                 flush = True
     if flush:
-        trans.sa_session.flush()
+        sa_session.flush()
 
-def extract_capsule_files( trans, **kwd ):
+def create_repository_and_import_archive( app, host, user, repository_archive_dict, import_results_tups ):
+    """
+    Create a new repository in the tool shed and populate it with the contents of a gzip compressed
+    tar archive that was exported as part or all of the contents of a capsule.
+    """
+    results_message = ''
+    name = repository_archive_dict.get( 'name', None )
+    username = repository_archive_dict.get( 'owner', None )
+    if name is None or username is None:
+        ok = False
+        results_message += 'Import failed: required repository name <b>%s</b> or owner <b>%s</b> is missing.' % \
+            ( str( name ), str( username ))
+        import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
+    else:
+        status = repository_archive_dict.get( 'status', None )
+        if status is None:
+            # The repository does not yet exist in this Tool Shed and the current user is authorized to import
+            # the current archive file.
+            type = repository_archive_dict.get( 'type', 'unrestricted' )
+            description = repository_archive_dict.get( 'description', '' )
+            long_description = repository_archive_dict.get( 'long_description', '' )
+            # The owner entry in the repository_archive_dict is the public username of the user associated with
+            # the exported repository archive.
+            user = suc.get_user_by_username( app, username )
+            if user is None:
+                ok = False
+                results_message += 'Import failed: repository owner <b>%s</b> does not have an account in this Tool Shed.' % str( username )
+                import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
+            else:
+                user_id = user.id
+                # The categories entry in the repository_archive_dict is a list of category names.  If a name does not
+                # exist in the current Tool Shed, the category will not be created, so it will not be associated with
+                # the repository.
+                category_ids = []
+                category_names = repository_archive_dict.get( 'category_names', [] )
+                for category_name in category_names:
+                    category = suc.get_category_by_name( app, category_name )
+                    if category is None:
+                        results_message += 'This Tool Shed does not have the category <b>%s</b> so it ' % str( category_name )
+                        results_message += 'will not be associated with this repository.'
+                    else:
+                        category_ids.append( app.security.encode_id( category.id ) )
+                # Create the repository record in the database.
+                repository, create_message = repository_maintenance_util.create_repository( app,
+                                                                                            name,
+                                                                                            type,
+                                                                                            description,
+                                                                                            long_description,
+                                                                                            user_id=user_id,
+                                                                                            category_ids=category_ids )
+                if create_message:
+                    results_message += create_message
+                # Populate the new repository with the contents of exported repository archive.
+                results_dict = import_repository_archive( app, host, user, repository, repository_archive_dict )
+                ok = results_dict.get( 'ok', False )
+                error_message = results_dict.get( 'error_message', '' )
+                if error_message:
+                    results_message += error_message
+                import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
+        else:
+            # The repository either already exists in this Tool Shed or the current user is not authorized to create it.
+            ok = True
+            results_message += 'Import not necessary: repository status for this Tool Shed is: %s.' % str( status )
+            import_results_tups.append( ( ok, ( str( name ), str( username ) ), results_message ) )
+    return import_results_tups
+
+def extract_capsule_files( **kwd ):
     """Extract the uploaded capsule archive into a temporary location for inspection, validation and potential import."""
     return_dict = {}
     tar_archive = kwd.get( 'tar_archive', None )
@@ -168,7 +235,7 @@ def get_repository_info_from_manifest( manifest_file_path ):
         repository_info_dicts.append( repository_info_dict )
     return repository_info_dicts, error_message
 
-def get_repository_status_from_tool_shed( trans, repository_info_dicts ):
+def get_repository_status_from_tool_shed( app, user, user_is_admin, repository_info_dicts ):
     """
     For each exported repository archive contained in the capsule, inspect the Tool Shed to see if that repository already
     exists or if the current user is authorized to create the repository, and set a status appropriately.  If repository
@@ -179,7 +246,7 @@ def get_repository_status_from_tool_shed( trans, repository_info_dicts ):
     """
     repository_status_info_dicts = []
     for repository_info_dict in repository_info_dicts:
-        repository = suc.get_repository_by_name_and_owner( trans.app, repository_info_dict[ 'name' ], repository_info_dict[ 'owner' ] )
+        repository = suc.get_repository_by_name_and_owner( app, repository_info_dict[ 'name' ], repository_info_dict[ 'owner' ] )
         if repository:
             if repository.deleted:
                 repository_info_dict[ 'status' ] = 'Exists, deleted'
@@ -189,16 +256,16 @@ def get_repository_status_from_tool_shed( trans, repository_info_dicts ):
                 repository_info_dict[ 'status' ] = 'Exists'
         else:
             # No repository with the specified name and owner currently exists, so make sure the current user can create one.
-            if trans.user_is_admin():
+            if user_is_admin:
                 repository_info_dict[ 'status' ] = None
-            elif trans.app.security_agent.user_can_import_repository_archive( trans.user, repository_info_dict[ 'owner' ] ):
+            elif app.security_agent.user_can_import_repository_archive( user, repository_info_dict[ 'owner' ] ):
                 repository_info_dict[ 'status' ] = None
             else:
                 repository_info_dict[ 'status' ] = 'Not authorized to import'
         repository_status_info_dicts.append( repository_info_dict )
     return repository_status_info_dicts
 
-def import_repository_archive( trans, repository, repository_archive_dict ):
+def import_repository_archive( app, host, user, repository, repository_archive_dict ):
     """Import a repository archive contained within a repository capsule."""
     archive_file_name = repository_archive_dict.get( 'archive_file_name', None )
     capsule_file_name = repository_archive_dict[ 'capsule_file_name' ]
@@ -207,8 +274,8 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
     results_dict = dict( ok=True, error_message='' )
     archive_file_path = os.path.join( file_path, archive_file_name )
     archive = tarfile.open( archive_file_path, 'r:*' )
-    repo_dir = repository.repo_path( trans.app )
-    repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
+    repo_dir = repository.repo_path( app )
+    repo = hg_util.get_repo_for_repository( app, repository=None, repo_path=repo_dir, create=False )
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
     ok, error_message = commit_util.check_archive( repository, archive )
@@ -237,9 +304,8 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
             uploaded_file_name = os.path.join( full_path, filename )
             if os.path.split( uploaded_file_name )[ -1 ] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                 # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
-                                                                                                           uploaded_file_name,
-                                                                                                           unpopulate=False )
+                altered, root_elem, error_message = \
+                    commit_util.handle_repository_dependencies_definition( app, uploaded_file_name, unpopulate=False )
                 if error_message:
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message
@@ -248,7 +314,7 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
                     shutil.move( tmp_filename, uploaded_file_name )
             elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                 # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( app, uploaded_file_name )
                 if error_message:
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message
@@ -261,7 +327,9 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
         # Since the repository is new, the following must be False.
         remove_repo_files_not_in_tar = False
         ok, error_message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
-            commit_util.handle_directory_changes( trans,
+            commit_util.handle_directory_changes( app,
+                                                  host,
+                                                  user.username,
                                                   repository,
                                                   full_path,
                                                   filenames_in_archive,
@@ -274,9 +342,14 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
             results_dict[ 'ok' ] = False
             results_dict[ 'error_message' ] += error_message
         try:
-            metadata_util.set_repository_metadata_due_to_new_tip( trans,
-                                                                  repository,
-                                                                  content_alert_str=content_alert_str )
+            status, error_message = metadata_util.set_repository_metadata_due_to_new_tip( app,
+                                                                                          host,
+                                                                                          user,
+                                                                                          repository,
+                                                                                          content_alert_str=content_alert_str )
+            if error_message:
+                results_dict[ 'ok' ] = False
+                results_dict[ 'error_message' ] += error_message
         except Exception, e:
             log.debug( "Error setting metadata on repository %s created from imported archive %s: %s" % \
                 ( str( repository.name ), str( archive_file_name ), str( e ) ) )
@@ -286,7 +359,7 @@ def import_repository_archive( trans, repository, repository_archive_dict ):
         results_dict[ 'error_message' ] += error_message
     return results_dict
 
-def upload_capsule( trans, **kwd ):
+def upload_capsule( **kwd ):
     """Upload and prepare an exported repository capsule for validation."""
     file_data = kwd.get( 'file_data', '' )
     url = kwd.get( 'url', '' )
@@ -349,7 +422,7 @@ def upload_capsule( trans, **kwd ):
         return return_dict
     return return_dict
 
-def validate_capsule( trans, **kwd ):
+def validate_capsule( **kwd ):
     """Inspect the uploaded capsule's manifest and its contained files to ensure it is a valid repository capsule."""
     capsule_dict = {}
     capsule_dict.update( kwd )

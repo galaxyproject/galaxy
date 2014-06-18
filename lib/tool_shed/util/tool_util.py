@@ -239,7 +239,7 @@ def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=No
             if is_data_index_sample_file( filename ):
                 copy_sample_file( app, filename, dest_path=dest_path )
 
-def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
+def generate_message_for_invalid_tools( app, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
     if as_html:
         new_line = '<br/>'
         bold_start = '<b>'
@@ -249,10 +249,10 @@ def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, me
         bold_start = ''
         bold_end = ''
     message = ''
-    if trans.webapp.name == 'galaxy':
+    if app.name == 'galaxy':
         tip_rev = str( repository.changeset_revision )
     else:
-        tip_rev = str( repository.tip( trans.app ) )
+        tip_rev = str( repository.tip( app ) )
     if not displaying_invalid_tool:
         if metadata_dict:
             message += "Metadata may have been defined for some items in revision '%s'.  " % tip_rev
@@ -883,7 +883,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                                                                      tool,
                                                                      sample_files )
             if invalid_files_and_errors_tups:
-                message2 = generate_message_for_invalid_tools( trans,
+                message2 = generate_message_for_invalid_tools( trans.app,
                                                                invalid_files_and_errors_tups,
                                                                repository,
                                                                metadata_dict=None,

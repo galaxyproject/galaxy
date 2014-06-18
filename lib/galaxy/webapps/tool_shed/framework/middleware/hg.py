@@ -1,6 +1,7 @@
 """Middle-ware for handling hg authentication for users pushing change sets to local repositories."""
-import os
+import json
 import logging
+import os
 import sqlalchemy
 import sys
 import tempfile
@@ -9,11 +10,9 @@ from paste.httpheaders import AUTH_TYPE
 from paste.httpheaders import REMOTE_USER
 
 from galaxy.util import asbool
-from galaxy.util import json
-from galaxy.webapps.tool_shed import model
 from galaxy.util.hash_util import new_secure_hash
-import tool_shed.util.shed_util_common as suc
 from tool_shed.util import commit_util
+from tool_shed.util import hg_util
 import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
@@ -104,7 +103,7 @@ class Hg( object ):
                     fh.write( chunk )
                 fh.close()
                 fh = open( tmp_filename, 'rb' )
-                changeset_groups = json.from_json_string( commit_util.bundle_to_json( fh ) )
+                changeset_groups = json.loads( hg_util.bundle_to_json( fh ) )
                 fh.close()
                 try:
                     os.unlink( tmp_filename )

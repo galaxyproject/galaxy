@@ -167,7 +167,7 @@ class UploadController( BaseUIController ):
                             # Inspect the contents of the file to see if changeset_revision values are missing and if so,
                             # set them appropriately.
                             altered, root_elem, error_message = \
-                                commit_util.handle_repository_dependencies_definition( trans,
+                                commit_util.handle_repository_dependencies_definition( trans.app,
                                                                                        uploaded_file_name,
                                                                                        unpopulate=False )
                             if error_message:
@@ -184,7 +184,7 @@ class UploadController( BaseUIController ):
                             # Inspect the contents of the file to see if changeset_revision values are
                             # missing and if so, set them appropriately.
                             altered, root_elem, error_message = \
-                                commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                                commit_util.handle_tool_dependencies_definition( trans.app, uploaded_file_name )
                             if error_message:
                                 ok = False
                                 message = error_message
@@ -200,15 +200,19 @@ class UploadController( BaseUIController ):
                         if ok:
                             # See if any admin users have chosen to receive email alerts when a repository is updated.
                             # If so, check every uploaded file to ensure content is appropriate.
-                            check_contents = commit_util.check_file_contents_for_email_alerts( trans )
+                            check_contents = commit_util.check_file_contents_for_email_alerts( trans.app )
                             if check_contents and os.path.isfile( full_path ):
                                 content_alert_str = commit_util.check_file_content_for_html_and_images( full_path )
                             else:
                                 content_alert_str = ''
-                            commands.add( repo.ui, repo, full_path )
+                            hg_util.add_changeset( repo.ui, repo, full_path )
                             # Convert from unicode to prevent "TypeError: array item must be char"
                             full_path = full_path.encode( 'ascii', 'replace' )
-                            commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+                            hg_util.commit_changeset( repo.ui,
+                                                      repo,
+                                                      full_path_to_changeset=full_path,
+                                                      username=trans.user.username,
+                                                      message=commit_message )
                             if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
                                 # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
                                 # by parsing the file and adding new entries to the in-memory trans.app.tool_data_tables
@@ -218,7 +222,8 @@ class UploadController( BaseUIController ):
                                     message = '%s<br/>%s' % ( message, error_message )
                             # See if the content of the change set was valid.
                             admin_only = len( repository.downloadable_revisions ) != 1
-                            suc.handle_email_alerts( trans,
+                            suc.handle_email_alerts( trans.app,
+                                                     trans.request.host,
                                                      repository,
                                                      content_alert_str=content_alert_str,
                                                      new_repo_alert=new_repo_alert,
@@ -253,8 +258,15 @@ class UploadController( BaseUIController ):
                                     ( len( files_to_remove ), upload_point )
                             else:
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
+                        status, error_message = metadata_util.set_repository_metadata_due_to_new_tip( trans.app,
+                                                                                                      trans.request.host,
+                                                                                                      trans.user,
+                                                                                                      repository,
+                                                                                                      content_alert_str=content_alert_str,
+                                                                                                      **kwd )
+                        if error_message:
+                            message = error_message
                         kwd[ 'message' ] = message
-                        metadata_util.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
                     if repository.metadata_revisions:
                         # A repository's metadata revisions are order descending by update_time, so the zeroth revision
                         # will be the tip just after an upload.
@@ -355,7 +367,7 @@ class UploadController( BaseUIController ):
                         # Inspect the contents of the file to see if changeset_revision values are missing and
                         # if so, set them appropriately.
                         altered, root_elem, error_message = \
-                            commit_util.handle_repository_dependencies_definition( trans,
+                            commit_util.handle_repository_dependencies_definition( trans.app,
                                                                                    uploaded_file_name,
                                                                                    unpopulate=False )
                         if error_message:
@@ -365,7 +377,7 @@ class UploadController( BaseUIController ):
                             shutil.move( tmp_filename, uploaded_file_name )
                     elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                        altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                        altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans.app, uploaded_file_name )
                         if error_message:
                             return False, error_message, [], '', [], []
                         if altered:
@@ -382,8 +394,17 @@ class UploadController( BaseUIController ):
                             os.remove( repo_path )
                     shutil.move( os.path.join( uploaded_directory, relative_path ), repo_path )
                     filenames_in_archive.append( relative_path )
-        return commit_util.handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
-                                                     new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed )
+        return commit_util.handle_directory_changes( trans.app,
+                                                     trans.request.host,
+                                                     trans.user.username,
+                                                     repository,
+                                                     full_path,
+                                                     filenames_in_archive,
+                                                     remove_repo_files_not_in_tar,
+                                                     new_repo_alert,
+                                                     commit_message,
+                                                     undesirable_dirs_removed,
+                                                     undesirable_files_removed )
 
     def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
         # Upload a tar archive of files.
@@ -422,7 +443,7 @@ class UploadController( BaseUIController ):
                 uploaded_file_name = os.path.join( full_path, filename )
                 if os.path.split( uploaded_file_name )[ -1 ] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans,
+                    altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans.app,
                                                                                                                uploaded_file_name,
                                                                                                                unpopulate=False )
                     if error_message:
@@ -432,13 +453,15 @@ class UploadController( BaseUIController ):
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                     # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans.app, uploaded_file_name )
                     if error_message:
                         return False, error_message, [], '', [], []
                     if altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
-            return commit_util.handle_directory_changes( trans,
+            return commit_util.handle_directory_changes( trans.app,
+                                                         trans.request.host,
+                                                         trans.user.username,
                                                          repository,
                                                          full_path,
                                                          filenames_in_archive,
