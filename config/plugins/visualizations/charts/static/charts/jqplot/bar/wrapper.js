@@ -25,6 +25,9 @@ return Backbone.View.extend(
                     axes: {
                         xaxis: {
                             min  : -1
+                        },
+                        yaxis: {
+                            pad  : 1.2
                         }
                     }
                 });
