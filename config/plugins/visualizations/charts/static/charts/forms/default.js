@@ -80,7 +80,7 @@ return {
             title       : 'Axis tick format',
             info        : 'Select the tick format for the axis.',
             type        : 'select',
-            init        : '.1',
+            init        : '1',
             data        : [
                 {
                     label   : '0.00001',
@@ -181,7 +181,7 @@ return {
             title       : 'Axis tick format',
             info        : 'Select the tick format for the axis.',
             type        : 'select',
-            init        : '.1',
+            init        : '1',
             data        : [
                 {
                     label   : '0.00001',
