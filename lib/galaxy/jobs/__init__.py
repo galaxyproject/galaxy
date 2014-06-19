@@ -61,6 +61,12 @@ class JobDestination( Bunch ):
         self['resubmit'] = []
         # dict is appropriate (rather than a bunch) since keys may not be valid as attributes
         self['params'] = dict()
+
+        # Use the values persisted in an existing job
+        if 'from_job' in kwds and kwds['from_job'].destination_id is not None:
+            self['id'] = kwds['from_job'].destination_id
+            self['params'] = kwds['from_job'].destination_params
+
         super(JobDestination, self).__init__(**kwds)
 
         # Store tags as a list
@@ -679,7 +685,7 @@ class JobWrapper( object ):
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
     """
-    def __init__( self, job, queue ):
+    def __init__( self, job, queue, use_persisted_destination=False ):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
@@ -713,6 +719,8 @@ class JobWrapper( object ):
         self.params = None
         if job.params:
             self.params = from_json_string( job.params )
+        if use_persisted_destination:
+            self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None

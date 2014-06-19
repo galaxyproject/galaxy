@@ -84,12 +84,12 @@ class JobHandlerQueue( object ):
         self.monitor_thread.start()
         log.info( "job handler queue started" )
 
-    def job_wrapper( self, job ):
-        return JobWrapper( job, self )
+    def job_wrapper( self, job, use_persisted_destination=False ):
+        return JobWrapper( job, self, use_persisted_destination=use_persisted_destination )
 
     def job_pair_for_id( self, id ):
         job = self.sa_session.query( model.Job ).get( id )
-        return job, self.job_wrapper( job )
+        return job, self.job_wrapper( job, use_persisted_destination=True )
 
     def __check_jobs_at_startup( self ):
         """
