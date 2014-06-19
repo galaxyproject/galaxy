@@ -130,7 +130,6 @@ def handle_complex_repository_dependency_elem( app, elem, sub_elem_index, sub_el
     Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag that defines
     a complex repository dependency.
     """
-    # The received sub_elem looks something like the following:
     # <repository name="package_eigen_2_0" owner="test" prior_installation_required="True" />
     revised, repository_elem, error_message = handle_repository_dependency_elem( app, sub_elem, unpopulate=unpopulate )
     if error_message:
@@ -432,22 +431,24 @@ def handle_tool_dependencies_definition( app, tool_dependencies_config, unpopula
                                         for last_actions_index, last_actions_elem in enumerate( actions_group_elem ):
                                             last_actions_package_altered = False
                                             if last_actions_elem.tag == 'package':
+                                                last_actions_elem_package_elem_altered = False
                                                 for last_actions_elem_package_index, last_actions_elem_package_elem in enumerate( last_actions_elem ):
                                                     if last_actions_elem_package_elem.tag == 'repository':
                                                         # We have a complex repository dependency.
-                                                        altered, last_actions_package_altered, last_actions_elem, message = \
+                                                        last_actions_package_altered, last_actions_elem_package_elem_altered, last_actions_elem, message = \
                                                             handle_complex_repository_dependency_elem( app,
                                                                                                        last_actions_elem,
                                                                                                        last_actions_elem_package_index,
                                                                                                        last_actions_elem_package_elem,
+                                                                                                       last_actions_elem_package_elem_altered,
                                                                                                        last_actions_package_altered,
-                                                                                                       altered,
                                                                                                        unpopulate=unpopulate )
+                                                        if not altered and last_actions_package_altered:
+                                                            altered = True
                                                         if message:
                                                             error_message += message
-                                                if last_actions_package_altered:
-                                                    last_actions_elem[ last_actions_elem_package_index ] = last_actions_elem_package_elem
-                                                    actions_group_elem[ last_actions_index ] = last_actions_elem
+                                                    if last_actions_elem_package_elem_altered:
+                                                        actions_group_elem[ last_actions_index ] = last_actions_elem
                                             else:
                                                 # Inspect the sub elements of last_actions_elem to locate all <repository> tags and
                                                 # populate them with toolshed and changeset_revision attributes if necessary.
