@@ -53,9 +53,13 @@ class LwrExchange(object):
         self.__connect_ssl = connect_ssl
         self.__exchange = kombu.Exchange(DEFAULT_EXCHANGE_NAME, DEFAULT_EXCHANGE_TYPE)
         self.__timeout = timeout
+        # Be sure to log message publishing failures.
+        if publish_kwds.get("retry", False):
+            if "retry_policy" not in publish_kwds:
+                publish_kwds["retry_policy"] = {}
+            if "errback" not in publish_kwds["retry_policy"]:
+                publish_kwds["retry_policy"]["errback"] = self.__publish_errback
         self.__publish_kwds = publish_kwds
-        if "retry_policy" in self.__publish_kwds:
-            self.__publish_kwds["retry_policy"]["errback"] = self.__publish_errback
 
     @property
     def url(self):
