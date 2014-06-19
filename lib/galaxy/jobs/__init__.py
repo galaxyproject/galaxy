@@ -22,7 +22,7 @@ from galaxy.datatypes import metadata
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
-from galaxy.jobs.runners import BaseJobRunner
+from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import from_json_string
@@ -230,7 +230,7 @@ class JobConfiguration( object ):
         types = dict(registered_user_concurrent_jobs=int,
                      anonymous_user_concurrent_jobs=int,
                      walltime=str,
-                     output_size=int)
+                     output_size=util.size_to_bytes)
 
         self.limits = Bunch(registered_user_concurrent_jobs=None,
                             anonymous_user_concurrent_jobs=None,
@@ -1270,13 +1270,13 @@ class JobWrapper( object ):
     def check_limits(self, runtime=None):
         if self.app.job_config.limits.output_size > 0:
             for outfile, size in self.get_output_sizes():
-                if size > self.app.config.output_size_limit:
-                    log.warning( '(%s) Job output %s is over the output size limit' % ( self.get_id_tag(), os.path.basename( outfile ) ) )
-                    return 'Job output file grew too large (greater than %s), please try different inputs or parameters' % util.nice_size( self.app.job_config.limits.output_size )
+                if size > self.app.job_config.limits.output_size:
+                    log.warning( '(%s) Job output size %s has exceeded the global output size limit', self.get_id_tag(), os.path.basename( outfile ) )
+                    return JobState.runner_states.OUTPUT_SIZE_LIMIT, 'Job output file grew too large (greater than %s), please try different inputs or parameters' % util.nice_size( self.app.job_config.limits.output_size )
         if self.app.job_config.limits.walltime_delta is not None and runtime is not None:
             if runtime > self.app.job_config.limits.walltime_delta:
-                log.warning( '(%s) Job has reached walltime, it will be terminated' % ( self.get_id_tag() ) )
-                return 'Job ran longer than the maximum allowed execution time (%s), please try different inputs or parameters' % self.app.job_config.limits.walltime
+                log.warning( '(%s) Job runtime %s has exceeded the global walltime, it will be terminated', self.get_id_tag(), runtime )
+                return JobState.runner_states.GLOBAL_WALLTIME_REACHED, 'Job ran longer than the maximum allowed execution time (runtime: %s, limit: %s), please try different inputs or parameters' % ( str(runtime).split('.')[0], self.app.job_config.limits.walltime )
         return None
 
     def has_limits( self ):
