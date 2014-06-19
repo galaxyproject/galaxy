@@ -156,6 +156,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return job_state
 
     def __async_update( self, full_status ):
+        while not hasattr( self.app, 'job_manager' ):
+            # The status update thread can start consuming before app is done initializing
+            log.debug( 'Received a status update message before app is initialized, waiting 5 seconds' )
+            sleep( 5 )
         job_id = None
         try:
             job_id = full_status[ "job_id" ]
