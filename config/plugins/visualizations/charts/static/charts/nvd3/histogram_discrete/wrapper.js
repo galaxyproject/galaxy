@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary)
+    draw : function(process_id, chart, request_dictionary, canvas_list)
     {
         // configure request
         var index = 1;
@@ -46,7 +46,8 @@ return Backbone.View.extend(
             request_dictionary  : tmp_dict,
             makeConfig          : function(nvd3_model) {
                 nvd3_model.options({showControls: true});
-            }
+            },
+            canvas_list         : canvas_list
         });
     }
 });

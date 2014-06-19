@@ -10,7 +10,7 @@ return Backbone.View.extend({
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary) {
+    draw : function(process_id, chart, request_dictionary, canvas_list) {
         var nvd3 = new NVD3(this.app, this.options);
         nvd3.draw({
             type                : 'stackedAreaChart',
@@ -22,7 +22,8 @@ return Backbone.View.extend({
                       .y(function(d) { return d.y })
                       .clipEdge(true)
                       .style('stream');
-            }
+            },
+            canvas_list         : canvas_list
         });
     }
 });

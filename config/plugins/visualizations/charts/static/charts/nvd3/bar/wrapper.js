@@ -10,13 +10,14 @@ return Backbone.View.extend({
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary) {
+    draw : function(process_id, chart, request_dictionary, canvas_list) {
         var nvd3 = new NVD3(this.app, this.options);
         nvd3.draw({
             type                : 'multiBarChart',
             process_id          : process_id,
             chart               : chart,
-            request_dictionary  : request_dictionary
+            request_dictionary  : request_dictionary,
+            canvas_list         : canvas_list
         });
     }
 });

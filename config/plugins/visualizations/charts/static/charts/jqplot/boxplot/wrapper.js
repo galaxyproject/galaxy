@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary) {
+    draw : function(process_id, chart, request_dictionary, canvas_list) {
         // configure request
         var index = 0;
         for (var i in request_dictionary.groups) {
@@ -28,6 +28,7 @@ return Backbone.View.extend(
             process_id          : process_id,
             chart               : chart,
             request_dictionary  : request_dictionary,
+            canvas_list         : canvas_list,
             makeConfig          : function(groups, plot_config){
                 var boundary = Tools.getDomains(groups, 'x');
                 $.extend(true, plot_config, {

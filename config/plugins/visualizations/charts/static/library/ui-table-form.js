@@ -27,7 +27,7 @@ var View = Backbone.View.extend(
         // ui elements
         this.table_title = new Ui.Label({title: this.options.title});
         this.table = new Table.View({content: this.options.content});
-        
+
         // create element
         var $view = $('<div class="ui-table-form"/>');
         if (this.options.title) {
@@ -228,11 +228,6 @@ var View = Backbone.View.extend(
         
         // add to table
         this.table.append(id);
-        
-        // show/hide
-        if (settings_def.hide) {
-            this.table.get(id).hide();
-        }
     }
 });
 

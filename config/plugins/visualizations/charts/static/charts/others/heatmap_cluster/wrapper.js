@@ -10,7 +10,7 @@ return Backbone.View.extend({
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary) {
+    draw : function(process_id, chart, request_dictionary, canvas_list) {
         // configure request
         var index = 0;
         var tmp_dict = {
@@ -46,7 +46,7 @@ return Backbone.View.extend({
         var self = this;
         var plot = Tools.panelHelper({
             app                 : this.app,
-            canvas_list         : this.options.canvas_list,
+            canvas_list         : canvas_list,
             process_id          : process_id,
             chart               : chart,
             request_dictionary  : tmp_dict,

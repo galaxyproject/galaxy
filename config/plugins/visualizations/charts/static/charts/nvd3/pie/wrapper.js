@@ -11,7 +11,7 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary) {
+    draw : function(process_id, chart, request_dictionary, canvas_list) {
         // setup handler
         var self = this;
         request_dictionary.success = function() {
@@ -21,7 +21,7 @@ return Backbone.View.extend(
                 var group = request_dictionary.groups[group_index];
             
                 // draw group
-                self._draw_group(chart, group, self.options.canvas_list[group_index]);
+                self._draw_group(chart, group, canvas_list[group_index]);
             }
             
             // set chart state

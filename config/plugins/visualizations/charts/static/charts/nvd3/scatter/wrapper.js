@@ -10,7 +10,7 @@ return Backbone.View.extend({
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary) {
+    draw : function(process_id, chart, request_dictionary, canvas_list) {
         var nvd3 = new NVD3(this.app, this.options);
         nvd3.draw({
             type                : 'scatterChart',
@@ -21,7 +21,8 @@ return Backbone.View.extend({
                 nvd3_model.showDistX(true)
                       .showDistY(true)
                       .color(d3.scale.category10().range());
-            }
+            },
+            canvas_list         : canvas_list
         });
     }
 });

@@ -16,8 +16,8 @@ return Backbone.View.extend(
         // get current chart object
         this.chart = this.app.chart;
         
-        this.form = new TableForm.View({
-            title   : 'Chart options:',
+        // create settings
+        this.form = new TableForm.View(app, {
             content : 'This chart type does not provide any options.'
         });
         
