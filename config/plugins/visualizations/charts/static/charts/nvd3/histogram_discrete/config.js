@@ -5,6 +5,7 @@ return $.extend(true, {}, nvd3_config, {
     category    : 'Data processing (requires \'charts\' tool from Toolshed)',
     execute     : 'histogramdiscrete',
     keywords    : 'small medium large',
+    query_limit : 10000,
     columns     : {
         x : {
             title       : 'Observations',
@@ -22,7 +23,7 @@ return $.extend(true, {}, nvd3_config, {
             init : 'f'
         },
         y_axis_precision : {
-            init : '.2'
+            init : '2'
         }
     }
 });

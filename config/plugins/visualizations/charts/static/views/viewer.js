@@ -79,8 +79,8 @@ return Backbone.View.extend(
                     buttons : {
                         'Cancel' : function() {self.app.modal.hide()},
                         'Continue' : function() {
+                            self.app.modal.hide();
                             self._wait (self.chart, function() {
-                                self.app.modal.hide();
                                 Screenshot.createPDF({
                                     $el     : self.viewport_view.$el,
                                     title   : self.chart.get('title'),

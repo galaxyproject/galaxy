@@ -2,38 +2,24 @@
 define(['plugin/charts/jqplot/common/wrapper'], function(Plot) {
 
 // widget
-return Backbone.View.extend(
-{
-    // initialize
+return Backbone.Model.extend({
     initialize: function(app, options) {
-        this.app        = app;
-        this.options    = options;
-    },
-            
-    // render
-    draw : function(process_id, chart, request_dictionary, canvas_list) {
-        var plot = new Plot(this.app, this.options);
-        plot.draw({
-            process_id          : process_id,
-            chart               : chart,
-            request_dictionary  : request_dictionary,
-            canvas_list         : canvas_list,
-            makeConfig          : function(groups, plot_config){
-                $.extend(true, plot_config, {
-                    seriesDefaults: {
-                        renderer : $.jqplot.BarRenderer
+        options.makeConfig = function(groups, plot_config){
+            $.extend(true, plot_config, {
+                seriesDefaults: {
+                    renderer : $.jqplot.BarRenderer
+                },
+                axes: {
+                    xaxis: {
+                        min  : -1
                     },
-                    axes: {
-                        xaxis: {
-                            min  : -1
-                        },
-                        yaxis: {
-                            pad  : 1.2
-                        }
+                    yaxis: {
+                        pad  : 1.2
                     }
-                });
-            }
-        });
+                }
+            });
+        };
+        new Plot(app, options);
     }
 });
 

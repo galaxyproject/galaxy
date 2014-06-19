@@ -4,35 +4,19 @@ define(['plugin/charts/jqplot/common/plot-config', 'plugin/charts/tools'], funct
 // widget
 return Backbone.View.extend(
 {
-    // plot series
-    plot_series: {
-        name                : '',
-        data                : [],
-        tooltip: {
-            headerFormat    : '<em>{point.key}</em><br/>'
-        }
-    },
-    
     // initialize
     initialize: function(app, options) {
-        this.app        = app;
-        this.options    = options;
-    },
-            
-    // render
-    draw : function(options) {
-        _.extend(this.options, options);
+        // get parameters
+        this.options = options;
+        
+        // define render function
         var self = this;
-        var plot = new Tools.panelHelper({
-            app                 : this.app,
-            process_id          : this.options.process_id,
-            canvas_list         : this.options.canvas_list,
-            chart               : this.options.chart,
-            request_dictionary  : this.options.request_dictionary,
-            render              : function(canvas_id, groups) {
-                                    return self.render(canvas_id, groups)
-                                }
-        });
+        options.render = function(canvas_id, groups) {
+            return self.render(canvas_id, groups)
+        };
+        
+        // call panel helper
+        Tools.panelHelper(app, options);
     },
     
     // draw all data into a single canvas

@@ -160,21 +160,27 @@ return Backbone.View.extend({
         // create chart view
         var self = this;
         require(['plugin/charts/' + this.app.chartPath(chart_type) + '/wrapper'], function(ChartView) {
-            // create chart and parse list of dom ids
-            var view = new ChartView(self.app, {});
-            
-            // request data
             if (self.chart_definition.execute) {
                 self.app.jobs.request(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
                     function() {
-                        view.draw(process_id, chart, self._defaultRequestDictionary(chart), self.canvas_list);
+                        var view = new ChartView(self.app, {
+                            process_id          : process_id,
+                            chart               : chart,
+                            request_dictionary  : self._defaultRequestDictionary(chart),
+                            canvas_list         : self.canvas_list
+                        });
                     },
                     function() {
                         chart.deferred.done(process_id);
                     }
                 );
             } else {
-                view.draw(process_id, chart, self._defaultRequestDictionary(chart), self.canvas_list);
+                var view = new ChartView(self.app, {
+                    process_id          : process_id,
+                    chart               : chart,
+                    request_dictionary  : self._defaultRequestDictionary(chart),
+                    canvas_list         : self.canvas_list
+                });
             }
         });
     },

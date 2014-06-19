@@ -5,32 +5,18 @@ define(['plugin/charts/tools', 'plugin/charts/others/heatmap/heatmap-plugin'], f
 return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
-        this.app        = app;
-        this.options    = options;
-    },
-            
-    // render
-    draw : function(process_id, chart, request_dictionary, canvas_list) {
-        // backup chart
-        this.chart = chart;
+        // define render function
+        options.render = function(canvas_id, groups) {
+            new HeatMap(app, {
+                chart       : options.chart,
+                canvas_id   : canvas_id,
+                groups      : groups
+            });
+            return true;
+        };
         
-        // distribute data groups on svgs and handle process
-        var self = this;
-        var plot = Tools.panelHelper({
-            app                 : this.app,
-            canvas_list         : canvas_list,
-            process_id          : process_id,
-            chart               : chart,
-            request_dictionary  : request_dictionary,
-            render              : function(canvas_id, groups) {
-                                    this.heatmap = new HeatMap(app, {
-                                        chart       : chart,
-                                        canvas_id   : canvas_id,
-                                        groups      : groups
-                                    });
-                                    return true;
-                                  }
-        });
+        // call panel helper
+        Tools.panelHelper(app, options);
     }
 });
 

@@ -6,13 +6,11 @@ return Backbone.View.extend(
 {
     // initialize
     initialize: function(app, options) {
-        this.app        = app;
-        this.options    = options;
-    },
-            
-    // render
-    draw : function(process_id, chart, request_dictionary, canvas_list) {
-        // configure request
+        // get request dictionary
+        var request_dictionary = options.request_dictionary;
+        var chart = options.chart;
+        
+        // modify request
         var index = 0;
         for (var i in request_dictionary.groups) {
             var group = request_dictionary.groups[i];
@@ -23,12 +21,13 @@ return Backbone.View.extend(
                 }
             }
         }
-        var plot = new Plot(this.app, this.options);
-        plot.draw({
-            process_id          : process_id,
-            chart               : chart,
-            request_dictionary  : request_dictionary,
-            canvas_list         : canvas_list,
+        
+        // create plot
+        var plot = new Plot(app, {
+            process_id          : options.process_id,
+            chart               : options.chart,
+            request_dictionary  : options.request_dictionary,
+            canvas_list         : options.canvas_list,
             makeConfig          : function(groups, plot_config){
                 var boundary = Tools.getDomains(groups, 'x');
                 $.extend(true, plot_config, {
@@ -75,15 +74,14 @@ return Backbone.View.extend(
                 }];
             },
             makeSeries: function (groups) {
-                /* example data
+                /*/ example data
                 var catOHLC = [
                     [0, 138.7, 139.68, 135.18, 135.4],
                     [1, 143.46, 144.66, 139.79, 140.02],
                     [2, 140.67, 143.56, 132.88, 142.44],
                     [3, 136.01, 139.5, 134.53, 139.48]
                 ];
-                return [catOHLC];
-                */
+                return [catOHLC];*/
                 
                 // plot data
                 var plot_data = [];

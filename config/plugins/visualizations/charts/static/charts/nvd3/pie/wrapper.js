@@ -6,12 +6,12 @@ return Backbone.View.extend(
 {
     // initialize
     initialize: function(app, options) {
-        this.app        = app;
-        this.options    = options;
-    },
-            
-    // render
-    draw : function(process_id, chart, request_dictionary, canvas_list) {
+        // get parameters
+        var request_dictionary = options.request_dictionary;
+        var chart = options.chart;
+        var canvas_list = options.canvas_list;
+        var process_id = options.process_id;
+        
         // setup handler
         var self = this;
         request_dictionary.success = function() {
@@ -21,7 +21,7 @@ return Backbone.View.extend(
                 var group = request_dictionary.groups[group_index];
             
                 // draw group
-                self._draw_group(chart, group, canvas_list[group_index]);
+                self._drawGroup(chart, group, canvas_list[group_index]);
             }
             
             // set chart state
@@ -32,11 +32,11 @@ return Backbone.View.extend(
         }
         
         // request data
-        this.app.datasets.request(request_dictionary);
+        app.datasets.request(request_dictionary);
     },
     
     // draw group
-    _draw_group: function(chart, group, canvas_id) {
+    _drawGroup: function(chart, group, canvas_id) {
         try {
             // get canvas
             var canvas = d3.select('#' + canvas_id);
@@ -45,7 +45,7 @@ return Backbone.View.extend(
             var title = canvas.append('text');
       
             // configure title attributes
-            this._fix_title(chart, canvas, title, group.key);
+            this._fixTitle(chart, canvas, title, group.key);
       
             // format chart data
             var pie_data = [];
@@ -97,7 +97,7 @@ return Backbone.View.extend(
                     chart_3d.update();
                     
                     // fix title
-                    self._fix_title(chart, canvas, title, group.key);
+                    self._fixTitle(chart, canvas, title, group.key);
                 });
             });
         } catch (err) {
@@ -106,7 +106,7 @@ return Backbone.View.extend(
     },
     
     // fix title
-    _fix_title: function(chart, canvas, title_element, title_text) {
+    _fixTitle: function(chart, canvas, title_element, title_text) {
         // update title
         var width = parseInt(canvas.style('width'));
         var height = parseInt(canvas.style('height'));

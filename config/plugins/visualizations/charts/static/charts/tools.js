@@ -2,7 +2,7 @@
 define(['utils/utils'], function(Utils) {
 
 // render
-function panelHelper (options)
+function panelHelper (app, options)
 {
     // link this
     var self = this;
@@ -13,7 +13,6 @@ function panelHelper (options)
     var request_dictionary  = options.request_dictionary;
     var render              = options.render;
     var canvas_list         = options.canvas_list;
-    var app                 = options.app;
     
     // get request size from chart
     request_dictionary.query_limit = chart.definition.query_limit;
