@@ -1,13 +1,14 @@
+import json
 import logging
 import os
+import urllib
+import urllib2
 
 from galaxy.util import asbool
-from galaxy.util import json
 from galaxy.util import listify
 
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
-from tool_shed.util import common_install_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -127,7 +128,7 @@ def create_repository_dependency_objects( app, tool_path, tool_shed_url, repo_in
     # Discover all repository dependencies and retrieve information for installing them.  Even if the user elected
     # to not install repository dependencies we have to make sure all repository dependency objects exist so that
     # the appropriate repository dependency relationships can be built.
-    all_required_repo_info_dict = common_install_util.get_required_repo_info_dicts( app, tool_shed_url, repo_info_dicts )
+    all_required_repo_info_dict = get_required_repo_info_dicts( app, tool_shed_url, repo_info_dicts )
     all_repo_info_dicts = all_required_repo_info_dict.get( 'all_repo_info_dicts', [] )
     if not all_repo_info_dicts:
         # No repository dependencies were discovered so process the received repositories.
@@ -171,7 +172,7 @@ def create_repository_dependency_objects( app, tool_path, tool_shed_url, repo_in
                         elif repository_db_record.status in [ install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
                             # The current tool shed repository is deactivated, so updating its database record is not necessary - just activate it.
                             log.debug( "Reactivating deactivated tool_shed_repository '%s'." % str( repository_db_record.name ) )
-                            common_install_util.activate_repository( app, repository_db_record )
+                            app.installed_repository_manager.activate_repository( repository_db_record )
                             # No additional updates to the database record are necessary.
                             can_update_db_record = False
                         elif repository_db_record.status not in [ install_model.ToolShedRepository.installation_status.NEW ]:
@@ -368,7 +369,7 @@ def get_repository_dependencies_for_installed_tool_shed_repository( app, reposit
         print "The URL\n%s\nraised the exception:\n%s\n" % ( url, str( e ) )
         return ''
     if len( raw_text ) > 2:
-        encoded_text = json.from_json_string( raw_text )
+        encoded_text = json.loads( raw_text )
         text = encoding_util.tool_shed_decode( encoded_text )
     else:
         text = ''
@@ -486,36 +487,118 @@ def get_repository_dependency_tups_from_repository_metadata( app, repository_met
                                 ( name, owner ) )
     return dependency_tups
 
-def get_repository_dependency_tups_for_installed_repository( app, repository, dependency_tups=None, status=None ):
+def get_required_repo_info_dicts( app, tool_shed_url, repo_info_dicts ):
     """
-    Return a list of of tuples defining tool_shed_repository objects (whose status can be anything) required by the
-    received repository.  The returned list defines the entire repository dependency tree.  This method is called
-    only from Galaxy.
+    Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of
+    them to the list.  All repository_dependency entries in each of the received repo_info_dicts includes
+    all required repositories, so only one pass through this method is required to retrieve all repository
+    dependencies.
     """
-    if dependency_tups is None:
-        dependency_tups = []
-    repository_tup = get_repository_tuple_for_installed_repository_manager( repository )
-    for rrda in repository.required_repositories:
-        repository_dependency = rrda.repository_dependency
-        required_repository = repository_dependency.repository
-        if status is None or required_repository.status == status:
-            required_repository_tup = get_repository_tuple_for_installed_repository_manager( required_repository )
-            if required_repository_tup == repository_tup:
-                # We have a circular repository dependency relationship, skip this entry.
-                continue
-            if required_repository_tup not in dependency_tups:
-                dependency_tups.append( required_repository_tup )
-                return get_repository_dependency_tups_for_installed_repository( app,
-                                                                                required_repository,
-                                                                                dependency_tups=dependency_tups )
-    return dependency_tups
-
-def get_repository_tuple_for_installed_repository_manager( repository ):
-    return ( str( repository.tool_shed ),
-             str( repository.name ),
-             str( repository.owner ),
-             str( repository.installed_changeset_revision ) )
-
+    all_required_repo_info_dict = {}
+    all_repo_info_dicts = []
+    if repo_info_dicts:
+        # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool
+        # shed to discover repository ids.
+        required_repository_tups = []
+        for repo_info_dict in repo_info_dicts:
+            if repo_info_dict not in all_repo_info_dicts:
+                all_repo_info_dicts.append( repo_info_dict )
+            for repository_name, repo_info_tup in repo_info_dict.items():
+                description, \
+                    repository_clone_url, \
+                    changeset_revision, \
+                    ctx_rev, \
+                    repository_owner, \
+                    repository_dependencies, \
+                    tool_dependencies = \
+                    suc.get_repo_info_tuple_contents( repo_info_tup )
+                if repository_dependencies:
+                    for key, val in repository_dependencies.items():
+                        if key in [ 'root_key', 'description' ]:
+                            continue
+                        repository_components_tuple = container_util.get_components_from_key( key )
+                        components_list = suc.extract_components_from_tuple( repository_components_tuple )
+                        # Skip listing a repository dependency if it is required only to compile a tool dependency
+                        # defined for the dependent repository since in this case, the repository dependency is really
+                        # a dependency of the dependent repository's contained tool dependency, and only if that
+                        # tool dependency requires compilation.
+                        # For backward compatibility to the 12/20/12 Galaxy release.
+                        prior_installation_required = 'False'
+                        only_if_compiling_contained_td = 'False'
+                        if len( components_list ) == 4:
+                            prior_installation_required = 'False'
+                            only_if_compiling_contained_td = 'False'
+                        elif len( components_list ) == 5:
+                            prior_installation_required = components_list[ 4 ]
+                            only_if_compiling_contained_td = 'False'
+                        if not asbool( only_if_compiling_contained_td ):
+                            if components_list not in required_repository_tups:
+                                required_repository_tups.append( components_list )
+                        for components_list in val:
+                            try:
+                                only_if_compiling_contained_td = components_list[ 5 ]
+                            except:
+                                only_if_compiling_contained_td = 'False'
+                            # Skip listing a repository dependency if it is required only to compile a tool dependency
+                            # defined for the dependent repository (see above comment).
+                            if not asbool( only_if_compiling_contained_td ):
+                                if components_list not in required_repository_tups:
+                                    required_repository_tups.append( components_list )
+                else:
+                    # We have a single repository with no dependencies.
+                    components_list = [ tool_shed_url, repository_name, repository_owner, changeset_revision ]
+                    required_repository_tups.append( components_list )
+            if required_repository_tups:
+                # The value of required_repository_tups is a list of tuples, so we need to encode it.
+                encoded_required_repository_tups = []
+                for required_repository_tup in required_repository_tups:
+                    # Convert every item in required_repository_tup to a string.
+                    required_repository_tup = [ str( item ) for item in required_repository_tup ]
+                    encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
+                encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
+                encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
+                if suc.is_tool_shed_client( app ):
+                    # Handle secure / insecure Tool Shed URL protocol changes and port changes.
+                    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
+                url = common_util.url_join( tool_shed_url, '/repository/get_required_repo_info_dict' )
+                # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the urllib2.Request has data provided
+                url = urllib2.urlopen( urllib2.Request( url ) ).geturl()
+                request = urllib2.Request( url, data=urllib.urlencode( dict( encoded_str=encoded_required_repository_str ) ) )
+                response = urllib2.urlopen( request ).read()
+                if response:
+                    try:
+                        required_repo_info_dict = json.loads( response )
+                    except Exception, e:
+                        log.exception( e )
+                        return all_repo_info_dicts
+                    required_repo_info_dicts = []
+                    for k, v in required_repo_info_dict.items():
+                        if k == 'repo_info_dicts':
+                            encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
+                            for encoded_dict_str in encoded_dict_strings:
+                                decoded_dict = encoding_util.tool_shed_decode( encoded_dict_str )
+                                required_repo_info_dicts.append( decoded_dict )
+                        else:
+                            if k not in all_required_repo_info_dict:
+                                all_required_repo_info_dict[ k ] = v
+                            else:
+                                if v and not all_required_repo_info_dict[ k ]:
+                                    all_required_repo_info_dict[ k ] = v
+                        if required_repo_info_dicts:
+                            for required_repo_info_dict in required_repo_info_dicts:
+                                # Each required_repo_info_dict has a single entry, and all_repo_info_dicts is a list
+                                # of dictionaries, each of which has a single entry.  We'll check keys here rather than
+                                # the entire dictionary because a dictionary entry in all_repo_info_dicts will include
+                                # lists of discovered repository dependencies, but these lists will be empty in the
+                                # required_repo_info_dict since dependency discovery has not yet been performed for these
+                                # dictionaries.
+                                required_repo_info_dict_key = required_repo_info_dict.keys()[ 0 ]
+                                all_repo_info_dicts_keys = [ d.keys()[ 0 ] for d in all_repo_info_dicts ]
+                                if required_repo_info_dict_key not in all_repo_info_dicts_keys:
+                                    all_repo_info_dicts.append( required_repo_info_dict )
+                    all_required_repo_info_dict[ 'all_repo_info_dicts' ] = all_repo_info_dicts
+    return all_required_repo_info_dict
+    
 def get_updated_changeset_revisions_for_repository_dependencies( app, key_rd_dicts ):
     updated_key_rd_dicts = []
     for key_rd_dict in key_rd_dicts:

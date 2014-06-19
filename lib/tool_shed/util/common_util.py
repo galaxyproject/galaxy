@@ -120,12 +120,12 @@ def generate_clone_url_for_repository_in_tool_shed( user, repository ):
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
 
-def generate_clone_url_from_repo_info_tup( trans, repo_info_tup ):
+def generate_clone_url_from_repo_info_tup( app, repo_info_tup ):
     """Generate the URL for cloning a repository given a tuple of toolshed, name, owner, changeset_revision."""
     # Example tuple: ['http://localhost:9009', 'blast_datatypes', 'test', '461a4216e8ab', False]
     toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
         parse_repository_dependency_tuple( repo_info_tup )
-    tool_shed_url = get_tool_shed_url_from_tool_shed_registry( trans.app, toolshed )
+    tool_shed_url = get_tool_shed_url_from_tool_shed_registry( app, toolshed )
     # Don't include the changeset_revision in clone urls.
     return url_join( tool_shed_url, 'repos', owner, name )
 

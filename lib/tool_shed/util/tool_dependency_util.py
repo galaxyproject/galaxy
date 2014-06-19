@@ -300,31 +300,6 @@ def get_required_repository_package_env_sh_path( app, package_name, package_vers
     env_sh_file_path = os.path.join( env_sh_file_dir, 'env.sh' )
     return env_sh_file_path
 
-def get_runtime_dependent_tool_dependency_tuples( app, tool_dependency, status=None ):
-    """
-    Return the list of tool dependency objects that require the received tool dependency at run time.  The returned
-    list will be filtered by the received status if it is not None.  This method is called only from Galaxy.
-    """
-    runtime_dependent_tool_dependency_tups = []
-    required_env_shell_file_path = tool_dependency.get_env_shell_file_path( app )
-    if required_env_shell_file_path:
-        required_env_shell_file_path = os.path.abspath( required_env_shell_file_path )
-    if required_env_shell_file_path is not None:
-        for td in app.install_model.context.query( app.install_model.ToolDependency ):
-            if status is None or td.status == status:
-                env_shell_file_path = td.get_env_shell_file_path( app )
-                if env_shell_file_path is not None:
-                    try:
-                        contents = open( env_shell_file_path, 'r' ).read()
-                    except Exception, e:
-                        contents = None
-                        log.debug( 'Error reading file %s, so cannot determine if package %s requires package %s at run time: %s' % \
-                            ( str( env_shell_file_path ), str( td.name ), str( tool_dependency.name ), str( e ) ) )
-                    if contents is not None and contents.find( required_env_shell_file_path ) >= 0:
-                        td_tuple = get_tool_dependency_tuple_for_installed_repository_manager( td )
-                        runtime_dependent_tool_dependency_tups.append( td_tuple )
-    return runtime_dependent_tool_dependency_tups
-
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
     return trans.install_model.context.query( trans.install_model.ToolDependency ).get( trans.security.decode_id( id ) )
@@ -388,13 +363,6 @@ def get_tool_dependency_install_dir( app, repository_name, repository_owner, rep
                                               repository_owner,
                                               repository_name,
                                               repository_changeset_revision ) )
-
-def get_tool_dependency_tuple_for_installed_repository_manager( tool_dependency ):
-    if tool_dependency.type is None:
-        type = None
-    else:
-        type = str( tool_dependency.type )
-    return ( tool_dependency.tool_shed_repository_id, str( tool_dependency.name ), str( tool_dependency.version ), type )
 
 def handle_tool_dependency_installation_error( app, tool_dependency, error_message, remove_installation_path=False ):
     # Since there was an installation error, remove the installation directory because the install_package method uses 

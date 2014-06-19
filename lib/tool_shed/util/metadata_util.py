@@ -15,7 +15,6 @@ import tool_shed.util.shed_util_common as suc
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import common_install_util
 from tool_shed.util import container_util
 from tool_shed.util import hg_util
 from tool_shed.util import readme_util
@@ -1679,7 +1678,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
             readme_files_dict = None
         # Handle repository dependencies.
         installed_repository_dependencies, missing_repository_dependencies = \
-            common_install_util.get_installed_and_missing_repository_dependencies( trans, repository )
+            trans.app.installed_repository_manager.get_installed_and_missing_repository_dependencies( repository )
         # Handle the current repository's tool dependencies.
         repository_tool_dependencies = metadata.get( 'tool_dependencies', None )
         # Make sure to display missing tool dependencies as well.

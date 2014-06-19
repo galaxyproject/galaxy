@@ -13,7 +13,6 @@ from galaxy import web
 from galaxy.util.odict import odict
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
-from tool_shed.util import common_install_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -262,7 +261,9 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
                                                  str( repository.user.username ),
                                                  repository_dependencies,
                                                  None )
-    all_required_repo_info_dict = common_install_util.get_required_repo_info_dicts( trans.app, tool_shed_url, [ repo_info_dict ] )
+    all_required_repo_info_dict = repository_dependency_util.get_required_repo_info_dicts( trans.app,
+                                                                                           tool_shed_url,
+                                                                                           [ repo_info_dict ] )
     all_repo_info_dicts = all_required_repo_info_dict.get( 'all_repo_info_dicts', [] )
     return all_repo_info_dicts
 

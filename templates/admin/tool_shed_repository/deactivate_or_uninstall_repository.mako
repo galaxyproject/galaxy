@@ -108,12 +108,9 @@ ${render_galaxy_repository_actions( repository )}
                     </div>
                     <div style="clear: both"></div>
                     <br/>
-                    <%
-                        from tool_shed.util.repository_dependency_util import get_repository_tuple_for_installed_repository_manager
-                        from tool_shed.util.tool_dependency_util import get_tool_dependency_tuple_for_installed_repository_manager
-                        
+                    <%                        
                         irm = trans.app.installed_repository_manager
-                        repository_tup = get_repository_tuple_for_installed_repository_manager( repository )
+                        repository_tup = irm.get_repository_tuple_for_installed_repository_manager( repository )
 
                         # Get installed repositories that this repository requires.
                         installed_dependent_repositories = []

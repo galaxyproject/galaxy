@@ -5,7 +5,6 @@ log = logging.getLogger( __name__ )
 
 from tool_shed.galaxy_install import install_manager
 
-from tool_shed.util import common_install_util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import shed_util_common as suc
@@ -148,7 +147,7 @@ class RepairRepositoryManager():
         repair_dict = {}
         if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             try:
-                common_install_util.activate_repository( self.app, repository )
+                self.app.installed_repository_manager.activate_repository( repository )
             except Exception, e:
                 error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
                 log.debug( error_message )
