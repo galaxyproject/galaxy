@@ -11,12 +11,13 @@ return Backbone.View.extend(
     },
             
     // render
-    draw : function(process_id, chart, request_dictionary) {
+    draw : function(process_id, chart, request_dictionary, canvas_list) {
         var plot = new Plot(this.app, this.options);
         plot.draw({
             process_id          : process_id,
             chart               : chart,
-            request_dictionary  : request_dictionary
+            request_dictionary  : request_dictionary,
+            canvas_list         : canvas_list
         });
     }
 });
