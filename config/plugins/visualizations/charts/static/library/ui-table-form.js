@@ -228,6 +228,11 @@ var View = Backbone.View.extend(
         
         // add to table
         this.table.append(id);
+        
+         // show/hide
+         if (settings_def.hide) {
+             this.table.get(id).hide();
+         }
     }
 });
 
