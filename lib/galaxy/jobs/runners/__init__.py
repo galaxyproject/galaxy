@@ -6,6 +6,7 @@ import os
 import time
 import string
 import logging
+import datetime
 import threading
 import subprocess
 
@@ -335,7 +336,9 @@ class JobState( object ):
     Encapsulate state of jobs.
     """
     runner_states = Bunch(
-        WALLTIME_REACHED = 'walltime_reached'
+        WALLTIME_REACHED = 'walltime_reached',
+        GLOBAL_WALLTIME_REACHED = 'global_walltime_reached',
+        OUTPUT_SIZE_LIMIT = 'output_size_limit'
     )
     def __init__( self ):
         self.runner_state_handled = False
@@ -374,8 +377,9 @@ class AsynchronousJobState( JobState ):
     def __init__( self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None  ):
         super( AsynchronousJobState, self ).__init__()
         self.old_state = None
-        self.running = False
+        self._running = False
         self.check_count = 0
+        self.start_time = None
 
         self.job_wrapper = job_wrapper
         # job_id is the DRM's job id, not the Galaxy job id
@@ -391,6 +395,33 @@ class AsynchronousJobState( JobState ):
         self.set_defaults( files_dir )
 
         self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
+
+    @property
+    def running( self ):
+        return self._running
+
+    @running.setter
+    def running( self, is_running ):
+        self._running = is_running
+        # This will be invalid for job recovery
+        if self.start_time is None:
+            self.start_time = datetime.datetime.now()
+
+    def check_limits( self, runtime=None ):
+        limit_state = None
+        if self.job_wrapper.has_limits():
+            self.check_count += 1
+            if self.running and (self.check_count % 20 == 0):
+                if runtime is None:
+                    runtime = datetime.datetime.now() - (self.start_time or datetime.datetime.now())
+                self.check_count = 0
+                limit_state = self.job_wrapper.check_limits( runtime=runtime )
+        if limit_state is not None:
+            # Set up the job for failure, but the runner will do the actual work
+            self.runner_state, self.fail_message = limit_state
+            self.stop_job = True
+            return True
+        return False
 
     def cleanup( self ):
         for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:

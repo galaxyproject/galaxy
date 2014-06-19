@@ -35,6 +35,7 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import E
 from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
+from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
 
 log = logging.getLogger( __name__ )
 
@@ -610,15 +611,15 @@ class InstallRepositoryManager( object ):
         tool_panel_section_id = installation_dict[ 'tool_panel_section_id' ]
         tool_path = installation_dict[ 'tool_path' ]
         tool_shed_url = installation_dict[ 'tool_shed_url' ]
+        rdm = RepositoryDependencyManager( self.app )
         created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
-            repository_dependency_util.create_repository_dependency_objects( app=self.app,
-                                                                             tool_path=tool_path,
-                                                                             tool_shed_url=tool_shed_url,
-                                                                             repo_info_dicts=repo_info_dicts,
-                                                                             install_repository_dependencies=install_repository_dependencies,
-                                                                             no_changes_checked=no_changes_checked,
-                                                                             tool_panel_section_id=tool_panel_section_id,
-                                                                             new_tool_panel_section_label=new_tool_panel_section_label )
+            rdm.create_repository_dependency_objects( tool_path=tool_path,
+                                                      tool_shed_url=tool_shed_url,
+                                                      repo_info_dicts=repo_info_dicts,
+                                                      install_repository_dependencies=install_repository_dependencies,
+                                                      no_changes_checked=no_changes_checked,
+                                                      tool_panel_section_id=tool_panel_section_id,
+                                                      new_tool_panel_section_label=new_tool_panel_section_label )
         return created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts
 
     def initiate_repository_installation( self, installation_dict ):

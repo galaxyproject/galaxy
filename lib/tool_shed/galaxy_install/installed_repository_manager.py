@@ -16,6 +16,8 @@ from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 
+from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
+
 log = logging.getLogger( __name__ )
 
 
@@ -227,6 +229,7 @@ class InstalledRepositoryManager( object ):
         Return dictionaries containing the sets of installed and missing tool dependencies and repository
         dependencies associated with the repository defined by the received repo_info_dict.
         """
+        rdm = RepositoryDependencyManager( self.app )
         repository = None
         installed_rd = {}
         installed_td = {}
@@ -258,9 +261,7 @@ class InstalledRepositoryManager( object ):
                 installed_rd, missing_rd = \
                     self.get_installed_and_missing_repository_dependencies_for_new_or_updated_install( repo_info_tuple )
             # Discover all repository dependencies and retrieve information for installing them.
-            all_repo_info_dict = repository_dependency_util.get_required_repo_info_dicts( self.app,
-                                                                                          tool_shed_url,
-                                                                                          util.listify( repo_info_dict ) )
+            all_repo_info_dict = rdm.get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
             has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
             has_repository_dependencies_only_if_compiling_contained_td = \
                 all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
@@ -298,9 +299,7 @@ class InstalledRepositoryManager( object ):
                                 missing_td[ td_key ] = td_dict
         else:
             # We have a single repository with (possibly) no defined repository dependencies.
-            all_repo_info_dict = repository_dependency_util.get_required_repo_info_dicts( self.app,
-                                                                                          tool_shed_url,
-                                                                                          util.listify( repo_info_dict ) )
+            all_repo_info_dict = rdm.get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
             has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
             has_repository_dependencies_only_if_compiling_contained_td = \
                 all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )

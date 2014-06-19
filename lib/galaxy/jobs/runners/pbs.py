@@ -400,18 +400,11 @@ class PBSJobRunner( AsynchronousJobRunner ):
             if status.job_state == "R" and not pbs_job_state.running:
                 pbs_job_state.running = True
                 pbs_job_state.job_wrapper.change_state( model.Job.states.RUNNING )
-            if status.job_state == "R" and ( pbs_job_state.check_count % 20 ) == 0:
-                # Every 20th time the job status is checked, do limit checks (if configured)
-                # Get the job's runtime
-                runtime = None
-                if status.get( 'resources_used', False ):
-                    # resources_used may not be in the status for new jobs
-                    h, m, s = [ int( i ) for i in status.resources_used.walltime.split( ':' ) ]
-                    runtime = timedelta( 0, s, 0, 0, m, h )
-                msg = pbs_job_state.job_wrapper.check_limits(runtime)
-                if msg is not None:
-                    pbs_job_state.fail_message = msg
-                    pbs_job_state.stop_job = True
+            if status.job_state == "R" and status.get( 'resources_used', False ):
+                # resources_used may not be in the status for new jobs
+                h, m, s = [ int( i ) for i in status.resources_used.walltime.split( ':' ) ]
+                runtime = timedelta( 0, s, 0, 0, m, h )
+                if pbs_job_state.check_limits( runtime=runtime ):
                     self.work_queue.put( ( self.fail_job, pbs_job_state ) )
                     continue
             elif status.job_state == "C":

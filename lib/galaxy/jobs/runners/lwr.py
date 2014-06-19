@@ -92,7 +92,23 @@ LWR_PARAM_SPECS = dict(
         map=str,
         valid=specs.is_in("transient", "persistent"),
         default="persistent",
-    )
+    ),
+    amqp_publish_retry_max_retries=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_start=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_step=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_max=dict(
+        map=int,
+        default=None,
+    ),
 )
 
 

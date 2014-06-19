@@ -19,6 +19,8 @@ from tool_shed.util import hg_util
 from tool_shed.util import repository_dependency_util
 from tool_shed.util import xml_util
 
+from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
+
 eggs.require( 'mercurial' )
 
 from mercurial import commands
@@ -238,6 +240,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
     Return a list of dictionaries defining repositories that are required by the repository associated with the
     received repository_id.
     """
+    rdm = RepositoryDependencyManager( trans.app )
     repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
     # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
@@ -261,9 +264,7 @@ def get_repo_info_dicts( trans, tool_shed_url, repository_id, changeset_revision
                                                  str( repository.user.username ),
                                                  repository_dependencies,
                                                  None )
-    all_required_repo_info_dict = repository_dependency_util.get_required_repo_info_dicts( trans.app,
-                                                                                           tool_shed_url,
-                                                                                           [ repo_info_dict ] )
+    all_required_repo_info_dict = rdm.get_required_repo_info_dicts( tool_shed_url, [ repo_info_dict ] )
     all_repo_info_dicts = all_required_repo_info_dict.get( 'all_repo_info_dicts', [] )
     return all_repo_info_dicts
 

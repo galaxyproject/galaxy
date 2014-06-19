@@ -31,6 +31,7 @@ from tool_shed.util import xml_util
 from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 import tool_shed.galaxy_install.grids.admin_toolshed_grids as admin_toolshed_grids
+from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
 
 log = logging.getLogger( __name__ )
 
@@ -1294,6 +1295,7 @@ class AdminToolshed( AdminGalaxy ):
         Reinstall a tool shed repository that has been previously uninstalled, making sure to handle all repository
         and tool dependencies of the repository.
         """
+        rdm = RepositoryDependencyManager( trans.app )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd[ 'id' ]
@@ -1381,13 +1383,12 @@ class AdminToolshed( AdminGalaxy ):
             repo_info_dicts.append( repo_info_dict )
         # Make sure all tool_shed_repository records exist.
         created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
-            repository_dependency_util.create_repository_dependency_objects( app=trans.app,
-                                                                             tool_path=tool_path,
-                                                                             tool_shed_url=tool_shed_url,
-                                                                             repo_info_dicts=repo_info_dicts,
-                                                                             install_repository_dependencies=install_repository_dependencies,
-                                                                             no_changes_checked=no_changes_checked,
-                                                                             tool_panel_section_id=tool_panel_section_id )
+            rdm.create_repository_dependency_objects( tool_path=tool_path,
+                                                      tool_shed_url=tool_shed_url,
+                                                      repo_info_dicts=repo_info_dicts,
+                                                      install_repository_dependencies=install_repository_dependencies,
+                                                      no_changes_checked=no_changes_checked,
+                                                      tool_panel_section_id=tool_panel_section_id )
         # Default the selected tool panel location for loading tools included in each newly installed required
         # tool shed repository to the location selected for the repository selected for re-installation.
         for index, tps_key in enumerate( tool_panel_section_keys ):

@@ -183,7 +183,7 @@ class FileStager(object):
         working_directory_files = listdir(self.working_directory) if exists(self.working_directory) else []
         for working_directory_file in working_directory_files:
             path = join(self.working_directory, working_directory_file)
-            self.transfer_tracker.handle_transfer(path, 'workdir')
+            self.transfer_tracker.handle_transfer(path, path_type.WORKDIR)
 
     def __initialize_version_file_rename(self):
         version_file = self.version_file
@@ -217,7 +217,7 @@ class FileStager(object):
 
     def __upload_rewritten_config_files(self):
         for config_file, new_config_contents in self.job_inputs.config_files.items():
-            self.transfer_tracker.handle_transfer(config_file, type='config', contents=new_config_contents)
+            self.transfer_tracker.handle_transfer(config_file, type=path_type.CONFIG, contents=new_config_contents)
 
     def get_command_line(self):
         """

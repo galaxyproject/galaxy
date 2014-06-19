@@ -412,5 +412,12 @@
                 will be terminated by Galaxy.
          -->
         <limit type="walltime">24:00:00</limit>
+        <!-- output_size:
+                Size that any defined tool output can grow to before the job
+                will be terminated. This does not include temporary files
+                created by the job. Format is flexible, e.g.:
+                '10GB' = '10g' = '10240 Mb' = '10737418240'
+        -->
+        <limit type="output_size">10GB</limit>
     </limits>
 </job_conf>
