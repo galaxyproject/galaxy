@@ -28,7 +28,7 @@ return Backbone.View.extend(
         var picture_button_menu = new Ui.ButtonMenu({
             icon    : 'fa-camera',
             title   : 'Screenshot',
-            tooltip : 'Download as PNG or SVG file'
+            tooltip : 'Download as PNG, SVG or PDF file'
         });
         
         // add png option
@@ -77,7 +77,7 @@ return Backbone.View.extend(
                     title   : 'Send chart data for PDF creation',
                     body    : 'Galaxy does not provide integrated PDF export scripts. You may click \'Continue\' to create the PDF by using a 3rd party service (https://export.highcharts.com).',
                     buttons : {
-                        'Close' : function() {self.app.modal.hide()},
+                        'Cancel' : function() {self.app.modal.hide()},
                         'Continue' : function() {
                             self._wait (self.chart, function() {
                                 self.app.modal.hide();

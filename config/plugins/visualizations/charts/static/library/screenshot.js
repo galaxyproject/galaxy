@@ -137,63 +137,6 @@ define(["libs/underscore"], function(_) {
         window.location.href = 'data:none/none;base64,' + btoa(createXML(options).string);
     };
     
-    // XML creator
-    function createXML (options) {
-        if (options.$el.find('svg').length == 0) {
-            if (options.error) {
-                options.error('No SVG found. This chart type does not support SVG export.');
-                return;
-            }
-        }
-       
-        // get parameters
-        var $el = options.$el;
-       
-        // get svg dimensions
-        var nsvgs  = $el.find('svg').length;
-        var height = parseInt($el.find('svg').first().css('height'));
-        var width  = parseInt($el.find('svg').first().css('width'));
-       
-        // serialize svg
-        var serializer = new XMLSerializer();
-
-        // get svg element
-        var $composite = $('<svg/>');
-        
-        // configure svg
-        $composite.attr({
-            version : '1.1',
-            xmlns   : 'http://www.w3.org/2000/svg',
-            width   : width*nsvgs,
-            height  : height
-        });
-   
-        // write all svgs
-        var xmlString   = '';
-        var offsetX     = 0;
-        $el.find('svg').each(function() {
-            var $svg = $(this).clone();
-            
-            // inline css
-            _inline($svg);
-            
-            // create group and append to composite svg
-            var $g = $('<g transform="translate(' + offsetX + ', 0)">');
-            $g.append($svg.find('g').first());
-            $composite.append($g);
-            
-            // shift offset for multipanel charts
-            offsetX += width;
-        });
-       
-        // create xml string
-        return {
-            string  : serializer.serializeToString($composite[0]),
-            height  : height,
-            width   : width
-        }
-    };
-
     // css inliner
     function _inline ($target) {
         for (var sheet_id in document.styleSheets) {
@@ -262,6 +205,65 @@ define(["libs/underscore"], function(_) {
             form.submit();
         } catch(err) {
             console.log(err);
+        }
+    };
+    
+    //
+    // XML export
+    //
+    function createXML (options) {
+        if (options.$el.find('svg').length == 0) {
+            if (options.error) {
+                options.error('No SVG found. This chart type does not support SVG/PDF export.');
+                return;
+            }
+        }
+       
+        // get parameters
+        var $el = options.$el;
+       
+        // get svg dimensions
+        var nsvgs  = $el.find('svg').length;
+        var height = parseInt($el.find('svg').first().css('height'));
+        var width  = parseInt($el.find('svg').first().css('width'));
+       
+        // serialize svg
+        var serializer = new XMLSerializer();
+
+        // get svg element
+        var $composite = $('<svg/>');
+        
+        // configure svg
+        $composite.attr({
+            version : '1.1',
+            xmlns   : 'http://www.w3.org/2000/svg',
+            width   : width*nsvgs,
+            height  : height
+        });
+   
+        // write all svgs
+        var xmlString   = '';
+        var offsetX     = 0;
+        $el.find('svg').each(function() {
+            var $svg = $(this).clone();
+            
+            // inline css
+            _inline($svg);
+            
+            // create group and append to composite svg
+            var $g = $('<g transform="translate(' + offsetX + ', 0)">');
+            $g.append($svg.find('g').first());
+            $composite.append($g);
+            
+            // shift offset for multipanel charts
+            offsetX += width;
+        });
+       
+        // create xml string
+        return {
+            string  : serializer.serializeToString($composite[0]),
+            height  : height,
+            width   : width
         }
     };
     
