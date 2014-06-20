@@ -149,6 +149,7 @@ return Backbone.View.extend(
         var is_auto     = column_definition.is_auto;
         var is_numeric  = column_definition.is_numeric;
         var is_unique   = column_definition.is_unique;
+        var is_zero     = column_definition.is_zero;
         
         // configure columns
         var columns = [];
@@ -161,6 +162,14 @@ return Backbone.View.extend(
             columns.push({
                 'label' : 'Column: Row Number',
                 'value' : 'auto'
+            });
+        }
+        
+        // add zero selection column
+        if (is_zero) {
+            columns.push({
+                'label' : 'Column: None',
+                'value' : 'zero'
             });
         }
         

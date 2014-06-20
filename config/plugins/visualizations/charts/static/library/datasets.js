@@ -159,7 +159,7 @@ return Backbone.Collection.extend(
                 
                 // check if column is in cache
                 var block_id = this._block_id(request_dictionary, column);
-                if (this.cache[block_id] || column === 'auto') {
+                if (this.cache[block_id] || column === 'auto' || column === 'zero') {
                     continue;
                 }
                 
@@ -264,33 +264,44 @@ return Backbone.Collection.extend(
                 var column = group.columns[key];
           
                 // check if auto block is requested
-                if (column.index == 'auto') {
-                    for (var j = 0; j < limit; j++) {
-                        // get value dictionary
-                        var value = group.values[j];
-                        
-                        // add auto value
-                        value[key] = parseInt(j) + start;
-                    }
-                } else {
-                    // get block
-                    var block_id = this._block_id(request_dictionary, column.index);
-                    var column_data = this.cache[block_id];
-                
-                    // go through column
-                    for (var j = 0; j < limit; j++) {
-                        // get value dictionary
-                        var value = group.values[j];
-                        
-                        // get/fix value
-                        var v = column_data[j];
-                        if (isNaN(v) && !column.is_label) {
-                            v = 0;
+                switch (column.index) {
+                    case 'auto':
+                        for (var j = 0; j < limit; j++) {
+                            // get value dictionary
+                            var value = group.values[j];
+                            
+                            // add auto value
+                            value[key] = parseInt(j) + start;
                         }
-                        
-                        // add to dict
-                        value[key] = v;
-                    }
+                        break;
+                    case 'zero':
+                        for (var j = 0; j < limit; j++) {
+                            // get value dictionary
+                            var value = group.values[j];
+                            
+                            // add zero value
+                            value[key] = 0;
+                        }
+                        break;
+                    default:
+                        // get block
+                        var block_id = this._block_id(request_dictionary, column.index);
+                        var column_data = this.cache[block_id];
+                    
+                        // go through column
+                        for (var j = 0; j < limit; j++) {
+                            // get value dictionary
+                            var value = group.values[j];
+                            
+                            // get/fix value
+                            var v = column_data[j];
+                            if (isNaN(v) && !column.is_label) {
+                                v = 0;
+                            }
+                            
+                            // add to dict
+                            value[key] = v;
+                        }
                 }
             }
         }

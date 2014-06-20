@@ -249,7 +249,7 @@ return Backbone.View.extend({
             .style(this.options.style)
             .style({'font-size': xFontSize + 'px'})
             .attr('transform', function(d) {
-                var y = -this.getBBox().height - 10;
+                var y = -this.getBBox().height - 15;
                 var x = -xFontSize + boxWidth/2;
                 return 'rotate(-90)translate(' + y + ',' + x + ')';
             });
@@ -259,7 +259,8 @@ return Backbone.View.extend({
             .attr('width', width)
             .attr('height', font_size + 3)
             .attr('y', height + margin.bottom - font_size - 3)
-            .attr('fill', this.options.debug_color);
+            .attr('fill', this.options.debug_color)
+            .attr('opacity', 0.7);
             
         // axis label
         this.gxAxisLabel = svg.append('text')
@@ -316,7 +317,8 @@ return Backbone.View.extend({
             .attr('width', font_size)
             .attr('height', height)
             .attr('x', -margin.left)
-            .attr('fill', this.options.debug_color);
+            .attr('fill', this.options.debug_color)
+            .attr('opacity', 0.7);
             
         // axis label
         this.gyAxisLabel = svg.append('text')
@@ -349,9 +351,15 @@ return Backbone.View.extend({
         var legendElementHeight = Math.max(legendSize * height / legendElements, font_size);
         var legendHeight = legendElements * legendElementHeight / 2;
         
+        // check number of legend elements
+        var data = d3.range(this.zMin, this.zMax, 2 * (this.zMax-this.zMin) / legendElements).reverse();
+        if (data.length < 2) {
+            return;
+        }
+        
         // create legend elements
         var legend = this.svg.selectAll('.legend')
-            .data(d3.range(this.zMin, this.zMax, 2 * (this.zMax-this.zMin) / legendElements).reverse())
+            .data(data)
             .enter().append('g')
                 .attr('class', 'legend')
                 .attr('transform', function(d, i) {
