@@ -1264,7 +1264,7 @@ class Tool( object, Dictifiable ):
                 executable = self.version_string_cmd.split()[0]
                 abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
                 command_line = self.version_string_cmd.replace(executable, abs_executable, 1)
-                self.version_string_cmd = self.interpreter + " " + command_line
+                self.version_string_cmd = version_cmd_interpreter + " " + command_line
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
