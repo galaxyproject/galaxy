@@ -207,11 +207,11 @@ return Backbone.View.extend({
         // add tooltip events
         boxes.selectAll('rect')
         .on('dblclick', function(d) {
-            d3.event.stopPropagation();
-            var xLabel = self.categories.array.x[d.x];
-            var yLabel = self.categories.array.y[d.y];
             var url = self.chart.settings.get('url_template').trim();
             if (url) {
+                d3.event.stopPropagation();
+                var xLabel = self.categories.array.x[d.x];
+                var yLabel = self.categories.array.y[d.y];
                 window.open(url.replace('__LABEL__', xLabel));
                 window.open(url.replace('__LABEL__', yLabel));
             }
