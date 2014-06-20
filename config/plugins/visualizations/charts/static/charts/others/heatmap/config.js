@@ -98,6 +98,13 @@ return $.extend(true, {}, config_default, {
                     value   : 'wysiwyg'
                 }
             ]
+        },
+        url_template: {
+            title       : 'Url template',
+            info        : 'Enter a url to link the labels with external sources. Use __LABEL__ as placeholder.',
+            type        : 'text',
+            init        : '',
+            placeholder : 'http://someurl.com?id=__LABEL__'
         }
     }
 });

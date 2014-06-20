@@ -206,6 +206,16 @@ return Backbone.View.extend({
         
         // add tooltip events
         boxes.selectAll('rect')
+        .on('dblclick', function(d) {
+            d3.event.stopPropagation();
+            var xLabel = self.categories.array.x[d.x];
+            var yLabel = self.categories.array.y[d.y];
+            var url = self.chart.settings.get('url_template').trim();
+            if (url) {
+                window.open(url.replace('__LABEL__', xLabel));
+                window.open(url.replace('__LABEL__', yLabel));
+            }
+        })
         .on('mouseover', function(d) {
             self.tooltip.style('opacity', 0.9);
             self.tooltip .html(self._templateTooltip(d))
