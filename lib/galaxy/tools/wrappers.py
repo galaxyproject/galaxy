@@ -1,4 +1,5 @@
 import pipes
+from galaxy import exceptions
 from galaxy.util.none_like import NoneDataset
 from galaxy.util import odict
 
@@ -211,6 +212,17 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
             return self.false_path
         elif self.false_extra_files_path is not None and key == 'extra_files_path':
             return self.false_extra_files_path
+        elif key == 'extra_files_path':
+            try:
+                return self.files_path
+            except AttributeError:
+                try:
+                    return self.dataset.extra_files_path
+                except exceptions.ObjectNotFound:
+                    # NestedObjectstore raises an error here
+                    # instead of just returning a non-existent
+                    # path like DiskObjectStore.
+                    raise
         else:
             return getattr( self.dataset, key )
 
