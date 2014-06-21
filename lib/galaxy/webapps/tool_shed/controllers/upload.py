@@ -8,13 +8,14 @@ from galaxy.web.base.controller import BaseUIController
 from galaxy import util
 from galaxy import web
 from galaxy.datatypes import checkers
+from tool_shed.dependencies import dependency_manager
 import tool_shed.repository_types.util as rt_util
-import tool_shed.util.shed_util_common as suc
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_dependency_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
@@ -95,6 +96,8 @@ class UploadController( BaseUIController ):
                 uploaded_file_filename = os.path.split( file_data.filename )[ -1 ]
                 isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             if uploaded_file or uploaded_directory:
+                rdah = dependency_manager.RepositoryDependencyAttributeHandler( trans.app, unpopulate=False )
+                tdah = dependency_manager.ToolDependencyAttributeHandler( trans.app, unpopulate=False )
                 ok = True
                 isgzip = False
                 isbz2 = False
@@ -124,6 +127,8 @@ class UploadController( BaseUIController ):
                 if istar:
                     ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
                         self.upload_tar( trans,
+                                         rdah,
+                                         tdah,
                                          repository,
                                          tar,
                                          uploaded_file,
@@ -134,6 +139,8 @@ class UploadController( BaseUIController ):
                 elif uploaded_directory:
                     ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
                         self.upload_directory( trans,
+                                               rdah,
+                                               tdah,
                                                repository,
                                                uploaded_directory,
                                                upload_point,
@@ -164,12 +171,9 @@ class UploadController( BaseUIController ):
                             full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
                         # Move some version of the uploaded file to the load_point within the repository hierarchy.
                         if uploaded_file_filename in [ rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME ]:
-                            # Inspect the contents of the file to see if changeset_revision values are missing and if so,
-                            # set them appropriately.
-                            altered, root_elem, error_message = \
-                                commit_util.handle_repository_dependencies_definition( trans.app,
-                                                                                       uploaded_file_name,
-                                                                                       unpopulate=False )
+                            # Inspect the contents of the file to see if toolshed or changeset_revision attributes
+                            # are missing and if so, set them appropriately.
+                            altered, root_elem, error_message = rdah.handle_tag_attributes( uploaded_file_name )
                             if error_message:
                                 ok = False
                                 message = error_message
@@ -179,12 +183,10 @@ class UploadController( BaseUIController ):
                                 shutil.move( tmp_filename, full_path )
                             else:
                                 shutil.move( uploaded_file_name, full_path )
-                        elif uploaded_file_filename in [ rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-                                                         rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
+                        elif uploaded_file_filename in [ rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
                             # Inspect the contents of the file to see if changeset_revision values are
                             # missing and if so, set them appropriately.
-                            altered, root_elem, error_message = \
-                                commit_util.handle_tool_dependencies_definition( trans.app, uploaded_file_name )
+                            altered, root_elem, error_message = tdah.handle_tag_attributes( uploaded_file_name )
                             if error_message:
                                 ok = False
                                 message = error_message
@@ -333,7 +335,7 @@ class UploadController( BaseUIController ):
                                     message=message,
                                     status=status )
 
-    def upload_directory( self, trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar,
+    def upload_directory( self, trans, rdah, tdah, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar,
                           commit_message, new_repo_alert ):
         repo_dir = repository.repo_path( trans.app )
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
@@ -364,20 +366,18 @@ class UploadController( BaseUIController ):
                 if ok:
                     uploaded_file_name = os.path.abspath( os.path.join( root, uploaded_file ) )
                     if os.path.split( uploaded_file_name )[ -1 ] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
-                        # Inspect the contents of the file to see if changeset_revision values are missing and
-                        # if so, set them appropriately.
-                        altered, root_elem, error_message = \
-                            commit_util.handle_repository_dependencies_definition( trans.app,
-                                                                                   uploaded_file_name,
-                                                                                   unpopulate=False )
+                        # Inspect the contents of the file to see if toolshed or changeset_revision
+                        # attributes are missing and if so, set them appropriately.
+                        altered, root_elem, error_message = rdah.handle_tag_attributes( uploaded_file_name )
                         if error_message:
                             return False, error_message, [], '', [], []
                         elif altered:
                             tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                             shutil.move( tmp_filename, uploaded_file_name )
                     elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
-                        # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                        altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans.app, uploaded_file_name )
+                        # Inspect the contents of the file to see if toolshed or changeset_revision
+                        # attributes are missing and if so, set them appropriately.
+                        altered, root_elem, error_message = tdah.handle_tag_attributes( uploaded_file_name )
                         if error_message:
                             return False, error_message, [], '', [], []
                         if altered:
@@ -406,7 +406,8 @@ class UploadController( BaseUIController ):
                                                      undesirable_dirs_removed,
                                                      undesirable_files_removed )
 
-    def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
+    def upload_tar( self, trans, rdah, tdah, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar,
+                    commit_message, new_repo_alert ):
         # Upload a tar archive of files.
         repo_dir = repository.repo_path( trans.app )
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
@@ -442,18 +443,18 @@ class UploadController( BaseUIController ):
             for filename in filenames_in_archive:
                 uploaded_file_name = os.path.join( full_path, filename )
                 if os.path.split( uploaded_file_name )[ -1 ] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
-                    # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root_elem, error_message = commit_util.handle_repository_dependencies_definition( trans.app,
-                                                                                                               uploaded_file_name,
-                                                                                                               unpopulate=False )
+                    # Inspect the contents of the file to see if toolshed or changeset_revision attributes
+                    # are missing and if so, set them appropriately.
+                    altered, root_elem, error_message = rdah.handle_tag_attributes( uploaded_file_name )
                     if error_message:
                         return False, error_message, [], '', [], []
                     elif altered:
                         tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                         shutil.move( tmp_filename, uploaded_file_name )
                 elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
-                    # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                    altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( trans.app, uploaded_file_name )
+                    # Inspect the contents of the file to see if toolshed or changeset_revision
+                    # attributes are missing and if so, set them appropriately.
+                    altered, root_elem, error_message = tdah.handle_tag_attributes( uploaded_file_name )
                     if error_message:
                         return False, error_message, [], '', [], []
                     if altered:

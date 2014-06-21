@@ -169,7 +169,9 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
                           commit_message='Populate package_x11_client_1_5_proto_7_0_0470 with tool dependency definitions.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
-        assert len( package_x11_repository.metadata_revisions ) == 1, 'package_x11_client_1_5_proto_7_0_0470 has incorrect number of metadata revisions'
+        assert len( package_x11_repository.metadata_revisions ) == 1, \
+            'package_x11_client_1_5_proto_7_0_0470 has incorrect number of metadata revisions, expected 1 but found %d' % \
+            len( package_x11_repository.metadata_revisions )
 
     def test_0025_upload_updated_tool_dependency_to_package_emboss( self ):
         '''Upload a new tool_dependencies.xml to package_emboss_5_0_0_0470.''' 
@@ -189,7 +191,9 @@ class TestEnvironmentInheritance( ShedTwillTestCase ):
                           commit_message='Populate package_emboss_5_0_0_0470 with tool dependency definitions.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
-        assert len( package_emboss_repository.metadata_revisions ) == 2, 'package_emboss_5_0_0_0470 has incorrect number of metadata revisions'
+        assert len( package_emboss_repository.metadata_revisions ) == 2, \
+            'package_emboss_5_0_0_0470 has incorrect number of metadata revisions, expected 2 but found %d' % \
+            len( package_emboss_repository.metadata_revisions )
 
     def test_0030_upload_updated_tool_dependency_to_emboss_5_repository( self ):
         '''Upload a new tool_dependencies.xml to emboss_5_0470.'''

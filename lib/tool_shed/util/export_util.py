@@ -6,19 +6,19 @@ import tempfile
 import threading
 from time import gmtime
 from time import strftime
-import tool_shed.util.shed_util_common as suc
 import tool_shed.repository_types.util as rt_util
 from galaxy import eggs
 from galaxy import web
 from galaxy.util.odict import odict
+from tool_shed.dependencies import dependency_manager
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import repository_dependency_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
-
 from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
 
 eggs.require( 'mercurial' )
@@ -129,6 +129,8 @@ def export_repository( trans, tool_shed_url, repository_id, repository_name, cha
     return repositories_archive, error_messages
 
 def generate_repository_archive( trans, work_dir, tool_shed_url, repository, changeset_revision, file_type ):
+    rdah = dependency_manager.RepositoryDependencyAttributeHandler( trans.app, unpopulate=True )
+    tdah = dependency_manager.ToolDependencyAttributeHandler( trans.app, unpopulate=True )
     file_type_str = get_file_type_str( changeset_revision, file_type )
     file_name = '%s-%s' % ( repository.name, file_type_str )
     return_code, error_message = archive_repository_revision( trans, ui, repository, work_dir, changeset_revision )
@@ -151,8 +153,7 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                 # See if we have a repository dependencies defined.
                 if name == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                     # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
-                    altered, root_elem, error_message = \
-                        commit_util.handle_repository_dependencies_definition( trans.app, full_path, unpopulate=True )
+                    altered, root_elem, error_message = rdah.handle_tag_attributes( full_path )
                     if error_message:
                         return None, error_message
                     if altered:
@@ -160,8 +161,7 @@ def generate_repository_archive( trans, work_dir, tool_shed_url, repository, cha
                         shutil.move( tmp_filename, full_path )
                 elif name == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                     # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
-                    altered, root_elem, error_message = \
-                        commit_util.handle_tool_dependencies_definition( trans.app, full_path, unpopulate=True )
+                    altered, root_elem, error_message = tdah.handle_tag_attributes( full_path )
                     if error_message:
                         return None, error_message
                     if altered:

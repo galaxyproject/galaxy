@@ -5,13 +5,14 @@ import tarfile
 import tempfile
 import urllib
 from galaxy import util
+from tool_shed.dependencies import dependency_manager
 from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_maintenance_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
-import tool_shed.util.shed_util_common as suc
 import tool_shed.repository_types.util as rt_util
 
 log = logging.getLogger( __name__ )
@@ -267,6 +268,8 @@ def get_repository_status_from_tool_shed( app, user, user_is_admin, repository_i
 
 def import_repository_archive( app, host, user, repository, repository_archive_dict ):
     """Import a repository archive contained within a repository capsule."""
+    rdah = dependency_manager.RepositoryDependencyAttributeHandler( app, unpopulate=False )
+    tdah = dependency_manager.ToolDependencyAttributeHandler( app, unpopulate=False )
     archive_file_name = repository_archive_dict.get( 'archive_file_name', None )
     capsule_file_name = repository_archive_dict[ 'capsule_file_name' ]
     encoded_file_path = repository_archive_dict[ 'encoded_file_path' ]
@@ -303,9 +306,9 @@ def import_repository_archive( app, host, user, repository, repository_archive_d
         for filename in filenames_in_archive:
             uploaded_file_name = os.path.join( full_path, filename )
             if os.path.split( uploaded_file_name )[ -1 ] == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
-                # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                altered, root_elem, error_message = \
-                    commit_util.handle_repository_dependencies_definition( app, uploaded_file_name, unpopulate=False )
+                # Inspect the contents of the file to see if toolshed or changeset_revision attributes
+                # are missing and if so, set them appropriately.
+                altered, root_elem, error_message = rdah.handle_tag_attributes( uploaded_file_name )
                 if error_message:
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message
@@ -313,8 +316,9 @@ def import_repository_archive( app, host, user, repository, repository_archive_d
                     tmp_filename = xml_util.create_and_write_tmp_file( root_elem )
                     shutil.move( tmp_filename, uploaded_file_name )
             elif os.path.split( uploaded_file_name )[ -1 ] == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
-                # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
-                altered, root_elem, error_message = commit_util.handle_tool_dependencies_definition( app, uploaded_file_name )
+                # Inspect the contents of the file to see if toolshed or changeset_revision
+                # attributes are missing and if so, set them appropriately.
+                altered, root_elem, error_message = tdah.handle_tag_attributes( uploaded_file_name )
                 if error_message:
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message

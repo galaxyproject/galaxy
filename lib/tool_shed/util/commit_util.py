@@ -5,14 +5,10 @@ import os
 import shutil
 import tempfile
 from galaxy.datatypes import checkers
-from galaxy.util import asbool
-from galaxy.util.odict import odict
-from galaxy.web import url_for
-import tool_shed.util.shed_util_common as suc
 from tool_shed.util import basic_util
 from tool_shed.util import hg_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
-from tool_shed.util import xml_util
 import tool_shed.repository_types.util as rt_util
 
 log = logging.getLogger( __name__ )
@@ -48,8 +44,8 @@ def check_archive( repository, archive ):
 
 def check_file_contents_for_email_alerts( app ):
     """
-    See if any admin users have chosen to receive email alerts when a repository is updated.  If so, the file contents of the update must be
-    checked for inappropriate content.
+    See if any admin users have chosen to receive email alerts when a repository is updated.
+    If so, the file contents of the update must be checked for inappropriate content.
     """
     sa_session = app.model.context.current
     admin_users = app.config.get( "admin_users", "" ).split( "," )
@@ -71,8 +67,9 @@ def check_file_content_for_html_and_images( file_path ):
 
 def get_change_lines_in_file_for_tag( tag, change_dict ):
     """
-    The received change_dict is the jsonified version of the changes to a file in a changeset being pushed to the tool shed from the command line.
-    This method cleans and returns appropriate lines for inspection.
+    The received change_dict is the jsonified version of the changes to a file in a
+    changeset being pushed to the Tool Shed from the command line. This method cleans
+    and returns appropriate lines for inspection.
     """
     cleaned_lines = []
     data_list = change_dict.get( 'data', [] )
@@ -108,7 +105,9 @@ def get_upload_point( repository, **kwd ):
     return upload_point
 
 def handle_bz2( repository, uploaded_file_name ):
-    fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_bunzip2_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
+    fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_bunzip2_' % repository.id,
+                                         dir=os.path.dirname( uploaded_file_name ),
+                                         text=False )
     bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
     while 1:
         try:
@@ -124,22 +123,6 @@ def handle_bz2( repository, uploaded_file_name ):
     os.close( fd )
     bzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
-
-def handle_complex_repository_dependency_elem( app, elem, sub_elem_index, sub_elem, sub_elem_altered, altered, unpopulate=False ):
-    """
-    Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag that defines
-    a complex repository dependency.
-    """
-    # <repository name="package_eigen_2_0" owner="test" prior_installation_required="True" />
-    revised, repository_elem, error_message = handle_repository_dependency_elem( app, sub_elem, unpopulate=unpopulate )
-    if error_message:
-        error_message = 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
-    if revised:
-        elem[ sub_elem_index ] = repository_elem
-        sub_elem_altered = True
-        if not altered:
-            altered = True
-    return altered, sub_elem_altered, elem, error_message
 
 def handle_directory_changes( app, host, username, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
                               new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed ):
@@ -218,20 +201,10 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
                              admin_only=admin_only )
     return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
 
-def handle_missing_repository_attribute( elem ):
-    # <repository name="molecule_datatypes" owner="test" />
-    error_message = ''
-    name = elem.get( 'name' )
-    if not name:
-        error_message += 'The tag is missing the required name attribute.  '
-    owner = elem.get( 'owner' )
-    if not owner:
-        error_message += 'The tag is missing the required owner attribute.  '
-    log.debug( error_message )
-    return error_message
-
 def handle_gzip( repository, uploaded_file_name ):
-    fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
+    fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id,
+                                         dir=os.path.dirname( uploaded_file_name ),
+                                         text=False )
     gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
     while 1:
         try:
@@ -247,249 +220,6 @@ def handle_gzip( repository, uploaded_file_name ):
     os.close( fd )
     gzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
-
-def handle_repository_dependencies_definition( app, repository_dependencies_config, unpopulate=False ):
-    """
-    Populate or unpopulate the toolshed and changeset_revision attributes of a <repository> tag.  Populating will occur when a
-    dependency definition file is being uploaded to the repository, while depopulating will occur when the repository is being
-    exported.
-    """
-    altered = False
-    # Make sure we're looking at a valid repository_dependencies.xml file.
-    tree, error_message = xml_util.parse_xml( repository_dependencies_config )
-    if tree is None:
-        return False, None, error_message
-    root = tree.getroot()
-    if root.tag == 'repositories':
-        for index, elem in enumerate( root ):
-            if elem.tag == 'repository':
-                # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
-                revised, elem, error_message = handle_repository_dependency_elem( app, elem, unpopulate=unpopulate )
-                if error_message:
-                    error_message = 'The repository_dependencies.xml file contains an invalid <repository> tag.  %s' % error_message
-                    return False, None, error_message
-                if revised:
-                    root[ index ] = elem
-                    if not altered:
-                        altered = True
-        return altered, root, error_message
-    return False, None, error_message
-
-def handle_repository_dependency_elem( app, elem, unpopulate=False ):
-    """Populate or unpopulate repository tags."""
-    # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
-    # <repository changeset_revision="xxx" name="package_xorg_macros_1_17_1" owner="test" toolshed="yyy">
-    #    <package name="xorg_macros" version="1.17.1" />
-    # </repository>
-    error_message = ''
-    name = elem.get( 'name' )
-    owner = elem.get( 'owner' )
-    # The name and owner attributes are always required, so if either are missing, return the error message.
-    if not name or not owner:
-        error_message = handle_missing_repository_attribute( elem )
-        return False, elem, error_message
-    revised = False
-    toolshed = elem.get( 'toolshed' )
-    changeset_revision = elem.get( 'changeset_revision' )
-    # Over a short period of time a bug existed which caused the prior_installation_required attribute
-    # to be set to False and included in the <repository> tag when a repository was exported along with
-    # its dependencies.  The following will eliminate this problematic attribute upon import.
-    prior_installation_required = elem.get( 'prior_installation_required' )
-    if prior_installation_required is not None and not asbool( prior_installation_required ):
-        del elem.attrib[ 'prior_installation_required' ]
-    sub_elems = [ child_elem for child_elem in list( elem ) ]
-    if len( sub_elems ) > 0:
-        # At this point, a <repository> tag will point only to a package.
-        # <package name="xorg_macros" version="1.17.1" />
-        # Coerce the list to an odict().
-        sub_elements = odict()
-        packages = []
-        for sub_elem in sub_elems:
-            sub_elem_type = sub_elem.tag
-            sub_elem_name = sub_elem.get( 'name' )
-            sub_elem_version = sub_elem.get( 'version' )
-            if sub_elem_type and sub_elem_name and sub_elem_version:
-                packages.append( ( sub_elem_name, sub_elem_version ) )
-        sub_elements[ 'packages' ] = packages
-    else:
-        # Set to None.
-        sub_elements = None
-    if unpopulate:
-        # We're exporting the repository, so eliminate all toolshed and changeset_revision attributes from the
-        # <repository> tag.
-        if toolshed or changeset_revision:
-            attributes = odict()
-            attributes[ 'name' ] = name
-            attributes[ 'owner' ] = owner
-            prior_installation_required = elem.get( 'prior_installation_required' )
-            if asbool( prior_installation_required ):
-                attributes[ 'prior_installation_required' ] = 'True'
-            elem = xml_util.create_element( 'repository', attributes=attributes, sub_elements=sub_elements )
-            revised = True
-        return revised, elem, error_message
-    # From here on we're populating the toolshed and changeset_revisions if necessary.
-    if not toolshed:
-        # Default the setting to the current tool shed.
-        toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
-        elem.attrib[ 'toolshed' ] = toolshed
-        revised = True
-    if not changeset_revision:
-        # Populate the changeset_revision attribute with the latest installable metadata revision for the defined repository.
-        # We use the latest installable revision instead of the latest metadata revision to ensure that the contents of the
-        # revision are valid.
-        repository = suc.get_repository_by_name_and_owner( app, name, owner )
-        if repository:
-            repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-            lastest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( app, repository, repo )
-            if lastest_installable_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
-                elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
-                revised = True
-            else:
-                error_message = 'Invalid latest installable changeset_revision %s ' % str( lastest_installable_changeset_revision )
-                error_message += 'retrieved for repository %s owned by %s.  ' % ( str( name ), str( owner ) )
-        else:
-            error_message = 'Unable to locate repository with name %s and owner %s.  ' % ( str( name ), str( owner ) )
-    return revised, elem, error_message
-
-def handle_repository_dependency_sub_elem( app, package_altered, altered, actions_elem, action_index, action_elem, unpopulate=False ):
-    """
-    Populate or unpopulate the toolshed and changeset_revision attributes for each of the following tag sets.
-    <action type="set_environment_for_install">
-    <action type="setup_r_environment">
-    <action type="setup_ruby_environment">
-    """
-    error_message = ''
-    for repo_index, repo_elem in enumerate( action_elem ):
-        # Make sure to skip comments and tags that are not <repository>.
-        if repo_elem.tag == 'repository':
-            revised, repository_elem, message = handle_repository_dependency_elem( app, repo_elem, unpopulate=unpopulate )
-            if message:
-                error_message += 'The tool_dependencies.xml file contains an invalid <repository> tag.  %s' % message
-            if revised:
-                action_elem[ repo_index ] = repository_elem
-                package_altered = True
-                if not altered:
-                    altered = True
-    if package_altered:
-        actions_elem[ action_index ] = action_elem
-    return package_altered, altered, actions_elem, error_message
-
-def handle_tool_dependencies_definition( app, tool_dependencies_config, unpopulate=False ):
-    """
-    Populate or unpopulate the tooshed and changeset_revision attributes of each <repository>
-    tag defined within a tool_dependencies.xml file.
-    """
-    altered = False
-    error_message = ''
-    # Make sure we're looking at a valid tool_dependencies.xml file.
-    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
-    if tree is None:
-        return False, None, error_message
-    root = tree.getroot()
-    if root.tag == 'tool_dependency':
-        package_altered = False
-        for root_index, root_elem in enumerate( root ):
-            # <package name="eigen" version="2.0.17">
-            package_altered = False
-            if root_elem.tag == 'package':
-                for package_index, package_elem in enumerate( root_elem ):
-                    if package_elem.tag == 'repository':
-                        # We have a complex repository dependency.
-                        altered, package_altered, root_elem, message = \
-                            handle_complex_repository_dependency_elem( app,
-                                                                       root_elem,
-                                                                       package_index,
-                                                                       package_elem,
-                                                                       package_altered,
-                                                                       altered,
-                                                                       unpopulate=unpopulate )
-                        if message:
-                            error_message += message
-                        if package_altered:
-                            root[ root_index ] = root_elem
-                    elif package_elem.tag == 'install':
-                        # <install version="1.0">
-                        for actions_index, actions_elem in enumerate( package_elem ):
-                            if actions_elem.tag == 'actions_group':
-                                # Inspect all entries in the <actions_group> tag set, skipping <actions>
-                                # tag sets that define os and architecture attributes.  We want to inspect
-                                # only the last <actions> tag set contained within the <actions_group> tag
-                                # set to see if a complex repository dependency is defined.
-                                for actions_group_index, actions_group_elem in enumerate( actions_elem ):
-                                    if actions_group_elem.tag == 'actions':
-                                        # Skip all actions tags that include os or architecture attributes.
-                                        system = actions_group_elem.get( 'os' )
-                                        architecture = actions_group_elem.get( 'architecture' )
-                                        if system or architecture:
-                                            continue
-                                        # ...
-                                        # <actions>
-                                        #     <package name="libgtextutils" version="0.6">
-                                        #         <repository name="package_libgtextutils_0_6" owner="test" prior_installation_required="True" />
-                                        #     </package>
-                                        # ...
-                                        for last_actions_index, last_actions_elem in enumerate( actions_group_elem ):
-                                            last_actions_package_altered = False
-                                            if last_actions_elem.tag == 'package':
-                                                last_actions_elem_package_elem_altered = False
-                                                for last_actions_elem_package_index, last_actions_elem_package_elem in enumerate( last_actions_elem ):
-                                                    if last_actions_elem_package_elem.tag == 'repository':
-                                                        # We have a complex repository dependency.
-                                                        last_actions_package_altered, last_actions_elem_package_elem_altered, last_actions_elem, message = \
-                                                            handle_complex_repository_dependency_elem( app,
-                                                                                                       last_actions_elem,
-                                                                                                       last_actions_elem_package_index,
-                                                                                                       last_actions_elem_package_elem,
-                                                                                                       last_actions_elem_package_elem_altered,
-                                                                                                       last_actions_package_altered,
-                                                                                                       unpopulate=unpopulate )
-                                                        if not altered and last_actions_package_altered:
-                                                            altered = True
-                                                        if message:
-                                                            error_message += message
-                                                    if last_actions_elem_package_elem_altered:
-                                                        actions_group_elem[ last_actions_index ] = last_actions_elem
-                                            else:
-                                                # Inspect the sub elements of last_actions_elem to locate all <repository> tags and
-                                                # populate them with toolshed and changeset_revision attributes if necessary.
-                                                last_actions_package_altered, altered, last_actions_elem, message = \
-                                                    handle_repository_dependency_sub_elem( app,
-                                                                                           last_actions_package_altered,
-                                                                                           altered,
-                                                                                           actions_group_elem,
-                                                                                           last_actions_index,
-                                                                                           last_actions_elem,
-                                                                                           unpopulate=unpopulate )
-                                                if message:
-                                                    error_message += message
-                            elif actions_elem.tag == 'actions':
-                                # We are not in an <actions_group> tag set, so we must be in an <actions> tag set.
-                                for action_index, action_elem in enumerate( actions_elem ):
-                                    # Inspect the sub elements of last_actions_elem to locate all <repository> tags
-                                    # and populate them with toolshed and changeset_revision attributes if necessary.
-                                    package_altered, altered, actions_elem, message = \
-                                        handle_repository_dependency_sub_elem( app,
-                                                                               package_altered,
-                                                                               altered,
-                                                                               actions_elem,
-                                                                               action_index,
-                                                                               action_elem,
-                                                                               unpopulate=unpopulate )
-                                    if message:
-                                        error_message += message
-                            else:
-                                package_name = root_elem.get( 'name', '' )
-                                package_version = root_elem.get( 'version', '' )
-                                error_message += 'Version %s of the %s package cannot be installed because ' % \
-                                    ( str( package_version ), str( package_name ) )
-                                error_message += 'the recipe for installing the package is missing either an '
-                                error_message += '&lt;actions&gt; tag set or an &lt;actions_group&gt; tag set.'
-                            if package_altered:
-                                package_elem[ actions_index ] = actions_elem
-            if package_altered:
-                root[ root_index ] = root_elem
-        return altered, root, error_message
-    return False, None, error_message
 
 def repository_tag_is_valid( filename, line ):
     """
