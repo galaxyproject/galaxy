@@ -221,41 +221,6 @@ def handle_gzip( repository, uploaded_file_name ):
     gzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
 
-def repository_tag_is_valid( filename, line ):
-    """
-    Checks changes made to <repository> tags in a dependency definition file being pushed to the
-    Tool Shed from the command line to ensure that all required attributes exist.
-    """
-    required_attributes = [ 'toolshed', 'name', 'owner', 'changeset_revision' ]
-    defined_attributes = line.split()
-    for required_attribute in required_attributes:
-        defined = False
-        for defined_attribute in defined_attributes:
-            if defined_attribute.startswith( required_attribute ):
-                defined = True
-                break
-        if not defined:
-            error_msg = 'The %s file contains a <repository> tag that is missing the required attribute %s.  ' % \
-                ( filename, required_attribute )
-            error_msg += 'Automatically populating dependency definition attributes occurs only when using '
-            error_msg += 'the Tool Shed upload utility.  '
-            return False, error_msg
-    return True, ''
-
-def repository_tags_are_valid( filename, change_list ):
-    """
-    Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing
-    changes to the tool shed on the command line.
-    """
-    tag = '<repository'
-    for change_dict in change_list:
-        lines = get_change_lines_in_file_for_tag( tag, change_dict )
-        for line in lines:
-            is_valid, error_msg = repository_tag_is_valid( filename, line )
-            if not is_valid:
-                return False, error_msg
-    return True, ''
-
 def uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=False, isbz2=False ):
     if isgzip:
         handle_gzip( repository, uploaded_file_name )

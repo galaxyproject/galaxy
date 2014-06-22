@@ -177,6 +177,7 @@ class RepositoryDependencyAttributeHandler( object ):
                     new_root[ index ] = new_elem
         return root_altered, new_root, error_message
 
+
 class ToolDependencyAttributeHandler( object ):
 
     def __init__( self, app, unpopulate ):
