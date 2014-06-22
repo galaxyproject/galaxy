@@ -53,7 +53,8 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.debug( error_message )
             return None, error_message
         repository_id = trans.security.encode_id( repository.id )
-        return export_util.export_repository( trans,
+        return export_util.export_repository( trans.app,
+                                              trans.user,
                                               tool_shed_url,
                                               repository_id,
                                               str( repository.name ),

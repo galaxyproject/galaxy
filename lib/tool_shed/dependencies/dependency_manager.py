@@ -5,7 +5,7 @@ from galaxy.util import asbool
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 
-from tool_shed.dependencies import tag_attribute_handler
+from tool_shed.dependencies.tool import tag_attribute_handler
 from tool_shed.repository_types.util import REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
 from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION_FILENAME
 from tool_shed.util import hg_util

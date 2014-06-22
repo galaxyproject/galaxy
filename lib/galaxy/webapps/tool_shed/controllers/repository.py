@@ -1172,7 +1172,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             file_type = 'gz'
             export_repository_dependencies = CheckboxField.is_checked( export_repository_dependencies )
             tool_shed_url = web.url_for( '/', qualified=True )
-            repositories_archive, error_message = export_util.export_repository( trans,
+            repositories_archive, error_message = export_util.export_repository( trans.app,
+                                                                                 trans.user,
                                                                                  tool_shed_url,
                                                                                  repository_id,
                                                                                  str( repository.name ),
