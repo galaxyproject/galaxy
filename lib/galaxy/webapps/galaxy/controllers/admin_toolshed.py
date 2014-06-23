@@ -1359,9 +1359,8 @@ class AdminToolshed( AdminGalaxy ):
         else:
             # Entering this else block occurs only if the tool_shed_repository does not include any valid tools.
             if install_repository_dependencies:
-                repository_dependencies = \
-                    repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans.app,
-                                                                                                               tool_shed_repository )
+                repository_dependencies = rdm.get_repository_dependencies_for_installed_tool_shed_repository( trans.app,
+                                                                                                              tool_shed_repository )
             else:
                 repository_dependencies = None
             if metadata:
@@ -1579,9 +1578,9 @@ class AdminToolshed( AdminGalaxy ):
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
                 tool_dependencies = metadata.get( 'tool_dependencies', None )
-            repository_dependencies = \
-                repository_dependency_util.get_repository_dependencies_for_installed_tool_shed_repository( trans.app,
-                                                                                                           tool_shed_repository )
+            rdm = RepositoryDependencyManager( trans.app )
+            repository_dependencies = rdm.get_repository_dependencies_for_installed_tool_shed_repository( trans.app,
+                                                                                                          tool_shed_repository )
             repo_info_dict = \
                 repository_maintenance_util.create_repo_info_dict( app=trans.app,
                                                                    repository_clone_url=repository_clone_url,
