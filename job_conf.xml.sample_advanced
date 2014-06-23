@@ -178,7 +178,7 @@
                does trust tool's specified container - but also wants tool's not
                configured to run in a container the following option can provide
                a fallback. -->
-          <!-- <param id="dockers_default_container_id">busybox:ubuntu-14.04</param> -->
+          <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
 
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
