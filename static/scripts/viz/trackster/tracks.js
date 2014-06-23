@@ -1579,8 +1579,14 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         this.request_redraw();
     },
 
-    resize_window: function() {
+    /** Resize viewport. Use this method if header/footer content has changed in size. */
+    resize_viewport: function() {
         this.viewport_container.height( this.container.height() - this.top_container.height() - this.bottom_container.height() );
+    },
+
+    /** Called when window is resized. */
+    resize_window: function() {
+        this.resize_viewport();
         this.request_redraw();
     },
 
@@ -2940,6 +2946,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * drawn/fetched and shown.
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
+        // If reference track is visible, adjust viewport to be smaller so that bottom content
+        // is visible.
+        if (this.view.reference_track.tiles_div.is(':visible')) {
+            this.view.resize_viewport();
+        }
+
         var line_track_tiles = _.filter(tiles, function(tile) {
             return (tile instanceof LineTrackTile);
         });
@@ -3618,15 +3630,15 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     can_draw: Drawable.prototype.can_draw,
 
     /**
-     * Retrieves data and draws tile if reference data can be displayed.
+     * Draws and shows tile if reference data can be displayed; otherwise track is hidden.
      */
     draw_helper: function(region, w_scale, options) {
         if (w_scale > this.view.canvas_manager.char_width_px) {
-             this.tiles_div.show();
+            this.tiles_div.show();
             return TiledTrack.prototype.draw_helper.call(this, region, w_scale, options);
         }
         else {
-             this.tiles_div.hide();
+            this.tiles_div.hide();
             return null;
         }
     },
