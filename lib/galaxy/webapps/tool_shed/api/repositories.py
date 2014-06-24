@@ -10,14 +10,14 @@ from galaxy import web
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
+from tool_shed.capsule import capsule_manager
 import tool_shed.repository_types.util as rt_util
-import tool_shed.util.shed_util_common as suc
 from tool_shed.util import basic_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import import_util
 from tool_shed.util import metadata_util
 from tool_shed.util import repository_maintenance_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 
 log = logging.getLogger( __name__ )
@@ -248,10 +248,14 @@ class RepositoriesController( BaseAPIController ):
         except tarfile.ReadError, e:
             log.debug( 'Error opening capsule file %s: %s' % ( str( capsule_file_name ), str( e ) ) )
             return {}
+        irm = capsule_manager.ImportRepositoryManager( trans.app,
+                                                       trans.request.host,
+                                                       trans.user,
+                                                       trans.user_is_admin() )
         capsule_dict[ 'tar_archive' ] = tar_archive
         capsule_dict[ 'capsule_file_name' ] = capsule_file_name
-        capsule_dict = import_util.extract_capsule_files( **capsule_dict )
-        capsule_dict = import_util.validate_capsule( **capsule_dict )
+        capsule_dict = irm.extract_capsule_files( **capsule_dict )
+        capsule_dict = irm.validate_capsule( **capsule_dict )
         status = capsule_dict.get( 'status', 'error' )
         if status == 'error':
             log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
@@ -263,15 +267,12 @@ class RepositoriesController( BaseAPIController ):
             return {}
         file_path = encoding_util.tool_shed_decode( encoded_file_path )
         export_info_file_path = os.path.join( file_path, 'export_info.xml' )
-        export_info_dict = import_util.get_export_info_dict( export_info_file_path )
+        export_info_dict = irm.get_export_info_dict( export_info_file_path )
         manifest_file_path = os.path.join( file_path, 'manifest.xml' )
         # The manifest.xml file has already been validated, so no error_message should be returned here.
-        repository_info_dicts, error_message = import_util.get_repository_info_from_manifest( manifest_file_path )
+        repository_info_dicts, error_message = irm.get_repository_info_from_manifest( manifest_file_path )
         # Determine the status for each exported repository archive contained within the capsule.
-        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans.app,
-                                                                                         trans.user,
-                                                                                         trans.user_is_admin(),
-                                                                                         repository_info_dicts )
+        repository_status_info_dicts = irm.get_repository_status_from_tool_shed( repository_info_dicts )
         # Generate a list of repository name / import results message tuples for display after the capsule is imported.
         import_results_tups = []
         # Only create repositories that do not yet exist and that the current user is authorized to create.  The
@@ -280,12 +281,9 @@ class RepositoriesController( BaseAPIController ):
             # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
             repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
             repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
-            import_results_tups = import_util.create_repository_and_import_archive( trans.app,
-                                                                                    trans.request.host,
-                                                                                    trans.user,
-                                                                                    repository_status_info_dict,
-                                                                                    import_results_tups )
-        import_util.check_status_and_reset_downloadable( trans.app, import_results_tups )
+            import_results_tups = irm.create_repository_and_import_archive( repository_status_info_dict,
+                                                                            import_results_tups )
+        irm.check_status_and_reset_downloadable( import_results_tups )
         basic_util.remove_dir( file_path )
         # NOTE: the order of installation is defined in import_results_tups, but order will be lost
         # when transferred to return_dict.

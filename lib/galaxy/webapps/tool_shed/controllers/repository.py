@@ -14,20 +14,19 @@ from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_
-import tool_shed.util.shed_util_common as suc
+from tool_shed.capsule import capsule_manager
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
-from tool_shed.util import export_util
 from tool_shed.util import hg_util
-from tool_shed.util import import_util
 from tool_shed.util import metadata_util
 from tool_shed.util import readme_util
 from tool_shed.util import repository_dependency_util
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import review_util
 from tool_shed.util import search_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
@@ -1149,7 +1148,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # server account's .hgrc file to include the following setting:
         # [web]
         # allow_archive = bz2, gz, zip
-        file_type_str = export_util.get_file_type_str( changeset_revision, file_type )
+        file_type_str = basic_util.get_file_type_str( changeset_revision, file_type )
         repository.times_downloaded += 1
         trans.sa_session.add( repository )
         trans.sa_session.flush()
@@ -1172,15 +1171,14 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             file_type = 'gz'
             export_repository_dependencies = CheckboxField.is_checked( export_repository_dependencies )
             tool_shed_url = web.url_for( '/', qualified=True )
-            repositories_archive, error_message = export_util.export_repository( trans.app,
-                                                                                 trans.user,
-                                                                                 tool_shed_url,
-                                                                                 repository_id,
-                                                                                 str( repository.name ),
-                                                                                 changeset_revision,
-                                                                                 file_type,
-                                                                                 export_repository_dependencies,
-                                                                                 api=False )
+            erm = capsule_manager.ExportRepositoryManager( app=trans.app,
+                                                           user=trans.user,
+                                                           tool_shed_url=tool_shed_url,
+                                                           repository=repository,
+                                                           changeset_revision=changeset_revision,
+                                                           export_repository_dependencies=export_repository_dependencies,
+                                                           using_api=False )
+            repositories_archive, error_message = erm.export_repository()
             repositories_archive_filename = os.path.basename( repositories_archive.name )
             if error_message:
                 message = error_message
@@ -1969,15 +1967,16 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         encoded_file_path = kwd.get( 'encoded_file_path', None )
         file_path = encoding_util.tool_shed_decode( encoded_file_path )
         export_info_file_path = os.path.join( file_path, 'export_info.xml' )
-        export_info_dict = import_util.get_export_info_dict( export_info_file_path )
+        irm = capsule_manager.ImportRepositoryManager( trans.app,
+                                                       trans.request.host,
+                                                       trans.user,
+                                                       trans.user_is_admin() )
+        export_info_dict = irm.get_export_info_dict( export_info_file_path )
         manifest_file_path = os.path.join( file_path, 'manifest.xml' )
         # The manifest.xml file has already been validated, so no error_message should be returned here.
-        repository_info_dicts, error_message = import_util.get_repository_info_from_manifest( manifest_file_path )
+        repository_info_dicts, error_message = irm.get_repository_info_from_manifest( manifest_file_path )
         # Determine the status for each exported repository archive contained within the capsule.
-        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans.app,
-                                                                                         trans.user,
-                                                                                         trans.user_is_admin(),
-                                                                                         repository_info_dicts )
+        repository_status_info_dicts = irm.get_repository_status_from_tool_shed( repository_info_dicts )
         if 'import_capsule_button' in kwd:
             # Generate a list of repository name / import results message tuples for display after the capsule is imported.
             import_results_tups = []
@@ -1987,12 +1986,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
                 repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
                 repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
-                import_results_tups = import_util.create_repository_and_import_archive( trans.app,
-                                                                                        trans.request.host,
-                                                                                        trans.user,
-                                                                                        repository_status_info_dict,
-                                                                                        import_results_tups )
-            import_util.check_status_and_reset_downloadable( trans.app, import_results_tups )
+                import_results_tups = irm.create_repository_and_import_archive( repository_status_info_dict,
+                                                                                import_results_tups )
+            irm.check_status_and_reset_downloadable( import_results_tups )
             basic_util.remove_dir( file_path )
             return trans.fill_template( '/webapps/tool_shed/repository/import_capsule_results.mako',
                                         export_info_dict=export_info_dict,
@@ -3081,13 +3077,17 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         status = kwd.get( 'status', 'done' )
         url = kwd.get( 'url', '' )
         if 'upload_capsule_button' in kwd:
-            capsule_dict = import_util.upload_capsule( **kwd )
+            irm = capsule_manager.ImportRepositoryManager( trans.app,
+                                                           trans.request.host,
+                                                           trans.user,
+                                                           trans.user_is_admin() )
+            capsule_dict = irm.upload_capsule( **kwd )
             status = capsule_dict.get( 'status', 'error' )
             if status == 'error':
                 message = capsule_dict.get( 'error_message', '' )
             else:
-                capsule_dict = import_util.extract_capsule_files( **capsule_dict )
-                capsule_dict = import_util.validate_capsule( **capsule_dict )
+                capsule_dict = irm.extract_capsule_files( **capsule_dict )
+                capsule_dict = irm.validate_capsule( **capsule_dict )
                 status = capsule_dict.get( 'status', 'error' )
                 if status == 'ok':
                     return trans.response.send_redirect( web.url_for( controller='repository',
