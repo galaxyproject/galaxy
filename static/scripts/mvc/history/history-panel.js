@@ -249,7 +249,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         actions.push( {
             // TODO: Only show quick pair if two things selected.
             html: _l( 'Build List of Dataset Pairs (Experimental)' ),
-            func: panel._showPairedCollectionModal.bind( panel )
+            func: _.bind( panel._showPairedCollectionModal, panel )
         });
         return new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), actions );
     },
