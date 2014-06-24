@@ -22,8 +22,8 @@ return Backbone.View.extend(
         // ui elements
         this.group_key = new Ui.Input({
             placeholder: 'Data label',
-            onchange: function() {
-                self.group.set('key', self.group_key.value());
+            onchange: function(value) {
+                self.group.set('key', value);
             }
         });
         this.table = new Table.View({content: 'No data column.'});
@@ -74,40 +74,42 @@ return Backbone.View.extend(
         var self = this;
         
         // configure chart type
-        var chart_settings = this.app.types.get(chart_type);
-    
-        // reset table
-        this.table.removeAll();
+        var chart_definition = this.chart.definition;
         
-        // load list
-        var list = {};
-        for (var id in chart_settings.columns) {
-            // initialize
-            var value = this.group.get(id);
-            if (!value) {
-                this.group.set(id, 0);
+        // reset table
+        this.table.delAll();
+        
+        // load list for select fields
+        var select_list = {};
+        for (var id in chart_definition.columns) {
+            // get definition
+            var data_def = chart_definition.columns[id];
+            if (!data_def) {
+                console.debug('Group::_refreshTable() - Skipping column definition.');
+                continue;
+            }
+
+            // create select field
+            var select = new Ui.Select.View({
+                id      : 'select_' + id,
+                wait    : true
+            });
+            
+            // title
+            var title = data_def.title;
+            
+            // is unique
+            if (data_def.is_unique) {
+                title += '&nbsp;(all data labels)';
             }
             
-            // create select field
-            var data_def = chart_settings.columns[id];
-            var select = new Ui.Select.View({
-                id   : 'select_' + id,
-                gid  : id,
-                onchange : function(value) {
-                    self.group.set(this.gid, value);
-                    self.chart.set('modified', true);
-                },
-                value : value,
-                wait  : true
-            });
-    
             // add row to table
-            this.table.add(data_def.title, '25%');
+            this.table.add(title, '25%');
             this.table.add(select.$el);
             this.table.append(id);
             
             // add select field to list
-            list[id] = select;
+            select_list[id] = select;
         }
         
         // loading
@@ -116,39 +118,128 @@ return Backbone.View.extend(
         // register process
         var process_id = this.chart.deferred.register();
         
-        // get dataset
-        this.app.datasets.request({id : dataset_id}, function(dataset) {
-            // update select fields
-            for (var id in list) {
-                
-                // is a numeric number required
-                var is_label = chart_settings.columns[id].is_label;
-            
-                // configure columns
-                var columns = [];
-                var meta = dataset.metadata_column_types;
-                for (var key in meta) {
-                    // check type
-                    if ((!is_label && (meta[key] == 'int' || meta[key] == 'float')) || is_label) {
-                        // add to selection
-                        columns.push({
-                            'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
-                            'value' : key
-                        });
-                    }
+        // request dictionary
+        var request_dictionary = {
+            id      : dataset_id,
+            success : function(dataset) {
+                // update select fields
+                for (var id in select_list) {
+                    self._addRow(id, dataset, select_list, chart_definition.columns[id])
                 }
-            
-                // list
-                list[id].update(columns);
-                list[id].show();
+                
+                // loading
+                self.chart.state('ok', 'Metadata initialized...');
+                
+                // unregister
+                self.chart.deferred.done(process_id);
+            }
+        };
+        
+        // get dataset
+        this.app.datasets.request(request_dictionary);
+    },
+    
+    // add row
+    _addRow: function(id, dataset, select_list, column_definition) {
+        // link this
+        var self = this;
+        
+        // is a numeric number required
+        var is_label    = column_definition.is_label;
+        var is_auto     = column_definition.is_auto;
+        var is_numeric  = column_definition.is_numeric;
+        var is_unique   = column_definition.is_unique;
+        var is_zero     = column_definition.is_zero;
+        
+        // configure columns
+        var columns = [];
+        
+        // get select
+        var select = select_list[id];
+        
+        // add auto selection column
+        if (is_auto) {
+            columns.push({
+                'label' : 'Column: Row Number',
+                'value' : 'auto'
+            });
+        }
+        
+        // add zero selection column
+        if (is_zero) {
+            columns.push({
+                'label' : 'Column: None',
+                'value' : 'zero'
+            });
+        }
+        
+        // meta data
+        var meta = dataset.metadata_column_types;
+        for (var key in meta) {
+            // check type
+            var valid = false;
+            if (meta[key] == 'int' || meta[key] == 'float') {
+                valid = is_numeric;
+            } else {
+                valid = is_label;
             }
             
-            // loading
-            self.chart.state('ok', 'Metadata initialized...');
+            // check type
+            if (valid) {
+                // add to selection
+                columns.push({
+                    'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
+                    'value' : key
+                });
+            }
+        }
+    
+        // update selection list
+        select.update(columns);
+        
+        // set initial value
+        if (is_unique && this.chart.groups.first()) {
+            this.group.set(id, this.chart.groups.first().get(id));
+        }
+        
+        // update current value
+        if (!select.exists(this.group.get(id))) {
+            // get first value
+            var first = select.first();
             
-            // unregister
-            self.chart.deferred.done(process_id);
+            // log
+            console.debug('Group()::_addRow() - Switching model value from "' + this.group.get(id) + '" to "' + first + '".');
+            
+            // update model value
+            this.group.set(id, first);
+        }
+        
+        // set group value
+        select.value(this.group.get(id));
+        
+        // link group with select field
+        this.group.off('change:' + id);
+        this.group.on('change:' + id, function(){
+            select.value(self.group.get(id));
         });
+        
+        // link select field with group
+        select.setOnChange(function(value) {
+            // update model value
+            if (is_unique) {
+                // update all groups
+                self.chart.groups.each(function(group) {
+                    group.set(id, value);
+                });
+            } else {
+                // only change this group
+                self.group.set(id, value);
+            }
+            self.chart.set('modified', true);
+        });
+        
+        // show select field
+        select.show();
     },
     
     // update

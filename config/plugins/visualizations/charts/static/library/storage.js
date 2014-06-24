@@ -95,6 +95,28 @@ return Backbone.Model.extend(
             return false;
         }
         
+        // get chart type
+        var chart_type = chart_dict.attributes['type'];
+        
+        // check chart type
+        if (!chart_type) {
+            console.debug('Storage::load() - Chart type not provided. Invalid format.');
+            return false;
+        }
+        
+        // get chart definition
+        var chart_definition = this.app.types.get(chart_type);
+        if (!chart_definition) {
+            console.debug('Storage::load() - Chart type not supported. Please re-configure the chart. Resetting chart.');
+            return false;
+        }
+        
+        // initiating chart
+        console.debug('Storage::load() - Loading chart type ' + chart_type + '.');
+        
+        // parse chart definition
+        this.chart.definition = chart_definition;
+        
         // main
         this.chart.set(chart_dict.attributes);
         

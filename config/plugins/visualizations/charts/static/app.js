@@ -86,6 +86,22 @@ return Backbone.View.extend(
         }
     },
     
+    // get root path
+    chartPath: function(chart_type) {
+        // create path from id
+        var path = chart_type.split(/_(.+)/);
+        
+        // check path
+        if (path.length >= 2) {
+            // return path
+            return path[0] + '/' + path[1];
+        } else {
+            // log status
+            console.debug('FAILED App:chartPath() - Invalid format: ' + chart_type);
+        }
+        return undefined;
+    },
+
     // execute command
     execute: function(options) {
     },

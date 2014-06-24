@@ -13,7 +13,8 @@ var View = Backbone.View.extend(
         content     : 'No content available.',
         onchange    : null,
         ondblclick  : null,
-        onconfirm   : null
+        onconfirm   : null,
+        cls         : ''
     },
     
     // events
@@ -21,9 +22,6 @@ var View = Backbone.View.extend(
         'click'     : '_onclick',
         'dblclick'  : '_ondblclick'
     },
-    
-    // first
-    first: true,
     
     // initialize
     initialize : function(options) {
@@ -84,8 +82,13 @@ var View = Backbone.View.extend(
         this._commit(id, true);
     },
     
-    // remove
-    remove: function(id) {
+    // get element
+    get: function(id) {
+        return this.$el.find('#' + id);
+    },
+    
+    // delete
+    del: function(id) {
         var item = this.$tbody.find('#' + id);
         if (item.length > 0) {
             item.remove();
@@ -94,9 +97,9 @@ var View = Backbone.View.extend(
         }
     },
 
-    // remove
-    removeAll: function() {
-        this.$tbody.html('');
+    // delete all
+    delAll: function() {
+        this.$tbody.empty();
         this.row_count = 0;
         this._refresh();
     },
@@ -137,7 +140,7 @@ var View = Backbone.View.extend(
     // commit
     _commit: function(id, prepend) {
         // remove previous item with same id
-        this.remove(id);
+        this.del(id);
         
         // add
         this.row.attr('id', id);
@@ -195,7 +198,7 @@ var View = Backbone.View.extend(
     _template: function(options)
     {
         return  '<div>' +
-                    '<table class="grid">' +
+                    '<table class="ui-table ' + options.cls + '">' +
                         '<thead></thead>' +
                         '<tbody style="cursor: pointer;"></tbody>' +
                     '</table>' +

@@ -5,7 +5,7 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend(
 {
     // options
-    optionsDefault: {
+    optionsDefault : {
         id      : '',
         cls     : '',
         empty   : 'No data available',
@@ -21,6 +21,9 @@ var View = Backbone.View.extend(
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
         
+        // initial value
+        this.selected = this.options.value;
+        
         // create new element
         this.setElement(this._template(this.options));
         
@@ -28,16 +31,18 @@ var View = Backbone.View.extend(
         this.$select = this.$el.find('#select');
         this.$icon = this.$el.find('#icon');
         
-        // initial value
-        this.selected = this.options.value;
-        
-        // add change event
+        // add change event. fires only on user activity
         var self = this;
-        if (this.options.onchange) {
-            this.$select.on('change', function() {
-                self.value(self.$select.val());
-            });
-        }
+        this.$select.on('change', function() {
+            self.value(self.$select.val());
+        });
+        
+        // add change event. fires on trigger
+        this.on('change', function() {
+            if (self.options.onchange) {
+                self.options.onchange(self.value());
+            }
+        });
         
         // refresh
         this._refresh();
@@ -69,15 +74,25 @@ var View = Backbone.View.extend(
         
         // get current id/value
         var after = this.selected;
-        if(after) {
+        if (after) {
             // fire onchange
-            if ((after != before && this.options.onchange)) {
+            if (after != before && this.options.onchange) {
                 this.options.onchange(after);
             }
         }
         
         // return
         return after;
+    },
+    
+    // first
+    first: function() {
+        var options = this.$select.find('option');
+        if (options.length > 0) {
+            return options.val();
+        } else {
+            return undefined;
+        }
     },
     
     // label
@@ -149,13 +164,18 @@ var View = Backbone.View.extend(
             this.$select.append(this._templateOption(options[key]));
         }
         
-        // select first option if nothing else is selected
-        if (!this.selected && options.length > 0) {
-            this.value(options[0].value);
-        }
-        
         // refresh
         this._refresh();
+    },
+    
+    // set on change event
+    setOnChange: function(callback) {
+        this.options.onchange = callback;
+    },
+    
+    // check if selected value exists
+    exists: function(value) {
+        return this.$select.find('option[value=' + value + ']').length > 0;
     },
     
     // refresh
@@ -166,24 +186,20 @@ var View = Backbone.View.extend(
         // count remaining entries
         var remaining = this.$select.find('option').length;
         if (remaining == 0) {
+            // disable select field
+            this.disable();
+        
             // append placeholder
             this.$select.append(this._templateOption({value : 'null', label : this.options.empty}));
-            this.disable();
         } else {
             // enable select field
             this.enable();
-            
-            // update selected value
-            if (this.selected) {
-                this.$select.val(this.selected);
-            }
         }
-    },
-    
-    // exists
-    _exists: function(value) {
-        // check if selected value exists
-        return 0 != this.$select.find('option[value=' + value + ']').length;
+        
+        // update value
+        if (this.selected) {
+            this.$select.val(this.selected);
+        }
     },
     
     // option
@@ -193,7 +209,7 @@ var View = Backbone.View.extend(
     
     // element
     _template: function(options) {
-        var tmpl =  '<div id="' + options.id + '" class="styled-select">' +
+        var tmpl =  '<div id="' + options.id + '" class="ui-select">' +
                         '<div class="button">' +
                             '<i id="icon"/>' +
                         '</div>' +

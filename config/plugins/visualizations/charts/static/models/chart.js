@@ -54,6 +54,7 @@ return Backbone.Model.extend(
         current.trigger('change', current);
     },
     
+    // set state
     state: function(value, info) {
         // set status
         this.set('state', value);

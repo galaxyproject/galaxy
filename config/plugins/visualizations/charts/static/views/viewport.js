@@ -24,7 +24,7 @@ return Backbone.View.extend({
         this.setElement($(this._template()));
         
         // use full screen for viewer
-        this._fullscreen(this.$el, 80);
+        this._fullscreen(this.$el, 100);
         
         // create canvas element
         this._createContainer('div');
@@ -39,7 +39,7 @@ return Backbone.View.extend({
         this.chart.on('set:state', function() {
             // get info element
             var $info = self.$el.find('#info');
-            var $container = self.$el.find('container');
+            var $container = self.$el.find('.charts-viewport-container');
             
             // get icon
             var $icon = $info.find('#icon');
@@ -50,22 +50,21 @@ return Backbone.View.extend({
             // show info
             $info.show();
             $info.find('#text').html(self.chart.get('state_info'));
-
-            // hide containers
-            $container.hide();
-
+            
             // check status
             var state = self.chart.get('state');
             switch (state) {
                 case 'ok':
                     $info.hide();
-                    $container.show()
+                    $container.show();
                     break;
                 case 'failed':
                     $icon.addClass('icon fa fa-warning');
+                    $container.hide();
                     break;
                 default:
                     $icon.addClass('icon fa fa-spinner fa-spin');
+                    $container.show();
             }
         });
     },
@@ -108,20 +107,16 @@ return Backbone.View.extend({
         // create requested canvas elements
         for (var i = 0; i < n; i++) {
             // create element
-            var canvas_el = $(this._templateContainer(tag, parseInt(100 / n)));
+            var container_el = $(this._templateContainer(tag, parseInt(100 / n)));
             
             // add to view
-            this.$el.append(canvas_el);
+            this.$el.append(container_el);
             
             // add to list
-            this.container_list[i] = canvas_el;
+            this.container_list[i] = container_el;
             
             // add a separate list for canvas elements
-            if (tag == 'svg') {
-                this.canvas_list[i] = d3.select(canvas_el.find('#canvas')[0]);
-            } else {
-                this.canvas_list[i] = canvas_el.find('#canvas');
-            }
+            this.canvas_list[i] = container_el.find('.charts-viewport-canvas').attr('id');
         }
     },
     
@@ -137,26 +132,23 @@ return Backbone.View.extend({
         var chart_type = chart.get('type');
         
         // load chart settings
-        this.chart_settings = this.app.types.get(chart_type);
-        
-        // read settings
-        var use_panels = this.chart_settings.use_panels;
+        this.chart_definition = chart.definition;
         
         // determine number of svg/div-elements to create
         var n_panels = 1;
-        if (use_panels) {
+        if (chart.settings.get('use_panels') === 'true') {
             n_panels = chart.groups.length;
         }
         
         // create canvas element and add to canvas list
-        this._createContainer(this.chart_settings.tag, n_panels);
+        this._createContainer(this.chart_definition.tag, n_panels);
             
         // set chart state
         chart.state('wait', 'Please wait...');
         
         // clean up data if there is any from previous jobs
-        if (!this.chart_settings.execute ||
-            (this.chart_settings.execute && chart.get('modified'))) {
+        if (!this.chart_definition.execute ||
+            (this.chart_definition.execute && chart.get('modified'))) {
             
             // reset jobs
             this.app.jobs.cleanup(chart);
@@ -167,27 +159,35 @@ return Backbone.View.extend({
         
         // create chart view
         var self = this;
-        require(['plugin/charts/' + chart_type + '/wrapper'], function(ChartView) {
-            // create chart
-            var view = new ChartView(self.app, {canvas : self.canvas_list});
-            
-            // request data
-            if (self.chart_settings.execute) {
+        require(['plugin/charts/' + this.app.chartPath(chart_type) + '/wrapper'], function(ChartView) {
+            if (self.chart_definition.execute) {
                 self.app.jobs.request(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
                     function() {
-                        view.draw(process_id, chart, self._defaultRequestDictionary(chart));
+                        var view = new ChartView(self.app, {
+                            process_id          : process_id,
+                            chart               : chart,
+                            request_dictionary  : self._defaultRequestDictionary(chart),
+                            canvas_list         : self.canvas_list
+                        });
                     },
                     function() {
                         chart.deferred.done(process_id);
                     }
                 );
             } else {
-                // load data into view
-                view.draw(process_id, chart, self._defaultRequestDictionary(chart));
+                var view = new ChartView(self.app, {
+                    process_id          : process_id,
+                    chart               : chart,
+                    request_dictionary  : self._defaultRequestDictionary(chart),
+                    canvas_list         : self.canvas_list
+                });
             }
         });
     },
-    
+
+    //
+    // REQUEST STRING FUNCTIONS
+    //
     // create default chart request
     _defaultRequestString: function(chart) {
     
@@ -202,7 +202,7 @@ return Backbone.View.extend({
             group_index++;
             
             // add selected columns to column string
-            for (var key in self.chart_settings.columns) {
+            for (var key in self.chart_definition.columns) {
                 request_string += key + '_' + group_index + ':' + (parseInt(group.get(key)) + 1) + ', ';
             }
         });
@@ -235,7 +235,7 @@ return Backbone.View.extend({
         };
         
         // update request dataset id
-        if (this.chart_settings.execute) {
+        if (this.chart_definition.execute) {
             request_dictionary.id = chart.get('dataset_id_job');
         } else {
             request_dictionary.id = chart.get('dataset_id');
@@ -248,15 +248,14 @@ return Backbone.View.extend({
 
             // add columns
             var columns = {};
-            for (var column_key in self.chart_settings.columns) {
+            for (var column_key in self.chart_definition.columns) {
                 // get settings for column
-                var column_settings = self.chart_settings.columns[column_key];
+                var column_settings = self.chart_definition.columns[column_key];
                 
                 // add to columns
-                columns[column_key] = {
-                    index       : group.get(column_key),
-                    is_label    : column_settings.is_label
-                }
+                columns[column_key] = Utils.merge ({
+                    index : group.get(column_key)
+                }, column_settings);
             }
             
             // add group data
@@ -274,7 +273,7 @@ return Backbone.View.extend({
     _template: function() {
         return  '<div class="charts-viewport">' +
                     '<div id="info" class="info">' +
-                        '<span id="icon" class="icon" />' +
+                        '<span id="icon" class="icon"/>' +
                         '<span id="text" class="text" />' +
                     '</div>' +
                 '</div>';
@@ -284,7 +283,7 @@ return Backbone.View.extend({
     _templateContainer: function(tag, width) {
         return  '<div class="charts-viewport-container" style="width:' + width + '%;">' +
                     '<div id="menu"/>' +
-                    '<' + tag + ' id="canvas" class="charts-viewport-canvas">' +
+                    '<' + tag + ' id="' + Utils.uuid() + '" class="charts-viewport-canvas">' +
                 '</div>';
     }
     

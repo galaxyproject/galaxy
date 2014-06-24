@@ -1,7 +1,7 @@
 // dependencies
 define(['utils/utils', 'plugin/library/ui', 'mvc/ui/ui-portlet',
-        'plugin/models/group', 'plugin/views/viewport',],
-        function(Utils, Ui, Portlet, Group, ViewportView) {
+        'plugin/models/group', 'plugin/views/viewport', 'plugin/library/screenshot'],
+        function(Utils, Ui, Portlet, Group, ViewportView, Screenshot) {
 
 // widget
 return Backbone.View.extend(
@@ -21,48 +21,102 @@ return Backbone.View.extend(
         // link this
         var self = this;
         
+        // message element
+        this.message = new Ui.Message();
+        
+        // button menu
+        var picture_button_menu = new Ui.ButtonMenu({
+            icon    : 'fa-camera',
+            title   : 'Screenshot',
+            tooltip : 'Download as PNG, SVG or PDF file'
+        });
+        
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-png',
+            title       : 'Save as PNG',
+            icon        : 'fa-file',
+            onclick     : function() {
+                self._wait (self.chart, function() {
+                    Screenshot.createPNG({
+                        $el     : self.viewport_view.$el,
+                        title   : self.chart.get('title'),
+                        error   : function(err) {
+                            self.message.update({ message: err, status: 'danger' });
+                        }
+                    });
+                });
+            }
+        });
+        
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-svg',
+            title       : 'Save as SVG',
+            icon        : 'fa-file-text-o',
+            onclick     : function() {
+                self._wait (self.chart, function() {
+                    Screenshot.createSVG({
+                        $el     : self.viewport_view.$el,
+                        title   : self.chart.get('title'),
+                        error   : function(err) {
+                            self.message.update({ message: err, status: 'danger' });
+                        }
+                    });
+                });
+            }
+        });
+        
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-png',
+            title       : 'Save as PDF',
+            icon        : 'fa-file-o',
+            onclick     : function() {
+                self.app.modal.show({
+                    title   : 'Send chart data for PDF creation',
+                    body    : 'Galaxy does not provide integrated PDF export scripts. You may click \'Continue\' to create the PDF by using a 3rd party service (https://export.highcharts.com).',
+                    buttons : {
+                        'Cancel' : function() {self.app.modal.hide()},
+                        'Continue' : function() {
+                            self.app.modal.hide();
+                            self._wait (self.chart, function() {
+                                Screenshot.createPDF({
+                                    $el     : self.viewport_view.$el,
+                                    title   : self.chart.get('title'),
+                                    error   : function(err) {
+                                        self.message.update({ message: err, status: 'danger' });
+                                    }
+                                });
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
         // create portlet
         this.portlet = new Portlet.View({
             icon : 'fa-bar-chart-o',
             title: 'Viewport',
+            scrollable: false,
             operations: {
                 edit_button: new Ui.ButtonIcon({
                     icon    : 'fa-edit',
                     tooltip : 'Customize this chart',
                     title   : 'Editor',
                     onclick : function() {
-                        // attempt to load chart editor
                         self._wait (self.chart, function() {
                             self.app.go('editor');
                         });
                     }
                 }),
-                /*picture_button: new Ui.ButtonIcon({
-                    icon    : 'fa-camera',
-                    tooltip : 'Download SVG-file',
-                    title   : 'Screenshot',
-                    onclick : function() {
-                        // attempt to load chart editor
-                        self._wait (self.chart, function() {
-                            self._screenshot();
-                        });
-                    }
-                }),
-                settings_button: new Ui.ButtonIcon({
-                    icon    : 'fa-gear',
-                    tooltip : 'Configure this application',
-                    title   : 'Application',
-                    onclick : function() {
-                        // attempt to load chart editor
-                        self._wait (self.chart, function() {
-                            self.app.go('editor');
-                        });
-                    }
-                })*/
+                picture_button_menu: picture_button_menu
             }
         });
         
         // append portlet
+        this.portlet.append(this.message.$el);
         this.portlet.append(this.viewport_view.$el);
         
         // set element
@@ -95,39 +149,13 @@ return Backbone.View.extend(
         this.portlet.title(title);
     },
     
-    // download svg file
-    _screenshot: function() {
-        // Encode the SVG
-        var serializer = new XMLSerializer();
-        var xmlString = serializer.serializeToString(this.viewport_view.svg.node());
-        var imgData = 'data:image/svg+xml;base64,' + btoa(xmlString);
-        //Use the download attribute (or a shim) to provide a link
-        //this.portlet.append('<a href="' + imgData + '" download>Download</a>');
-        window.location.href = 'data:application/x-download/;charset=utf-8,' + encodeURIComponent(xmlString);
-    },
-    
     // wait for chart to be ready
     _wait: function(chart, callback) {
         // get chart
         if (chart.deferred.ready()) {
             callback();
         } else {
-            // show modal
-            var self = this;
-            this.app.modal.show({
-                title   : 'Please wait!',
-                body    : 'Your chart is currently being processed. Please wait and try again.',
-                buttons : {
-                    'Close'     : function() {self.app.modal.hide();},
-                    'Retry'     : function() {
-                        // hide modal
-                        self.app.modal.hide();
-                        
-                        // retry
-                        setTimeout(function() { self._wait(chart, callback); }, self.app.config.get('query_timeout'));
-                    }
-                }
-            });
+            this.message.update({message: 'Your chart is currently being processed. Please wait and try again.'});
         }
     }
 });
