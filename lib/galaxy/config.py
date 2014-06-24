@@ -376,6 +376,8 @@ class Configuration( object ):
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
         # visualization plugin framework
         self.visualization_plugins_directory = kwargs.get( 'visualization_plugins_directory', None )
+        # Default chunk size for chunkable datatypes -- 64k
+        self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
 
     @property
     def sentry_dsn_public( self ):
