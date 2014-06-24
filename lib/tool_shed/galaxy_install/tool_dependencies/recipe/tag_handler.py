@@ -20,7 +20,7 @@ log = logging.getLogger( __name__ )
 class RecipeTag( object ):
     """Abstract class that defines a standard format for handling recipe tags when installing packages."""
 
-    def process_tag_set( tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
+    def process_tag_set( self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
                          from_tool_migration_manager=False, tool_dependency_db_records=None ):
         raise "Unimplemented Method"
 

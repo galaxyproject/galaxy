@@ -417,17 +417,16 @@ def ready_name_for_url( raw_name ):
     return slug_base
 
 
-def in_directory( file, directory ):
+def in_directory( file, directory, local_path_module=os.path ):
     """
     Return true, if the common prefix of both is equal to directory
     e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
     """
 
     # Make both absolute.
-    directory = os.path.abspath( directory )
-    file = os.path.abspath( file )
-
-    return os.path.commonprefix( [ file, directory ] ) == directory
+    directory = local_path_module.abspath(directory)
+    file = local_path_module.abspath(file)
+    return local_path_module.commonprefix([file, directory]) == directory
 
 
 def merge_sorted_iterables( operator, *iterables ):

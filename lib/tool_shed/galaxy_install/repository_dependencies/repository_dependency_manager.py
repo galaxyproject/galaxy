@@ -255,6 +255,29 @@ class RepositoryDependencyManager( object ):
         self.build_repository_dependency_relationships( all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
         return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts
 
+    def get_repository_dependencies_for_installed_tool_shed_repository( self, app, repository ):
+        """
+        Send a request to the appropriate tool shed to retrieve the dictionary of repository dependencies defined
+        for the received repository which is installed into Galaxy.  This method is called only from Galaxy.
+        """
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, str( repository.tool_shed ) )
+        params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( repository.name ),
+                                                               str( repository.owner ),
+                                                               str( repository.changeset_revision ) )
+        url = common_util.url_join( tool_shed_url,
+                                    'repository/get_repository_dependencies%s' % params )
+        try:
+            raw_text = common_util.tool_shed_get( app, tool_shed_url, url )
+        except Exception, e:
+            print "The URL\n%s\nraised the exception:\n%s\n" % ( url, str( e ) )
+            return ''
+        if len( raw_text ) > 2:
+            encoded_text = json.loads( raw_text )
+            text = encoding_util.tool_shed_decode( encoded_text )
+        else:
+            text = ''
+        return text
+
     def get_repository_dependency_by_repository_id( self, install_model, decoded_repository_id ):
         return install_model.context.query( install_model.RepositoryDependency ) \
                                     .filter( install_model.RepositoryDependency.table.c.tool_shed_repository_id == decoded_repository_id ) \

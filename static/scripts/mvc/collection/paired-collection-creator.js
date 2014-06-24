@@ -7,6 +7,8 @@ define([
  */
 var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
+    className: 'collection-creator flex-row-container',
+
     /** set up initial options, instance vars, behaviors, and autopair (if set to do so) */
     initialize : function( attributes ){
         //console.debug( '-- PairedCollectionCreator:', attributes );
@@ -541,7 +543,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** render the entire interface */
     render : function( speed, callback ){
         //console.debug( '-- _render' );
-        this.$el.empty().addClass( 'collection-creator' ).html( PairedCollectionCreator.templates.main() );
+        //this.$el.empty().html( PairedCollectionCreator.templates.main() );
+        this.$el.empty().html( PairedCollectionCreator.templates.main() );
         this._renderHeader( speed );
         this._renderMiddle( speed );
         this._renderFooter( speed );
@@ -1191,9 +1194,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
 /** the skeleton */
 main : _.template([
-    '<div class="header"></div>',
-    '<div class="middle"></div>',
-    '<div class="footer">'
+    '<div class="header flex-row no-flex"></div>',
+    '<div class="middle flex-row flex-row-container"></div>',
+    '<div class="footer flex-row no-flex">'
 ].join('')),
 
 /** the header (not including help text) */
@@ -1209,7 +1212,7 @@ header : _.template([
         '<span class="alert-message"></span>',
     '</div>',
 
-    '<div class="column-headers vertically-spaced row-flex-container">',
+    '<div class="column-headers vertically-spaced flex-column-container">',
         '<div class="forward-column flex-column column">',
             '<div class="column-header">',
                 '<div class="column-title">',
@@ -1221,7 +1224,7 @@ header : _.template([
                 '</div>',
             '</div>',
         '</div>',
-        '<div class="paired-column flex-column column">',
+        '<div class="paired-column flex-column no-flex column">',
             '<div class="column-header">',
                 '<a class="choose-filters-link" href="javascript:void(0)">',
                     _l( 'Choose filters' ),
@@ -1250,11 +1253,12 @@ header : _.template([
 
 /** the middle: unpaired, divider, and paired */
 middle : _.template([
-    '<div class="unpaired-columns row-flex-container scroll-container">',
+    // contains two flex rows (rows that fill available space) and a divider btwn
+    '<div class="unpaired-columns flex-column-container scroll-container flex-row">',
         '<div class="forward-column flex-column column">',
             '<ol class="column-datasets"></ol>',
         '</div>',
-        '<div class="paired-column flex-column column">',
+        '<div class="paired-column flex-column no-flex column">',
             '<ol class="column-datasets"></ol>',
         '</div>',
         '<div class="reverse-column flex-column column">',
@@ -1272,11 +1276,11 @@ middle : _.template([
             '</a>',
         '</div>',
     '</div>',
-    '<div class="paired-columns row-flex-container scroll-container">',
+    '<div class="paired-columns flex-column-container scroll-container flex-row">',
         '<div class="forward-column flex-column column">',
             '<ol class="column-datasets"></ol>',
         '</div>',
-        '<div class="paired-column flex-column column">',
+        '<div class="paired-column flex-column no-flex column">',
             '<ol class="column-datasets"></ol>',
         '</div>',
         '<div class="reverse-column flex-column column">',

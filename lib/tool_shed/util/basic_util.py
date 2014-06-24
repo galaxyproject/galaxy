@@ -45,6 +45,17 @@ def get_env_var_values( install_environment ):
     env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
     return env_var_dict
 
+def get_file_type_str( changeset_revision, file_type ):
+    if file_type == 'zip':
+        file_type_str = '%s.zip' % changeset_revision
+    elif file_type == 'bz2':
+        file_type_str = '%s.tar.bz2' % changeset_revision
+    elif file_type == 'gz':
+        file_type_str = '%s.tar.gz' % changeset_revision
+    else:
+        file_type_str = ''
+    return file_type_str
+
 def move_file( current_dir, source, destination, rename_to=None ):
     source_path = os.path.abspath( os.path.join( current_dir, source ) )
     source_file = os.path.basename( source_path )

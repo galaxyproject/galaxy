@@ -19,27 +19,30 @@
             <!-- Override the $DRMAA_LIBRARY_PATH environment variable -->
             <param id="drmaa_library_path">/sge/lib/libdrmaa.so</param>
         </plugin>
-        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr:LwrJobRunner">
-          <!-- More information on LWR can be found at https://lwr.readthedocs.org -->
-          <!-- Uncomment following line to use libcurl to perform HTTP calls (defaults to urllib) -->
+        <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
+        <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
+        <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner" />
+        <!-- Pulsar runners (see more at https://pulsar.readthedocs.org) -->
+        <plugin id="pulsar_rest" type="runner" load="galaxy.jobs.runners.pulsar:PulsarRESTJobRunner">
+          <!-- Allow optimized HTTP calls with libcurl (defaults to urllib) -->
           <!-- <param id="transport">curl</param> -->
-          <!-- *Experimental Caching*: Uncomment next parameters to enable
-               caching and specify the number of caching threads to enable on Galaxy
-               side. Likely will not work with newer features such as MQ support.
-               If this is enabled be sure to specify a `file_cache_dir` in the remote
-               LWR's main configuration file.
+
+          <!-- *Experimental Caching*: Next parameter enables caching.
+                Likely will not work with newer features such as MQ support.
+
+                If this is enabled be sure to specify a `file_cache_dir` in
+                the remote Pulsar's servers main configuration file.
           -->
           <!-- <param id="cache">True</param> -->
-          <!-- <param id="transfer_threads">2</param> -->
         </plugin>
-        <plugin id="amqp_lwr" type="runner" load="galaxy.jobs.runners.lwr:LwrJobRunner">
-          <param id="url">amqp://guest:guest@localhost:5672//</param>
-          <!-- If using message queue driven LWR - the LWR will generally
-               initiate file transfers so a the URL of this Galaxy instance
-               must be configured. -->
+        <plugin id="pulsar_mq" type="runner" load="galaxy.jobs.runners.pulsar:PulsarMQJobRunner">
+          <!-- AMQP URL to connect to. -->
+          <param id="amqp_url">amqp://guest:guest@localhost:5672//</param>
+          <!-- URL remote Pulsar apps should transfer files to this Galaxy
+               instance to/from. -->
           <param id="galaxy_url">http://localhost:8080</param>
-          <!-- If multiple managers configured on the LWR, specify which one
-               this plugin targets. -->
+          <!-- Pulsar job manager to communicate with (see Pulsar
+               docs for information on job managers). -->
           <!-- <param id="manager">_default_</param> -->
           <!-- The AMQP client can provide an SSL client certificate (e.g. for
                validation), the following options configure that certificate
@@ -58,9 +61,17 @@
                higher value (in seconds) (or `None` to use blocking connections). -->
           <!-- <param id="amqp_consumer_timeout">None</param> -->
         </plugin>
-        <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
-        <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
-        <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner" />
+        <plugin id="pulsar_legacy" type="runner" load="galaxy.jobs.runners.pulsar:PulsarLegacyJobRunner">
+          <!-- Pulsar job runner with default parameters matching those
+               of old LWR job runner. If your Pulsar server is running on a
+               Windows machine for instance this runner should still be used.
+
+               These destinations still needs to target a Pulsar server, 
+               older LWR plugins and destinations still work in Galaxy can
+               target LWR servers, but this support should be considered
+               deprecated and will disappear with a future release of Galaxy.
+          -->
+        </plugin>
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
@@ -125,8 +136,8 @@
 
                $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro
 
-               If using the LWR, defaults will be even further restricted because the 
-               LWR will (by default) stage all needed inputs into the job's job_directory
+               If using the Pulsar, defaults will be even further restricted because the 
+               Pulsar will (by default) stage all needed inputs into the job's job_directory
                (so there is not need to allow the docker container to read all the
                files - let alone write over them). Defaults in this case becomes:
 
@@ -135,7 +146,7 @@
                Python string.Template is used to expand volumes and values $defaults,
                $galaxy_root, $default_file_path, $tool_directory, $working_directory,
                are available to all jobs and $job_directory is also available for
-               LWR jobs.
+               Pulsar jobs.
           -->
           <!-- Control memory allocatable by docker container with following option:
           -->
@@ -178,7 +189,7 @@
                does trust tool's specified container - but also wants tool's not
                configured to run in a container the following option can provide
                a fallback. -->
-          <!-- <param id="dockers_default_container_id">busybox:ubuntu-14.04</param> -->
+          <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
 
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
@@ -213,87 +224,71 @@
             <!-- A destination that represents a method in the dynamic runner. -->
             <param id="function">foo</param>
         </destination>
-        <destination id="secure_lwr" runner="lwr">
-            <param id="url">https://windowshost.examle.com:8913/</param>
-            <!-- If set, private_token must match token remote LWR server configured with. -->
+        <destination id="secure_pulsar_rest_dest" runner="pulsar_rest">
+            <param id="url">https://examle.com:8913/</param>
+            <!-- If set, private_token must match token in remote Pulsar's
+                 configuration. -->
             <param id="private_token">123456789changeme</param>
             <!-- Uncomment the following statement to disable file staging (e.g.
-                 if there is a shared file system between Galaxy and the LWR 
+                 if there is a shared file system between Galaxy and the Pulsar 
                  server). Alternatively action can be set to 'copy' - to replace 
                  http transfers with file system copies, 'remote_transfer' to cause
-                 the lwr to initiate HTTP transfers instead of Galaxy, or
-                 'remote_copy' to cause lwr to initiate file system copies.
+                 the Pulsar to initiate HTTP transfers instead of Galaxy, or
+                 'remote_copy' to cause Pulsar to initiate file system copies.
                  If setting this to 'remote_transfer' be sure to specify a
                  'galaxy_url' attribute on the runner plugin above. -->
             <!-- <param id="default_file_action">none</param> -->
             <!-- The above option is just the default, the transfer behavior
                  none|copy|http can be configured on a per path basis via the
-                 following file. See lib/galaxy/jobs/runners/lwr_client/action_mapper.py
-                 for examples of how to configure this file. This is very beta
-                 and nature of file will likely change.
+                 following file. See Pulsar documentation for more details and
+                 examples.
             -->
-            <!-- <param id="file_action_config">file_actions.json</param> -->
-            <!-- Uncomment following option to disable Galaxy tool dependency
-                 resolution and utilize remote LWR's configuraiton of tool
-                 dependency resolution instead (same options as Galaxy for
-                 dependency resolution are available in LWR). At a minimum
-                 the remote LWR server should define a tool_dependencies_dir in
-                 its `server.ini` configuration. The LWR will not attempt to
-                 stage dependencies - so ensure the the required galaxy or tool
-                 shed packages are available remotely (exact same tool shed
-                 installed changesets are required).
+            <!-- <param id="file_action_config">file_actions.yaml</param> -->
+            <!-- The non-legacy Pulsar runners will attempt to resolve Galaxy
+                 dependencies remotely - to enable this set a tool_dependency_dir
+                 in Pulsar's configuration (can work with all the same dependency
+                 resolutions mechanisms as Galaxy - tool Shed installs, Galaxy
+                 packages, etc...). To disable this behavior, set the follow parameter
+                 to none. To generate the dependency resolution command locally
+                 set the following parameter local.
             -->
-            <!-- <param id="dependency_resolution">remote</params> -->
-            <!-- Traditionally, the LWR allow Galaxy to generate a command line
-                 as if it were going to run the command locally and then the
-                 LWR client rewrites it after the fact using regular
-                 expressions. Setting the following value to true causes the
-                 LWR runner to insert itself into the command line generation
-                 process and generate the correct command line from the get go.
-                 This will likely be the default someday - but requires a newer
-                 LWR version and is less well tested. -->
-            <!-- <param id="rewrite_parameters">true</params> -->
+            <!-- <param id="dependency_resolution">none</params> -->
             <!-- Uncomment following option to enable setting metadata on remote
-                 LWR server. The 'use_remote_datatypes' option is available for
+                 Pulsar server. The 'use_remote_datatypes' option is available for
                  determining whether to use remotely configured datatypes or local
                  ones (both alternatives are a little brittle). -->
             <!-- <param id="remote_metadata">true</param> -->
             <!-- <param id="use_remote_datatypes">false</param> -->
             <!-- <param id="remote_property_galaxy_home">/path/to/remote/galaxy-central</param> -->
-            <!-- If remote LWR server is configured to run jobs as the real user,
+            <!-- If remote Pulsar server is configured to run jobs as the real user,
                  uncomment the following line to pass the current Galaxy user
                  along. -->
             <!-- <param id="submit_user">$__user_name__</param> -->
-            <!-- Various other submission parameters can be passed along to the LWR
-                 whose use will depend on the remote LWR's configured job manager.
+            <!-- Various other submission parameters can be passed along to the Pulsar
+                 whose use will depend on the remote Pulsar's configured job manager.
                  For instance:
             -->
-            <!-- <param id="submit_native_specification">-P bignodes -R y -pe threads 8</param> -->            
-        </destination>
-        <destination id="amqp_lwr_dest" runner="amqp_lwr" >
-            <!-- url and private_token are not valid when using MQ driven LWR. The plugin above
-                 determines which queue/manager to target and the underlying MQ server should be
-                 used to configure security.
+            <!-- <param id="submit_native_specification">-P bignodes -R y -pe threads 8</param> -->
+            <!-- Disable parameter rewriting and rewrite generated commands
+                 instead. This may be required if remote host is Windows machine
+                 but probably not otherwise.
             -->
-            <!-- Traditionally, the LWR client sends request to LWR
-                 server to populate various system properties. This
+            <!-- <param id="rewrite_parameters">false</params> -->           
+        </destination>
+        <destination id="pulsar_mq_dest" runner="amqp_pulsar" >
+            <!-- The RESTful Pulsar client sends a request to Pulsar
+                 to populate various system properties. This
                  extra step can be disabled and these calculated here
                  on client by uncommenting jobs_directory and
                  specifying any additional remote_property_ of
                  interest, this is not optional when using message
                  queues.
             -->
-            <param id="jobs_directory">/path/to/remote/lwr/lwr_staging/</param>
-            <!-- Default the LWR send files to and pull files from Galaxy when
-                 using message queues (in the more traditional mode Galaxy sends
-                 files to and pull files from the LWR - this is obviously less
-                 appropriate when using a message queue).
-
-                 The default_file_action currently requires pycurl be available
-                 to Galaxy (presumably in its virtualenv). Making this dependency
-                 optional is an open task.
+            <param id="jobs_directory">/path/to/remote/pulsar/files/staging/</param>
+            <!-- Otherwise MQ and Legacy pulsar destinations can be supplied
+                 all the same destination parameters as the RESTful client documented
+                 above (though url and private_token are ignored when using a MQ).
             -->
-            <param id="default_file_action">remote_transfer</param>
         </destination>
         <destination id="ssh_torque" runner="cli">
             <param id="shell_plugin">SecureShell</param>

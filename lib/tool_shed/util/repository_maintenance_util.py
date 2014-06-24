@@ -66,7 +66,7 @@ def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_re
     1. During the tool shed repository installation process via the tool shed's get_repository_information()
     method.  In this case both the received repository and repository_metadata will be objects, but
     tool_dependencies and repository_dependencies will be None.
-    2. When getting updates for an install repository where the updates include newly defined repository
+    2. When getting updates for an installed repository where the updates include newly defined repository
     dependency definitions.  This scenario is similar to 1. above. The tool shed's get_repository_information()
     method is the caller, and both the received repository and repository_metadata will be objects, but
     tool_dependencies and repository_dependencies will be None.

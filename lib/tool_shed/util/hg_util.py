@@ -28,6 +28,21 @@ INITIAL_CHANGELOG_HASH = '000000000000'
 def add_changeset( repo_ui, repo, path_to_filename_in_archive ):
     commands.add( repo_ui, repo, path_to_filename_in_archive )
 
+def archive_repository_revision( app, repository, archive_dir, changeset_revision ):
+    '''Create an un-versioned archive of a repository.'''
+    repo = get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
+    options_dict = get_mercurial_default_options_dict( 'archive' )
+    options_dict[ 'rev' ] = changeset_revision
+    error_message = ''
+    return_code = None
+    try:
+        return_code = commands.archive( get_configured_ui, repo, archive_dir, **options_dict )
+    except Exception, e:
+        error_message = "Error attempting to archive revision <b>%s</b> of repository %s: %s\nReturn code: %s\n" % \
+            ( str( changeset_revision ), str( repository.name ), str( e ), str( return_code ) )
+        log.exception( error_message )
+    return return_code, error_message
+
 def bundle_to_json( fh ):
     """
     Convert the received HG10xx data stream (a mercurial 1.0 bundle created using hg push from the

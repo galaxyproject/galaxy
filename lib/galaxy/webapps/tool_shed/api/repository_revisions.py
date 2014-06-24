@@ -5,7 +5,7 @@ from galaxy import web
 from galaxy import util
 from galaxy.model.orm import and_, not_, select
 from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
-from tool_shed.util import export_util
+from tool_shed.capsule import capsule_manager
 from tool_shed.util import hg_util
 import tool_shed.util.shed_util_common as suc
 
@@ -53,14 +53,14 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.debug( error_message )
             return None, error_message
         repository_id = trans.security.encode_id( repository.id )
-        return export_util.export_repository( trans,
-                                              tool_shed_url,
-                                              repository_id,
-                                              str( repository.name ),
-                                              changeset_revision,
-                                              file_type,
-                                              export_repository_dependencies,
-                                              api=True )
+        erm = capsule_manager.ExportRepositoryManager( app=trans.app,
+                                                       user=trans.user,
+                                                       tool_shed_url=tool_shed_url,
+                                                       repository=repository,
+                                                       changeset_revision=changeset_revision,
+                                                       export_repository_dependencies=export_repository_dependencies,
+                                                       using_api=True )
+        return erm.export_repository()
 
     def __get_value_mapper( self, trans ):
         value_mapper = { 'id' : trans.security.encode_id,
