@@ -44,11 +44,15 @@
     .flex-column-container {
         display: -webkit-box;
         display: -webkit-flex;
+        display: -ms-flexbox;
         display: flex;
 
         -webkit-align-items: stretch;
+        -ms-align-items: stretch;
         align-items: stretch;
+
         -webkit-align-content: stretch;
+        -ms-align-content: stretch;
         align-content: stretch;
     }
 
@@ -56,28 +60,34 @@
     &.flex-row-container,
     .flex-row-container {
         -webkit-flex-direction: column;
+        -ms-flex-direction: column;
         flex-direction: column;
     }
     .flex-row {
         -webkit-flex: 1 auto;
+        -ms-flex: 1 auto;
         flex: 1 0 auto;
     }
     .flex-row.no-flex {
         -webkit-flex: 0 auto;
+        -ms-flex: 0 auto;
         flex: 0 0 auto;
     }
 
     // a series of horizontal elements that will expand to fill available space
     .flex-column-container {
         -webkit-flex-direction: row;
+        -ms-flex-direction: row;
         flex-direction: row;
     }
     .flex-column {
         -webkit-flex: 1 auto;
+        -ms-flex: 1 auto;
         flex: 1 1 auto;
     }
     .flex-column.no-flex {
         -webkit-flex: 0 auto;
+        -ms-flex: 0 auto;
         flex: 0 0 auto;
     }
 

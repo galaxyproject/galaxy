@@ -1367,13 +1367,13 @@ button.toast-close-button{padding:0;cursor:pointer;background:transparent;border
 .collection-creator .scroll-container{overflow:auto}
 .collection-creator .truncate{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .collection-creator .empty-message{color:grey;font-style:italic}
-.collection-creator.flex-row-container,.collection-creator .flex-row-container,.collection-creator .flex-column-container{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:stretch;align-items:stretch;-webkit-align-content:stretch;align-content:stretch}
-.collection-creator.flex-row-container,.collection-creator .flex-row-container{-webkit-flex-direction:column;flex-direction:column}
-.collection-creator .flex-row{-webkit-flex:1 auto;flex:1 0 auto}
-.collection-creator .flex-row.no-flex{-webkit-flex:0 auto;flex:0 0 auto}
-.collection-creator .flex-column-container{-webkit-flex-direction:row;flex-direction:row}
-.collection-creator .flex-column{-webkit-flex:1 auto;flex:1 1 auto}
-.collection-creator .flex-column.no-flex{-webkit-flex:0 auto;flex:0 0 auto}
+.collection-creator.flex-row-container,.collection-creator .flex-row-container,.collection-creator .flex-column-container{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-align-items:stretch;-ms-align-items:stretch;align-items:stretch;-webkit-align-content:stretch;-ms-align-content:stretch;align-content:stretch}
+.collection-creator.flex-row-container,.collection-creator .flex-row-container{-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column}
+.collection-creator .flex-row{-webkit-flex:1 auto;-ms-flex:1 auto;flex:1 0 auto}
+.collection-creator .flex-row.no-flex{-webkit-flex:0 auto;-ms-flex:0 auto;flex:0 0 auto}
+.collection-creator .flex-column-container{-webkit-flex-direction:row;-ms-flex-direction:row;flex-direction:row}
+.collection-creator .flex-column{-webkit-flex:1 auto;-ms-flex:1 auto;flex:1 1 auto}
+.collection-creator .flex-column.no-flex{-webkit-flex:0 auto;-ms-flex:0 auto;flex:0 0 auto}
 .collection-creator .choose-filters .help{margin-bottom:2px;font-size:90%;color:grey}
 .collection-creator .choose-filters button{width:100%;margin-top:2px}
 .collection-creator .header .alert{display:none}
