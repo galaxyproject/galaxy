@@ -11,6 +11,7 @@ import pipes
 import re
 import shutil
 import sys
+import string
 import tempfile
 import threading
 import traceback
@@ -214,8 +215,7 @@ class ToolBox( object, Dictifiable ):
             config_elems = []
         else:
             parsing_shed_tool_conf = False
-            # Default to backward compatible config setting.
-            tool_path = self.tool_root_dir
+        tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self.integrated_tool_panel_config_has_contents
         for _, elem in enumerate( root ):
@@ -242,6 +242,17 @@ class ToolBox( object, Dictifiable ):
             if shed_config_dict[ 'config_filename' ] == filename:
                 return shed_config_dict
         return default
+
+    def __resolve_tool_path(self, tool_path, config_filename):
+        if not tool_path:
+            # Default to backward compatible config setting.
+            tool_path = self.tool_root_dir
+        else:
+            # Allow use of __tool_conf_dir__ in toolbox config files.
+            tool_conf_dir = os.path.dirname(config_filename)
+            tool_path_vars = {"tool_conf_dir": tool_conf_dir}
+            tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
+        return tool_path
 
     def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
         # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
