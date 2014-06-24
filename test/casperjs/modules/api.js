@@ -555,7 +555,7 @@ ToolsAPI.prototype.upload = function upload( historyId, options ){
 };
 
 /** amount of time allowed to upload a file (before erroring) */
-ToolsAPI.prototype.DEFAULT_UPLOAD_TIMEOUT = 12000;
+ToolsAPI.prototype.DEFAULT_UPLOAD_TIMEOUT = 30 * 1000;
 
 /** add two casperjs steps - upload a file, wait for the job to complete, and run 'then' when they are */
 ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
@@ -569,6 +569,9 @@ ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
         this.debug( 'uploadedId: ' + uploadedId );
     });
 
+    spaceghost.debug( '---------------------------------------------------------- timeout: ' + ( options.timeout || spaceghost.api.tools.DEFAULT_UPLOAD_TIMEOUT ) );
+    spaceghost.debug( 'timeout: ' + options.timeout );
+    spaceghost.debug( 'timeout: ' + spaceghost.api.tools.DEFAULT_UPLOAD_TIMEOUT );
     spaceghost.then( function(){
         this.waitFor(
             function testHdaState(){
