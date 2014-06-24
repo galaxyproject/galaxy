@@ -2,11 +2,6 @@
 .collection-creator {
 
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    align-content: stretch;
-
     overflow: hidden;
 
     -webkit-user-select: none;
@@ -41,6 +36,49 @@
     .empty-message {
         color: grey;
         font-style: italic;
+    }
+
+    // ------------------------------------------------------------------------ flex
+    &.flex-row-container,
+    .flex-row-container,
+    .flex-column-container {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+
+        -webkit-align-items: stretch;
+        align-items: stretch;
+        -webkit-align-content: stretch;
+        align-content: stretch;
+    }
+
+    // a series of vertical elements that will expand to fill available space
+    &.flex-row-container,
+    .flex-row-container {
+        -webkit-flex-direction: column;
+        flex-direction: column;
+    }
+    .flex-row {
+        -webkit-flex: 1 auto;
+        flex: 1 0 auto;
+    }
+    .flex-row.no-flex {
+        -webkit-flex: 0 auto;
+        flex: 0 0 auto;
+    }
+
+    // a series of horizontal elements that will expand to fill available space
+    .flex-column-container {
+        -webkit-flex-direction: row;
+        flex-direction: row;
+    }
+    .flex-column {
+        -webkit-flex: 1 auto;
+        flex: 1 1 auto;
+    }
+    .flex-column.no-flex {
+        -webkit-flex: 0 auto;
+        flex: 0 0 auto;
     }
 
     // ------------------------------------------------------------------------ sub-components
@@ -87,12 +125,10 @@
         text-align: center;
         // mess with these two to make center more/less priority
         width: 22%;
-        flex: 0 1 auto;
     }
 
     // ------------------------------------------------------------------------ header
     .header {
-        flex: 0 0 auto;
         padding-bottom: 8px;
 
         .main-help {
@@ -151,45 +187,21 @@
 
     }
 
-    // ------------------------------------------------------------------------ flex
-    .row-flex-container {
-        display: flex;
-        flex-direction: row;
-        align-items: stretch;
-        align-content: stretch;
-    }
-    .flex-column {
-        flex: 1 1 auto;
-    }
-
     // ------------------------------------------------------------------------ middle
     .middle {
-        // highest flex count - will priority fill with this
-        flex: 1 0 auto;
-
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        align-content: stretch;
     }
     .unpaired-columns,
     .paired-columns {
-        flex: 1 0 auto;
         // huh! - giving these any static height will pull them in
         height: 0;
         // NOT setting the above will give a full-height page
 
         border: 1px solid lightgrey;
-        border-radius: 3px;
         border-width: 1px 0 1px 0;
-        overflow-y: auto;
+        //overflow-y: auto;
         padding: 4px;
     }
     // ------------------------------------------------------------------------ unpaired
-    .unpaired-columns {
-        flex: 1 0 auto;
-    }
-
     .paired-columns {
         margin-bottom: 8px;
     }
@@ -337,9 +349,6 @@
 
     // ------------------------------------------------------------------------ footer
     .footer {
-        flex: 0 0 auto;
-        padding-bottom: 8px;
-
         .collection-name-prompt.validation-warning:before {
             //TODO: localize (somehow)
             content: '(required)';
@@ -361,5 +370,6 @@
         .collection-name-prompt {
             margin: 5px 4px 0 0;
         }
+        padding-bottom: 8px;
     }
 }
