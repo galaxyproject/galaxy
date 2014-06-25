@@ -804,7 +804,7 @@ use_interactive = True
 # the cluster that should be sourced by the user to set up the environment
 # prior to running tools.  This can be especially useful for running jobs as
 # the actual user, to remove the need to configure each user's environment
-# individually.  This only affects cluster jobs, not local jobs.
+# individually.
 #environment_setup_file = None
 
 
