@@ -102,6 +102,12 @@
           <!-- Warning: Local slot count doesn't tie up additional worker threads, to prevent over 
                allocating machine define a second local runner with different name and fewer workers
                to run this destination. -->
+          <param id="embed_metadata_in_job">True</param>
+          <!-- Above parameter will be default (with no option to set
+               to False) in an upcoming release of Galaxy, but you can
+               try it early - it will slightly speed up local jobs by
+               embedding metadata calculation in job script itself.
+          -->
           <job_metrics /> 
           <!-- Above element demonstrates embedded job metrics definition - see
                job_metrics_conf.xml.sample for full documentation on possible nested
