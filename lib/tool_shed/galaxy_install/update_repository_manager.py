@@ -19,6 +19,7 @@ class UpdateRepositoryManager( object ):
         self.running = True
         self.sleeper = Sleeper()
         self.restarter = threading.Thread( target=self.__restarter )
+        self.restarter.daemon = True
         self.restarter.start()
         self.seconds_to_sleep = int( app.config.hours_between_check * 3600 )
 
