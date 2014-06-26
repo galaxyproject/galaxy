@@ -718,7 +718,7 @@ class InstalledRepositoryManager( object ):
             if installed_repository_dict[ 'display_path' ]:
                 datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
 
-    def purge_repository( self, app, repository ):
+    def purge_repository( self, repository ):
         """Purge a repository with status New (a white ghost) from the database."""
         sa_session = self.app.model.context.current
         status = 'ok'
@@ -732,24 +732,26 @@ class InstalledRepositoryManager( object ):
             # Purge this repository's associated tool versions.
             if repository.tool_versions:
                 for tool_version in repository.tool_versions:
-                    try:
-                        tool_version_association = tool_version.parent_tool_association
-                        sa_session.delete( tool_version_association )
-                        sa_session.flush()
-                    except Exception, e:
-                        status = 'error'
-                        message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
-                            ( str( repository.name ), str( repository.status ), str( e ) )
-                        return status, message
-                    try:
-                        tool_version_association = tool_version.child_tool_association
-                        sa_session.delete( tool_version_association )
-                        sa_session.flush()
-                    except Exception, e:
-                        status = 'error'
-                        message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
-                            ( str( repository.name ), str( repository.status ), str( e ) )
-                        return status, message
+                    if tool_version.parent_tool_association:
+                        for tool_version_association in tool_version.parent_tool_association:
+                            try:
+                                sa_session.delete( tool_version_association )
+                                sa_session.flush()
+                            except Exception, e:
+                                status = 'error'
+                                message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
+                                    ( str( repository.name ), str( repository.status ), str( e ) )
+                                return status, message
+                    if tool_version.child_tool_association:
+                        for tool_version_association in tool_version.child_tool_association:
+                            try:
+                                sa_session.delete( tool_version_association )
+                                sa_session.flush()
+                            except Exception, e:
+                                status = 'error'
+                                message = 'Error attempting to purge tool_versions for the repository named %s with status %s: %s.' % \
+                                    ( str( repository.name ), str( repository.status ), str( e ) )
+                                return status, message
                     try:
                         sa_session.delete( tool_version )
                         sa_session.flush()
