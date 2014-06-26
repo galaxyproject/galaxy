@@ -194,9 +194,7 @@ class InstalledRepositoryGrid( grids.Grid ):
                    grids.GridOperation( label="Deactivate or uninstall",
                                         condition=( lambda item: \
                                                     not item.deleted and \
-                                                    item.status not in \
-                                                        [ tool_shed_install.ToolShedRepository.installation_status.ERROR,
-                                                          tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
+                                                    item.status != tool_shed_install.ToolShedRepository.installation_status.NEW ),
                                         allow_multiple=False,
                                         url_args=dict( controller='admin_toolshed',
                                                        action='browse_repositories',
