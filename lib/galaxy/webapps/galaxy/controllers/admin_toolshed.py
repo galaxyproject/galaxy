@@ -1271,7 +1271,7 @@ class AdminToolshed( AdminGalaxy ):
             repository = suc.get_installed_tool_shed_repository( trans.app, repository_id )
             if repository:
                 if kwd.get( 'purge_repository', False ):
-                    irm = install_manager.InstallRepositoryManager( trans.app )
+                    irm = trans.app.installed_repository_manager
                     purge_status, purge_message = irm.purge_repository( trans.app, repository )
                     if purge_status == 'ok':
                         new_kwd[ 'status' ] = "done"
