@@ -1268,8 +1268,8 @@ class AdminToolshed( AdminGalaxy ):
         new_kwd = {}
         if repository_id is not None:
             repository = suc.get_installed_tool_shed_repository( trans.app, repository_id )
-            if repository.is_new:
-                if repository:
+            if repository:
+                if repository.is_new:
                     if kwd.get( 'purge_repository_button', False ):
                         irm = trans.app.installed_repository_manager
                         purge_status, purge_message = irm.purge_repository( repository )
@@ -1283,10 +1283,10 @@ class AdminToolshed( AdminGalaxy ):
                                                     repository=repository )
                 else:
                     new_kwd[ 'status' ] = 'error'
-                    new_kwd[ 'message' ] = 'Cannot locate the database record for the repository with encoded id %s.' % str( repository_id )
+                    new_kwd[ 'message' ] = 'Repositories must have a <b>New</b> status in order to be purged.'
             else:
                 new_kwd[ 'status' ] = 'error'
-                new_kwd[ 'message' ] = 'Repositories must have a <b>New</b> status in order to be purged.'
+                new_kwd[ 'message' ] = 'Cannot locate the database record for the repository with encoded id %s.' % str( repository_id )
         else:
             new_kwd[ 'status' ] = 'error'
             new_kwd[ 'message' ] = 'Invalid repository id value "None" received for repository to be purged.'
