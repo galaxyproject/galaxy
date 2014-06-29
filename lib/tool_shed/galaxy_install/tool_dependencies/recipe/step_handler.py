@@ -158,7 +158,7 @@ class Download( object ):
 
         if '#md5#' in download_url:
             md5 = True
-            dowonload_url, checksum = download_url.split('#md5#')
+            download_url, checksum = download_url.split('#md5#')
         elif '#sha256#' in download_url:
             sha256 = True
             download_url, checksum = download_url.split('#sha256#')
