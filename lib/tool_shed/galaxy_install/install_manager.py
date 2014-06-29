@@ -44,7 +44,8 @@ class InstallToolDependencyManager( object ):
     
     def __init__( self, app ):
         self.app = app
-        self.INSTALL_ACTIONS = [ 'download_binary', 'download_by_url', 'download_file', 'setup_perl_environment',
+        self.INSTALL_ACTIONS = [ 'download_binary', 'download_by_url', 'download_file', 
+                                 'setup_perl_environment', 'setup_python_environment',
                                  'setup_r_environment', 'setup_ruby_environment', 'shell_command' ]
 
     def format_traceback( self ):
