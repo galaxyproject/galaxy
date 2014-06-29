@@ -1181,6 +1181,13 @@ class JobWrapper( object ):
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+        input_ext = 'data'
+        for _, data in inp_data.items():
+            # For loop odd, but sort simulating behavior in galaxy.tools.actions
+            if not data:
+                continue
+            input_ext = data.ext
+
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )  # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
@@ -1191,7 +1198,7 @@ class JobWrapper( object ):
         # Create generated output children and primary datasets and add to param_dict
         collected_datasets = {
             'children': self.tool.collect_child_datasets(out_data, self.working_directory),
-            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory)
+            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext)
         }
         param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
