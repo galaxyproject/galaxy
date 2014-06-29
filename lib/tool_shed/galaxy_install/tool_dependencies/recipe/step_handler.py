@@ -8,6 +8,7 @@ import tarfile
 import time
 import urllib2
 import zipfile
+import hashlib
 
 from galaxy.util import asbool
 from galaxy.util.template import fill_template
@@ -139,10 +140,29 @@ class CompressedFile( object ):
 class Download( object ):
     
     def url_download( self, install_dir, downloaded_file_name, download_url, extract=True ):
+        """
+            The given download_url can have an extension like #md5# or #sha256#.
+            This indicates a checksum which will be chekced after download. 
+            If the checksum does not match an exception is thrown.
+            
+            https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
+        """
+
         file_path = os.path.join( install_dir, downloaded_file_name )
         src = None
         dst = None
+        checksum = None
+        sha256 = False
+        md5 = False
         # Set a timer so we don't sit here forever.
+
+        if '#md5#' in download_url:
+            md5 = True
+            dowonload_url, checksum = download_url.split('#md5#')
+        elif '#sha256#' in download_url:
+            sha256 = True
+            download_url, checksum = download_url.split('#sha256#')
+
         start_time = time.time()
         try:
             src = urllib2.urlopen( download_url )
@@ -166,6 +186,18 @@ class Download( object ):
                 src.close()
             if dst:
                 dst.close()
+
+        try:
+            if sha256:
+                downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
+            elif md5:
+                downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest()
+
+            if checksum and downloaded_checksum != checksum:
+                raise Exception( 'Given checksum does not match with the one from the downloaded file (%s).' % (downloaded_checksum) )
+        except Exception, e:
+            raise
+
         if extract:
             if tarfile.is_tarfile( file_path ) or ( zipfile.is_zipfile( file_path ) and not file_path.endswith( '.jar' ) ):
                 archive = CompressedFile( file_path )
@@ -174,6 +206,7 @@ class Download( object ):
                 extraction_path = os.path.abspath( install_dir )
         else:
             extraction_path = os.path.abspath( install_dir )
+
         return extraction_path
 
 
@@ -1421,7 +1454,6 @@ class SetupPythonEnvironment( Download, RecipeStep ):
         if initial_download:
             filtered_actions = actions[ 1: ]
         env_shell_file_paths = action_dict.get( 'env_shell_file_paths', None )
-        log.debug( '\n%s\n' % env_shell_file_paths )
         if env_shell_file_paths is None:
             log.debug( 'Missing Python environment, make sure your specified Python installation exists.' )
             if initial_download:
