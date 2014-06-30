@@ -23,8 +23,7 @@ import sys
 import tempfile
 import threading
 
-# note: this imports galaxy.util.json
-import json
+from galaxy.util import json
 
 from email.MIMEText import MIMEText
 
