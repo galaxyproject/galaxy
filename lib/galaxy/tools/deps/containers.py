@@ -204,6 +204,9 @@ class DockerContainer(Container):
         )
 
     def __expand_str(self, value):
+        if not value:
+            return value
+
         template = string.Template(value)
         variables = dict()
 
