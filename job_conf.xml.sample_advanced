@@ -154,6 +154,11 @@
                are available to all jobs and $job_directory is also available for
                Pulsar jobs.
           -->
+          <!-- One can run docker using volumes-from tag by setting the following
+               parameter. For more information on volumes-from check out the following
+               docker tutorial. https://docs.docker.com/userguide/dockervolumes/
+          -->
+          <!-- <param id="docker_volumes_from">parent_container_name</param> -->
           <!-- Control memory allocatable by docker container with following option:
           -->
           <!-- <param id="docker_memory">24G</param> -->

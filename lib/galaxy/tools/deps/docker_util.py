@@ -7,6 +7,7 @@ DEFAULT_VOLUME_MOUNT_TYPE = "rw"
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_NET = None
 DEFAULT_MEMORY = None
+DEFAULT_VOLUMES_FROM = None
 
 
 class DockerVolume(object):
@@ -55,6 +56,7 @@ def build_docker_run_command(
     tag=None,
     docker_cmd=DEFAULT_DOCKER_COMMAND,
     volumes=[],
+    volumes_from=DEFAULT_VOLUMES_FROM,
     memory=DEFAULT_MEMORY,
     env_directives=[],
     working_directory=DEFAULT_WORKING_DIRECTORY,
@@ -75,6 +77,8 @@ def build_docker_run_command(
         command_parts.extend(["-e", env_directive])
     for volume in volumes:
         command_parts.extend(["-v", str(volume)])
+    if volumes_from:
+        command_parts.extend(["--volumes-from", str(volumes_from)])
     if memory:
         command_parts.extend(["-m", memory])
     if name:

@@ -190,10 +190,12 @@ class DockerContainer(Container):
         volumes_raw = self.__expand_str(self.destination_info.get("docker_volumes", "$defaults"))
         # TODO: Remove redundant volumes...
         volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
+        volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
         return docker_util.build_docker_run_command(
             command,
             self.container_id,
             volumes=volumes,
+            volumes_from=volumes_from,
             env_directives=env_directives,
             working_directory=working_directory,
             docker_cmd=prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
