@@ -172,6 +172,10 @@ class IdXML(ProteomicsXml):
     blurb = "OpenMS identification file"
     root = "IdXML"
 
+class TandemXML(ProteomicsXml):
+    file_ext = "tandem"
+    blurb = "X!Tandem search results file"
+    root = "bioml"
 
 class Mgf( Text ):
     """Mascot Generic Format data"""
