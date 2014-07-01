@@ -620,8 +620,13 @@ var CircsterTrackView = Backbone.View.extend({
         $.when(track.get('data_manager').get_genome_wide_data(this.genome)).then(function(genome_wide_data) {
             // Set bounds.
             self.data_bounds = self.get_data_bounds(genome_wide_data);
-            track.get('config').set_value('min_value', self.data_bounds[0]);
-            track.get('config').set_value('max_value', self.data_bounds[1]);
+
+            // Set min, max value in config so that they can be adjusted. Make this silent
+            // because these attributes are watched for changes and the viz is updated
+            // accordingly (set up in initialize). Because we are setting up, we don't want 
+            // the watch to trigger events here.
+            track.get('config').set_value('min_value', self.data_bounds[0], {silent: true});
+            track.get('config').set_value('max_value', self.data_bounds[1], {silent: true});
 
             // Merge chroms layout with data.
             layout_and_data = _.zip(chrom_arcs, genome_wide_data),

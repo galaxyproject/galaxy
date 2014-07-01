@@ -994,7 +994,8 @@ var TracksterView = Backbone.View.extend({
                             };
                         }));
                     });
-                }
+                },
+                minLength: 2
             });
         });
         if (this.vis_id !== undefined) {

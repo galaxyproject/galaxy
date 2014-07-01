@@ -894,7 +894,7 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend({
 
         // -- Set up config settings. -- 
         var models =  [
-            { key: 'name', value: this.get('dataset').get('name') },
+            { key: 'name', default_value: this.get('dataset').get('name') },
             { key: 'color' },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: 0 },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: 1 }
