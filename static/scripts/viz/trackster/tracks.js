@@ -1070,6 +1070,11 @@ var TracksterView = Backbone.View.extend({
             d.current_x = d.offsetX;
             var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
             view.move_delta(delta_chrom);
+        })
+        /*
+        FIXME: Do not do this for now because it's too jittery. Some kind of gravity approach is 
+        needed here because moving left/right should be difficult.
+
         // Also capture mouse wheel for left/right scrolling
         }).bind( 'mousewheel', function( e, d, dx, dy ) {
             // Only handle x axis scrolling; y axis scrolling is
@@ -1079,6 +1084,7 @@ var TracksterView = Backbone.View.extend({
                 view.move_delta( delta_chrom );
             }
         });
+        */
        
         // Dragging in the top label track allows selecting a region to zoom in on selected region.
         this.top_labeltrack.bind( "dragstart", function( e, d ) {
