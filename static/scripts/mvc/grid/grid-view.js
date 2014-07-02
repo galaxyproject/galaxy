@@ -568,6 +568,12 @@ return Backbone.View.extend({
         }
         
         // refresh grid
+        if (href) {
+            this.go_to(inbound, href);
+            return false;
+        }
+
+        // refresh grid
         if (this.grid.get('async')) {
             this.update_grid();
         } else {
