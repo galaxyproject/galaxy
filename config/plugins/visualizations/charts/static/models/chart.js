@@ -2,8 +2,7 @@
 define(['plugin/models/groups'], function(Groups) {
 
 // model
-return Backbone.Model.extend(
-{
+return Backbone.Model.extend({
     // defaults
     defaults : {
         id              : null,

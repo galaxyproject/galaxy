@@ -60,7 +60,7 @@ return Backbone.View.extend({
         this._refreshGroup();
     },
     
-    // update dataset
+    // update group selection table
     _refreshTable: function() {
         // identify datasets
         var dataset_id = this.chart.get('dataset_id');

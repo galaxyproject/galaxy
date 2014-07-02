@@ -8,17 +8,9 @@ define(['mvc/ui/ui-tabs', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils
  *  The charts editor holds the tabs for selecting chart types, chart configuration
  *  and data group selections.
  */
-return Backbone.View.extend(
-{
-    // defaults options
-    optionsDefault: {
-        header  : true,
-        content : 'No content available.'
-    },
-    
+return Backbone.View.extend({
     // initialize
-    initialize: function(app, options)
-    {
+    initialize: function(app, options){
         // link this
         var self = this;
         
@@ -27,9 +19,6 @@ return Backbone.View.extend(
         
         // get current chart object
         this.chart = this.app.chart;
-        
-        // configure options
-        this.options = Utils.merge(options, this.optionsDefault);
         
         // message element
         this.message = new Ui.Message();
@@ -52,7 +41,7 @@ return Backbone.View.extend(
                     tooltip : 'Return to Viewer',
                     title   : 'Cancel',
                     onclick : function() {
-                        // show viewport
+                        // show viewer/viewport
                         self.app.go('viewer');
                         
                         // reset chart
@@ -203,7 +192,7 @@ return Backbone.View.extend(
         this.title.value(title);
     },
     
-    // update
+    // refresh group
     _refreshGroupKey: function() {
         var self = this;
         var counter = 0;
@@ -216,7 +205,7 @@ return Backbone.View.extend(
         });
     },
     
-    // new group
+    // add group model
     _addGroupModel: function() {
         var group = new Group({
             id : Utils.uuid()
@@ -225,7 +214,7 @@ return Backbone.View.extend(
         return group;
     },
 
-    // add group
+    // add group tab
     _addGroup: function(group) {
         // link this
         var self = this;

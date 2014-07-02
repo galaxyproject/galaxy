@@ -560,17 +560,10 @@ return Backbone.View.extend({
             if (this.grid.can_async_op(operation)) {
                 this.update_grid();
             } else {
-                this.go_to(inbound, '');
+                this.go_to(inbound, href);
             }
             
             // done
-            return false;
-        }
-        
-        // check for href details
-        if (href)
-        {
-            this.go_to(inbound, href);
             return false;
         }
         
@@ -578,7 +571,7 @@ return Backbone.View.extend({
         if (this.grid.get('async')) {
             this.update_grid();
         } else {
-            this.go_to(inbound, '');
+            this.go_to(inbound, href);
         }
 
         // done
@@ -596,9 +589,10 @@ return Backbone.View.extend({
         this.grid.set('advanced_search', advanced_search);
         
         // get default url
-        if(!href)
+        if(!href) {
             href = this.grid.get('url_base') + '?' + $.param(this.grid.get_url_data());
-            
+        }
+        
         // clear grid of transient request attributes.
         this.grid.set({
             operation: undefined,
