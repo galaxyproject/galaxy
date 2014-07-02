@@ -1,7 +1,5 @@
 // dependencies
-define(['plugin/models/groups', 'plugin/library/deferred', 'mvc/visualization/visualization-model'],
-        function(Groups, Deferred) {
-
+define(['plugin/models/groups'], function(Groups) {
 
 // model
 return Backbone.Model.extend(
@@ -23,7 +21,6 @@ return Backbone.Model.extend(
     initialize: function(options) {
         this.groups = new Groups();
         this.settings = new Backbone.Model();
-        this.deferred = new Deferred();
     },
     
     // reset

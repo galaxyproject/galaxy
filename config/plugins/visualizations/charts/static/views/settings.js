@@ -2,9 +2,10 @@
 define(['plugin/library/ui', 'plugin/library/ui-table-form', 'utils/utils'],
         function(Ui, TableForm, Utils) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  This class renders the chart configuration form.
+ */
+return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
         // link app
@@ -36,7 +37,7 @@ return Backbone.View.extend(
         // get settings
         var chart_definition = this.chart.definition;
         
-        // check if dataset is available
+        // check if chart definition is available
         if (!chart_definition) {
             return;
         }

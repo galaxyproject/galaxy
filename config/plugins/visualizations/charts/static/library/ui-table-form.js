@@ -2,9 +2,10 @@
 define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
         function(Table, Ui, Utils) {
 
-// widget
-var View = Backbone.View.extend(
-{
+/**
+ *  This class takes a dictionary as input an creates an input form. It uses the Ui.Table element to organize and format the form elements.
+ */
+var View = Backbone.View.extend({
     // options
     optionsDefault: {
         title       : '',

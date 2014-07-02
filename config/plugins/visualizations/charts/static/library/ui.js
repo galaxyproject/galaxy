@@ -2,9 +2,12 @@
 define(['utils/utils', 'plugin/library/ui-select', 'plugin/library/ui-button-menu', 'mvc/ui/ui-modal'],
         function(Utils, Select, ButtonMenu, Modal) {
 
+/**
+ *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
+ */
+ 
 // plugin
-var Image = Backbone.View.extend(
-{
+var Image = Backbone.View.extend({
     // options
     optionsDefault: {
         url  : '',
@@ -27,8 +30,7 @@ var Image = Backbone.View.extend(
 });
 
 // plugin
-var Label = Backbone.View.extend(
-{
+var Label = Backbone.View.extend({
     // options
     optionsDefault: {
         title  : '',
@@ -61,8 +63,7 @@ var Label = Backbone.View.extend(
 });
 
 // plugin
-var Icon = Backbone.View.extend(
-{
+var Icon = Backbone.View.extend({
     // options
     optionsDefault: {
         float       : 'right',
@@ -95,8 +96,7 @@ var Icon = Backbone.View.extend(
 });
 
 // plugin
-var Button = Backbone.View.extend(
-{
+var Button = Backbone.View.extend({
     // options
     optionsDefault: {
         id    : null,
@@ -134,8 +134,7 @@ var Button = Backbone.View.extend(
 });
 
 // plugin
-var ButtonIcon = Backbone.View.extend(
-{
+var ButtonIcon = Backbone.View.extend({
     // options
     optionsDefault: {
         id      : null,
@@ -188,8 +187,7 @@ var ButtonIcon = Backbone.View.extend(
 });
 
 // plugin
-var Anchor = Backbone.View.extend(
-{
+var Anchor = Backbone.View.extend({
     // options
     optionsDefault: {
         title  : '',
@@ -215,8 +213,7 @@ var Anchor = Backbone.View.extend(
 });
 
 // plugin
-var Message = Backbone.View.extend(
-{
+var Message = Backbone.View.extend({
     // options
     optionsDefault: {
         message : '',
@@ -268,8 +265,7 @@ var Message = Backbone.View.extend(
 });
 
 // plugin
-var Searchbox = Backbone.View.extend(
-{
+var Searchbox = Backbone.View.extend({
     // options
     optionsDefault: {
         onclick : null,
@@ -308,8 +304,7 @@ var Searchbox = Backbone.View.extend(
 });
 
 // plugin
-var Input = Backbone.View.extend(
-{
+var Input = Backbone.View.extend({
     // options
     optionsDefault: {
         value           : '',
@@ -362,8 +357,7 @@ var Input = Backbone.View.extend(
 });
 
 // plugin
-var Textarea = Backbone.View.extend(
-{
+var Textarea = Backbone.View.extend({
     // options
     optionsDefault: {
         value           : '',
@@ -416,8 +410,7 @@ var Textarea = Backbone.View.extend(
 });
 
 // plugin
-var RadioButton = Backbone.View.extend(
-{
+var RadioButton = Backbone.View.extend({
     // options
     optionsDefault: {
         value           : '',
@@ -503,19 +496,19 @@ var RadioButton = Backbone.View.extend(
 
 // return
 return {
-    Label   : Label,
-    Button  : Button,
-    Icon  : Icon,
-    ButtonIcon : ButtonIcon,
-    Input : Input,
-    Anchor  : Anchor,
-    Message : Message,
-    Searchbox : Searchbox,
-    Select : Select,
-    ButtonMenu : ButtonMenu,
-    Modal: Modal,
-    Textarea: Textarea,
-    Image: Image,
-    RadioButton: RadioButton
+    Anchor      : Anchor,
+    Button      : Button,
+    ButtonIcon  : ButtonIcon,
+    ButtonMenu  : ButtonMenu,
+    Icon        : Icon,
+    Image       : Image,
+    Input       : Input,
+    Label       : Label,
+    Message     : Message,
+    Modal       : Modal,
+    RadioButton : RadioButton,
+    Searchbox   : Searchbox,
+    Select      : Select,
+    Textarea    : Textarea
 }
 });

@@ -1,7 +1,10 @@
+// dependencies
 define(['utils/utils', 'plugin/library/ui'], function(Utils, Ui) {
 
-return Backbone.View.extend(
-{
+/**
+ *  This class renders the chart type selection grid.
+ */
+return Backbone.View.extend({
     // defaults options
     optionsDefault: {
         onchange    : null,
@@ -16,7 +19,6 @@ return Backbone.View.extend(
     
     // initialize
     initialize : function(app, options) {
-        
         // link this
         var self = this;
         

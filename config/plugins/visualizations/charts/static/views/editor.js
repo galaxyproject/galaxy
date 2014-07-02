@@ -4,7 +4,10 @@ define(['mvc/ui/ui-tabs', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils
         'plugin/views/group', 'plugin/views/settings', 'plugin/views/types'],
     function(Tabs, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView, TypesView) {
 
-// widget
+/**
+ *  The charts editor holds the tabs for selecting chart types, chart configuration
+ *  and data group selections.
+ */
 return Backbone.View.extend(
 {
     // defaults options
@@ -319,7 +322,7 @@ return Backbone.View.extend(
         
         // wait until chart is ready
         var self = this;
-        this.chart.deferred.execute(function() {
+        this.app.deferred.execute(function() {
             // save
             self.app.storage.save();
             

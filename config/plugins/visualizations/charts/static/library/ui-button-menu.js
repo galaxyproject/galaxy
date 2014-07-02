@@ -1,8 +1,9 @@
 // dependencies
-define(['utils/utils'],
-        function(Utils) {
+define(['utils/utils'], function(Utils) {
 
-// return button menu
+/**
+ *  This class creates a button with dropdown menu. It extends the functionality of the Ui.ButtonIcon class.
+ */
 return Backbone.View.extend({
     // main options
     optionsDefault: {
