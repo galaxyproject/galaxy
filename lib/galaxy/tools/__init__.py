@@ -2507,13 +2507,16 @@ class Tool( object, Dictifiable ):
                     incoming_value = get_incoming_value( incoming, key, None )
                     value, error = check_param( trans, input, incoming_value, context, source=source )
                     # If a callback was provided, allow it to process the value
+                    input_name = input.name
                     if item_callback:
-                        old_value = state.get( input.name, None )
+                        old_value = state.get( input_name, None )
                         value, error = item_callback( trans, key, input, value, error, old_value, context )
                     if error:
-                        errors[ input.name ] = error
-                    state[ input.name ] = value
-                    state.update( self.__meta_properties_for_state( key, incoming, incoming_value, value )  )
+                        errors[ input_name ] = error
+
+                    state[ input_name ] = value
+                    meta_properties = self.__meta_properties_for_state( key, incoming, incoming_value, value, input_name )
+                    state.update( meta_properties )
         return errors
 
     def __remove_meta_properties( self, incoming ):
@@ -2527,12 +2530,17 @@ class Tool( object, Dictifiable ):
                 del result[ key ]
         return result
 
-    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val ):
+    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val, input_name ):
         meta_properties = {}
-        multirun_key = "%s|__multirun__" % key
-        if multirun_key in incoming:
-            multi_value = incoming[ multirun_key ]
-            meta_properties[ multirun_key ] = multi_value
+        meta_property_suffixes = [
+            "__multirun__",
+            "__collection_multirun__",
+        ]
+        for meta_property_suffix in meta_property_suffixes:
+            multirun_key = "%s|%s" % ( key, meta_property_suffix )
+            if multirun_key in incoming:
+                multi_value = incoming[ multirun_key ]
+                meta_properties[ "%s|%s" % ( input_name, meta_property_suffix ) ] = multi_value
         return meta_properties
 
     @property
