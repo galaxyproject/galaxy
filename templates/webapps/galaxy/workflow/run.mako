@@ -156,10 +156,10 @@
                 var state = $(this).attr("name");
                 var stepToolBox = $(this).parent().find('input:not([class]):not([type="hidden"]), select:not([class])');
                 var labels = $(this).parent().find('label');
-                var split_name=stepToolBox.attr("name").split("|");
+                var split_name = stepToolBox.attr("name").split("|");
                 var step_id = split_name[0];
                 var step_name = split_name.slice(1, split_name.length).join("|");
-                hidden_html = "<input type='hidden' name='"+step_id+"|__runtime__"+step_name+"' value='true' />";
+                var hidden_html = "<input type='hidden' name='"+step_id+"|__runtime__"+step_name+"' value='true' />";
                 var html = "";
                 if (state === "edit"){
                     stepToolBoxClone = stepToolBox.clone();
