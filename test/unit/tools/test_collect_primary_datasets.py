@@ -191,7 +191,7 @@ class CollectPrimaryDatasetsTestCase( unittest.TestCase, tools_support.UsesApp, 
     def _collect( self, job_working_directory=None ):
         if not job_working_directory:
             job_working_directory = self.test_directory
-        return self.tool.collect_primary_datasets( self.outputs, job_working_directory )
+        return self.tool.collect_primary_datasets( self.outputs, job_working_directory, "txt" )
 
     def _replace_output_collectors( self, xml_str ):
         # Rewrite tool as if it had been created with output containing
