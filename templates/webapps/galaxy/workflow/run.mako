@@ -174,7 +174,6 @@
                     }
                     $(this).parent().find(".editable").show();
                     $(this).parent().parent().find(".uneditable_field").hide();
-                    console.log(hidden_html)
                     $(this).parent().find(".editable").html(html+hidden_html);
                     editingParameter($(this));
                 }
