@@ -2952,12 +2952,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * drawn/fetched and shown.
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
-        // If reference track is visible, adjust viewport to be smaller so that bottom content
-        // is visible.
-        if (this.view.reference_track.tiles_div.is(':visible')) {
-            this.view.resize_viewport();
-        }
-
         var line_track_tiles = _.filter(tiles, function(tile) {
             return (tile instanceof LineTrackTile);
         });
@@ -3639,14 +3633,30 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Draws and shows tile if reference data can be displayed; otherwise track is hidden.
      */
     draw_helper: function(region, w_scale, options) {
+        var cur_visible = this.tiles_div.is(':visible'),
+            new_visible,
+            tile = null;
         if (w_scale > this.view.canvas_manager.char_width_px) {
             this.tiles_div.show();
-            return TiledTrack.prototype.draw_helper.call(this, region, w_scale, options);
+            new_visible = true;
+            tile = TiledTrack.prototype.draw_helper.call(this, region, w_scale, options);
         }
         else {
+            new_visible = false;
             this.tiles_div.hide();
-            return null;
         }
+
+        // NOTE: viewport resizing conceptually belongs in postdraw_actions(), but currently
+        // postdraw_actions is not called when reference track not shown due to no tiles. If 
+        // it is moved to postdraw_actions, resize must be called each time because cannot
+        // easily detect showing/hiding.
+
+        // If showing or hiding reference track, resize viewport.
+        if (cur_visible !== new_visible) {
+            this.view.resize_viewport();
+        }
+
+        return tile;
     },
 
     can_subset: function(entry) { return true; },
