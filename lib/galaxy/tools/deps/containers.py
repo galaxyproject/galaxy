@@ -191,6 +191,14 @@ class DockerContainer(Container):
         # TODO: Remove redundant volumes...
         volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
+
+        docker_host_props = dict(
+            docker_cmd=prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
+            sudo=asbool(prop("sudo", docker_util.DEFAULT_SUDO)),
+            sudo_cmd=prop("sudo_cmd", docker_util.DEFAULT_SUDO_COMMAND),
+            host=prop("host", docker_util.DEFAULT_HOST),
+        )
+
         return docker_util.build_docker_run_command(
             command,
             self.container_id,
@@ -198,11 +206,8 @@ class DockerContainer(Container):
             volumes_from=volumes_from,
             env_directives=env_directives,
             working_directory=working_directory,
-            docker_cmd=prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
-            sudo=asbool(prop("sudo", docker_util.DEFAULT_SUDO)),
-            sudo_cmd=prop("sudo_cmd", docker_util.DEFAULT_SUDO_COMMAND),
-            host=prop("host", docker_util.DEFAULT_HOST),
-            net=prop("net", "none")  # By default, docker instance has networking disabled
+            net=prop("net", "none"),  # By default, docker instance has networking disabled
+            **docker_host_props
         )
 
     def __expand_str(self, value):
