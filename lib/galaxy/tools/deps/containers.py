@@ -199,7 +199,8 @@ class DockerContainer(Container):
             host=prop("host", docker_util.DEFAULT_HOST),
         )
 
-        return docker_util.build_docker_run_command(
+        cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
+        run_command = docker_util.build_docker_run_command(
             command,
             self.container_id,
             volumes=volumes,
@@ -209,6 +210,7 @@ class DockerContainer(Container):
             net=prop("net", "none"),  # By default, docker instance has networking disabled
             **docker_host_props
         )
+        return "%s\n%s" % (cache_command, run_command)
 
     def __expand_str(self, value):
         if not value:

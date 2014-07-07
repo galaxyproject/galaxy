@@ -50,6 +50,24 @@ class DockerVolume(object):
         return ":".join([self.from_path, self.to_path, self.how])
 
 
+def build_docker_cache_command(
+    image,
+    docker_cmd=DEFAULT_DOCKER_COMMAND,
+    sudo=DEFAULT_SUDO,
+    sudo_cmd=DEFAULT_SUDO_COMMAND,
+    host=DEFAULT_HOST,
+):
+    inspect_command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
+    inspect_command_parts.extend(["inspect", image])
+    inspect_image_command = " ".join(inspect_command_parts)
+
+    pull_command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
+    pull_command_parts.extend(["pull", image])
+    pull_image_command = " ".join(pull_command_parts)
+    cache_command = "%s > /dev/null 2>&1\n[ $? -ne 0 ] && %s > /dev/null 2>&1\n" % (inspect_image_command, pull_image_command)
+    return cache_command
+
+
 def build_docker_run_command(
     container_command,
     image,
