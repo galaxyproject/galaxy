@@ -3213,7 +3213,9 @@ class DataManagerTool( OutputParameterJSONTool ):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool, DataManagerTool ]:
+for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
+                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
+                    DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 
