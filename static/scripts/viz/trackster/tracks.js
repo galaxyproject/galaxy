@@ -243,9 +243,16 @@ var Drawable = function(view, container, obj_dict) {
     
     // Build Drawable HTML and behaviors.
     this.container_div = this.build_container_div();
-    this.header_div = this.build_header_div();
-    
-    if (this.header_div) {
+    this.header_div = null;
+
+    // Use opt-out policy on header creation because this is the more frequent approach: 
+    // unless flag set, create header.
+    if (obj_dict.header !== false) {
+        var header_view = new TrackHeaderView({
+            model: this
+        });
+            
+        this.header_div = header_view.$el;
         this.container_div.append(this.header_div);
         
         // Icons container.
@@ -382,11 +389,6 @@ extend(Drawable.prototype, {
      * Build drawable's container div; this is the parent div for all drawable's elements.
      */
     build_container_div: function() {},
-
-    /**
-     * Build drawable's header div.
-     */
-    build_header_div: function() {},
 
     /**
      * Add an action icon to this object. Appends icon unless prepend flag is specified.
@@ -679,13 +681,6 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             this.container.content_div.append(container_div);
         }
         return container_div;
-    },
-
-    build_header_div: function() {
-        var header_view = new TrackHeaderView({
-            model: this
-        });
-        return header_view.$el;
     },
 
     hide_contents: function () {
@@ -2347,13 +2342,6 @@ extend(Track.prototype, Drawable.prototype, {
         return $("<div/>").addClass('track').attr("id", "track_" + this.id);
     },
 
-    build_header_div: function() {
-        var header_view = new TrackHeaderView({
-            model: this
-        });
-        return header_view.$el;
-    },
-
     /** 
      * Set track's dataset.
      */
@@ -3348,15 +3336,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 });
 
 var LabelTrack = function (view, container) {
-    var obj_dict = {
-        resize: false
-    };
-    Track.call(this, view, container, obj_dict);
+    Track.call(this, view, container, {
+        resize: false,
+        header: false
+    });
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
-    build_header_div: function() {},
-
     init: function() {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;  
@@ -3618,7 +3604,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
  * Displays reference genome data. 
  */
 var ReferenceTrack = function (view) {
-    TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false });
+    TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false, header: false });
     
     // Use offset to ensure that bases at tile edges are drawn.
     this.left_offset = view.canvas_manager.char_width_px;
@@ -3635,8 +3621,6 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     config_params: _.union( Drawable.prototype.config_params, [
         { key: 'height', type: 'int', default_value: 13, hidden: true }
     ] ),
-
-    build_header_div: function() {},
 
     init: function() {
         this.data_manager.clear();
