@@ -15,4 +15,4 @@ def seconds_to_str( value ):
     elif value < 3600:
         return "%s minutes" % ( value / 60 )
     else:
-        return "%s days and %s minutes" % ( value / 3600, ( value % 3600 ) / 60 )
+        return "%s hours and %s minutes" % ( value / 3600, ( value % 3600 ) / 60 )
