@@ -177,6 +177,30 @@ function round(num, places) {
     return Math.round(num * val) / val;
 }
 
+
+/**
+ * View for track/group header.
+ */
+var TrackHeaderView = Backbone.View.extend({
+    className: 'track-header',
+
+    initialize: function() {
+        // Watch and update name changes.
+        this.model.config.get('name').on('change:value', this.update_name, this);
+        this.render();
+    },
+
+    render: function() {
+        this.$el.append($("<div/>").addClass(this.model.drag_handle_class));
+        this.$el.append($("<div/>").addClass("track-name")
+                                   .text(this.model.config.get_value('name')));
+    },
+
+    update_name: function() {
+        this.$el.find('.track-name').text(this.model.config.get_value('name'));
+    }
+});
+
 /**
  * Drawables hierarchy:
  *
@@ -327,7 +351,6 @@ extend(Drawable.prototype, {
     set_name: function(new_name) {
         this.old_name = this.config.get_value('name');
         this.config.set_value('name', new_name);
-        this.name_div.text(new_name);
     },
 
     /**
@@ -659,10 +682,10 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
     },
 
     build_header_div: function() {
-        var header_div = $("<div/>").addClass("track-header");
-        header_div.append($("<div/>").addClass(this.drag_handle_class));
-        this.name_div = $("<div/>").addClass("track-name").text(this.config.get_value('name')).appendTo(header_div);
-        return header_div;
+        var header_view = new TrackHeaderView({
+            model: this
+        });
+        return header_view.$el;
     },
 
     hide_contents: function () {
@@ -2325,11 +2348,10 @@ extend(Track.prototype, Drawable.prototype, {
     },
 
     build_header_div: function() {
-        var header_div = $("<div class='track-header'/>");
-        if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(header_div); }
-        this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.config.get_value('name'))
-                        .attr( "id", this.config.get_value('name').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
-        return header_div;
+        var header_view = new TrackHeaderView({
+            model: this
+        });
+        return header_view.$el;
     },
 
     /** 
