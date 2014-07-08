@@ -462,6 +462,10 @@ static_robots_txt = %(here)s/static/robots.txt
 #enable_cloud_launch = False
 #cloudlaunch_default_ami = ami-a7dbf6ce
 
+# Incremental Display Options
+
+#display_chunk_size = 65536
+
 # -- Advanced proxy features
 
 # For help on configuring the Advanced proxy features, see:
