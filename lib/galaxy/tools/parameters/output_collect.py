@@ -14,7 +14,7 @@ DATASET_ID_TOKEN = "DATASET_ID"
 DEFAULT_EXTRA_FILENAME_PATTERN = r"primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
 
 
-def collect_primary_datatasets( tool, output, job_working_directory ):
+def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
     app = tool.app
     sa_session = tool.sa_session
     new_primary_datasets = {}
@@ -66,6 +66,8 @@ def collect_primary_datatasets( tool, output, job_working_directory ):
             designation = fields_match.designation
             visible = fields_match.visible
             ext = fields_match.ext
+            if ext == "input":
+                ext = input_ext
             dbkey = fields_match.dbkey
             # Create new primary dataset
             primary_data = app.model.HistoryDatasetAssociation( extension=ext,
