@@ -8,6 +8,7 @@ import tarfile
 import time
 import urllib2
 import zipfile
+import hashlib
 
 from galaxy.util import asbool
 from galaxy.util.template import fill_template
@@ -139,10 +140,29 @@ class CompressedFile( object ):
 class Download( object ):
     
     def url_download( self, install_dir, downloaded_file_name, download_url, extract=True ):
+        """
+            The given download_url can have an extension like #md5# or #sha256#.
+            This indicates a checksum which will be chekced after download. 
+            If the checksum does not match an exception is thrown.
+            
+            https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
+        """
+
         file_path = os.path.join( install_dir, downloaded_file_name )
         src = None
         dst = None
+        checksum = None
+        sha256 = False
+        md5 = False
         # Set a timer so we don't sit here forever.
+
+        if '#md5#' in download_url:
+            md5 = True
+            download_url, checksum = download_url.split('#md5#')
+        elif '#sha256#' in download_url:
+            sha256 = True
+            download_url, checksum = download_url.split('#sha256#')
+
         start_time = time.time()
         try:
             src = urllib2.urlopen( download_url )
@@ -166,6 +186,18 @@ class Download( object ):
                 src.close()
             if dst:
                 dst.close()
+
+        try:
+            if sha256:
+                downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
+            elif md5:
+                downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest()
+
+            if checksum and downloaded_checksum != checksum:
+                raise Exception( 'Given checksum does not match with the one from the downloaded file (%s).' % (downloaded_checksum) )
+        except Exception, e:
+            raise
+
         if extract:
             if tarfile.is_tarfile( file_path ) or ( zipfile.is_zipfile( file_path ) and not file_path.endswith( '.jar' ) ):
                 archive = CompressedFile( file_path )
@@ -174,6 +206,7 @@ class Download( object ):
                 extraction_path = os.path.abspath( install_dir )
         else:
             extraction_path = os.path.abspath( install_dir )
+
         return extraction_path
 
 
@@ -1388,6 +1421,139 @@ class SetupRubyEnvironment( Download, RecipeStep ):
         if ruby_package_tups:
             action_dict[ 'ruby_package_tups' ] = ruby_package_tups
         return action_dict
+
+
+class SetupPythonEnvironment( Download, RecipeStep ):
+
+    def __init__( self, app ):
+        self.app = app
+        self.type = 'setup_python_environment'
+
+    def execute_step( self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
+        """
+        Initialize the environment for installing Python packages.  The class is called during the initial
+        download stage when installing packages, so the value of initial_download will generally be True.
+        However, the parameter value allows this class to also be used in the second stage of the installation,
+        although it may never be necessary.  If initial_download is True, the recipe steps will be filtered
+        and returned and the installation directory (i.e., dir) will be defined and returned.  If we're not
+        in the initial download stage, these actions will not occur, and None values will be returned for them.
+
+        Warning: easy_install is configured that it will not be install any dependency, the tool developer needs
+        to specify every dependency explicitly
+        """
+        # <action type="setup_python_environment">
+        #       <repository name="package_python_2_7" owner="bgruening">
+        #           <package name="python" version="2.7" />
+        #       </repository>
+        #       <!-- allow downloading and installing a Python package from https://pypi.python.org/ -->
+        #       <package>pysam.tar.gz</package>
+        #       <package>http://url-to-some-python-package.de/pysam.tar.gz</package>
+        # </action>
+        dir = None
+        if initial_download:
+            filtered_actions = actions[ 1: ]
+        env_shell_file_paths = action_dict.get( 'env_shell_file_paths', None )
+        if env_shell_file_paths is None:
+            log.debug( 'Missing Python environment, make sure your specified Python installation exists.' )
+            if initial_download:
+                return tool_dependency, filtered_actions, dir
+            return tool_dependency, None, None
+        else:
+            install_environment.add_env_shell_file_paths( env_shell_file_paths )
+        log.debug( 'Handling setup_python_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' % \
+                   ( str( tool_dependency.name ), str( install_environment.env_shell_file_paths ) ) )
+        dir = os.path.curdir
+        current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+        with lcd( current_dir ):
+            with settings( warn_only=True ):
+                python_package_tups = action_dict.get( 'python_package_tups', [] )
+                for python_package_tup in python_package_tups:
+                    package, package_version = python_package_tup
+                    package_path = os.path.join( install_environment.tool_shed_repository_install_dir, package )
+                    if os.path.isfile( package_path ):
+                        # we assume a local shipped python package
+
+                        cmd = r'''PATH=$PATH:$PYTHONHOME/bin; export PATH;
+                                export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR;
+                                easy_install --no-deps --install-dir $INSTALL_DIR --script-dir $INSTALL_DIR/bin %s
+                        ''' % ( package_path )
+                    elif package.find( '://' ) != -1:
+                        # We assume a URL to a python package.
+                        url = package
+                        package_name = url.split( '/' )[ -1 ]
+                        self.url_download( work_dir, package_name, url, extract=False )
+
+                        cmd = r'''PATH=$PATH:$PYTHONHOME/bin; export PATH;
+                                export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR;
+                                easy_install --no-deps --install-dir $INSTALL_DIR --script-dir $INSTALL_DIR/bin %s
+                            ''' % ( package_name )
+                    else:
+                        pass
+                        # pypi can be implemented or for > python3.4 we can use the build-in system
+                    cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
+                    return_code = install_environment.handle_command( tool_dependency=tool_dependency,
+                                                                      cmd=cmd,
+                                                                      return_output=False )
+                    if return_code:
+                        if initial_download:
+                            return tool_dependency, filtered_actions, dir
+                        return tool_dependency, None, None
+                # Pull in python dependencies (runtime).
+                env_file_builder.handle_action_shell_file_paths( action_dict )
+                env_file_builder.append_line( name="PYTHONPATH",
+                                              action="prepend_to",
+                                              value= os.path.join( install_environment.install_dir, 'lib', 'python') )
+                env_file_builder.append_line( name="PATH",
+                                              action="prepend_to",
+                                              value=os.path.join( install_environment.install_dir, 'bin' ) )
+                return_code = env_file_builder.return_code
+                if return_code:
+                    if initial_download:
+                        return tool_dependency, filtered_actions, dir
+                    return tool_dependency, None, None
+        if initial_download:
+            return tool_dependency, filtered_actions, dir
+        return tool_dependency, None, None
+
+    def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
+        # setup a Python environment.
+        # <action type="setup_python_environment">
+        #       <repository name="package_python_2_7" owner="bgruening">
+        #           <package name="python" version="2.7" />
+        #       </repository>
+        #       <!-- allow downloading and installing an Python package from https://pypi.org/ -->
+        #       <package>pysam.tar.gz</package>
+        #       <package>http://url-to-some-python-package.de/pysam.tar.gz</package>
+        # </action>
+        # Discover all child repository dependency tags and define the path to an env.sh file
+        # associated with each repository.  This will potentially update the value of the
+        # 'env_shell_file_paths' entry in action_dict.
+        all_env_shell_file_paths = []
+        env_manager = EnvManager( self.app )
+        action_dict = env_manager.get_env_shell_file_paths_from_setup_environment_elem( all_env_shell_file_paths,
+                                                                                        action_elem,
+                                                                                        action_dict )
+        python_package_tups = []
+        for env_elem in action_elem:
+            if env_elem.tag == 'package':
+                #A valid package definitions can be:
+                #    pysam.tar.gz -> locally shipped tarball
+                #    ftp://ftp.gruening.de/pysam.tar.gz -> online tarball
+                python_token = env_elem.text.strip().split( '=' )
+                if len( python_token ) == 2:
+                    # version string
+                    package_name = python_token[ 0 ]
+                    package_version = python_token[ 1 ]
+                    python_package_tups.append( ( package_name, package_version ) )
+                else:
+                    # package name for pypi.org without version number
+                    package = env_elem.text.strip()
+                    python_package_tups.append( ( package, None ) )
+        if python_package_tups:
+            action_dict[ 'python_package_tups' ] = python_package_tups
+        return action_dict
+
 
 
 class SetupVirtualEnv( Download, RecipeStep ):
