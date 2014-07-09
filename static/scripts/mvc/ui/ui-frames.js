@@ -196,7 +196,6 @@ var View = Backbone.View.extend(
 
             // Load content into frame.
             var content_elt = $frame_el.find('.f-content');
-            console.log(content_elt);
             if (_.isFunction(options.content)) {
                 options.content(content_elt);
             }
