@@ -447,7 +447,9 @@ class DownloadFile( RecipeStep ):
             filename = action_dict[ 'target_filename' ]
         else:
             filename = url.split( '/' )[ -1 ]
-        td_common_util.url_download( work_dir, filename, url )
+        if current_dir is not None:
+            work_dir = current_dir
+        td_common_util.url_download( work_dir, filename, url, extract=action_dict[ 'extract' ] )
         if initial_download:
             dir = os.path.curdir
             return tool_dependency, filtered_actions, dir
