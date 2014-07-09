@@ -20,14 +20,12 @@ var TrackHeaderView = Backbone.View.extend({
         // Icons container.
         this.action_icons = {};
         this.render_action_icons();
-                
-        this.$el.append( $("<div style='clear: both'/>") );
-        
+
         // Suppress double clicks in header so that they do not impact viz under header.
         this.$el.dblclick( function(e) { e.stopPropagation(); } );
         
         // Needed for floating elts in header.
-        $("<div style='clear: both'/>").appendTo(this.container_div);
+        this.$el.append( $("<div style='clear: both'/>") );
     },
 
     update_name: function() {
@@ -41,7 +39,7 @@ var TrackHeaderView = Backbone.View.extend({
             self.add_action_icon(icon_dict.name, icon_dict.title, icon_dict.css_class, 
                                  icon_dict.on_click_fn, icon_dict.prepend, icon_dict.hide);
         });
-        
+
         // Set up behavior for modes popup.
         this.set_display_modes(this.model.display_modes);
     },

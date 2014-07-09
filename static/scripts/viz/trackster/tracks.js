@@ -225,7 +225,8 @@ var Drawable = function(view, container, obj_dict) {
     // unless flag set, create header.
     if (obj_dict.header !== false) {
         var header_view = new viz_views.TrackHeaderView({
-            model: this
+            model: this,
+            id: this.id
         });
             
         this.header_div = header_view.$el;
@@ -552,6 +553,10 @@ var DrawableGroup = function(view, container, obj_dict) {
     // Set up filters.
     this.filters_manager = new filters_mod.FiltersManager(this);
     this.header_div.after(this.filters_manager.parent_div);
+
+    // HACK: add div to clear floating elements.
+    this.filters_manager.parent_div.after( $("<div style='clear: both'/>") );
+
     // For saving drawables' filter managers when group-level filtering is done:
     this.saved_filters_managers = [];
     
@@ -591,7 +596,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         {
             name: "filters_icon",
             title: "Filters",
-            css_class: "filters-icon",
+            css_class: "ui-slider-050",
             on_click_fn: function(group) {
                 // TODO: update Tooltip text.
                 if (group.filters_manager.visible()) {
