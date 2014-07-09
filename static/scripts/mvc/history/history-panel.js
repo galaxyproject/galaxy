@@ -2,11 +2,12 @@ define([
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-edit",
     "mvc/collection/dataset-collection-edit",
+    "mvc/history/history-contents",
     "mvc/history/readonly-history-panel",
     "mvc/tags",
     "mvc/annotations",
     "utils/localization"
-], function( hdaModel, hdaEdit, datasetCollectionEdit, readonlyPanel, tagsMod, annotationsMod, _l ){
+], function( hdaModel, hdaEdit, datasetCollectionEdit, historyContents, readonlyPanel, tagsMod, annotationsMod, _l ){
 /* =============================================================================
 TODO:
 
@@ -36,7 +37,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     HDAViewClass : hdaEdit.HDAEditView,
 
     // ......................................................................... SET UP
-    /** Set up the view, set up storage, bind listeners to HDACollection events
+    /** Set up the view, set up storage, bind listeners to HistoryContents events
      *  @param {Object} attributes
      */
     initialize : function( attributes ){
@@ -493,7 +494,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 
     /** return an HdaCollection of the models of all currenly selected hdas */
     getSelectedHdaCollection : function(){
-        return new hdaModel.HDACollection( _.map( this.getSelectedHdaViews(), function( hdaView ){
+        return new historyContents.HistoryContents( _.map( this.getSelectedHdaViews(), function( hdaView ){
             return hdaView.model;
         }), { historyId: this.model.id });
     },
