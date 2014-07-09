@@ -332,7 +332,6 @@ extend(Drawable.prototype, {
     revert_name: function() {
         if (this.old_name) {
             this.config.set_value('name', this.old_name);
-            this.name_div.text(this.old_name);
         }
     },
 
