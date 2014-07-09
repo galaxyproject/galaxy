@@ -647,9 +647,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             this.action_icons.filters_icon.hide();
         }
         else if (num_drawables === 1) {
-            if (this.drawables[0] instanceof CompositeTrack) {
-                this.action_icons.composite_icon.show();
-            }
+            this.action_icons.composite_icon.toggle(this.drawables[0] instanceof CompositeTrack);
             this.action_icons.filters_icon.hide();
         }
         else { // There are 2 or more tracks.
@@ -738,12 +736,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 }
             
                 // Show/hide icon based on filter availability.
-                if (this.filters_manager.filters.length > 0) {   
-                    this.action_icons.filters_icon.show();
-                }
-                else {
-                    this.action_icons.filters_icon.hide();
-                }
+                this.action_icons.filters_icon.toggle(this.filters_manager.filters.length > 0);
             }
             else {
                 this.action_icons.filters_icon.hide();
@@ -1134,12 +1127,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
 
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
-        if (this.drawables.length === 0) {
-            this.intro_div.show();
-        }
-        else {
-            this.intro_div.hide();
-        }
+        this.intro_div.toggle(this.drawables.length === 0);
     },
 
     /**
@@ -1716,12 +1704,7 @@ var TracksterToolView = Backbone.View.extend({
      * Show or hide tool depending on tool visibility state.
      */
     set_visible: function() {
-        if (this.model.is_visible()) {
-            this.$el.show();
-        }
-        else {
-            this.$el.hide();
-        }
+        this.$el.toggle(this.model.is_visible());
     },
 
     /**
@@ -2691,24 +2674,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         // Show/hide filter icon.
         //
-        if (track.filters_available) {
-            track.action_icons.filters_icon.show();
-        }
-        else {
-            track.action_icons.filters_icon.hide();
-        }
+        track.action_icons.filters_icon.toggle(track.filters_available);
         
         //
         // Show/hide tool icons.
         //
-        if (track.tool) {
-            track.action_icons.tools_icon.show();
-            track.action_icons.param_space_viz_icon.show();
-        }
-        else {
-            track.action_icons.tools_icon.hide();
-            track.action_icons.param_space_viz_icon.hide();
-        }
+        track.action_icons.tools_icon.toggle(track.tool !== null);
+        track.action_icons.param_space_viz_icon.toggle(track.tool !== null);
     },
 
     /**
@@ -3834,12 +3806,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     break;
                 }
             }
-            if (!all_slotted) {
-                this.action_icons.show_more_rows_icon.show();
-            }
-            else {
-                this.action_icons.show_more_rows_icon.hide();
-            }
+            this.action_icons.show_more_rows_icon.toggle(!all_slotted);
         }
         else {
             this.action_icons.show_more_rows_icon.hide();
