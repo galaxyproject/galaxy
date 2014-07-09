@@ -54,6 +54,7 @@ class StepManager( object ):
                                       setup_perl_environment=step_handler.SetupPerlEnvironment( self.app ),
                                       setup_r_environment=step_handler.SetupREnvironment( self.app ),
                                       setup_ruby_environment=step_handler.SetupRubyEnvironment( self.app ),
+                                      setup_python_environment=step_handler.SetupPythonEnvironment( self.app ),
                                       setup_virtualenv=step_handler.SetupVirtualEnv( self.app ),
                                       shell_command=step_handler.ShellCommand( self.app ),
                                       template_command=step_handler.TemplateCommand( self.app ) )
