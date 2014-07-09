@@ -83,7 +83,7 @@ class JobRunnerMapper( object ):
         if "job" in function_arg_names or "user" in function_arg_names or "user_email" in function_arg_names or "resource_params" in function_arg_names:
             job = self.job_wrapper.get_job()
             history = job.history
-            user = history and history.user
+            user = job.user
             user_email = user and str(user.email)
 
             if "job" in function_arg_names:
