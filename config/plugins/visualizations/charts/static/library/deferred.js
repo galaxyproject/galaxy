@@ -1,9 +1,10 @@
 // dependencies
 define(['utils/utils'], function(Utils) {
 
-// deferred process handler
-return Backbone.Model.extend(
-{
+/**
+ *  This class handles deferred processes. It makes it easy to handle multiple and overlapping sets of deferred processes.
+ */
+return Backbone.Model.extend({
     // queue
     queue: [],
     
@@ -14,8 +15,7 @@ return Backbone.Model.extend(
     counter: 0,
     
     // initialize
-    initialize: function()
-    {
+    initialize: function(){
         // loop through queue and check states
         this.on('refresh', function() {
             for (var index in this.queue) {

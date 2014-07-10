@@ -1,9 +1,10 @@
 // dependencies
 define(['utils/utils'], function(Utils) {
 
-// plugin
-var View = Backbone.View.extend(
-{
+/**
+ *  This class creates/wraps a default html select field as backbone class.
+ */
+var View = Backbone.View.extend({
     // options
     optionsDefault : {
         id      : '',

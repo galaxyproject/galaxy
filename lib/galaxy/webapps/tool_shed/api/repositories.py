@@ -7,6 +7,7 @@ from time import strftime
 from galaxy import eggs
 from galaxy import util
 from galaxy import web
+from galaxy.model.orm import and_
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
@@ -297,16 +298,28 @@ class RepositoriesController( BaseAPIController ):
         return return_dict
 
     @web.expose_api_anonymous
-    def index( self, trans, deleted=False, **kwd ):
+    def index( self, trans, deleted=False, owner=None, name=None, **kwd ):
         """
         GET /api/repositories
+
+        :param deleted: True/False, displays repositories that are or are not set to deleted.
+        :param owner: the owner's public username.
+        :param name: the repository name.
+
         Displays a collection (list) of repositories.
         """
         # Example URL: http://localhost:9009/api/repositories
         repository_dicts = []
         deleted = util.asbool( deleted )
+        clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == False,
+                              trans.app.model.Repository.table.c.deleted == deleted ) ]
+        if owner is not None:
+            clause_list.append( and_( trans.app.model.User.table.c.username == owner, 
+                                      trans.app.model.Repository.table.c.user_id == trans.app.model.User.table.c.id ) )
+        if name is not None:
+            clause_list.append( trans.app.model.Repository.table.c.name == name )
         for repository in trans.sa_session.query( trans.app.model.Repository ) \
-                                          .filter( trans.app.model.Repository.table.c.deleted == deleted ) \
+                                          .filter( *clause_list ) \
                                           .order_by( trans.app.model.Repository.table.c.name ):
             repository_dict = repository.to_dict( view='collection',
                                                   value_mapper=self.__get_value_mapper( trans ) )

@@ -102,7 +102,6 @@ class AdminToolshed( AdminGalaxy ):
                                                                   action='reset_to_install',
                                                                   **kwd ) )
             if operation == "purge":
-                kwd[ 'purge_repository' ] = True
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                   action='purge_repository',
                                                                   **kwd ) )
@@ -1270,14 +1269,21 @@ class AdminToolshed( AdminGalaxy ):
         if repository_id is not None:
             repository = suc.get_installed_tool_shed_repository( trans.app, repository_id )
             if repository:
-                if kwd.get( 'purge_repository', False ):
-                    irm = install_manager.InstallRepositoryManager( trans.app )
-                    purge_status, purge_message = irm.purge_repository( trans.app, repository )
-                    if purge_status == 'ok':
-                        new_kwd[ 'status' ] = "done"
+                if repository.is_new:
+                    if kwd.get( 'purge_repository_button', False ):
+                        irm = trans.app.installed_repository_manager
+                        purge_status, purge_message = irm.purge_repository( repository )
+                        if purge_status == 'ok':
+                            new_kwd[ 'status' ] = "done"
+                        else:
+                            new_kwd[ 'status' ] = 'error'
+                        new_kwd[ 'message' ] = purge_message
                     else:
-                        new_kwd[ 'status' ] = 'error'
-                    new_kwd[ 'message' ] = purge_message
+                        return trans.fill_template( 'admin/tool_shed_repository/purge_repository_confirmation.mako',
+                                                    repository=repository )
+                else:
+                    new_kwd[ 'status' ] = 'error'
+                    new_kwd[ 'message' ] = 'Repositories must have a <b>New</b> status in order to be purged.'
             else:
                 new_kwd[ 'status' ] = 'error'
                 new_kwd[ 'message' ] = 'Cannot locate the database record for the repository with encoded id %s.' % str( repository_id )

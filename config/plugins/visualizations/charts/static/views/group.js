@@ -2,9 +2,10 @@
 define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
         function(Table, Ui, Utils) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  This class renders the data group selection fields.
+ */
+return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
         // link app
@@ -59,7 +60,7 @@ return Backbone.View.extend(
         this._refreshGroup();
     },
     
-    // update dataset
+    // update group selection table
     _refreshTable: function() {
         // identify datasets
         var dataset_id = this.chart.get('dataset_id');
@@ -116,7 +117,7 @@ return Backbone.View.extend(
         this.chart.state('wait', 'Loading metadata...');
         
         // register process
-        var process_id = this.chart.deferred.register();
+        var process_id = this.app.deferred.register();
         
         // request dictionary
         var request_dictionary = {
@@ -131,7 +132,7 @@ return Backbone.View.extend(
                 self.chart.state('ok', 'Metadata initialized...');
                 
                 // unregister
-                self.chart.deferred.done(process_id);
+                self.app.deferred.done(process_id);
             }
         };
         

@@ -55,6 +55,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     datatypes_grid = repository_grids.DatatypesGrid()
     deprecated_repositories_i_own_grid = repository_grids.DeprecatedRepositoriesIOwnGrid()
     email_alerts_repository_grid = repository_grids.EmailAlertsRepositoryGrid()
+    docker_image_grid = repository_grids.DockerImageGrid()
     install_matched_repository_grid = repository_grids.InstallMatchedRepositoryGrid()
     matched_repository_grid = repository_grids.MatchedRepositoryGrid()
     my_writable_repositories_grid = repository_grids.MyWritableRepositoriesGrid()
@@ -984,6 +985,62 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         else:
             # Do all we can to eliminate spam.
             return trans.show_error_message( "You must be logged in to contact the owner of a repository." )
+
+    @web.expose
+    def create_galaxy_docker_image( self, trans, **kwd ):
+        message = kwd.get( 'message', '' )
+        status = kwd.get( 'status', 'done' )
+        repository_ids = util.listify( kwd.get( 'id', '' ) )
+        if 'operation' in kwd:
+            if repository_ids:
+                operation = kwd[ 'operation' ].lower()
+                if operation == "include in docker image":
+                    repository_tups = []
+                    for repository_id in repository_ids:
+                        repository = suc.get_repository_by_id( trans.app, repository_id )
+                        repository_tups.append( ( str( repository.name ),
+                                                  str( repository.user.username ),
+                                                  str( repository.type ) ) )
+                    return trans.fill_template( "/webapps/tool_shed/repository/docker_image_repositories.mako",
+                                                id=','.join( repository_ids ),
+                                                repository_tups=repository_tups,
+                                                message=message,
+                                                status=status )
+            else:
+                # This can only occur when there is a multi-select grid with check boxes and an operation,
+                # and the user clicked the operation button without checking any of the check boxes.
+                kwd[ 'message' ] = "No items were selected."
+                kwd[ 'status' ] = 'error'
+        elif kwd.get( 'create_docker_image_button', False ):
+            tmp_image_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cdidir" )
+            docker_file_name = 'Dockerfile'
+            docker_file_path = os.path.join( tmp_image_dir, docker_file_name )
+            tool_shed_url = tool_shed_url = web.url_for( '/', qualified=True )
+            repository_string = ''
+            for repository_id in repository_ids:
+                repository = suc.get_repository_by_id( trans.app, repository_id )
+                template = basic_util.SELECTED_REPOSITORIES_TEMPLATE
+                repository_template = \
+                    string.Template( template ).safe_substitute( tool_shed_url=tool_shed_url,
+                                                                 repository_owner=str( repository.user.username ) ,
+                                                                 repository_name=str( repository.name ) )
+                repository_string = '%s\n%s' % ( repository_string, repository_template )
+            template = basic_util.DOCKER_IMAGE_TEMPLATE
+            docker_image_template = \
+                string.Template( template ).safe_substitute( selected_repositories=repository_string )
+            docker_image_string = docker_image_template
+            trans.response.set_content_type( 'application/text/plain' )
+            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s"' % docker_file_name
+            opened_file = open( docker_file_path, "w" )
+            opened_file.write( docker_image_string )
+            opened_file.close()
+            opened_file = open( docker_file_path, "r" )
+            # Make sure the file is removed from disk after the contents have been downloaded.
+            os.unlink( docker_file_path )
+            docker_file_path, docker_file_name = os.path.split( docker_file_path )
+            basic_util.remove_dir( docker_file_path )
+            return opened_file
+        return self.docker_image_grid( trans, **kwd )
 
     @web.expose
     def create_repository( self, trans, **kwd ):

@@ -423,7 +423,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
     /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDAView(' + modelString + ')';
+        return 'HDAEditView(' + modelString + ')';
     }
 });
 
@@ -510,6 +510,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
 
 
 //==============================================================================
-return {
-    HDAEditView  : HDAEditView
-};});
+    return {
+        HDAEditView  : HDAEditView
+    };
+});

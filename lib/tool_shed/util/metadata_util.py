@@ -868,6 +868,20 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                                                                             repository_elem=sub_action_elem,
                                                                             only_if_compiling_contained_td=True,
                                                                             updating_installed_repository=False )
+                                elif action_elem.tag == 'action':
+                                    # <action type="set_environment_for_install">
+                                    #    <repository changeset_revision="b107b91b3574" name="package_readline_6_2" owner="devteam" prior_installation_required="True" toolshed="http://localhost:9009">
+                                    #        <package name="readline" version="6.2" />
+                                    #    </repository>
+                                    # </action>
+                                    for sub_action_elem in action_elem:
+                                        if sub_action_elem.tag == 'repository':
+                                            # We have a complex repository dependency.
+                                            repository_dependency_tup, repository_dependency_is_valid, error_message = \
+                                                handle_repository_elem( app=app,
+                                                                        repository_elem=sub_action_elem,
+                                                                        only_if_compiling_contained_td=True,
+                                                                        updating_installed_repository=False )
     if requirements_dict:
         dependency_key = '%s/%s' % ( package_name, package_version )
         if repository_dependency_is_valid:

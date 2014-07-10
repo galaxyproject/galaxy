@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!--
+    If the value of 'URL_method' is 'get', the request will consist of the value of 'URL' coming back in
+    the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
+    initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
+-->
+<tool name="Flymine" id="flymine" tool_type="data_source">
+    <description>server</description>
+    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <inputs action="http://www.flymine.org" check_values="false" method="get"> 
+        <display>go to Flymine server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=flymine" />
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="post" />
+        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="dbkey" remote_name="db" missing="?" />
+        <request_param galaxy_name="organism" remote_name="organism" missing="" />
+        <request_param galaxy_name="table" remote_name="table" missing="" />
+        <request_param galaxy_name="description" remote_name="description" missing="" />
+        <request_param galaxy_name="name" remote_name="name" missing="FlyMine query" />
+        <request_param galaxy_name="info" remote_name="info" missing="" />
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="auto" >
+            <value_translation>
+                <value galaxy_value="auto" remote_value="txt" /> <!-- intermine currently always provides 'txt', make this auto detect -->
+            </value_translation>
+        </request_param>
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>
+

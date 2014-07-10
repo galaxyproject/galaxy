@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<toolbox tool_path="test/functional/tools">
+<toolbox tool_path="${tool_conf_dir}">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="composite.xml" />

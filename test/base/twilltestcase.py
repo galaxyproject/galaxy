@@ -506,13 +506,13 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'The file conversion of Convert BED to GFF on data' )
         self.wait()  # wait for the format convert tool to finish before returning
 
-    def copy_history_item( self, source_dataset_id=None, target_history_id=None, all_target_history_ids=[],
+    def copy_history_item( self, source_history_id=None, source_dataset_id=None, target_history_id=None, all_target_history_ids=[],
                            deleted_history_ids=[] ):
         """
         Copy 1 history_dataset_association to 1 history (Limited by twill since it doesn't support multiple
         field names, such as checkboxes
         """
-        self.visit_url( "%s/dataset/copy_datasets?source_dataset_ids=%s" % ( self.url, source_dataset_id ) )
+        self.visit_url( "/dataset/copy_datasets" )
         self.check_page_for_string( 'Source History:' )
         # Make sure all of users active histories are displayed
         for id in all_target_history_ids:
@@ -524,9 +524,11 @@ class TwillTestCase( unittest.TestCase ):
                 raise AssertionError( "deleted history id %d displayed in list of target histories" % id )
             except:
                 pass
-
-        tc.fv( '1', 'target_history_id', target_history_id )
-        tc.submit( 'do_copy' )
+        form_values = [ ( 'source_history', source_history_id ),
+                        ( 'target_history_id', target_history_id ),
+                        ( 'source_content_ids', 'dataset|%s' % source_dataset_id ),
+                        ( 'do_copy', True ) ]
+        self.visit_url( "/dataset/copy_datasets", params=form_values )
         check_str = '1 dataset copied to 1 history'
         self.check_page_for_string( check_str )
 

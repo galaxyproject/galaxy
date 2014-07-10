@@ -1,0 +1,1 @@
+define(["mvc/base-mvc","utils/localization"],function(a,b){var c=Backbone.View.extend(a.LoggableMixin).extend({});return{HistoryContentBaseView:c}});

@@ -1,9 +1,10 @@
 // dependencies
-define(['utils/utils', 'plugin/models/chart', 'plugin/models/group'], function(Utils, Chart, Group) {
+define(['utils/utils', 'plugin/models/chart', 'plugin/models/group', 'mvc/visualization/visualization-model'], function(Utils, Chart, Group) {
 
-// collection
-return Backbone.Model.extend(
-{
+/**
+ *  This class saves and loads a chart through the api.
+ */
+return Backbone.Model.extend({
     // viz model
     vis: null,
     
@@ -44,7 +45,6 @@ return Backbone.Model.extend(
     
     // pack and save nested chart model
     save: function() {
-    
         // link chart
         var chart = this.app.chart;
         

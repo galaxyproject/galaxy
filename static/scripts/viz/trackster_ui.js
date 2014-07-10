@@ -225,7 +225,7 @@ var TracksterUI = base.Base.extend({
         
         // Create view.
         var self = this,
-            view = new tracks.TracksterView(view_config);
+            view = new tracks.TracksterView(_.extend(view_config, {header: false}));
         view.editor = true;
         $.when( view.load_chroms_deferred ).then(function(chrom_info) {
             // Viewport config.

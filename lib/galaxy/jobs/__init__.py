@@ -1181,17 +1181,21 @@ class JobWrapper( object ):
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+        input_ext = 'data'
+        for _, data in inp_data.items():
+            # For loop odd, but sort simulating behavior in galaxy.tools.actions
+            if not data:
+                continue
+            input_ext = data.ext
+
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )  # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data, self.working_directory)
-        gitd = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
-        if gitd:
-            self.tool.collect_associated_files({'': gitd}, self.working_directory)
         # Create generated output children and primary datasets and add to param_dict
         collected_datasets = {
             'children': self.tool.collect_child_datasets(out_data, self.working_directory),
-            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory)
+            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext)
         }
         param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
@@ -1241,7 +1245,6 @@ class JobWrapper( object ):
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
-            galaxy.tools.genome_index.GenomeIndexToolWrapper( self.job_id ).postprocessing( self.sa_session, self.app )
             if delete_files:
                 self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
         except:
@@ -1344,10 +1347,8 @@ class JobWrapper( object ):
         dataset_path_rewriter = self.dataset_path_rewriter
 
         job = self.get_job()
-        # Job output datasets are combination of history, library, jeha and gitd datasets.
+        # Job output datasets are combination of history, library, and jeha datasets.
         special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
-        if not special:
-            special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
         false_path = None
 
         results = []
