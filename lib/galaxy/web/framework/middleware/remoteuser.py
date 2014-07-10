@@ -76,7 +76,11 @@ class RemoteUser( object ):
                         before you may access Galaxy.
                     """
                     return self.error( start_response, title, message )
-            if path_info.startswith( '/user/create' ) and environ[ self.remote_user_header ] in self.admin_users:
+            if not path_info.startswith('/user'):
+                # shortcut the following whitelist for non-user-controller
+                # requests.
+                pass
+            elif path_info.startswith( '/user/create' ) and environ[ self.remote_user_header ] in self.admin_users:
                 pass  # admins can create users
             elif path_info.startswith( '/user/logout' ) and environ[ self.remote_user_header ] in self.admin_users:
                 pass  # Admin users may be impersonating, allow logout.
@@ -86,7 +90,14 @@ class RemoteUser( object ):
                 pass  # username can be managed when remote_user is in use
             elif path_info.startswith( '/user/dbkeys' ):
                 pass  # dbkeys can be managed when remote_user is in use
+            elif path_info.startswith( '/user/toolbox_filters' ):
+                pass  # toolbox filters can be managed when remote_user is in use
+            elif path_info.startswith( '/user/set_default_permissions' ):
+                pass  # default permissions can be managed when remote_user is in use
+            elif path_info == '/user' or path_info =='/user/':
+                pass # We do allow access to the root user preferences page.
             elif path_info.startswith( '/user' ):
+                # Any other endpoint in the user controller is off limits
                 title = "Access to Galaxy user controls is disabled"
                 message = """
                     User controls are disabled when Galaxy is configured
