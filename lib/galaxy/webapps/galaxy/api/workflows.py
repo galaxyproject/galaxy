@@ -9,6 +9,7 @@ from sqlalchemy import desc, or_
 from galaxy import exceptions
 from galaxy import util
 from galaxy import web
+from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.web.base.controller import UsesHistoryMixin
@@ -20,7 +21,7 @@ from galaxy.workflow.extract import extract_workflow
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations):
 
     @web.expose_api
     def index(self, trans, **kwd):
@@ -94,12 +95,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
                 # Eventually, allow regular tool parameters to be inserted and modified at runtime.
                 # p = step.get_required_parameters()
         item['inputs'] = inputs
+        item['annotation'] = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
         steps = {}
         for step in latest_workflow.steps:
             steps[step.id] = {'id': step.id,
                               'type': step.type,
                               'tool_id': step.tool_id,
                               'tool_version': step.tool_version,
+                              'annotation': self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step ),
                               'tool_inputs': step.tool_inputs,
                               'input_steps': {}}
             for conn in step.input_connections:
