@@ -94,8 +94,8 @@ class RemoteUser( object ):
                 pass  # toolbox filters can be managed when remote_user is in use
             elif path_info.startswith( '/user/set_default_permissions' ):
                 pass  # default permissions can be managed when remote_user is in use
-            elif path_info == '/user' or path_info =='/user/':
-                pass # We do allow access to the root user preferences page.
+            elif path_info == '/user' or path_info == '/user/':
+                pass  # We do allow access to the root user preferences page.
             elif path_info.startswith( '/user' ):
                 # Any other endpoint in the user controller is off limits
                 title = "Access to Galaxy user controls is disabled"
