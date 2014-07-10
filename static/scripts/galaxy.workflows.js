@@ -361,7 +361,7 @@ function add_node_for_module( type, title ) {
 // This function preloads how to display known pja's.
 function display_pja(pja, node) {
     // DBTODO SANITIZE INPUTS.
-    $("#pja_container").append( get_pja_form(pja) );
+    $("#pja_container").append( get_pja_form(pja, node) );
     $("#pja_container>.toolForm:last>.toolFormTitle>.buttons").click(function (){
         action_to_rem = $(this).closest(".toolForm", ".action_tag").children(".action_tag:first").text();
         $(this).closest(".toolForm").remove();

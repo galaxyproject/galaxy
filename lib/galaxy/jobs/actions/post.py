@@ -215,6 +215,15 @@ class RenameDatasetAction(DefaultJobAction):
                 p_str += "<label for='pja__"+pja.output_name+"__RenameDatasetAction__newname'>New output name:</label>\
                           <input type='text' name='pja__"+pja.output_name+"__RenameDatasetAction__newname' value=''/>";
             }
+            inputlist = [];
+            $.each(node.input_terminals, function(i, v){
+                inputlist.push(v.name);
+            });
+            if (inputlist !== []){
+                p_str += "Available inputs are: <strong>" + inputlist.join(', ') + "</strong>";
+            }else{
+                p_str += "No inputs are available for templating into this action.";
+            }
             """
         return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
 
