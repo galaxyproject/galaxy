@@ -225,7 +225,7 @@ class RenameDatasetAction(DefaultJobAction):
                 p_str += "No inputs are available for templating into this action.";
             }
             """
-        return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.")
+        return get_form_template(cls.name, cls.verbose_name, form, "This action will rename the result dataset.  See <a href='https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables'>the wiki</a> for usage information.")
 
     @classmethod
     def get_short_str(cls, pja):
