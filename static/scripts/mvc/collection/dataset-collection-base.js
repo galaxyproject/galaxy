@@ -1,7 +1,7 @@
 define([
-    "mvc/dataset/hda-model",
-    "mvc/dataset/hda-base"
-], function( hdaModel, hdaBase ){
+    "mvc/history/history-content-base-view",
+    "utils/localization"
+], function( historyContentBaseView, _l ){
 /* global Backbone, LoggableMixin */
 //==============================================================================
 /** @class Read only view for HistoryDatasetCollectionAssociation.
@@ -12,10 +12,11 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
+var DatasetCollectionBaseView = historyContentBaseView.HistoryContentBaseView.extend({
     className   : "dataset hda history-panel-hda",
     id          : function(){ return 'hdca-' + this.model.get( 'id' ); },
 
+    /**  */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( this + '.initialize:', attributes );
@@ -28,6 +29,7 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
         this.expanded   = attributes.expanded || false;
     },
 
+    /** */
     render : function( fade ){
         var $newRender = this._buildNewRender();
 
@@ -35,51 +37,45 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
         return this;
     },
 
-    // main template for folder browsing
-    templateSkeleton : function (){
-        return [
-            '<div class="dataset hda">',
-                '<div class="dataset-warnings">',
-                    '<% if ( deleted ) { %>',
-                        '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
-                            _l( 'This dataset has been deleted.' ),
-                        '</div>',
-                    '<% } %>',
-                    '<% if ( ! visible ) { %>',
-                        '<div class="dataset-hidden-msg warningmessagesmall"><strong>',
-                            _l( 'This dataset has been hidden.' ),
-                        '</div>',
-                    '<% } %>',
-                '</div>',
-                '<div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>',
-                '<div class="dataset-primary-actions"></div>',
-                '<div class="dataset-title-bar clear" tabindex="0">',
-                    '<span class="dataset-state-icon state-icon"></span>',
-                    '<div class="dataset-title">',
-                        '<span class="hda-hid"><%= hid %></span> ',
-                        '<span class="dataset-name"><%= name %></span>',
-                    '</div>',
-                '</div>',
-                '<div class="dataset-body"></div>',
-            '</div>'
-        ].join( '' );
-    },
-
-    templateBody : function() {
-        return [
-            '<div class="dataset-body">',
-                '<div class="dataset-summary">',
-                'A dataset collection.',
-            '</div>'
-        ].join( '' );
-    },
-    
+    /** */
     _buildNewRender : function(){
-        var $newRender = $( _.template(this.templateSkeleton(), this.model.toJSON() ) );
+        var $newRender = $( DatasetCollectionBaseView.templates.skeleton( this.model.toJSON() ) );
         $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
         $newRender.children( '.dataset-body' ).replaceWith( this._render_body() );
         this._setUpBehaviors( $newRender );
         return $newRender;
+    },
+
+    /** */
+    _queueNewRender : function( $newRender, fade ) {
+        fade = ( fade === undefined )?( true ):( fade );
+        var view = this;
+
+        // fade the old render out (if desired)
+        if( fade ){
+            $( view ).queue( function( next ){ this.$el.fadeOut( view.fxSpeed, next ); });
+        }
+        // empty the old render, update to any new HDA state, swap in the new render contents, handle multi-select
+        $( view ).queue( function( next ){
+            this.$el.empty()
+                .attr( 'class', view.className ).addClass( 'state-' + view.model.get( 'state' ) )
+                .append( $newRender.children() );
+            if( this.selectable ){ this.showSelector( 0 ); }
+            next();
+        });
+        // fade the new in
+        if( fade ){
+            $( view ).queue( function( next ){ this.$el.fadeIn( view.fxSpeed, next ); });
+        }
+        // trigger an event to know we're ready
+        $( view ).queue( function( next ){
+            this.trigger( 'rendered', view );
+            if( this.model.inReadyState() ){
+                this.trigger( 'rendered:ready', view );
+            }
+            if( this.draggable ){ this.draggableOn(); }
+            next();
+        });
     },
 
     // ................................................................................ titlebar buttons
@@ -134,6 +130,31 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
         'click .dataset-selector'       : 'toggleSelect'
     },
 
+    /** Show or hide the body/details of history content.
+     *      note: if the model does not have detailed data, fetch that data before showing the body
+     *  @param {Event} event the event that triggered this (@link HDABaseView#events)
+     *  @param {Boolean} expanded if true, expand; if false, collapse
+     *  @fires body-expanded when a body has been expanded
+     *  @fires body-collapsed when a body has been collapsed
+     */
+    toggleBodyVisibility : function( event, expand ){
+        // bail (with propagation) if keydown and not space or enter
+        var KEYCODE_SPACE = 32, KEYCODE_RETURN = 13;
+        if( event && ( event.type === 'keydown' )
+        &&  !( event.keyCode === KEYCODE_SPACE || event.keyCode === KEYCODE_RETURN ) ){
+            return true;
+        }
+
+        var $body = this.$el.find( '.dataset-body' );
+        expand = ( expand === undefined )?( !$body.is( ':visible' ) ):( expand );
+        if( expand ){
+            this.expandBody();
+        } else {
+            this.collapseBody();
+        }
+        return false;
+    },
+
     /** Render and show the full, detailed body of this view including extra data and controls.
      *  @fires body-expanded when a body has been expanded
      */
@@ -162,13 +183,12 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
         });
     },
 
-
     /** Render an 'ok' collection.
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_ok : function(){
         // most common state renderer and the most complicated
-        var $body = $( _.template( this.templateBody(), this.model.toJSON() ) );
+        var $body = $( DatasetCollectionBaseView.templates.body( this.model.toJSON() ) );
 
         // return shortened form if del'd (no display apps or peek?)
         if( this.model.get( 'deleted' ) ){
@@ -176,13 +196,133 @@ var DatasetCollectionBaseView = hdaBase.HistoryContentBaseView.extend({
         }
 
         return $body;
-    }
+    },
     
+    // ......................................................................... selection
+    /** display a (fa-icon) checkbox on the left of the hda that fires events when checked
+     *      Note: this also hides the primary actions
+     */
+    showSelector : function(){
+        // make sure selected state is represented properly
+        if( this.selected ){
+            this.select( null, true );
+        }
+
+        this.selectable = true;
+        this.trigger( 'selectable', true, this );
+
+        this.$( '.dataset-primary-actions' ).hide();
+        this.$( '.dataset-selector' ).show();
+    },
+
+    /** remove the selection checkbox */
+    hideSelector : function(){
+        // reverse the process from showSelect
+        this.selectable = false;
+        this.trigger( 'selectable', false, this );
+
+        this.$( '.dataset-selector' ).hide();
+        this.$( '.dataset-primary-actions' ).show();
+    },
+
+    toggleSelector : function(){
+        if( !this.$el.find( '.dataset-selector' ).is( ':visible' ) ){
+            this.showSelector();
+        } else {
+            this.hideSelector();
+        }
+    },
+
+    /** event handler for selection (also programmatic selection)
+     */
+    select : function( event ){
+        // switch icon, set selected, and trigger event
+        this.$el.find( '.dataset-selector span' )
+            .removeClass( 'fa-square-o' ).addClass( 'fa-check-square-o' );
+        if( !this.selected ){
+            this.trigger( 'selected', this, event );
+            this.selected = true;
+        }
+        return false;
+    },
+
+    /** event handler for clearing selection (also programmatic deselection)
+     */
+    deselect : function( event ){
+        // switch icon, set selected, and trigger event
+        this.$el.find( '.dataset-selector span' )
+            .removeClass( 'fa-check-square-o' ).addClass( 'fa-square-o' );
+        if( this.selected ){
+            this.trigger( 'de-selected', this, event );
+            this.selected = false;
+        }
+        return false;
+    },
+
+    toggleSelect : function( event ){
+        if( this.selected ){
+            this.deselect( event );
+        } else {
+            this.select( event );
+        }
+    },
+
+    // ......................................................................... misc
+    /** String representation */
+    toString : function(){
+        var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
+        return 'HDCABaseView(' + modelString + ')';
+    }
 });
 
-//==============================================================================
-return {
-    DatasetCollectionBaseView : DatasetCollectionBaseView
+//------------------------------------------------------------------------------ TEMPLATES
+//TODO: possibly break these out into a sep. module
+var skeletonTemplate = _.template([
+    '<div class="dataset hda">',
+        '<div class="dataset-warnings">',
+            '<% if ( collection.deleted ) { %>',
+                '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
+                    _l( 'This collection has been deleted.' ),
+                '</div>',
+            '<% } %>',
+            '<% if ( !collection.visible ) { %>',
+                '<div class="dataset-hidden-msg warningmessagesmall"><strong>',
+                    _l( 'This collection has been hidden.' ),
+                '</div>',
+            '<% } %>',
+        '</div>',
+        '<div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>',
+        '<div class="dataset-primary-actions"></div>',
+        '<div class="dataset-title-bar clear" tabindex="0">',
+            '<span class="dataset-state-icon state-icon"></span>',
+            '<div class="dataset-title">',
+                '<span class="hda-hid"><%= collection.hid %></span> ',
+                '<span class="dataset-name"><%= collection.name %></span>',
+            '</div>',
+        '</div>',
+        '<div class="dataset-body"></div>',
+    '</div>'
+].join( '' ));
+
+var bodyTemplate = _.template([
+    '<div class="dataset-body">',
+        '<div class="dataset-summary">',
+        _l( 'A dataset collection.' ),
+    '</div>'
+].join( '' ));
+
+DatasetCollectionBaseView.templates = {
+    // we override here in order to pass the localizer (_L) into the template scope - since we use it as a fn within
+    skeleton            : function( collectionJSON ){
+        return skeletonTemplate({ _l: _l, collection: collectionJSON });
+    },
+    body                : function( collectionJSON ){
+        return bodyTemplate({ _l: _l, collection: collectionJSON });
+    }
 };
 
+//==============================================================================
+    return {
+        DatasetCollectionBaseView : DatasetCollectionBaseView
+    };
 });
