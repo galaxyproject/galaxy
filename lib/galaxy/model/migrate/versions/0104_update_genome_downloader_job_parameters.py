@@ -23,6 +23,8 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
+metadata = MetaData()
+context = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
 class DeferredJob( object ):
     states = Bunch( NEW = 'new',
@@ -37,11 +39,7 @@ class DeferredJob( object ):
         self.params = params
 
 def upgrade(migrate_engine):
-    metadata = MetaData()
     metadata.bind = migrate_engine
-
-    Session = sessionmaker( bind=migrate_engine)
-    context = Session()
 
     DeferredJob.table = Table( "deferred_job", metadata,
         Column( "id", Integer, primary_key=True ),
@@ -70,11 +68,7 @@ def upgrade(migrate_engine):
     context.flush()
 
 def downgrade(migrate_engine):
-    metadata = MetaData()
     metadata.bind = migrate_engine
-
-    Session = sessionmaker( bind=migrate_engine)
-    context = Session()
 
     jobs = context.query( DeferredJob ).filter_by( plugin='GenomeTransferPlugin' ).all()
 
