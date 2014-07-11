@@ -6,11 +6,10 @@ import os, sys, re
 import pkg_resources
 import itertools
 import random
+import math
 
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "pysam" )
-pkg_resources.require( "numpy" )
-import numpy
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from bx.bbi.bigbed_file import BigBedFile
@@ -1179,7 +1178,7 @@ class BBIDataProvider( GenomeDataProvider ):
                     var = summary.sum_squares[0] - mean
                     if valid_count > 1:
                         var /= valid_count - 1
-                    sd = numpy.sqrt( var )
+                    sd = math.sqrt( var )
                     min_val = summary.min_val[0]
                     max_val = summary.max_val[0]
 
