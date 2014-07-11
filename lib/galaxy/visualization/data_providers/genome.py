@@ -8,6 +8,7 @@ import itertools
 import random
 import math
 
+pkg_resources.require( "numpy" )
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "pysam" )
 from bx.interval_index_file import Indexes
