@@ -1057,7 +1057,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 r1 = [ read['start'], read['end'], read['cigar'], read['strand'], read['seq'] ]
                 r2 = [ read['mate_start'], read['mate_start'] ]
 
-            results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2, [read[ 'mapq' ], 125] ] )
+            results.append( [ hash( "%i_%s" % ( read_start, qname ) ), read_start, read_end, qname, r1, r2, [read[ 'mapq' ], 125] ] )
 
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
