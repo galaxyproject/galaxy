@@ -1068,8 +1068,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             '''
             read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(),
                                                                      read[ start_field ],
-                                                                     ref_seq,
-                                                                     start,
+                                                                     ref_seq.sequence,
+                                                                     ref_seq.start,
                                                                      read[ cigar_field ] )
             read[ seq_field ] = read_seq
             read[ cigar_field ] = read_cigar
@@ -1088,7 +1088,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # if possible. Otherwise, convert cigar.
         if ref_seq:
             # Uppercase for easy comparison.
-            ref_seq = ref_seq.upper()
+            ref_seq.sequence = ref_seq.sequence.upper()
             process_read = compress_seq_and_cigar
         else:
             process_read = convert_cigar
