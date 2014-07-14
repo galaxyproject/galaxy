@@ -194,7 +194,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             max_vals = data_provider.get_default_max_vals()
 
         # Get reference sequence and mean depth for region; these is used by providers for aligned reads.
-        ref_seq = None
+        region = None
         mean_depth = None
         if isinstance( data_provider, (SamDataProvider, BamDataProvider ) ):
             # Get reference sequence.
