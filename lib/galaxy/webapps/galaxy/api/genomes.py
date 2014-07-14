@@ -36,7 +36,8 @@ class GenomesController( BaseAPIController ):
         # Return info.
         rval = None
         if reference:
-            rval = self.app.genomes.reference( trans, dbkey=id, chrom=chrom, low=low, high=high )
+            region = self.app.genomes.reference( trans, dbkey=id, chrom=chrom, low=low, high=high )
+            rval = { 'dataset_type': 'refseq', 'data': region.sequence }
         else:
             rval = self.app.genomes.chroms( trans, dbkey=id, num=num, chrom=chrom, low=low )
         return rval

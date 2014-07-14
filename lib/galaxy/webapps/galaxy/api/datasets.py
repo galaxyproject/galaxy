@@ -199,9 +199,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         if isinstance( data_provider, (SamDataProvider, BamDataProvider ) ):
             # Get reference sequence.
             if dataset.dbkey:
-                data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
-                if data_dict:
-                    ref_seq = data_dict[ 'data' ]
+                region = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
+                if region:
+                    ref_seq = region.sequence
 
             # Get mean depth.
             if not indexer:
