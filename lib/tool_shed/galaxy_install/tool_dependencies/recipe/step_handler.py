@@ -703,7 +703,9 @@ class DownloadFile( Download, RecipeStep ):
             filename = action_dict[ 'target_filename' ]
         else:
             filename = url.split( '/' )[ -1 ]
-        self.url_download( work_dir, filename, url )
+        if current_dir is not None:
+            work_dir = current_dir
+        self.url_download( work_dir, filename, url, extract=action_dict[ 'extract' ] )
         if initial_download:
             dir = os.path.curdir
             return tool_dependency, filtered_actions, dir
