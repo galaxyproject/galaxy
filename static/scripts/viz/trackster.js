@@ -211,6 +211,10 @@ var TracksterView = Backbone.View.extend(
 
         // initialize keyboard
         ui.init_keyboard_nav(view);
+
+        $(window).on('beforeunload', function() {
+            return "There are unsaved changes to your visualization that will be lost if you leave this page.";
+        });
     }
 });
 
