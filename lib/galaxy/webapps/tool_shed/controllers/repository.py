@@ -15,6 +15,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_
 from tool_shed.capsule import capsule_manager
+from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
@@ -22,7 +23,6 @@ from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import readme_util
-from tool_shed.util import repository_dependency_util
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import review_util
 from tool_shed.util import search_util
@@ -1251,15 +1251,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 return opened_archive
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         metadata = repository_metadata.metadata
+        toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+        rb = relation_builder.RelationBuilder( trans.app, repository, repository_metadata, toolshed_base_url )
         # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
-        repository_dependencies = \
-            repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
-                                                                                           repository=repository,
-                                                                                           repository_metadata=repository_metadata,
-                                                                                           toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
-                                                                                           key_rd_dicts_to_be_processed=None,
-                                                                                           all_repository_dependencies=None,
-                                                                                           handled_key_rd_dicts=None )
+        repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
         if repository_dependencies:
             # Only display repository dependencies if they exist.
             exclude = [ 'datatypes', 'invalid_repository_dependencies', 'invalid_tool_dependencies', 'invalid_tools',
@@ -1777,15 +1772,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                repository_dependencies = \
-                    repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
-                                                                                                   repository=repository,
-                                                                                                   repository_metadata=repository_metadata,
-                                                                                                   toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
-                                                                                                   key_rd_dicts_to_be_processed=None,
-                                                                                                   all_repository_dependencies=None,
-                                                                                                   handled_key_rd_dicts=None,
-                                                                                                   circular_repository_dependencies=None )
+                toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+                rb = relation_builder.RelationBuilder( trans.app, repository, repository_metadata, toolshed_base_url )
+                repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
                 if repository_dependencies:
                     return encoding_util.tool_shed_encode( repository_dependencies )
         return ''
@@ -2413,14 +2402,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     skip_tool_tests_checked = True
                 metadata = repository_metadata.metadata
                 # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
-                repository_dependencies = \
-                    repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
-                                                                                                   repository=repository,
-                                                                                                   repository_metadata=repository_metadata,
-                                                                                                   toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
-                                                                                                   key_rd_dicts_to_be_processed=None,
-                                                                                                   all_repository_dependencies=None,
-                                                                                                   handled_key_rd_dicts=None )
+                toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+                rb = relation_builder.RelationBuilder( trans.app, repository, repository_metadata, toolshed_base_url )
+                repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
                 if str( repository.type ) != rt_util.REPOSITORY_SUITE_DEFINITION:
                     # Handle messaging for resetting repository type to the optimal value.
                     change_repository_type_message = rt_util.generate_message_for_repository_type_change( trans.app,
@@ -2461,9 +2445,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                     repository_metadata )
         heads = hg_util.get_repository_heads( repo )
         deprecated_repository_dependency_tups = \
-            repository_dependency_util.get_repository_dependency_tups_from_repository_metadata( trans.app,
-                                                                                                repository_metadata,
-                                                                                                deprecated_only=True )
+            metadata_util.get_repository_dependency_tups_from_repository_metadata( trans.app,
+                                                                                   repository_metadata,
+                                                                                   deprecated_only=True )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
@@ -2614,14 +2598,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
             toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
-            repository_dependencies = \
-                repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
-                                                                                               repository=repository,
-                                                                                               repository_metadata=repository_metadata,
-                                                                                               toolshed_base_url=toolshed_base_url,
-                                                                                               key_rd_dicts_to_be_processed=None,
-                                                                                               all_repository_dependencies=None,
-                                                                                               handled_key_rd_dicts=None )
+            rb = relation_builder.RelationBuilder( trans.app, repository, repository_metadata, toolshed_base_url )
+            repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
             if metadata:
                 if 'repository_dependencies' in metadata and not repository_dependencies:
                     # See if we have an invalid repository dependency definition or if the repository dependency is required
@@ -2636,8 +2614,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             invalid = True
                             break
                     if invalid:
-                        message = repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata,
-                                                                                                                   error_from_tuple=False )
+                        message = metadata_util.generate_message_for_invalid_repository_dependencies( metadata,
+                                                                                                      error_from_tuple=False )
                         status = 'error'
         else:
             repository_metadata_id = None
@@ -3329,14 +3307,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if repository_metadata:
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
-            repository_dependencies = \
-                repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=trans.app,
-                                                                                               repository=repository,
-                                                                                               repository_metadata=repository_metadata,
-                                                                                               toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
-                                                                                               key_rd_dicts_to_be_processed=None,
-                                                                                               all_repository_dependencies=None,
-                                                                                               handled_key_rd_dicts=None )
+            toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+            rb = relation_builder.RelationBuilder( trans.app, repository, repository_metadata, toolshed_base_url )
+            repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
             if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
                 # Handle messaging for orphan tool dependency definitions.
                 orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata )

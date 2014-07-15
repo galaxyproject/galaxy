@@ -14,7 +14,6 @@ from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
-from tool_shed.util import repository_dependency_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
@@ -303,8 +302,8 @@ class UploadController( BaseUIController ):
                         status = 'error'
                     # Handle messaging for invalid repository dependencies.
                     invalid_repository_dependencies_message = \
-                        repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict,
-                                                                                                         error_from_tuple=True )
+                        metadata_util.generate_message_for_invalid_repository_dependencies( metadata_dict,
+                                                                                            error_from_tuple=True )
                     if invalid_repository_dependencies_message:
                         message += invalid_repository_dependencies_message
                         status = 'error'

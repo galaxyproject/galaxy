@@ -19,7 +19,7 @@ from tool_shed.util import tool_util
 log = logging.getLogger( __name__ )
 
 
-class RepositoryDependencyManager( object ):
+class RepositoryDependencyInstallManager( object ):
 
     def __init__( self, app ):
         self.app = app

@@ -607,6 +607,48 @@ def generate_guid_for_object( repository_clone_url, guid_type, obj_id, version )
     tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
     return '%s/%s/%s/%s' % ( tmp_url, guid_type, obj_id, version )
 
+def generate_message_for_invalid_repository_dependencies( metadata_dict, error_from_tuple=False ):
+    """Get or generate and return an error message associated with an invalid repository dependency."""
+    message = ''
+    if metadata_dict:
+        if error_from_tuple:
+            # Return the error messages associated with a set of one or more invalid repository dependency tuples.
+            invalid_repository_dependencies_dict = metadata_dict.get( 'invalid_repository_dependencies', None )
+            if invalid_repository_dependencies_dict is not None:
+                invalid_repository_dependencies = invalid_repository_dependencies_dict.get( 'invalid_repository_dependencies', [] )
+                for repository_dependency_tup in invalid_repository_dependencies:
+                    toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, error = \
+                        common_util.parse_repository_dependency_tuple( repository_dependency_tup, contains_error=True )
+                    if error:
+                        message += '%s  ' % str( error )
+        else:
+            # The complete dependency hierarchy could not be determined for a repository being installed into
+            # Galaxy.  This is likely due to invalid repository dependency definitions, so we'll get them from
+            # the metadata and parse them for display in an error message.  This will hopefully communicate the
+            # problem to the user in such a way that a resolution can be determined.
+            message += 'The complete dependency hierarchy could not be determined for this repository, so no required '
+            message += 'repositories will not be installed.  This is likely due to invalid repository dependency definitions.  '
+            repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', None )
+            if repository_dependencies_dict is not None:
+                rd_tups = repository_dependencies_dict.get( 'repository_dependencies', None )
+                if rd_tups is not None:
+                    message += 'Here are the attributes of the dependencies defined for this repository to help determine the '
+                    message += 'cause of this problem.<br/>'
+                    message += '<table cellpadding="2" cellspacing="2">'
+                    message += '<tr><th>Tool shed</th><th>Repository name</th><th>Owner</th><th>Changeset revision</th>'
+                    message += '<th>Prior install required</th></tr>'
+                    for rd_tup in rd_tups:
+                        tool_shed, name, owner, changeset_revision, pir, oicct = \
+                            common_util.parse_repository_dependency_tuple( rd_tup )
+                        if util.asbool( pir ):
+                            pir_str = 'True'
+                        else:
+                            pir_str = ''
+                        message += '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % \
+                            ( tool_shed, name, owner, changeset_revision, pir_str )
+                    message += '</table>'
+    return message
+
 def generate_metadata_for_changeset_revision( app, repository, changeset_revision, repository_clone_url,
                                               shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
                                               resetting_all_metadata_on_repository=False, updating_installed_repository=False,
@@ -1155,6 +1197,36 @@ def get_relative_path_to_repository_file( root, name, relative_install_dir, work
             shed_config_dict.get( 'tool_path' ) and relative_path_to_file.startswith( os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir ) ):
             relative_path_to_file = relative_path_to_file[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
     return relative_path_to_file
+
+def get_repository_dependency_tups_from_repository_metadata( app, repository_metadata, deprecated_only=False ):
+    """
+    Return a list of of tuples defining repository objects required by the received repository.  The returned
+    list defines the entire repository dependency tree.  This method is called only from the Tool Shed.
+    """
+    dependency_tups = []
+    if repository_metadata is not None:
+        metadata = repository_metadata.metadata
+        if metadata:
+            repository_dependencies_dict = metadata.get( 'repository_dependencies', None )
+            if repository_dependencies_dict is not None:
+                repository_dependency_tups = repository_dependencies_dict.get( 'repository_dependencies', None )
+                if repository_dependency_tups is not None:
+                    # The value of repository_dependency_tups is a list of repository dependency tuples like this:
+                    # ['http://localhost:9009', 'package_samtools_0_1_18', 'devteam', 'ef37fc635cb9', 'False', 'False']
+                    for repository_dependency_tup in repository_dependency_tups:
+                        toolshed, name, owner, changeset_revision, pir, oicct = \
+                        common_util.parse_repository_dependency_tuple( repository_dependency_tup )
+                        repository = suc.get_repository_by_name_and_owner( app, name, owner )
+                        if repository:
+                            if deprecated_only:
+                                if repository.deprecated:
+                                    dependency_tups.append( repository_dependency_tup )
+                            else:
+                                dependency_tups.append( repository_dependency_tup )
+                        else:
+                            log.debug( "Cannot locate repository %s owned by %s for inclusion in repository dependency tups." % \
+                                ( name, owner ) )
+    return dependency_tups
 
 def get_repository_metadata_by_id( app, id ):
     """Get repository metadata from the database"""

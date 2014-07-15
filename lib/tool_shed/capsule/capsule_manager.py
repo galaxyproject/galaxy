@@ -12,18 +12,19 @@ from galaxy import web
 from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE
 from galaxy.util.odict import odict
-from tool_shed.dependencies import dependency_manager
+from tool_shed.dependencies.repository.relation_builder import RelationBuilder
+from tool_shed.dependencies.dependency_manager import RepositoryDependencyAttributeHandler
+from tool_shed.dependencies.dependency_manager import ToolDependencyAttributeHandler
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
-from tool_shed.util import repository_dependency_util
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
+from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
 
 log = logging.getLogger( __name__ )
 
@@ -129,8 +130,8 @@ class ExportRepositoryManager( object ):
         return sub_elements
 
     def generate_repository_archive( self, repository, changeset_revision, work_dir ):
-        rdah = dependency_manager.RepositoryDependencyAttributeHandler( self.app, unpopulate=True )
-        tdah = dependency_manager.ToolDependencyAttributeHandler( self.app, unpopulate=True )
+        rdah = RepositoryDependencyAttributeHandler( self.app, unpopulate=True )
+        tdah = ToolDependencyAttributeHandler( self.app, unpopulate=True )
         file_type_str = basic_util.get_file_type_str( changeset_revision, self.file_type )
         file_name = '%s-%s' % ( repository.name, file_type_str )
         return_code, error_message = hg_util.archive_repository_revision( self.app,
@@ -235,21 +236,15 @@ class ExportRepositoryManager( object ):
         Return a list of dictionaries defining repositories that are required by the repository
         associated with self.repository_id.
         """
-        rdm = RepositoryDependencyManager( self.app )
+        rdim = RepositoryDependencyInstallManager( self.app )
         repository = suc.get_repository_in_tool_shed( self.app, self.repository_id )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
                                                                                  self.repository_id,
                                                                                  self.changeset_revision )
         # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
         toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
-        repository_dependencies = \
-            repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=self.app,
-                                                                                           repository=self.repository,
-                                                                                           repository_metadata=repository_metadata,
-                                                                                           toolshed_base_url=toolshed_base_url,
-                                                                                           key_rd_dicts_to_be_processed=None,
-                                                                                           all_repository_dependencies=None,
-                                                                                           handled_key_rd_dicts=None )
+        rb = RelationBuilder( self.app, repository, repository_metadata, toolshed_base_url )
+        repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
         repo = hg_util.get_repo_for_repository( self.app,
                                                 repository=self.repository,
                                                 repo_path=None,
@@ -265,7 +260,7 @@ class ExportRepositoryManager( object ):
                                                      str( self.repository.user.username ),
                                                      repository_dependencies,
                                                      None )
-        all_required_repo_info_dict = rdm.get_required_repo_info_dicts( self.tool_shed_url, [ repo_info_dict ] )
+        all_required_repo_info_dict = rdim.get_required_repo_info_dicts( self.tool_shed_url, [ repo_info_dict ] )
         all_repo_info_dicts = all_required_repo_info_dict.get( 'all_repo_info_dicts', [] )
         return all_repo_info_dicts
 
@@ -651,8 +646,8 @@ class ImportRepositoryManager( object ):
 
     def import_repository_archive( self, repository, repository_archive_dict ):
         """Import a repository archive contained within a repository capsule."""
-        rdah = dependency_manager.RepositoryDependencyAttributeHandler( self.app, unpopulate=False )
-        tdah = dependency_manager.ToolDependencyAttributeHandler( self.app, unpopulate=False )
+        rdah = RepositoryDependencyAttributeHandler( self.app, unpopulate=False )
+        tdah = ToolDependencyAttributeHandler( self.app, unpopulate=False )
         archive_file_name = repository_archive_dict.get( 'archive_file_name', None )
         capsule_file_name = repository_archive_dict[ 'capsule_file_name' ]
         encoded_file_path = repository_archive_dict[ 'encoded_file_path' ]

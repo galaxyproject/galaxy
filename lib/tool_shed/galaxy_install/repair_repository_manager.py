@@ -4,12 +4,11 @@ import os
 log = logging.getLogger( __name__ )
 
 from tool_shed.galaxy_install import install_manager
-from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
+from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import repository_dependency_util
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
@@ -56,7 +55,7 @@ class RepairRepositoryManager():
         issues with an installed repository that has installation problems somewhere in its
         dependency hierarchy.
         """
-        rdm = RepositoryDependencyManager( self.app )
+        rdim = repository_dependency_manager.RepositoryDependencyInstallManager( self.app )
         tsr_ids = []
         repo_info_dicts = []
         tool_panel_section_keys = []
@@ -64,8 +63,8 @@ class RepairRepositoryManager():
         irm = install_manager.InstallRepositoryManager( self.app )
         # Get a dictionary of all repositories upon which the contents of the current repository_metadata
         #record depend.
-        repository_dependencies_dict = rdm.get_repository_dependencies_for_installed_tool_shed_repository( self.app,
-                                                                                                           repository )
+        repository_dependencies_dict = rdim.get_repository_dependencies_for_installed_tool_shed_repository( self.app,
+                                                                                                            repository )
         if repository_dependencies_dict:
             # Generate the list of installed repositories from the information contained in the
             # repository_dependencies dictionary.
@@ -75,14 +74,14 @@ class RepairRepositoryManager():
             # repaired in the required order.
             for installed_repository in installed_repositories:
                 tsr_ids.append( self.app.security.encode_id( installed_repository.id ) )
-                repo_info_dict, tool_panel_section_key = self.get_repo_info_dict_for_repair( rdm,
+                repo_info_dict, tool_panel_section_key = self.get_repo_info_dict_for_repair( rdim,
                                                                                              installed_repository )
                 tool_panel_section_keys.append( tool_panel_section_key )
                 repo_info_dicts.append( repo_info_dict )
         else:
             # The received repository has no repository dependencies.
             tsr_ids.append( self.app.security.encode_id( repository.id ) )
-            repo_info_dict, tool_panel_section_key = self.get_repo_info_dict_for_repair( rdm,
+            repo_info_dict, tool_panel_section_key = self.get_repo_info_dict_for_repair( rdim,
                                                                                          repository )
             tool_panel_section_keys.append( tool_panel_section_key )
             repo_info_dicts.append( repo_info_dict )
@@ -95,11 +94,11 @@ class RepairRepositoryManager():
         repair_dict[ 'ordered_tool_panel_section_keys' ] = ordered_tool_panel_section_keys
         return repair_dict
 
-    def get_repo_info_dict_for_repair( self, rdm, repository ):
+    def get_repo_info_dict_for_repair( self, rdim, repository ):
         tool_panel_section_key = None
         repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
-        repository_dependencies = rdm.get_repository_dependencies_for_installed_tool_shed_repository( self.app,
-                                                                                                      repository )
+        repository_dependencies = rdim.get_repository_dependencies_for_installed_tool_shed_repository( self.app,
+                                                                                                       repository )
         metadata = repository.metadata
         if metadata:
             tool_dependencies = metadata.get( 'tool_dependencies', None )

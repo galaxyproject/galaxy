@@ -2,10 +2,10 @@ import ConfigParser
 import logging
 import os
 import re
-import tool_shed.util.shed_util_common as suc
+from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
-from tool_shed.util import repository_dependency_util
+from tool_shed.util import shed_util_common as suc
 from galaxy import util
 from galaxy import web
 from galaxy.web.form_builder import build_select_field
@@ -90,16 +90,9 @@ def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_re
             metadata = repository_metadata.metadata
             if metadata:
                 tool_shed_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+                rb = relation_builder.RelationBuilder( app, repository, repository_metadata, tool_shed_url )
                 # Get a dictionary of all repositories upon which the contents of the received repository depends.
-                repository_dependencies = \
-                    repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=app,
-                                                                                                   repository=repository,
-                                                                                                   repository_metadata=repository_metadata,
-                                                                                                   toolshed_base_url=tool_shed_url,
-                                                                                                   key_rd_dicts_to_be_processed=None,
-                                                                                                   all_repository_dependencies=None,
-                                                                                                   handled_key_rd_dicts=None,
-                                                                                                   circular_repository_dependencies=None )
+                repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
                 tool_dependencies = metadata.get( 'tool_dependencies', {} )
     if tool_dependencies:
         new_tool_dependencies = {}
