@@ -779,7 +779,7 @@ class AdminToolshed( AdminGalaxy ):
                 trans.install_model.context.add( repository )
                 trans.install_model.context.flush()
             message = "The repository information has been updated."
-        containers_dict = metadata_util.populate_containers_dict_from_repository_metadata( trans=trans,
+        containers_dict = metadata_util.populate_containers_dict_from_repository_metadata( app=trans.app,
                                                                                            tool_shed_url=tool_shed_url,
                                                                                            tool_path=tool_path,
                                                                                            repository=repository,
@@ -1697,7 +1697,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def reset_metadata_on_selected_installed_repositories( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
+            message, status = metadata_util.reset_metadata_on_selected_repositories( trans.app, trans.user, **kwd )
         else:
             message = kwd.get( 'message', ''  )
             status = kwd.get( 'status', 'done' )
@@ -1796,7 +1796,7 @@ class AdminToolshed( AdminGalaxy ):
             status = 'error'
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
-        containers_dict = metadata_util.populate_containers_dict_from_repository_metadata( trans=trans,
+        containers_dict = metadata_util.populate_containers_dict_from_repository_metadata( app=trans.app,
                                                                                            tool_shed_url=tool_shed_url,
                                                                                            tool_path=tool_path,
                                                                                            repository=repository,

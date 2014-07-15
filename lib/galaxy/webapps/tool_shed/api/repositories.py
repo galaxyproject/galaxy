@@ -429,7 +429,7 @@ class RepositoriesController( BaseAPIController ):
             repository_id = trans.security.encode_id( repository.id )
             try:
                 invalid_file_tups, metadata_dict = \
-                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
+                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans.app, trans.user, repository_id )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
                                                                             invalid_file_tups,
@@ -509,7 +509,8 @@ class RepositoriesController( BaseAPIController ):
                             repository_status=[] )
             try:
                 invalid_file_tups, metadata_dict = \
-                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans,
+                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans.app,
+                                                                                 trans.user,
                                                                                  trans.security.encode_id( repository.id ) )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,

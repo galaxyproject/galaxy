@@ -2733,7 +2733,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def reset_all_metadata( self, trans, id, **kwd ):
         """Reset all metadata on the complete changelog for a single repository in the tool shed."""
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
-        invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, id, **kwd )
+        invalid_file_tups, metadata_dict = \
+            metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans.app, trans.user, id, **kwd )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans.app, id )
             message = tool_util.generate_message_for_invalid_tools( trans.app, invalid_file_tups, repository, metadata_dict )
@@ -2750,7 +2751,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def reset_metadata_on_my_writable_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
+            message, status = metadata_util.reset_metadata_on_selected_repositories( trans.app, trans.user, **kwd )
         else:
             message = kwd.get( 'message', ''  )
             status = kwd.get( 'status', 'done' )
