@@ -1380,6 +1380,14 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         drawable.init();
         this.changed();
         this.update_intro_div();
+
+        // When drawable config changes, mark view as changed. This
+        // captures most (all?) state change that needs to be saved.
+        var self = this;
+        drawable.config.on('change', function() {
+            console.log(drawable.config.get_value('name') + " changed");
+            self.changed();
+        });
     },
 
     add_label_track: function (label_track) {
