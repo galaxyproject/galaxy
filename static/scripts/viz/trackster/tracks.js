@@ -1385,7 +1385,6 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         // captures most (all?) state change that needs to be saved.
         var self = this;
         drawable.config.on('change', function() {
-            console.log(drawable.config.get_value('name') + " changed");
             self.changed();
         });
     },

@@ -18,7 +18,7 @@ def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_sta
         return read_seq, cigar
 
     # Set up position for reference, read.
-    ref_seq_pos = read_start
+    ref_seq_pos = read_start - ref_seq_start
     read_pos = 0
 
     # Create new read sequence, cigar.

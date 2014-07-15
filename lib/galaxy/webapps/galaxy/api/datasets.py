@@ -203,14 +203,14 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 # get longer, this will need to be increased and/or a handle to the genomic data may be need
                 # to be given to the data provider.
                 region = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, 
-                                                     low=( int( low  ) - 500 ), high=( int( high ) + 500 ) )
+                                                     low=( max( 0, int( low  ) - 500 ) ), 
+                                                     high=( int( high ) + 500 ) )
 
             # Get mean depth.
             if not indexer:
                 indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
             stats = indexer.get_data( chrom, low, high, stats=True )
             mean_depth = stats[ 'data' ][ 'mean' ]
-
 
         # Get and return data from data_provider.
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ),
