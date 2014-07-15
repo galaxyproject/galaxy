@@ -35,9 +35,62 @@ var TracksterUI = base.Base.extend({
     },
 
     /**
+     * Save visualization, returning a Deferred object for the remote call to save.
+     */
+    save_viz: function() {
+        // show dialog
+        Galaxy.modal.show({title: "Saving...", body: "progress" });
+        
+        // Save bookmarks.
+        var bookmarks = [];
+        $(".bookmark").each(function() { 
+            bookmarks.push({
+                position: $(this).children(".position").text(),
+                annotation: $(this).children(".annotation").text()
+            });
+        });
+
+        // FIXME: give unique IDs to Drawables and save overview as ID.
+        var overview_track_name = (view.overview_drawable ? view.overview_drawable.config.get_value('name') : null),
+            viz_config = {
+                'view': view.to_dict(),
+                'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
+                'bookmarks': bookmarks
+            };
+
+        // Make call to save visualization.
+        return $.ajax({
+            url: galaxy_config.root + "visualization/save",
+            type: "POST",
+            dataType: "json",
+            data: {
+                'id'        : view.vis_id,
+                'title'     : view.config.get_value('name'),
+                'dbkey'     : view.dbkey,
+                'type'      : 'trackster',
+                'vis_json'  : JSON.stringify(viz_config)
+            }
+        }).success(function(vis_info) {
+            Galaxy.modal.hide();
+            view.vis_id = vis_info.vis_id;
+            view.has_changes = false;
+
+            // Needed to set URL when first saving a visualization.
+            window.history.pushState({}, "", vis_info.url + window.location.hash);
+        }).error(function() {
+            // show dialog
+            Galaxy.modal.show({
+                title   : "Could Not Save",
+                body    : "Could not save visualization. Please try again later.",
+                buttons : { "Cancel": function() { Galaxy.modal.hide(); } }
+            });
+        });
+    },
+
+    /**
      * Create button menu
      */ 
-     createButtonMenu: function() {
+    createButtonMenu: function() {
         var self = this,
             menu = create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
@@ -62,58 +115,13 @@ var TracksterUI = base.Base.extend({
                 }
             },
             { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
-                // show dialog
-                Galaxy.modal.show({title: "Saving...", body: "progress" });
-                
-                // Save bookmarks.
-                var bookmarks = [];
-                $(".bookmark").each(function() { 
-                    bookmarks.push({
-                        position: $(this).children(".position").text(),
-                        annotation: $(this).children(".annotation").text()
-                    });
-                });
-
-                // FIXME: give unique IDs to Drawables and save overview as ID.
-                var overview_track_name = (view.overview_drawable ? view.overview_drawable.config.get_value('name') : null),
-                    viz_config = {
-                        'view': view.to_dict(),
-                        'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
-                        'bookmarks': bookmarks
-                    };
-
-                $.ajax({
-                    url: galaxy_config.root + "visualization/save",
-                    type: "POST",
-                    dataType: "json",
-                    data: {
-                        'id'        : view.vis_id,
-                        'title'     : view.config.get_value('name'),
-                        'dbkey'     : view.dbkey,
-                        'type'      : 'trackster',
-                        'vis_json'  : JSON.stringify(viz_config)
-                    }
-                }).success(function(vis_info) {
-                    Galaxy.modal.hide();
-                    view.vis_id = vis_info.vis_id;
-                    view.has_changes = false;
-
-                    // Needed to set URL when first saving a visualization.
-                    window.history.pushState({}, "", vis_info.url + window.location.hash);
-                }).error(function() {
-                    // show dialog
-                    Galaxy.modal.show({
-                        title   : "Could Not Save",
-                        body    : "Could not save visualization. Please try again later.",
-                        buttons : { "Cancel": function() { Galaxy.modal.hide() } }
-                    });
-                });
+                self.save_viz();
             } },
             {
                 icon_class: 'cross-circle',
                 title: 'Close',
                 on_click: function() {
-                    window.location = galaxy_config.root + 'visualization';
+                    self.handle_unsaved_changes(view);
                 }
             }
         ], 
@@ -302,7 +310,7 @@ var TracksterUI = base.Base.extend({
     /**
      * Set up keyboard navigation for a visualization.
      */
-     init_keyboard_nav: function(view) {
+    init_keyboard_nav: function(view) {
         // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
         $(document).keyup(function(e) {
             // Do not navigate if arrow keys used in input element.
@@ -328,6 +336,35 @@ var TracksterUI = base.Base.extend({
                     break;
             }
         });
+    },
+
+    /**
+     * Handle unsaved changes in visualization.
+     */
+    handle_unsaved_changes: function(view) {
+        if (view.has_changes) {
+            var self = this;
+            Galaxy.modal.show({
+                title: "Close visualization",
+                body: "There are unsaved changes to your visualization which will be lost if you do not save them.",
+                buttons: {
+                    "Cancel": function() { Galaxy.modal.hide(); },
+                    "Leave without Saving" : function() {
+                        window.onbeforeunload = undefined;
+                        window.location = galaxy_config.root + 'visualization';
+                    },
+                    "Save" : function() {
+                        $.when(self.save_viz()).then(function() {
+                            window.location = galaxy_config.root + 'visualization';
+                        });
+                    }
+                }
+            });
+                       
+        } 
+        else {
+            window.location = galaxy_config.root + 'visualization';
+        }
     }
 
 });
