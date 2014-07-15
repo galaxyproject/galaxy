@@ -93,7 +93,10 @@ class FeatureLocationIndexDataProvider( BaseDataProvider ):
             else:
                 high = mid
 
+        # Need to move back one line because last line read may be included in
+        # results.
         position = low * line_len
+        textloc_file.seek( position )
 
         # At right point in file, generate hits.
         result = []
