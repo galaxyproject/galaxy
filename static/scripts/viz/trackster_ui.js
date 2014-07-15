@@ -267,9 +267,6 @@ var TracksterUI = base.Base.extend({
                 }
             }
             
-            // Need to update intro div after drawables have been added.
-            view.update_intro_div();
-            
             // Set overview.
             var overview_drawable;
             for (var i = 0; i < view.drawables.length; i++) {
