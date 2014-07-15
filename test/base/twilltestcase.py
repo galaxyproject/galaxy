@@ -2496,7 +2496,7 @@ class TwillTestCase( unittest.TestCase ):
         return msg
 
     def _get_job_stream_output( self, hda_id, stream, format ):
-        self.visit_url( "/datasets/%s/%s" % ( self.security.encode_id( hda_id ), stream ) )
+        self.visit_url( "/datasets/%s/%s" % ( hda_id, stream ) )
 
         output = self.last_page()
         return self._format_stream( output, stream, format )
