@@ -1091,9 +1091,10 @@ class InstallRepositoryManager( object ):
                                                                      tsr_ids,
                                                                      repo_info_dicts,
                                                                      tool_panel_section_keys=tool_panel_section_keys )
-                ordered_tsr_ids.append( tsr_id )
-                ordered_repo_info_dicts.append( repo_info_dict )
-                ordered_tool_panel_section_keys.append( tool_panel_section_key )
+                if tsr_id not in ordered_tsr_ids:
+                    ordered_tsr_ids.append( tsr_id )
+                    ordered_repo_info_dicts.append( repo_info_dict )
+                    ordered_tool_panel_section_keys.append( tool_panel_section_key )
         return ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys
 
     def populate_containers_dict_for_new_install( self, tool_shed_url, tool_path, readme_files_dict, installed_repository_dependencies,
