@@ -8,7 +8,7 @@ from galaxy.web.base.controller import BaseUIController
 from galaxy import util
 from galaxy import web
 from galaxy.datatypes import checkers
-from tool_shed.dependencies import dependency_manager
+from tool_shed.dependencies import attribute_handlers
 import tool_shed.repository_types.util as rt_util
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
@@ -95,8 +95,8 @@ class UploadController( BaseUIController ):
                 uploaded_file_filename = os.path.split( file_data.filename )[ -1 ]
                 isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             if uploaded_file or uploaded_directory:
-                rdah = dependency_manager.RepositoryDependencyAttributeHandler( trans.app, unpopulate=False )
-                tdah = dependency_manager.ToolDependencyAttributeHandler( trans.app, unpopulate=False )
+                rdah = attribute_handlers.RepositoryDependencyAttributeHandler( trans.app, unpopulate=False )
+                tdah = attribute_handlers.ToolDependencyAttributeHandler( trans.app, unpopulate=False )
                 ok = True
                 isgzip = False
                 isbz2 = False

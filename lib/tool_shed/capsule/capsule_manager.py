@@ -13,8 +13,7 @@ from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE
 from galaxy.util.odict import odict
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
-from tool_shed.dependencies.dependency_manager import RepositoryDependencyAttributeHandler
-from tool_shed.dependencies.dependency_manager import ToolDependencyAttributeHandler
+from tool_shed.dependencies import attribute_handlers
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import common_util
@@ -130,8 +129,8 @@ class ExportRepositoryManager( object ):
         return sub_elements
 
     def generate_repository_archive( self, repository, changeset_revision, work_dir ):
-        rdah = RepositoryDependencyAttributeHandler( self.app, unpopulate=True )
-        tdah = ToolDependencyAttributeHandler( self.app, unpopulate=True )
+        rdah = attribute_handlers.RepositoryDependencyAttributeHandler( self.app, unpopulate=True )
+        tdah = attribute_handlers.ToolDependencyAttributeHandler( self.app, unpopulate=True )
         file_type_str = basic_util.get_file_type_str( changeset_revision, self.file_type )
         file_name = '%s-%s' % ( repository.name, file_type_str )
         return_code, error_message = hg_util.archive_repository_revision( self.app,
@@ -646,8 +645,8 @@ class ImportRepositoryManager( object ):
 
     def import_repository_archive( self, repository, repository_archive_dict ):
         """Import a repository archive contained within a repository capsule."""
-        rdah = RepositoryDependencyAttributeHandler( self.app, unpopulate=False )
-        tdah = ToolDependencyAttributeHandler( self.app, unpopulate=False )
+        rdah = attribute_handlers.RepositoryDependencyAttributeHandler( self.app, unpopulate=False )
+        tdah = attribute_handlers.ToolDependencyAttributeHandler( self.app, unpopulate=False )
         archive_file_name = repository_archive_dict.get( 'archive_file_name', None )
         capsule_file_name = repository_archive_dict[ 'capsule_file_name' ]
         encoded_file_path = repository_archive_dict[ 'encoded_file_path' ]
