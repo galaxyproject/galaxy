@@ -6,16 +6,20 @@ from time import gmtime
 from time import strftime
 from datetime import date
 from datetime import datetime
+
 from galaxy import util
 from galaxy import web
-from galaxy.util.odict import odict
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_
+
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
+
+from tool_shed.galaxy_install import dependency_display
+
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
@@ -24,17 +28,16 @@ from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import readme_util
 from tool_shed.util import repository_maintenance_util
-from tool_shed.util import review_util
 from tool_shed.util import search_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
-from tool_shed.galaxy_install import install_manager
+
 from galaxy.webapps.tool_shed.util import ratings_util
-import galaxy.tools
+
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
+
 import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
@@ -2421,9 +2424,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         status = 'warning'
                     else:
                         # Handle messaging for orphan tool dependency definitions.
-                        orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans,
-                                                                                                             repository,
-                                                                                                             metadata )
+                        dd = dependency_display.DependencyDisplayer( trans.app )
+                        orphan_message = dd.generate_message_for_orphan_tool_dependencies( repository, metadata )
                         if orphan_message:
                             message += orphan_message
                             status = 'warning'
@@ -3313,7 +3315,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
             if str( repository.type ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
                 # Handle messaging for orphan tool dependency definitions.
-                orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans, repository, metadata )
+                dd = dependency_display.DependencyDisplayer( trans.app )
+                orphan_message = dd.generate_message_for_orphan_tool_dependencies( repository, metadata )
                 if orphan_message:
                     message += orphan_message
                     status = 'warning'

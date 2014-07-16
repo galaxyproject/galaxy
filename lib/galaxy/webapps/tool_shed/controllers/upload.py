@@ -4,18 +4,21 @@ import shutil
 import tarfile
 import tempfile
 import urllib
-from galaxy.web.base.controller import BaseUIController
+
 from galaxy import util
 from galaxy import web
 from galaxy.datatypes import checkers
+from galaxy.web.base.controller import BaseUIController
+
 from tool_shed.dependencies import attribute_handlers
+from tool_shed.galaxy_install import dependency_display
 import tool_shed.repository_types.util as rt_util
+
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 
@@ -274,6 +277,7 @@ class UploadController( BaseUIController ):
                         metadata_dict = repository.metadata_revisions[ 0 ].metadata
                     else:
                         metadata_dict = {}
+                    dd = dependency_display.DependencyDisplayer( trans.app )
                     if str( repository.type ) not in [ rt_util.REPOSITORY_SUITE_DEFINITION,
                                                        rt_util.TOOL_DEPENDENCY_DEFINITION ]:
                         change_repository_type_message = rt_util.generate_message_for_repository_type_change( trans.app,
@@ -288,15 +292,12 @@ class UploadController( BaseUIController ):
                             # repository), so warning messages are important because orphans are always valid.  The repository
                             # owner must be warned in case they did not intend to define an orphan dependency, but simply
                             # provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
-                            orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( trans,
-                                                                                                                 repository,
-                                                                                                                 metadata_dict )
+                            orphan_message = dd.generate_message_for_orphan_tool_dependencies( repository, metadata_dict )
                             if orphan_message:
                                 message += orphan_message
                                 status = 'warning'
                     # Handle messaging for invalid tool dependencies.
-                    invalid_tool_dependencies_message = \
-                        tool_dependency_util.generate_message_for_invalid_tool_dependencies( metadata_dict )
+                    invalid_tool_dependencies_message = dd.generate_message_for_invalid_tool_dependencies( metadata_dict )
                     if invalid_tool_dependencies_message:
                         message += invalid_tool_dependencies_message
                         status = 'error'

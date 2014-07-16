@@ -3,7 +3,6 @@ import logging
 import os
 import sys
 import tempfile
-import threading
 import traceback
 
 from galaxy import exceptions
@@ -19,7 +18,6 @@ from galaxy.model.orm import or_
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import container_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
@@ -225,7 +223,8 @@ class InstallToolDependencyManager( object ):
                             installed_packages.append( tool_dependency )
                             if self.app.config.manage_dependency_relationships:
                                 # Add the tool_dependency to the in-memory dictionaries in the installed_repository_manager.
-                                self.app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository, tool_dependency )
+                                self.app.installed_repository_manager.handle_tool_dependency_install( tool_shed_repository,
+                                                                                                      tool_dependency )
         return installed_packages
 
     def install_via_fabric( self, tool_shed_repository, tool_dependency, install_dir, package_name=None, custom_fabfile_path=None,
@@ -371,8 +370,8 @@ class InstallToolDependencyManager( object ):
                                                     # Delete contents of installation directory if attempt at binary installation failed.
                                                     installation_directory_contents = os.listdir( installation_directory )
                                                     if installation_directory_contents:
-                                                        removed, error_message = tool_dependency_util.remove_tool_dependency( self.app,
-                                                                                                                              tool_dependency )
+                                                        removed, error_message = \
+                                                            tool_dependency_util.remove_tool_dependency( self.app, tool_dependency )
                                                         if removed:
                                                             can_install_from_source = True
                                                         else:
@@ -894,7 +893,8 @@ class InstallRepositoryManager( object ):
                                                     tool_shed_repository,
                                                     install_model.ToolShedRepository.installation_status.INSTALLED )
             if self.app.config.manage_dependency_relationships:
-                # Add the installed repository and any tool dependencies to the in-memory dictionaries in the installed_repository_manager.
+                # Add the installed repository and any tool dependencies to the in-memory dictionaries
+                # in the installed_repository_manager.
                 self.app.installed_repository_manager.handle_repository_install( tool_shed_repository )
         else:
             # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
@@ -905,147 +905,6 @@ class InstallRepositoryManager( object ):
                                            deleted=False,
                                            uninstalled=False,
                                            remove_from_disk=True )
-
-    def merge_containers_dicts_for_new_install( self, containers_dicts ):
-        """
-        When installing one or more tool shed repositories for the first time, the received list of
-        containers_dicts contains a containers_dict for each repository being installed.  Since the
-        repositories are being installed for the first time, all entries are None except the repository
-        dependencies and tool dependencies.  The entries for missing dependencies are all None since
-        they have previously been merged into the installed dependencies.  This method will merge the
-        dependencies entries into a single container and return it for display.
-        """
-        new_containers_dict = dict( readme_files=None,
-                                    datatypes=None,
-                                    missing_repository_dependencies=None,
-                                    repository_dependencies=None,
-                                    missing_tool_dependencies=None,
-                                    tool_dependencies=None,
-                                    invalid_tools=None,
-                                    valid_tools=None,
-                                    workflows=None )
-        if containers_dicts:
-            lock = threading.Lock()
-            lock.acquire( True )
-            try:
-                repository_dependencies_root_folder = None
-                tool_dependencies_root_folder = None
-                # Use a unique folder id (hopefully the following is).
-                folder_id = 867
-                for old_container_dict in containers_dicts:
-                    # Merge repository_dependencies.
-                    old_container_repository_dependencies_root = old_container_dict[ 'repository_dependencies' ]
-                    if old_container_repository_dependencies_root:
-                        if repository_dependencies_root_folder is None:
-                            repository_dependencies_root_folder = container_util.Folder( id=folder_id,
-                                                                                         key='root',
-                                                                                         label='root',
-                                                                                         parent=None )
-                            folder_id += 1
-                            repository_dependencies_folder = container_util.Folder( id=folder_id,
-                                                                                    key='merged',
-                                                                                    label='Repository dependencies',
-                                                                                    parent=repository_dependencies_root_folder )
-                            folder_id += 1
-                        # The old_container_repository_dependencies_root will be a root folder containing a single sub_folder.
-                        old_container_repository_dependencies_folder = old_container_repository_dependencies_root.folders[ 0 ]
-                        # Change the folder id so it won't confict with others being merged.
-                        old_container_repository_dependencies_folder.id = folder_id
-                        folder_id += 1
-                        repository_components_tuple = container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
-                        components_list = suc.extract_components_from_tuple( repository_components_tuple )
-                        name = components_list[ 1 ]
-                        # Generate the label by retrieving the repository name.
-                        old_container_repository_dependencies_folder.label = str( name )
-                        repository_dependencies_folder.folders.append( old_container_repository_dependencies_folder )
-                    # Merge tool_dependencies.
-                    old_container_tool_dependencies_root = old_container_dict[ 'tool_dependencies' ]
-                    if old_container_tool_dependencies_root:
-                        if tool_dependencies_root_folder is None:
-                            tool_dependencies_root_folder = container_util.Folder( id=folder_id,
-                                                                                   key='root',
-                                                                                   label='root',
-                                                                                   parent=None )
-                            folder_id += 1
-                            tool_dependencies_folder = container_util.Folder( id=folder_id,
-                                                                              key='merged',
-                                                                              label='Tool dependencies',
-                                                                              parent=tool_dependencies_root_folder )
-                            folder_id += 1
-                        else:
-                            td_list = [ td.listify for td in tool_dependencies_folder.tool_dependencies ]
-                            # The old_container_tool_dependencies_root will be a root folder containing a single sub_folder.
-                            old_container_tool_dependencies_folder = old_container_tool_dependencies_root.folders[ 0 ]
-                            for td in old_container_tool_dependencies_folder.tool_dependencies:
-                                if td.listify not in td_list:
-                                    tool_dependencies_folder.tool_dependencies.append( td )
-                if repository_dependencies_root_folder:
-                    repository_dependencies_root_folder.folders.append( repository_dependencies_folder )
-                    new_containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
-                if tool_dependencies_root_folder:
-                    tool_dependencies_root_folder.folders.append( tool_dependencies_folder )
-                    new_containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
-            except Exception, e:
-                log.debug( "Exception in merge_containers_dicts_for_new_install: %s" % str( e ) )
-            finally:
-                lock.release()
-        return new_containers_dict
-
-    def merge_missing_repository_dependencies_to_installed_container( self, containers_dict ):
-        """Merge the list of missing repository dependencies into the list of installed repository dependencies."""
-        missing_rd_container_root = containers_dict.get( 'missing_repository_dependencies', None )
-        if missing_rd_container_root:
-            # The missing_rd_container_root will be a root folder containing a single sub_folder.
-            missing_rd_container = missing_rd_container_root.folders[ 0 ]
-            installed_rd_container_root = containers_dict.get( 'repository_dependencies', None )
-            # The installed_rd_container_root will be a root folder containing a single sub_folder.
-            if installed_rd_container_root:
-                installed_rd_container = installed_rd_container_root.folders[ 0 ]
-                installed_rd_container.label = 'Repository dependencies'
-                for index, rd in enumerate( missing_rd_container.repository_dependencies ):
-                    # Skip the header row.
-                    if index == 0:
-                        continue
-                    installed_rd_container.repository_dependencies.append( rd )
-                installed_rd_container_root.folders = [ installed_rd_container ]
-                containers_dict[ 'repository_dependencies' ] = installed_rd_container_root
-            else:
-                # Change the folder label from 'Missing repository dependencies' to be 'Repository dependencies' for display.
-                root_container = containers_dict[ 'missing_repository_dependencies' ]
-                for sub_container in root_container.folders:
-                    # There should only be 1 sub-folder.
-                    sub_container.label = 'Repository dependencies'
-                containers_dict[ 'repository_dependencies' ] = root_container
-        containers_dict[ 'missing_repository_dependencies' ] = None
-        return containers_dict
-
-    def merge_missing_tool_dependencies_to_installed_container( self, containers_dict ):
-        """ Merge the list of missing tool dependencies into the list of installed tool dependencies."""
-        missing_td_container_root = containers_dict.get( 'missing_tool_dependencies', None )
-        if missing_td_container_root:
-            # The missing_td_container_root will be a root folder containing a single sub_folder.
-            missing_td_container = missing_td_container_root.folders[ 0 ]
-            installed_td_container_root = containers_dict.get( 'tool_dependencies', None )
-            # The installed_td_container_root will be a root folder containing a single sub_folder.
-            if installed_td_container_root:
-                installed_td_container = installed_td_container_root.folders[ 0 ]
-                installed_td_container.label = 'Tool dependencies'
-                for index, td in enumerate( missing_td_container.tool_dependencies ):
-                    # Skip the header row.
-                    if index == 0:
-                        continue
-                    installed_td_container.tool_dependencies.append( td )
-                installed_td_container_root.folders = [ installed_td_container ]
-                containers_dict[ 'tool_dependencies' ] = installed_td_container_root
-            else:
-                # Change the folder label from 'Missing tool dependencies' to be 'Tool dependencies' for display.
-                root_container = containers_dict[ 'missing_tool_dependencies' ]
-                for sub_container in root_container.folders:
-                    # There should only be 1 subfolder.
-                    sub_container.label = 'Tool dependencies'
-                containers_dict[ 'tool_dependencies' ] = root_container
-        containers_dict[ 'missing_tool_dependencies' ] = None
-        return containers_dict
 
     def order_components_for_installation( self, tsr_ids, repo_info_dicts, tool_panel_section_keys ):
         """
@@ -1096,45 +955,3 @@ class InstallRepositoryManager( object ):
                     ordered_repo_info_dicts.append( repo_info_dict )
                     ordered_tool_panel_section_keys.append( tool_panel_section_key )
         return ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys
-
-    def populate_containers_dict_for_new_install( self, tool_shed_url, tool_path, readme_files_dict, installed_repository_dependencies,
-                                                  missing_repository_dependencies, installed_tool_dependencies, missing_tool_dependencies,
-                                                  updating=False ):
-        """
-        Return the populated containers for a repository being installed for the first time or for an installed repository
-        that is being updated and the updates include newly defined repository (and possibly tool) dependencies.
-        """
-        installed_tool_dependencies, missing_tool_dependencies = \
-            tool_dependency_util.populate_tool_dependencies_dicts( app=self.app,
-                                                                   tool_shed_url=tool_shed_url,
-                                                                   tool_path=tool_path,
-                                                                   repository_installed_tool_dependencies=installed_tool_dependencies,
-                                                                   repository_missing_tool_dependencies=missing_tool_dependencies,
-                                                                   required_repo_info_dicts=None )
-        # Most of the repository contents are set to None since we don't yet know what they are.
-        containers_dict = \
-            container_util.build_repository_containers_for_galaxy( app=self.app,
-                                                                   repository=None,
-                                                                   datatypes=None,
-                                                                   invalid_tools=None,
-                                                                   missing_repository_dependencies=missing_repository_dependencies,
-                                                                   missing_tool_dependencies=missing_tool_dependencies,
-                                                                   readme_files_dict=readme_files_dict,
-                                                                   repository_dependencies=installed_repository_dependencies,
-                                                                   tool_dependencies=installed_tool_dependencies,
-                                                                   valid_tools=None,
-                                                                   workflows=None,
-                                                                   valid_data_managers=None,
-                                                                   invalid_data_managers=None,
-                                                                   data_managers_errors=None,
-                                                                   new_install=True,
-                                                                   reinstalling=False )
-        if not updating:
-            # If we installing a new repository and not updaing an installed repository, we can merge
-            # the missing_repository_dependencies container contents to the installed_repository_dependencies
-            # container.  When updating an installed repository, merging will result in losing newly defined
-            # dependencies included in the updates.
-            containers_dict = self.merge_missing_repository_dependencies_to_installed_container( containers_dict )
-            # Merge the missing_tool_dependencies container contents to the installed_tool_dependencies container.
-            containers_dict = self.merge_missing_tool_dependencies_to_installed_container( containers_dict )
-        return containers_dict

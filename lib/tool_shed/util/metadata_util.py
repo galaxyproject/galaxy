@@ -3,7 +3,6 @@ import os
 import tempfile
 
 from galaxy import util
-from galaxy import web
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.tools.data_manager.manager import DataManager
@@ -11,17 +10,17 @@ from galaxy.util import inflector
 from galaxy.util import json
 from galaxy.web import url_for
 
-import tool_shed.util.shed_util_common as suc
 from tool_shed.repository_types.metadata import TipOnly
+import tool_shed.repository_types.util as rt_util
+
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import container_util
 from tool_shed.util import hg_util
 from tool_shed.util import readme_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-import tool_shed.repository_types.util as rt_util
 
 log = logging.getLogger( __name__ )
 
@@ -1013,7 +1012,11 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
     description = root.get( 'description' )
     for elem in root:
         if elem.tag == 'package':
-            valid_tool_dependencies_dict, invalid_tool_dependencies_dict, repository_dependency_tup, repository_dependency_is_valid, message = \
+            valid_tool_dependencies_dict, \
+            invalid_tool_dependencies_dict, \
+            repository_dependency_tup, \
+            repository_dependency_is_valid, \
+            message = \
                 generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict )
             if repository_dependency_is_valid:
                 if repository_dependency_tup and repository_dependency_tup not in valid_repository_dependency_tups:
@@ -1024,7 +1027,13 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                     # We have an invalid complex repository dependency, so mark the tool dependency as invalid.
                     tool_dependency_is_valid = False
                     # Append the error message to the invalid repository dependency tuple.
-                    toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_dependency_tup
+                    toolshed, \
+                    name, \
+                    owner, \
+                    changeset_revision, \
+                    prior_installation_required, \
+                    only_if_compiling_contained_td \
+                        = repository_dependency_tup
                     repository_dependency_tup = \
                         ( toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td, message )
                     invalid_repository_dependency_tups.append( repository_dependency_tup )
@@ -1033,9 +1042,13 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
             valid_tool_dependencies_dict = generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict )
     if valid_tool_dependencies_dict:
         if original_valid_tool_dependencies_dict:
-            # We're generating metadata on an update pulled to a tool shed repository installed into a Galaxy instance, so handle changes to
-            # tool dependencies appropriately.
-            handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_valid_tool_dependencies_dict, valid_tool_dependencies_dict )
+            # We're generating metadata on an update pulled to a tool shed repository installed
+            # into a Galaxy instance, so handle changes to tool dependencies appropriately.
+            irm = app.installed_repository_manager
+            updated_tool_dependency_names, deleted_tool_dependency_names = \
+                irm.handle_existing_tool_dependencies_that_changed_in_update( repository,
+                                                                              original_valid_tool_dependencies_dict,
+                                                                              valid_tool_dependencies_dict )
         metadata_dict[ 'tool_dependencies' ] = valid_tool_dependencies_dict
     if invalid_tool_dependencies_dict:
         metadata_dict[ 'invalid_tool_dependencies' ] = invalid_tool_dependencies_dict
@@ -1295,25 +1308,6 @@ def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_i
                                 relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
-
-def handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_dependency_dict, new_dependency_dict ):
-    """
-    This method is called when a Galaxy admin is getting updates for an installed tool shed repository in order to cover the case where an
-    existing tool dependency was changed (e.g., the version of the dependency was changed) but the tool version for which it is a dependency
-    was not changed.  In this case, we only want to determine if any of the dependency information defined in original_dependency_dict was
-    changed in new_dependency_dict.  We don't care if new dependencies were added in new_dependency_dict since they will just be treated as
-    missing dependencies for the tool.
-    """
-    updated_tool_dependency_names = []
-    deleted_tool_dependency_names = []
-    for original_dependency_key, original_dependency_val_dict in original_dependency_dict.items():
-        if original_dependency_key not in new_dependency_dict:
-            updated_tool_dependency = update_existing_tool_dependency( app, repository, original_dependency_val_dict, new_dependency_dict )
-            if updated_tool_dependency:
-                updated_tool_dependency_names.append( updated_tool_dependency.name )
-            else:
-                deleted_tool_dependency_names.append( original_dependency_val_dict[ 'name' ] )
-    return updated_tool_dependency_names, deleted_tool_dependency_names
 
 def handle_repository_elem( app, repository_elem, only_if_compiling_contained_td=False, updating_installed_repository=False ):
     """
@@ -1737,104 +1731,6 @@ def new_workflow_metadata_required( repository_metadata, metadata_dict ):
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table record is not needed.
     return False
 
-def populate_containers_dict_from_repository_metadata( app, tool_shed_url, tool_path, repository,
-                                                       reinstalling=False, required_repo_info_dicts=None ):
-    """
-    Retrieve necessary information from the received repository's metadata to populate the
-    containers_dict for display.  This method is called only from Galaxy (not the tool shed)
-    when displaying repository dependencies for installed repositories and when displaying
-    them for uninstalled repositories that are being reinstalled.
-    """
-    metadata = repository.metadata
-    if metadata:
-        # Handle proprietary datatypes.
-        datatypes = metadata.get( 'datatypes', None )
-        # Handle invalid tools.
-        invalid_tools = metadata.get( 'invalid_tools', None )
-        # Handle README files.
-        if repository.has_readme_files:
-            if reinstalling or repository.status not in [ app.install_model.ToolShedRepository.installation_status.DEACTIVATED,
-                                                          app.install_model.ToolShedRepository.installation_status.INSTALLED ]:
-                # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
-                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
-                params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( repository.name ),
-                                                                       str( repository.owner ),
-                                                                       str( repository.installed_changeset_revision ) )
-                url = common_util.url_join( tool_shed_url,
-                                            'repository/get_readme_files%s' % params )
-                raw_text = common_util.tool_shed_get( app, tool_shed_url, url )
-                readme_files_dict = json.from_json_string( raw_text )
-            else:
-                readme_files_dict = readme_util.build_readme_files_dict( app,
-                                                                         repository,
-                                                                         repository.changeset_revision,
-                                                                         repository.metadata, tool_path )
-        else:
-            readme_files_dict = None
-        # Handle repository dependencies.
-        installed_repository_dependencies, missing_repository_dependencies = \
-            app.installed_repository_manager.get_installed_and_missing_repository_dependencies( repository )
-        # Handle the current repository's tool dependencies.
-        repository_tool_dependencies = metadata.get( 'tool_dependencies', None )
-        # Make sure to display missing tool dependencies as well.
-        repository_invalid_tool_dependencies = metadata.get( 'invalid_tool_dependencies', None )
-        if repository_invalid_tool_dependencies is not None:
-            if repository_tool_dependencies is None:
-                repository_tool_dependencies = {}
-            repository_tool_dependencies.update( repository_invalid_tool_dependencies )
-        repository_installed_tool_dependencies, repository_missing_tool_dependencies = \
-            tool_dependency_util.get_installed_and_missing_tool_dependencies_for_installed_repository( app,
-                                                                                                       repository,
-                                                                                                       repository_tool_dependencies )
-        if reinstalling:
-            installed_tool_dependencies, missing_tool_dependencies = \
-                tool_dependency_util.populate_tool_dependencies_dicts( app,
-                                                                       tool_shed_url,
-                                                                       tool_path,
-                                                                       repository_installed_tool_dependencies,
-                                                                       repository_missing_tool_dependencies,
-                                                                       required_repo_info_dicts )
-        else:
-            installed_tool_dependencies = repository_installed_tool_dependencies
-            missing_tool_dependencies = repository_missing_tool_dependencies
-        # Handle valid tools.
-        valid_tools = metadata.get( 'tools', None )
-        # Handle workflows.
-        workflows = metadata.get( 'workflows', None )
-        # Handle Data Managers
-        valid_data_managers = None
-        invalid_data_managers = None
-        data_managers_errors = None
-        if 'data_manager' in metadata:
-            valid_data_managers = metadata['data_manager'].get( 'data_managers', None )
-            invalid_data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
-            data_managers_errors = metadata['data_manager'].get( 'messages', None )
-        containers_dict = container_util.build_repository_containers_for_galaxy( app=app,
-                                                                                 repository=repository,
-                                                                                 datatypes=datatypes,
-                                                                                 invalid_tools=invalid_tools,
-                                                                                 missing_repository_dependencies=missing_repository_dependencies,
-                                                                                 missing_tool_dependencies=missing_tool_dependencies,
-                                                                                 readme_files_dict=readme_files_dict,
-                                                                                 repository_dependencies=installed_repository_dependencies,
-                                                                                 tool_dependencies=installed_tool_dependencies,
-                                                                                 valid_tools=valid_tools,
-                                                                                 workflows=workflows,
-                                                                                 valid_data_managers=valid_data_managers,
-                                                                                 invalid_data_managers=invalid_data_managers,
-                                                                                 data_managers_errors=data_managers_errors,
-                                                                                 new_install=False,
-                                                                                 reinstalling=reinstalling )
-    else:
-        containers_dict = dict( datatypes=None,
-                                invalid_tools=None,
-                                readme_files_dict=None,
-                                repository_dependencies=None,
-                                tool_dependencies=None,
-                                valid_tools=None,
-                                workflows=None )
-    return containers_dict
-
 def reset_all_metadata_on_installed_repository( app, id ):
     """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
     invalid_file_tups = []
@@ -2200,68 +2096,6 @@ def set_repository_metadata_due_to_new_tip( app, host, user, repository, content
     # This method is not called from Galaxy.
     error_message, status = set_repository_metadata( app, host, user, repository, content_alert_str=content_alert_str, **kwd )
     return status, error_message
-
-def update_existing_tool_dependency( app, repository, original_dependency_dict, new_dependencies_dict ):
-    """
-    Update an exsiting tool dependency whose definition was updated in a change set
-    pulled by a Galaxy administrator when getting updates to an installed tool shed
-    repository.  The original_dependency_dict is a single tool dependency definition,
-    an example of which is::
-
-        {"name": "bwa",
-         "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ",
-         "type": "package",
-         "version": "0.6.2"}
-
-    The new_dependencies_dict is the dictionary generated by the metadata_util.generate_tool_dependency_metadata method.
-    """
-    new_tool_dependency = None
-    original_name = original_dependency_dict[ 'name' ]
-    original_type = original_dependency_dict[ 'type' ]
-    original_version = original_dependency_dict[ 'version' ]
-    # Locate the appropriate tool_dependency associated with the repository.
-    tool_dependency = None
-    for tool_dependency in repository.tool_dependencies:
-        if tool_dependency.name == original_name and tool_dependency.type == original_type and tool_dependency.version == original_version:
-            break
-    if tool_dependency and tool_dependency.can_update:
-        dependency_install_dir = tool_dependency.installation_directory( app )
-        removed_from_disk, error_message = tool_dependency_util.remove_tool_dependency_installation_directory( dependency_install_dir )
-        if removed_from_disk:
-            context = app.install_model.context
-            new_dependency_name = None
-            new_dependency_type = None
-            new_dependency_version = None
-            for new_dependency_key, new_dependency_val_dict in new_dependencies_dict.items():
-                # Match on name only, hopefully this will be enough!
-                if original_name == new_dependency_val_dict[ 'name' ]:
-                    new_dependency_name = new_dependency_val_dict[ 'name' ]
-                    new_dependency_type = new_dependency_val_dict[ 'type' ]
-                    new_dependency_version = new_dependency_val_dict[ 'version' ]
-                    break
-            if new_dependency_name and new_dependency_type and new_dependency_version:
-                # Update all attributes of the tool_dependency record in the database.
-                log.debug( "Updating version %s of tool dependency %s %s to have new version %s and type %s." % \
-                    ( str( tool_dependency.version ),
-                      str( tool_dependency.type ),
-                      str( tool_dependency.name ),
-                      str( new_dependency_version ),
-                      str( new_dependency_type ) ) )
-                tool_dependency.type = new_dependency_type
-                tool_dependency.version = new_dependency_version
-                tool_dependency.status = app.install_model.ToolDependency.installation_status.UNINSTALLED
-                tool_dependency.error_message = None
-                context.add( tool_dependency )
-                context.flush()
-                new_tool_dependency = tool_dependency
-            else:
-                # We have no new tool dependency definition based on a matching dependency name, so remove
-                # the existing tool dependency record from the database.
-                log.debug( "Deleting version %s of tool dependency %s %s from the database since it is no longer defined." % \
-                    ( str( tool_dependency.version ), str( tool_dependency.type ), str( tool_dependency.name ) ) )
-                context.delete( tool_dependency )
-                context.flush()
-    return new_tool_dependency
 
 def update_repository_dependencies_metadata( metadata, repository_dependency_tups, is_valid, description ):
     if is_valid:
