@@ -143,12 +143,13 @@ ToolAnnotationAssociation_table = Table( "tool_annotation_association", metadata
     Column( "id", Integer, primary_key=True ),
     Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "annotation", TEXT, index=True) )
+    Column( "annotation", TEXT ) )
 
 def upgrade( migrate_engine ):
     print __doc__
     metadata.bind = migrate_engine
     metadata.create_all()
+    Index( 'ix_tool_annotation_association_annotation', ToolAnnotationAssociation_table.c.annotation, mysql_length=767 ).create()
 
 def downgrade( migrate_engine ):
     # Operations to reverse the above upgrade go here.
