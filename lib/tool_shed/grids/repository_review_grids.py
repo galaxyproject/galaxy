@@ -79,7 +79,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                 rval = ''
                 for repository_metadata in repository_metadata_revisions:
                     rev, label, changeset_revision = \
-                        hg_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
+                        hg_util.get_rev_label_changeset_revision_from_repository_metadata( trans.app,
                                                                                            repository_metadata,
                                                                                            repository=repository,
                                                                                            include_date=True,
@@ -304,7 +304,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
                 rval += 'edit_review'
             else:
                 rval +='browse_review'
-            revision_label = hg_util.get_revision_label( trans,
+            revision_label = hg_util.get_revision_label( trans.app,
                                                          review.repository,
                                                          review.changeset_revision,
                                                          include_date=True,

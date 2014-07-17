@@ -1346,7 +1346,7 @@ class RepositoryMetadataGrid( grids.Grid ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             changeset_revision = repository_metadata.changeset_revision
-            changeset_revision_label = hg_util.get_revision_label( trans, repository, changeset_revision, include_date=True )
+            changeset_revision_label = hg_util.get_revision_label( trans.app, repository, changeset_revision, include_date=True )
             return changeset_revision_label
 
 
