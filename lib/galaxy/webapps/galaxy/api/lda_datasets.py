@@ -44,26 +44,30 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         .. seealso:: :attr:`galaxy.web.base.controller.UsesLibraryMixinItems.get_library_dataset`
         """
         try:
-            dataset = self.get_library_dataset( trans, id=id, check_ownership=False, check_accessible=True )
+            library_dataset = self.get_library_dataset( trans, id=id, check_ownership=False, check_accessible=True )
         except Exception:
-            raise exceptions.ObjectNotFound( 'Requested dataset was not found.' )
+            raise exceptions.ObjectNotFound( 'Requested library_dataset was not found.' )
+
+        current_user_roles = trans.get_current_user_roles()
 
         # Build the full path for breadcrumb purposes.
-        full_path = self._build_path( trans, dataset.folder )
-        dataset_item = ( trans.security.encode_id( dataset.id ), dataset.name )
+        full_path = self._build_path( trans, library_dataset.folder )
+        dataset_item = ( trans.security.encode_id( library_dataset.id ), library_dataset.name )
         full_path.insert(0, dataset_item)
         full_path = full_path[ ::-1 ]
 
-        nice_size = util.nice_size( int( dataset.library_dataset_dataset_association.get_size() ) )
+        nice_size = util.nice_size( int( library_dataset.library_dataset_dataset_association.get_size() ) )
 
-        date_uploaded = dataset.library_dataset_dataset_association.create_time.strftime( "%Y-%m-%d %I:%M %p" )
+        date_uploaded = library_dataset.library_dataset_dataset_association.create_time.strftime( "%Y-%m-%d %I:%M %p" )
 
-        rval = trans.security.encode_all_ids( dataset.to_dict() )
-        rval[ 'deleted' ] = dataset.deleted
+        rval = trans.security.encode_all_ids( library_dataset.to_dict() )
+        rval[ 'deleted' ] = library_dataset.deleted
         rval[ 'folder_id' ] = 'F' + rval[ 'folder_id' ]
         rval[ 'full_path' ] = full_path
         rval[ 'file_size' ] = nice_size
         rval[ 'date_uploaded' ] = date_uploaded
+        rval[ 'can_user_modify' ] = trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset) or trans.user_is_admin()
+        rval[ 'can_user_manage' ] = trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
         return rval
 
     @expose_api
@@ -71,63 +75,93 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         show_roles( self, trans, id, **kwd ):
         GET /api/libraries/datasets/{encoded_dataset_id}/permissions:
-            Displays information about current and available roles
+            Displays information about current or available roles
             for a given dataset permission.
         """
+
         current_user_roles = trans.get_current_user_roles()
-
-        page = kwd.get( 'page', None )
-        if page is not None:
-            page = int( page )
-
-        page_limit = kwd.get( 'page_limit', None )
-        if page_limit is not None:
-            page_limit = int( page_limit )
-
-        query = kwd.get( 'q', None )
-
-        if page is None:
-            page = 1
-
-        if page_limit is None:
-            page_limit = 10
-
         try:
             library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
         except Exception, e:
             raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
-        library = library_dataset.folder.parent_library
         dataset = library_dataset.library_dataset_dataset_association.dataset
 
+        # User has to have manage permissions in order to see the roles.
         can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, dataset ) or trans.user_is_admin()
         if not can_manage:
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to access permissions.' )
 
-        roles = trans.app.security_agent.get_valid_dataset_roles( trans, dataset, query, page, page_limit )
+        scope = kwd.get( 'scope', None )
 
-        total_roles = len( roles )
-        return_roles = []
-        for role in roles:
-            return_roles.append( dict( id=role.name, name=role.name, type=role.type ) )
+        #  Return all roles currently set for relevant permissions.
+        if scope == 'current' or scope is None:
+            # Omit duplicated roles by converting to set
+            access_roles = set( dataset.get_access_roles( trans ) )
+            modify_roles = set( trans.app.security_agent.get_roles_for_action( library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY ) )
+            manage_roles = set( dataset.get_manage_permissions_roles( trans ) )
 
-        return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
+            # legit_roles = trans.app.security_agent.get_legitimate_roles( trans, dataset, 'library_admin' )
+            # log.debug( 'CXXXXXCXCXCXCXCXCC legit roles: ' + str( [ legit_role.name for legit_role in legit_roles ] ) )
 
-    @expose_api
-    def get_roles( self, trans, encoded_dataset_id, **kwd ):
-        try:
-            library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
-        except Exception, e:
-            raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
-        dataset = library_dataset.library_dataset_dataset_association.dataset
+            # all_permissions = trans.app.security_agent.get_permissions( library_dataset )
+            # for k,v in all_permissions.items():
+                # log.debug( '*******************************************' )
+                # log.debug( 'permission action: ' + str( k.action ) )
+                # log.debug( 'permission roles: ' + str( [ role.name for role in v ] ) )
 
-        roles = dataset.get_access_roles( trans )
+            access_dataset_role_list = [ access_role.name for access_role in access_roles ]
+            manage_dataset_role_list = [ manage_role.name for manage_role in manage_roles ]
+            modify_item_role_list = [ modify_role.name for modify_role in modify_roles ]
 
-        # roles = dataset.get_manage_permissions_roles( trans )
+            return dict( access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list )
 
-        # roles = trans.app.security_agent.get_current_dataset_roles( trans, dataset, trans.app.security_agent.permitted_actions.DATASET_ACCESS )
-        # Omit duplicated roles by converting to set
-        roles = set( roles )
-        return [ role.name for role in roles ]
+        #  Return roles that are available to select.
+        if scope == 'available':
+            page = kwd.get( 'page', None )
+            if page is not None:
+                page = int( page )
+            else:
+                page = 1
+
+            page_limit = kwd.get( 'page_limit', None )
+            if page_limit is not None:
+                page_limit = int( page_limit )
+            else:
+                page_limit = 10
+
+            query = kwd.get( 'q', None )
+
+            # try:
+            #     library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
+            # except Exception, e:
+            #     raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
+            # dataset = library_dataset.library_dataset_dataset_association.dataset
+            # library = library_dataset.folder.parent_library
+
+            roles, total_roles = trans.app.security_agent.get_valid_dataset_roles( trans, dataset, query, page, page_limit )
+
+            return_roles = []
+            for role in roles:
+                return_roles.append( dict( id=role.name, name=role.name, type=role.type ) )
+
+            return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
+
+    # @expose_api
+    # def get_roles( self, trans, encoded_dataset_id, **kwd ):
+    #     try:
+    #         library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
+    #     except Exception, e:
+    #         raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
+    #     dataset = library_dataset.library_dataset_dataset_association.dataset
+
+    #     roles = dataset.get_access_roles( trans )
+
+    #     # roles = dataset.get_manage_permissions_roles( trans )
+
+    #     # roles = trans.app.security_agent.get_current_dataset_roles( trans, dataset, trans.app.security_agent.permitted_actions.DATASET_ACCESS )
+    #     # Omit duplicated roles by converting to set
+    #     roles = set( roles )
+    #     return [ role.name for role in roles ]
 
     @expose_api
     def delete( self, trans, encoded_dataset_id, **kwd ):

@@ -3,10 +3,11 @@ define([
   "mvc/library/library-model",
   'mvc/ui/ui-select'
   ],
-function(mod_toastr,
-         mod_library_model,
-         mod_select
-         ) {
+function(
+        mod_toastr,
+        mod_library_model,
+        mod_select
+        ) {
 
 var LibraryDatasetView = Backbone.View.extend({
   el: '#center',
@@ -188,65 +189,170 @@ var LibraryDatasetView = Backbone.View.extend({
     var self = this;
 
     // load all current permissions
-    $.get( "/api/libraries/datasets/" + self.id + "/permissions/current").done(function(fetched_permissions) {
-        var selected_roles = [];
-        for (var i = 0; i < fetched_permissions.length; i++) {
-            selected_roles.push(fetched_permissions[i] + ':' + fetched_permissions[i]);
+    $.get( "/api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+        var selected_access_dataset_roles = [];
+        for (var i = 0; i < fetched_permissions.access_dataset_roles.length; i++) {
+            selected_access_dataset_roles.push(fetched_permissions.access_dataset_roles[i] + ':' + fetched_permissions.access_dataset_roles[i]);
         }
+        var selected_modify_item_roles = [];
+        for (var i = 0; i < fetched_permissions.modify_item_roles.length; i++) {
+            selected_modify_item_roles.push(fetched_permissions.modify_item_roles[i] + ':' + fetched_permissions.modify_item_roles[i]);
+        }
+        var selected_manage_dataset_roles = [];
+        for (var i = 0; i < fetched_permissions.manage_dataset_roles.length; i++) {
+            selected_manage_dataset_roles.push(fetched_permissions.manage_dataset_roles[i] + ':' + fetched_permissions.manage_dataset_roles[i]);
+        }
+        
         // ACCESS PERMISSIONS
-        if (is_admin){ // Admin has a special select that allows remote searching
+        if (is_admin){ // Admin has a special select that allows AJAX searching
             var access_select_options = {
-                minimumInputLength: 1,
-                css: 'access_perm',
-                multiple:true,
-                placeholder: 'Click to select a role',
-                container: self.$el.find('#access_perm'),
-                ajax: {
-                    url: "/api/libraries/datasets/" + self.id + "/permissions",
-                    dataType: 'json',
-                    quietMillis: 100,
-                    data: function (term, page) { // page is the one-based page number tracked by Select2
-                        return {
-                            q: term, //search term
-                            page_limit: 10, // page size
-                            page: page // page number
-                        };
-                    },
-                    results: function (data, page) {
-                        var more = (page * 10) < data.total; // whether or not there are more results available
-                        // notice we return the value of more so Select2 knows if more results can be loaded
-                        return {results: data.roles, more: more};
-                    }
-                },
-                formatResult : function roleFormatResult(role) {
-                    return role.name + ' type: ' + role.type;
-                },
+              minimumInputLength: 0,
+              css: 'access_perm',
+              multiple:true,
+              placeholder: 'Click to select a role',
+              container: self.$el.find('#access_perm'),
+              ajax: {
+                  url: "/api/libraries/datasets/" + self.id + "/permissions?scope=available",
+                  dataType: 'json',
+                  quietMillis: 100,
+                  data: function (term, page) { // page is the one-based page number tracked by Select2
+                      return {
+                          q: term, //search term
+                          page_limit: 10, // page size
+                          page: page // page number
+                      };
+                  },
+                  results: function (data, page) {
+                      var more = (page * 10) < data.total; // whether or not there are more results available
+                      // notice we return the value of more so Select2 knows if more results can be loaded
+                      return {results: data.roles, more: more};
+                  }
+              },
+              formatResult : function roleFormatResult(role) {
+                  return role.name + ' type: ' + role.type;
+              },
 
-                formatSelection: function roleFormatSelection(role) {
-                    return role.name;
-                },
-                initSelection: function(element, callback) {
-                // the input tag has a value attribute preloaded that points to a preselected role's id
-                // this function resolves that id attribute to an object that select2 can render
-                // using its formatResult renderer - that way the role name is shown preselected
-                    var data = [];
-                    $(element.val().split(",")).each(function() {
-                        var item = this.split(':');
-                        data.push({
-                            id: item[1],
-                            name: item[1]
-                        });
-                    });
-                    callback(data);
-                },
-                initialData: selected_roles.join(','),
-                dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+              formatSelection: function roleFormatSelection(role) {
+                  return role.name;
+              },
+              initSelection: function(element, callback) {
+              // the input tag has a value attribute preloaded that points to a preselected role's id
+              // this function resolves that id attribute to an object that select2 can render
+              // using its formatResult renderer - that way the role name is shown preselected
+                  var data = [];
+                  $(element.val().split(",")).each(function() {
+                      var item = this.split(':');
+                      data.push({
+                          id: item[1],
+                          name: item[1]
+                      });
+                  });
+                  callback(data);
+              },
+              initialData: selected_access_dataset_roles.join(','),
+              dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+            };
+            var modify_select_options = {
+              minimumInputLength: 0,
+              css: 'modify_perm',
+              multiple:true,
+              placeholder: 'Click to select a role',
+              container: self.$el.find('#modify_perm'),
+              ajax: {
+                  url: "/api/libraries/datasets/" + self.id + "/permissions?scope=available",
+                  dataType: 'json',
+                  quietMillis: 100,
+                  data: function (term, page) { // page is the one-based page number tracked by Select2
+                      return {
+                          q: term, //search term
+                          page_limit: 10, // page size
+                          page: page // page number
+                      };
+                  },
+                  results: function (data, page) {
+                      var more = (page * 10) < data.total; // whether or not there are more results available
+                      // notice we return the value of more so Select2 knows if more results can be loaded
+                      return {results: data.roles, more: more};
+                  }
+              },
+              formatResult : function roleFormatResult(role) {
+                  return role.name + ' type: ' + role.type;
+              },
+
+              formatSelection: function roleFormatSelection(role) {
+                  return role.name;
+              },
+              initSelection: function(element, callback) {
+              // the input tag has a value attribute preloaded that points to a preselected role's id
+              // this function resolves that id attribute to an object that select2 can render
+              // using its formatResult renderer - that way the role name is shown preselected
+                  var data = [];
+                  $(element.val().split(",")).each(function() {
+                      var item = this.split(':');
+                      data.push({
+                          id: item[1],
+                          name: item[1]
+                      });
+                  });
+                  callback(data);
+              },
+              initialData: selected_modify_item_roles.join(','),
+              dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
+            };
+            var manage_select_options = {
+              minimumInputLength: 0,
+              css: 'manage_perm',
+              multiple:true,
+              placeholder: 'Click to select a role',
+              container: self.$el.find('#manage_perm'),
+              ajax: {
+                  url: "/api/libraries/datasets/" + self.id + "/permissions?scope=available",
+                  dataType: 'json',
+                  quietMillis: 100,
+                  data: function (term, page) { // page is the one-based page number tracked by Select2
+                      return {
+                          q: term, //search term
+                          page_limit: 10, // page size
+                          page: page // page number
+                      };
+                  },
+                  results: function (data, page) {
+                      var more = (page * 10) < data.total; // whether or not there are more results available
+                      // notice we return the value of more so Select2 knows if more results can be loaded
+                      return {results: data.roles, more: more};
+                  }
+              },
+              formatResult : function roleFormatResult(role) {
+                  return role.name + ' type: ' + role.type;
+              },
+
+              formatSelection: function roleFormatSelection(role) {
+                  return role.name;
+              },
+              initSelection: function(element, callback) {
+              // the input tag has a value attribute preloaded that points to a preselected role's id
+              // this function resolves that id attribute to an object that select2 can render
+              // using its formatResult renderer - that way the role name is shown preselected
+                  var data = [];
+                  $(element.val().split(",")).each(function() {
+                      var item = this.split(':');
+                      data.push({
+                          id: item[1],
+                          name: item[1]
+                      });
+                  });
+                  callback(data);
+              },
+              initialData: selected_manage_dataset_roles.join(','),
+              dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
             };
 
             this.accessSelectObject = new mod_select.View(access_select_options);
+            this.modifySelectObject = new mod_select.View(modify_select_options);
+            this.manageSelectObject = new mod_select.View(manage_select_options);
         } else { // Non-admins have select with pre-loaded options
-            var template = this.templateAccessSelect();
-            $.get( "/api/libraries/datasets/" + self.id + "/permissions", function( data ) {
+            var template = self.templateAccessSelect();
+            $.get( "/api/libraries/datasets/" + self.id + "/permissions?scope=available", function( data ) {
                 $('.access_perm').html(template({options:data.roles}));
                 this.accessSelectObject = $('#access_select').select2();
             }).fail(function() {
@@ -277,9 +383,16 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('  <div id="library_toolbar">');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-default toolbtn-download-dataset primary-button" type="button"><span class="fa fa-download"></span> Download</span></button>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-default toolbtn-import-dataset primary-button" type="button"><span class="fa fa-book"></span> to History</span></button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Modify dataset" class="btn btn-default toolbtn_modify_dataset primary-button" type="button"><span class="fa fa-pencil"></span> Modify</span></button>');
-    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Change permissions" class="btn btn-default toolbtn_change_permissions primary-button" type="button"><span class="fa fa-group"></span> Permissions</span></button></a>');
+
+    tmpl_array.push('   <% if (item.get("can_user_modify")) { %>');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-default toolbtn_modify_dataset primary-button" type="button"><span class="fa fa-pencil"></span> Modify</span></button>');
+    tmpl_array.push('   <% } %>');
+    
+    tmpl_array.push('   <% if (item.get("can_user_manage")) { %>');
+    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button" type="button"><span class="fa fa-group"></span> Permissions</span></button></a>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
+    tmpl_array.push('   <% } %>');
+
 
     tmpl_array.push('  </div>');
 
@@ -500,8 +613,8 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
 
     tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to folder" class="btn btn-default primary-button" type="button"><span class="fa fa-folder-open-o"></span> go to Folder</span></button></a>');
-    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-file-o"></span> see the Dataset</span></button><a>');
+    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to containing folder" class="btn btn-default primary-button" type="button"><span class="fa fa-folder-open-o"></span> Containing Folder</span></button></a>');
+    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-file-o"></span> Dataset Details</span></button><a>');
 
     tmpl_array.push('  </div>');
 
@@ -517,35 +630,48 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('   <% }); %>');
     tmpl_array.push('</ol>');
 
-    tmpl_array.push('<h1><%= _.escape(item.get("name")) %></h1>');
-    tmpl_array.push('<div class="alert alert-success">You have rights to change permissions on this dataset. That means you can control who can access it, who can modify it and also appoint others that can manage permissions on it.</div>');
+    tmpl_array.push('<h1>Permissions: <%= _.escape(item.get("name")) %></h1>');
+
+    
     tmpl_array.push('<div class="dataset_table">');
 
-    tmpl_array.push('<h2>Basic permissions</h2>');
+    // tmpl_array.push('<h2>Basic</h2>');
     tmpl_array.push('<p>You can remove all access restrictions on this dataset. ');
-    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Everybody will be able to see the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button"><span class="fa fa-globe"></span> Remove restrictions</span></button>');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Everybody will be able to access the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button"><span class="fa fa-globe"></span> Remove restrictions</span></button>');
     tmpl_array.push('</p>');
     
     tmpl_array.push('<p>You can make this dataset private to you. ');
-    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Only you will be able to see the dataset." class="btn btn-default btn-make-private primary-button" type="button"><span class="fa fa-key"></span> Make private</span></button>');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Only you will be able to access the dataset." class="btn btn-default btn-make-private primary-button" type="button"><span class="fa fa-key"></span> Make private</span></button>');
     tmpl_array.push('</p>');
 
     tmpl_array.push('<p>You can share this dataset with another Galaxy user. ');
-    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Only you and the other user will be able to see the dataset." class="btn btn-default btn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Only you and the other user will be able to access the dataset." class="btn btn-default btn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
     tmpl_array.push('</p>');
 
-    tmpl_array.push('<h2>Advanced permissions</h2>');
-    tmpl_array.push('<p>You can assign any number of roles to any of the following three dataset permission types. However please read carefully the implications of such actions.</p>');
-    tmpl_array.push('<h3>Access Roles</h3>');
-    tmpl_array.push('<div class="alert alert-info">User has to have <strong>all these roles</strong> in order to see this dataset.</div>');
-    tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
+    // tmpl_array.push('<h2>Advanced</h2>');
+    tmpl_array.push('<p>You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.</p>');
+    tmpl_array.push('<hr/>');
+
+    tmpl_array.push('<h2>Library-related permissions</h2>');
+    tmpl_array.push('<div class="alert alert-success">You have the permission to modify this Library item. This includes changing its metadata and other information. It does not include modifying the underlying dataset.</div>');
+    tmpl_array.push('<h4>Roles that can modify the library item</h4>');
+    tmpl_array.push('<div id="modify_perm" class="modify_perm roles-selection"></div>');
+    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify the information about this library item.</div>');
     tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
-    tmpl_array.push('<h3>Modify Roles</h3>');
-    tmpl_array.push('<div class="alert alert-info">Users with <strong>any</strong> of these roles can modify the information about this dataset.</div>');
-    tmpl_array.push('<div id="modify_perm" class="modify_perm"></div>');
-    tmpl_array.push('<h3>Manage Roles</h3>');
-    tmpl_array.push('<div class="alert alert-info">Users with <strong>any</strong> of these roles can change permissions of this dataset.</div>');
-    tmpl_array.push('<div id="manage_perm" class="manage_perm"></div>');
+    tmpl_array.push('<hr/>');
+
+    tmpl_array.push('<h2>Dataset-related permissions</h2>');
+    tmpl_array.push('<div class="alert alert-success">You have the permission to manage permissions on this dataset. That means you can control who can access it and also appoint others that can manage permissions on it. Changes made here will affect <strong>every</strong> library item and every history this dataset is part of.</div>');
+    tmpl_array.push('<h4>Roles that can access dataset</h4>');
+    tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
+    tmpl_array.push('<div class="alert alert-info roles-selection">User has to have <strong>all these roles</strong> in order to access this dataset. Users without access permission <strong>cannot</strong> have other permissions on this dataset. If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.</div>');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
+    tmpl_array.push('<h4>Roles that can manage permissions on the dataset</h4>');
+    tmpl_array.push('<div id="manage_perm" class="manage_perm roles-selection"></div>');
+    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.</div>');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
+
+
 
 
     tmpl_array.push('</div>');
@@ -585,6 +711,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     return _.template(tmpl_array.join(''));
   }
+
 });
 
 return {
