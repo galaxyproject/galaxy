@@ -169,7 +169,7 @@ class AdminToolshed( AdminGalaxy ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
-        tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_ids[ 0 ] )
+        tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_ids[ 0 ] )
         if tool_dependency.in_error_state:
             message = "This tool dependency is not installed correctly (see the <b>Tool dependency installation error</b> below).  "
             message += "Choose <b>Uninstall this tool dependency</b> from the <b>Repository Actions</b> menu, correct problems "
@@ -806,7 +806,7 @@ class AdminToolshed( AdminGalaxy ):
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         if tool_dependency_ids:
             # We need a tool_shed_repository, so get it from one of the tool_dependencies.
-            tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_ids[ 0 ] )
+            tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_ids[ 0 ] )
             tool_shed_repository = tool_dependency.tool_shed_repository
         else:
             # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
@@ -830,7 +830,7 @@ class AdminToolshed( AdminGalaxy ):
             elif operation == 'uninstall':
                 tool_dependencies_for_uninstallation = []
                 for tool_dependency_id in tool_dependency_ids:
-                    tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_id )
+                    tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_id )
                     if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.INSTALLED,
                                                    trans.install_model.ToolDependency.installation_status.ERROR ]:
                         tool_dependencies_for_uninstallation.append( tool_dependency )
@@ -845,7 +845,7 @@ class AdminToolshed( AdminGalaxy ):
                 if trans.app.config.tool_dependency_dir:
                     tool_dependencies_for_installation = []
                     for tool_dependency_id in tool_dependency_ids:
-                        tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_id )
+                        tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_id )
                         if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                        trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             tool_dependencies_for_installation.append( tool_dependency )
@@ -889,7 +889,7 @@ class AdminToolshed( AdminGalaxy ):
         repository_id = kwd.get( 'repository_id', None )
         if tool_dependency_ids:
             # We need a tool_shed_repository, so get it from one of the tool_dependencies.
-            tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_ids[ 0 ] )
+            tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_ids[ 0 ] )
             tool_shed_repository = tool_dependency.tool_shed_repository
         else:
             # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
@@ -914,7 +914,7 @@ class AdminToolshed( AdminGalaxy ):
                 if trans.app.config.tool_dependency_dir:
                     tool_dependencies_for_installation = []
                     for tool_dependency_id in tool_dependency_ids:
-                        tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_id )
+                        tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_id )
                         if tool_dependency.status in [ trans.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                        trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             tool_dependencies_for_installation.append( tool_dependency )
@@ -1849,7 +1849,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_dependency_ids = util.listify( kwd.get( 'id', None ) )
         tool_dependencies = []
         for tool_dependency_id in tool_dependency_ids:
-            tool_dependency = tool_dependency_util.get_tool_dependency( trans, tool_dependency_id )
+            tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_id )
             tool_dependencies.append( tool_dependency )
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
         if kwd.get( 'uninstall_tool_dependencies_button', False ):

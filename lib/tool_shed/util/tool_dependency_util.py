@@ -128,9 +128,9 @@ def get_platform_info_dict():
     platform_dict[ 'architecture' ] = machine.lower()
     return platform_dict
 
-def get_tool_dependency( trans, id ):
+def get_tool_dependency( app, id ):
     """Get a tool_dependency from the database via id"""
-    return trans.install_model.context.query( trans.install_model.ToolDependency ).get( trans.security.decode_id( id ) )
+    return app.install_model.context.query( app.install_model.ToolDependency ).get( app.security.decode_id( id ) )
 
 def get_tool_dependency_by_name_type_repository( app, repository, name, type ):
     context = app.install_model.context
