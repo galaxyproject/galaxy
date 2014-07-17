@@ -100,6 +100,8 @@ class InstallToolDependencyManager( object ):
                     # We're in stage 2 of the installation process.  The package has been down-loaded, so we can
                     # now perform all of the actions defined for building it.
                     for action_tup in filtered_actions:
+                        if dir is None:
+                            dir = ''
                         current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                         with lcd( current_dir ):
                             action_type, action_dict = action_tup
