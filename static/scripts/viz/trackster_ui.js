@@ -1,12 +1,9 @@
-define( ["base","libs/underscore","viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/tracks", "viz/visualization" ], 
-        function( base, _, slotting, painters, tracks, visualization ) {
+define( ["base","libs/underscore", "viz/trackster/tracks", "viz/visualization" ], 
+        function( base, _, tracks, visualization ) {
 
 /************************************************************************
  * Functions used for creating and managing the Trackster user interface.
  ************************************************************************/
-
-var object_from_template = tracks.object_from_template;
-
 
 /**
  * Returns an IconButtonMenuView for the provided configuration.
@@ -96,7 +93,7 @@ var TracksterUI = base.Base.extend({
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
                 visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                     _.each(tracks, function(track) {
-                        view.add_drawable( object_from_template(track, view, view) );
+                        view.add_drawable( tracks.object_from_template(track, view, view) );
                     });
                 });
             } },
@@ -263,7 +260,7 @@ var TracksterUI = base.Base.extend({
                     drawable_type,
                     drawable;
                 for (var i = 0; i < drawables_config.length; i++) {
-                    view.add_drawable( object_from_template( drawables_config[i], view, view ) );
+                    view.add_drawable( tracks.object_from_template( drawables_config[i], view, view ) );
                 }
             }
             
@@ -367,7 +364,7 @@ var TracksterUI = base.Base.extend({
 });
 
 return {
-    object_from_template: object_from_template,
+    object_from_template: tracks.object_from_template,
     TracksterUI: TracksterUI
 };
 
