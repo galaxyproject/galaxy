@@ -1347,7 +1347,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         match_tuples = []
         ok = True
         if tool_ids or tool_names or tool_versions:
-            ok, match_tuples = search_util.search_repository_metadata( trans,
+            ok, match_tuples = search_util.search_repository_metadata( trans.app,
                                                                        exact_matches_checked,
                                                                        tool_ids=tool_ids,
                                                                        tool_names=tool_names,
@@ -1437,9 +1437,14 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             match_tuples = []
             ok = True
             if workflow_names:
-                ok, match_tuples = search_util.search_repository_metadata( trans, exact_matches_checked, workflow_names=workflow_names )
+                ok, match_tuples = search_util.search_repository_metadata( trans.app,
+                                                                           exact_matches_checked,
+                                                                           workflow_names=workflow_names )
             else:
-                ok, match_tuples = search_util.search_repository_metadata( trans, exact_matches_checked, workflow_names=[], all_workflows=True )
+                ok, match_tuples = search_util.search_repository_metadata( trans.app,
+                                                                           exact_matches_checked,
+                                                                           workflow_names=[],
+                                                                           all_workflows=True )
             if ok:
                 kwd[ 'match_tuples' ] = match_tuples
                 if trans.webapp.name == 'galaxy':
