@@ -34,24 +34,6 @@ require(
 // trackster viewer
 define( ["libs/underscore", "base", "viz/trackster/tracks", "viz/visualization"], 
         function(_, base, tracks, visualization) {
-/**
- * Returns an IconButtonMenuView for the provided configuration.
- * Configuration is a list of dictionaries where each dictionary
- * defines an icon button. Each dictionary must have the following
- * elements: icon_class, title, and on_click.
- */
-var create_icon_buttons_menu = function(config, global_config) {
-    if (!global_config) { global_config = {}; }
-
-    // Create and initialize menu.
-    var buttons = new IconButtonCollection( 
-            _.map(config, function(button_config) { 
-                return new IconButton(_.extend(button_config, global_config)); 
-            })
-        );
-    
-    return new IconButtonMenuView( {collection: buttons} );
-};
 
 /**
  * User interface controls for trackster 
