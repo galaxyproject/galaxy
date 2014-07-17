@@ -92,7 +92,23 @@ LWR_PARAM_SPECS = dict(
         map=str,
         valid=specs.is_in("transient", "persistent"),
         default="persistent",
-    )
+    ),
+    amqp_publish_retry_max_retries=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_start=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_step=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_max=dict(
+        map=int,
+        default=None,
+    ),
 )
 
 
@@ -106,7 +122,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers, runner_param_specs=LWR_PARAM_SPECS, **kwds )
         self._init_worker_threads()
-        self.galaxy_url = self.runner_params.galaxy_url
+        galaxy_url = self.runner_params.galaxy_url
+        if galaxy_url:
+            galaxy_url = galaxy_url.rstrip("/")
+        self.galaxy_url = galaxy_url
         self.__init_client_manager()
         if self.runner_params.url:
             # This is a message queue driven runner, don't monitor
@@ -153,6 +172,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return job_state
 
     def __async_update( self, full_status ):
+        while not hasattr( self.app, 'job_manager' ):
+            # The status update thread can start consuming before app is done initializing
+            log.debug( 'Received a status update message before app is initialized, waiting 5 seconds' )
+            sleep( 5 )
         job_id = None
         try:
             job_id = full_status[ "job_id" ]

@@ -11104,10 +11104,10 @@ nv.models.scatter = function() {
                 var pX = getX(point,pointIndex);
                 var pY = getY(point,pointIndex);
 
-                return [x(pX)+ Math.random() * 1e-7,
-                        y(pY)+ Math.random() * 1e-7,
+                return [x(pX),
+                        y(pY),
                         groupIndex,
-                        pointIndex, point]; //temp hack to add noise untill I think of a better way so there are no duplicates
+                        pointIndex, point];
               })
               .filter(function(pointArray, pointIndex) {
                 return pointActive(pointArray[4], pointIndex); // Issue #237.. move filter to after map, so pointIndex is correct!
@@ -11158,6 +11158,18 @@ nv.models.scatter = function() {
               [width + 10,-10]
           ]);
 
+          // delete duplicates from vertices - essential assumption for d3.geom.voronoi
+          var epsilon = 1e-6; // d3 uses 1e-6 to determine equivalence.
+          vertices = vertices.sort(function(a,b){return ((a[0] - b[0]) || (a[1] - b[1]))});
+          for (var i = 0; i < vertices.length - 1; ) {
+              if ((Math.abs(vertices[i][0] - vertices[i+1][0]) < epsilon) &&
+                  (Math.abs(vertices[i][1] - vertices[i+1][1]) < epsilon)) {
+                      vertices.splice(i+1, 1);
+              } else {
+                  i++;
+              }
+          }
+ 
           var voronoi = d3.geom.voronoi(vertices).map(function(d, i) {
               return {
                 'data': bounds.clip(d),
@@ -11174,8 +11186,8 @@ nv.models.scatter = function() {
           pointPaths.exit().remove();
           pointPaths
               .attr('d', function(d) {
-                if (d.data.length === 0)
-                    return 'M 0 0'
+                if (!d || !d.data || d.data.length === 0)
+                    return 'M 0 0';
                 else
                     return 'M' + d.data.join('L') + 'Z';
               });

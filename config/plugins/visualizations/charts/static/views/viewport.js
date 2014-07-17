@@ -2,7 +2,11 @@
 define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
         function(Portlet, Ui, Utils) {
 
-// widget
+/**
+ *  The viewport creates and manages the dom elements used by the visualization plugins to draw the chart.
+ *  Additionally, this class creates default request strings and request dictionaries parsed to the visualization plugins.
+ *  This is the last class of the charts core classes before handing control over to the visualization plugins.
+ */
 return Backbone.View.extend({
 
     // list of canvas elements
@@ -26,7 +30,7 @@ return Backbone.View.extend({
         // use full screen for viewer
         this._fullscreen(this.$el, 100);
         
-        // create canvas element
+        // create container element
         this._createContainer('div');
         
         // events
@@ -126,7 +130,7 @@ return Backbone.View.extend({
         var self = this;
         
         // register process
-        var process_id = chart.deferred.register();
+        var process_id = this.app.deferred.register();
 
         // identify chart type
         var chart_type = chart.get('type');
@@ -160,21 +164,27 @@ return Backbone.View.extend({
         // create chart view
         var self = this;
         require(['plugin/charts/' + this.app.chartPath(chart_type) + '/wrapper'], function(ChartView) {
-            // create chart and parse list of dom ids
-            var view = new ChartView(self.app, {canvas_list : self.canvas_list});
-            
-            // request data
             if (self.chart_definition.execute) {
                 self.app.jobs.request(chart, self._defaultSettingsString(chart), self._defaultRequestString(chart),
                     function() {
-                        view.draw(process_id, chart, self._defaultRequestDictionary(chart));
+                        var view = new ChartView(self.app, {
+                            process_id          : process_id,
+                            chart               : chart,
+                            request_dictionary  : self._defaultRequestDictionary(chart),
+                            canvas_list         : self.canvas_list
+                        });
                     },
                     function() {
-                        chart.deferred.done(process_id);
+                        this.app.deferred.done(process_id);
                     }
                 );
             } else {
-                view.draw(process_id, chart, self._defaultRequestDictionary(chart));
+                var view = new ChartView(self.app, {
+                    process_id          : process_id,
+                    chart               : chart,
+                    request_dictionary  : self._defaultRequestDictionary(chart),
+                    canvas_list         : self.canvas_list
+                });
             }
         });
     },

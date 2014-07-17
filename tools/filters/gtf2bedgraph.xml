@@ -3,7 +3,9 @@
   <command interpreter="python">gtf_to_bedgraph_converter.py $input $out_file1 $attribute_name</command>
   <inputs>
     <param format="gtf" name="input" type="data" label="Convert this query"/>
-    <param name="attribute_name" type="text" label="Attribute to Use for Value"/>
+    <param name="attribute_name" type="text" label="Attribute to Use for Value">
+        <validator type="empty_field" /> 
+    </param>
   </inputs>
   <outputs>
     <data format="bedgraph" name="out_file1" />

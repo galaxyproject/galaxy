@@ -10,7 +10,6 @@ import binascii
 import collections
 import errno
 import grp
-import json
 import logging
 import os
 import pickle
@@ -23,6 +22,8 @@ import string
 import sys
 import tempfile
 import threading
+
+from galaxy.util import json
 
 from email.MIMEText import MIMEText
 
@@ -312,8 +313,8 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
 
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:
-        json_data = json.loads(json_data)
-    return json.dumps(json_data, sort_keys=True, indent=4 * ' ')
+        json_data = json.from_json_string(json_data)
+    return json.to_json_string(json_data, sort_keys=True, indent=4)
 
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
@@ -417,17 +418,16 @@ def ready_name_for_url( raw_name ):
     return slug_base
 
 
-def in_directory( file, directory ):
+def in_directory( file, directory, local_path_module=os.path ):
     """
     Return true, if the common prefix of both is equal to directory
     e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
     """
 
     # Make both absolute.
-    directory = os.path.abspath( directory )
-    file = os.path.abspath( file )
-
-    return os.path.commonprefix( [ file, directory ] ) == directory
+    directory = local_path_module.abspath(directory)
+    file = local_path_module.abspath(file)
+    return local_path_module.commonprefix([file, directory]) == directory
 
 
 def merge_sorted_iterables( operator, *iterables ):

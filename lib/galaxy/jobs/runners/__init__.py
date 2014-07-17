@@ -6,6 +6,7 @@ import os
 import time
 import string
 import logging
+import datetime
 import threading
 import subprocess
 
@@ -17,8 +18,11 @@ from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.util import in_directory
 from galaxy.util import ParamsWithSpecs
+from galaxy.util.bunch import Bunch
 from galaxy.jobs.runners.util.job_script import job_script
 from galaxy.jobs.runners.util.env import env_to_statement
+
+from .state_handler_factory import build_state_handlers
 
 log = logging.getLogger( __name__ )
 
@@ -57,6 +61,7 @@ class BaseJobRunner( object ):
         if kwargs:
             log.debug( 'Loading %s with params: %s', self.runner_name, kwargs )
         self.runner_params = RunnerParams( specs=runner_param_specs, params=kwargs )
+        self.runner_state_handlers = build_state_handlers()
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
@@ -310,11 +315,33 @@ class BaseJobRunner( object ):
             job_info
         )
 
+    def _handle_runner_state( self, runner_state, job_state ):
+        try:
+            for handler in self.runner_state_handlers.get(runner_state, []):
+                handler(self.app, self, job_state)
+                if job_state.runner_state_handled:
+                    break
+        except:
+            log.exception('Caught exception in runner state handler:')
+
+    def mark_as_resubmitted( self, job_state ):
+        job_state.job_wrapper.mark_as_resubmitted()
+        if not self.app.config.track_jobs_in_database:
+            job_state.job_wrapper.change_state( model.Job.states.QUEUED )
+            self.app.job_manager.job_handler.dispatcher.put( job_state.job_wrapper )
+
 
 class JobState( object ):
     """
     Encapsulate state of jobs.
     """
+    runner_states = Bunch(
+        WALLTIME_REACHED = 'walltime_reached',
+        GLOBAL_WALLTIME_REACHED = 'global_walltime_reached',
+        OUTPUT_SIZE_LIMIT = 'output_size_limit'
+    )
+    def __init__( self ):
+        self.runner_state_handled = False
 
     def set_defaults( self, files_dir ):
         if self.job_wrapper is not None:
@@ -348,9 +375,11 @@ class AsynchronousJobState( JobState ):
     """
 
     def __init__( self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None  ):
+        super( AsynchronousJobState, self ).__init__()
         self.old_state = None
-        self.running = False
+        self._running = False
         self.check_count = 0
+        self.start_time = None
 
         self.job_wrapper = job_wrapper
         # job_id is the DRM's job id, not the Galaxy job id
@@ -366,6 +395,33 @@ class AsynchronousJobState( JobState ):
         self.set_defaults( files_dir )
 
         self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
+
+    @property
+    def running( self ):
+        return self._running
+
+    @running.setter
+    def running( self, is_running ):
+        self._running = is_running
+        # This will be invalid for job recovery
+        if self.start_time is None:
+            self.start_time = datetime.datetime.now()
+
+    def check_limits( self, runtime=None ):
+        limit_state = None
+        if self.job_wrapper.has_limits():
+            self.check_count += 1
+            if self.running and (self.check_count % 20 == 0):
+                if runtime is None:
+                    runtime = datetime.datetime.now() - (self.start_time or datetime.datetime.now())
+                self.check_count = 0
+                limit_state = self.job_wrapper.check_limits( runtime=runtime )
+        if limit_state is not None:
+            # Set up the job for failure, but the runner will do the actual work
+            self.runner_state, self.fail_message = limit_state
+            self.stop_job = True
+            return True
+        return False
 
     def cleanup( self ):
         for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
@@ -513,9 +569,13 @@ class AsynchronousJobRunner( BaseJobRunner ):
     def fail_job( self, job_state ):
         if getattr( job_state, 'stop_job', True ):
             self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
-        job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
-        if self.app.config.cleanup_job == "always":
-            job_state.cleanup()
+        self._handle_runner_state( 'failure', job_state )
+        # Not convinced this is the best way to indicate this state, but
+        # something necessary
+        if not job_state.runner_state_handled:
+            job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
+            if self.app.config.cleanup_job == "always":
+                job_state.cleanup()
 
     def mark_as_finished(self, job_state):
         self.work_queue.put( ( self.finish_job, job_state ) )

@@ -2,9 +2,10 @@
 define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
         function(Table, Ui, Utils) {
 
-// widget
-var View = Backbone.View.extend(
-{
+/**
+ *  This class takes a dictionary as input an creates an input form. It uses the Ui.Table element to organize and format the form elements.
+ */
+var View = Backbone.View.extend({
     // options
     optionsDefault: {
         title       : '',
@@ -27,7 +28,7 @@ var View = Backbone.View.extend(
         // ui elements
         this.table_title = new Ui.Label({title: this.options.title});
         this.table = new Table.View({content: this.options.content});
-        
+
         // create element
         var $view = $('<div class="ui-table-form"/>');
         if (this.options.title) {
@@ -97,13 +98,14 @@ var View = Backbone.View.extend(
                         
                         // find selected dictionary
                         var dict = _.findWhere(settings_def.data, {value: value});
-                        if (dict) {
-                            for (var i in dict.show) {
-                                var target = dict.show[i];
+                        if (dict && dict.operations) {
+                            var operations = dict.operations;
+                            for (var i in operations.show) {
+                                var target = operations.show[i];
                                 self.table.get(target).show();
                             }
-                            for (var i in dict.hide) {
-                                var target = dict.hide[i];
+                            for (var i in operations.hide) {
+                                var target = operations.hide[i];
                                 self.table.get(target).hide();
                             }
                         }
@@ -122,13 +124,14 @@ var View = Backbone.View.extend(
                         
                         // find selected dictionary
                         var dict = _.findWhere(settings_def.data, {value: value});
-                        if (dict) {
-                            for (var i in dict.show) {
-                                var target = dict.show[i];
+                        if (dict && dict.operations) {
+                            var operations = dict.operations;
+                            for (var i in operations.show) {
+                                var target = operations.show[i];
                                 self.table.get(target).show();
                             }
-                            for (var i in dict.hide) {
-                                var target = dict.hide[i];
+                            for (var i in operations.hide) {
+                                var target = operations.hide[i];
                                 self.table.get(target).hide();
                             }
                         }
@@ -226,6 +229,11 @@ var View = Backbone.View.extend(
         
         // add to table
         this.table.append(id);
+        
+         // show/hide
+         if (settings_def.hide) {
+             this.table.get(id).hide();
+         }
     }
 });
 

@@ -22,7 +22,7 @@ from galaxy.datatypes import metadata
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
-from galaxy.jobs.runners import BaseJobRunner
+from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import from_json_string
@@ -57,8 +57,16 @@ class JobDestination( Bunch ):
         self['runner'] = None
         self['legacy'] = False
         self['converted'] = False
+        self['env'] = []
+        self['resubmit'] = []
         # dict is appropriate (rather than a bunch) since keys may not be valid as attributes
         self['params'] = dict()
+
+        # Use the values persisted in an existing job
+        if 'from_job' in kwds and kwds['from_job'].destination_id is not None:
+            self['id'] = kwds['from_job'].destination_id
+            self['params'] = kwds['from_job'].destination_params
+
         super(JobDestination, self).__init__(**kwds)
 
         # Store tags as a list
@@ -187,6 +195,7 @@ class JobConfiguration( object ):
             job_destination = JobDestination(**dict(destination.items()))
             job_destination['params'] = self.__get_params(destination)
             job_destination['env'] = self.__get_envs(destination)
+            job_destination['resubmit'] = self.__get_resubmits(destination)
             self.destinations[id] = (job_destination,)
             if job_destination.tags is not None:
                 for tag in job_destination.tags:
@@ -221,7 +230,7 @@ class JobConfiguration( object ):
         types = dict(registered_user_concurrent_jobs=int,
                      anonymous_user_concurrent_jobs=int,
                      walltime=str,
-                     output_size=int)
+                     output_size=util.size_to_bytes)
 
         self.limits = Bunch(registered_user_concurrent_jobs=None,
                             anonymous_user_concurrent_jobs=None,
@@ -420,7 +429,7 @@ class JobConfiguration( object ):
     def __get_envs(self, parent):
         """Parses any child <env> tags in to a dictionary suitable for persistence.
 
-        :param parent: Parent element in which to find child <param> tags.
+        :param parent: Parent element in which to find child <env> tags.
         :type parent: ``xml.etree.ElementTree.Element``
 
         :returns: dict
@@ -433,6 +442,23 @@ class JobConfiguration( object ):
                 execute=param.get('exec'),
                 value=param.text,
                 raw=util.asbool(param.get('raw', 'false'))
+            ) )
+        return rval
+
+    def __get_resubmits(self, parent):
+        """Parses any child <resubmit> tags in to a dictionary suitable for persistence.
+
+        :param parent: Parent element in which to find child <resubmit> tags.
+        :type parent: ``xml.etree.ElementTree.Element``
+
+        :returns: dict
+        """
+        rval = []
+        for resubmit in parent.findall('resubmit'):
+            rval.append( dict(
+                condition=resubmit.get('condition'),
+                destination=resubmit.get('destination'),
+                handler=resubmit.get('handler')
             ) )
         return rval
 
@@ -659,7 +685,7 @@ class JobWrapper( object ):
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
     """
-    def __init__( self, job, queue ):
+    def __init__( self, job, queue, use_persisted_destination=False ):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
@@ -693,6 +719,8 @@ class JobWrapper( object ):
         self.params = None
         if job.params:
             self.params = from_json_string( job.params )
+        if use_persisted_destination:
+            self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
@@ -908,6 +936,17 @@ class JobWrapper( object ):
                 self.sa_session.add( dataset_assoc.dataset )
             job.state = job.states.PAUSED
             self.sa_session.add( job )
+
+    def mark_as_resubmitted( self ):
+        job = self.get_job()
+        self.sa_session.refresh( job )
+        # TODO: Enable this code once a UI for resubmitted datasets exists
+        #for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
+        #    dataset._state = model.Dataset.states.RESUBMITTED
+        #    self.sa_session.add( dataset )
+        job.state = model.Job.states.RESUBMITTED
+        self.sa_session.add( job )
+        self.sa_session.flush()
 
     def change_state( self, state, info=False ):
         job = self.get_job()
@@ -1142,17 +1181,21 @@ class JobWrapper( object ):
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+        input_ext = 'data'
+        for _, data in inp_data.items():
+            # For loop odd, but sort simulating behavior in galaxy.tools.actions
+            if not data:
+                continue
+            input_ext = data.ext
+
         param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )  # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data, self.working_directory)
-        gitd = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
-        if gitd:
-            self.tool.collect_associated_files({'': gitd}, self.working_directory)
         # Create generated output children and primary datasets and add to param_dict
         collected_datasets = {
             'children': self.tool.collect_child_datasets(out_data, self.working_directory),
-            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory)
+            'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext)
         }
         param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
@@ -1202,7 +1245,6 @@ class JobWrapper( object ):
                 self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
-            galaxy.tools.genome_index.GenomeIndexToolWrapper( self.job_id ).postprocessing( self.sa_session, self.app )
             if delete_files:
                 self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
         except:
@@ -1231,13 +1273,13 @@ class JobWrapper( object ):
     def check_limits(self, runtime=None):
         if self.app.job_config.limits.output_size > 0:
             for outfile, size in self.get_output_sizes():
-                if size > self.app.config.output_size_limit:
-                    log.warning( '(%s) Job output %s is over the output size limit' % ( self.get_id_tag(), os.path.basename( outfile ) ) )
-                    return 'Job output file grew too large (greater than %s), please try different inputs or parameters' % util.nice_size( self.app.job_config.limits.output_size )
+                if size > self.app.job_config.limits.output_size:
+                    log.warning( '(%s) Job output size %s has exceeded the global output size limit', self.get_id_tag(), os.path.basename( outfile ) )
+                    return JobState.runner_states.OUTPUT_SIZE_LIMIT, 'Job output file grew too large (greater than %s), please try different inputs or parameters' % util.nice_size( self.app.job_config.limits.output_size )
         if self.app.job_config.limits.walltime_delta is not None and runtime is not None:
             if runtime > self.app.job_config.limits.walltime_delta:
-                log.warning( '(%s) Job has reached walltime, it will be terminated' % ( self.get_id_tag() ) )
-                return 'Job ran longer than the maximum allowed execution time (%s), please try different inputs or parameters' % self.app.job_config.limits.walltime
+                log.warning( '(%s) Job runtime %s has exceeded the global walltime, it will be terminated', self.get_id_tag(), runtime )
+                return JobState.runner_states.GLOBAL_WALLTIME_REACHED, 'Job ran longer than the maximum allowed execution time (runtime: %s, limit: %s), please try different inputs or parameters' % ( str(runtime).split('.')[0], self.app.job_config.limits.walltime )
         return None
 
     def has_limits( self ):
@@ -1305,10 +1347,8 @@ class JobWrapper( object ):
         dataset_path_rewriter = self.dataset_path_rewriter
 
         job = self.get_job()
-        # Job output datasets are combination of history, library, jeha and gitd datasets.
+        # Job output datasets are combination of history, library, and jeha datasets.
         special = self.sa_session.query( model.JobExportHistoryArchive ).filter_by( job=job ).first()
-        if not special:
-            special = self.sa_session.query( model.GenomeIndexToolData ).filter_by( job=job ).first()
         false_path = None
 
         results = []

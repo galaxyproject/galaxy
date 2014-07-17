@@ -2,7 +2,7 @@
 
 cd `dirname $0`
 
-./scripts/copy_sample_files.sh
+./scripts/common_startup.sh
 
 tool_shed=`./lib/tool_shed/scripts/bootstrap_tool_shed/parse_run_sh_args.sh $@`
 args=$@

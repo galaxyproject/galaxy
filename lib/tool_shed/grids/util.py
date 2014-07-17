@@ -58,7 +58,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         repository_metadata_revisions = repository.metadata_revisions
     for repository_metadata in repository_metadata_revisions:
         rev, label, changeset_revision = \
-            hg_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
+            hg_util.get_rev_label_changeset_revision_from_repository_metadata( trans.app,
                                                                                repository_metadata,
                                                                                repository=repository,
                                                                                include_date=True,

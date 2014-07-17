@@ -2,25 +2,13 @@
 define(['plugin/charts/nvd3/common/wrapper'], function(NVD3) {
 
 // widget
-return Backbone.View.extend({
-    // initialize
+return Backbone.Model.extend({
     initialize: function(app, options) {
-        this.app        = app;
-        this.options    = options;
-    },
-            
-    // render
-    draw : function(process_id, chart, request_dictionary) {
-        var nvd3 = new NVD3(this.app, this.options);
-        nvd3.draw({
-            type                : 'multiBarHorizontalChart',
-            process_id          : process_id,
-            chart               : chart,
-            request_dictionary  : request_dictionary,
-            makeConfig          : function(nvd3_model) {
-                nvd3_model.stacked(true);
-            }
-        });
+        options.type = 'multiBarHorizontalChart';
+        options.makeConfig = function(nvd3_model) {
+            nvd3_model.stacked(true);
+        };
+        new NVD3(app, options);
     }
 });
 

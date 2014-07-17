@@ -1,13 +1,18 @@
 import logging
+
+from galaxy import util
+from galaxy.util import inflector
+from galaxy import web
+
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.base.controllers.admin import Admin
-from galaxy import util
-from galaxy import web
-from galaxy.util import inflector
-import tool_shed.util.shed_util_common as suc
-import tool_shed.util.metadata_util as metadata_util
-from tool_shed.util import repository_maintenance_util
+
 import tool_shed.grids.admin_grids as admin_grids
+from tool_shed.metadata import repository_metadata_manager
+
+from tool_shed.util import metadata_util
+from tool_shed.util import repository_maintenance_util
+from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -315,11 +320,14 @@ class AdminController( BaseUIController, Admin ):
     def manage_role_associations( self, trans, **kwd ):
         """Manage users, groups and repositories associated with a role."""
         role_id = kwd.get( 'id', None )
-        role = repository_maintenance_util.get_role_by_id( trans, role_id )
+        role = repository_maintenance_util.get_role_by_id( trans.app, role_id )
         # We currently only have a single role associated with a repository, the repository admin role.
         repository_role_association = role.repositories[ 0 ]
         repository = repository_role_association.repository
-        associations_dict = repository_maintenance_util.handle_role_associations( trans, role, repository, **kwd )
+        associations_dict = repository_maintenance_util.handle_role_associations( trans.app,
+                                                                                  role,
+                                                                                  repository,
+                                                                                  **kwd )
         in_users = associations_dict.get( 'in_users', [] )
         out_users = associations_dict.get( 'out_users', [] )
         in_groups = associations_dict.get( 'in_groups', [] )
@@ -341,7 +349,8 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
+            rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
+            message, status = rmm.reset_metadata_on_selected_repositories( trans.user, **kwd )
         else:
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )

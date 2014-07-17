@@ -65,6 +65,8 @@ class Configuration( object ):
             self.tool_dependency_dir = None
             self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
+        # Galaxy flavor Docker Image
+        self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.user_activation_on = kwargs.get( 'user_activation_on', None )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )

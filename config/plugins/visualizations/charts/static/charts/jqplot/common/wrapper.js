@@ -1,38 +1,23 @@
 // dependencies
 define(['plugin/charts/jqplot/common/plot-config', 'plugin/charts/tools'], function(configmaker, Tools) {
 
-// widget
-return Backbone.View.extend(
-{
-    // plot series
-    plot_series: {
-        name                : '',
-        data                : [],
-        tooltip: {
-            headerFormat    : '<em>{point.key}</em><br/>'
-        }
-    },
-    
+/**
+ *  This is the common wrapper for jqplot based visualizations.
+ */
+return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
-        this.app        = app;
-        this.options    = options;
-    },
-            
-    // render
-    draw : function(options) {
-        _.extend(this.options, options);
+        // get parameters
+        this.options = options;
+        
+        // define render function
         var self = this;
-        var plot = new Tools.panelHelper({
-            app                 : this.app,
-            process_id          : this.options.process_id,
-            canvas_list         : this.options.canvas_list,
-            chart               : this.options.chart,
-            request_dictionary  : this.options.request_dictionary,
-            render              : function(canvas_id, groups) {
-                                    return self.render(canvas_id, groups)
-                                }
-        });
+        options.render = function(canvas_id, groups) {
+            return self.render(canvas_id, groups)
+        };
+        
+        // call panel helper
+        Tools.panelHelper(app, options);
     },
     
     // draw all data into a single canvas
@@ -54,7 +39,7 @@ return Backbone.View.extend(
             this._makeAxes(groups, plot_config, chart.settings);
             
             // make custom series call
-            if (makeSeries) {
+            if (makeSeriesLabels) {
                 plot_config.series = makeSeriesLabels(groups, plot_config);
             } else {
                 plot_config.series = this._makeSeriesLabels(groups);
@@ -92,7 +77,6 @@ return Backbone.View.extend(
             var plot = drawGraph();
             
             // catch window resize event
-            var self = this;
             $(window).on('resize', function () {
                 drawGraph();
             });
@@ -126,41 +110,21 @@ return Backbone.View.extend(
             categories = Tools.makeCategories(groups);
         }
                 
-        // make axis
+        // make axes
         function makeAxis (id) {
-            var axis        = plot_config.axes[id + 'axis'].tickOptions;
-            var type        = settings.get(id + '_axis_type');
-            var tick        = settings.get(id + '_axis_tick');
-            var is_category = categories.array[id];
-            
-            // hide axis
-            if (type == 'hide') {
-                axis.formatter = function(format, value) { return '' };
-                return;
-            }
-            
-            // format values/labels
-            if (type == 'auto') {
-                if (is_category) {
-                    axis.formatter = function(format, value) {
-                        return categories.array[id][value] || '';
-                    };
-                }
-            } else {
-                var formatter = d3.format(tick + type);
-                if (is_category) {
-                    axis.formatter = function(format, value) {
-                        return formatter(categories.array[id][value]);
-                    };
-                } else {
-                    axis.formatter = function(format, value) {
-                        return formatter(value);
+            Tools.makeTickFormat({
+                categories  : categories.array[id],
+                type        : settings.get(id + '_axis_type'),
+                precision   : settings.get(id + '_axis_precision'),
+                formatter   : function(formatter) {
+                    if (formatter) {
+                        plot_config.axes[id + 'axis'].tickOptions.formatter = function(format, value) {
+                            return formatter(value);
+                        };
                     }
                 }
-            }
+            });
         };
-    
-        // make axes
         makeAxis('x');
         makeAxis('y');
     },

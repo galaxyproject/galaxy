@@ -8,7 +8,7 @@ class DependenciesDescription(object):
     related context required to resolve dependencies via the
     ToolShedPackageDependencyResolver.
 
-    This is meant to enable remote resolution of dependencies, by the LWR or
+    This is meant to enable remote resolution of dependencies, by the Pulsar or
     other potential remote execution mechanisms.
     """
 
@@ -39,7 +39,7 @@ class DependenciesDescription(object):
 
     @staticmethod
     def _toolshed_install_dependency_from_dict(as_dict):
-        # Rather than requiring full models in LWR, just use simple objects
+        # Rather than requiring full models in Pulsar, just use simple objects
         # containing only properties and associations used to resolve
         # dependencies for tool execution.
         repository_object = bunch.Bunch(

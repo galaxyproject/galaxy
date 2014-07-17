@@ -29,4 +29,13 @@ def parse_amqp_connect_ssl_params(params):
 
 
 def parse_amqp_publish_kwds(params):
-    return filter_destination_params(params, "amqp_publish_")
+    all_publish_params = filter_destination_params(params, "amqp_publish_")
+    retry_policy_params = {}
+    for key in all_publish_params.keys():
+        if key.startswith("retry_"):
+            value = all_publish_params[key]
+            retry_policy_params[key[len("retry_"):]] = value
+            del all_publish_params[key]
+    if retry_policy_params:
+        all_publish_params["retry_policy"] = retry_policy_params
+    return all_publish_params

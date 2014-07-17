@@ -1,14 +1,14 @@
 // dependencies
 define(['utils/utils', 'plugin/library/ui', 'mvc/ui/ui-portlet',
-        'plugin/models/group', 'plugin/views/viewport', 'plugin/library/screenshot'],
-        function(Utils, Ui, Portlet, Group, ViewportView, Screenshot) {
+        'plugin/views/viewport', 'plugin/library/screenshot'],
+        function(Utils, Ui, Portlet, ViewportView, Screenshot) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  This class renders the chart viewer which encapsulates the chart viewport.
+ */
+return Backbone.View.extend({
     // initialize
-    initialize: function(app, options)
-    {
+    initialize: function(app, options){
         // link app
         this.app = app;
         
@@ -24,6 +24,77 @@ return Backbone.View.extend(
         // message element
         this.message = new Ui.Message();
         
+        // button menu
+        var picture_button_menu = new Ui.ButtonMenu({
+            icon    : 'fa-camera',
+            title   : 'Screenshot',
+            tooltip : 'Download as PNG, SVG or PDF file'
+        });
+        
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-png',
+            title       : 'Save as PNG',
+            icon        : 'fa-file',
+            onclick     : function() {
+                self._wait (self.chart, function() {
+                    Screenshot.createPNG({
+                        $el     : self.viewport_view.$el,
+                        title   : self.chart.get('title'),
+                        error   : function(err) {
+                            self.message.update({ message: err, status: 'danger' });
+                        }
+                    });
+                });
+            }
+        });
+        
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-svg',
+            title       : 'Save as SVG',
+            icon        : 'fa-file-text-o',
+            onclick     : function() {
+                self._wait (self.chart, function() {
+                    Screenshot.createSVG({
+                        $el     : self.viewport_view.$el,
+                        title   : self.chart.get('title'),
+                        error   : function(err) {
+                            self.message.update({ message: err, status: 'danger' });
+                        }
+                    });
+                });
+            }
+        });
+        
+        // add png option
+        picture_button_menu.addMenu({
+            id          : 'button-png',
+            title       : 'Save as PDF',
+            icon        : 'fa-file-o',
+            onclick     : function() {
+                self.app.modal.show({
+                    title   : 'Send chart data for PDF creation',
+                    body    : 'Galaxy does not provide integrated PDF export scripts. You may click \'Continue\' to create the PDF by using a 3rd party service (https://export.highcharts.com).',
+                    buttons : {
+                        'Cancel' : function() {self.app.modal.hide()},
+                        'Continue' : function() {
+                            self.app.modal.hide();
+                            self._wait (self.chart, function() {
+                                Screenshot.createPDF({
+                                    $el     : self.viewport_view.$el,
+                                    title   : self.chart.get('title'),
+                                    error   : function(err) {
+                                        self.message.update({ message: err, status: 'danger' });
+                                    }
+                                });
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
         // create portlet
         this.portlet = new Portlet.View({
             icon : 'fa-bar-chart-o',
@@ -35,30 +106,12 @@ return Backbone.View.extend(
                     tooltip : 'Customize this chart',
                     title   : 'Editor',
                     onclick : function() {
-                        // attempt to load chart editor
                         self._wait (self.chart, function() {
                             self.app.go('editor');
                         });
                     }
                 }),
-                picture_button: new Ui.ButtonIcon({
-                    icon    : 'fa-camera',
-                    tooltip : 'SVGs are converted to PDF via ' + self.app.config.get('screenshot_url') + ' and CANVAS-based charts to PNG-files.',
-                    title   : 'Screenshot',
-                    onclick : function() {
-                        // attempt to load chart editor
-                        self._wait (self.chart, function() {
-                            Screenshot.create({
-                                $el     : self.viewport_view.$el,
-                                url     : self.app.config.get('screenshot_url'),
-                                title   : self.chart.get('title'),
-                                error   : function(err) {
-                                    self.message.update({ message: 'Please reduce your chart to a single panel and try again.', status: 'danger' });
-                                }
-                            });
-                        });
-                    }
-                })
+                picture_button_menu: picture_button_menu
             }
         });
         
@@ -99,7 +152,7 @@ return Backbone.View.extend(
     // wait for chart to be ready
     _wait: function(chart, callback) {
         // get chart
-        if (chart.deferred.ready()) {
+        if (this.app.deferred.ready()) {
             callback();
         } else {
             this.message.update({message: 'Your chart is currently being processed. Please wait and try again.'});

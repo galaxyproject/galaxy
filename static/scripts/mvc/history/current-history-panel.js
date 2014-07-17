@@ -53,7 +53,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     noneFoundMsg        : _l( "No matching datasets found" ),
 
     // ......................................................................... SET UP
-    /** Set up the view, set up storage, bind listeners to HDACollection events
+    /** Set up the view, set up storage, bind listeners to HistoryContents events
      *  @param {Object} attributes
      */
     initialize : function( attributes ){

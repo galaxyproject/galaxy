@@ -1,7 +1,8 @@
 define([
     "mvc/dataset/hda-model",
     "mvc/collection/dataset-collection-base",
-], function( hdaModel, datasetCollectionBase ){
+    "utils/localization"
+], function( hdaModel, datasetCollectionBase, _l ){
 //==============================================================================
 /** @class Editing view for HistoryDatasetCollectionAssociation.
  *  @name DatasetCollectionEditView
@@ -17,7 +18,7 @@ var DatasetCollectionEditView = datasetCollectionBase.DatasetCollectionBaseView.
 
     // ......................................................................... edit attr, delete
     /** Render icon-button group for the common, most easily accessed actions.
-     *      Overrides _render_titleButtons to include editting related buttons.
+     *      Overrides _render_titleButtons to include editing related buttons.
      *  @see DatasetCollectionBaseView#_render_titleButtons
      *  @returns {jQuery} rendered DOM
      */
@@ -57,13 +58,18 @@ var DatasetCollectionEditView = datasetCollectionBase.DatasetCollectionBaseView.
         }
         deleteBtnData.faIcon = 'fa-times';
         return faIconButton( deleteBtnData );
-    }
+    },
 
+    // ......................................................................... misc
+    /** string rep */
+    toString : function(){
+        var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
+        return 'HDCAEditView(' + modelString + ')';
+    }
 });
 
 //==============================================================================
-return {
-    DatasetCollectionEditView  : DatasetCollectionEditView
-};
-
+    return {
+        DatasetCollectionEditView  : DatasetCollectionEditView
+    };
 });

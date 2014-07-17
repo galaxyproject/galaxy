@@ -18,9 +18,9 @@ var HistoryPrefs = baseMVC.SessionStorageModel.extend({
         //TODO: add scroll position?
     },
     /** add an hda id to the hash of expanded hdas */
-    addExpandedHda : function( id ){
+    addExpandedHda : function( model ){
         var key = 'expandedHdas';
-        this.save( key, _.extend( this.get( key ), _.object([ id ], [ true ]) ) );
+        this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
     },
     /** remove an hda id from the hash of expanded hdas */
     removeExpandedHda : function( id ){
@@ -97,7 +97,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     noneFoundMsg        : _l( 'No matching datasets found' ),
 
     // ......................................................................... SET UP
-    /** Set up the view, set up storage, bind listeners to HDACollection events
+    /** Set up the view, set up storage, bind listeners to HistoryContents events
      *  @param {Object} attributes optional settings for the panel
      */
     initialize : function( attributes ){
@@ -264,7 +264,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         var hdaDetailIds = function( historyData ){
                 // will be called to get hda ids that need details from the api
 //TODO: non-visible HDAs are getting details loaded... either stop loading them at all or filter ids thru isVisible
-                return _.keys( HistoryPrefs.get( historyData.id ).get( 'expandedHdas' ) );
+                return _.values( HistoryPrefs.get( historyData.id ).get( 'expandedHdas' ) );
             };
         return this.loadHistory( historyId, attributes, historyFn, hdaFn, hdaDetailIds );
     },
@@ -591,7 +591,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         if( visibleHdas.length ){
             visibleHdas.each( function( hda ){
                 // render it (NOTE: reverse order, newest on top (prepend))
-                var hdaId = hda.get( 'id' ),
+                var hdaId = hda.id,
                     hdaView = panel._createContentView( hda );
                 newHdaViews[ hdaId ] = hdaView;
                 // persist selection
@@ -610,7 +610,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
      *  @param {HistoryDatasetAssociation} hda
      */
     _createContentView : function( hda ){
-        var hdaId = hda.get( 'id' ),
+        var hdaId = hda.id,
             historyContentType = hda.get( "history_content_type" ),
             hdaView = null;
         if( historyContentType === "dataset" ){
@@ -646,8 +646,8 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
             panel.errorHandler( model, xhr, options, msg );
         });
         // maintain a list of hdas whose bodies are expanded
-        hdaView.on( 'body-expanded', function( id ){
-            panel.storage.addExpandedHda( id );
+        hdaView.on( 'body-expanded', function( model ){
+            panel.storage.addExpandedHda( model );
         });
         hdaView.on( 'body-collapsed', function( id ){
             panel.storage.removeExpandedHda( id );

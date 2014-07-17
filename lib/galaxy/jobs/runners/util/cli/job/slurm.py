@@ -1,11 +1,11 @@
-# A simple CLI runner for slurm that can be used when running Galaxy from a 
+# A simple CLI runner for slurm that can be used when running Galaxy from a
 # non-submit host and using a Slurm cluster.
 
 try:
     from galaxy.model import Job
     job_states = Job.states
 except ImportError:
-    # Not in Galaxy, map Galaxy job states to LWR ones.
+    # Not in Galaxy, map Galaxy job states to Pulsar ones.
     from galaxy.util import enum
     job_states = enum(RUNNING='running', OK='complete', QUEUED='queued')
 
@@ -22,6 +22,7 @@ argmap = {
     'partition': '-p'
 }
 
+
 class Slurm(BaseJobExec):
 
     def __init__(self, **params):
@@ -31,8 +32,8 @@ class Slurm(BaseJobExec):
 
     def job_script_kwargs(self, ofile, efile, job_name):
         scriptargs = {'-o': ofile,
-                   '-e': efile,
-                   '-J': job_name}
+                      '-e': efile,
+                      '-J': job_name}
 
         # Map arguments using argmap.
         for k, v in self.params.items():
@@ -66,7 +67,7 @@ class Slurm(BaseJobExec):
     def parse_status(self, status, job_ids):
         # Get status for each job, skipping header.
         rval = {}
-        for line in status.splitlines()[ 1: ]:
+        for line in status.splitlines()[1:]:
             id, state = line.split()
             if id in job_ids:
                 # map job states to Galaxy job states.
@@ -75,7 +76,7 @@ class Slurm(BaseJobExec):
 
     def parse_single_status(self, status, job_id):
         status = status.splitlines()
-        if len( status ) > 1:
+        if len(status) > 1:
             # Job still on cluster and has state.
             id, state = status[1].split()
             return self._get_job_state(state)

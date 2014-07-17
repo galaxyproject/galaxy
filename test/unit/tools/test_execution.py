@@ -38,6 +38,7 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         self.setup_app()
         self.history = galaxy.model.History()
         self.trans = MockTrans( self.app, self.history )
+        self.app.dataset_collections_service = MockCollectionService()
         self.tool_action = MockAction( self.trans )
 
     def tearDown(self):
@@ -180,6 +181,39 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         self.__assert_state_serializable( state )
         self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
 
+    def test_simple_collection_multirun_state_update( self ):
+        hdca = self.__setup_collection_multirun_job()
+        encoded_id = self.app.security.encode_id(hdca.id)
+        template, template_vars = self.__handle_with_incoming( **{
+            "param1|__collection_multirun__": encoded_id,
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        self.__assert_state_serializable( state )
+        self.assertEquals( state.inputs[ "param1|__collection_multirun__" ], encoded_id )
+
+    def test_repeat_multirun_state_updates( self ):
+        self._init_tool( REPEAT_TOOL_CONTENTS )
+
+        # Fresh state contains no repeat elements
+        self.__handle_with_incoming()
+        # Hitting add button adds repeat element
+        template, template_vars = self.__handle_with_incoming(**{
+            "param1|__multirun__": [ 1, 2 ],
+            "repeat1_add": "dummy",
+        })
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
+        assert len( state.inputs[ "repeat1" ] ) == 1
+
+        # Hitting add button again adds another repeat element
+        template, template_vars = self.__handle_with_incoming( state, **{
+            "repeat1_0|param2|__multirun__": [ 1, 2 ],
+            "repeat1_add": "dummy",
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        self.assertEquals( state.inputs[ "param1|__multirun__" ], [ 1, 2 ] )
+        self.assertEquals( state.inputs[ "repeat1" ][0][ "param2|__multirun__" ], [ 1, 2 ] )
+
     def test_simple_multirun_execution( self ):
         hda1, hda2 = self.__setup_multirun_job()
         template, template_vars = self.__handle_with_incoming( **{
@@ -276,6 +310,11 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         hda1, hda2 = self.__add_dataset( 1 ), self.__add_dataset( 2 )
         return hda1, hda2
 
+    def __setup_collection_multirun_job( self ):
+        self._init_tool( tools_support.SIMPLE_CAT_TOOL_CONTENTS )
+        hdca = self.__add_collection_dataset( 1 )
+        return hdca
+
     def __handle_with_incoming( self, previous_state=None, **kwds ):
         """ Execute tool.handle_input with incoming specified by kwds
         (optionally extending a previous state).
@@ -309,6 +348,17 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         self.trans.sa_session.model_objects[ galaxy.model.HistoryDatasetAssociation ][ id ] = hda
         self.history.datasets.append( hda )
         return hda
+
+    def __add_collection_dataset( self, id, *hdas ):
+        hdca = galaxy.model.HistoryDatasetCollectionAssociation()
+        hdca.id = id
+        collection = galaxy.model.DatasetCollection()
+        hdca.collection = collection
+        collection.elements = [ galaxy.model.DatasetCollectionElement(element=self.__add_dataset( 1 )) ]
+
+        self.trans.sa_session.model_objects[ galaxy.model.HistoryDatasetCollectionAssociation ][ id ] = hdca
+        self.history.dataset_collections.append( hdca )
+        return hdca
 
     def __assert_rerenders_tool_without_errors( self, template, template_vars ):
         assert template == "tool_form.mako"
@@ -392,3 +442,12 @@ class MockTrans( object ):
 
     def get_history( self ):
         return self.history
+
+
+class MockCollectionService( object ):
+
+    def __init__( self ):
+        self.collection_info = object()
+
+    def match_collections( self, collections_to_match ):
+        return self.collection_info

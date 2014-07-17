@@ -19,6 +19,9 @@ DEFAULT_EXCHANGE_TYPE = "direct"
 DEFAULT_TIMEOUT = 0.2
 DEFAULT_HEARTBEAT = 580
 
+DEFAULT_RECONNECT_CONSUMER_WAIT = 1
+DEFAULT_HEARTBEAT_WAIT = 1
+
 
 class LwrExchange(object):
     """ Utility for publishing and consuming structured LWR queues using kombu.
@@ -50,6 +53,12 @@ class LwrExchange(object):
         self.__connect_ssl = connect_ssl
         self.__exchange = kombu.Exchange(DEFAULT_EXCHANGE_NAME, DEFAULT_EXCHANGE_TYPE)
         self.__timeout = timeout
+        # Be sure to log message publishing failures.
+        if publish_kwds.get("retry", False):
+            if "retry_policy" not in publish_kwds:
+                publish_kwds["retry_policy"] = {}
+            if "errback" not in publish_kwds["retry_policy"]:
+                publish_kwds["retry_policy"]["errback"] = self.__publish_errback
         self.__publish_kwds = publish_kwds
 
     @property
@@ -73,13 +82,15 @@ class LwrExchange(object):
             except (IOError, socket.error), exc:
                 # In testing, errno is None
                 log.warning('Got %s, will retry: %s', exc.__class__.__name__, exc)
-                heartbeat_thread.join()
+                if heartbeat_thread:
+                    heartbeat_thread.join()
+                sleep(DEFAULT_RECONNECT_CONSUMER_WAIT)
 
     def heartbeat(self, connection):
         log.debug('AMQP heartbeat thread alive')
         while connection.connected:
             connection.heartbeat_check()
-            sleep(1)
+            sleep(DEFAULT_HEARTBEAT_WAIT)
         log.debug('AMQP heartbeat thread exiting')
 
     def publish(self, name, payload):
@@ -94,6 +105,10 @@ class LwrExchange(object):
                     routing_key=key,
                     **self.__publish_kwds
                 )
+
+    def __publish_errback(self, exc, interval):
+        log.error("Connection error while publishing: %r", exc, exc_info=1)
+        log.info("Retrying in %s seconds", interval)
 
     def connection(self, connection_string, **kwargs):
         if "ssl" not in kwargs:

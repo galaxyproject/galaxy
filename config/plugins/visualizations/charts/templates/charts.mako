@@ -21,6 +21,10 @@
         ## shared css
         ${h.css( 'base' )}
 
+        ## canvg
+        ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
+        ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}
+
         ## nvd3
         ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
 
@@ -61,12 +65,13 @@
             require.config({
                 baseUrl: config.root + "static/scripts/",
                 paths: {
-                    "plugin"        : "${app_root}"
+                    "plugin"        : "${app_root}",
+                    "d3"            : "libs/d3"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
                     "libs/backbone/backbone": { exports: "Backbone" },
-                    "d3": { exports: "d3"},
+                    "d3": { exports: "d3"}
 
                 }
             });

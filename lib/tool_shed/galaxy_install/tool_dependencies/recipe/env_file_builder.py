@@ -17,7 +17,7 @@ class EnvFileBuilder( object ):
         return_code = self.file_append( env_entry, env_file, make_executable=make_executable )
         self.return_code = self.return_code or return_code
         return self.return_code
-    
+
     @staticmethod
     def create_or_update_env_shell_file( install_dir, env_var_dict ):
         env_var_action = env_var_dict[ 'action' ]

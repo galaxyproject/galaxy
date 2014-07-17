@@ -90,6 +90,9 @@ sendmail_path = /usr/sbin/sendmail
 # Profiling middleware (cProfile based)
 ## use_profile = True
 
+# Enable creation of Galaxy flavor Docker Image
+#enable_galaxy_flavor_docker_image = False
+
 # Use the new iframe / javascript based layout
 use_new_layout = true
 

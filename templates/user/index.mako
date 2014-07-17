@@ -10,11 +10,13 @@
     <p>You are currently logged in as ${trans.user.email}.</p>
     <ul>
         %if t.webapp.name == 'galaxy':
-            <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller )}">${_('Manage your information')}</a></li>
+            %if not trans.app.config.use_remote_user:
+                <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller )}">${_('Manage your information')}</a></li>
+            %endif
             <li><a href="${h.url_for( controller='user', action='set_default_permissions', cntrller=cntrller )}">${_('Change default permissions')}</a> for new histories</li>
             <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller )}">${_('Manage your API keys')}</a></li>
             <li><a href="${h.url_for( controller='user', action='toolbox_filters', cntrller=cntrller )}">${_('Manage your ToolBox filters')}</a></li>
-            %if trans.app.config.enable_openid:
+            %if trans.app.config.enable_openid and not trans.app.config.use_remote_user:
                 <li><a href="${h.url_for( controller='user', action='openid_manage', cntrller=cntrller )}">${_('Manage OpenIDs')}</a> linked to your account</li>
             %endif
             %if trans.app.config.use_remote_user:

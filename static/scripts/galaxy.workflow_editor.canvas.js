@@ -306,7 +306,7 @@ var BaseInputTerminal = Terminal.extend( {
                     inputFilled = false;
                 } else {
                     var firstOutput = this.connectors[ 0 ].handle1;
-                    if( firstOutput === null ){
+                    if( ! firstOutput ){
                         inputFilled = false;
                     } else {
                         if( firstOutput.isDataCollectionInput || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {

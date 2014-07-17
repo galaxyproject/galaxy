@@ -135,7 +135,7 @@ class PathHelper(object):
             message_template = "Cannot compute new path for file %s, does not start with %s."
             message = message_template % (posix_path, old_base)
             raise Exception(message)
-        stripped_path = posix_path[ len(old_base): ]
+        stripped_path = posix_path[len(old_base):]
         while stripped_path.startswith("/"):
             stripped_path = stripped_path[1:]
         path_parts = stripped_path.split(self.separator)

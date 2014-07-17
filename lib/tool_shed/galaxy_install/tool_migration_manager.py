@@ -8,15 +8,18 @@ import shutil
 import tempfile
 import threading
 import logging
+
 from galaxy import util
 from galaxy.tools import ToolSection
-import tool_shed.util.shed_util_common as suc
+
+from tool_shed.galaxy_install import install_manager
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
+
 from tool_shed.util import basic_util
-from tool_shed.util import common_install_util
 from tool_shed.util import common_util
 from tool_shed.util import datatype_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
@@ -111,11 +114,11 @@ class ToolMigrationManager( object ):
                                 created_tool_shed_repositories = self.create_or_update_tool_shed_repository_records( name,
                                                                                                                      changeset_revision,
                                                                                                                      repository_dependencies_dict )
-                                # Order the repositories for proper installation.  This process is similar to the process used when installing tool
-                                # shed repositories (i.e., the order_components_for_installation() method in ~/lib/tool_shed/galaxy_install/
-                                # repository_util), but does not handle managing tool panel sections and other components since repository dependency
-                                # definitions contained in tool shed repositories with migrated tools must never define a relationship to a repository
-                                # dependency that contains a tool.
+                                # Order the repositories for proper installation.  This process is similar to the
+                                # process used when installing tool shed repositories, but does not handle managing
+                                # tool panel sections and other components since repository dependency definitions
+                                # contained in tool shed repositories with migrated tools must never define a relationship
+                                # to a repository dependency that contains a tool.
                                 ordered_tool_shed_repositories = self.order_repositories_for_installation( created_tool_shed_repositories,
                                                                                                            repository_dependencies_dict )
 
@@ -381,17 +384,17 @@ class ToolMigrationManager( object ):
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()
+        irmm = InstalledRepositoryMetadataManager( self.app )
         metadata_dict, invalid_file_tups = \
-            metadata_util.generate_metadata_for_changeset_revision( app=self.app,
-                                                                    repository=tool_shed_repository,
-                                                                    changeset_revision=tool_shed_repository.changeset_revision,
-                                                                    repository_clone_url=repository_clone_url,
-                                                                    shed_config_dict = self.shed_config_dict,
-                                                                    relative_install_dir=relative_install_dir,
-                                                                    repository_files_dir=None,
-                                                                    resetting_all_metadata_on_repository=False,
-                                                                    updating_installed_repository=False,
-                                                                    persist=True )
+            irmm.generate_metadata_for_changeset_revision( repository=tool_shed_repository,
+                                                           changeset_revision=tool_shed_repository.changeset_revision,
+                                                           repository_clone_url=repository_clone_url,
+                                                           shed_config_dict = self.shed_config_dict,
+                                                           relative_install_dir=relative_install_dir,
+                                                           repository_files_dir=None,
+                                                           resetting_all_metadata_on_repository=False,
+                                                           updating_installed_repository=False,
+                                                           persist=True )
         tool_shed_repository.metadata = metadata_dict
         self.app.install_model.context.add( tool_shed_repository )
         self.app.install_model.context.flush()
@@ -446,12 +449,11 @@ class ToolMigrationManager( object ):
                                                     self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from disk.
             tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
-            installed_tool_dependencies = \
-                common_install_util.install_specified_tool_dependencies( app=self.app,
-                                                                         tool_shed_repository=tool_shed_repository,
-                                                                         tool_dependencies_config=tool_dependencies_config,
-                                                                         tool_dependencies=tool_dependencies,
-                                                                         from_tool_migration_manager=True )
+            itdm = install_manager.InstallToolDependencyManager( self.app )
+            installed_tool_dependencies = itdm.install_specified_tool_dependencies( tool_shed_repository=tool_shed_repository,
+                                                                                    tool_dependencies_config=tool_dependencies_config,
+                                                                                    tool_dependencies=tool_dependencies,
+                                                                                    from_tool_migration_manager=True )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
@@ -586,11 +588,10 @@ class ToolMigrationManager( object ):
         in the list of repositories about to be installed, then they are not considered.  Repository dependency
         definitions that contain circular dependencies should not result in an infinite loop, but obviously prior
         installation will not be handled for one or more of the repositories that require prior installation.  This
-        process is similar to the process used when installing tool shed repositories (i.e., the
-        order_components_for_installation() method in ~/lib/tool_shed/galaxy_install/repository_util), but does not
-        handle managing tool panel sections and other components since repository dependency definitions contained
-        in tool shed repositories with migrated tools must never define a relationship to a repository dependency
-        that contains a tool.
+        process is similar to the process used when installing tool shed repositories, but does not handle managing
+        tool panel sections and other components since repository dependency definitions contained in tool shed
+        repositories with migrated tools must never define a relationship to a repository dependency that contains
+        a tool.
         """
         ordered_tool_shed_repositories = []
         ordered_tsr_ids = []

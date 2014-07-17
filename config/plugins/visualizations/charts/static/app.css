@@ -1,3 +1,19 @@
+.charts-tooltip {   
+  position: absolute;           
+  text-align: center;           
+  padding: 3px 5px 3px 5px;            
+  font: 12px sans-serif;        
+  background: white;   
+  border: 1px solid gray;      
+  border-radius: 4px;           
+  pointer-events: none; 
+}
+
+.charts-tooltip-first {
+  font-weight: bold;
+  text-align: left;
+  padding-right: 5px;
+}  
 
 .charts-grid .item {
 	padding: 5px;
@@ -18,6 +34,7 @@
 .charts-grid .image {
 	padding: 10px;
 	width: 100px;
+	height: 86px;
 }
 
 .charts-grid .title {
@@ -48,7 +65,7 @@
 	margin-left: 5px;
 	top: -1px;
 	font-size: 1.0em;
-	display: inline-block;
+	display: inline;
 }
 
 .charts-viewport .icon {

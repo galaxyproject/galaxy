@@ -68,7 +68,9 @@ class ToolShedRepository( object ):
 
     @property
     def can_deactivate( self ):
-        return self.status not in [ self.installation_status.DEACTIVATED, self.installation_status.UNINSTALLED ]
+        return self.status not in [ self.installation_status.DEACTIVATED,
+                                    self.installation_status.ERROR,
+                                    self.installation_status.UNINSTALLED ]
 
     @property
     def can_reinstall_or_activate( self ):

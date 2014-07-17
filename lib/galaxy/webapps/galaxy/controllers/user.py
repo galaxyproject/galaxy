@@ -1092,7 +1092,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     def reset_password( self, trans, email=None, **kwd ):
         if trans.app.config.smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact your local Galaxy administrator." )
-        message = util.restore_text( kwd.get( 'message', '' ) )
+        message = util.sanitize_text(util.restore_text( kwd.get( 'message', '' ) ))
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()

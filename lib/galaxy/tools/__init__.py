@@ -11,6 +11,7 @@ import pipes
 import re
 import shutil
 import sys
+import string
 import tempfile
 import threading
 import traceback
@@ -214,8 +215,7 @@ class ToolBox( object, Dictifiable ):
             config_elems = []
         else:
             parsing_shed_tool_conf = False
-            # Default to backward compatible config setting.
-            tool_path = self.tool_root_dir
+        tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self.integrated_tool_panel_config_has_contents
         for _, elem in enumerate( root ):
@@ -242,6 +242,17 @@ class ToolBox( object, Dictifiable ):
             if shed_config_dict[ 'config_filename' ] == filename:
                 return shed_config_dict
         return default
+
+    def __resolve_tool_path(self, tool_path, config_filename):
+        if not tool_path:
+            # Default to backward compatible config setting.
+            tool_path = self.tool_root_dir
+        else:
+            # Allow use of __tool_conf_dir__ in toolbox config files.
+            tool_conf_dir = os.path.dirname(config_filename)
+            tool_path_vars = {"tool_conf_dir": tool_conf_dir}
+            tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
+        return tool_path
 
     def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
         # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
@@ -1264,7 +1275,7 @@ class Tool( object, Dictifiable ):
                 executable = self.version_string_cmd.split()[0]
                 abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
                 command_line = self.version_string_cmd.replace(executable, abs_executable, 1)
-                self.version_string_cmd = self.interpreter + " " + command_line
+                self.version_string_cmd = version_cmd_interpreter + " " + command_line
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
@@ -2392,7 +2403,18 @@ class Tool( object, Dictifiable ):
                     # Get value of test param and determine current case
                     value, test_param_error = \
                         check_param( trans, input.test_param, test_incoming, context, source=source )
-                    current_case = input.get_current_case( value, trans )
+                    try:
+                        current_case = input.get_current_case( value, trans )
+                    except ValueError, e:
+                        #load default initial value
+                        if not test_param_error:
+                            test_param_error = str( e )
+                        if trans is not None:
+                            history = trans.get_history()
+                        else:
+                            history = None
+                        value = input.test_param.get_initial_value( trans, context, history=history )
+                        current_case = input.get_current_case( value, trans )
                 if current_case != old_current_case:
                     # Current case has changed, throw away old state
                     group_state = state[input.name] = {}
@@ -2485,13 +2507,16 @@ class Tool( object, Dictifiable ):
                     incoming_value = get_incoming_value( incoming, key, None )
                     value, error = check_param( trans, input, incoming_value, context, source=source )
                     # If a callback was provided, allow it to process the value
+                    input_name = input.name
                     if item_callback:
-                        old_value = state.get( input.name, None )
+                        old_value = state.get( input_name, None )
                         value, error = item_callback( trans, key, input, value, error, old_value, context )
                     if error:
-                        errors[ input.name ] = error
-                    state[ input.name ] = value
-                    state.update( self.__meta_properties_for_state( key, incoming, incoming_value, value )  )
+                        errors[ input_name ] = error
+
+                    state[ input_name ] = value
+                    meta_properties = self.__meta_properties_for_state( key, incoming, incoming_value, value, input_name )
+                    state.update( meta_properties )
         return errors
 
     def __remove_meta_properties( self, incoming ):
@@ -2505,12 +2530,17 @@ class Tool( object, Dictifiable ):
                 del result[ key ]
         return result
 
-    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val ):
+    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val, input_name ):
         meta_properties = {}
-        multirun_key = "%s|__multirun__" % key
-        if multirun_key in incoming:
-            multi_value = incoming[ multirun_key ]
-            meta_properties[ multirun_key ] = multi_value
+        meta_property_suffixes = [
+            "__multirun__",
+            "__collection_multirun__",
+        ]
+        for meta_property_suffix in meta_property_suffixes:
+            multirun_key = "%s|%s" % ( key, meta_property_suffix )
+            if multirun_key in incoming:
+                multi_value = incoming[ multirun_key ]
+                meta_properties[ "%s|%s" % ( input_name, meta_property_suffix ) ] = multi_value
         return meta_properties
 
     @property
@@ -2904,12 +2934,12 @@ class Tool( object, Dictifiable ):
                     self.sa_session.flush()
         return children
 
-    def collect_primary_datasets( self, output, job_working_directory ):
+    def collect_primary_datasets( self, output, job_working_directory, input_ext ):
         """
         Find any additional datasets generated by a tool and attach (for
         cases where number of outputs is not known in advance).
         """
-        return output_collect.collect_primary_datatasets( self, output, job_working_directory )
+        return output_collect.collect_primary_datasets( self, output, job_working_directory, input_ext )
 
     def to_dict( self, trans, link_details=False, io_details=False ):
         """ Returns dict of tool. """
@@ -3183,7 +3213,9 @@ class DataManagerTool( OutputParameterJSONTool ):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool, DataManagerTool ]:
+for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
+                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
+                    DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 

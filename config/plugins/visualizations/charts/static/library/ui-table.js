@@ -1,7 +1,10 @@
+// dependencies
 define(['utils/utils'], function(Utils) {
 
-var View = Backbone.View.extend(
-{
+/**
+ *  This class creates a ui table element.
+ */
+var View = Backbone.View.extend({
     // current row
     row: null,
     
@@ -99,7 +102,7 @@ var View = Backbone.View.extend(
 
     // delete all
     delAll: function() {
-        this.$tbody.html('');
+        this.$tbody.empty();
         this.row_count = 0;
         this._refresh();
     },

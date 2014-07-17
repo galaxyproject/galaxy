@@ -65,7 +65,7 @@
     %>
         // Post-job action vars.
         var pja_list = "${ActionBox.get_add_list()}",
-            get_pja_form = function(pja) {
+            get_pja_form = function(pja, node) {
                 var p_str = '';
                 // FIXME: this writes JS code; this logic should be codified in galaxy.workflows.js
                 ${ActionBox.get_forms(trans)}

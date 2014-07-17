@@ -6,21 +6,19 @@ from __future__ import absolute_import
 
 import logging
 from sqlalchemy import desc, or_
-from galaxy import exceptions
-from galaxy import util
-from galaxy import web
+from galaxy import exceptions, util, web
+from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.web.base.controller import UsesHistoryMixin
+from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
-from galaxy.workflow.extract import extract_workflow
-
 
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations):
 
     @web.expose_api
     def index(self, trans, **kwd):
@@ -36,9 +34,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
-            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == True ) )
+            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == True ) ) #noqa -- sqlalchemy comparison
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
-                filter1, trans.app.model.StoredWorkflow.table.c.deleted == False ).order_by(
+                filter1, trans.app.model.StoredWorkflow.table.c.deleted == False ).order_by( #noqa -- sqlalchemy comparison
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
             item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf.id)
@@ -47,7 +45,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
-                trans.app.model.StoredWorkflow.deleted == False ).order_by(
+                trans.app.model.StoredWorkflow.deleted == False ).order_by( #noqa -- sqlalchemy comparison
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
             item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
@@ -71,7 +69,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             return "Malformed workflow id ( %s ) specified, unable to decode." % str(workflow_id)
         try:
             stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).get(decoded_workflow_id)
-            if stored_workflow.importable == False and stored_workflow.user != trans.user and not trans.user_is_admin():
+            if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin():
                 if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                     trans.response.status = 400
                     return("Workflow is neither importable, nor owned by or shared with current user")
@@ -94,12 +92,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
                 # Eventually, allow regular tool parameters to be inserted and modified at runtime.
                 # p = step.get_required_parameters()
         item['inputs'] = inputs
+        item['annotation'] = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
         steps = {}
         for step in latest_workflow.steps:
             steps[step.id] = {'id': step.id,
                               'type': step.type,
                               'tool_id': step.tool_id,
                               'tool_version': step.tool_version,
+                              'annotation': self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step ),
                               'tool_inputs': step.tool_inputs,
                               'input_steps': {}}
             for conn in step.input_connections:
@@ -199,8 +199,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         history_param = payload.get('history', '')
 
         # Get workflow + accessibility check.
-        stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(
-                        trans.security.decode_id(workflow_id))
+        stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 trans.response.status = 400
@@ -223,9 +222,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         # Get target history.
         if history_param.startswith('hist_id='):
-            #Passing an existing history to use.
-            history = trans.sa_session.query(self.app.model.History).get(
-                    trans.security.decode_id(history_param[8:]))
+            # Passing an existing history to use.
+            history = trans.sa_session.query(self.app.model.History).get(trans.security.decode_id(history_param[8:]))
             if history.user != trans.user and not trans.user_is_admin():
                 trans.response.status = 400
                 return "Invalid History specified."
@@ -311,7 +309,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         ret_dict = self._workflow_to_dict( trans, stored_workflow )
         if not ret_dict:
-            #This workflow has a tool that's missing from the distribution
+            # This workflow has a tool that's missing from the distribution
             trans.response.status = 400
             return "Workflow cannot be exported due to missing tools."
         return ret_dict
@@ -338,12 +336,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             trans.response.status = 403
             return("Workflow is not owned by current user")
 
-        #Mark a workflow as deleted
+        # Mark a workflow as deleted
         stored_workflow.deleted = True
         trans.sa_session.flush()
 
         # TODO: Unsure of response message to let api know that a workflow was successfully deleted
-        #return 'OK'
         return ( "Workflow '%s' successfully deleted" % stored_workflow.name )
 
     @web.expose_api
@@ -394,7 +391,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             stored_workflow = self.get_stored_workflow( trans, workflow_id, check_ownership=False )
         except:
             raise exceptions.ObjectNotFound( "Malformed workflow id ( %s ) specified." % workflow_id )
-        if stored_workflow.importable == False:
+        if stored_workflow.importable is False:
             raise exceptions.MessageException( 'The owner of this workflow has disabled imports via this link.' )
         elif stored_workflow.deleted:
             raise exceptions.MessageException( "You can't import this workflow because it has been deleted." )
@@ -417,13 +414,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         """
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception, e:
+        except Exception:
             raise exceptions.ObjectNotFound()
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 raise exceptions.ItemOwnershipException()
-        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
+        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter_by(workflow_id=stored_workflow.latest_workflow_id)
         out = []
         for r in results:
             out.append( self.encode_all_ids( trans, r.to_dict(), True) )
@@ -446,14 +443,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception, e:
+        except Exception:
             raise exceptions.ObjectNotFound()
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 raise exceptions.ItemOwnershipException()
-        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
-        results = results.filter(self.app.model.WorkflowInvocation.id == trans.security.decode_id(usage_id))
+        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter_by(workflow_id=stored_workflow.latest_workflow_id)
+        results = results.filter_by(id=trans.security.decode_id(usage_id))
         out = results.first()
         if out is not None:
             return self.encode_all_ids( trans, out.to_dict('element'), True)

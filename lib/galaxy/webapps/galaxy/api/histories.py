@@ -201,7 +201,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         delete( self, trans, id, **kwd )
         * DELETE /api/histories/{id}
             delete the history with the given ``id``
-        .. note:: Currently does not stop any active jobs in the history.
+        .. note:: Stops all active jobs in the history if purge is set.
 
         :type   id:     str
         :param  id:     the encoded id of the history to delete
@@ -235,6 +235,10 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             for hda in history.datasets:
                 if hda.purged:
                     continue
+                if hda.creating_job_associations:
+                    job = hda.creating_job_associations[0].job
+                    job.mark_deleted( self.app.config.track_jobs_in_database )
+                    self.app.job_manager.job_stop_queue.put( job.id )
                 hda.purged = True
                 trans.sa_session.add( hda )
                 trans.sa_session.flush()

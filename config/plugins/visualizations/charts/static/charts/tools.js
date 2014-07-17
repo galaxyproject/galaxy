@@ -2,8 +2,7 @@
 define(['utils/utils'], function(Utils) {
 
 // render
-function panelHelper (options)
-{
+function panelHelper (app, options) {
     // link this
     var self = this;
     
@@ -13,7 +12,6 @@ function panelHelper (options)
     var request_dictionary  = options.request_dictionary;
     var render              = options.render;
     var canvas_list         = options.canvas_list;
-    var app                 = options.app;
     
     // get request size from chart
     request_dictionary.query_limit = chart.definition.query_limit;
@@ -43,7 +41,7 @@ function panelHelper (options)
             }
             
             // unregister process
-            chart.deferred.done(process_id);
+            app.deferred.done(process_id);
         } catch (err) {
             // log
             console.debug('FAILED: Tools::panelHelper() - ' + err);
@@ -52,7 +50,7 @@ function panelHelper (options)
             chart.state('failed', err);
             
             // unregister process
-            chart.deferred.done(process_id);
+            app.deferred.done(process_id);
         }
     };
     
@@ -246,14 +244,136 @@ function makeUniqueCategories(groups, with_index) {
         counter     : counter
     }
 };
+
+// make axis
+function makeTickFormat (options) {
+    var type        = options.type;
+    var precision   = options.precision;
+    var categories  = options.categories;
+    var formatter   = options.formatter;
+    
+    // hide axis
+    if (type == 'hide') {
+        formatter(function() { return '' });
+        return;
+    }
+    
+    // format values/labels
+    if (type == 'auto') {
+        if (categories) {
+            formatter(function(value) {
+                return categories[value] || '';
+            });
+        }
+    } else {
+        var d3format = function(d) {
+            switch (type) {
+                case 's' :
+                    var prefix = d3.formatPrefix(d);
+                    return prefix.scale(d).toFixed() + prefix.symbol;
+                default :
+                    return d3.format('.' + precision + type)(d);
+            }
+        };
+        if (categories) {
+            formatter(function(value) {
+                var label = categories[value];
+                if (label) {
+                    if (isNaN(label)) {
+                        return label;
+                    } else {
+                        try {
+                            return d3format(label);
+                        } catch (err) {
+                            return label;
+                        }
+                    }
+                } else {
+                    return '';
+                }
+            });
+        } else {
+            formatter(function(value) {
+                return d3format(value);
+            });
+        }
+    }
+};
+
+// add zoom handler
+function addZoom(options) {
+    // scaleExtent
+    var scaleExtent = 100;
+    
+    // parameters
+    var yAxis       = options.yAxis;
+    var xAxis       = options.xAxis;
+    var xDomain     = options.xDomain || xAxis.scale().domain;
+    var yDomain     = options.yDomain || yAxis.scale().domain;
+    var redraw      = options.redraw;
+    var svg         = options.svg;
+    
+    // scales
+    var xScale = xAxis.scale();
+    var yScale = yAxis.scale();
+    
+    // min/max boundaries
+    var x_boundary = xScale.domain().slice();
+    var y_boundary = yScale.domain().slice();
+    
+    // create d3 zoom handler
+    var d3zoom = d3.behavior.zoom();
+    
+    // ensure nice axis
+    xScale.nice();
+    yScale.nice();
+       
+    // fix domain
+    function fixDomain(domain, boundary) {
+        domain[0] = Math.min(Math.max(domain[0], boundary[0]), boundary[1] - boundary[1]/scaleExtent);
+        domain[1] = Math.max(boundary[0] + boundary[1]/scaleExtent, Math.min(domain[1], boundary[1]));
+        return domain;
+    };
+    
+    // zoom event handler
+    function zoomed() {
+        yDomain(fixDomain(yScale.domain(), y_boundary));
+        xDomain(fixDomain(xScale.domain(), x_boundary));
+        redraw();
+    };
+
+    // zoom event handler
+    function unzoomed() {
+        xDomain(x_boundary);
+        yDomain(y_boundary);
+        redraw();
+        d3zoom.scale(1);
+        d3zoom.translate([0,0]);
+    };
+    
+    // initialize wrapper
+    d3zoom.x(xScale)
+          .y(yScale)
+          .scaleExtent([1, scaleExtent])
+          .on('zoom', zoomed);
+          
+    // add handler
+    svg.call(d3zoom).on('dblclick.zoom', unzoomed);
+    
+    // return
+    return d3zoom;
+};
     
 // return
 return {
-    panelHelper         : panelHelper,
-    makeCategories      : makeCategories,
-    makeSeries          : makeSeries,
-    getDomains          : getDomains,
-    mapCategories       : mapCategories
+    panelHelper             : panelHelper,
+    makeCategories          : makeCategories,
+    makeUniqueCategories    : makeUniqueCategories,
+    makeSeries              : makeSeries,
+    getDomains              : getDomains,
+    mapCategories           : mapCategories,
+    makeTickFormat          : makeTickFormat,
+    addZoom                 : addZoom
 }
 
 });

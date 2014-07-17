@@ -1,4 +1,5 @@
 import pipes
+from galaxy import exceptions
 from galaxy.util.none_like import NoneDataset
 from galaxy.util import odict
 
@@ -208,9 +209,28 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
 
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
+            # Path to dataset was rewritten for this job.
             return self.false_path
         elif self.false_extra_files_path is not None and key == 'extra_files_path':
+            # Path to extra files was rewritten for this job.
             return self.false_extra_files_path
+        elif key == 'extra_files_path':
+            try:
+                # Assume it is an output and that this wrapper
+                # will be set with correct "files_path" for this
+                # job.
+                return self.files_path
+            except AttributeError:
+                # Otherwise, we have an input - delegate to model and
+                # object store to find the static location of this
+                # directory.
+                try:
+                    return self.dataset.extra_files_path
+                except exceptions.ObjectNotFound:
+                    # NestedObjectstore raises an error here
+                    # instead of just returning a non-existent
+                    # path like DiskObjectStore.
+                    raise
         else:
             return getattr( self.dataset, key )
 

@@ -1,8 +1,8 @@
 define([
-    "mvc/dataset/hda-model",
+    "mvc/history/history-contents",
     "mvc/base-mvc",
     "utils/localization"
-], function( hdaModel, baseMVC, _l ){
+], function( historyContents, baseMVC, _l ){
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
@@ -45,8 +45,8 @@ var History = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
         this.logger = options.logger || null;
         this.log( this + ".initialize:", historyJSON, hdaJSON, options );
 
-        /** HDACollection of the HDAs contained in this history. */
-        this.hdas = new hdaModel.HDACollection( hdaJSON || [], { historyId: this.get( 'id' )});
+        /** HistoryContents collection of the HDAs contained in this history. */
+        this.hdas = new historyContents.HistoryContents( hdaJSON || [], { historyId: this.get( 'id' )});
         // if we've got hdas passed in the constructor, load them
         if( hdaJSON && _.isArray( hdaJSON ) ){
             this.hdas.reset( hdaJSON );
@@ -200,6 +200,7 @@ History.UPDATE_DELAY = 4000;
 History.getHistoryData = function getHistoryData( historyId, options ){
     options = options || {};
     var hdaDetailIds = options.hdaDetailIds || [];
+    var hdcaDetailIds = options.hdcaDetailIds || [];
     //console.debug( 'getHistoryData:', historyId, options );
 
     var df = jQuery.Deferred(),
@@ -224,7 +225,18 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         if( _.isFunction( hdaDetailIds ) ){
             hdaDetailIds = hdaDetailIds( historyData );
         }
-        var data = ( hdaDetailIds.length )?( { details : hdaDetailIds.join( ',' ) } ):( {} );
+        if( _.isFunction( hdcaDetailIds ) ){
+            hdcaDetailIds = hdcaDetailIds( historyData );
+        }
+        var data = {};
+        if( hdaDetailIds.length ) {
+            data.dataset_details = hdaDetailIds.join( ',' );
+        }
+        if( hdcaDetailIds.length ) {
+            // for symmetry, not actually used by backend of consumed
+            // by frontend.
+            data.dataset_collection_details = hdcaDetailIds.join( ',' );
+        }
         return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyData.id + '/contents', { data: data });
     }
 

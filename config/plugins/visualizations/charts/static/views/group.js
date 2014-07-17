@@ -2,9 +2,10 @@
 define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
         function(Table, Ui, Utils) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  This class renders the data group selection fields.
+ */
+return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
         // link app
@@ -59,7 +60,7 @@ return Backbone.View.extend(
         this._refreshGroup();
     },
     
-    // update dataset
+    // update group selection table
     _refreshTable: function() {
         // identify datasets
         var dataset_id = this.chart.get('dataset_id');
@@ -95,8 +96,16 @@ return Backbone.View.extend(
                 wait    : true
             });
             
+            // title
+            var title = data_def.title;
+            
+            // is unique
+            if (data_def.is_unique) {
+                title += '&nbsp;(all data labels)';
+            }
+            
             // add row to table
-            this.table.add(data_def.title, '25%');
+            this.table.add(title, '25%');
             this.table.add(select.$el);
             this.table.append(id);
             
@@ -108,7 +117,7 @@ return Backbone.View.extend(
         this.chart.state('wait', 'Loading metadata...');
         
         // register process
-        var process_id = this.chart.deferred.register();
+        var process_id = this.app.deferred.register();
         
         // request dictionary
         var request_dictionary = {
@@ -123,7 +132,7 @@ return Backbone.View.extend(
                 self.chart.state('ok', 'Metadata initialized...');
                 
                 // unregister
-                self.chart.deferred.done(process_id);
+                self.app.deferred.done(process_id);
             }
         };
         
@@ -141,6 +150,7 @@ return Backbone.View.extend(
         var is_auto     = column_definition.is_auto;
         var is_numeric  = column_definition.is_numeric;
         var is_unique   = column_definition.is_unique;
+        var is_zero     = column_definition.is_zero;
         
         // configure columns
         var columns = [];
@@ -153,6 +163,14 @@ return Backbone.View.extend(
             columns.push({
                 'label' : 'Column: Row Number',
                 'value' : 'auto'
+            });
+        }
+        
+        // add zero selection column
+        if (is_zero) {
+            columns.push({
+                'label' : 'Column: None',
+                'value' : 'zero'
             });
         }
         
@@ -180,6 +198,11 @@ return Backbone.View.extend(
         // update selection list
         select.update(columns);
         
+        // set initial value
+        if (is_unique && this.chart.groups.first()) {
+            this.group.set(id, this.chart.groups.first().get(id));
+        }
+        
         // update current value
         if (!select.exists(this.group.get(id))) {
             // get first value
@@ -192,14 +215,11 @@ return Backbone.View.extend(
             this.group.set(id, first);
         }
         
-        // set initial value
-        if (is_unique) {
-            select.value(this.chart.groups.first().get(id));
-        } else {
-            select.value(this.group.get(id));
-        }
+        // set group value
+        select.value(this.group.get(id));
         
         // link group with select field
+        this.group.off('change:' + id);
         this.group.on('change:' + id, function(){
             select.value(self.group.get(id));
         });

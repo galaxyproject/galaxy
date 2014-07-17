@@ -39,6 +39,11 @@
 
 .ui-button-icon {
     margin-right: 5px;
+    ul {
+        i {
+            font-size: 1.2em; margin-right: 5px; position: relative; top: 1px;
+        }
+    }
 }
 
 .ui-button-icon .button {
@@ -91,7 +96,9 @@
         background: @form-heading-bg;
         border-bottom: solid @form-border 1px;
         padding: 2px 8px;
-        overflow: auto;
+        overflow: visible;
+        float: right;
+        width:100%;
 
         h1, h2, h3, h4, h5, h6 {
             float: left;
@@ -115,6 +122,7 @@
     .portlet-content {
         height: inherit;
         padding: 10px;
+        clear: both;
 
         .content {
             padding     : 10px;

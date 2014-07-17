@@ -16,6 +16,13 @@ class JobMappingException( Exception ):
         self.failure_message = failure_message
 
 
+class JobNotReadyException( Exception ):
+
+    def __init__( self, job_state=None, message=None ):
+        self.job_state = job_state
+        self.message = message
+
+
 class JobRunnerMapper( object ):
     """
     This class is responsible to managing the mapping of jobs
@@ -76,7 +83,7 @@ class JobRunnerMapper( object ):
         if "job" in function_arg_names or "user" in function_arg_names or "user_email" in function_arg_names or "resource_params" in function_arg_names:
             job = self.job_wrapper.get_job()
             history = job.history
-            user = history and history.user
+            user = job.user
             user_email = user and str(user.email)
 
             if "job" in function_arg_names:
@@ -164,8 +171,9 @@ class JobRunnerMapper( object ):
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 
-    def __cache_job_destination( self, params ):
-        raw_job_destination = self.job_wrapper.tool.get_job_destination( params )
+    def __cache_job_destination( self, params, raw_job_destination=None ):
+        if raw_job_destination is None:
+            raw_job_destination = self.job_wrapper.tool.get_job_destination( params )
         #raw_job_destination_id_or_tag = self.job_wrapper.tool.get_job_destination_id_or_tag( params )
         if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
             job_destination = self.__handle_dynamic_job_destination( raw_job_destination )
@@ -183,7 +191,6 @@ class JobRunnerMapper( object ):
             self.__cache_job_destination( params )
         return self.cached_job_destination
 
-    #def get_job_destination_id_or_tag( self, params ):
-    #    if not hasattr( self, 'cached_job_destination_id_or_tag' ):
-    #        self.__cache_job_destination( params )
-    #    return self.cached_job_destination_id_or_tag
+    def cache_job_destination( self, raw_job_destination ):
+        self.__cache_job_destination( None, raw_job_destination=raw_job_destination )
+        return self.cached_job_destination

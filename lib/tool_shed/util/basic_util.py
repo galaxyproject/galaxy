@@ -20,6 +20,33 @@ NO_OUTPUT_TIMEOUT = 1200.0
 MAXDIFFSIZE = 8000
 MAX_DISPLAY_SIZE = 32768
 
+DOCKER_IMAGE_TEMPLATE = '''
+# Galaxy Docker image
+
+FROM bgruening/galaxy-stable
+
+MAINTAINER Bjoern A. Gruning, bjoern.gruening@gmail.com
+
+RUN sed -i 's|brand.*|brand = deepTools|g' ~/galaxy-central/universe_wsgi.ini
+
+WORKDIR /galaxy-central
+
+${selected_repositories}
+
+# Mark one folder as imported from the host.
+VOLUME ["/export/"]
+
+# Expose port 80 to the host
+EXPOSE :80
+
+# Autostart script that is invoked during container start
+CMD ["/usr/bin/startup"]
+'''
+
+SELECTED_REPOSITORIES_TEMPLATE = '''
+RUN service postgresql start && service apache2 start && ./run.sh --daemon && sleep 120 && python ./scripts/api/install_tool_shed_repositories.py --api admin -l http://localhost:8080 --url ${tool_shed_url} -o ${repository_owner} --name ${repository_name} --tool-deps --repository-deps --panel-section-name 'Docker'
+'''
+
 def evaluate_template( text, install_environment ):
     """
     Substitute variables defined in XML blocks from dependencies file.  The value of the received
@@ -44,6 +71,17 @@ def get_env_var_values( install_environment ):
     # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
     env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
     return env_var_dict
+
+def get_file_type_str( changeset_revision, file_type ):
+    if file_type == 'zip':
+        file_type_str = '%s.zip' % changeset_revision
+    elif file_type == 'bz2':
+        file_type_str = '%s.tar.bz2' % changeset_revision
+    elif file_type == 'gz':
+        file_type_str = '%s.tar.gz' % changeset_revision
+    else:
+        file_type_str = ''
+    return file_type_str
 
 def move_file( current_dir, source, destination, rename_to=None ):
     source_path = os.path.abspath( os.path.join( current_dir, source ) )
