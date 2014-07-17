@@ -566,6 +566,7 @@ var TracksterView = base.Backbone.View.extend(
 });
 
 return {
+    TracksterUI: TracksterUI,
     GalaxyApp : TracksterView
 };
 
