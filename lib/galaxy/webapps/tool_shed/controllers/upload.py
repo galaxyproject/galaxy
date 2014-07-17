@@ -12,12 +12,12 @@ from galaxy.web.base.controller import BaseUIController
 
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.galaxy_install import dependency_display
+from tool_shed.metadata import repository_metadata_manager
 import tool_shed.repository_types.util as rt_util
 
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
@@ -262,12 +262,13 @@ class UploadController( BaseUIController ):
                                     ( len( files_to_remove ), upload_point )
                             else:
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
-                        status, error_message = metadata_util.set_repository_metadata_due_to_new_tip( trans.app,
-                                                                                                      trans.request.host,
-                                                                                                      trans.user,
-                                                                                                      repository,
-                                                                                                      content_alert_str=content_alert_str,
-                                                                                                      **kwd )
+                        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
+                        status, error_message = \
+                            rmm.set_repository_metadata_due_to_new_tip( trans.request.host,
+                                                                        trans.user,
+                                                                        repository,
+                                                                        content_alert_str=content_alert_str,
+                                                                        **kwd )
                         if error_message:
                             message = error_message
                         kwd[ 'message' ] = message
@@ -303,8 +304,8 @@ class UploadController( BaseUIController ):
                         status = 'error'
                     # Handle messaging for invalid repository dependencies.
                     invalid_repository_dependencies_message = \
-                        metadata_util.generate_message_for_invalid_repository_dependencies( metadata_dict,
-                                                                                            error_from_tuple=True )
+                        dd.generate_message_for_invalid_repository_dependencies( metadata_dict,
+                                                                                 error_from_tuple=True )
                     if invalid_repository_dependencies_message:
                         message += invalid_repository_dependencies_message
                         status = 'error'

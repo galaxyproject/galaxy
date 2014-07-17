@@ -4,19 +4,21 @@ import os
 import tarfile
 import tempfile
 from time import strftime
-from galaxy import eggs
+
 from galaxy import util
 from galaxy import web
 from galaxy.model.orm import and_
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
+
 from tool_shed.capsule import capsule_manager
-import tool_shed.repository_types.util as rt_util
+from tool_shed.metadata import repository_metadata_manager
+from tool_shed.repository_types import util as rt_util
+
 from tool_shed.util import basic_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
@@ -428,8 +430,9 @@ class RepositoriesController( BaseAPIController ):
             log.debug( "Resetting metadata on repository %s" % str( repository.name ) )
             repository_id = trans.security.encode_id( repository.id )
             try:
+                rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
                 invalid_file_tups, metadata_dict = \
-                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans.app, trans.user, repository_id )
+                    rmm.reset_all_metadata_on_repository_in_tool_shed( trans.user, repository_id )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
                                                                             invalid_file_tups,
@@ -508,10 +511,10 @@ class RepositoriesController( BaseAPIController ):
             results = dict( start_time=start_time,
                             repository_status=[] )
             try:
+                rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
                 invalid_file_tups, metadata_dict = \
-                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans.app,
-                                                                                 trans.user,
-                                                                                 trans.security.encode_id( repository.id ) )
+                    rmm.reset_all_metadata_on_repository_in_tool_shed( trans.user,
+                                                                       trans.security.encode_id( repository.id ) )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
                                                                             invalid_file_tups,

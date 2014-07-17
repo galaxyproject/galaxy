@@ -19,6 +19,7 @@ from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
 
 from tool_shed.galaxy_install import dependency_display
+from tool_shed.metadata import repository_metadata_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -2610,14 +2611,20 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     repository_dependencies_dict = metadata[ 'repository_dependencies' ]
                     rd_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
                     for rd_tup in rd_tups:
-                        rdtool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, rd_only_if_compiling_contained_td = \
+                        rdtool_shed, \
+                        rd_name, \
+                        rd_owner, \
+                        rd_changeset_revision, \
+                        rd_prior_installation_required, \
+                        rd_only_if_compiling_contained_td = \
                             common_util.parse_repository_dependency_tuple( rd_tup )
                         if not util.asbool( rd_only_if_compiling_contained_td ):
                             invalid = True
                             break
                     if invalid:
-                        message = metadata_util.generate_message_for_invalid_repository_dependencies( metadata,
-                                                                                                      error_from_tuple=False )
+                        dd = dependency_display.DependencyDisplayer( trans.app )
+                        message = dd.generate_message_for_invalid_repository_dependencies( metadata,
+                                                                                           error_from_tuple=False )
                         status = 'error'
         else:
             repository_metadata_id = None
@@ -2735,11 +2742,15 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def reset_all_metadata( self, trans, id, **kwd ):
         """Reset all metadata on the complete changelog for a single repository in the tool shed."""
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
         invalid_file_tups, metadata_dict = \
-            metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans.app, trans.user, id, **kwd )
+            rmm.reset_all_metadata_on_repository_in_tool_shed( trans.user, id, **kwd )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans.app, id )
-            message = tool_util.generate_message_for_invalid_tools( trans.app, invalid_file_tups, repository, metadata_dict )
+            message = tool_util.generate_message_for_invalid_tools( trans.app,
+                                                                    invalid_file_tups,
+                                                                    repository,
+                                                                    metadata_dict )
             status = 'error'
         else:
             message = "All repository metadata has been reset.  "
@@ -2753,7 +2764,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def reset_metadata_on_my_writable_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = metadata_util.reset_metadata_on_selected_repositories( trans.app, trans.user, **kwd )
+            rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
+            message, status = rmm.reset_metadata_on_selected_repositories( trans.user, **kwd )
         else:
             message = kwd.get( 'message', ''  )
             status = kwd.get( 'status', 'done' )
@@ -2817,11 +2829,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if tip == repository.tip( trans.app ):
                     message += 'No changes to repository.  '
                 else:
-                    status, error_message = metadata_util.set_repository_metadata_due_to_new_tip( trans.app,
-                                                                                                  trans.request.host,
-                                                                                                  trans.user,
-                                                                                                  repository,
-                                                                                                  **kwd )
+                    rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
+                    status, error_message = rmm.set_repository_metadata_due_to_new_tip( trans.request.host,
+                                                                                        trans.user,
+                                                                                        repository,
+                                                                                        **kwd )
                     if error_message:
                         message = error_message
                     else:

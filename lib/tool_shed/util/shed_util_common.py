@@ -26,6 +26,7 @@ log = logging.getLogger( __name__ )
 
 MAX_CONTENT_SIZE = 1048576
 DATATYPES_CONFIG_FILENAME = 'datatypes_conf.xml'
+REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = 'data_manager_conf.xml'
 
 new_repo_email_alert_template = """
 Sharable link:         ${sharable_link}

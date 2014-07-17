@@ -8,15 +8,18 @@ import shutil
 import tempfile
 import threading
 import logging
+
 from galaxy import util
 from galaxy.tools import ToolSection
+
 from tool_shed.galaxy_install import install_manager
-import tool_shed.util.shed_util_common as suc
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
+
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import datatype_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
@@ -381,17 +384,17 @@ class ToolMigrationManager( object ):
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()
+        irmm = InstalledRepositoryMetadataManager( self.app )
         metadata_dict, invalid_file_tups = \
-            metadata_util.generate_metadata_for_changeset_revision( app=self.app,
-                                                                    repository=tool_shed_repository,
-                                                                    changeset_revision=tool_shed_repository.changeset_revision,
-                                                                    repository_clone_url=repository_clone_url,
-                                                                    shed_config_dict = self.shed_config_dict,
-                                                                    relative_install_dir=relative_install_dir,
-                                                                    repository_files_dir=None,
-                                                                    resetting_all_metadata_on_repository=False,
-                                                                    updating_installed_repository=False,
-                                                                    persist=True )
+            irmm.generate_metadata_for_changeset_revision( repository=tool_shed_repository,
+                                                           changeset_revision=tool_shed_repository.changeset_revision,
+                                                           repository_clone_url=repository_clone_url,
+                                                           shed_config_dict = self.shed_config_dict,
+                                                           relative_install_dir=relative_install_dir,
+                                                           repository_files_dir=None,
+                                                           resetting_all_metadata_on_repository=False,
+                                                           updating_installed_repository=False,
+                                                           persist=True )
         tool_shed_repository.metadata = metadata_dict
         self.app.install_model.context.add( tool_shed_repository )
         self.app.install_model.context.flush()

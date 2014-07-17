@@ -48,6 +48,57 @@ class DependencyDisplayer( object ):
             tool_dependencies[ dependency_key ] = requirements_dict
         return tool_dependencies
 
+    def generate_message_for_invalid_repository_dependencies( self, metadata_dict, error_from_tuple=False ):
+        """
+        Get or generate and return an error message associated with an invalid repository dependency.
+        """
+        message = ''
+        if metadata_dict:
+            if error_from_tuple:
+                # Return the error messages associated with a set of one or more invalid repository
+                # dependency tuples.
+                invalid_repository_dependencies_dict = metadata_dict.get( 'invalid_repository_dependencies', None )
+                if invalid_repository_dependencies_dict is not None:
+                    invalid_repository_dependencies = \
+                        invalid_repository_dependencies_dict.get( 'invalid_repository_dependencies', [] )
+                    for repository_dependency_tup in invalid_repository_dependencies:
+                        toolshed, \
+                        name, \
+                        owner, \
+                        changeset_revision, \
+                        prior_installation_required, \
+                        only_if_compiling_contained_td, error = \
+                            common_util.parse_repository_dependency_tuple( repository_dependency_tup, contains_error=True )
+                        if error:
+                            message += '%s  ' % str( error )
+            else:
+                # The complete dependency hierarchy could not be determined for a repository being installed into
+                # Galaxy.  This is likely due to invalid repository dependency definitions, so we'll get them from
+                # the metadata and parse them for display in an error message.  This will hopefully communicate the
+                # problem to the user in such a way that a resolution can be determined.
+                message += 'The complete dependency hierarchy could not be determined for this repository, so no required '
+                message += 'repositories will not be installed.  This is likely due to invalid repository dependency definitions.  '
+                repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', None )
+                if repository_dependencies_dict is not None:
+                    rd_tups = repository_dependencies_dict.get( 'repository_dependencies', None )
+                    if rd_tups is not None:
+                        message += 'Here are the attributes of the dependencies defined for this repository to help determine the '
+                        message += 'cause of this problem.<br/>'
+                        message += '<table cellpadding="2" cellspacing="2">'
+                        message += '<tr><th>Tool shed</th><th>Repository name</th><th>Owner</th><th>Changeset revision</th>'
+                        message += '<th>Prior install required</th></tr>'
+                        for rd_tup in rd_tups:
+                            tool_shed, name, owner, changeset_revision, pir, oicct = \
+                                common_util.parse_repository_dependency_tuple( rd_tup )
+                            if util.asbool( pir ):
+                                pir_str = 'True'
+                            else:
+                                pir_str = ''
+                            message += '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>' % \
+                                ( tool_shed, name, owner, changeset_revision, pir_str )
+                        message += '</table>'
+        return message
+
     def generate_message_for_invalid_tool_dependencies( self, metadata_dict ):
         """
         Tool dependency definitions can only be invalid if they include a definition for a complex

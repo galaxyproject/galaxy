@@ -7,23 +7,26 @@ import threading
 import urllib
 from time import gmtime
 from time import strftime
-import tool_shed.repository_types.util as rt_util
+
 from galaxy import web
 from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE
 from galaxy.util.odict import odict
+
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.dependencies import attribute_handlers
+from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
+from tool_shed.metadata import repository_metadata_manager
+import tool_shed.repository_types.util as rt_util
+
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
 
 log = logging.getLogger( __name__ )
 
@@ -32,6 +35,7 @@ class ExportedRepositoryRegistry( object ):
 
     def __init__( self ):
         self.exported_repository_elems = []
+
 
 class ExportRepositoryManager( object ):
 
@@ -723,11 +727,11 @@ class ImportRepositoryManager( object ):
                 results_dict[ 'ok' ] = False
                 results_dict[ 'error_message' ] += error_message
             try:
-                status, error_message = metadata_util.set_repository_metadata_due_to_new_tip( self.app,
-                                                                                              self.host,
-                                                                                              self.user,
-                                                                                              repository,
-                                                                                              content_alert_str=content_alert_str )
+                rmm = repository_metadata_manager.RepositoryMetadataManager( self.app )
+                status, error_message = rmm.set_repository_metadata_due_to_new_tip( self.host,
+                                                                                    self.user,
+                                                                                    repository,
+                                                                                    content_alert_str=content_alert_str )
                 if error_message:
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message

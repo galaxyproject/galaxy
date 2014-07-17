@@ -16,7 +16,6 @@ from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
 from tool_shed.util import readme_util
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import shed_util_common as suc
@@ -27,8 +26,9 @@ from tool_shed.util import workflow_util
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.galaxy_install import install_manager
 
+from tool_shed.galaxy_install.grids import admin_toolshed_grids
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
-import tool_shed.galaxy_install.grids.admin_toolshed_grids as admin_toolshed_grids
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 
 log = logging.getLogger( __name__ )
@@ -1704,7 +1704,8 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def reset_metadata_on_selected_installed_repositories( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = metadata_util.reset_metadata_on_selected_repositories( trans.app, trans.user, **kwd )
+            irmm = InstalledRepositoryMetadataManager( trans.app )
+            message, status = irmm.reset_metadata_on_selected_repositories( trans.user, **kwd )
         else:
             message = kwd.get( 'message', ''  )
             status = kwd.get( 'status', 'done' )
@@ -1723,17 +1724,17 @@ class AdminToolshed( AdminGalaxy ):
         tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
         if relative_install_dir:
             original_metadata_dict = repository.metadata
+            irmm = InstalledRepositoryMetadataManager( trans.app )
             metadata_dict, invalid_file_tups = \
-                metadata_util.generate_metadata_for_changeset_revision( app=trans.app,
-                                                                        repository=repository,
-                                                                        changeset_revision=repository.changeset_revision,
-                                                                        repository_clone_url=repository_clone_url,
-                                                                        shed_config_dict = repository.get_shed_config_dict( trans.app ),
-                                                                        relative_install_dir=relative_install_dir,
-                                                                        repository_files_dir=None,
-                                                                        resetting_all_metadata_on_repository=False,
-                                                                        updating_installed_repository=False,
-                                                                        persist=False )
+                irmm.generate_metadata_for_changeset_revision( repository=repository,
+                                                               changeset_revision=repository.changeset_revision,
+                                                               repository_clone_url=repository_clone_url,
+                                                               shed_config_dict = repository.get_shed_config_dict( trans.app ),
+                                                               relative_install_dir=relative_install_dir,
+                                                               repository_files_dir=None,
+                                                               resetting_all_metadata_on_repository=False,
+                                                               updating_installed_repository=False,
+                                                               persist=False )
             repository.metadata = metadata_dict
             if metadata_dict != original_metadata_dict:
                 suc.update_in_shed_tool_config( trans.app, repository )
@@ -1926,17 +1927,17 @@ class AdminToolshed( AdminGalaxy ):
                     if repository.includes_data_managers:
                         data_manager_util.remove_from_data_manager( trans.app, repository )
                     # Update the repository metadata.
+                    irmm = InstalledRepositoryMetadataManager( trans.app )
                     metadata_dict, invalid_file_tups = \
-                        metadata_util.generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                repository=repository,
-                                                                                changeset_revision=latest_changeset_revision,
-                                                                                repository_clone_url=repository_clone_url,
-                                                                                shed_config_dict=repository.get_shed_config_dict( trans.app ),
-                                                                                relative_install_dir=relative_install_dir,
-                                                                                repository_files_dir=None,
-                                                                                resetting_all_metadata_on_repository=False,
-                                                                                updating_installed_repository=True,
-                                                                                persist=True )
+                        irmm.generate_metadata_for_changeset_revision( repository=repository,
+                                                                       changeset_revision=latest_changeset_revision,
+                                                                       repository_clone_url=repository_clone_url,
+                                                                       shed_config_dict=repository.get_shed_config_dict( trans.app ),
+                                                                       relative_install_dir=relative_install_dir,
+                                                                       repository_files_dir=None,
+                                                                       resetting_all_metadata_on_repository=False,
+                                                                       updating_installed_repository=True,
+                                                                       persist=True )
                     if 'tools' in metadata_dict:
                         tool_panel_dict = metadata_dict.get( 'tool_panel_section', None )
                         if tool_panel_dict is None:

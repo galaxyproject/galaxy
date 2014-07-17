@@ -2,14 +2,17 @@ import ConfigParser
 import logging
 import os
 import re
-from tool_shed.dependencies.repository import relation_builder
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
-from tool_shed.util import shed_util_common as suc
+
 from galaxy import util
 from galaxy import web
 from galaxy.web.form_builder import build_select_field
 from galaxy.webapps.tool_shed.model import directory_hash_id
+
+from tool_shed.dependencies.repository import relation_builder
+
+from tool_shed.util import common_util
+from tool_shed.util import hg_util
+from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -36,24 +39,6 @@ def change_repository_name_in_hgrc_file( hgrc_file, new_name ):
     new_file = open( hgrc_file, 'wb' )
     config.write( new_file )
     new_file.close()
-
-def create_hgrc_file( app, repository ):
-    # At this point, an entry for the repository is required to be in the hgweb.config file so we can call repository.repo_path( trans.app ).
-    # Since we support both http and https, we set push_ssl to False to override the default (which is True) in the mercurial api.  The hg
-    # purge extension purges all files and directories not being tracked by mercurial in the current repository.  It'll remove unknown files
-    # and empty directories.  This is not currently used because it is not supported in the mercurial API.
-    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-    fp = repo.opener( 'hgrc', 'wb' )
-    fp.write( '[paths]\n' )
-    fp.write( 'default = .\n' )
-    fp.write( 'default-push = .\n' )
-    fp.write( '[web]\n' )
-    fp.write( 'allow_push = %s\n' % repository.user.username )
-    fp.write( 'name = %s\n' % repository.name )
-    fp.write( 'push_ssl = false\n' )
-    fp.write( '[extensions]\n' )
-    fp.write( 'hgext.purge=' )
-    fp.close()
 
 def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None,
                            repository=None, repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
@@ -150,7 +135,7 @@ def create_repository( app, name, type, description, long_description, user_id, 
     lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
     app.hgweb_config_manager.add_entry( lhs, repository_path )
     # Create a .hg/hgrc file for the local repository.
-    create_hgrc_file( app, repository )
+    hg_util.create_hgrc_file( app, repository )
     flush_needed = False
     if category_ids:
         # Create category associations

@@ -22,17 +22,17 @@ from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
+from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
-from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 
 log = logging.getLogger( __name__ )
 
@@ -499,17 +499,17 @@ class InstallRepositoryManager( object ):
         """
         install_model = self.app.install_model
         shed_config_dict = self.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
+        irmm = InstalledRepositoryMetadataManager( self.app )
         metadata_dict, invalid_file_tups = \
-            metadata_util.generate_metadata_for_changeset_revision( app=self.app,
-                                                                    repository=tool_shed_repository,
-                                                                    changeset_revision=tool_shed_repository.changeset_revision,
-                                                                    repository_clone_url=repository_clone_url,
-                                                                    shed_config_dict=shed_config_dict,
-                                                                    relative_install_dir=relative_install_dir,
-                                                                    repository_files_dir=None,
-                                                                    resetting_all_metadata_on_repository=False,
-                                                                    updating_installed_repository=False,
-                                                                    persist=True )
+            irmm.generate_metadata_for_changeset_revision( repository=tool_shed_repository,
+                                                           changeset_revision=tool_shed_repository.changeset_revision,
+                                                           repository_clone_url=repository_clone_url,
+                                                           shed_config_dict=shed_config_dict,
+                                                           relative_install_dir=relative_install_dir,
+                                                           repository_files_dir=None,
+                                                           resetting_all_metadata_on_repository=False,
+                                                           updating_installed_repository=False,
+                                                           persist=True )
         tool_shed_repository.metadata = metadata_dict
         # Update the tool_shed_repository.tool_shed_status column in the database.
         tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, tool_shed_repository )

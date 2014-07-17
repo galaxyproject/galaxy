@@ -90,6 +90,27 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
             return file_path
     return None
 
+def create_hgrc_file( app, repository ):
+    # At this point, an entry for the repository is required to be in the hgweb.config
+    # file so we can call repository.repo_path( trans.app ).  Since we support both
+    # http and https, we set push_ssl to False to override the default (which is True)
+    # in the mercurial api.  The hg purge extension purges all files and directories
+    # not being tracked by mercurial in the current repository.  It'll remove unknown
+    # files and empty directories.  This is not currently used because it is not supported
+    #in the mercurial API.
+    repo = get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
+    fp = repo.opener( 'hgrc', 'wb' )
+    fp.write( '[paths]\n' )
+    fp.write( 'default = .\n' )
+    fp.write( 'default-push = .\n' )
+    fp.write( '[web]\n' )
+    fp.write( 'allow_push = %s\n' % repository.user.username )
+    fp.write( 'name = %s\n' % repository.name )
+    fp.write( 'push_ssl = false\n' )
+    fp.write( '[extensions]\n' )
+    fp.write( 'hgext.purge=' )
+    fp.close()
+
 def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
     """Retrieve a specified changectx from a repository."""
     for changeset in repo.changelog:
