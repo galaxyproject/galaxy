@@ -877,7 +877,7 @@ var TracksterView = Backbone.View.extend({
         this.content_div = this.viewport_container;
         is_container(this.viewport_container, view);
         // Introduction div shown when there are no tracks.
-        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
+        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container);
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
             visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                 _.each(tracks, function(track) {
