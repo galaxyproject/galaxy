@@ -149,6 +149,45 @@ class ToolValidator( object ):
                     return tmp_filename
         return None
 
+    def get_list_of_copied_sample_files( self, repo, ctx, dir ):
+        """
+        Find all sample files (files in the repository with the special .sample extension)
+        in the reversed repository manifest up to ctx.  Copy each discovered file to dir and
+        return the list of filenames.  If a .sample file was added in a changeset and then
+        deleted in a later changeset, it will be returned in the deleted_sample_files list.
+        The caller will set the value of app.config.tool_data_path to dir in order to load
+        the tools and generate metadata for them.
+        """
+        deleted_sample_files = []
+        sample_files = []
+        for changeset in hg_util.reversed_upper_bounded_changelog( repo, ctx ):
+            changeset_ctx = repo.changectx( changeset )
+            for ctx_file in changeset_ctx.files():
+                ctx_file_name = basic_util.strip_path( ctx_file )
+                # If we decide in the future that files deleted later in the changelog should
+                # not be used, we can use the following if statement. if ctx_file_name.endswith( '.sample' )
+                # and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
+                if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
+                    fctx = hg_util.get_file_context_from_ctx( changeset_ctx, ctx_file )
+                    if fctx in [ 'DELETED' ]:
+                        # Since the possibly future used if statement above is commented out, the
+                        # same file that was initially added will be discovered in an earlier changeset
+                        # in the change log and fall through to the else block below.  In other words,
+                        # if a file named blast2go.loc.sample was added in change set 0 and then deleted
+                        # in changeset 3, the deleted file in changeset 3 will be handled here, but the
+                        # later discovered file in changeset 0 will be handled in the else block below.
+                        # In this way, the file contents will always be found for future tools even though
+                        # the file was deleted.
+                        if ctx_file_name not in deleted_sample_files:
+                            deleted_sample_files.append( ctx_file_name )
+                    else:
+                        sample_files.append( ctx_file_name )
+                        tmp_ctx_file_name = os.path.join( dir, ctx_file_name.replace( '.sample', '' ) )
+                        fh = open( tmp_ctx_file_name, 'wb' )
+                        fh.write( fctx.data() )
+                        fh.close()
+        return sample_files, deleted_sample_files
+
     def handle_sample_files_and_load_tool_from_disk( self, repo_files_dir, repository_id, tool_config_filepath, work_dir ):
         """
         Copy all sample files from disk to a temporary directory since the sample files may
@@ -172,7 +211,7 @@ class ToolValidator( object ):
         ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
         # We're not currently doing anything with the returned list of deleted_sample_files here.  It is
         # intended to help handle sample files that are in the manifest, but have been deleted from disk.
-        sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
+        sample_files, deleted_sample_files = self.get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
         if sample_files:
             self.app.config.tool_data_path = work_dir
             if 'tool_data_table_conf.xml.sample' in sample_files:
