@@ -20,6 +20,7 @@ from tool_shed.dependencies.repository import relation_builder
 
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
+from tool_shed.tools import tool_validator
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -1164,10 +1165,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
-        repository, tool, message = tool_util.load_tool_from_changeset_revision( trans.app,
-                                                                                 repository_id,
-                                                                                 changeset_revision,
-                                                                                 tool_config )
+        tv = tool_validator.ToolValidator( trans.app )
+        repository, tool, message = tv.load_tool_from_changeset_revision( repository_id,
+                                                                          changeset_revision,
+                                                                          tool_config )
         if message:
             status = 'error'
         tool_state = tool_util.new_state( trans, tool, invalid=False )
@@ -2147,18 +2148,17 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'error' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
-        repository, tool, error_message = tool_util.load_tool_from_changeset_revision( trans.app,
-                                                                                       repository_id,
-                                                                                       changeset_revision,
-                                                                                       tool_config )
+        tv = tool_validator.ToolValidator( trans.app )
+        repository, tool, error_message = tv.load_tool_from_changeset_revision( repository_id,
+                                                                                changeset_revision,
+                                                                                tool_config )
         tool_state = tool_util.new_state( trans, tool, invalid=True )
         invalid_file_tups = []
         if tool:
-            invalid_file_tups = tool_util.check_tool_input_params( trans.app,
-                                                                   repository.repo_path( trans.app ),
-                                                                   tool_config,
-                                                                   tool,
-                                                                   [] )
+            invalid_file_tups = tv.check_tool_input_params( repository.repo_path( trans.app ),
+                                                            tool_config,
+                                                            tool,
+                                                            [] )
         if invalid_file_tups:
             message = tool_util.generate_message_for_invalid_tools( trans.app,
                                                                     invalid_file_tups,
@@ -3397,6 +3397,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             metadata = repository_metadata.metadata
             if metadata:
                 if 'tools' in metadata:
+                    tv = tool_validator.ToolValidator( trans.app )
                     for tool_metadata_dict in metadata[ 'tools' ]:
                         if tool_metadata_dict[ 'id' ] == tool_id:
                             work_dir = tempfile.mkdtemp()
@@ -3404,29 +3405,26 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             guid = tool_metadata_dict[ 'guid' ]
                             full_path_to_tool_config = os.path.abspath( relative_path_to_tool_config )
                             full_path_to_dir, tool_config_filename = os.path.split( full_path_to_tool_config )
-                            can_use_disk_file = tool_util.can_use_tool_config_disk_file( trans.app,
-                                                                                         repository,
-                                                                                         repo,
-                                                                                         full_path_to_tool_config,
-                                                                                         changeset_revision )
+                            can_use_disk_file = tv.can_use_tool_config_disk_file( repository,
+                                                                                  repo,
+                                                                                  full_path_to_tool_config,
+                                                                                  changeset_revision )
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
                                 tool, valid, message, sample_files = \
-                                    tool_util.handle_sample_files_and_load_tool_from_disk( trans.app,
-                                                                                           repo_files_dir,
-                                                                                           repository_id,
-                                                                                           full_path_to_tool_config,
-                                                                                           work_dir )
+                                    tv.handle_sample_files_and_load_tool_from_disk( repo_files_dir,
+                                                                                    repository_id,
+                                                                                    full_path_to_tool_config,
+                                                                                    work_dir )
                                 if message:
                                     status = 'error'
                             else:
                                 tool, message, sample_files = \
-                                    tool_util.handle_sample_files_and_load_tool_from_tmp_config( trans.app,
-                                                                                                 repo,
-                                                                                                 repository_id,
-                                                                                                 changeset_revision,
-                                                                                                 tool_config_filename,
-                                                                                                 work_dir )
+                                    tv.handle_sample_files_and_load_tool_from_tmp_config( repo,
+                                                                                          repository_id,
+                                                                                          changeset_revision,
+                                                                                          tool_config_filename,
+                                                                                          work_dir )
                                 if message:
                                     status = 'error'
                             basic_util.remove_dir( work_dir )
