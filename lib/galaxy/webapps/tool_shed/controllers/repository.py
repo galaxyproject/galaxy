@@ -1164,7 +1164,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
-        repository, tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, message = tool_util.load_tool_from_changeset_revision( trans.app,
+                                                                                 repository_id,
+                                                                                 changeset_revision,
+                                                                                 tool_config )
         if message:
             status = 'error'
         tool_state = tool_util.new_state( trans, tool, invalid=False )
@@ -2144,7 +2147,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'error' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
-        repository, tool, error_message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, error_message = tool_util.load_tool_from_changeset_revision( trans.app,
+                                                                                       repository_id,
+                                                                                       changeset_revision,
+                                                                                       tool_config )
         tool_state = tool_util.new_state( trans, tool, invalid=True )
         invalid_file_tups = []
         if tool:
@@ -3398,7 +3404,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             guid = tool_metadata_dict[ 'guid' ]
                             full_path_to_tool_config = os.path.abspath( relative_path_to_tool_config )
                             full_path_to_dir, tool_config_filename = os.path.split( full_path_to_tool_config )
-                            can_use_disk_file = tool_util.can_use_tool_config_disk_file( trans,
+                            can_use_disk_file = tool_util.can_use_tool_config_disk_file( trans.app,
                                                                                          repository,
                                                                                          repo,
                                                                                          full_path_to_tool_config,
@@ -3406,7 +3412,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
                                 tool, valid, message, sample_files = \
-                                    tool_util.handle_sample_files_and_load_tool_from_disk( trans,
+                                    tool_util.handle_sample_files_and_load_tool_from_disk( trans.app,
                                                                                            repo_files_dir,
                                                                                            repository_id,
                                                                                            full_path_to_tool_config,
@@ -3415,7 +3421,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                     status = 'error'
                             else:
                                 tool, message, sample_files = \
-                                    tool_util.handle_sample_files_and_load_tool_from_tmp_config( trans,
+                                    tool_util.handle_sample_files_and_load_tool_from_tmp_config( trans.app,
                                                                                                  repo,
                                                                                                  repository_id,
                                                                                                  changeset_revision,

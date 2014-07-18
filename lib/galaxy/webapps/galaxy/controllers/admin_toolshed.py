@@ -244,7 +244,10 @@ class AdminToolshed( AdminGalaxy ):
         if kwd.get( 'deactivate_or_uninstall_repository_button', False ):
             if tool_shed_repository.includes_tools_for_display_in_tool_panel:
                 # Handle tool panel alterations.
-                tool_util.remove_from_tool_panel( trans, tool_shed_repository, shed_tool_conf, uninstall=remove_from_disk_checked )
+                tool_util.remove_from_tool_panel( trans.app,
+                                                  tool_shed_repository,
+                                                  shed_tool_conf,
+                                                  uninstall=remove_from_disk_checked )
             if tool_shed_repository.includes_data_managers:
                 data_manager_util.remove_from_data_manager( trans.app, tool_shed_repository )
             if tool_shed_repository.includes_datatypes:
@@ -1116,9 +1119,9 @@ class AdminToolshed( AdminGalaxy ):
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                   action='manage_repositories',
                                                                   **kwd ) )
-        shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans )
+        shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans.app, shed_tool_conf )
-        tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans )
+        tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
         if len( repo_info_dicts ) == 1:
             # If we're installing or updating a single repository, see if it contains a readme or
             # dependencies that we can display.
@@ -1636,7 +1639,7 @@ class AdminToolshed( AdminGalaxy ):
                     original_section_name = ''
             else:
                 original_section_name = ''
-            tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans )
+            tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field( trans.app )
             no_changes_check_box = CheckboxField( 'no_changes', checked=True )
             if original_section_name:
                 message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
@@ -1652,7 +1655,7 @@ class AdminToolshed( AdminGalaxy ):
             no_changes_check_box = None
             original_section_name = ''
             tool_panel_section_select_field = None
-        shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans )
+        shed_tool_conf_select_field = tool_util.build_shed_tool_conf_select_field( trans.app )
         dd = dependency_display.DependencyDisplayer( trans.app )
         containers_dict = \
             dd.populate_containers_dict_for_new_install( tool_shed_url=tool_shed_url,

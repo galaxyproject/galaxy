@@ -61,7 +61,10 @@ class RepoToolModule( ToolModule ):
             # We're in the tool shed.
             for tool_dict in tools_metadata:
                 if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
-                    repository, self.tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
+                    repository, self.tool, message = tool_util.load_tool_from_changeset_revision( trans.app,
+                                                                                                  repository_id,
+                                                                                                  changeset_revision,
+                                                                                                  tool_dict[ 'tool_config' ] )
                     if message and self.tool is None:
                         self.errors = 'unavailable'
                     break
