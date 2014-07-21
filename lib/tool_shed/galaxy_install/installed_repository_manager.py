@@ -11,11 +11,11 @@ from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
-from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import tool_panel_manager
 
 log = logging.getLogger( __name__ )
 
@@ -80,19 +80,19 @@ class InstalledRepositoryManager( object ):
         repository.deleted = False
         repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
+            tpm = tool_panel_manager.ToolPanelManager( self.app )
             metadata = repository.metadata
             repository_tools_tups = suc.get_repository_tools_tups( self.app, metadata )
             # Reload tools into the appropriate tool panel section.
             tool_panel_dict = repository.metadata[ 'tool_panel_section' ]
-            tool_util.add_to_tool_panel( self.app,
-                                         repository.name,
-                                         repository_clone_url,
-                                         repository.installed_changeset_revision,
-                                         repository_tools_tups,
-                                         repository.owner,
-                                         shed_tool_conf,
-                                         tool_panel_dict,
-                                         new_install=False )
+            tpm.add_to_tool_panel( repository.name,
+                                   repository_clone_url,
+                                   repository.installed_changeset_revision,
+                                   repository_tools_tups,
+                                   repository.owner,
+                                   shed_tool_conf,
+                                   tool_panel_dict,
+                                   new_install=False )
             if repository.includes_data_managers:
                 tp, data_manager_relative_install_dir = repository.get_tool_relative_path( self.app )
                 # Hack to add repository.name here, which is actually the root of the installed repository
