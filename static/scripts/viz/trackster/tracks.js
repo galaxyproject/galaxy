@@ -1062,11 +1062,9 @@ var TracksterView = Backbone.View.extend({
             view.request_redraw();
         });
 
-        // For vertical alignment, track mouse with simple line.
-        // Fixes needed for this to work:
-        // (a) make work with embedded visualizations;
-        // (b) seems to get stuck on tile overlaps.
+        // FIXME: this is still wonky for embedded visualizations.
         /*
+        // For vertical alignment, track mouse with simple line.
         var mouse_tracker_div = $('<div/>').addClass('mouse-pos').appendTo(parent_element);
 
         // Show tracker only when hovering over view.
@@ -1075,9 +1073,8 @@ var TracksterView = Backbone.View.extend({
                 mouse_tracker_div.show();
                 parent_element.mousemove(function(e) {
                     mouse_tracker_div.css({
-                        // -1 makes it appear next to the mouse w/o obscuring clicking
-                        // and dragging on view elements.
-                        left: e.pageX - 1
+                        // -1 makes line appear next to the mouse w/o preventing mouse actions.
+                        left: e.pageX - parent_element.offset().left - 1
                     });
                 });
             },
