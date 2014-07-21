@@ -296,6 +296,8 @@ class GalaxyRBACAgent( RBACAgent ):
 
         # Omit duplicated roles by converting to set
         return_roles = set( roles )
+        if total_count is None:
+            total_count = len( return_roles )
         return self.sort_by_attr( [ role for role in return_roles ], 'name' ), total_count
 
     def get_legitimate_roles( self, trans, item, cntrller ):

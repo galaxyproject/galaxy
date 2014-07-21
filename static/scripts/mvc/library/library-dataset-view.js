@@ -635,7 +635,6 @@ var LibraryDatasetView = Backbone.View.extend({
     
     tmpl_array.push('<div class="dataset_table">');
 
-    // tmpl_array.push('<h2>Basic</h2>');
     tmpl_array.push('<p>You can remove all access restrictions on this dataset. ');
     tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Everybody will be able to access the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button"><span class="fa fa-globe"></span> Remove restrictions</span></button>');
     tmpl_array.push('</p>');
@@ -648,7 +647,6 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Only you and the other user will be able to access the dataset." class="btn btn-default btn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
     tmpl_array.push('</p>');
 
-    // tmpl_array.push('<h2>Advanced</h2>');
     tmpl_array.push('<p>You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.</p>');
     tmpl_array.push('<hr/>');
 
@@ -661,7 +659,8 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('<hr/>');
 
     tmpl_array.push('<h2>Dataset-related permissions</h2>');
-    tmpl_array.push('<div class="alert alert-success">You have the permission to manage permissions on this dataset. That means you can control who can access it and also appoint others that can manage permissions on it. Changes made here will affect <strong>every</strong> library item and every history this dataset is part of.</div>');
+    tmpl_array.push('<div class="alert alert-success">You have the permission to manage permissions on this dataset. That means you can control who can access it and also appoint others that can manage permissions on it.</div>');
+    tmpl_array.push('<div class="alert alert-danger">Changes made here will affect <strong>every</strong> library item and every history this dataset is part of.</div>');
     tmpl_array.push('<h4>Roles that can access dataset</h4>');
     tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User has to have <strong>all these roles</strong> in order to access this dataset. Users without access permission <strong>cannot</strong> have other permissions on this dataset. If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.</div>');

@@ -41,6 +41,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         :rtype:     dictionary
         :returns:   detailed dataset information from base controller
+
         .. seealso:: :attr:`galaxy.web.base.controller.UsesLibraryMixinItems.get_library_dataset`
         """
         try:
@@ -67,6 +68,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         rval[ 'file_size' ] = nice_size
         rval[ 'date_uploaded' ] = date_uploaded
         rval[ 'can_user_modify' ] = trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset) or trans.user_is_admin()
+
+        #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
         rval[ 'can_user_manage' ] = trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
         return rval
 
@@ -74,9 +77,20 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     def show_roles( self, trans, encoded_dataset_id, **kwd ):
         """
         show_roles( self, trans, id, **kwd ):
-        GET /api/libraries/datasets/{encoded_dataset_id}/permissions:
+        * GET /api/libraries/datasets/{encoded_dataset_id}/permissions
             Displays information about current or available roles
             for a given dataset permission.
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to query
+        :type   encoded_dataset_id:      an encoded id string
+
+        :param  scope:      either 'current' or 'available'
+        :type   scope:      string
+
+        :rtype:     dictionary
+        :returns:   either dict of current roles for all permission types or
+                           dict of available roles to choose from (is the same for any permission type)
+
         """
 
         current_user_roles = trans.get_current_user_roles()
@@ -146,30 +160,66 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
             return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
 
-    # @expose_api
-    # def get_roles( self, trans, encoded_dataset_id, **kwd ):
-    #     try:
-    #         library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
-    #     except Exception, e:
-    #         raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
-    #     dataset = library_dataset.library_dataset_dataset_association.dataset
+    @expose_api
+    def update( self, trans, encoded_dataset_id, **kwd ):
+        """
+        def update( self, trans, encoded_dataset_id, **kwd ):
+            *POST /api/libraries/datasets/{encoded_dataset_id}/permissions
 
-    #     roles = dataset.get_access_roles( trans )
+        :param  encoded_dataset_id:      the encoded id of the dataset to make private
+        :type   encoded_dataset_id:      an encoded id string      
 
-    #     # roles = dataset.get_manage_permissions_roles( trans )
+        :param  action:     (required) describes what action should be performed
+                            available actions: make_private, remove_restrictions
+        :type   action:     string        
 
-    #     # roles = trans.app.security_agent.get_current_dataset_roles( trans, dataset, trans.app.security_agent.permitted_actions.DATASET_ACCESS )
-    #     # Omit duplicated roles by converting to set
-    #     roles = set( roles )
-    #     return [ role.name for role in roles ]
+        :rtype:     dictionary
+        :returns:   dict containing information about the dataset
+        """
+        try:
+            dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
+        except Exception, e:
+            raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
+
+        # User has to have manage permissions on dataset in order to remove access restrictions.
+        current_user_roles = trans.get_current_user_roles()
+        can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, dataset ) or trans.user_is_admin()
+        if not can_manage:
+            raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to manage permissions on this dataset.' )
+
+        action = kwd.get( 'action', None )
+        if action is None:
+            raise exceptions.RequestParameterMissingException( 'The mandatory parameter "action" is missing.' )
+        elif action == 'remove_restrictions':
+            trans.app.security_agent.make_dataset_public( dataset )
+        elif action == 'make_private':
+            trans.app.security_agent.make_dataset_public( dataset )
+            private_role = self.model.security_agent.get_private_user_role( trans.user )
+            dp = trans.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role )
+            trans.sa_session.add( dp )
+            trans.sa_session.flush()
+
+        rval = trans.security.encode_all_ids( dataset.to_dict() )
+        rval[ 'update_time' ] = dataset.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+        rval[ 'deleted' ] = dataset.deleted
+        rval[ 'folder_id' ] = 'F' + rval[ 'folder_id' ]
+        return rval
 
     @expose_api
     def delete( self, trans, encoded_dataset_id, **kwd ):
         """
         delete( self, trans, encoded_dataset_id, **kwd ):
         * DELETE /api/libraries/datasets/{encoded_dataset_id}
-            Marks the dataset deleted or undeletes it based on the value
-            of the undelete flag (if present).
+            Marks the dataset deleted or undeleted based on the value
+            of the undelete flag. 
+            If the flag is not present it is considered False and the
+            item is marked deleted.
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to change
+        :type   encoded_dataset_id:      an encoded id string    
+
+        :rtype:     dictionary
+        :returns:   dict containing information about the dataset
         """
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         try:

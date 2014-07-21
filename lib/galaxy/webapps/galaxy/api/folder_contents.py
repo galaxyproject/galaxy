@@ -127,6 +127,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 # When both are False the dataset is 'restricted'
                 is_private = False
                 is_unrestricted = False
+                # Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
                 if trans.app.security_agent.dataset_is_public( content_item.library_dataset_dataset_association.dataset ):
                     is_unrestricted = True
                 else:
