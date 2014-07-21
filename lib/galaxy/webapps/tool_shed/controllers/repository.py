@@ -2755,7 +2755,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
         rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
         invalid_file_tups, metadata_dict = \
-            rmm.reset_all_metadata_on_repository_in_tool_shed( id, **kwd )
+            rmm.reset_all_metadata_on_repository_in_tool_shed( id )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans.app, id )
             message = tool_util.generate_message_for_invalid_tools( trans.app,

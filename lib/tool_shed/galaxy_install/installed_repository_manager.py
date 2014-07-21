@@ -14,6 +14,7 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
@@ -80,9 +81,10 @@ class InstalledRepositoryManager( object ):
         repository.deleted = False
         repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
+            irmm = InstalledRepositoryMetadataManager( self.app )
             tpm = tool_panel_manager.ToolPanelManager( self.app )
             metadata = repository.metadata
-            repository_tools_tups = suc.get_repository_tools_tups( self.app, metadata )
+            repository_tools_tups = irmm.get_repository_tools_tups( metadata )
             # Reload tools into the appropriate tool panel section.
             tool_panel_dict = repository.metadata[ 'tool_panel_section' ]
             tpm.add_to_tool_panel( repository.name,

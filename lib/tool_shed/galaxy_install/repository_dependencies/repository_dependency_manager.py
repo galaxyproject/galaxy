@@ -206,7 +206,7 @@ class RepositoryDependencyInstallManager( object ):
                                 # Set changeset_revision here so suc.create_or_update_tool_shed_repository will find
                                 # the previously installed and uninstalled repository instead of creating a new record.
                                 changeset_revision = repository_db_record.installed_changeset_revision
-                                suc.reset_previously_installed_repository( install_model, repository_db_record )
+                                self.reset_previously_installed_repository( repository_db_record )
                                 can_update_db_record = True
                     else:
                         # No record exists in the database for the repository currently being processed.
@@ -409,3 +409,26 @@ class RepositoryDependencyInstallManager( object ):
                                     return False
                             return True
             return False
+
+    def reset_previously_installed_repository( self, repository ):
+        """
+        Reset the attributes of a tool_shed_repository that was previously installed.
+        The repository will be in some state other than INSTALLED, so all attributes
+        will be set to the default NEW state.  This will enable the repository to be
+        freshly installed.
+        """
+        debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % str( repository.name )
+        debug_msg += "The current state of the tool_shed_repository is:\n"
+        debug_msg += "deleted: %s\n" % str( repository.deleted )
+        debug_msg += "tool_shed_status: %s\n" % str( repository.tool_shed_status )
+        debug_msg += "uninstalled: %s\n" % str( repository.uninstalled )
+        debug_msg += "status: %s\n" % str( repository.status )
+        debug_msg += "error_message: %s\n" % str( repository.error_message )
+        log.debug( debug_msg )
+        repository.deleted = False
+        repository.tool_shed_status = None
+        repository.uninstalled = False
+        repository.status = self.app.install_model.ToolShedRepository.installation_status.NEW
+        repository.error_message = None
+        self.app.install_model.context.add( repository )
+        self.app.install_model.context.flush()

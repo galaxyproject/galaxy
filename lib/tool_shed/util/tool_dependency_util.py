@@ -4,10 +4,33 @@ import shutil
 
 from galaxy import util
 from galaxy.model.orm import and_
+from galaxy.web.form_builder import SelectField
+
 from tool_shed.util import hg_util
 from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
+
+def build_tool_dependencies_select_field( app, tool_shed_repository, name, multiple=True, display='checkboxes',
+                                          uninstalled_only=False ):
+    """
+    Generate a SelectField consisting of the current list of tool dependency ids
+    for an installed tool shed repository.
+    """
+    tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
+    for tool_dependency in tool_shed_repository.tool_dependencies:
+        if uninstalled_only:
+            if tool_dependency.status not in [ app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                               app.install_model.ToolDependency.installation_status.UNINSTALLED ]:
+                continue
+        else:
+            if tool_dependency.status in [ app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                           app.install_model.ToolDependency.installation_status.UNINSTALLED ]:
+                continue
+        option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
+        option_value = app.security.encode_id( tool_dependency.id )
+        tool_dependencies_select_field.add_option( option_label, option_value )
+    return tool_dependencies_select_field
 
 def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status, set_status=True ):
     """Create or update a tool_dependency record in the Galaxy database."""

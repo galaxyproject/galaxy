@@ -1,7 +1,10 @@
 import logging
 import os
+
+from tool_shed.galaxy_install.tools import tool_panel_manager
+
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
-import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -17,6 +20,7 @@ def data_manager_config_elems_to_xml_file( app, config_elems, config_filename ):
 def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, shed_config_dict, relative_install_dir, repository, repository_tools_tups ):
     rval = []
     if 'data_manager' in metadata_dict:
+        tpm = tool_panel_manager.ToolPanelManager( app )
         repository_tools_by_guid = {}
         for tool_tup in repository_tools_tups:
             repository_tools_by_guid[ tool_tup[ 1 ] ] = dict( tool_config_filename=tool_tup[ 0 ], tool=tool_tup[ 2 ] )
@@ -70,13 +74,13 @@ def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, 
                 elem.set( 'shed_conf_file', shed_config_dict['config_filename'] )
                 if elem.get( 'tool_file', None ) is not None:
                     del elem.attrib[ 'tool_file' ] #remove old tool_file info
-                tool_elem = suc.generate_tool_elem( repository.tool_shed,
-                                                    repository.name,
-                                                    repository.installed_changeset_revision,
-                                                    repository.owner,
-                                                    tool_config_filename,
-                                                    tool,
-                                                    None )
+                tool_elem = tpm.generate_tool_elem( repository.tool_shed,
+                                                        repository.name,
+                                                        repository.installed_changeset_revision,
+                                                        repository.owner,
+                                                        tool_config_filename,
+                                                        tool,
+                                                        None )
                 elem.insert( 0, tool_elem )
                 data_manager = app.data_managers.load_manager_from_elem( elem, tool_path=shed_config_dict.get( 'tool_path', '' ), replace_existing=True )
                 if data_manager:

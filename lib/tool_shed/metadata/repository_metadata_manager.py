@@ -951,11 +951,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             unsuccessful_count = 0
             for repository_id in repository_ids:
                 try:
-                    # We're in the tool shed.
                     repository = suc.get_repository_in_tool_shed( self.app, repository_id )
-                    owner = str( repository.user.username )
                     invalid_file_tups, metadata_dict = \
-                        self.reset_all_metadata_on_repository_in_tool_shed( self.user, repository_id )
+                        self.reset_all_metadata_on_repository_in_tool_shed( repository_id )
                     if invalid_file_tups:
                         message = tool_util.generate_message_for_invalid_tools( self.app,
                                                                                 invalid_file_tups,
@@ -966,7 +964,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                         unsuccessful_count += 1
                     else:
                         log.debug( "Successfully reset metadata on repository %s owned by %s" % \
-                                    ( str( repository.name ), owner ) )
+                                    ( str( repository.name ), str( repository.user.username ) ) )
                         successful_count += 1
                 except:
                     log.exception( "Error attempting to reset metadata on repository %s" % str( repository.name ) )

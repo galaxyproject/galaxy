@@ -190,6 +190,7 @@ class RepairRepositoryManager():
             if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.ERROR ]:
                 repair_dict = add_repair_dict_entry( repository.name, repository.error_message )
         else:
+            irm = install_manager.InstallRepositoryManager( self.app )
             # We have an installed tool shed repository, so handle tool dependencies if necessary.
             if repository.missing_tool_dependencies and metadata and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itdep" )
@@ -204,8 +205,7 @@ class RepairRepositoryManager():
                                                                                  error_message=None,
                                                                                  remove_from_disk=True )
                 # Install tool dependencies.
-                suc.update_tool_shed_repository_status( self.app,
-                                                        repository,
+                irm.update_tool_shed_repository_status( repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
                 # Get the tool_dependencies.xml file from the repository.
                 tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', repository.repo_path( self.app ) )
@@ -218,5 +218,6 @@ class RepairRepositoryManager():
                     if installed_tool_dependency.status in [ self.app.install_model.ToolDependency.installation_status.ERROR ]:
                         repair_dict = add_repair_dict_entry( repository.name, installed_tool_dependency.error_message )
                 basic_util.remove_dir( work_dir )
-            suc.update_tool_shed_repository_status( self.app, repository, self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
+            irm.update_tool_shed_repository_status( repository,
+                                                    self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
         return repair_dict

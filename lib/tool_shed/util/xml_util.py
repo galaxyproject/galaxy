@@ -137,8 +137,8 @@ def parse_xml( file_name ):
 def xml_to_string( elem, encoding='utf-8', use_indent=False, level=0 ):
     if elem is not None:
         if use_indent:
-            # We were called from suc.config_elems_to_xml_file(), so set the level to 1 since level 0
-            # is the <toolbox> tag set.
+            # We were called from ToolPanelManager.config_elems_to_xml_file(), so
+            # set the level to 1 since level 0 is the <toolbox> tag set.
             indent( elem, level=level )
         if using_python_27:
             xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding, method="xml" )

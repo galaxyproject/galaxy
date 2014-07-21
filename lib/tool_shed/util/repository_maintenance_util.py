@@ -40,6 +40,20 @@ def change_repository_name_in_hgrc_file( hgrc_file, new_name ):
     config.write( new_file )
     new_file.close()
 
+def check_or_update_tool_shed_status_for_installed_repository( app, repository ):
+    updated = False
+    tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( app, repository )
+    if tool_shed_status_dict:
+        ok = True
+        if tool_shed_status_dict != repository.tool_shed_status:
+            repository.tool_shed_status = tool_shed_status_dict
+            app.install_model.context.add( repository )
+            app.install_model.context.flush()
+            updated = True
+    else:
+        ok = False
+    return ok, updated
+
 def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None,
                            repository=None, repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
     """
@@ -170,6 +184,11 @@ def create_repository_admin_role( app, repository ):
     sa_session.add( rra )
     sa_session.flush()
     return role
+
+def get_installed_tool_shed_repository( app, id ):
+    """Get a tool shed repository record from the Galaxy database defined by the id."""
+    return app.install_model.context.query( app.install_model.ToolShedRepository ) \
+                                    .get( app.security.decode_id( id ) )
 
 def get_repo_info_dict( app, user, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( app, repository_id )
