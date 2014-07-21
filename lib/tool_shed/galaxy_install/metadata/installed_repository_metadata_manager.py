@@ -3,6 +3,7 @@ import os
 
 from galaxy import util
 from galaxy.util import inflector
+from galaxy.web.form_builder import SelectField
 
 from tool_shed.metadata import metadata_generator
 
@@ -18,6 +19,32 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
     def __init__( self, app ):
         super( InstalledRepositoryMetadataManager, self ).__init__( app )
         self.app = app
+
+    def build_repository_ids_select_field( self, name='repository_ids', multiple=True, display='checkboxes' ):
+        """Generate the current list of repositories for resetting metadata."""
+        repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
+        query = self.get_query_for_setting_metadata_on_repositories( order=True )
+        for repository in query:
+            owner = str( repository.owner )
+            option_label = '%s (%s)' % ( str( repository.name ), owner )
+            option_value = '%s' % self.app.security.encode_id( repository.id )
+            repositories_select_field.add_option( option_label, option_value )
+        return repositories_select_field
+
+    def get_query_for_setting_metadata_on_repositories( self, order=True ):
+        """
+        Return a query containing repositories for resetting metadata.  The order parameter
+        is used for displaying the list of repositories ordered alphabetically for display on
+        a page.  When called from the Galaxy API, order is False.
+        """
+        if order:
+            return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
+                                                 .filter( self.app.install_model.ToolShedRepository.table.c.uninstalled == False ) \
+                                                 .order_by( self.app.install_model.ToolShedRepository.table.c.name,
+                                                            self.app.install_model.ToolShedRepository.table.c.owner )
+        else:
+            return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
+                                                 .filter( self.app.install_model.ToolShedRepository.table.c.uninstalled == False )
 
     def reset_all_metadata_on_installed_repository( self, id ):
         """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""

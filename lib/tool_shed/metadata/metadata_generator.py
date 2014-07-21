@@ -10,6 +10,7 @@ from galaxy.tools.data_manager.manager import DataManager
 from galaxy.web import url_for
 
 from tool_shed.repository_types import util as rt_util
+from tool_shed.tools import tool_validator
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -128,7 +129,7 @@ class MetadataGenerator( object ):
             log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
         return metadata_dict
 
-    def generate_datatypes_metadata( self, repository, repository_clone_url, repository_files_dir, datatypes_config,
+    def generate_datatypes_metadata( self, tv, repository, repository_clone_url, repository_files_dir, datatypes_config,
                                      metadata_dict ):
         """Update the received metadata_dict with information from the parsed datatypes_config."""
         tree, error_message = xml_util.parse_xml( datatypes_config )
@@ -178,7 +179,7 @@ class MetadataGenerator( object ):
                         tool_config_path = hg_util.get_config_from_disk( tool_config, repository_files_dir )
                         full_path = os.path.abspath( tool_config_path )
                         tool, valid, error_message = \
-                            tool_util.load_tool_from_config( self.app, self.app.security.encode_id( repository.id ), full_path )
+                            tv.load_tool_from_config( self.app.security.encode_id( repository.id ), full_path )
                         if tool is None:
                             guid = None
                         else:
@@ -245,6 +246,7 @@ class MetadataGenerator( object ):
         tool_data_table_conf.xml.sample file, in which case the entries should ultimately be
         persisted to the file referred to by self.app.config.shed_tool_data_table_config.
         """
+        tv = tool_validator.ToolValidator( self.app )
         if shed_config_dict is None:
             shed_config_dict = {}
         if updating_installed_repository:
@@ -290,7 +292,8 @@ class MetadataGenerator( object ):
         # Handle proprietary datatypes, if any.
         datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
         if datatypes_config:
-            metadata_dict = self.generate_datatypes_metadata( repository,
+            metadata_dict = self.generate_datatypes_metadata( tv,
+                                                              repository,
                                                               repository_clone_url,
                                                               files_dir,
                                                               datatypes_config,
@@ -361,20 +364,18 @@ class MetadataGenerator( object ):
                                     is_tool = element_tree_root.tag == 'tool'
                                 if is_tool:
                                     tool, valid, error_message = \
-                                        tool_util.load_tool_from_config( self.app,
-                                                                         self.app.security.encode_id( repository.id ),
-                                                                         full_path )
+                                        tv.load_tool_from_config( self.app.security.encode_id( repository.id ),
+                                                                  full_path )
                                     if tool is None:
                                         if not valid:
                                             invalid_tool_configs.append( name )
                                             invalid_file_tups.append( ( name, error_message ) )
                                     else:
                                         invalid_files_and_errors_tups = \
-                                            tool_util.check_tool_input_params( self.app,
-                                                                               files_dir,
-                                                                               name,
-                                                                               tool,
-                                                                               sample_file_copy_paths )
+                                            tv.check_tool_input_params( files_dir,
+                                                                        name,
+                                                                        tool,
+                                                                        sample_file_copy_paths )
                                         can_set_metadata = True
                                         for tup in invalid_files_and_errors_tups:
                                             if name in tup:

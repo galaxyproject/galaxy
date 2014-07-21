@@ -41,8 +41,8 @@ def get_component_review( app, id ):
 def get_component_by_name( app, name ):
     """Get a component from the database via a name."""
     sa_session = app.model.context.current
-    return sa_session.query( app.app.model.Component ) \
-                     .filter( app.app.model.Component.table.c.name==name ) \
+    return sa_session.query( app.model.Component ) \
+                     .filter( app.model.Component.table.c.name==name ) \
                      .first()
 
 def get_component_review_by_repository_review_id_component_id( app, repository_review_id, component_id ):

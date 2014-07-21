@@ -1,5 +1,6 @@
 import logging
 import os
+
 import galaxy.tools
 import galaxy.tools.parameters
 import galaxy.webapps.galaxy.controllers.workflow
@@ -9,9 +10,12 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.modules import InputDataModule
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
-import tool_shed.util.shed_util_common as suc
+
+from tool_shed.tools import tool_validator
+
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 
 eggs.require( "SVGFig" )
@@ -57,11 +61,14 @@ class RepoToolModule( ToolModule ):
         self.tool_id = tool_id
         self.tool = None
         self.errors = None
+        self.tv = tool_validator.ToolValidator( trans.app )
         if trans.webapp.name == 'tool_shed':
             # We're in the tool shed.
             for tool_dict in tools_metadata:
                 if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
-                    repository, self.tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
+                    repository, self.tool, message = self.tv.load_tool_from_changeset_revision( repository_id,
+                                                                                                changeset_revision,
+                                                                                                tool_dict[ 'tool_config' ] )
                     if message and self.tool is None:
                         self.errors = 'unavailable'
                     break
