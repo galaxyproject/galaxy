@@ -356,7 +356,7 @@ var TracksterUI = base.Base.extend({
                 buttons: {
                     "Cancel": function() { Galaxy.modal.hide(); },
                     "Leave without Saving" : function() {
-                        window.onbeforeunload = undefined;
+                        $(window).off('beforeunload');
                         window.location = galaxy_config.root + 'visualization';
                     },
                     "Save" : function() {
