@@ -1287,7 +1287,6 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                 }
             }
 
-            view.reset_overview();
             view.request_redraw();
         }
     },
