@@ -5,13 +5,14 @@ log = logging.getLogger( __name__ )
 
 from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import tool_panel_manager
 
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import repository_maintenance_util
 from tool_shed.util import tool_dependency_util
-from tool_shed.util import tool_util
+
 
 class RepairRepositoryManager():
 
@@ -119,10 +120,11 @@ class RepairRepositoryManager():
                 tool_panel_section_id = section_dict[ 'id' ]
                 tool_panel_section_name = section_dict[ 'name' ]
                 if tool_panel_section_id:
+                    tpm = tool_panel_manager.ToolPanelManager( self.app )
                     tool_panel_section_key, tool_panel_section = \
-                        tool_util.get_or_create_tool_section( self.app.toolbox,
-                                                              tool_panel_section_id=tool_panel_section_id,
-                                                              new_tool_panel_section_label=tool_panel_section_name )
+                        tpm.get_or_create_tool_section( self.app.toolbox,
+                                                        tool_panel_section_id=tool_panel_section_id,
+                                                        new_tool_panel_section_label=tool_panel_section_name )
         else:
             tool_dependencies = None
         repo_info_dict = repository_maintenance_util.create_repo_info_dict( app=self.app,
@@ -156,15 +158,17 @@ class RepairRepositoryManager():
                 log.debug( error_message )
                 repair_dict [ repository.name ] = error_message
         elif repository.status not in [ self.app.install_model.ToolShedRepository.installation_status.INSTALLED ]:
-            shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
+            shed_tool_conf, tool_path, relative_install_dir = \
+                suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
             # Reset the repository attributes to the New state for installation.
             if metadata:
+                tpm = tool_panel_manager.ToolPanelManager( self.app )
                 tool_section, tool_panel_section_key = \
-                    tool_util.handle_tool_panel_selection( self.app.toolbox,
-                                                           metadata,
-                                                           no_changes_checked=True,
-                                                           tool_panel_section_id=None,
-                                                           new_tool_panel_section_label=None )
+                    tpm.handle_tool_panel_selection( self.app.toolbox,
+                                                     metadata,
+                                                     no_changes_checked=True,
+                                                     tool_panel_section_id=None,
+                                                     new_tool_panel_section_label=None )
             else:
                 # The tools will be loaded outside of any sections in the tool panel.
                 tool_panel_section_key = None

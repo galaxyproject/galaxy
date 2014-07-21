@@ -2753,9 +2753,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def reset_all_metadata( self, trans, id, **kwd ):
         """Reset all metadata on the complete changelog for a single repository in the tool shed."""
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
-        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
         invalid_file_tups, metadata_dict = \
-            rmm.reset_all_metadata_on_repository_in_tool_shed( trans.user, id, **kwd )
+            rmm.reset_all_metadata_on_repository_in_tool_shed( id, **kwd )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans.app, id )
             message = tool_util.generate_message_for_invalid_tools( trans.app,
@@ -2774,13 +2774,16 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def reset_metadata_on_my_writable_repositories_in_tool_shed( self, trans, **kwd ):
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
-            message, status = rmm.reset_metadata_on_selected_repositories( trans.user, **kwd )
+            message, status = rmm.reset_metadata_on_selected_repositories( **kwd )
         else:
             message = kwd.get( 'message', ''  )
             status = kwd.get( 'status', 'done' )
-        repositories_select_field = suc.build_repository_ids_select_field( trans, my_writable=True )
+        repositories_select_field = rmm.build_repository_ids_select_field( name='repository_ids',
+                                                                           multiple=True,
+                                                                           display='checkboxes',
+                                                                           my_writable=True )
         return trans.fill_template( '/webapps/tool_shed/common/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,
@@ -2840,9 +2843,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if tip == repository.tip( trans.app ):
                     message += 'No changes to repository.  '
                 else:
-                    rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app )
+                    rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
                     status, error_message = rmm.set_repository_metadata_due_to_new_tip( trans.request.host,
-                                                                                        trans.user,
                                                                                         repository,
                                                                                         **kwd )
                     if error_message:

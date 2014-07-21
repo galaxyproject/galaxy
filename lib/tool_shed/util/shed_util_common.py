@@ -84,20 +84,6 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 '${host}'
 """
 
-def build_repository_ids_select_field( trans, name='repository_ids', multiple=True, display='checkboxes', my_writable=False ):
-    """Method called from both Galaxy and the Tool Shed to generate the current list of repositories for resetting metadata."""
-    repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
-    query = get_query_for_setting_metadata_on_repositories( trans, my_writable=my_writable, order=True )
-    for repository in query:
-        if trans.webapp.name == 'tool_shed':
-            owner = str( repository.user.username )
-        else:
-            owner = str( repository.owner )
-        option_label = '%s (%s)' % ( str( repository.name ), owner )
-        option_value = '%s' % trans.security.encode_id( repository.id )
-        repositories_select_field.add_option( option_label, option_value )
-    return repositories_select_field
-
 def build_tool_dependencies_select_field( app, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled_only=False ):
     """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
     tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
@@ -644,66 +630,6 @@ def get_prior_import_or_install_required_dict( app, tsr_ids, repo_info_dicts ):
                 prior_import_or_install_ids = get_repository_ids_requiring_prior_import_or_install( app, tsr_ids, repository_dependencies )
                 prior_import_or_install_required_dict[ encoded_repository_id ] = prior_import_or_install_ids
     return prior_import_or_install_required_dict
-
-def get_query_for_setting_metadata_on_repositories( trans, my_writable=False, order=True ):
-    """
-    Return a query containing repositories for resetting metadata.  This method is called from both the
-    Tool Shed and Galaxy.  The my_writable parameter is ignored unless called from the Tool Shed, and the
-    order parameter is used for displaying the list of repositories ordered alphabetically for display on
-    a page.  When called from either the Tool Shed or Galaxy API, order is False.
-    """
-    if trans.webapp.name == 'tool_shed':
-        # When called from the Tool Shed API, the metadata is reset on all repositories of types
-        # repository_suite_definition and tool_dependency_definition in addition to other selected
-        # repositories.
-        if my_writable:
-            username = trans.user.username
-            clause_list = []
-            for repository in trans.sa_session.query( trans.model.Repository ) \
-                                              .filter( trans.model.Repository.table.c.deleted == False ):
-                # Always reset metadata on all repositories of types repository_suite_definition and
-                # tool_dependency_definition.
-                if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
-                    clause_list.append( trans.model.Repository.table.c.id == repository.id )
-                else:
-                    allow_push = repository.allow_push( trans.app )
-                    if allow_push:
-                        # Include all repositories that are writable by the current user.
-                        allow_push_usernames = allow_push.split( ',' )
-                        if username in allow_push_usernames:
-                            clause_list.append( trans.model.Repository.table.c.id == repository.id )
-            if clause_list:
-                if order:
-                    return trans.sa_session.query( trans.model.Repository ) \
-                                           .filter( or_( *clause_list ) ) \
-                                           .order_by( trans.model.Repository.table.c.name,
-                                                      trans.model.Repository.table.c.user_id )
-                else:
-                    return trans.sa_session.query( trans.model.Repository ) \
-                                           .filter( or_( *clause_list ) )
-            else:
-                # Return an empty query.
-                return trans.sa_session.query( trans.model.Repository ) \
-                                       .filter( trans.model.Repository.table.c.id == -1 )
-        else:
-            if order:
-                return trans.sa_session.query( trans.model.Repository ) \
-                                       .filter( trans.model.Repository.table.c.deleted == False ) \
-                                       .order_by( trans.model.Repository.table.c.name,
-                                                  trans.model.Repository.table.c.user_id )
-            else:
-                return trans.sa_session.query( trans.model.Repository ) \
-                                       .filter( trans.model.Repository.table.c.deleted == False )
-    else:
-        # We're in Galaxy.
-        if order:
-            return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                   .filter( trans.install_model.ToolShedRepository.table.c.uninstalled == False ) \
-                                   .order_by( trans.install_model.ToolShedRepository.table.c.name,
-                                              trans.install_model.ToolShedRepository.table.c.owner )
-        else:
-            return trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                   .filter( trans.install_model.ToolShedRepository.table.c.uninstalled == False )
 
 def get_repo_info_tuple_contents( repo_info_tuple ):
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""

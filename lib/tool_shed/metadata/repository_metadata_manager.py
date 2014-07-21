@@ -2,11 +2,13 @@ import logging
 import os
 import tempfile
 
-from galaxy.util import inflector
 from galaxy import util
+from galaxy.util import inflector
+from galaxy.web.form_builder import SelectField
 
 from tool_shed.metadata import metadata_generator
 from tool_shed.repository_types.metadata import TipOnly
+from tool_shed.repository_types import util as rt_util
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -20,9 +22,10 @@ log = logging.getLogger( __name__ )
 
 class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
 
-    def __init__( self, app ):
+    def __init__( self, app, user ):
         super( RepositoryMetadataManager, self ).__init__( app )
         self.app = app
+        self.user = user
         # Repository metadata comparisons for changeset revisions.
         self.EQUAL = 'equal'
         self.NO_METADATA = 'no metadata'
@@ -46,6 +49,18 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             repository_metadata.tool_versions = tool_versions_dict
             self.sa_session.add( repository_metadata )
             self.sa_session.flush()
+
+    def build_repository_ids_select_field( self, name='repository_ids', multiple=True, display='checkboxes',
+                                           my_writable=False ):
+        """Generate the current list of repositories for resetting metadata."""
+        repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
+        query = self.get_query_for_setting_metadata_on_repositories( my_writable=my_writable, order=True )
+        for repository in query:
+            owner = str( repository.user.username )
+            option_label = '%s (%s)' % ( str( repository.name ), owner )
+            option_value = '%s' % self.app.security.encode_id( repository.id )
+            repositories_select_field.add_option( option_label, option_value )
+        return repositories_select_field
 
     def clean_repository_metadata( self, id, changeset_revisions ):
         # Delete all repository_metadata records associated with the repository that have
@@ -458,6 +473,54 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             # The tool did not change through all of the changeset revisions.
             return old_id
 
+    def get_query_for_setting_metadata_on_repositories( self, my_writable=False, order=True ):
+        """
+        Return a query containing repositories for resetting metadata.  The order parameter
+        is used for displaying the list of repositories ordered alphabetically for display on
+        a page.  When called from the Tool Shed API, order is False.
+        """
+        # When called from the Tool Shed API, the metadata is reset on all repositories of types
+        # repository_suite_definition and tool_dependency_definition in addition to other selected
+        # repositories.
+        if my_writable:
+            username = self.user.username
+            clause_list = []
+            for repository in self.sa_session.query( self.app.model.Repository ) \
+                                             .filter( self.app.model.Repository.table.c.deleted == False ):
+                # Always reset metadata on all repositories of types repository_suite_definition and
+                # tool_dependency_definition.
+                if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
+                    clause_list.append( self.app.model.Repository.table.c.id == repository.id )
+                else:
+                    allow_push = repository.allow_push( self.app )
+                    if allow_push:
+                        # Include all repositories that are writable by the current user.
+                        allow_push_usernames = allow_push.split( ',' )
+                        if username in allow_push_usernames:
+                            clause_list.append( self.app.model.Repository.table.c.id == repository.id )
+            if clause_list:
+                if order:
+                    return self.sa_session.query( self.app.model.Repository ) \
+                                          .filter( or_( *clause_list ) ) \
+                                          .order_by( self.app.model.Repository.table.c.name,
+                                                     self.app.model.Repository.table.c.user_id )
+                else:
+                    return self.sa_session.query( self.app.model.Repository ) \
+                                          .filter( or_( *clause_list ) )
+            else:
+                # Return an empty query.
+                return self.sa_session.query( self.app.model.Repository ) \
+                                      .filter( self.app.model.Repository.table.c.id == -1 )
+        else:
+            if order:
+                return self.sa_session.query( self.app.model.Repository ) \
+                                      .filter( self.app.model.Repository.table.c.deleted == False ) \
+                                      .order_by( self.app.model.Repository.table.c.name,
+                                                 self.app.model.Repository.table.c.user_id )
+            else:
+                return self.sa_session.query( self.app.model.Repository ) \
+                                      .filter( self.app.model.Repository.table.c.deleted == False )
+
     def new_datatypes_metadata_required( self, repository_metadata, metadata_dict ):
         """
         Compare the last saved metadata for each datatype in the repository with the new metadata
@@ -732,13 +795,13 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # repository_metadata table record is not needed.
         return False
 
-    def reset_all_metadata_on_repository_in_tool_shed( self, user, id ):
+    def reset_all_metadata_on_repository_in_tool_shed( self, id ):
         """Reset all metadata on a single repository in a tool shed."""    
         repository = suc.get_repository_in_tool_shed( self.app, id )
         log.debug( "Resetting all metadata on repository: %s" % repository.name )
         repo_dir = repository.repo_path( self.app )
         repo = hg_util.get_repo_for_repository( self.app, repository=None, repo_path=repo_dir, create=False )
-        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( user, repository )
+        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( self.user, repository )
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
@@ -875,7 +938,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                 self.sa_session.add( repository_metadata )
                 self.sa_session.flush()
 
-    def reset_metadata_on_selected_repositories( self, user, **kwd ):
+    def reset_metadata_on_selected_repositories( self, **kwd ):
         """
         Inspect the repository changelog to reset metadata for all appropriate changeset revisions.
         This method is called from both Galaxy and the Tool Shed.
@@ -892,7 +955,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                     repository = suc.get_repository_in_tool_shed( self.app, repository_id )
                     owner = str( repository.user.username )
                     invalid_file_tups, metadata_dict = \
-                        self.reset_all_metadata_on_repository_in_tool_shed( user, repository_id )
+                        self.reset_all_metadata_on_repository_in_tool_shed( self.user, repository_id )
                     if invalid_file_tups:
                         message = tool_util.generate_message_for_invalid_tools( self.app,
                                                                                 invalid_file_tups,
@@ -918,7 +981,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             status = 'error'
         return message, status
 
-    def set_repository_metadata( self, host, user, repository, content_alert_str='', **kwd ):
+    def set_repository_metadata( self, host, repository, content_alert_str='', **kwd ):
         """
         Set metadata using the repository's current disk files, returning specific error
         messages (if any) to alert the repository owner that the changeset has problems.
@@ -926,7 +989,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         message = ''
         status = 'done'
         encoded_id = self.app.security.encode_id( repository.id )
-        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( user, repository )
+        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( self.user, repository )
         repo_dir = repository.repo_path( self.app )
         repo = hg_util.get_repo_for_repository( self.app, repository=None, repo_path=repo_dir, create=False )
         metadata_dict, invalid_file_tups = \
@@ -1027,10 +1090,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         tool_util.reset_tool_data_tables( self.app )
         return message, status
 
-    def set_repository_metadata_due_to_new_tip( self, host, user, repository, content_alert_str=None, **kwd ):
+    def set_repository_metadata_due_to_new_tip( self, host, repository, content_alert_str=None, **kwd ):
         """Set metadata on the repository tip in the tool shed."""
         error_message, status = self.set_repository_metadata( host,
-                                                              user,
                                                               repository,
                                                               content_alert_str=content_alert_str,
                                                               **kwd )

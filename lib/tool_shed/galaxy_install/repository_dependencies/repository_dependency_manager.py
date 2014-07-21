@@ -10,11 +10,12 @@ import urllib2
 
 from galaxy.util import asbool
 
+from tool_shed.galaxy_install.tools import tool_panel_manager
+
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
 
 log = logging.getLogger( __name__ )
 
@@ -216,19 +217,20 @@ class RepositoryDependencyInstallManager( object ):
                     if can_update_db_record:
                         # The database record for the tool shed repository currently being processed can be updated.
                         # Get the repository metadata to see where it was previously located in the tool panel.
+                        tpm = tool_panel_manager.ToolPanelManager( self.app )
                         if repository_db_record and repository_db_record.metadata:
                             tool_section, tool_panel_section_key = \
-                                tool_util.handle_tool_panel_selection( toolbox=self.app.toolbox,
-                                                                       metadata=repository_db_record.metadata,
-                                                                       no_changes_checked=no_changes_checked,
-                                                                       tool_panel_section_id=tool_panel_section_id,
-                                                                       new_tool_panel_section_label=new_tool_panel_section_label )
+                                tpm.handle_tool_panel_selection( toolbox=self.app.toolbox,
+                                                                 metadata=repository_db_record.metadata,
+                                                                 no_changes_checked=no_changes_checked,
+                                                                 tool_panel_section_id=tool_panel_section_id,
+                                                                 new_tool_panel_section_label=new_tool_panel_section_label )
                         else:
                             # We're installing a new tool shed repository that does not yet have a database record.
                             tool_panel_section_key, tool_section = \
-                                tool_util.handle_tool_panel_section( self.app.toolbox,
-                                                                     tool_panel_section_id=tool_panel_section_id,
-                                                                     new_tool_panel_section_label=new_tool_panel_section_label )
+                                tpm.handle_tool_panel_section( self.app.toolbox,
+                                                               tool_panel_section_id=tool_panel_section_id,
+                                                               new_tool_panel_section_label=new_tool_panel_section_label )
                         tool_shed_repository = \
                             suc.create_or_update_tool_shed_repository( app=self.app,
                                                                        name=name,

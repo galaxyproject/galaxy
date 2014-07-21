@@ -33,6 +33,7 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import E
 from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
+from tool_shed.galaxy_install.tools import tool_panel_manager
 
 log = logging.getLogger( __name__ )
 
@@ -535,7 +536,8 @@ class InstallRepositoryManager( object ):
                                                                             self.app.config.shed_tool_data_table_config,
                                                                             persist=True )
         if 'tools' in metadata_dict:
-            tool_panel_dict = tool_util.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
+            tpm = tool_panel_manager.ToolPanelManager( self.app )
+            tool_panel_dict = tpm.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
             sample_files = metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
             tool_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
@@ -555,16 +557,18 @@ class InstallRepositoryManager( object ):
                                                                                                   sample_files_copied )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the
                 # local Galaxy instance.
-                tool_util.copy_sample_files( self.app, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied )
-                tool_util.add_to_tool_panel( app=self.app,
-                                             repository_name=tool_shed_repository.name,
-                                             repository_clone_url=repository_clone_url,
-                                             changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                             repository_tools_tups=repository_tools_tups,
-                                             owner=tool_shed_repository.owner,
-                                             shed_tool_conf=shed_tool_conf,
-                                             tool_panel_dict=tool_panel_dict,
-                                             new_install=True )
+                tool_util.copy_sample_files( self.app,
+                                             sample_files,
+                                             tool_path=tool_path,
+                                             sample_files_copied=sample_files_copied )
+                tpm.add_to_tool_panel( repository_name=tool_shed_repository.name,
+                                       repository_clone_url=repository_clone_url,
+                                       changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                       repository_tools_tups=repository_tools_tups,
+                                       owner=tool_shed_repository.owner,
+                                       shed_tool_conf=shed_tool_conf,
+                                       tool_panel_dict=tool_panel_dict,
+                                       new_install=True )
         if 'data_manager' in metadata_dict:
             new_data_managers = data_manager_util.install_data_managers( self.app,
                                                                          self.app.config.shed_data_manager_config_file,
@@ -644,10 +648,11 @@ class InstallRepositoryManager( object ):
         tool_shed_url = installation_dict[ 'tool_shed_url' ]
         # Handle contained tools.
         if includes_tools_for_display_in_tool_panel and ( new_tool_panel_section_label or tool_panel_section_id ):
+            tpm = tool_panel_manager.ToolPanelManager( self.app )
             tool_panel_section_key, tool_section = \
-                tool_util.handle_tool_panel_section( self.app.toolbox,
-                                                     tool_panel_section_id=tool_panel_section_id,
-                                                     new_tool_panel_section_label=new_tool_panel_section_label )
+                tpm.handle_tool_panel_section( self.app.toolbox,
+                                               tool_panel_section_id=tool_panel_section_id,
+                                               new_tool_panel_section_label=new_tool_panel_section_label )
         else:
             tool_panel_section_key = None
             tool_section = None

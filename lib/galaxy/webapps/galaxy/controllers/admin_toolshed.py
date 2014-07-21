@@ -30,6 +30,7 @@ from tool_shed.galaxy_install.grids import admin_toolshed_grids
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import tool_panel_manager
 
 log = logging.getLogger( __name__ )
 
@@ -244,10 +245,10 @@ class AdminToolshed( AdminGalaxy ):
         if kwd.get( 'deactivate_or_uninstall_repository_button', False ):
             if tool_shed_repository.includes_tools_for_display_in_tool_panel:
                 # Handle tool panel alterations.
-                tool_util.remove_from_tool_panel( trans.app,
-                                                  tool_shed_repository,
-                                                  shed_tool_conf,
-                                                  uninstall=remove_from_disk_checked )
+                tpm = tool_panel_manager.ToolPanelManager( trans.app )
+                tpm.remove_from_tool_panel( tool_shed_repository,
+                                            shed_tool_conf,
+                                            uninstall=remove_from_disk_checked )
             if tool_shed_repository.includes_data_managers:
                 data_manager_util.remove_from_data_manager( trans.app, tool_shed_repository )
             if tool_shed_repository.includes_datatypes:
@@ -1336,13 +1337,14 @@ class AdminToolshed( AdminGalaxy ):
         # its repository dependencies.
         includes_tool_dependencies = tool_shed_repository.includes_tool_dependencies
         if tool_shed_repository.includes_tools_for_display_in_tool_panel:
+            tpm = tool_panel_manager.ToolPanelManager( trans.app )
             # Handle the selected tool panel location for loading tools included in the tool shed repository.
             tool_section, tool_panel_section_key = \
-                tool_util.handle_tool_panel_selection( toolbox=trans.app.toolbox,
-                                                       metadata=metadata,
-                                                       no_changes_checked=no_changes_checked,
-                                                       tool_panel_section_id=tool_panel_section_id,
-                                                       new_tool_panel_section_label=new_tool_panel_section_label )
+                tpm.handle_tool_panel_selection( toolbox=trans.app.toolbox,
+                                                 metadata=metadata,
+                                                 no_changes_checked=no_changes_checked,
+                                                 tool_panel_section_id=tool_panel_section_id,
+                                                 new_tool_panel_section_label=new_tool_panel_section_label )
             if tool_section is not None:
                 # Just in case the tool_section.id differs from tool_panel_section_id, which it shouldn't...
                 tool_panel_section_id = str( tool_section.id )
@@ -1706,13 +1708,13 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def reset_metadata_on_selected_installed_repositories( self, trans, **kwd ):
+        irmm = InstalledRepositoryMetadataManager( trans.app )
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            irmm = InstalledRepositoryMetadataManager( trans.app )
             message, status = irmm.reset_metadata_on_selected_repositories( trans.user, **kwd )
         else:
             message = kwd.get( 'message', ''  )
             status = kwd.get( 'status', 'done' )
-        repositories_select_field = suc.build_repository_ids_select_field( trans )
+        repositories_select_field = irmm.build_repository_ids_select_field( trans )
         return trans.fill_template( '/admin/tool_shed_repository/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,
@@ -1942,19 +1944,19 @@ class AdminToolshed( AdminGalaxy ):
                                                                        updating_installed_repository=True,
                                                                        persist=True )
                     if 'tools' in metadata_dict:
+                        tpm = tool_panel_manager.ToolPanelManager( trans.app )
                         tool_panel_dict = metadata_dict.get( 'tool_panel_section', None )
                         if tool_panel_dict is None:
                             tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans.app, repository )
                         repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata_dict )
-                        tool_util.add_to_tool_panel( app=trans.app,
-                                                     repository_name=str( repository.name ),
-                                                     repository_clone_url=repository_clone_url,
-                                                     changeset_revision=str( repository.installed_changeset_revision ),
-                                                     repository_tools_tups=repository_tools_tups,
-                                                     owner=str( repository.owner ),
-                                                     shed_tool_conf=shed_tool_conf,
-                                                     tool_panel_dict=tool_panel_dict,
-                                                     new_install=False )
+                        tpm.add_to_tool_panel( repository_name=str( repository.name ),
+                                               repository_clone_url=repository_clone_url,
+                                               changeset_revision=str( repository.installed_changeset_revision ),
+                                               repository_tools_tups=repository_tools_tups,
+                                               owner=str( repository.owner ),
+                                               shed_tool_conf=shed_tool_conf,
+                                               tool_panel_dict=tool_panel_dict,
+                                               new_install=False )
                         # Add new Data Manager entries
                         if 'data_manager' in metadata_dict:
                             new_data_managers = data_manager_util.install_data_managers( trans.app,
