@@ -885,8 +885,6 @@ var TracksterView = Backbone.View.extend({
                 });
             });
         });
-        // Another label track at bottom
-        this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
         // Navigation at top
         this.nav_container = $("<div/>").addClass("trackster-nav-container").prependTo(this.top_container);
         this.nav = $("<div/>").addClass("trackster-nav").appendTo(this.nav_container);
@@ -1042,7 +1040,7 @@ var TracksterView = Backbone.View.extend({
         // Dragging in the top label track allows selecting a region to zoom in on selected region.
         this.top_labeltrack.bind( "dragstart", function( e, d ) {
             return $("<div/>").addClass('zoom-area').css(
-                "height", view.browser_content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height() + 1
+                "height", view.browser_content_div.height() + view.top_labeltrack.height() + 1
             ).appendTo( $(this) );
         }).bind( "drag", function( e, d ) {
             $( d.proxy ).css({ left: Math.min( e.pageX, d.startX ) - view.container.offset().left, width: Math.abs( e.pageX - d.startX ) });
@@ -1091,7 +1089,6 @@ var TracksterView = Backbone.View.extend({
         */
         
         this.add_label_track( new LabelTrack( this, { content_div: this.top_labeltrack } ) );
-        this.add_label_track( new LabelTrack( this, { content_div: this.nav_labeltrack } ) );
         
         $(window).bind("resize", function() {
             // Stop previous timer.
