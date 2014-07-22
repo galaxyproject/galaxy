@@ -24,7 +24,7 @@ from tool_shed.util import commit_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
 
@@ -462,13 +462,13 @@ class ImportRepositoryManager( object ):
                         else:
                             category_ids.append( self.app.security.encode_id( category.id ) )
                     # Create the repository record in the database.
-                    repository, create_message = repository_maintenance_util.create_repository( self.app,
-                                                                                                name,
-                                                                                                type,
-                                                                                                description,
-                                                                                                long_description,
-                                                                                                user_id=user_id,
-                                                                                                category_ids=category_ids )
+                    repository, create_message = repository_util.create_repository( self.app,
+                                                                                    name,
+                                                                                    type,
+                                                                                    description,
+                                                                                    long_description,
+                                                                                    user_id=user_id,
+                                                                                    category_ids=category_ids )
                     if create_message:
                         results_message += create_message
                     # Populate the new repository with the contents of exported repository archive.

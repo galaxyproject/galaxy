@@ -9,7 +9,7 @@ from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.metadata import metadata_generator
 
 from tool_shed.util import common_util
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
@@ -78,7 +78,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
         """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
         invalid_file_tups = []
         metadata_dict = {}
-        repository = repository_maintenance_util.get_installed_tool_shed_repository( self.app, id )
+        repository = repository_util.get_installed_tool_shed_repository( self.app, id )
         repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
         tool_path, relative_install_dir = repository.get_tool_relative_path( self.app )
         if relative_install_dir:
@@ -118,7 +118,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
             unsuccessful_count = 0
             for repository_id in repository_ids:
                 try:
-                    repository = repository_maintenance_util.get_installed_tool_shed_repository( self.app, repository_id )
+                    repository = repository_util.get_installed_tool_shed_repository( self.app, repository_id )
                     owner = str( repository.owner )
                     invalid_file_tups, metadata_dict = \
                         self.reset_all_metadata_on_installed_repository( repository_id )

@@ -10,7 +10,7 @@ from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import tool_dependency_util
 
 
@@ -127,16 +127,16 @@ class RepairRepositoryManager():
                                                         new_tool_panel_section_label=tool_panel_section_name )
         else:
             tool_dependencies = None
-        repo_info_dict = repository_maintenance_util.create_repo_info_dict( app=self.app,
-                                                                            repository_clone_url=repository_clone_url,
-                                                                            changeset_revision=repository.changeset_revision,
-                                                                            ctx_rev=repository.ctx_rev,
-                                                                            repository_owner=repository.owner,
-                                                                            repository_name=repository.name,
-                                                                            repository=None,
-                                                                            repository_metadata=None,
-                                                                            tool_dependencies=tool_dependencies,
-                                                                            repository_dependencies=repository_dependencies )
+        repo_info_dict = repository_util.create_repo_info_dict( app=self.app,
+                                                                repository_clone_url=repository_clone_url,
+                                                                changeset_revision=repository.changeset_revision,
+                                                                ctx_rev=repository.ctx_rev,
+                                                                repository_owner=repository.owner,
+                                                                repository_name=repository.name,
+                                                                repository=None,
+                                                                repository_metadata=None,
+                                                                tool_dependencies=tool_dependencies,
+                                                                repository_dependencies=repository_dependencies )
         return repo_info_dict, tool_panel_section_key
 
     def repair_tool_shed_repository( self, repository, repo_info_dict ):

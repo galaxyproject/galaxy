@@ -11,7 +11,7 @@ import tool_shed.grids.admin_grids as admin_grids
 from tool_shed.metadata import repository_metadata_manager
 
 from tool_shed.util import metadata_util
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -320,14 +320,14 @@ class AdminController( BaseUIController, Admin ):
     def manage_role_associations( self, trans, **kwd ):
         """Manage users, groups and repositories associated with a role."""
         role_id = kwd.get( 'id', None )
-        role = repository_maintenance_util.get_role_by_id( trans.app, role_id )
+        role = repository_util.get_role_by_id( trans.app, role_id )
         # We currently only have a single role associated with a repository, the repository admin role.
         repository_role_association = role.repositories[ 0 ]
         repository = repository_role_association.repository
-        associations_dict = repository_maintenance_util.handle_role_associations( trans.app,
-                                                                                  role,
-                                                                                  repository,
-                                                                                  **kwd )
+        associations_dict = repository_util.handle_role_associations( trans.app,
+                                                                      role,
+                                                                      repository,
+                                                                      **kwd )
         in_users = associations_dict.get( 'in_users', [] )
         out_users = associations_dict.get( 'out_users', [] )
         in_groups = associations_dict.get( 'in_groups', [] )
