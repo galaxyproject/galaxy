@@ -410,7 +410,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
             for changeset in repo.changelog:
                 changeset_hash = str( repo.changectx( changeset ) )
-                skip_tool_test = suc.get_skip_tool_test_by_changeset_revision( self.app, changeset_hash )
+                skip_tool_test = self.get_skip_tool_test_by_changeset_revision( changeset_hash )
                 if skip_tool_test:
                     # We found a skip_tool_test record associated with the changeset_revision,
                     # so see if it has a valid repository_revision.
@@ -520,6 +520,16 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             else:
                 return self.sa_session.query( self.app.model.Repository ) \
                                       .filter( self.app.model.Repository.table.c.deleted == False )
+
+    def get_skip_tool_test_by_changeset_revision( self, changeset_revision ):
+        """
+        Return a skip_tool_test record whose initial_changeset_revision is the received
+        changeset_revision.
+        """
+        # There should only be one, but we'll use first() so callers won't have to handle exceptions.
+        return self.sa_session.query( self.app.model.SkipToolTest ) \
+                              .filter( self.app.model.SkipToolTest.table.c.initial_changeset_revision == changeset_revision ) \
+                              .first()
 
     def new_datatypes_metadata_required( self, repository_metadata, metadata_dict ):
         """

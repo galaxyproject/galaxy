@@ -2,8 +2,9 @@ import logging
 import os
 import shutil
 
+from xml.etree import ElementTree as XmlET
+
 from tool_shed.util import hg_util
-from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
@@ -13,6 +14,36 @@ class ToolDataTableManager( object ):
     
     def __init__( self, app ):
         self.app = app
+
+    def generate_repository_info_elem( self, tool_shed, repository_name, changeset_revision, owner,
+                                       parent_elem=None, **kwd ):
+        """Create and return an ElementTree repository info Element."""
+        if parent_elem is None:
+            elem = XmlET.Element( 'tool_shed_repository' )
+        else:
+            elem = XmlET.SubElement( parent_elem, 'tool_shed_repository' )
+        tool_shed_elem = XmlET.SubElement( elem, 'tool_shed' )
+        tool_shed_elem.text = tool_shed
+        repository_name_elem = XmlET.SubElement( elem, 'repository_name' )
+        repository_name_elem.text = repository_name
+        repository_owner_elem = XmlET.SubElement( elem, 'repository_owner' )
+        repository_owner_elem.text = owner
+        changeset_revision_elem = XmlET.SubElement( elem, 'installed_changeset_revision' )
+        changeset_revision_elem.text = changeset_revision
+        #add additional values
+        #TODO: enhance additional values to allow e.g. use of dict values that will recurse
+        for key, value in kwd.iteritems():
+            new_elem = XmlET.SubElement( elem, key )
+            new_elem.text = value
+        return elem
+
+    def generate_repository_info_elem_from_repository( self, tool_shed_repository, parent_elem=None, **kwd ):
+        return self.generate_repository_info_elem( tool_shed_repository.tool_shed,
+                                                   tool_shed_repository.name,
+                                                   tool_shed_repository.installed_changeset_revision,
+                                                   tool_shed_repository.owner,
+                                                   parent_elem=parent_elem,
+                                                   **kwd )
 
     def get_tool_index_sample_files( self, sample_files ):
         """
@@ -129,7 +160,7 @@ class ToolDataTableManager( object ):
                     if path:
                         file_elem.set( 'path', os.path.normpath( os.path.join( target_dir, os.path.split( path )[1] ) ) )
                 # Store repository info in the table tag set for trace-ability.
-                repo_elem = suc.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
+                repo_elem = self.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
         if elems:
             # Remove old data_table
             os.unlink( tool_data_table_conf_filename )

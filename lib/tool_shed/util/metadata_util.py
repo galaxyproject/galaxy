@@ -7,6 +7,18 @@ from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
+def get_latest_changeset_revision( app, repository, repo ):
+    repository_tip = repository.tip( app )
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( app,
+                                                                             app.security.encode_id( repository.id ),
+                                                                             repository_tip )
+    if repository_metadata and repository_metadata.downloadable:
+        return repository_tip
+    changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=False )
+    if changeset_revisions:
+        return changeset_revisions[ -1 ]
+    return hg_util.INITIAL_CHANGELOG_HASH
+
 def get_latest_repository_metadata( app, decoded_repository_id, downloadable=False ):
     """Get last metadata defined for a specified repository from the database."""
     sa_session = app.model.context.current
@@ -15,7 +27,7 @@ def get_latest_repository_metadata( app, decoded_repository_id, downloadable=Fal
     if downloadable:
         changeset_revision = suc.get_latest_downloadable_changeset_revision( app, repository, repo )
     else:
-        changeset_revision = suc.get_latest_changeset_revision( app, repository, repo )
+        changeset_revision = get_latest_changeset_revision( app, repository, repo )
     return suc.get_repository_metadata_by_changeset_revision( app,
                                                               app.security.encode_id( repository.id ),
                                                               changeset_revision )

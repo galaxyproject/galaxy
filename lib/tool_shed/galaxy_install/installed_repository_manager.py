@@ -342,8 +342,8 @@ class InstalledRepositoryManager( object ):
             installed_rd_tups = []
             missing_rd_tups = []
             for tsr in repository.repository_dependencies:
-                prior_installation_required = suc.set_prior_installation_required( self.app, repository, tsr )
-                only_if_compiling_contained_td = suc.set_only_if_compiling_contained_td( repository, tsr )
+                prior_installation_required = self.set_prior_installation_required( repository, tsr )
+                only_if_compiling_contained_td = self.set_only_if_compiling_contained_td( repository, tsr )
                 rd_tup = [ tsr.tool_shed,
                            tsr.name,
                            tsr.owner,
@@ -956,6 +956,47 @@ class InstalledRepositoryManager( object ):
                   repository_dependency.changeset_revision == changeset_revision ):
                 return True
         return False
+
+    def set_only_if_compiling_contained_td( self, repository, required_repository ):
+        """
+        Return True if the received required_repository is only needed to compile a tool
+        dependency defined for the received repository.
+        """
+        # This method is called only from Galaxy when rendering repository dependencies
+        # for an installed tool shed repository.
+        # TODO: Do we need to check more than changeset_revision here?
+        required_repository_tup = [ required_repository.tool_shed, \
+                                    required_repository.name, \
+                                    required_repository.owner, \
+                                    required_repository.changeset_revision ]
+        for tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
+            partial_tup = tup[ 0:4 ]
+            if partial_tup == required_repository_tup:
+                return 'True'
+        return 'False'
+
+    def set_prior_installation_required( self, repository, required_repository ):
+        """
+        Return True if the received required_repository must be installed before the
+        received repository.
+        """
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app,
+                                                                               str( required_repository.tool_shed ) )
+        required_repository_tup = [ tool_shed_url,
+                                    str( required_repository.name ),
+                                    str( required_repository.owner ),
+                                    str( required_repository.changeset_revision ) ]
+        # Get the list of repository dependency tuples associated with the received repository
+        # where prior_installation_required is True.
+        required_rd_tups_that_must_be_installed = repository.requires_prior_installation_of
+        for required_rd_tup in required_rd_tups_that_must_be_installed:
+            # Repository dependency tuples in metadata include a prior_installation_required value,
+            # so strip it for comparision.
+            partial_required_rd_tup = required_rd_tup[ 0:4 ]
+            if partial_required_rd_tup == required_repository_tup:
+                # Return the string value of prior_installation_required, which defaults to 'False'.
+                return str( required_rd_tup[ 4 ] )
+        return 'False'
 
     def update_existing_tool_dependency( self, repository, original_dependency_dict, new_dependencies_dict ):
         """

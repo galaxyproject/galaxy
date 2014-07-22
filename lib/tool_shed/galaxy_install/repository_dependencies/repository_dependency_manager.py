@@ -2,9 +2,9 @@
 Class encapsulating the management of repository dependencies installed or being installed
 into Galaxy from the Tool Shed.
 """
-
 import json
 import logging
+import os
 import urllib
 import urllib2
 
@@ -63,11 +63,10 @@ class RepositoryDependencyInstallManager( object ):
                                 break
                         if d_repository is None:
                             # The dependent repository is not in the received list so look in the database.
-                            d_repository = suc.get_or_create_tool_shed_repository( self.app,
-                                                                                   d_toolshed,
-                                                                                   d_name,
-                                                                                   d_owner,
-                                                                                   d_changeset_revision )
+                            d_repository = self.get_or_create_tool_shed_repository( d_toolshed,
+                                                                                    d_name,
+                                                                                    d_owner,
+                                                                                    d_changeset_revision )
                         # Process each repository_dependency defined for the current dependent repository.
                         for repository_dependency_components_list in val:
                             required_repository = None
@@ -87,11 +86,10 @@ class RepositoryDependencyInstallManager( object ):
                                     break
                             if required_repository is None:
                                 # The required repository is not in the received list so look in the database.
-                                required_repository = suc.get_or_create_tool_shed_repository( self.app,
-                                                                                              rd_toolshed,
-                                                                                              rd_name,
-                                                                                              rd_owner,
-                                                                                              rd_changeset_revision )
+                                required_repository = self.get_or_create_tool_shed_repository( rd_toolshed,
+                                                                                               rd_name,
+                                                                                               rd_owner,
+                                                                                               rd_changeset_revision )
                             # Ensure there is a repository_dependency relationship between d_repository and required_repository.
                             rrda = None
                             for rd in d_repository.repository_dependencies:
@@ -256,6 +254,35 @@ class RepositoryDependencyInstallManager( object ):
         # Build repository dependency relationships even if the user chose to not install repository dependencies.
         self.build_repository_dependency_relationships( all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )
         return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts
+
+    def get_or_create_tool_shed_repository( self, tool_shed, name, owner, changeset_revision ):
+        """
+        Return a tool shed repository database record defined by the combination of
+        tool shed, repository name, repository owner and changeset_revision or
+        installed_changeset_revision.  A new tool shed repository record will be
+        created if one is not located.
+        """
+        install_model = self.app.install_model
+        # We store the port in the database.
+        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
+        # This method is used only in Galaxy, not the tool shed.
+        repository = suc.get_repository_for_dependency_relationship( self.app, tool_shed, name, owner, changeset_revision )
+        if not repository:
+            tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed )
+            repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
+            ctx_rev = suc.get_ctx_rev( self.app, tool_shed_url, name, owner, changeset_revision )
+            repository = suc.create_or_update_tool_shed_repository( app=self.app,
+                                                                    name=name,
+                                                                    description=None,
+                                                                    installed_changeset_revision=changeset_revision,
+                                                                    ctx_rev=ctx_rev,
+                                                                    repository_clone_url=repository_clone_url,
+                                                                    metadata_dict={},
+                                                                    status=install_model.ToolShedRepository.installation_status.NEW,
+                                                                    current_changeset_revision=None,
+                                                                    owner=owner,
+                                                                    dist_to_shed=False )
+        return repository
 
     def get_repository_dependencies_for_installed_tool_shed_repository( self, app, repository ):
         """
