@@ -20,7 +20,9 @@ from tool_shed.dependencies.repository import relation_builder
 
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
+
 from tool_shed.tools import tool_validator
+from tool_shed.tools import tool_version_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -3432,10 +3434,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             basic_util.remove_dir( work_dir )
                             break
                     if guid:
-                        tool_lineage = tool_util.get_version_lineage_for_tool( trans.app,
-                                                                               repository_id,
-                                                                               repository_metadata,
-                                                                               guid )
+                        tvm = tool_version_manager.ToolVersionManager( trans.app )
+                        tool_lineage = tvm.get_version_lineage_for_tool( repository_id,
+                                                                         repository_metadata,
+                                                                         guid )
         else:
             repository_metadata_id = None
             metadata = None

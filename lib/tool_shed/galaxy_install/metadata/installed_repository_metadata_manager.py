@@ -19,10 +19,13 @@ log = logging.getLogger( __name__ )
 
 class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator ):
 
-    def __init__( self, app ):
+    def __init__( self, app, tpm=None ):
         super( InstalledRepositoryMetadataManager, self ).__init__( app )
         self.app = app
-        self.tpm = tool_panel_manager.ToolPanelManager( self.app )
+        if tpm is None:
+            self.tpm = tool_panel_manager.ToolPanelManager( self.app )
+        else:
+            self.tpm = tpm
 
     def build_repository_ids_select_field( self, name='repository_ids', multiple=True, display='checkboxes' ):
         """Generate the current list of repositories for resetting metadata."""

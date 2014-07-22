@@ -32,6 +32,8 @@ from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryM
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
+from tool_shed.tools import tool_version_manager
+
 log = logging.getLogger( __name__ )
 
 
@@ -1799,7 +1801,8 @@ class AdminToolshed( AdminGalaxy ):
         text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         if text:
             tool_version_dicts = json.from_json_string( text )
-            tool_util.handle_tool_versions( trans.app, tool_version_dicts, repository )
+            tvm = tool_version_manager.ToolVersionManager( trans.app )
+            tvm.handle_tool_versions( tool_version_dicts, repository )
             message = "Tool versions have been set for all included tools."
             status = 'done'
         else:
@@ -1932,7 +1935,8 @@ class AdminToolshed( AdminGalaxy ):
                     if repository.includes_data_managers:
                         data_manager_util.remove_from_data_manager( trans.app, repository )
                     # Update the repository metadata.
-                    irmm = InstalledRepositoryMetadataManager( trans.app )
+                    tpm = tool_panel_manager.ToolPanelManager( trans.app )
+                    irmm = InstalledRepositoryMetadataManager( trans.app, tpm )
                     metadata_dict, invalid_file_tups = \
                         irmm.generate_metadata_for_changeset_revision( repository=repository,
                                                                        changeset_revision=latest_changeset_revision,
@@ -1944,7 +1948,6 @@ class AdminToolshed( AdminGalaxy ):
                                                                        updating_installed_repository=True,
                                                                        persist=True )
                     if 'tools' in metadata_dict:
-                        tpm = tool_panel_manager.ToolPanelManager( trans.app )
                         tool_panel_dict = metadata_dict.get( 'tool_panel_section', None )
                         if tool_panel_dict is None:
                             tool_panel_dict = tpm.generate_tool_panel_dict_from_shed_tool_conf_entries( repository )
@@ -2123,7 +2126,8 @@ class AdminToolshed( AdminGalaxy ):
                         tool_config = os.path.join( shed_config_dict.get( 'tool_path' ), tool_config )
                     tool = trans.app.toolbox.load_tool( os.path.abspath( tool_config ), guid=tool_metadata[ 'guid' ] )
                     if tool:
-                        tool_version = tool_util.get_tool_version( trans.app, str( tool.id ) )
+                        tvm = tool_version_manager.ToolVersionManager( trans.app )
+                        tool_version = tvm.get_tool_version( str( tool.id ) )
                         tool_lineage = tool_version.get_version_ids( trans.app, reverse=True )
                     break
         return trans.fill_template( "/admin/tool_shed_repository/view_tool_metadata.mako",

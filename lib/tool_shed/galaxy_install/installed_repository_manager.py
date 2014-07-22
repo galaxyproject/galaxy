@@ -81,8 +81,8 @@ class InstalledRepositoryManager( object ):
         repository.deleted = False
         repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
-            irmm = InstalledRepositoryMetadataManager( self.app )
             tpm = tool_panel_manager.ToolPanelManager( self.app )
+            irmm = InstalledRepositoryMetadataManager( self.app, tpm )
             metadata = repository.metadata
             repository_tools_tups = irmm.get_repository_tools_tups( metadata )
             # Reload tools into the appropriate tool panel section.

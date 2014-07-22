@@ -150,6 +150,7 @@ class RepairRepositoryManager():
     
         metadata = repository.metadata
         repair_dict = {}
+        tpm = tool_panel_manager.ToolPanelManager( self.app )
         if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             try:
                 self.app.installed_repository_manager.activate_repository( repository )
@@ -162,7 +163,6 @@ class RepairRepositoryManager():
                 suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
             # Reset the repository attributes to the New state for installation.
             if metadata:
-                tpm = tool_panel_manager.ToolPanelManager( self.app )
                 tool_section, tool_panel_section_key = \
                     tpm.handle_tool_panel_selection( self.app.toolbox,
                                                      metadata,
@@ -179,7 +179,7 @@ class RepairRepositoryManager():
                                            deleted=False,
                                            uninstalled=False,
                                            remove_from_disk=True )
-            irm = install_manager.InstallRepositoryManager( self.app )
+            irm = install_manager.InstallRepositoryManager( self.app, tpm )
             irm.install_tool_shed_repository( repository,
                                               repo_info_dict,
                                               tool_panel_section_key,
@@ -190,7 +190,7 @@ class RepairRepositoryManager():
             if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.ERROR ]:
                 repair_dict = add_repair_dict_entry( repository.name, repository.error_message )
         else:
-            irm = install_manager.InstallRepositoryManager( self.app )
+            irm = install_manager.InstallRepositoryManager( self.app, tpm )
             # We have an installed tool shed repository, so handle tool dependencies if necessary.
             if repository.missing_tool_dependencies and metadata and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itdep" )

@@ -11,10 +11,13 @@ import logging
 
 from galaxy import util
 from galaxy.tools import ToolSection
+from galaxy.util.odict import odict
 
 from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.tools import tool_panel_manager
+
+from tool_shed.tools import tool_version_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -24,7 +27,6 @@ from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
 
@@ -41,6 +43,7 @@ class ToolMigrationManager( object ):
         self.app = app
         self.toolbox = self.app.toolbox
         self.migrated_tools_config = migrated_tools_config
+        # Initialize the ToolPanelManager.
         self.tpm = tool_panel_manager.ToolPanelManager( self.app )
         # If install_dependencies is True but tool_dependency_dir is not set, do not attempt
         # to install but print informative error message.
@@ -412,7 +415,7 @@ class ToolMigrationManager( object ):
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()
-        irmm = InstalledRepositoryMetadataManager( self.app )
+        irmm = InstalledRepositoryMetadataManager( self.app, self.tpm )
         metadata_dict, invalid_file_tups = \
             irmm.generate_metadata_for_changeset_revision( repository=tool_shed_repository,
                                                            changeset_revision=tool_shed_repository.changeset_revision,
@@ -471,7 +474,7 @@ class ToolMigrationManager( object ):
                                                 new_install=True )
         if install_dependencies and tool_dependencies and has_tool_dependencies:
             # Install tool dependencies.
-            irm = install_manager.InstallRepositoryManager( self.app )
+            irm = install_manager.InstallRepositoryManager( self.app, self.tpm )
             itdm = install_manager.InstallToolDependencyManager( self.app )
             irm.update_tool_shed_repository_status( tool_shed_repository,
                                                     self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
@@ -533,7 +536,7 @@ class ToolMigrationManager( object ):
         if cloned_ok and is_installed:
             print "Skipping automatic install of repository '", tool_shed_repository.name, "' because it has already been installed in location ", clone_dir
         else:
-            irm = install_manager.InstallRepositoryManager( self.app )
+            irm = install_manager.InstallRepositoryManager( self.app, self.tpm )
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', tool_shed_repository.owner, tool_shed_repository.name )
             relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
             install_dir = os.path.join( clone_dir, tool_shed_repository.name )
@@ -556,6 +559,8 @@ class ToolMigrationManager( object ):
                 self.app.install_model.context.refresh( tool_shed_repository )
                 metadata_dict = tool_shed_repository.metadata
                 if 'tools' in metadata_dict:
+                    # Initialize the ToolVersionManager.
+                    tvm = tool_version_manager.ToolVersionManager( self.app )
                     irm.update_tool_shed_repository_status( tool_shed_repository,
                                                             self.app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                     # Get the tool_versions from the tool shed for each tool in the installed change set.
@@ -564,7 +569,7 @@ class ToolMigrationManager( object ):
                     text = common_util.tool_shed_get( self.app, self.tool_shed_url, url )
                     if text:
                         tool_version_dicts = json.loads( text )
-                        tool_util.handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
+                        tvm.handle_tool_versions( tool_version_dicts, tool_shed_repository )
                     else:
                         # Set the tool versions since they seem to be missing for this repository in the tool shed.
                         # CRITICAL NOTE: These default settings may not properly handle all parent/child associations.
@@ -573,8 +578,8 @@ class ToolMigrationManager( object ):
                             tool_id = tool_dict[ 'guid' ]
                             old_tool_id = tool_dict[ 'id' ]
                             tool_version = tool_dict[ 'version' ]
-                            tool_version_using_old_id = tool_util.get_tool_version( self.app, old_tool_id )
-                            tool_version_using_guid = tool_util.get_tool_version( self.app, tool_id )
+                            tool_version_using_old_id = tvm.get_tool_version( old_tool_id )
+                            tool_version_using_guid = tvm.get_tool_version( tool_id )
                             if not tool_version_using_old_id:
                                 tool_version_using_old_id = self.app.install_model.ToolVersion( tool_id=old_tool_id,
                                                                                         tool_shed_repository=tool_shed_repository )
@@ -586,12 +591,12 @@ class ToolMigrationManager( object ):
                                 self.app.install_model.context.add( tool_version_using_guid )
                                 self.app.install_model.context.flush()
                             # Associate the two versions as parent / child.
-                            tool_version_association = tool_util.get_tool_version_association( self.app,
-                                                                                               tool_version_using_old_id,
-                                                                                               tool_version_using_guid )
+                            tool_version_association = tvm.get_tool_version_association( tool_version_using_old_id,
+                                                                                         tool_version_using_guid )
                             if not tool_version_association:
-                                tool_version_association = self.app.install_model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
-                                                                                                  parent_id=tool_version_using_old_id.id )
+                                tool_version_association = \
+                                    self.app.install_model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
+                                                                                   parent_id=tool_version_using_old_id.id )
                                 self.app.install_model.context.add( tool_version_association )
                                 self.app.install_model.context.flush()
                 irm.update_tool_shed_repository_status( tool_shed_repository,

@@ -35,6 +35,8 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import Ste
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
+from tool_shed.tools import tool_version_manager
+
 log = logging.getLogger( __name__ )
 
 
@@ -438,10 +440,13 @@ class InstallToolDependencyManager( object ):
 
 class InstallRepositoryManager( object ):
 
-    def __init__( self, app ):
+    def __init__( self, app, tpm=None ):
         self.app = app
         self.install_model = self.app.install_model
-        self.tpm = tool_panel_manager.ToolPanelManager( self.app )
+        if tpm is None:
+            self.tpm = tool_panel_manager.ToolPanelManager( self.app )
+        else:
+            self.tpm = tpm
 
     def get_repository_components_for_installation( self, encoded_tsr_id, encoded_tsr_ids, repo_info_dicts,
                                                     tool_panel_section_keys ):
@@ -503,7 +508,7 @@ class InstallRepositoryManager( object ):
         reinstalling an uninstalled repository.
         """
         shed_config_dict = self.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
-        irmm = InstalledRepositoryMetadataManager( self.app )
+        irmm = InstalledRepositoryMetadataManager( self.app, self.tpm )
         metadata_dict, invalid_file_tups = \
             irmm.generate_metadata_for_changeset_revision( repository=tool_shed_repository,
                                                            changeset_revision=tool_shed_repository.changeset_revision,
@@ -869,7 +874,8 @@ class InstallRepositoryManager( object ):
                 text = common_util.tool_shed_get( self.app, tool_shed_url, url )
                 if text:
                     tool_version_dicts = json.loads( text )
-                    tool_util.handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
+                    tvm = tool_version_manager.ToolVersionManager( self.app )
+                    tvm.handle_tool_versions( tool_version_dicts, tool_shed_repository )
                 else:
                     if not error_message:
                         error_message = ""

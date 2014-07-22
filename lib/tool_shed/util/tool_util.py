@@ -1,21 +1,19 @@
 import logging
 import os
 import shutil
+
 import galaxy.tools
 from galaxy import util
 from galaxy.datatypes import checkers
-from galaxy.model.orm import and_
 from galaxy.tools import parameters
-from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
 from galaxy.tools.actions.upload import UploadToolAction
+
 from tool_shed.util import basic_util
-from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import xml_util
 import tool_shed.util.shed_util_common as suc
-from xml.etree import ElementTree as XmlET
 
 log = logging.getLogger( __name__ )
 
@@ -167,55 +165,6 @@ def get_tool_index_sample_files( sample_files ):
             tool_index_sample_files.append( str( s ) )
     return tool_index_sample_files
 
-def get_tool_version( app, tool_id ):
-    context = app.install_model.context
-    return context.query( app.install_model.ToolVersion ) \
-                     .filter( app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
-                     .first()
-
-def get_tool_version_association( app, parent_tool_version, tool_version ):
-    """Return a ToolVersionAssociation if one exists that associates the two received tool_versions"""
-    context = app.install_model.context
-    return context.query( app.install_model.ToolVersionAssociation ) \
-                  .filter( and_( app.install_model.ToolVersionAssociation.table.c.parent_id == parent_tool_version.id,
-                                 app.install_model.ToolVersionAssociation.table.c.tool_id == tool_version.id ) ) \
-                  .first()
-
-def get_version_lineage_for_tool( app, repository_id, repository_metadata, guid ):
-    """
-    Return the tool version lineage chain in descendant order for the received
-    guid contained in the received repsitory_metadata.tool_versions.
-    """
-    repository = suc.get_repository_by_id( app, repository_id )
-    repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
-    # Initialize the tool lineage
-    version_lineage = [ guid ]
-    # Get all ancestor guids of the received guid.
-    current_child_guid = guid
-    for changeset in hg_util.reversed_upper_bounded_changelog( repo, repository_metadata.changeset_revision ):
-        ctx = repo.changectx( changeset )
-        rm = suc.get_repository_metadata_by_changeset_revision( app, repository_id, str( ctx ) )
-        if rm:
-            parent_guid = rm.tool_versions.get( current_child_guid, None )
-            if parent_guid:
-                version_lineage.append( parent_guid )
-                current_child_guid = parent_guid
-    # Get all descendant guids of the received guid.
-    current_parent_guid = guid
-    for changeset in hg_util.reversed_lower_upper_bounded_changelog( repo,
-                                                                     repository_metadata.changeset_revision,
-                                                                     repository.tip( app ) ):
-        ctx = repo.changectx( changeset )
-        rm = suc.get_repository_metadata_by_changeset_revision( app, repository_id, str( ctx ) )
-        if rm:
-            tool_versions = rm.tool_versions
-            for child_guid, parent_guid in tool_versions.items():
-                if parent_guid == current_parent_guid:
-                    version_lineage.insert( 0, child_guid )
-                    current_parent_guid = child_guid
-                    break
-    return version_lineage
-
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically
@@ -294,35 +243,6 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
         message = str( e )
         error = True
     return error, message
-
-def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
-    """
-    Using the list of tool_version_dicts retrieved from the tool shed (one per changeset
-    revison up to the currently installed changeset revision), create the parent / child
-    pairs of tool versions.  Each dictionary contains { tool id : parent tool id } pairs.
-    """
-    context = app.install_model.context
-    for tool_version_dict in tool_version_dicts:
-        for tool_guid, parent_id in tool_version_dict.items():
-            tool_version_using_tool_guid = get_tool_version( app, tool_guid )
-            tool_version_using_parent_id = get_tool_version( app, parent_id )
-            if not tool_version_using_tool_guid:
-                tool_version_using_tool_guid = app.install_model.ToolVersion( tool_id=tool_guid, tool_shed_repository=tool_shed_repository )
-                context.add( tool_version_using_tool_guid )
-                context.flush()
-            if not tool_version_using_parent_id:
-                tool_version_using_parent_id = app.install_model.ToolVersion( tool_id=parent_id, tool_shed_repository=tool_shed_repository )
-                context.add( tool_version_using_parent_id )
-                context.flush()
-            tool_version_association = get_tool_version_association( app,
-                                                                     tool_version_using_parent_id,
-                                                                     tool_version_using_tool_guid )
-            if not tool_version_association:
-                # Associate the two versions as parent / child.
-                tool_version_association = app.install_model.ToolVersionAssociation( tool_id=tool_version_using_tool_guid.id,
-                                                                             parent_id=tool_version_using_parent_id.id )
-                context.add( tool_version_association )
-                context.flush()
 
 def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files ):
     """Only ever called from Galaxy end when installing"""
