@@ -11,9 +11,6 @@ from galaxy.web.form_builder import SelectField
 from galaxy.tools.actions.upload import UploadToolAction
 
 from tool_shed.util import basic_util
-from tool_shed.util import hg_util
-from tool_shed.util import xml_util
-import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -156,45 +153,6 @@ def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_di
                         return tool_path, relative_install_dir
     return None, None
 
-def get_tool_index_sample_files( sample_files ):
-    """Try to return the list of all appropriate tool data sample files included in the repository."""
-    tool_index_sample_files = []
-    for s in sample_files:
-        # The problem with this is that Galaxy does not follow a standard naming convention for file names.
-        if s.endswith( '.loc.sample' ) or s.endswith( '.xml.sample' ) or s.endswith( '.txt.sample' ):
-            tool_index_sample_files.append( str( s ) )
-    return tool_index_sample_files
-
-def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
-    """
-    Inspect each tool to see if any have input parameters that are dynamically
-    generated select lists that require entries in the tool_data_table_conf.xml
-    file.  This method is called only from Galaxy (not the tool shed) when a
-    repository is being installed or reinstalled.
-    """
-    missing_data_table_entry = False
-    for index, repository_tools_tup in enumerate( repository_tools_tups ):
-        tup_path, guid, repository_tool = repository_tools_tup
-        if repository_tool.params_with_missing_data_table_entry:
-            missing_data_table_entry = True
-            break
-    if missing_data_table_entry:
-        # The repository must contain a tool_data_table_conf.xml.sample file that includes
-        # all required entries for all tools in the repository.
-        sample_tool_data_table_conf = hg_util.get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
-        if sample_tool_data_table_conf:
-            # Add entries to the ToolDataTableManager's in-memory data_tables dictionary.
-            error, message = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
-            if error:
-                # TODO: Do more here than logging an exception.
-                log.debug( message )
-        # Reload the tool into the local list of repository_tools_tups.
-        repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
-        repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
-        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        reset_tool_data_tables( app )
-    return repository_tools_tups
-
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups, sample_files_copied ):
     """
     Inspect each tool to see if it has any input parameters that are dynamically
@@ -221,84 +179,6 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups, sample_files_copied
-
-def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
-    """
-    Parse the incoming filename and add new entries to the in-memory
-    app.tool_data_tables dictionary.  If persist is True (should only occur
-    if call is from the Galaxy side, not the tool shed), the new entries will
-    be appended to Galaxy's shed_tool_data_table_conf.xml file on disk.
-    """
-    error = False
-    message = ''
-    try:
-        new_table_elems, message = \
-            app.tool_data_tables.add_new_entries_from_config_file( config_filename=filename,
-                                                                   tool_data_path=app.config.tool_data_path,
-                                                                   shed_tool_data_table_config=app.config.shed_tool_data_table_config,
-                                                                   persist=persist )
-        if message:
-            error = True
-    except Exception, e:
-        message = str( e )
-        error = True
-    return error, message
-
-def install_tool_data_tables( app, tool_shed_repository, tool_index_sample_files ):
-    """Only ever called from Galaxy end when installing"""
-    TOOL_DATA_TABLE_FILE_NAME = 'tool_data_table_conf.xml'
-    TOOL_DATA_TABLE_FILE_SAMPLE_NAME = '%s.sample' % ( TOOL_DATA_TABLE_FILE_NAME )
-    SAMPLE_SUFFIX = '.sample'
-    SAMPLE_SUFFIX_OFFSET = -len( SAMPLE_SUFFIX )
-    tool_path, relative_target_dir = tool_shed_repository.get_tool_relative_path( app )
-    target_dir = os.path.join( app.config.shed_tool_data_path, relative_target_dir ) #this is where index files will reside on a per repo/installed version
-    if not os.path.exists( target_dir ):
-        os.makedirs( target_dir )
-    for sample_file in tool_index_sample_files:
-        path, filename = os.path.split ( sample_file )
-        target_filename = filename
-        if target_filename.endswith( SAMPLE_SUFFIX ):
-            target_filename = target_filename[ : SAMPLE_SUFFIX_OFFSET ]
-        source_file = os.path.join( tool_path, sample_file )
-        #we're not currently uninstalling index files, do not overwrite existing files
-        target_path_filename = os.path.join( target_dir, target_filename )
-        if not os.path.exists( target_path_filename ) or target_filename == TOOL_DATA_TABLE_FILE_NAME:
-            shutil.copy2( source_file, target_path_filename )
-        else:
-            log.debug( "Did not copy sample file '%s' to install directory '%s' because file already exists.", filename, target_dir )
-        #for provenance and to simplify introspection, lets keep the original data table sample file around
-        if filename == TOOL_DATA_TABLE_FILE_SAMPLE_NAME:
-            shutil.copy2( source_file, os.path.join( target_dir, filename ) )
-    tool_data_table_conf_filename = os.path.join( target_dir, TOOL_DATA_TABLE_FILE_NAME )
-    elems = []
-    if os.path.exists( tool_data_table_conf_filename ):
-        tree, error_message = xml_util.parse_xml( tool_data_table_conf_filename )
-        if tree:
-            for elem in tree.getroot():
-                #append individual table elems or other elemes, but not tables elems
-                if elem.tag == 'tables':
-                    for table_elem in elems:
-                        elems.append( elem )
-                else:
-                    elems.append( elem )
-    else:
-        log.debug( "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.",
-                   tool_data_table_conf_filename, TOOL_DATA_TABLE_FILE_SAMPLE_NAME )
-    for elem in elems:
-        if elem.tag == 'table':
-            for file_elem in elem.findall( 'file' ):
-                path = file_elem.get( 'path', None )
-                if path:
-                    file_elem.set( 'path', os.path.normpath( os.path.join( target_dir, os.path.split( path )[1] ) ) )
-            #store repository info in the table tagset for traceability
-            repo_elem = suc.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
-    if elems:
-        # Remove old data_table
-        os.unlink( tool_data_table_conf_filename )
-        # Persist new data_table content.
-        app.tool_data_tables.to_xml_file( tool_data_table_conf_filename, elems )
-    return tool_data_table_conf_filename, elems
-
 
 def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     """See if the file is column based with respect to a separator."""
@@ -384,7 +264,3 @@ def reload_upload_tools( app ):
             tool = app.toolbox.tools_by_id[ tool_id ]
             if isinstance( tool.tool_action, UploadToolAction ):
                 app.toolbox.reload_tool_by_id( tool_id )
-
-def reset_tool_data_tables( app ):
-    # Reset the tool_data_tables to an empty dictionary.
-    app.tool_data_tables.data_tables = {}

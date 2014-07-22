@@ -897,7 +897,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # revisions from the changelog.
         self.reset_all_tool_versions( id, repo )
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        tool_util.reset_tool_data_tables( self.app )
+        self.app.tool_data_tables.data_tables = {}
         return invalid_file_tups, metadata_dict
 
     def reset_all_tool_versions( self, id, repo ):
@@ -1085,7 +1085,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                                                                     metadata_dict )
             status = 'error'
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        tool_util.reset_tool_data_tables( self.app )
+        self.app.tool_data_tables.data_tables = {}
         return message, status
 
     def set_repository_metadata_due_to_new_tip( self, host, repository, content_alert_str=None, **kwd ):

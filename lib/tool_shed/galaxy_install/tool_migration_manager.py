@@ -17,6 +17,7 @@ from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
+from tool_shed.tools import data_table_manager
 from tool_shed.tools import tool_version_manager
 
 from tool_shed.util import basic_util
@@ -440,25 +441,27 @@ class ToolMigrationManager( object ):
         else:
             tool_dependencies = None
         if 'tools' in metadata_dict:
+            tdtm = data_table_manager.ToolDataTableManager( self.app )
             sample_files = metadata_dict.get( 'sample_files', [] )
             sample_files = [ str( s ) for s in sample_files ]
-            tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
+            tool_index_sample_files = tdtm.get_tool_index_sample_files( sample_files )
             tool_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=self.tool_path )
             sample_files_copied = [ s for s in tool_index_sample_files ]
             repository_tools_tups = irmm.get_repository_tools_tups( metadata_dict )
             if repository_tools_tups:
-                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = tool_util.handle_missing_data_table_entry( self.app,
-                                                                                   relative_install_dir,
-                                                                                   self.tool_path,
-                                                                                   repository_tools_tups )
+                # Handle missing data table entries for tool parameters that are dynamically
+                # generated select lists.
+                repository_tools_tups = tdtm.handle_missing_data_table_entry( relative_install_dir,
+                                                                              self.tool_path,
+                                                                              repository_tools_tups )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
                 repository_tools_tups, sample_files_copied = tool_util.handle_missing_index_file( self.app,
                                                                                                   self.tool_path,
                                                                                                   sample_files,
                                                                                                   repository_tools_tups,
                                                                                                   sample_files_copied )
-                # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
+                # Copy remaining sample files included in the repository to the ~/tool-data
+                # directory of the local Galaxy instance.
                 tool_util.copy_sample_files( self.app,
                                              sample_files,
                                              tool_path=self.tool_path,
