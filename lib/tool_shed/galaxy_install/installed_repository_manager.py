@@ -7,7 +7,6 @@ import os
 from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
-from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
@@ -16,6 +15,7 @@ from galaxy.model.orm import and_
 
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import data_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
 log = logging.getLogger( __name__ )
@@ -99,13 +99,13 @@ class InstalledRepositoryManager( object ):
                 tp, data_manager_relative_install_dir = repository.get_tool_relative_path( self.app )
                 # Hack to add repository.name here, which is actually the root of the installed repository
                 data_manager_relative_install_dir = os.path.join( data_manager_relative_install_dir, repository.name )
-                new_data_managers = data_manager_util.install_data_managers( self.app,
-                                                                             self.app.config.shed_data_manager_config_file,
-                                                                             metadata,
-                                                                             repository.get_shed_config_dict( self.app ),
-                                                                             data_manager_relative_install_dir,
-                                                                             repository,
-                                                                             repository_tools_tups )
+                dmh = data_manager.DataManagerHandler( self.app )
+                new_data_managers = dmh.install_data_managers( self.app.config.shed_data_manager_config_file,
+                                                               metadata,
+                                                               repository.get_shed_config_dict( self.app ),
+                                                               data_manager_relative_install_dir,
+                                                               repository,
+                                                               repository_tools_tups )
         self.install_model.context.add( repository )
         self.install_model.context.flush()
         if repository.includes_datatypes:

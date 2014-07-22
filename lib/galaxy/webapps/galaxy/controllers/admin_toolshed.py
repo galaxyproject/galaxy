@@ -12,7 +12,6 @@ from galaxy.model.orm import or_
 import tool_shed.repository_types.util as rt_util
 
 from tool_shed.util import common_util
-from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -30,6 +29,7 @@ from tool_shed.galaxy_install.grids import admin_toolshed_grids
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import data_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
 from tool_shed.tools import tool_version_manager
@@ -252,7 +252,8 @@ class AdminToolshed( AdminGalaxy ):
                                             shed_tool_conf,
                                             uninstall=remove_from_disk_checked )
             if tool_shed_repository.includes_data_managers:
-                data_manager_util.remove_from_data_manager( trans.app, tool_shed_repository )
+                dmh = data_manager.DataManagerHandler( trans.app )
+                dmh.remove_from_data_manager( tool_shed_repository )
             if tool_shed_repository.includes_datatypes:
                 # Deactivate proprietary datatypes.
                 installed_repository_dict = datatype_util.load_installed_datatypes( trans.app,
@@ -1933,7 +1934,8 @@ class AdminToolshed( AdminGalaxy ):
                     hg_util.update_repository( repo, latest_ctx_rev )
                     # Remove old Data Manager entries
                     if repository.includes_data_managers:
-                        data_manager_util.remove_from_data_manager( trans.app, repository )
+                        dmh = data_manager.DataManagerHandler( trans.app )
+                        dmh.remove_from_data_manager( repository )
                     # Update the repository metadata.
                     tpm = tool_panel_manager.ToolPanelManager( trans.app )
                     irmm = InstalledRepositoryMetadataManager( trans.app, tpm )
@@ -1962,13 +1964,13 @@ class AdminToolshed( AdminGalaxy ):
                                                new_install=False )
                         # Add new Data Manager entries
                         if 'data_manager' in metadata_dict:
-                            new_data_managers = data_manager_util.install_data_managers( trans.app,
-                                                                                         trans.app.config.shed_data_manager_config_file,
-                                                                                         metadata_dict,
-                                                                                         repository.get_shed_config_dict( trans.app ),
-                                                                                         os.path.join( relative_install_dir, name ),
-                                                                                         repository,
-                                                                                         repository_tools_tups )
+                            dmh = data_manager.DataManagerHandler( trans.app )
+                            new_data_managers = dmh.install_data_managers( trans.app.config.shed_data_manager_config_file,
+                                                                           metadata_dict,
+                                                                           repository.get_shed_config_dict( trans.app ),
+                                                                           os.path.join( relative_install_dir, name ),
+                                                                           repository,
+                                                                           repository_tools_tups )
                     if 'repository_dependencies' in metadata_dict or 'tool_dependencies' in metadata_dict:
                         new_repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
                         new_repository_dependencies = new_repository_dependencies_dict.get( 'repository_dependencies', [] )

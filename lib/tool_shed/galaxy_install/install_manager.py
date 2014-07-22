@@ -18,7 +18,6 @@ from galaxy.model.orm import or_
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -33,6 +32,7 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import E
 from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
+from tool_shed.galaxy_install.tools import data_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
 from tool_shed.tools import tool_version_manager
@@ -575,13 +575,13 @@ class InstallRepositoryManager( object ):
                                             tool_panel_dict=tool_panel_dict,
                                             new_install=True )
         if 'data_manager' in metadata_dict:
-            new_data_managers = data_manager_util.install_data_managers( self.app,
-                                                                         self.app.config.shed_data_manager_config_file,
-                                                                         metadata_dict,
-                                                                         shed_config_dict,
-                                                                         relative_install_dir,
-                                                                         tool_shed_repository,
-                                                                         repository_tools_tups )
+            dmh = data_manager.DataManagerHandler( self.app )
+            new_data_managers = dmh.install_data_managers( self.app.config.shed_data_manager_config_file,
+                                                           metadata_dict,
+                                                           shed_config_dict,
+                                                           relative_install_dir,
+                                                           tool_shed_repository,
+                                                           repository_tools_tups )
         if 'datatypes' in metadata_dict:
             tool_shed_repository.status = self.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
