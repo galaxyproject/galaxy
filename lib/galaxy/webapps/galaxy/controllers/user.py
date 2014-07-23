@@ -1522,7 +1522,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             user_address.deleted = True
             trans.sa_session.add( user_address )
             trans.sa_session.flush()
-            'Address (%s) deleted' % user_address.desc
+            message = 'Address (%s) deleted' % user_address.desc
             status = 'done'
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='manage_user_info',
