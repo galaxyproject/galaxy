@@ -195,6 +195,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
 class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
                          UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, ExportsHistoryMixin,
                          ImportsHistoryMixin ):
+
     def __init__( self, app ):
         super( HistoryController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(

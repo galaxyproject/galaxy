@@ -1,46 +1,67 @@
 define([
     "mvc/base-mvc",
+    "mvc/collection/dataset-collection-base",
+    "mvc/history/history-content-base-view",
     "utils/localization"
-], function( BASE_MVC, _l ){
+], function( BASE_MVC, DC_BASE, HISTORY_CONTENT_BASE_VIEW, _l ){
 /* global Backbone, LoggableMixin */
 //==============================================================================
-/** @class Read only view for DatasetCollection.
- *  @name DCBaseView
+var HCVMixin = HISTORY_CONTENT_BASE_VIEW.HistoryContentViewMixin,
+    _super = DC_BASE.DCBaseView;
+/** @class Read only view for HistoryDatasetCollectionAssociation.
+ *  @name
  *
  *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var DCBaseView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
+var HDCABaseView = _super.extend( BASE_MVC.mixin( HCVMixin, {
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output
     //logger              : console,
 
     /**  */
-    className   : "dataset-collection",
-    /**  */
-    fxSpeed     : 'fast',
+    className   : "dataset hda history-panel-hda",
 
     /**  */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
-        this.log( 'DCBaseView.initialize:', attributes );
+        this.log( this + '.initialize:', attributes );
+        _super.prototype.initialize.call( this, attributes );
+        HCVMixin.initialize.call( this, attributes );
     },
 
-//TODO: render has been removed from the inheritance chain here, so this won't work when called as is
+    /**  */
+    _template : function(){
+        return HDCABaseView.templates.skeleton( this.model.toJSON() );
+    },
+
+    /**  */
+    events : _.extend( _.clone( HCVMixin.events ), {
+    }),
+
+    /**  */
+    _renderBody : function(){
+        // override this
+        var $body = $( _super.templates.body( this.model.toJSON() ) );
+        if( this.expanded ){
+            $body.show();
+        }
+        return $body;
+    },
 
     // ......................................................................... misc
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'DCBaseView(' + modelString + ')';
+        return 'HDCABaseView(' + modelString + ')';
     }
-});
+}));
 
-/** templates for DCBaseViews (skeleton and body) */
-DCBaseView.templates = (function(){
+/** templates for HDCAs (skeleton and body) */
+HDCABaseView.templates = HDCABaseView.prototype.templates = (function(){
 // use closure to run underscore template fn only once at module load
     var skeletonTemplate = _.template([
         '<div class="dataset hda">',
@@ -56,10 +77,12 @@ DCBaseView.templates = (function(){
                     '</div>',
                 '<% } %>',
             '</div>',
+            '<div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>',
             '<div class="dataset-primary-actions"></div>',
             '<div class="dataset-title-bar clear" tabindex="0">',
                 '<span class="dataset-state-icon state-icon"></span>',
                 '<div class="dataset-title">',
+                    '<span class="hda-hid"><%- collection.hid %></span> ',
                     '<span class="dataset-name"><%- collection.name %></span>',
                 '</div>',
             '</div>',
@@ -86,66 +109,8 @@ DCBaseView.templates = (function(){
 }());
 
 
-//TODO: unused
-////==============================================================================
-///** @class Read only view for DatasetCollectionElement.
-// *  @name DCEBaseView
-// *
-// *  @augments Backbone.View
-// *  @borrows LoggableMixin#logger as #logger
-// *  @borrows LoggableMixin#log as #log
-// *  @constructs
-// */
-//var NestedDCBaseView = DCBaseView.extend({
-//
-//    logger : console,
-//
-//    /**  */
-//    initialize  : function( attributes ){
-//        if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
-//        this.warn( this + '.initialize:', attributes );
-//        DCBaseView.prototype.initialize.call( this, attributes );
-//    },
-//
-//    _template : function(){
-//        this.debug( this.model );
-//        this.debug( this.model.toJSON() );
-//        return NestedDCBaseView.templates.skeleton( this.model.toJSON() );
-//    },
-//
-//    // ......................................................................... misc
-//    /** String representation */
-//    toString : function(){
-//        var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-//        return 'NestedDCBaseView(' + modelString + ')';
-//    }
-//});
-//
-////------------------------------------------------------------------------------ TEMPLATES
-////TODO: possibly break these out into a sep. module
-//NestedDCBaseView.templates = (function(){
-//    var skeleton = _.template([
-//        '<div class="dataset hda history-panel-hda state-ok">',
-//            '<div class="dataset-primary-actions"></div>',
-//            '<div class="dataset-title-bar clear" tabindex="0">',
-//                '<div class="dataset-title">',
-//                    '<span class="dataset-name"><%= collection.name %></span>',
-//                '</div>',
-//            '</div>',
-//        '</div>'
-//    ].join( '' ));
-//    // we override here in order to pass the localizer (_L) into the template scope - since we use it as a fn within
-//    return {
-//        skeleton : function( json ){
-//            return skeleton({ _l: _l, collection: json });
-//        }
-//    };
-//}());
-
-
 //==============================================================================
     return {
-        DCBaseView          : DCBaseView,
-        //NestedDCBaseView    : NestedDCBaseView,
+        HDCABaseView        : HDCABaseView
     };
 });

@@ -14,6 +14,7 @@ from galaxy.tools import ToolSection
 from galaxy.util.odict import odict
 
 from tool_shed.galaxy_install import install_manager
+from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
@@ -22,7 +23,6 @@ from tool_shed.tools import tool_version_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import datatype_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
@@ -492,6 +492,7 @@ class ToolMigrationManager( object ):
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
                     print installed_tool_dependency.error_message, '\n\n'
         if 'datatypes' in metadata_dict:
+            cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
             tool_shed_repository.status = self.app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
                 tool_shed_repository.includes_datatypes = True
@@ -499,21 +500,27 @@ class ToolMigrationManager( object ):
             self.app.install_model.context.flush()
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-hrc" )
             datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, repo_install_dir )
-            # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
-            # after this installation completes.
-            converter_path, display_path = datatype_util.alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, repo_install_dir, override=False ) #repo_install_dir was relative_install_dir
+            # Load proprietary data types required by tools.  The value of override is not
+            # important here since the Galaxy server will be started after this installation
+            #completes.
+            converter_path, display_path = \
+                cdl.alter_config_and_load_prorietary_datatypes( datatypes_config,
+                                                                repo_install_dir,
+                                                                override=False ) 
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
-                repository_dict = datatype_util.create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed_url,
-                                                                                                  name=tool_shed_repository.name,
-                                                                                                  owner=self.repository_owner,
-                                                                                                  installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                                                  tool_dicts=metadata_dict.get( 'tools', [] ),
-                                                                                                  converter_path=converter_path,
-                                                                                                  display_path=display_path )
+                repository_dict = \
+                    cdl.create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed_url,
+                                                                          name=tool_shed_repository.name,
+                                                                          owner=self.repository_owner,
+                                                                          installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                          tool_dicts=metadata_dict.get( 'tools', [] ),
+                                                                          converter_path=converter_path,
+                                                                          display_path=display_path )
             if converter_path:
                 # Load proprietary datatype converters
-                self.app.datatypes_registry.load_datatype_converters( self.toolbox, installed_repository_dict=repository_dict )
+                self.app.datatypes_registry.load_datatype_converters( self.toolbox,
+                                                                      installed_repository_dict=repository_dict )
             if display_path:
                 # Load proprietary datatype display applications
                 self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )

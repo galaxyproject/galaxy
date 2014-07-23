@@ -1062,7 +1062,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                               action='browse_repositories',
                                                               message=message,
                                                               status=status ) )
-        name = kwd.get( 'name', '' )
+        name = kwd.get( 'name', '' ).strip()
         description = kwd.get( 'description', '' )
         long_description = kwd.get( 'long_description', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
@@ -1262,7 +1262,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         metadata = repository_metadata.metadata
         toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
+        # Initialize the repository dependency RelationBuilder.
         rb = relation_builder.RelationBuilder( trans.app, repository, repository_metadata, toolshed_base_url )
+        # Work-around to ensure repositories that contain packages needed only for compiling
+        # a dependent package are included in the capsule.
+        rb.set_filter_dependencies_needed_for_compiling( False )
         # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
         repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
         if repository_dependencies:

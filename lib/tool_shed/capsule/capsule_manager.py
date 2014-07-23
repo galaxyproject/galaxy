@@ -245,9 +245,13 @@ class ExportRepositoryManager( object ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
                                                                                  self.repository_id,
                                                                                  self.changeset_revision )
-        # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+        # Get a dictionary of all repositories upon which the contents of the current
+        # repository_metadata record depend.
         toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
         rb = RelationBuilder( self.app, repository, repository_metadata, toolshed_base_url )
+        # Work-around to ensure repositories that contain packages needed only for compiling
+        # a dependent package are included in the capsule.
+        rb.set_filter_dependencies_needed_for_compiling( False )
         repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
         repo = hg_util.get_repo_for_repository( self.app,
                                                 repository=self.repository,
