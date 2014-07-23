@@ -253,17 +253,11 @@ def populate_api_routes( webapp, app ):
                            action='show_roles',
                            conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( 'modify_permissions',
+    webapp.mapper.connect( 'update_lda_permissions',
                            '/api/libraries/datasets/:encoded_dataset_id/permissions',
                            controller='lda_datasets',
-                           action='update',
+                           action='update_permissions',
                            conditions=dict( method=[ "POST" ] ) )
-
-    # webapp.mapper.connect( 'show_legitimate_lda_roles',
-                           # '/api/libraries/datasets/:encoded_dataset_id/permissions/current',
-                           # controller='lda_datasets',
-                           # action='get_roles',
-                           # conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'delete_lda_item',
                            '/api/libraries/datasets/:encoded_dataset_id',

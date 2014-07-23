@@ -68,6 +68,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         rval[ 'file_size' ] = nice_size
         rval[ 'date_uploaded' ] = date_uploaded
         rval[ 'can_user_modify' ] = trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset) or trans.user_is_admin()
+        rval[ 'is_unrestricted' ] = trans.app.security_agent.dataset_is_public( library_dataset.library_dataset_dataset_association.dataset )
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
         rval[ 'can_user_manage' ] = trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
@@ -107,13 +108,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         scope = kwd.get( 'scope', None )
 
-        #  Return all roles currently set for relevant permissions.
         if scope == 'current' or scope is None:
-            # Omit duplicated roles by converting to set
-            access_roles = set( dataset.get_access_roles( trans ) )
-            modify_roles = set( trans.app.security_agent.get_roles_for_action( library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY ) )
-            manage_roles = set( dataset.get_manage_permissions_roles( trans ) )
-
+            return self.get_current_roles( trans, library_dataset )
             # legit_roles = trans.app.security_agent.get_legitimate_roles( trans, dataset, 'library_admin' )
             # log.debug( 'CXXXXXCXCXCXCXCXCC legit roles: ' + str( [ legit_role.name for legit_role in legit_roles ] ) )
 
@@ -122,12 +118,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 # log.debug( '*******************************************' )
                 # log.debug( 'permission action: ' + str( k.action ) )
                 # log.debug( 'permission roles: ' + str( [ role.name for role in v ] ) )
-
-            access_dataset_role_list = [ access_role.name for access_role in access_roles ]
-            manage_dataset_role_list = [ manage_role.name for manage_role in manage_roles ]
-            modify_item_role_list = [ modify_role.name for modify_role in modify_roles ]
-
-            return dict( access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list )
 
         #  Return roles that are available to select.
         if scope == 'available':
@@ -161,21 +151,28 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
 
     def get_current_roles( self, trans, library_dataset):
-            dataset = library_dataset.library_dataset_dataset_association.dataset
-            
-            # Omit duplicated roles by converting to set 
-            access_roles = set( dataset.get_access_roles( trans ) )
-            modify_roles = set( trans.app.security_agent.get_roles_for_action( library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY ) )
-            manage_roles = set( dataset.get_manage_permissions_roles( trans ) )
+        """
+        Find all roles currently connected to relevant permissions 
+        on the library dataset and the underlying dataset.
 
-            access_dataset_role_list = [ access_role.name for access_role in access_roles ]
-            manage_dataset_role_list = [ manage_role.name for manage_role in manage_roles ]
-            modify_item_role_list = [ modify_role.name for modify_role in modify_roles ]
+        :param  library_dataset:      the model object
+        :type   library_dataset:      LibraryDataset
+        """
+        dataset = library_dataset.library_dataset_dataset_association.dataset
 
-            return dict( access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list )
+        # Omit duplicated roles by converting to set 
+        access_roles = set( dataset.get_access_roles( trans ) )
+        modify_roles = set( trans.app.security_agent.get_roles_for_action( library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY ) )
+        manage_roles = set( dataset.get_manage_permissions_roles( trans ) )
+
+        access_dataset_role_list = [ access_role.name for access_role in access_roles ]
+        manage_dataset_role_list = [ manage_role.name for manage_role in manage_roles ]
+        modify_item_role_list = [ modify_role.name for modify_role in modify_roles ]
+
+        return dict( access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list )
 
     @expose_api
-    def update( self, trans, encoded_dataset_id, **kwd ):
+    def update_permissions( self, trans, encoded_dataset_id, **kwd ):
         """
         def update( self, trans, encoded_dataset_id, **kwd ):
             *POST /api/libraries/datasets/{encoded_dataset_id}/permissions
@@ -196,7 +193,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
 
         dataset = library_dataset.library_dataset_dataset_association.dataset
-        # User has to have manage permissions on dataset in order to remove access restrictions.
+
         current_user_roles = trans.get_current_user_roles()
         can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, dataset ) or trans.user_is_admin()
         if not can_manage:
@@ -211,12 +208,21 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 raise exceptions.InternalServerError( 'An error occured while making dataset public.' )
         elif action == 'make_private':
             trans.app.security_agent.make_dataset_public( dataset )
-            private_role = self.model.security_agent.get_private_user_role( trans.user )
-            dp = trans.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role )
+            private_role = trans.app.security_agent.get_private_user_role( trans.user )
+            dp = trans.app.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role )
             trans.sa_session.add( dp )
             trans.sa_session.flush()
-            if not trans.app.security_agent.dataset_is_private_to_user( dataset ):
+            if not trans.app.security_agent.dataset_is_private_to_user( trans, library_dataset ):
                 raise exceptions.InternalServerError( 'An error occured while making dataset private.' )
+        elif action == 'set_dataset_access_roles':
+            raise exceptions.NotImplemented()
+        elif action == 'set_dataset_manage_roles':
+            raise exceptions.NotImplemented()
+        elif action == 'set_library_dataset_modify_roles':
+            raise exceptions.NotImplemented()
+        else:
+            raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
+                                'Allowed values are: "remove_restrictions", "make_private", "set_dataset_access_roles"' )
 
         return self.get_current_roles( trans, library_dataset )
 
