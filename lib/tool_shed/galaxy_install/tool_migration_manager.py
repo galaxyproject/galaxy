@@ -11,20 +11,23 @@ import logging
 
 from galaxy import util
 from galaxy.tools import ToolSection
+from galaxy.util.odict import odict
 
 from tool_shed.galaxy_install import install_manager
+from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
+from tool_shed.tools import data_table_manager
+from tool_shed.tools import tool_version_manager
+
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import datatype_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
 
@@ -41,6 +44,7 @@ class ToolMigrationManager( object ):
         self.app = app
         self.toolbox = self.app.toolbox
         self.migrated_tools_config = migrated_tools_config
+        # Initialize the ToolPanelManager.
         self.tpm = tool_panel_manager.ToolPanelManager( self.app )
         # If install_dependencies is True but tool_dependency_dir is not set, do not attempt
         # to install but print informative error message.
@@ -74,7 +78,7 @@ class ToolMigrationManager( object ):
                 self.tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, defined_tool_shed_url )
                 self.tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed_url )
                 self.repository_owner = common_util.REPOSITORY_OWNER
-                index, self.shed_config_dict = suc.get_shed_tool_conf_dict( app, self.migrated_tools_config )
+                index, self.shed_config_dict = self.tpm.get_shed_tool_conf_dict( self.migrated_tools_config )
                 # Since tool migration scripts can be executed any number of times, we need to
                 # make sure the appropriate tools are defined in tool_conf.xml.  If no tools
                 # associated with the migration stage are defined, no repositories will be installed
@@ -412,7 +416,7 @@ class ToolMigrationManager( object ):
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()
-        irmm = InstalledRepositoryMetadataManager( self.app )
+        irmm = InstalledRepositoryMetadataManager( self.app, self.tpm )
         metadata_dict, invalid_file_tups = \
             irmm.generate_metadata_for_changeset_revision( repository=tool_shed_repository,
                                                            changeset_revision=tool_shed_repository.changeset_revision,
@@ -437,25 +441,27 @@ class ToolMigrationManager( object ):
         else:
             tool_dependencies = None
         if 'tools' in metadata_dict:
+            tdtm = data_table_manager.ToolDataTableManager( self.app )
             sample_files = metadata_dict.get( 'sample_files', [] )
             sample_files = [ str( s ) for s in sample_files ]
-            tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
+            tool_index_sample_files = tdtm.get_tool_index_sample_files( sample_files )
             tool_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=self.tool_path )
             sample_files_copied = [ s for s in tool_index_sample_files ]
-            repository_tools_tups = suc.get_repository_tools_tups( self.app, metadata_dict )
+            repository_tools_tups = irmm.get_repository_tools_tups( metadata_dict )
             if repository_tools_tups:
-                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = tool_util.handle_missing_data_table_entry( self.app,
-                                                                                   relative_install_dir,
-                                                                                   self.tool_path,
-                                                                                   repository_tools_tups )
+                # Handle missing data table entries for tool parameters that are dynamically
+                # generated select lists.
+                repository_tools_tups = tdtm.handle_missing_data_table_entry( relative_install_dir,
+                                                                              self.tool_path,
+                                                                              repository_tools_tups )
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
                 repository_tools_tups, sample_files_copied = tool_util.handle_missing_index_file( self.app,
                                                                                                   self.tool_path,
                                                                                                   sample_files,
                                                                                                   repository_tools_tups,
                                                                                                   sample_files_copied )
-                # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
+                # Copy remaining sample files included in the repository to the ~/tool-data
+                # directory of the local Galaxy instance.
                 tool_util.copy_sample_files( self.app,
                                              sample_files,
                                              tool_path=self.tool_path,
@@ -471,12 +477,12 @@ class ToolMigrationManager( object ):
                                                 new_install=True )
         if install_dependencies and tool_dependencies and has_tool_dependencies:
             # Install tool dependencies.
-            suc.update_tool_shed_repository_status( self.app,
-                                                    tool_shed_repository,
+            irm = install_manager.InstallRepositoryManager( self.app, self.tpm )
+            itdm = install_manager.InstallToolDependencyManager( self.app )
+            irm.update_tool_shed_repository_status( tool_shed_repository,
                                                     self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from disk.
             tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
-            itdm = install_manager.InstallToolDependencyManager( self.app )
             installed_tool_dependencies = itdm.install_specified_tool_dependencies( tool_shed_repository=tool_shed_repository,
                                                                                     tool_dependencies_config=tool_dependencies_config,
                                                                                     tool_dependencies=tool_dependencies,
@@ -486,6 +492,7 @@ class ToolMigrationManager( object ):
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
                     print installed_tool_dependency.error_message, '\n\n'
         if 'datatypes' in metadata_dict:
+            cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
             tool_shed_repository.status = self.app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
                 tool_shed_repository.includes_datatypes = True
@@ -493,21 +500,27 @@ class ToolMigrationManager( object ):
             self.app.install_model.context.flush()
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-hrc" )
             datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, repo_install_dir )
-            # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
-            # after this installation completes.
-            converter_path, display_path = datatype_util.alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, repo_install_dir, override=False ) #repo_install_dir was relative_install_dir
+            # Load proprietary data types required by tools.  The value of override is not
+            # important here since the Galaxy server will be started after this installation
+            #completes.
+            converter_path, display_path = \
+                cdl.alter_config_and_load_prorietary_datatypes( datatypes_config,
+                                                                repo_install_dir,
+                                                                override=False ) 
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
-                repository_dict = datatype_util.create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed_url,
-                                                                                                  name=tool_shed_repository.name,
-                                                                                                  owner=self.repository_owner,
-                                                                                                  installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                                                  tool_dicts=metadata_dict.get( 'tools', [] ),
-                                                                                                  converter_path=converter_path,
-                                                                                                  display_path=display_path )
+                repository_dict = \
+                    cdl.create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed_url,
+                                                                          name=tool_shed_repository.name,
+                                                                          owner=self.repository_owner,
+                                                                          installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                          tool_dicts=metadata_dict.get( 'tools', [] ),
+                                                                          converter_path=converter_path,
+                                                                          display_path=display_path )
             if converter_path:
                 # Load proprietary datatype converters
-                self.app.datatypes_registry.load_datatype_converters( self.toolbox, installed_repository_dict=repository_dict )
+                self.app.datatypes_registry.load_datatype_converters( self.toolbox,
+                                                                      installed_repository_dict=repository_dict )
             if display_path:
                 # Load proprietary datatype display applications
                 self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
@@ -533,6 +546,7 @@ class ToolMigrationManager( object ):
         if cloned_ok and is_installed:
             print "Skipping automatic install of repository '", tool_shed_repository.name, "' because it has already been installed in location ", clone_dir
         else:
+            irm = install_manager.InstallRepositoryManager( self.app, self.tpm )
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', tool_shed_repository.owner, tool_shed_repository.name )
             relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
             install_dir = os.path.join( clone_dir, tool_shed_repository.name )
@@ -542,8 +556,7 @@ class ToolMigrationManager( object ):
                                        tool_shed_repository.owner,
                                        tool_shed_repository.installed_changeset_revision )
             if not cloned_ok:
-                suc.update_tool_shed_repository_status( self.app,
-                                                        tool_shed_repository,
+                irm.update_tool_shed_repository_status( tool_shed_repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.CLONING )
                 cloned_ok, error_message = hg_util.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
             if cloned_ok and not is_installed:
@@ -556,8 +569,9 @@ class ToolMigrationManager( object ):
                 self.app.install_model.context.refresh( tool_shed_repository )
                 metadata_dict = tool_shed_repository.metadata
                 if 'tools' in metadata_dict:
-                    suc.update_tool_shed_repository_status( self.app,
-                                                            tool_shed_repository,
+                    # Initialize the ToolVersionManager.
+                    tvm = tool_version_manager.ToolVersionManager( self.app )
+                    irm.update_tool_shed_repository_status( tool_shed_repository,
                                                             self.app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                     # Get the tool_versions from the tool shed for each tool in the installed change set.
                     url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
@@ -565,7 +579,7 @@ class ToolMigrationManager( object ):
                     text = common_util.tool_shed_get( self.app, self.tool_shed_url, url )
                     if text:
                         tool_version_dicts = json.loads( text )
-                        tool_util.handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
+                        tvm.handle_tool_versions( tool_version_dicts, tool_shed_repository )
                     else:
                         # Set the tool versions since they seem to be missing for this repository in the tool shed.
                         # CRITICAL NOTE: These default settings may not properly handle all parent/child associations.
@@ -574,8 +588,8 @@ class ToolMigrationManager( object ):
                             tool_id = tool_dict[ 'guid' ]
                             old_tool_id = tool_dict[ 'id' ]
                             tool_version = tool_dict[ 'version' ]
-                            tool_version_using_old_id = tool_util.get_tool_version( self.app, old_tool_id )
-                            tool_version_using_guid = tool_util.get_tool_version( self.app, tool_id )
+                            tool_version_using_old_id = tvm.get_tool_version( old_tool_id )
+                            tool_version_using_guid = tvm.get_tool_version( tool_id )
                             if not tool_version_using_old_id:
                                 tool_version_using_old_id = self.app.install_model.ToolVersion( tool_id=old_tool_id,
                                                                                         tool_shed_repository=tool_shed_repository )
@@ -587,19 +601,19 @@ class ToolMigrationManager( object ):
                                 self.app.install_model.context.add( tool_version_using_guid )
                                 self.app.install_model.context.flush()
                             # Associate the two versions as parent / child.
-                            tool_version_association = tool_util.get_tool_version_association( self.app,
-                                                                                               tool_version_using_old_id,
-                                                                                               tool_version_using_guid )
+                            tool_version_association = tvm.get_tool_version_association( tool_version_using_old_id,
+                                                                                         tool_version_using_guid )
                             if not tool_version_association:
-                                tool_version_association = self.app.install_model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
-                                                                                                  parent_id=tool_version_using_old_id.id )
+                                tool_version_association = \
+                                    self.app.install_model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
+                                                                                   parent_id=tool_version_using_old_id.id )
                                 self.app.install_model.context.add( tool_version_association )
                                 self.app.install_model.context.flush()
-                suc.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
+                irm.update_tool_shed_repository_status( tool_shed_repository,
+                                                        self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
             else:
                 print 'Error attempting to clone repository %s: %s' % ( str( tool_shed_repository.name ), str( error_message ) )
-                suc.update_tool_shed_repository_status( self.app,
-                                                        tool_shed_repository,
+                irm.update_tool_shed_repository_status( tool_shed_repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.ERROR,
                                                         error_message=error_message )
 

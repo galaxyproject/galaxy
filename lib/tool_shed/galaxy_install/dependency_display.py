@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import threading
@@ -461,7 +462,7 @@ class DependencyDisplayer( object ):
                     url = common_util.url_join( tool_shed_url,
                                                 'repository/get_readme_files%s' % params )
                     raw_text = common_util.tool_shed_get( self.app, tool_shed_url, url )
-                    readme_files_dict = json.from_json_string( raw_text )
+                    readme_files_dict = json.loads( raw_text )
                 else:
                     readme_files_dict = readme_util.build_readme_files_dict( self.app,
                                                                              repository,

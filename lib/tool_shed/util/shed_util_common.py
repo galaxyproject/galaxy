@@ -1,25 +1,22 @@
+import json
 import logging
 import os
 import re
 import shutil
 import string
-import tempfile
+import sqlalchemy.orm.exc
+
 from galaxy import util
-from galaxy.util import asbool
-from galaxy.util import json
 from galaxy.web import url_for
-from galaxy.web.form_builder import SelectField
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.model.orm import or_
-import sqlalchemy.orm.exc
+
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import xml_util
-import tool_shed.repository_types.util as rt_util
-from xml.etree import ElementTree as XmlET
+
 from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
@@ -83,49 +80,6 @@ ${message}
 This message was sent from the Galaxy Tool Shed instance hosted on the server
 '${host}'
 """
-
-def build_tool_dependencies_select_field( app, tool_shed_repository, name, multiple=True, display='checkboxes', uninstalled_only=False ):
-    """Method called from Galaxy to generate the current list of tool dependency ids for an installed tool shed repository."""
-    tool_dependencies_select_field = SelectField( name=name, multiple=multiple, display=display )
-    for tool_dependency in tool_shed_repository.tool_dependencies:
-        if uninstalled_only:
-            if tool_dependency.status not in [ app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                               app.install_model.ToolDependency.installation_status.UNINSTALLED ]:
-                continue
-        else:
-            if tool_dependency.status in [ app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                           app.install_model.ToolDependency.installation_status.UNINSTALLED ]:
-                continue
-        option_label = '%s version %s' % ( str( tool_dependency.name ), str( tool_dependency.version ) )
-        option_value = app.security.encode_id( tool_dependency.id )
-        tool_dependencies_select_field.add_option( option_label, option_value )
-    return tool_dependencies_select_field
-
-def check_or_update_tool_shed_status_for_installed_repository( app, repository ):
-    updated = False
-    tool_shed_status_dict = get_tool_shed_status_for_installed_repository( app, repository )
-    if tool_shed_status_dict:
-        ok = True
-        if tool_shed_status_dict != repository.tool_shed_status:
-            repository.tool_shed_status = tool_shed_status_dict
-            app.install_model.context.add( repository )
-            app.install_model.context.flush()
-            updated = True
-    else:
-        ok = False
-    return ok, updated
-
-def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
-    """Persist the current in-memory list of config_elems to a file named by the value of config_filename."""
-    fd, filename = tempfile.mkstemp( prefix="tmp-toolshed-cetxf"  )
-    os.write( fd, '<?xml version="1.0"?>\n' )
-    os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
-    for elem in config_elems:
-        os.write( fd, '%s' % xml_util.xml_to_string( elem, use_indent=True ) )
-    os.write( fd, '</toolbox>\n' )
-    os.close( fd )
-    shutil.move( filename, os.path.abspath( config_filename ) )
-    os.chmod( config_filename, 0644 )
 
 def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url,
                                            metadata_dict, status, current_changeset_revision=None, owner='', dist_to_shed=False ):
@@ -210,35 +164,6 @@ def extract_components_from_tuple( repository_components_tuple ):
         components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td ]
     return components_list
 
-def generate_repository_info_elem( tool_shed, repository_name, changeset_revision, owner, parent_elem=None, **kwd ):
-    """Create and return an ElementTree repository info Element."""
-    if parent_elem is None:
-        elem = XmlET.Element( 'tool_shed_repository' )
-    else:
-        elem = XmlET.SubElement( parent_elem, 'tool_shed_repository' )
-    tool_shed_elem = XmlET.SubElement( elem, 'tool_shed' )
-    tool_shed_elem.text = tool_shed
-    repository_name_elem = XmlET.SubElement( elem, 'repository_name' )
-    repository_name_elem.text = repository_name
-    repository_owner_elem = XmlET.SubElement( elem, 'repository_owner' )
-    repository_owner_elem.text = owner
-    changeset_revision_elem = XmlET.SubElement( elem, 'installed_changeset_revision' )
-    changeset_revision_elem.text = changeset_revision
-    #add additional values
-    #TODO: enhance additional values to allow e.g. use of dict values that will recurse
-    for key, value in kwd.iteritems():
-        new_elem = XmlET.SubElement( elem, key )
-        new_elem.text = value
-    return elem
-
-def generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=None, **kwd ):
-    return generate_repository_info_elem( tool_shed_repository.tool_shed,
-                                          tool_shed_repository.name,
-                                          tool_shed_repository.installed_changeset_revision,
-                                          tool_shed_repository.owner,
-                                          parent_elem=parent_elem,
-                                          **kwd )
-
 def generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=None ):
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = url_for( '/', qualified=True ).rstrip( '/' )
@@ -248,28 +173,6 @@ def generate_sharable_link_for_repository_in_tool_shed( repository, changeset_re
         sharable_url += '/%s' % changeset_revision
     return sharable_url
 
-def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
-    """Create and return an ElementTree tool Element."""
-    if tool_section is not None:
-        tool_elem = XmlET.SubElement( tool_section, 'tool' )
-    else:
-        tool_elem = XmlET.Element( 'tool' )
-    tool_elem.attrib[ 'file' ] = tool_file_path
-    tool_elem.attrib[ 'guid' ] = tool.guid
-    tool_shed_elem = XmlET.SubElement( tool_elem, 'tool_shed' )
-    tool_shed_elem.text = tool_shed
-    repository_name_elem = XmlET.SubElement( tool_elem, 'repository_name' )
-    repository_name_elem.text = repository_name
-    repository_owner_elem = XmlET.SubElement( tool_elem, 'repository_owner' )
-    repository_owner_elem.text = owner
-    changeset_revision_elem = XmlET.SubElement( tool_elem, 'installed_changeset_revision' )
-    changeset_revision_elem.text = changeset_revision
-    id_elem = XmlET.SubElement( tool_elem, 'id' )
-    id_elem.text = tool.id
-    version_elem = XmlET.SubElement( tool_elem, 'version' )
-    version_elem.text = tool.version
-    return tool_elem
-
 def generate_tool_guid( repository_clone_url, tool ):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for
@@ -278,57 +181,6 @@ def generate_tool_guid( repository_clone_url, tool ):
     """
     tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
     return '%s/%s/%s' % ( tmp_url, tool.id, tool.version )
-
-def generate_tool_panel_dict_from_shed_tool_conf_entries( app, repository ):
-    """
-    Keep track of the section in the tool panel in which this repository's tools will be contained by parsing the shed_tool_conf in
-    which the repository's tools are defined and storing the tool panel definition of each tool in the repository.  This method is called
-    only when the repository is being deactivated or uninstalled and allows for activation or reinstallation using the original layout.
-    """
-    tool_panel_dict = {}
-    shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( app, repository )
-    metadata = repository.metadata
-    # Create a dictionary of tool guid and tool config file name for each tool in the repository.
-    guids_and_configs = {}
-    if 'tools' in metadata:
-        for tool_dict in metadata[ 'tools' ]:
-            guid = tool_dict[ 'guid' ]
-            tool_config = tool_dict[ 'tool_config' ]
-            file_name = basic_util.strip_path( tool_config )
-            guids_and_configs[ guid ] = file_name
-    # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict.
-    tree, error_message = xml_util.parse_xml( shed_tool_conf )
-    if tree is None:
-        return tool_panel_dict
-    root = tree.getroot()
-    for elem in root:
-        if elem.tag == 'tool':
-            guid = elem.get( 'guid' )
-            if guid in guids_and_configs:
-                # The tool is displayed in the tool panel outside of any tool sections.
-                tool_section_dict = dict( tool_config=guids_and_configs[ guid ], id='', name='', version='' )
-                if guid in tool_panel_dict:
-                    tool_panel_dict[ guid ].append( tool_section_dict )
-                else:
-                    tool_panel_dict[ guid ] = [ tool_section_dict ]
-        elif elem.tag == 'section':
-            section_id = elem.get( 'id' ) or ''
-            section_name = elem.get( 'name' ) or ''
-            section_version = elem.get( 'version' ) or ''
-            for section_elem in elem:
-                if section_elem.tag == 'tool':
-                    guid = section_elem.get( 'guid' )
-                    if guid in guids_and_configs:
-                        # The tool is displayed in the tool panel inside the current tool section.
-                        tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
-                                                  id=section_id,
-                                                  name=section_name,
-                                                  version=section_version )
-                        if guid in tool_panel_dict:
-                            tool_panel_dict[ guid ].append( tool_section_dict )
-                        else:
-                            tool_panel_dict[ guid ] = [ tool_section_dict ]
-    return tool_panel_dict
 
 def generate_tool_shed_repository_install_dir( repository_clone_url, changeset_revision ):
     """
@@ -409,61 +261,6 @@ def get_current_repository_metadata_for_changeset_revision( app, repository, cha
             return repository_metadata
     return None
 
-def get_dependent_downloadable_revisions( app, repository_metadata ):
-    """
-    Return all repository_metadata records that are downloadable and that depend upon the received
-    repository_metadata record.
-    """
-    # This method is called only from the tool shed.
-    sa_session = app.model.context.current
-    rm_changeset_revision = repository_metadata.changeset_revision
-    rm_repository = repository_metadata.repository
-    rm_repository_name = str( rm_repository.name )
-    rm_repository_owner = str( rm_repository.user.username )
-    dependent_downloadable_revisions = []
-    for repository in sa_session.query( app.model.Repository ) \
-                                .filter( and_( app.model.Repository.table.c.id != rm_repository.id,
-                                               app.model.Repository.table.c.deleted == False,
-                                               app.model.Repository.table.c.deprecated == False ) ):
-        downloadable_revisions = repository.downloadable_revisions
-        if downloadable_revisions:
-            for downloadable_revision in downloadable_revisions:
-                if downloadable_revision.has_repository_dependencies:
-                    metadata = downloadable_revision.metadata
-                    if metadata:
-                        repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
-                        repository_dependencies_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
-                        for repository_dependencies_tup in repository_dependencies_tups:
-                            tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                                common_util.parse_repository_dependency_tuple( repository_dependencies_tup )
-                            if name == rm_repository_name and owner == rm_repository_owner:
-                                # We've discovered a repository revision that depends upon the repository associated
-                                # with the received repository_metadata record, but we need to make sure it depends
-                                # upon the revision.
-                                if changeset_revision == rm_changeset_revision:
-                                    dependent_downloadable_revisions.append( downloadable_revision )
-                                else:
-                                    # Make sure the defined changeset_revision is current.
-                                    defined_repository_metadata = \
-                                        sa_session.query( app.model.RepositoryMetadata ) \
-                                                  .filter( app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) \
-                                                  .first()
-                                    if defined_repository_metadata is None:
-                                        # The defined changeset_revision is not associated with a repository_metadata
-                                        # record, so updates must be necessary.
-                                        defined_repository = get_repository_by_name_and_owner( app, name, owner )
-                                        defined_repo = hg_util.get_repo_for_repository( app,
-                                                                                        repository=defined_repository,
-                                                                                        repo_path=None,
-                                                                                        create=False )
-                                        updated_changeset_revision = \
-                                            get_next_downloadable_changeset_revision( defined_repository,
-                                                                                      defined_repo,
-                                                                                      changeset_revision )
-                                        if updated_changeset_revision == rm_changeset_revision:
-                                            dependent_downloadable_revisions.append( downloadable_revision )
-    return dependent_downloadable_revisions
-
 def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     installing_repository_ids = []
     new_status = app.install_model.ToolShedRepository.installation_status.NEW
@@ -482,22 +279,6 @@ def get_ids_of_tool_shed_repositories_being_installed( app, as_string=False ):
     if as_string:
         return ','.join( installing_repository_ids )
     return installing_repository_ids
-
-def get_installed_tool_shed_repository( app, id ):
-    """Get a tool shed repository record from the Galaxy database defined by the id."""
-    return app.install_model.context.query( app.install_model.ToolShedRepository ).get( app.security.decode_id( id ) )
-
-def get_latest_changeset_revision( app, repository, repo ):
-    repository_tip = repository.tip( app )
-    repository_metadata = get_repository_metadata_by_changeset_revision( app,
-                                                                         app.security.encode_id( repository.id ),
-                                                                         repository_tip )
-    if repository_metadata and repository_metadata.downloadable:
-        return repository_tip
-    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=False )
-    if changeset_revisions:
-        return changeset_revisions[ -1 ]
-    return hg_util.INITIAL_CHANGELOG_HASH
 
 def get_latest_downloadable_changeset_revision( app, repository, repo ):
     repository_tip = repository.tip( app )
@@ -563,35 +344,11 @@ def get_next_prior_import_or_install_required_dict_entry( prior_required_dict, p
             continue
         return key
 
-def get_or_create_tool_shed_repository( app, tool_shed, name, owner, changeset_revision ):
-    """
-    Return a tool shed repository database record defined by the combination of tool shed, repository name, repository owner and changeset_revision
-    or installed_changeset_revision.  A new tool shed repository record will be created if one is not located.
-    """
-    install_model = app.install_model
-    # We store the port in the database.
-    tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
-    # This method is used only in Galaxy, not the tool shed.
-    repository = get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision )
-    if not repository:
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
-        repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
-        ctx_rev = get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision )
-        repository = create_or_update_tool_shed_repository( app=app,
-                                                            name=name,
-                                                            description=None,
-                                                            installed_changeset_revision=changeset_revision,
-                                                            ctx_rev=ctx_rev,
-                                                            repository_clone_url=repository_clone_url,
-                                                            metadata_dict={},
-                                                            status=install_model.ToolShedRepository.installation_status.NEW,
-                                                            current_changeset_revision=None,
-                                                            owner=owner,
-                                                            dist_to_shed=False )
-    return repository
-
 def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True ):
-    """Return an ordered list of changeset_revisions that are associated with metadata where order is defined by the repository changelog."""
+    """
+    Return an ordered list of changeset_revisions that are associated with metadata
+    where order is defined by the repository changelog.
+    """
     if downloadable:
         metadata_revisions = repository.downloadable_revisions
     else:
@@ -611,9 +368,11 @@ def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=Tru
 
 def get_prior_import_or_install_required_dict( app, tsr_ids, repo_info_dicts ):
     """
-    This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy when a repository and its dependencies
-    are being installed.  Return a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained
-    in the received list of tsr_ids and whose associated repository must be imported or installed prior to the repository associated with the tsr_id key.
+    This method is used in the Tool Shed when exporting a repository and its dependencies,
+    and in Galaxy when a repository and its dependencies are being installed.  Return a
+    dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids,
+    each of which is contained in the received list of tsr_ids and whose associated repository
+    must be imported or installed prior to the repository associated with the tsr_id key.
     """
     # Initialize the dictionary.
     prior_import_or_install_required_dict = {}
@@ -697,7 +456,7 @@ def get_repository_dependency_types( repository_dependencies ):
     for rd_tup in repository_dependencies:
         tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( rd_tup )
-        if not asbool( only_if_compiling_contained_td ):
+        if not util.asbool( only_if_compiling_contained_td ):
             has_repository_dependencies = True
             break
     # Set has_repository_dependencies_only_if_compiling_contained_td, which will be True only if at
@@ -706,7 +465,7 @@ def get_repository_dependency_types( repository_dependencies ):
     for rd_tup in repository_dependencies:
         tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( rd_tup )
-        if asbool( only_if_compiling_contained_td ):
+        if util.asbool( only_if_compiling_contained_td ):
             has_repository_dependencies_only_if_compiling_contained_td = True
             break
     return has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
@@ -818,11 +577,14 @@ def get_repository_from_refresh_on_change( app, **kwd ):
 
 def get_repository_ids_requiring_prior_import_or_install( app, tsr_ids, repository_dependencies ):
     """
-    This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy when a repository and its dependencies
-    are being installed.  Inspect the received repository_dependencies and determine if the encoded id of each required repository is in the received
-    tsr_ids.  If so, then determine whether that required repository should be imported / installed prior to its dependent repository.  Return a list
-    of encoded repository ids, each of which is contained in the received list of tsr_ids, and whose associated repositories must be imported / installed
-    prior to the dependent repository associated with the received repository_dependencies.
+    This method is used in the Tool Shed when exporting a repository and its dependencies,
+    and in Galaxy when a repository and its dependencies are being installed.  Inspect the
+    received repository_dependencies and determine if the encoded id of each required
+    repository is in the received tsr_ids.  If so, then determine whether that required
+    repository should be imported / installed prior to its dependent repository.  Return a
+    list of encoded repository ids, each of which is contained in the received list of tsr_ids,
+    and whose associated repositories must be imported / installed prior to the dependent
+    repository associated with the received repository_dependencies.
     """
     prior_tsr_ids = []
     if repository_dependencies:
@@ -830,20 +592,32 @@ def get_repository_ids_requiring_prior_import_or_install( app, tsr_ids, reposito
             if key in [ 'description', 'root_key' ]:
                 continue
             for rd_tup in rd_tups:
-                tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
+                tool_shed, \
+                name, \
+                owner, \
+                changeset_revision, \
+                prior_installation_required, \
+                only_if_compiling_contained_td = \
                     common_util.parse_repository_dependency_tuple( rd_tup )
-                # If only_if_compiling_contained_td is False, then the repository dependency is not required to be installed prior to the dependent
-                # repository even if prior_installation_required is True.  This is because the only meaningful content of the repository dependency
-                # is its contained tool dependency, which is required in order to compile the dependent repository's tool dependency.  In the scenario
-                # where the repository dependency is not installed prior to the dependent repository's tool dependency compilation process, the tool
-                # dependency compilation framework will install the repository dependency prior to compilation of the dependent repository's tool
-                # dependency.
-                if not asbool( only_if_compiling_contained_td ):
-                    if asbool( prior_installation_required ):
+                # If only_if_compiling_contained_td is False, then the repository dependency
+                # is not required to be installed prior to the dependent repository even if
+                # prior_installation_required is True.  This is because the only meaningful
+                # content of the repository dependency is its contained tool dependency, which
+                # is required in order to compile the dependent repository's tool dependency.
+                # In the scenario where the repository dependency is not installed prior to the
+                # dependent repository's tool dependency compilation process, the tool dependency
+                # compilation framework will install the repository dependency prior to compilation
+                # of the dependent repository's tool dependency.
+                if not util.asbool( only_if_compiling_contained_td ):
+                    if util.asbool( prior_installation_required ):
                         if is_tool_shed_client( app ):
                             # We store the port, if one exists, in the database.
                             tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
-                            repository = get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision )
+                            repository = get_repository_for_dependency_relationship( app,
+                                                                                     tool_shed,
+                                                                                     name,
+                                                                                     owner,
+                                                                                     changeset_revision )
                         else:
                             repository = get_repository_by_name_and_owner( app, name, owner )
                         if repository:
@@ -898,42 +672,6 @@ def get_repository_query( app ):
     else:
         query = app.model.context.query( app.model.Repository )
     return query
-
-def get_repository_tools_tups( app, metadata_dict ):
-    """Return a list of tuples of the form (relative_path, guid, tool) for each tool defined in the received tool shed repository metadata."""
-    repository_tools_tups = []
-    index, shed_conf_dict = get_shed_tool_conf_dict( app, metadata_dict.get( 'shed_config_filename' ) )
-    if 'tools' in metadata_dict:
-        for tool_dict in metadata_dict[ 'tools' ]:
-            load_relative_path = relative_path = tool_dict.get( 'tool_config', None )
-            if shed_conf_dict.get( 'tool_path' ):
-                load_relative_path = os.path.join( shed_conf_dict.get( 'tool_path' ), relative_path )
-            guid = tool_dict.get( 'guid', None )
-            if relative_path and guid:
-                tool = app.toolbox.load_tool( os.path.abspath( load_relative_path ), guid=guid )
-            else:
-                tool = None
-            if tool:
-                repository_tools_tups.append( ( relative_path, guid, tool ) )
-    return repository_tools_tups
-
-def get_shed_tool_conf_dict( app, shed_tool_conf ):
-    """Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry in the shed_tool_conf_dict associated with the file."""
-    for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
-        if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
-            return index, shed_tool_conf_dict
-        else:
-            file_name = basic_util.strip_path( shed_tool_conf_dict[ 'config_filename' ] )
-            if shed_tool_conf == file_name:
-                return index, shed_tool_conf_dict
-
-def get_skip_tool_test_by_changeset_revision( app, changeset_revision ):
-    """Return a skip_tool_test record whose initial_changeset_revision is the received changeset_revision."""
-    # There should only be one, but we'll use first() so callers won't have to handle exceptions.
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.SkipToolTest ) \
-                     .filter( app.model.SkipToolTest.table.c.initial_changeset_revision == changeset_revision ) \
-                     .first()
 
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
     """
@@ -1238,7 +976,7 @@ def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_a
                     email_alerts.append( user.email )
         else:
             subject = "Galaxy tool shed update alert for repository named %s" % str( repository.name )
-            email_alerts = json.from_json_string( repository.email_alerts )
+            email_alerts = json.loads( repository.email_alerts )
         for email in email_alerts:
             to = email.strip()
             # Send it
@@ -1262,7 +1000,8 @@ def have_shed_tool_conf_for_install( app ):
     return False
 
 def is_tool_shed_client( app ):
-    """ The tool shed and clients to the tool (i.e. Galaxy) require a lot
+    """
+    The tool shed and clients to the tool (i.e. Galaxy) require a lot
     of similar functionality in this file but with small differences. This
     method should determine if the app performing the action is the tool shed
     or a client of the tool shed.
@@ -1338,32 +1077,12 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
                 return tool_shed_repository, previous_changeset_revision
     return None, None
 
-def reset_previously_installed_repository( install_model, repository ):
-    """
-    Reset the atrributes of a tool_shed_repository that was previsouly installed.  The repository will be in some state other than INSTALLED,
-    so all atributes will be set to the default NEW state.  This will enable the repository to be freshly installed.
-    """
-    debug_msg = "Resetting tool_shed_repository '%s' for installation.\n" % str( repository.name )
-    debug_msg += "The current state of the tool_shed_repository is:\n"
-    debug_msg += "deleted: %s\n" % str( repository.deleted )
-    debug_msg += "tool_shed_status: %s\n" % str( repository.tool_shed_status )
-    debug_msg += "uninstalled: %s\n" % str( repository.uninstalled )
-    debug_msg += "status: %s\n" % str( repository.status )
-    debug_msg += "error_message: %s\n" % str( repository.error_message )
-    log.debug( debug_msg )
-    repository.deleted = False
-    repository.tool_shed_status = None
-    repository.uninstalled = False
-    repository.status = install_model.ToolShedRepository.installation_status.NEW
-    repository.error_message = None
-    install_model.context.add( repository )
-    install_model.context.flush()
-
 def set_image_paths( app, encoded_repository_id, text ):
     """
-    Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy as well as image
-    display in repository README files.  This method will determine the location of the image file and return the path to it that will enable
-    the caller to open the file.
+    Handle tool help image display for tools that are contained in repositories in
+    the tool shed or installed into Galaxy as well as image display in repository
+    README files.  This method will determine the location of the image file and
+    return the path to it that will enable the caller to open the file.
     """
     if text:
         if is_tool_shed_client( app ):
@@ -1373,45 +1092,19 @@ def set_image_paths( app, encoded_repository_id, text ):
             route_to_images = '/repository/static/images/%s' % encoded_repository_id
         # We used to require $PATH_TO_IMAGES, but we now eliminate it if it's used.
         text = text.replace( '$PATH_TO_IMAGES', '' )
-        # Eliminate the invalid setting of ./static/images since the routes will properly display images contained in that directory.
+        # Eliminate the invalid setting of ./static/images since the routes will
+        # properly display images contained in that directory.
         text = text.replace( './static/images', '' )
-        # Eliminate the default setting of /static/images since the routes will properly display images contained in that directory.
+        # Eliminate the default setting of /static/images since the routes will
+        # properly display images contained in that directory.
         text = text.replace( '/static/images', '' )
-        # Use regex to instantiate routes into the defined image paths, but replace paths that start with neither http:// nor https://,
-        # which will allow for settings like .. images:: http_files/images/help.png
+        # Use regex to instantiate routes into the defined image paths, but replace
+        # paths that start with neither http:// nor https://, which will allow for
+        # settings like .. images:: http_files/images/help.png
         for match in re.findall( '.. image:: (?!http)/?(.+)', text ):
             text = text.replace( match, match.replace( '/', '%2F' ) )
         text = re.sub( r'\.\. image:: (?!https?://)/?(.+)', r'.. image:: %s/\1' % route_to_images, text )
     return text
-
-def set_only_if_compiling_contained_td( repository, required_repository ):
-    """Return True if the received required_repository is only needed to compile a tool dependency defined for the received repository."""
-    # This method is called only from Galaxy when rendering repository dependencies for an installed tool shed repository.
-    # TODO: Do we need to check more than changeset_revision here?
-    required_repository_tup = [ required_repository.tool_shed, required_repository.name, required_repository.owner, required_repository.changeset_revision ]
-    for tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
-        partial_tup = tup[ 0:4 ]
-        if partial_tup == required_repository_tup:
-            return 'True'
-    return 'False'
-
-def set_prior_installation_required( app, repository, required_repository ):
-    """Return True if the received required_repository must be installed before the received repository."""
-    # This method is called only from Galaxy when rendering repository dependencies for an installed Tool Shed repository.
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, str( required_repository.tool_shed ) )
-    required_repository_tup = [ tool_shed_url,
-                                str( required_repository.name ),
-                                str( required_repository.owner ),
-                                str( required_repository.changeset_revision ) ]
-    # Get the list of repository dependency tuples associated with the received repository where prior_installation_required is True.
-    required_rd_tups_that_must_be_installed = repository.requires_prior_installation_of
-    for required_rd_tup in required_rd_tups_that_must_be_installed:
-        # Repository dependency tuples in metadata include a prior_installation_required value, so strip it for comparision.
-        partial_required_rd_tup = required_rd_tup[ 0:4 ]
-        if partial_required_rd_tup == required_repository_tup:
-            # Return the string value of prior_installation_required, which defaults to 'False'.
-            return str( required_rd_tup[ 4 ] )
-    return 'False'
 
 def set_repository_attributes( app, repository, status, error_message, deleted, uninstalled, remove_from_disk=False ):
     if remove_from_disk:
@@ -1430,63 +1123,8 @@ def set_repository_attributes( app, repository, status, error_message, deleted, 
     app.install_model.context.add( repository )
     app.install_model.context.flush()
 
-def tool_shed_from_repository_clone_url( repository_clone_url ):
-    """Given a repository clone URL, return the tool shed that contains the repository."""
-    return common_util.remove_protocol_and_user_from_clone_url( repository_clone_url ).split( '/repos/' )[ 0 ].rstrip( '/' )
-
 def tool_shed_is_this_tool_shed( toolshed_base_url ):
     """Determine if a tool shed is the current tool shed."""
     cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url( toolshed_base_url )
     cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url( str( url_for( '/', qualified=True ) ) )
     return cleaned_toolshed_base_url == cleaned_tool_shed
-
-def update_in_shed_tool_config( app, repository ):
-    """
-    A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config
-    file to generate the entire list of config_elems instead of using the in-memory list.
-    """
-    shed_conf_dict = repository.get_shed_config_dict( app )
-    shed_tool_conf = shed_conf_dict[ 'config_filename' ]
-    tool_path = shed_conf_dict[ 'tool_path' ]
-    tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( app, repository )
-    repository_tools_tups = get_repository_tools_tups( app, repository.metadata )
-    clone_url = common_util.generate_clone_url_for_installed_repository( app, repository )
-    cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url( clone_url )
-    tool_shed = tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
-    owner = repository.owner
-    if not owner:
-        owner = get_repository_owner( cleaned_repository_clone_url )
-    guid_to_tool_elem_dict = {}
-    for tool_config_filename, guid, tool in repository_tools_tups:
-        guid_to_tool_elem_dict[ guid ] = generate_tool_elem( tool_shed,
-                                                             repository.name,
-                                                             repository.changeset_revision,
-                                                             repository.owner or '',
-                                                             tool_config_filename,
-                                                             tool,
-                                                             None )
-    config_elems = []
-    tree, error_message = xml_util.parse_xml( shed_tool_conf )
-    if tree:
-        root = tree.getroot()
-        for elem in root:
-            if elem.tag == 'section':
-                for i, tool_elem in enumerate( elem ):
-                    guid = tool_elem.attrib.get( 'guid' )
-                    if guid in guid_to_tool_elem_dict:
-                        elem[i] = guid_to_tool_elem_dict[ guid ]
-            elif elem.tag == 'tool':
-                guid = elem.attrib.get( 'guid' )
-                if guid in guid_to_tool_elem_dict:
-                    elem = guid_to_tool_elem_dict[ guid ]
-            config_elems.append( elem )
-        config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
-
-def update_tool_shed_repository_status( app, tool_shed_repository, status, error_message=None ):
-    """Update the status of a tool shed repository in the process of being installed into Galaxy."""
-    context = app.install_model.context
-    tool_shed_repository.status = status
-    if error_message:
-        tool_shed_repository.error_message = str( error_message )
-    context.add( tool_shed_repository )
-    context.flush()

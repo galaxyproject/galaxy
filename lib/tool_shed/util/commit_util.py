@@ -4,11 +4,15 @@ import logging
 import os
 import shutil
 import tempfile
+
 from galaxy.datatypes import checkers
+
+from tool_shed.tools import data_table_manager
+
 from tool_shed.util import basic_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
+
 import tool_shed.repository_types.util as rt_util
 
 log = logging.getLogger( __name__ )
@@ -184,7 +188,8 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
             # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
             # by parsing the file and adding new entries to the in-memory app.tool_data_tables
             # dictionary.
-            error, message = tool_util.handle_sample_tool_data_table_conf_file( app, filename_in_archive )
+            tdtm = data_table_manager.ToolDataTableManager( app )
+            error, message = tdtm.handle_sample_tool_data_table_conf_file( filename_in_archive, persist=False )
             if error:
                 return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
     hg_util.commit_changeset( repo.ui,

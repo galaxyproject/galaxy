@@ -5,20 +5,27 @@ from galaxy import util
 from galaxy.util import inflector
 from galaxy.web.form_builder import SelectField
 
+from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.metadata import metadata_generator
 
 from tool_shed.util import common_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
 
 class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator ):
 
-    def __init__( self, app ):
+    def __init__( self, app, tpm=None ):
         super( InstalledRepositoryMetadataManager, self ).__init__( app )
         self.app = app
+        if tpm is None:
+            self.tpm = tool_panel_manager.ToolPanelManager( self.app )
+        else:
+            self.tpm = tpm
 
     def build_repository_ids_select_field( self, name='repository_ids', multiple=True, display='checkboxes' ):
         """Generate the current list of repositories for resetting metadata."""
@@ -46,11 +53,32 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
             return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
                                                  .filter( self.app.install_model.ToolShedRepository.table.c.uninstalled == False )
 
+    def get_repository_tools_tups( self, metadata_dict ):
+        """
+        Return a list of tuples of the form (relative_path, guid, tool) for each tool defined
+        in the received tool shed repository metadata.
+        """
+        repository_tools_tups = []
+        index, shed_conf_dict = self.tpm.get_shed_tool_conf_dict( metadata_dict.get( 'shed_config_filename' ) )
+        if 'tools' in metadata_dict:
+            for tool_dict in metadata_dict[ 'tools' ]:
+                load_relative_path = relative_path = tool_dict.get( 'tool_config', None )
+                if shed_conf_dict.get( 'tool_path' ):
+                    load_relative_path = os.path.join( shed_conf_dict.get( 'tool_path' ), relative_path )
+                guid = tool_dict.get( 'guid', None )
+                if relative_path and guid:
+                    tool = self.app.toolbox.load_tool( os.path.abspath( load_relative_path ), guid=guid )
+                else:
+                    tool = None
+                if tool:
+                    repository_tools_tups.append( ( relative_path, guid, tool ) )
+        return repository_tools_tups
+
     def reset_all_metadata_on_installed_repository( self, id ):
         """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
         invalid_file_tups = []
         metadata_dict = {}
-        repository = suc.get_installed_tool_shed_repository( self.app, id )
+        repository = repository_util.get_installed_tool_shed_repository( self.app, id )
         repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
         tool_path, relative_install_dir = repository.get_tool_relative_path( self.app )
         if relative_install_dir:
@@ -67,7 +95,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
                                                                persist=False )
             repository.metadata = metadata_dict
             if metadata_dict != original_metadata_dict:
-                suc.update_in_shed_tool_config( self.app, repository )
+                self.update_in_shed_tool_config( repository )
                 self.app.install_model.context.add( repository )
                 self.app.install_model.context.flush()
                 log.debug( 'Metadata has been reset on repository %s.' % repository.name )
@@ -90,7 +118,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
             unsuccessful_count = 0
             for repository_id in repository_ids:
                 try:
-                    repository = suc.get_installed_tool_shed_repository( self.app, repository_id )
+                    repository = repository_util.get_installed_tool_shed_repository( self.app, repository_id )
                     owner = str( repository.owner )
                     invalid_file_tups, metadata_dict = \
                         self.reset_all_metadata_on_installed_repository( repository_id )
@@ -117,3 +145,49 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
             message = 'Select at least one repository to on which to reset all metadata.'
             status = 'error'
         return message, status
+
+    def tool_shed_from_repository_clone_url( self, repository_clone_url ):
+        """Given a repository clone URL, return the tool shed that contains the repository."""
+        return common_util.remove_protocol_and_user_from_clone_url( repository_clone_url ).split( '/repos/' )[ 0 ].rstrip( '/' )
+
+    def update_in_shed_tool_config( self, repository ):
+        """
+        A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config
+        file to generate the entire list of config_elems instead of using the in-memory list.
+        """
+        shed_conf_dict = repository.get_shed_config_dict( self.app )
+        shed_tool_conf = shed_conf_dict[ 'config_filename' ]
+        tool_path = shed_conf_dict[ 'tool_path' ]
+        tool_panel_dict = self.tpm.generate_tool_panel_dict_from_shed_tool_conf_entries( repository )
+        repository_tools_tups = self.get_repository_tools_tups( repository.metadata )
+        clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
+        cleaned_repository_clone_url = common_util.remove_protocol_and_user_from_clone_url( clone_url )
+        tool_shed = self.tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
+        owner = repository.owner
+        if not owner:
+            owner = suc.get_repository_owner( cleaned_repository_clone_url )
+        guid_to_tool_elem_dict = {}
+        for tool_config_filename, guid, tool in repository_tools_tups:
+            guid_to_tool_elem_dict[ guid ] = self.tpm.generate_tool_elem( tool_shed,
+                                                                          repository.name,
+                                                                          repository.changeset_revision,
+                                                                          repository.owner or '',
+                                                                          tool_config_filename,
+                                                                          tool,
+                                                                          None )
+        config_elems = []
+        tree, error_message = xml_util.parse_xml( shed_tool_conf )
+        if tree:
+            root = tree.getroot()
+            for elem in root:
+                if elem.tag == 'section':
+                    for i, tool_elem in enumerate( elem ):
+                        guid = tool_elem.attrib.get( 'guid' )
+                        if guid in guid_to_tool_elem_dict:
+                            elem[i] = guid_to_tool_elem_dict[ guid ]
+                elif elem.tag == 'tool':
+                    guid = elem.attrib.get( 'guid' )
+                    if guid in guid_to_tool_elem_dict:
+                        elem = guid_to_tool_elem_dict[ guid ]
+                config_elems.append( elem )
+            self.tpm.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )

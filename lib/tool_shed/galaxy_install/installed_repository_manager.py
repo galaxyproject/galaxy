@@ -7,14 +7,15 @@ import os
 from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
-from tool_shed.util import data_manager_util
-from tool_shed.util import datatype_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 
+from tool_shed.galaxy_install.datatypes import custom_datatype_manager
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import data_manager
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
 log = logging.getLogger( __name__ )
@@ -81,8 +82,9 @@ class InstalledRepositoryManager( object ):
         repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
             tpm = tool_panel_manager.ToolPanelManager( self.app )
+            irmm = InstalledRepositoryMetadataManager( self.app, tpm )
             metadata = repository.metadata
-            repository_tools_tups = suc.get_repository_tools_tups( self.app, metadata )
+            repository_tools_tups = irmm.get_repository_tools_tups( metadata )
             # Reload tools into the appropriate tool panel section.
             tool_panel_dict = repository.metadata[ 'tool_panel_section' ]
             tpm.add_to_tool_panel( repository.name,
@@ -97,13 +99,13 @@ class InstalledRepositoryManager( object ):
                 tp, data_manager_relative_install_dir = repository.get_tool_relative_path( self.app )
                 # Hack to add repository.name here, which is actually the root of the installed repository
                 data_manager_relative_install_dir = os.path.join( data_manager_relative_install_dir, repository.name )
-                new_data_managers = data_manager_util.install_data_managers( self.app,
-                                                                             self.app.config.shed_data_manager_config_file,
-                                                                             metadata,
-                                                                             repository.get_shed_config_dict( self.app ),
-                                                                             data_manager_relative_install_dir,
-                                                                             repository,
-                                                                             repository_tools_tups )
+                dmh = data_manager.DataManagerHandler( self.app )
+                new_data_managers = dmh.install_data_managers( self.app.config.shed_data_manager_config_file,
+                                                               metadata,
+                                                               repository.get_shed_config_dict( self.app ),
+                                                               data_manager_relative_install_dir,
+                                                               repository,
+                                                               repository_tools_tups )
         self.install_model.context.add( repository )
         self.install_model.context.flush()
         if repository.includes_datatypes:
@@ -112,17 +114,17 @@ class InstalledRepositoryManager( object ):
             else:
                 repository_install_dir = os.path.abspath( relative_install_dir )
             # Activate proprietary datatypes.
-            installed_repository_dict = datatype_util.load_installed_datatypes( self.app,
-                                                                                repository,
-                                                                                repository_install_dir,
-                                                                                deactivate=False )
+            cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
+            installed_repository_dict = cdl.load_installed_datatypes( repository,
+                                                                      repository_install_dir,
+                                                                      deactivate=False )
             if installed_repository_dict:
                 converter_path = installed_repository_dict.get( 'converter_path' )
                 if converter_path is not None:
-                    datatype_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=False )
+                    cdl.load_installed_datatype_converters( installed_repository_dict, deactivate=False )
                 display_path = installed_repository_dict.get( 'display_path' )
                 if display_path is not None:
-                    datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=False )
+                    cdl.load_installed_display_applications( installed_repository_dict, deactivate=False )
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories( self, repository ):
         """
@@ -340,8 +342,8 @@ class InstalledRepositoryManager( object ):
             installed_rd_tups = []
             missing_rd_tups = []
             for tsr in repository.repository_dependencies:
-                prior_installation_required = suc.set_prior_installation_required( self.app, repository, tsr )
-                only_if_compiling_contained_td = suc.set_only_if_compiling_contained_td( repository, tsr )
+                prior_installation_required = self.set_prior_installation_required( repository, tsr )
+                only_if_compiling_contained_td = self.set_only_if_compiling_contained_td( repository, tsr )
                 rd_tup = [ tsr.tool_shed,
                            tsr.name,
                            tsr.owner,
@@ -730,22 +732,24 @@ class InstalledRepositoryManager( object ):
             self.add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies( tool_dependency )
 
     def load_proprietary_datatypes( self ):
+        cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
         for tool_shed_repository in self.context.query( self.install_model.ToolShedRepository ) \
-                                                   .filter( and_( self.install_model.ToolShedRepository.table.c.includes_datatypes==True,
-                                                                  self.install_model.ToolShedRepository.table.c.deleted==False ) ) \
-                                                   .order_by( self.install_model.ToolShedRepository.table.c.id ):
+                                                .filter( and_( self.install_model.ToolShedRepository.table.c.includes_datatypes==True,
+                                                               self.install_model.ToolShedRepository.table.c.deleted==False ) ) \
+                                                .order_by( self.install_model.ToolShedRepository.table.c.id ):
             relative_install_dir = self.get_repository_install_dir( tool_shed_repository )
             if relative_install_dir:
-                installed_repository_dict = datatype_util.load_installed_datatypes( self.app, tool_shed_repository, relative_install_dir )
+                installed_repository_dict = cdl.load_installed_datatypes( tool_shed_repository, relative_install_dir )
                 if installed_repository_dict:
                     self.installed_repository_dicts.append( installed_repository_dict )
 
     def load_proprietary_converters_and_display_applications( self, deactivate=False ):
+        cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
         for installed_repository_dict in self.installed_repository_dicts:
             if installed_repository_dict[ 'converter_path' ]:
-                datatype_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
+                cdl.load_installed_datatype_converters( installed_repository_dict, deactivate=deactivate )
             if installed_repository_dict[ 'display_path' ]:
-                datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
+                cdl.load_installed_display_applications( installed_repository_dict, deactivate=deactivate )
 
     def purge_repository( self, repository ):
         """Purge a repository with status New (a white ghost) from the database."""
@@ -954,6 +958,47 @@ class InstalledRepositoryManager( object ):
                   repository_dependency.changeset_revision == changeset_revision ):
                 return True
         return False
+
+    def set_only_if_compiling_contained_td( self, repository, required_repository ):
+        """
+        Return True if the received required_repository is only needed to compile a tool
+        dependency defined for the received repository.
+        """
+        # This method is called only from Galaxy when rendering repository dependencies
+        # for an installed tool shed repository.
+        # TODO: Do we need to check more than changeset_revision here?
+        required_repository_tup = [ required_repository.tool_shed, \
+                                    required_repository.name, \
+                                    required_repository.owner, \
+                                    required_repository.changeset_revision ]
+        for tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
+            partial_tup = tup[ 0:4 ]
+            if partial_tup == required_repository_tup:
+                return 'True'
+        return 'False'
+
+    def set_prior_installation_required( self, repository, required_repository ):
+        """
+        Return True if the received required_repository must be installed before the
+        received repository.
+        """
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app,
+                                                                               str( required_repository.tool_shed ) )
+        required_repository_tup = [ tool_shed_url,
+                                    str( required_repository.name ),
+                                    str( required_repository.owner ),
+                                    str( required_repository.changeset_revision ) ]
+        # Get the list of repository dependency tuples associated with the received repository
+        # where prior_installation_required is True.
+        required_rd_tups_that_must_be_installed = repository.requires_prior_installation_of
+        for required_rd_tup in required_rd_tups_that_must_be_installed:
+            # Repository dependency tuples in metadata include a prior_installation_required value,
+            # so strip it for comparision.
+            partial_required_rd_tup = required_rd_tup[ 0:4 ]
+            if partial_required_rd_tup == required_repository_tup:
+                # Return the string value of prior_installation_required, which defaults to 'False'.
+                return str( required_rd_tup[ 4 ] )
+        return 'False'
 
     def update_existing_tool_dependency( self, repository, original_dependency_dict, new_dependencies_dict ):
         """

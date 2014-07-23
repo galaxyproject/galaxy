@@ -19,7 +19,7 @@ from tool_shed.repository_types import util as rt_util
 from tool_shed.util import basic_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 
@@ -194,10 +194,10 @@ class RepositoriesController( BaseAPIController ):
                 includes_tools_for_display_in_tool_panel, \
                 has_repository_dependencies, \
                 has_repository_dependencies_only_if_compiling_contained_td = \
-                    repository_maintenance_util.get_repo_info_dict( trans.app,
-                                                                    trans.user,
-                                                                    encoded_repository_id,
-                                                                    changeset_revision )
+                    repository_util.get_repo_info_dict( trans.app,
+                                                        trans.user,
+                                                        encoded_repository_id,
+                                                        changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
                 log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" % \

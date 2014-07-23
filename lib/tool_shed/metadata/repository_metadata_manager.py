@@ -410,7 +410,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
             for changeset in repo.changelog:
                 changeset_hash = str( repo.changectx( changeset ) )
-                skip_tool_test = suc.get_skip_tool_test_by_changeset_revision( self.app, changeset_hash )
+                skip_tool_test = self.get_skip_tool_test_by_changeset_revision( changeset_hash )
                 if skip_tool_test:
                     # We found a skip_tool_test record associated with the changeset_revision,
                     # so see if it has a valid repository_revision.
@@ -520,6 +520,16 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             else:
                 return self.sa_session.query( self.app.model.Repository ) \
                                       .filter( self.app.model.Repository.table.c.deleted == False )
+
+    def get_skip_tool_test_by_changeset_revision( self, changeset_revision ):
+        """
+        Return a skip_tool_test record whose initial_changeset_revision is the received
+        changeset_revision.
+        """
+        # There should only be one, but we'll use first() so callers won't have to handle exceptions.
+        return self.sa_session.query( self.app.model.SkipToolTest ) \
+                              .filter( self.app.model.SkipToolTest.table.c.initial_changeset_revision == changeset_revision ) \
+                              .first()
 
     def new_datatypes_metadata_required( self, repository_metadata, metadata_dict ):
         """
@@ -897,7 +907,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # revisions from the changelog.
         self.reset_all_tool_versions( id, repo )
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        tool_util.reset_tool_data_tables( self.app )
+        self.app.tool_data_tables.data_tables = {}
         return invalid_file_tups, metadata_dict
 
     def reset_all_tool_versions( self, id, repo ):
@@ -951,11 +961,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             unsuccessful_count = 0
             for repository_id in repository_ids:
                 try:
-                    # We're in the tool shed.
                     repository = suc.get_repository_in_tool_shed( self.app, repository_id )
-                    owner = str( repository.user.username )
                     invalid_file_tups, metadata_dict = \
-                        self.reset_all_metadata_on_repository_in_tool_shed( self.user, repository_id )
+                        self.reset_all_metadata_on_repository_in_tool_shed( repository_id )
                     if invalid_file_tups:
                         message = tool_util.generate_message_for_invalid_tools( self.app,
                                                                                 invalid_file_tups,
@@ -966,7 +974,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                         unsuccessful_count += 1
                     else:
                         log.debug( "Successfully reset metadata on repository %s owned by %s" % \
-                                    ( str( repository.name ), owner ) )
+                                    ( str( repository.name ), str( repository.user.username ) ) )
                         successful_count += 1
                 except:
                     log.exception( "Error attempting to reset metadata on repository %s" % str( repository.name ) )
@@ -1087,7 +1095,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                                                                     metadata_dict )
             status = 'error'
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        tool_util.reset_tool_data_tables( self.app )
+        self.app.tool_data_tables.data_tables = {}
         return message, status
 
     def set_repository_metadata_due_to_new_tip( self, host, repository, content_alert_str=None, **kwd ):

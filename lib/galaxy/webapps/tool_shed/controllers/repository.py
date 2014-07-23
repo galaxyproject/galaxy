@@ -20,7 +20,9 @@ from tool_shed.dependencies.repository import relation_builder
 
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
+
 from tool_shed.tools import tool_validator
+from tool_shed.tools import tool_version_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
@@ -29,7 +31,7 @@ from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 from tool_shed.util import readme_util
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import search_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
@@ -1060,7 +1062,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                               action='browse_repositories',
                                                               message=message,
                                                               status=status ) )
-        name = kwd.get( 'name', '' )
+        name = kwd.get( 'name', '' ).strip()
         description = kwd.get( 'description', '' )
         long_description = kwd.get( 'long_description', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
@@ -1068,7 +1070,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_type = kwd.get( 'repository_type', rt_util.UNRESTRICTED )
         if kwd.get( 'create_repository_button', False ):
             error = False
-            message = repository_maintenance_util.validate_repository_name( trans.app, name, trans.user )
+            message = repository_util.validate_repository_name( trans.app, name, trans.user )
             if message:
                 error = True
             if not description:
@@ -1077,13 +1079,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if error:
                 status = 'error'
             else:
-                repository, message = repository_maintenance_util.create_repository( trans.app,
-                                                                                     name,
-                                                                                     repository_type,
-                                                                                     description,
-                                                                                     long_description,
-                                                                                     user_id=trans.user.id,
-                                                                                     category_ids=category_ids )
+                repository, message = repository_util.create_repository( trans.app,
+                                                                         name,
+                                                                         repository_type,
+                                                                         description,
+                                                                         long_description,
+                                                                         user_id=trans.user.id,
+                                                                         category_ids=category_ids )
                 trans.response.send_redirect( web.url_for( controller='repository',
                                                            action='manage_repository',
                                                            message=message,
@@ -1818,7 +1820,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             repository_id, changeset_revision = tup
             repo_info_dict, cur_includes_tools, cur_includes_tool_dependencies, cur_includes_tools_for_display_in_tool_panel, \
                 cur_has_repository_dependencies, cur_has_repository_dependencies_only_if_compiling_contained_td = \
-                repository_maintenance_util.get_repo_info_dict( trans.app, trans.user, repository_id, changeset_revision )
+                repository_util.get_repo_info_dict( trans.app, trans.user, repository_id, changeset_revision )
             if cur_has_repository_dependencies and not has_repository_dependencies:
                 has_repository_dependencies = True
             if cur_has_repository_dependencies_only_if_compiling_contained_td and not has_repository_dependencies_only_if_compiling_contained_td:
@@ -1949,16 +1951,16 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                after_changeset_revision=changeset_revision )
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, repository_id, changeset_revision )
         ctx = hg_util.get_changectx_for_changeset( repo, changeset_revision )
-        repo_info_dict = repository_maintenance_util.create_repo_info_dict( app=trans.app,
-                                                                            repository_clone_url=repository_clone_url,
-                                                                            changeset_revision=changeset_revision,
-                                                                            ctx_rev=str( ctx.rev() ),
-                                                                            repository_owner=repository.user.username,
-                                                                            repository_name=repository.name,
-                                                                            repository=repository,
-                                                                            repository_metadata=repository_metadata,
-                                                                            tool_dependencies=None,
-                                                                            repository_dependencies=None )
+        repo_info_dict = repository_util.create_repo_info_dict( app=trans.app,
+                                                                repository_clone_url=repository_clone_url,
+                                                                changeset_revision=changeset_revision,
+                                                                ctx_rev=str( ctx.rev() ),
+                                                                repository_owner=repository.user.username,
+                                                                repository_name=repository.name,
+                                                                repository=repository,
+                                                                repository_metadata=repository_metadata,
+                                                                tool_dependencies=None,
+                                                                repository_dependencies=None )
         includes_data_managers = False
         includes_datatypes = False
         includes_tools = False
@@ -2272,7 +2274,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 repository.long_description = long_description
                 flush_needed = True
             if repository.times_downloaded == 0 and repo_name != repository.name:
-                message = repository_maintenance_util.validate_repository_name( trans.app, repo_name, user )
+                message = repository_util.validate_repository_name( trans.app, repo_name, user )
                 if message:
                     error = True
                 else:
@@ -2282,12 +2284,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     trans.app.hgweb_config_manager.change_entry( old_lhs, new_lhs, repo_dir )
                     # Change the entry in the repository's hgrc file.
                     hgrc_file = os.path.join( repo_dir, '.hg', 'hgrc' )
-                    repository_maintenance_util.change_repository_name_in_hgrc_file( hgrc_file, repo_name )
+                    repository_util.change_repository_name_in_hgrc_file( hgrc_file, repo_name )
                     # Rename the repository's admin role to match the new repository name.
                     repository_admin_role = repository.admin_role
                     repository_admin_role.name = \
-                        repository_maintenance_util.get_repository_admin_role_name( str( repo_name ),
-                                                                                    str( repository.user.username ) )
+                        repository_util.get_repository_admin_role_name( str( repo_name ),
+                                                                        str( repository.user.username ) )
                     trans.sa_session.add( repository_admin_role )
                     repository.name = repo_name
                     flush_needed = True
@@ -2377,7 +2379,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             current_allow_push_list = current_allow_push.split( ',' )
         else:
             current_allow_push_list = []
-        allow_push_select_field = repository_maintenance_util.build_allow_push_select_field( trans, current_allow_push_list )
+        allow_push_select_field = repository_util.build_allow_push_select_field( trans, current_allow_push_list )
         checked = alerts_checked or user.email in email_alerts
         alerts_check_box = CheckboxField( 'alerts', checked=checked )
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field( trans,
@@ -2519,10 +2521,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     if repository_metadata:
                         metadata = repository_metadata.metadata
         role = repository.admin_role
-        associations_dict = repository_maintenance_util.handle_role_associations( trans.app,
-                                                                                  role,
-                                                                                  repository,
-                                                                                  **kwd )
+        associations_dict = repository_util.handle_role_associations( trans.app,
+                                                                      role,
+                                                                      repository,
+                                                                      **kwd )
         in_users = associations_dict.get( 'in_users', [] )
         out_users = associations_dict.get( 'out_users', [] )
         in_groups = associations_dict.get( 'in_groups', [] )
@@ -2755,7 +2757,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
         rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
         invalid_file_tups, metadata_dict = \
-            rmm.reset_all_metadata_on_repository_in_tool_shed( id, **kwd )
+            rmm.reset_all_metadata_on_repository_in_tool_shed( id )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans.app, id )
             message = tool_util.generate_message_for_invalid_tools( trans.app,
@@ -3432,10 +3434,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                             basic_util.remove_dir( work_dir )
                             break
                     if guid:
-                        tool_lineage = tool_util.get_version_lineage_for_tool( trans.app,
-                                                                               repository_id,
-                                                                               repository_metadata,
-                                                                               guid )
+                        tvm = tool_version_manager.ToolVersionManager( trans.app )
+                        tool_lineage = tvm.get_version_lineage_for_tool( repository_id,
+                                                                         repository_metadata,
+                                                                         guid )
         else:
             repository_metadata_id = None
             metadata = None

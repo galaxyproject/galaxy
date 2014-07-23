@@ -10,7 +10,7 @@ from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import tool_dependency_util
 
 
@@ -127,16 +127,16 @@ class RepairRepositoryManager():
                                                         new_tool_panel_section_label=tool_panel_section_name )
         else:
             tool_dependencies = None
-        repo_info_dict = repository_maintenance_util.create_repo_info_dict( app=self.app,
-                                                                            repository_clone_url=repository_clone_url,
-                                                                            changeset_revision=repository.changeset_revision,
-                                                                            ctx_rev=repository.ctx_rev,
-                                                                            repository_owner=repository.owner,
-                                                                            repository_name=repository.name,
-                                                                            repository=None,
-                                                                            repository_metadata=None,
-                                                                            tool_dependencies=tool_dependencies,
-                                                                            repository_dependencies=repository_dependencies )
+        repo_info_dict = repository_util.create_repo_info_dict( app=self.app,
+                                                                repository_clone_url=repository_clone_url,
+                                                                changeset_revision=repository.changeset_revision,
+                                                                ctx_rev=repository.ctx_rev,
+                                                                repository_owner=repository.owner,
+                                                                repository_name=repository.name,
+                                                                repository=None,
+                                                                repository_metadata=None,
+                                                                tool_dependencies=tool_dependencies,
+                                                                repository_dependencies=repository_dependencies )
         return repo_info_dict, tool_panel_section_key
 
     def repair_tool_shed_repository( self, repository, repo_info_dict ):
@@ -150,6 +150,7 @@ class RepairRepositoryManager():
     
         metadata = repository.metadata
         repair_dict = {}
+        tpm = tool_panel_manager.ToolPanelManager( self.app )
         if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             try:
                 self.app.installed_repository_manager.activate_repository( repository )
@@ -162,7 +163,6 @@ class RepairRepositoryManager():
                 suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
             # Reset the repository attributes to the New state for installation.
             if metadata:
-                tpm = tool_panel_manager.ToolPanelManager( self.app )
                 tool_section, tool_panel_section_key = \
                     tpm.handle_tool_panel_selection( self.app.toolbox,
                                                      metadata,
@@ -179,7 +179,7 @@ class RepairRepositoryManager():
                                            deleted=False,
                                            uninstalled=False,
                                            remove_from_disk=True )
-            irm = install_manager.InstallRepositoryManager( self.app )
+            irm = install_manager.InstallRepositoryManager( self.app, tpm )
             irm.install_tool_shed_repository( repository,
                                               repo_info_dict,
                                               tool_panel_section_key,
@@ -190,6 +190,7 @@ class RepairRepositoryManager():
             if repository.status in [ self.app.install_model.ToolShedRepository.installation_status.ERROR ]:
                 repair_dict = add_repair_dict_entry( repository.name, repository.error_message )
         else:
+            irm = install_manager.InstallRepositoryManager( self.app, tpm )
             # We have an installed tool shed repository, so handle tool dependencies if necessary.
             if repository.missing_tool_dependencies and metadata and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-itdep" )
@@ -204,8 +205,7 @@ class RepairRepositoryManager():
                                                                                  error_message=None,
                                                                                  remove_from_disk=True )
                 # Install tool dependencies.
-                suc.update_tool_shed_repository_status( self.app,
-                                                        repository,
+                irm.update_tool_shed_repository_status( repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
                 # Get the tool_dependencies.xml file from the repository.
                 tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', repository.repo_path( self.app ) )
@@ -218,5 +218,6 @@ class RepairRepositoryManager():
                     if installed_tool_dependency.status in [ self.app.install_model.ToolDependency.installation_status.ERROR ]:
                         repair_dict = add_repair_dict_entry( repository.name, installed_tool_dependency.error_message )
                 basic_util.remove_dir( work_dir )
-            suc.update_tool_shed_repository_status( self.app, repository, self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
+            irm.update_tool_shed_repository_status( repository,
+                                                    self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
         return repair_dict

@@ -1,69 +1,89 @@
 define([
     "mvc/history/history-content-base",
+    "mvc/collection/collection-model",
     "utils/localization"
-], function( historyContent, _l ){
+], function( HISTORY_CONTENT, DC_MODEL, _l ){
 //==============================================================================
-var HistoryDatasetCollectionAssociation = historyContent.HistoryContent.extend(
-/** @lends HistoryDatasetCollectionAssociation.prototype */{
-    /** default attributes for a model */
-    defaults : {
-        // parent (containing) history
-        history_id          : null,
-        // often used with tagging
-        model_class         : 'HistoryDatasetCollectionAssociation',
-        history_content_type : 'dataset_collection',
-        hid                 : 0,
+var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
+/** @class Backbone model for (generic) Dataset Collection within a History.
+ *  @constructs
+ */
+    HistoryDatasetCollection = DC_MODEL.DatasetCollection.extend( hcontentMixin );
 
-        id                  : null,
-        name                : '(unnamed dataset collection)',
-        // one of HistoryDatasetAssociation.STATES, calling them all 'ok' for now.
-        state               : 'ok',
 
-        accessible          : true,
-        deleted             : false,
-        visible             : true,
+//NOTE: the following prototypes may not be necessary - but I wanted to specifiy
+//  them (for now) and allow for the possibility of unique functionality
+//==============================================================================
+var ListDC = DC_MODEL.ListDatasetCollection,
+/** @class Backbone model for List Dataset Collection within a History.
+ *  @constructs
+ */
+    HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
+/** @lends HistoryListDatasetCollection.prototype */{
 
-        purged              : false, // Purged doesn't make sense for collections - at least right now.
-
-        tags                : [],
-        annotation          : ''
-    },
-    urls : function(){
+    initialize : function( model, options ){
+        ListDC.prototype.initialize.call( this, model, options );
+        hcontentMixin.initialize.call( this, model, options );
+        //TODO: in lieu of any state info for collections, show as 'ok'
+        this.set( 'state', 'ok', { silent: true });
     },
 
-    inReadyState : function(){
-        return true; // TODO
-    },
-
-    // ........................................................................ search
-    /** what attributes of an collection will be used in a text search */
-    searchAttributes : [
-        'name'
-    ],
-
-    /** our attr keys don't often match the labels we display to the user - so, when using
-     *      attribute specifiers ('name="bler"') in a term, allow passing in aliases for the
-     *      following attr keys.
-     */
-    searchAliases : {
-        title       : 'name'
-        // TODO: Add tag...
-    },
-
-    // ........................................................................ misc
-    /** String representation */
+    /** String representation. */
     toString : function(){
-        var nameAndId = this.get( 'id' ) || '';
-        if( this.get( 'name' ) ){
-            nameAndId = this.get( 'hid' ) + ' :"' + this.get( 'name' ) + '",' + nameAndId;
-        }
-        return 'HDCA-' + this.get( 'collection_type' ) + '(' + nameAndId + ')';
+         return ([ 'HistoryListDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
+var PairDC = DC_MODEL.PairDatasetCollection,
+/** @class Backbone model for Pair Dataset Collection within a History.
+ *  @constructs
+ */
+    HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
+/** @lends HistoryPairDatasetCollection.prototype */{
+
+    initialize : function( model, options ){
+        PairDC.prototype.initialize.call( this, model, options );
+        hcontentMixin.initialize.call( this, model, options );
+        //TODO: in lieu of any state info for collections, show as 'ok'
+        this.set( 'state', 'ok', { silent: true });
+    },
+
+    /** String representation. */
+    toString : function(){
+         return ([ 'HistoryPairDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
+var ListPairedDC = DC_MODEL.ListPairedDatasetCollection,
+/** @class Backbone model for List of Pairs Dataset Collection within a History.
+ *  @constructs
+ */
+    HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).extend(
+/** @lends HistoryListPairedDatasetCollection.prototype */{
+
+    initialize : function( model, options ){
+        ListPairedDC.prototype.initialize.call( this, model, options );
+        hcontentMixin.initialize.call( this, model, options );
+        //TODO: in lieu of any state info for collections, show as 'ok'
+        this.set( 'state', 'ok', { silent: true });
+    },
+
+    /** String representation. */
+    toString : function(){
+         return ([ 'HistoryListPairedDatasetCollection(', this.get( 'name' ), ')' ].join( '' ));
     }
 });
 
 
 //==============================================================================
     return {
-        HistoryDatasetCollectionAssociation : HistoryDatasetCollectionAssociation
+        HistoryDatasetCollection            : HistoryDatasetCollection,
+        HistoryListDatasetCollection        : HistoryListDatasetCollection,
+        HistoryPairDatasetCollection        : HistoryPairDatasetCollection,
+        HistoryListPairedDatasetCollection  : HistoryListPairedDatasetCollection
     };
 });

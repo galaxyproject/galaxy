@@ -16,7 +16,6 @@ from tool_shed.tools import tool_validator
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
 
 eggs.require( "SVGFig" )
 import svgfig

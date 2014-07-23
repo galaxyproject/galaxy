@@ -13,13 +13,13 @@ from galaxy.web.base.controller import BaseUIController
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
-import tool_shed.repository_types.util as rt_util
+from tool_shed.repository_types import util as rt_util
+from tool_shed.tools import data_table_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 
 from galaxy import eggs
@@ -100,6 +100,7 @@ class UploadController( BaseUIController ):
             if uploaded_file or uploaded_directory:
                 rdah = attribute_handlers.RepositoryDependencyAttributeHandler( trans.app, unpopulate=False )
                 tdah = attribute_handlers.ToolDependencyAttributeHandler( trans.app, unpopulate=False )
+                tdtm = data_table_manager.ToolDataTableManager( trans.app )
                 ok = True
                 isgzip = False
                 isbz2 = False
@@ -221,7 +222,7 @@ class UploadController( BaseUIController ):
                                 # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
                                 # by parsing the file and adding new entries to the in-memory trans.app.tool_data_tables
                                 # dictionary.
-                                error, error_message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, full_path )
+                                error, error_message = tdtm.handle_sample_tool_data_table_conf_file( full_path, persist=False )
                                 if error:
                                     message = '%s<br/>%s' % ( message, error_message )
                             # See if the content of the change set was valid.
@@ -309,7 +310,7 @@ class UploadController( BaseUIController ):
                         message += invalid_repository_dependencies_message
                         status = 'error'
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-                    tool_util.reset_tool_data_tables( trans.app )
+                    tdtm.reset_tool_data_tables()
                     if uploaded_directory:
                         basic_util.remove_dir( uploaded_directory )
                     trans.response.send_redirect( web.url_for( controller='repository',
@@ -323,7 +324,7 @@ class UploadController( BaseUIController ):
                         basic_util.remove_dir( uploaded_directory )
                     status = 'error'
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-                tool_util.reset_tool_data_tables( trans.app )
+                tdtm.reset_tool_data_tables()
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/tool_shed/repository/upload.mako',
                                     repository=repository,

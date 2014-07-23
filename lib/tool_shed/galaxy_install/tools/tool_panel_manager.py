@@ -1,5 +1,7 @@
 import logging
 import os
+import shutil
+import tempfile
 
 import galaxy.tools
 from galaxy.tools.search import ToolBoxSearch
@@ -19,9 +21,11 @@ class ToolPanelManager( object ):
         self.app = app
 
     def add_to_shed_tool_config( self, shed_tool_conf_dict, elem_list ):
-        # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the
-        # config file to generate the entire list of config_elems instead of using the in-memory list
-        # since it will be a subset of the entire list if one or more repositories have been deactivated.
+        """
+        "A tool shed repository is being installed so change the shed_tool_conf file.  Parse the
+        config file to generate the entire list of config_elems instead of using the in-memory list
+        since it will be a subset of the entire list if one or more repositories have been deactivated.
+        """
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         config_elems = []
@@ -34,13 +38,13 @@ class ToolPanelManager( object ):
             for elem_entry in elem_list:
                 config_elems.append( elem_entry )
             # Persist the altered shed_tool_config file.
-            suc.config_elems_to_xml_file( self.app, config_elems, shed_tool_conf, tool_path )
+            self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
 
     def add_to_tool_panel( self, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner,
                            shed_tool_conf, tool_panel_dict, new_install=True ):
         """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
         # We need to change the in-memory version and the file system version of the shed_tool_conf file.
-        index, shed_tool_conf_dict = suc.get_shed_tool_conf_dict( self.app, shed_tool_conf )
+        index, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         # Generate the list of ElementTree Element objects for each section or tool.
         elem_list = self.generate_tool_panel_elem_list( repository_name,
@@ -80,6 +84,44 @@ class ToolPanelManager( object ):
             # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
             self.app.toolbox.write_integrated_tool_panel_config_file()
         self.app.toolbox_search = ToolBoxSearch( self.app.toolbox )
+
+    def config_elems_to_xml_file( self, config_elems, config_filename, tool_path ):
+        """
+        Persist the current in-memory list of config_elems to a file named by the
+        value of config_filename.
+        """
+        fd, filename = tempfile.mkstemp( prefix="tmp-toolshed-cetxf"  )
+        os.write( fd, '<?xml version="1.0"?>\n' )
+        os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
+        for elem in config_elems:
+            os.write( fd, '%s' % xml_util.xml_to_string( elem, use_indent=True ) )
+        os.write( fd, '</toolbox>\n' )
+        os.close( fd )
+        shutil.move( filename, os.path.abspath( config_filename ) )
+        os.chmod( config_filename, 0644 )
+
+    def generate_tool_elem( self, tool_shed, repository_name, changeset_revision, owner, tool_file_path,
+                            tool, tool_section ):
+        """Create and return an ElementTree tool Element."""
+        if tool_section is not None:
+            tool_elem = XmlET.SubElement( tool_section, 'tool' )
+        else:
+            tool_elem = XmlET.Element( 'tool' )
+        tool_elem.attrib[ 'file' ] = tool_file_path
+        tool_elem.attrib[ 'guid' ] = tool.guid
+        tool_shed_elem = XmlET.SubElement( tool_elem, 'tool_shed' )
+        tool_shed_elem.text = tool_shed
+        repository_name_elem = XmlET.SubElement( tool_elem, 'repository_name' )
+        repository_name_elem.text = repository_name
+        repository_owner_elem = XmlET.SubElement( tool_elem, 'repository_owner' )
+        repository_owner_elem.text = owner
+        changeset_revision_elem = XmlET.SubElement( tool_elem, 'installed_changeset_revision' )
+        changeset_revision_elem.text = changeset_revision
+        id_elem = XmlET.SubElement( tool_elem, 'id' )
+        id_elem.text = tool.id
+        version_elem = XmlET.SubElement( tool_elem, 'version' )
+        version_elem.text = tool.version
+        return tool_elem
 
     def generate_tool_panel_dict_for_new_install( self, tool_dicts, tool_section=None ):
         """
@@ -125,6 +167,60 @@ class ToolPanelManager( object ):
         tool_panel_dict[ guid ] = tool_section_dicts
         return tool_panel_dict
 
+    def generate_tool_panel_dict_from_shed_tool_conf_entries( self, repository ):
+        """
+        Keep track of the section in the tool panel in which this repository's tools
+        will be contained by parsing the shed_tool_conf in which the repository's tools
+        are defined and storing the tool panel definition of each tool in the repository.
+        This method is called only when the repository is being deactivated or un-installed
+        and allows for activation or re-installation using the original layout.
+        """
+        tool_panel_dict = {}
+        shed_tool_conf, tool_path, relative_install_dir = \
+            suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
+        metadata = repository.metadata
+        # Create a dictionary of tool guid and tool config file name for each tool in the repository.
+        guids_and_configs = {}
+        if 'tools' in metadata:
+            for tool_dict in metadata[ 'tools' ]:
+                guid = tool_dict[ 'guid' ]
+                tool_config = tool_dict[ 'tool_config' ]
+                file_name = basic_util.strip_path( tool_config )
+                guids_and_configs[ guid ] = file_name
+        # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict.
+        tree, error_message = xml_util.parse_xml( shed_tool_conf )
+        if tree is None:
+            return tool_panel_dict
+        root = tree.getroot()
+        for elem in root:
+            if elem.tag == 'tool':
+                guid = elem.get( 'guid' )
+                if guid in guids_and_configs:
+                    # The tool is displayed in the tool panel outside of any tool sections.
+                    tool_section_dict = dict( tool_config=guids_and_configs[ guid ], id='', name='', version='' )
+                    if guid in tool_panel_dict:
+                        tool_panel_dict[ guid ].append( tool_section_dict )
+                    else:
+                        tool_panel_dict[ guid ] = [ tool_section_dict ]
+            elif elem.tag == 'section':
+                section_id = elem.get( 'id' ) or ''
+                section_name = elem.get( 'name' ) or ''
+                section_version = elem.get( 'version' ) or ''
+                for section_elem in elem:
+                    if section_elem.tag == 'tool':
+                        guid = section_elem.get( 'guid' )
+                        if guid in guids_and_configs:
+                            # The tool is displayed in the tool panel inside the current tool section.
+                            tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
+                                                      id=section_id,
+                                                      name=section_name,
+                                                      version=section_version )
+                            if guid in tool_panel_dict:
+                                tool_panel_dict[ guid ].append( tool_section_dict )
+                            else:
+                                tool_panel_dict[ guid ] = [ tool_section_dict ]
+        return tool_panel_dict
+
     def generate_tool_panel_elem_list( self, repository_name, repository_clone_url, changeset_revision,
                                        tool_panel_dict, repository_tools_tups, owner='' ):
         """Generate a list of ElementTree Element objects for each section or tool."""
@@ -157,21 +253,21 @@ class ToolPanelManager( object ):
                     if tup_guid == guid:
                         break
                 if inside_section:
-                    tool_elem = suc.generate_tool_elem( tool_shed,
-                                                        repository_name,
-                                                        changeset_revision,
-                                                        owner,
-                                                        tool_file_path,
-                                                        tool,
-                                                        tool_section )
+                    tool_elem = self.generate_tool_elem( tool_shed,
+                                                         repository_name,
+                                                         changeset_revision,
+                                                         owner,
+                                                         tool_file_path,
+                                                         tool,
+                                                         tool_section )
                 else:
-                    tool_elem = suc.generate_tool_elem( tool_shed,
-                                                        repository_name,
-                                                        changeset_revision,
-                                                        owner,
-                                                        tool_file_path,
-                                                        tool,
-                                                        None )
+                    tool_elem = self.generate_tool_elem( tool_shed,
+                                                         repository_name,
+                                                         changeset_revision,
+                                                         owner,
+                                                         tool_file_path,
+                                                         tool,
+                                                         None )
                 if inside_section:
                     if section_in_elem_list:
                         elem_list[ index ] = tool_section
@@ -238,6 +334,19 @@ class ToolPanelManager( object ):
             log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
         return tool_panel_section_key, tool_section
 
+    def get_shed_tool_conf_dict( self, shed_tool_conf ):
+        """
+        Return the in-memory version of the shed_tool_conf file, which is stored in
+        the config_elems entry in the shed_tool_conf_dict associated with the file.
+        """
+        for index, shed_tool_conf_dict in enumerate( self.app.toolbox.shed_tool_confs ):
+            if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
+                return index, shed_tool_conf_dict
+            else:
+                file_name = basic_util.strip_path( shed_tool_conf_dict[ 'config_filename' ] )
+                if shed_tool_conf == file_name:
+                    return index, shed_tool_conf_dict
+
     def handle_tool_panel_section( self, toolbox, tool_panel_section_id=None, new_tool_panel_section_label=None ):
         """Return a ToolSection object retrieved from the current in-memory tool_panel."""
         # If tool_panel_section_id is received, the section exists in the tool panel.  In this
@@ -299,10 +408,12 @@ class ToolPanelManager( object ):
         return tool_section, tool_panel_section_key
 
     def remove_from_shed_tool_config( self, shed_tool_conf_dict, guids_to_remove ):
-        # A tool shed repository is being uninstalled so change the shed_tool_conf file.
-        # Parse the config file to generate the entire list of config_elems instead of
-        # using the in-memory list since it will be a subset of the entire list if one
-        # or more repositories have been deactivated.
+        """
+        A tool shed repository is being uninstalled so change the shed_tool_conf file.
+        Parse the config file to generate the entire list of config_elems instead of
+        using the in-memory list since it will be a subset of the entire list if one
+        or more repositories have been deactivated.
+        """
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         config_elems = []
@@ -330,7 +441,7 @@ class ToolPanelManager( object ):
             for config_elem in config_elems_to_remove:
                 config_elems.remove( config_elem )
             # Persist the altered in-memory version of the tool config.
-            suc.config_elems_to_xml_file( self.app, config_elems, shed_tool_conf, tool_path )
+            self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
 
     def remove_from_tool_panel( self, repository, shed_tool_conf, uninstall ):
         """
@@ -340,7 +451,7 @@ class ToolPanelManager( object ):
         # Determine where the tools are currently defined in the tool panel and store this
         # information so the tools can be displayed in the same way when the repository is
         # activated or reinstalled.
-        tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( self.app, repository )
+        tool_panel_dict = self.generate_tool_panel_dict_from_shed_tool_conf_entries( repository )
         repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
         self.app.install_model.context.add( repository )
         self.app.install_model.context.flush()
@@ -351,7 +462,7 @@ class ToolPanelManager( object ):
         for guid_to_remove in guids_to_remove:
             if guid_to_remove in self.app.toolbox.tools_by_id:
                 del self.app.toolbox.tools_by_id[ guid_to_remove ]
-        index, shed_tool_conf_dict = suc.get_shed_tool_conf_dict( self.app, shed_tool_conf )
+        index, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         if uninstall:
             # Remove from the shed_tool_conf file on disk.
             self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )

@@ -4,7 +4,7 @@ define([
     "mvc/collection/hdca-model",
     "mvc/base-mvc",
     "utils/localization"
-], function( historyContent, hdaModel, hdcaModel, baseMVC, _l ){
+], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC, _l ){
 //==============================================================================
 /** @class Backbone collection for history content.
  *      NOTE: history content seems like a dataset collection, but differs in that it is mixed:
@@ -18,22 +18,31 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryContents = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend(
+var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends HistoryContents.prototype */{
 
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
+    /** logger used to record this.log messages, commonly set to console */
+    // comment this out to suppress log output
     //logger              : console,
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
         if( attrs.history_content_type === "dataset" ) {
-            return new hdaModel.HistoryDatasetAssociation( attrs, options );
+            return new HDA_MODEL.HistoryDatasetAssociation( attrs, options );
+        
         } else if( attrs.history_content_type === "dataset_collection" ) {
-            return new hdcaModel.HistoryDatasetCollectionAssociation( attrs, options );
+            switch( attrs.collection_type ){
+                case 'list':
+                    return new HDCA_MODEL.HistoryListDatasetCollection( attrs, options );
+                case 'paired':
+                    return new HDCA_MODEL.HistoryPairDatasetCollection( attrs, options );
+                case 'list:paired':
+                    return new HDCA_MODEL.HistoryListPairedDatasetCollection( attrs, options );
+            }
+            throw new TypeError( 'Unknown collection_type: ' + attrs.collection_type );
         }
         // TODO: Handle unknown history_content_type...
-        throw new TypeError( 'Unknown history_content_type:' + attrs.history_content_type );
+        throw new TypeError( 'Unknown history_content_type: ' + attrs.history_content_type );
     },
 
     /** Set up.
@@ -43,6 +52,10 @@ var HistoryContents = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend
         options = options || {};
         this.historyId = options.historyId;
         //this._setUpListeners();
+
+        this.on( 'all', function(){
+            this.debug( this + '.event:', arguments );
+        });
     },
 
     /** root api url */
@@ -99,9 +112,9 @@ var HistoryContents = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend
      */
     getVisible : function( show_deleted, show_hidden, filters ){
         filters = filters || [];
-        //console.debug( 'filters:', filters );
-        //TODO:?? why doesn't this return a collection?
+        //this.debug( 'filters:', filters );
         // always filter by show deleted/hidden first
+        this.debug( 'checking isVisible' );
         var filteredHdas = new HistoryContents( this.filter( function( item ){
             return item.isVisible( show_deleted, show_hidden );
         }));
@@ -127,7 +140,7 @@ var HistoryContents = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend
         return this.fetch( options );
     },
 
-    /** using a queue, perform hdaModelAjaxFn on each of the hdas in this collection */
+    /** using a queue, perform hdaAjaxFn on each of the hdas in this collection */
     ajaxQueue : function( hdaAjaxFn, options ){
         var deferred = jQuery.Deferred(),
             startingLength = this.length,
@@ -182,7 +195,7 @@ var HistoryContents = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend
         var collection = this;
         models = _.map( models, function( model ){
             var attrs = model.attributes || model; // Handle raw json or Backbone model.
-            var typeId = historyContent.HistoryContent.typeIdStr( attrs.history_content_type, attrs.id );
+            var typeId = HISTORY_CONTENT.HistoryContent.typeIdStr( attrs.history_content_type, attrs.id );
             var existing = collection.get( typeId );
             if( !existing ){ return model; }
 
@@ -216,7 +229,7 @@ var HistoryContents = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend
                 var content_type = hda.attributes.history_content_type;
                 if( content_type === "dataset" ) {
                     if( full_collection_type !== "list" ) {
-                        console.log( "Invalid collection type" );
+                        this.log( "Invalid collection type" );
                     }
                     element_identifiers.push( { name: name, src: "hda", id: id } );
                 } else {
@@ -224,7 +237,7 @@ var HistoryContents = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend
                         full_collection_type = "list:" + hda.attributes.collection_type;
                     } else {
                         if( full_collection_type !== "list:" + hda.attributes.collection_type ) {
-                            console.log( "Invalid collection type" );
+                            this.log( "Invalid collection type" );
                         }
                     }
                     element_identifiers.push( { name: name, src: "hdca", id: id } );
@@ -263,9 +276,20 @@ var HistoryContents = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend
         return xhr;
     },
 
+    /** debugging */
+    print : function(){
+        var contents = this;
+        contents.each( function( c ){
+            contents.debug( c );
+            if( c.elements ){
+                contents.debug( '\t elements:', c.elements );
+            }
+        });
+    },
+
     /** String representation. */
     toString : function(){
-         return ([ 'HistoryContents(', [ this.parentId, this.length ].join(), ')' ].join( '' ));
+         return ([ 'HistoryContents(', [ this.historyId, this.length ].join(), ')' ].join( '' ));
     }
 });
 
