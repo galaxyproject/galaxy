@@ -30,7 +30,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     // missing features below
     "click .toolbtn_save_modifications"   :   "comingSoon",
-    "click .btn-share-dataset"            :   "comingSoon"
+    // "click .btn-share-dataset"            :   "comingSoon"
 
   },
 
