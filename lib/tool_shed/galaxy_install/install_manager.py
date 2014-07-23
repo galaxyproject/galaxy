@@ -18,7 +18,6 @@ from galaxy.model.orm import or_
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import datatype_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
@@ -26,6 +25,7 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 
+from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
@@ -594,18 +594,19 @@ class InstallRepositoryManager( object ):
                 files_dir = os.path.join( shed_config_dict[ 'tool_path' ], files_dir )
             datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
             # Load data types required by tools.
+            cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
             converter_path, display_path = \
-                datatype_util.alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, files_dir, override=False )
+                cdl.alter_config_and_load_prorietary_datatypes( datatypes_config, files_dir, override=False )
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
                 repository_dict = \
-                    datatype_util.create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
-                                                                                    name=tool_shed_repository.name,
-                                                                                    owner=tool_shed_repository.owner,
-                                                                                    installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                                    tool_dicts=metadata_dict.get( 'tools', [] ),
-                                                                                    converter_path=converter_path,
-                                                                                    display_path=display_path )
+                    cdl.create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
+                                                                          name=tool_shed_repository.name,
+                                                                          owner=tool_shed_repository.owner,
+                                                                          installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                          tool_dicts=metadata_dict.get( 'tools', [] ),
+                                                                          converter_path=converter_path,
+                                                                          display_path=display_path )
             if converter_path:
                 # Load proprietary datatype converters
                 self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, installed_repository_dict=repository_dict )
