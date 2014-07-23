@@ -214,6 +214,13 @@ visualization_plugins_directory = config/plugins/visualizations
 # used for the cache
 #template_cache_path = database/compiled_templates
 
+# Citation related caching. Tool citations information maybe fetched from
+# external sources such as http://dx.doi.org/ by Galaxy - the following parameters
+# can be used to control the caching used to store this information.
+#citation_cache_type=file
+#citation_cache_data_dir=database/citations/data
+#citation_cache_lock_dir=database/citations/lock
+
 # External service types config file, defines what types of external_services configurations 
 # are available in Galaxy.
 #external_service_type_config_file = external_service_types_conf.xml

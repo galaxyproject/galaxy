@@ -100,6 +100,9 @@
             },
             "${_("Show Structure")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
+            },            
+            "${_("Export Citations")}": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='citations' )}";
             },
             "${_("Export to File")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";

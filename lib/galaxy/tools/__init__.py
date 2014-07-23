@@ -1360,6 +1360,9 @@ class Tool( object, Dictifiable ):
         requirements, containers = parse_requirements_from_xml( root )
         self.requirements = requirements
         self.containers = containers
+
+        self.citations = self._parse_citations( root )
+
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(root)
         # Trackster configuration.
@@ -1685,6 +1688,20 @@ class Tool( object, Dictifiable ):
             if ( None != trace ):
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
+
+    def _parse_citations( self, root ):
+        citations = []
+        citations_elem = root.find("citations")
+        if not citations_elem:
+            return citations
+
+        for citation_elem in citations_elem:
+            if citation_elem.tag != "citation":
+                pass
+            citation = self.app.citations_manager.parse_citation( citation_elem, self.tool_dir )
+            if citation:
+                citations.append( citation )
+        return citations
 
     # TODO: This method doesn't have to be part of the Tool class.
     def parse_error_level( self, err_level ):
