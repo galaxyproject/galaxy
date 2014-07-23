@@ -1,31 +1,71 @@
 define([
+    "mvc/dataset/states",
     "mvc/base-mvc",
     "utils/localization"
-], function( baseMVC, _l ){
+], function( STATES, BASE_MVC, _l ){
+//==============================================================================
+/** how the type_id attribute is built for the history's mixed contents collection */
+var typeIdStr = function _typeIdStr( type, id ){
+    return [ type, id ].join( '-' );
+};
+
 //==============================================================================
 /** @class base model for content items contained in a history or hdca.
- *  @name HistoryContent
- *
- *  @augments Backbone.Model
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
-var HistoryContent = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
+var HistoryContentMixin = {
+//TODO:?? into true Backbone.Model?
+
+    /** default attributes for a model */
+    defaults : {
+        // parent (containing) history
+        history_id          : null,
+        history_content_type: 'dataset_collection',
+        hid                 : 0,
+
+        name                : '(unnamed content)',
+        // one of HistoryDatasetAssociation.STATES
+        state               : 'new',
+
+        deleted             : false,
+        visible             : true,
+
+//TODO: update to false when this is correctly passed from the API (when we have a security model for this)
+        accessible          : true,
+        purged              : false
+    },
+
+    // ........................................................................ mixed content element
+    // in order to be part of a MIXED bbone collection, we can't rely on the id
+    //  (which may collide btwn models of different classes)
+    // build a new id (type_id) that prefixes the history_content_type so the bbone collection can differentiate
     idAttribute : 'type_id',
 
     constructor : function( attrs, options ){
-        attrs.type_id = HistoryContent.typeIdStr( attrs.history_content_type, attrs.id );
+        this.info( 'HistoryContentMixin.constructor:', this, attrs, options );
+        attrs.type_id = typeIdStr( attrs.history_content_type, attrs.id );
         Backbone.Model.apply( this, arguments );
     },
 
-    initialize : function( attrs, options ){
-        // assumes type won't change
-        this.on( 'change:id', this._createTypeId );
-        //TODO: not sure this covers all the bases...
+    _typeIdStr : function(){
+        return typeIdStr( this.get( 'history_content_type' ), this.get( 'id' ) );
     },
+
+    initialize : function( attrs, options ){
+        this.debug( 'HistoryContentMixin.initialize', attrs, options );
+        // assumes type won't change
+        //TODO: not sure this covers all the bases...
+        this.on( 'change:id', this._createTypeId );
+
+        this._setUpListeners();
+    },
+
+    /** set up any event listeners
+     */
+    _setUpListeners : function(){
+    },
+
     _createTypeId : function(){
-        this.set( 'type_id', TypeIdModel.typeIdStr( this.get( 'history_content_type' ), this.get( 'id' ) ) );
+        this.set( 'type_id', this._typeIdStr() );
     },
 
     // ........................................................................ common queries
@@ -52,39 +92,93 @@ var HistoryContent = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
         return isVisible;
     },
 
+    /** Is this hda deleted or purged? */
+    isDeletedOrPurged : function(){
+        return ( this.get( 'deleted' ) || this.get( 'purged' ) );
+    },
+
+    /** Is this HDA in a 'ready' state; where 'Ready' states are states where no
+     *      processing (for the ds) is left to do on the server.
+     */
+    inReadyState : function(){
+        var ready = _.contains( STATES.READY_STATES, this.get( 'state' ) );
+        return ( this.isDeletedOrPurged() || ready );
+    },
+
+    /** Does this model already contain detailed data (as opposed to just summary level data)? */
+    hasDetails : function(){
+        // override
+        return true;
+    },
+
+    /** Convenience function to match hda.has_data. */
+    hasData : function(){
+        // override
+        return true;
+    },
+
     // ........................................................................ ajax
     /**  */
     urlRoot: galaxy_config.root + 'api/histories/',
 
     /** full url spec. for this HDA */
     url : function(){
-        return this.urlRoot + this.get( 'history_id' ) + '/contents/'
+        var url = this.urlRoot + this.get( 'history_id' ) + '/contents/'
              + this.get('history_content_type') + 's/' + this.get( 'id' );
+        //console.debug( this + '.url:', url );
+        return url;
+    },
+
+    /** returns misc. web urls for rendering things like re-run, display, etc. */
+    urls : function(){
+//TODO: would be nice if the API did this
+        // override
+        return {};
     },
 
     /** save this HDA, _Mark_ing it as deleted (just a flag) */
-    'delete' : function _delete( options ){
+    'delete' : function( options ){
         if( this.get( 'deleted' ) ){ return jQuery.when(); }
         return this.save( { deleted: true }, options );
     },
     /** save this HDA, _Mark_ing it as undeleted */
-    undelete : function _undelete( options ){
+    undelete : function( options ){
         if( !this.get( 'deleted' ) || this.get( 'purged' ) ){ return jQuery.when(); }
         return this.save( { deleted: false }, options );
     },
 
     /** save this HDA as not visible */
-    hide : function _hide( options ){
+    hide : function( options ){
         if( !this.get( 'visible' ) ){ return jQuery.when(); }
         return this.save( { visible: false }, options );
     },
     /** save this HDA as visible */
-    unhide : function _uhide( options ){
+    unhide : function( options ){
         if( this.get( 'visible' ) ){ return jQuery.when(); }
         return this.save( { visible: true }, options );
     },
 
+    /** purge this HDA and remove the underlying dataset file from the server's fs */
+    purge : function _purge( options ){
+//TODO: use, override model.destroy, HDA.delete({ purge: true })
+        // override
+        return jQuery.when();
+    },
+
     // ........................................................................ searching
+    /** what attributes of the content will be used in a text search */
+    searchAttributes : [
+        'name'
+    ],
+
+    /** our attr keys don't often match the labels we display to the user - so, when using
+     *      attribute specifiers ('name="bler"') in a term, allow passing in aliases for the
+     *      following attr keys.
+     */
+    searchAliases : {
+        title       : 'name'
+    },
+
     /** search the attribute with key attrKey for the string searchFor; T/F if found */
     searchAttribute : function( attrKey, searchFor ){
         var attrVal = this.get( attrKey );
@@ -167,15 +261,26 @@ var HistoryContent = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
         }
         return 'HistoryContent(' + nameAndId + ')';
     }
-});
-
-/** create a type + id string for use in mixed collections */
-HistoryContent.typeIdStr = function _typeId( type, id ){
-    return [ type, id ].join( '-' );
 };
 
 
 //==============================================================================
-return {
-    HistoryContent : HistoryContent
-};});
+/** @class base model for content items contained in a history or hdca.
+ *  @name HistoryContent
+ *
+ *  @augments Backbone.Model
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
+ */
+var HistoryContent = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend( HistoryContentMixin );
+//TODO:?? here or return as module fn?
+HistoryContent.typeIdStr = typeIdStr;
+
+
+//==============================================================================
+    return {
+        HistoryContentMixin : HistoryContentMixin,
+        HistoryContent      : HistoryContent
+    };
+});

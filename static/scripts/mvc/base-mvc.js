@@ -14,7 +14,7 @@ define([
  *  @example
  *  // Add to your models/views at the definition using chaining:
  *      var MyModel = Backbone.Model.extend( LoggableMixin ).extend({ // ... });
- * 
+ *
  *  // or - more explicitly AFTER the definition:
  *      var MyModel = Backbone.Model.extend({
  *          logger  : console
@@ -208,8 +208,23 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */{
 };
 
 //==============================================================================
-return {
-    LoggableMixin                   : LoggableMixin,
-    SessionStorageModel             : SessionStorageModel,
-    HiddenUntilActivatedViewMixin   : HiddenUntilActivatedViewMixin
-};});
+function mixin( mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash ){
+    // usage: var NewModel = Something.extend( mixin( MyMixinA, MyMixinB, { ... }) );
+    //NOTE: this does not combine any hashes (like events, etc.) and you're expected to handle that
+
+    // simple reversal of param order on _.defaults() - to show mixins in top of definition
+    var args = Array.prototype.slice.call( arguments, 0 ),
+        lastArg = args.pop();
+    args.unshift( lastArg );
+    return _.defaults.apply( _, args );
+}
+
+
+//==============================================================================
+    return {
+        LoggableMixin                   : LoggableMixin,
+        SessionStorageModel             : SessionStorageModel,
+        HiddenUntilActivatedViewMixin   : HiddenUntilActivatedViewMixin,
+        mixin                           : mixin
+    };
+});

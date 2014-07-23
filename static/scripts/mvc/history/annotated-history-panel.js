@@ -1,13 +1,14 @@
 define([
-    "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
     "mvc/history/readonly-history-panel",
     "utils/localization"
-], function( hdaModel, hdaBase, readonlyPanel, _l ){
+], function( HDA_BASE, READONLY_HPANEL, _l ){
 /* =============================================================================
 TODO:
 
 ============================================================================= */
+var _super = READONLY_HPANEL.ReadOnlyHistoryPanel;
+// used in history/display.mako and history/embed.mako
 /** @class View/Controller for a tabular view of the history model.
  *  @name AnnotatedHistoryPanel
  *
@@ -21,17 +22,17 @@ TODO:
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
+var AnnotatedHistoryPanel = _super.extend(
 /** @lends HistoryPanel.prototype */{
 
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
+    /** logger used to record this.log messages, commonly set to console */
+    // comment this out to suppress log output
     //logger              : console,
 
     className    : 'annotated-history-panel',
 
     /** class to use for constructing the HDA views */
-    HDAViewClass : hdaBase.HDABaseView,
+    HDAViewClass : HDA_BASE.HDABaseView,
 
     // ------------------------------------------------------------------------ panel rendering
     /** render with history data
@@ -44,7 +45,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     renderModel : function( ){
         // why do we need this here? why isn't className being applied?
         this.$el.addClass( this.className );
-        var $newRender = readonlyPanel.ReadOnlyHistoryPanel.prototype.renderModel.call( this ),
+        var $newRender = _super.prototype.renderModel.call( this ),
         // move datasets from div to table
             $datasetsList = this.$datasetsList( $newRender ),
             $datasetsTable = $( '<table/>' ).addClass( 'datasets-list datasets-table' );
@@ -76,7 +77,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
      */
     renderHdas : function( $whereTo ){
         $whereTo = $whereTo || this.$el;
-        var hdaViews = readonlyPanel.ReadOnlyHistoryPanel.prototype.renderHdas.call( this, $whereTo );
+        var hdaViews = _super.prototype.renderHdas.call( this, $whereTo );
         this.$datasetsList( $whereTo ).prepend( $( '<tr/>' ).addClass( 'headers' ).append([
             $( '<th/>' ).text( _l( 'Dataset' ) ),
             $( '<th/>' ).text( _l( 'Annotation' ) )
@@ -106,7 +107,7 @@ var AnnotatedHistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 
     // ------------------------------------------------------------------------ panel events
     /** event map */
-    events : _.extend( _.clone( readonlyPanel.ReadOnlyHistoryPanel.prototype.events ), {
+    events : _.extend( _.clone( _super.prototype.events ), {
         'click tr' : function( ev ){
             //if( !ev.target.hasAttribute( 'href' ) ){
                 $( ev.currentTarget ).find( '.dataset-title-bar' ).click();

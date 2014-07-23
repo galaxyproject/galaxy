@@ -1,75 +1,36 @@
 define([
-    "mvc/dataset/hda-model",
+    "mvc/dataset/states",
     "mvc/collection/dataset-collection-base",
     "utils/localization"
-], function( hdaModel, datasetCollectionBase, _l ){
+], function( STATES, DC_BASE_VIEW, _l ){
 //==============================================================================
-/** @class Editing view for HistoryDatasetCollectionAssociation.
+var _super = DC_BASE_VIEW.DCBaseView;
+/** @class Editing view for DatasetCollection.
  *  @name DatasetCollectionEditView
  *
- *  @augments DatasetCollectionBaseView
+ *  @augments DCBaseView
  *  @constructs
  */
-var DatasetCollectionEditView = datasetCollectionBase.DatasetCollectionBaseView.extend( {
+var DCEditView = _super.extend({
+
+    /** logger used to record this.log messages, commonly set to console */
+    // comment this out to suppress log output
+    //logger              : console,
 
     initialize  : function( attributes ){
-        datasetCollectionBase.DatasetCollectionBaseView.prototype.initialize.call( this, attributes );
-    },
-
-    // ......................................................................... edit attr, delete
-    /** Render icon-button group for the common, most easily accessed actions.
-     *      Overrides _render_titleButtons to include editing related buttons.
-     *  @see DatasetCollectionBaseView#_render_titleButtons
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_titleButtons : function(){
-        // render the display, edit attr and delete icon-buttons
-        return datasetCollectionBase.DatasetCollectionBaseView.prototype._render_titleButtons.call( this ).concat([
-            this._render_deleteButton()
-        ]);
-    },
-
-    /** Render icon-button to delete this hda.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_deleteButton : function(){
-        // don't show delete if...
-        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW )
-        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
-        ||  ( !this.model.get( 'accessible' ) ) ){
-            return null;
-        }
-        
-        var self = this,
-            deleteBtnData = {
-                title       : _l( 'Delete' ),
-                classes     : 'dataset-delete',
-                onclick     : function() {
-                    // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find( '.icon-btn.dataset-delete' ).trigger( 'mouseout' );
-                    self.model[ 'delete' ]();
-                }
-        };
-        if( this.model.get( 'deleted' ) ){
-            deleteBtnData = {
-                title       : _l( 'Dataset collection is already deleted' ),
-                disabled    : true
-            };
-        }
-        deleteBtnData.faIcon = 'fa-times';
-        return faIconButton( deleteBtnData );
+        _super.prototype.initialize.call( this, attributes );
     },
 
     // ......................................................................... misc
     /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDCAEditView(' + modelString + ')';
+        return 'DCEditView(' + modelString + ')';
     }
 });
 
 //==============================================================================
     return {
-        DatasetCollectionEditView  : DatasetCollectionEditView
+        DCEditView : DCEditView
     };
 });
