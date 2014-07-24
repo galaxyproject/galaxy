@@ -11,7 +11,7 @@ import base
 import line
 import column
 import external
-import sqlite3
+from galaxy.util import sqlite
 import re
 
 from galaxy import eggs
@@ -716,20 +716,11 @@ class SQliteDataProvider( base.DataProvider ):
 
     def __init__( self, source, query=None, **kwargs ):
         self.query = query
-        self.connection = sqlite3.connect(source.dataset.file_name)
-        self.connection.row_factory = sqlite3.Row
+        self.connection = sqlite.connect(source.dataset.file_name)
         super( SQliteDataProvider, self ).__init__( source, **kwargs )
 
-    def query_matches_whitelist(self, query):
-        if re.match("select ", query, re.IGNORECASE):
-            if re.search("^([^\"]|\"[^\"]*\")*?;", query) or re.search("^([^\']|\'[^\']*\')*?;", query):
-                return False
-            else:
-                return True
-        return False
-
     def __iter__( self ):
-        if (self.query is not None) and self.query_matches_whitelist(self.query):
+        if (self.query is not None) and sqlite.is_read_only_query(self.query):
             for row in self.connection.cursor().execute(self.query):
                 yield row
         else:
