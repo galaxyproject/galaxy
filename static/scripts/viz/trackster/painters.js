@@ -783,7 +783,9 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             char_width_px = ctx.canvas.manager.char_width_px,
             block_color = (strand === "+" ? this.prefs.detail_block_color : this.prefs.reverse_strand_color),
             pack_mode = (mode === 'Pack'),
-            paint_utils = new ReadPainterUtils(ctx, (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT), w_scale, mode),
+            draw_height = (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT),
+            rect_y = y_start + 1,
+            paint_utils = new ReadPainterUtils(ctx, draw_height, w_scale, mode),
             drawing_blocks = [];
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
@@ -813,10 +815,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
 
                 // Draw read base as rectangle.
                 ctx.fillStyle = block_color;
-                ctx.fillRect(s_start, 
-                             y_start + (pack_mode ? 1 : 4 ), 
-                             s_end - s_start, 
-                             (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
+                ctx.fillRect(s_start, rect_y, s_end - s_start, draw_height);
             }
         }
 
@@ -893,10 +892,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             }
                             // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
                             else if (w_scale > 0.05) {
-                                ctx.fillRect(c_start - gap, 
-                                             y_start + (pack_mode ? 1 : 4), 
-                                             Math.max( 1, Math.round(w_scale) ),
-                                             (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
+                                ctx.fillRect(c_start - gap, rect_y, Math.max( 1, Math.round(w_scale) ), draw_height);
                             }
                         }
                     }
@@ -913,7 +909,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
-                    paint_utils.draw_deletion(s_start, y_start + (pack_mode ? 1 : 4), cig_len);
+                    paint_utils.draw_deletion(s_start, rect_y, cig_len);
                     base_offset += cig_len;
                     break;
                 case "I": // Insertion.
