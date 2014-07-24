@@ -1,7 +1,5 @@
 define( ["libs/underscore"], function( _ ) {
 
-var extend = _.extend;
-
 /**
  * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
  * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
@@ -128,7 +126,7 @@ var Painter = function(data, view_start, view_end, prefs, mode) {
     this.view_start = view_start;
     this.view_end = view_end;
     // Drawing prefs
-    this.prefs = extend({}, this.default_prefs, prefs);
+    this.prefs = _.extend({}, this.default_prefs, prefs);
     this.mode = mode;
 };
 
@@ -354,7 +352,7 @@ var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_sca
 
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
 
-extend(FeaturePainter.prototype, {
+_.extend(FeaturePainter.prototype, {
     get_required_height: function(rows_required, width) {
         // y_scale is the height per row
         var required_height = this.get_row_height(),
@@ -451,7 +449,7 @@ var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alp
     this.draw_individual_connectors = false;
 };
 
-extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
+_.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
     /**
      * Height of a single row, depends on mode
@@ -692,7 +690,7 @@ var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler
     this.base_color_fn = base_color_fn;
 };
 
-extend(ReadPainter.prototype, FeaturePainter.prototype, {
+_.extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
      * Returns height based on mode.
      */
@@ -1077,7 +1075,7 @@ var ArcLinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, 
     this.draw_individual_connectors = true;
 };
 
-extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeaturePainter.prototype, {
+_.extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeaturePainter.prototype, {
 
     calculate_longest_feature_length: function () {
         var longest_feature_length = 0;
@@ -1336,7 +1334,7 @@ var ReadPainterUtils = function(ctx, row_height, px_per_base, mode) {
     this.delete_details_thickness = 0.2;
 };
 
-extend(ReadPainterUtils.prototype, {
+_.extend(ReadPainterUtils.prototype, {
     /**
      * Draw deletion of base(s). 
      * @param draw_detail if true, drawing in detail and deletion is drawn more subtly
@@ -1358,7 +1356,7 @@ var VariantPainter = function(data, view_start, view_end, prefs, mode, base_colo
     this.divider_height = 1;
 };
 
-extend(VariantPainter.prototype, Painter.prototype, {
+_.extend(VariantPainter.prototype, Painter.prototype, {
     /**
      * Height of a single row, depends on mode
      */
