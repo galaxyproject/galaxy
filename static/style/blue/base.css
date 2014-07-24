@@ -1678,7 +1678,7 @@ div.permissionContainer{padding-left:20px}
 .icon-btn-group .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
 .icon-btn-group .icon-btn:only-child{margin:0px;border-radius:3px}
 .search-input .search-query{width:100%;padding-right:24px}
-.search-input .search-clear,.search-input .search-loading{position:relative;display:inline-block;float:right;margin-top:-23px;margin-right:4px;font-size:1.4em;line-height:23px;color:grey}
+.search-input .search-clear,.search-input .search-loading{position:relative;display:inline-block;float:right;margin-top:-24px;margin-right:4px;font-size:1.4em;line-height:23px;color:grey}
 .search-input .search-clear:hover{color:#303030}
 #history-refresh-button,#history-options-button{display:inline-block;height:22px;width:22px;text-align:center;line-height:19px;font-size:1.2em;padding:0px}
 .hda.dataset{border:1px solid #bfbfbf}.hda.dataset .vertical-spacing{margin-bottom:8px}

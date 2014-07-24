@@ -1,7 +1,7 @@
-define( ["libs/underscore", "viz/visualization", "viz/trackster/util", 
+define( ["libs/underscore", "viz/visualization", "viz/viz_views", "viz/trackster/util", 
          "viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/filters",
          "mvc/data", "mvc/tools", "utils/config" ], 
-         function(_, visualization, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
+         function(_, visualization, viz_views, util, slotting, painters, filters_mod, data, tools_mod, config_mod) {
 
 var extend = _.extend;
 
@@ -219,28 +219,25 @@ var Drawable = function(view, container, obj_dict) {
     
     // Build Drawable HTML and behaviors.
     this.container_div = this.build_container_div();
-    this.header_div = this.build_header_div();
-    
-    if (this.header_div) {
+    this.header_div = null;
+
+    // Use opt-out policy on header creation because this is the more frequent approach: 
+    // unless flag set, create header.
+    if (obj_dict.header !== false) {
+        var header_view = new viz_views.TrackHeaderView({
+            model: this,
+            id: this.id
+        });
+            
+        this.header_div = header_view.$el;
         this.container_div.append(this.header_div);
-        
-        // Icons container.
-        this.icons_div = $("<div/>").addClass('track-icons').hide().appendTo(this.header_div);
-        this.build_action_icons(this.action_icons_def);
-                
-        this.header_div.append( $("<div style='clear: both'/>") );
-        
-        // Suppress double clicks in header so that they do not impact viz.
-        this.header_div.dblclick( function(e) { e.stopPropagation(); } );
-        
+
         // Show icons when users is hovering over track.
-        var drawable = this;
+        var icons_div = header_view.icons_div;
+        this.action_icons = header_view.action_icons;
         this.container_div.hover(
-            function() { drawable.icons_div.show(); }, function() { drawable.icons_div.hide(); }
+            function() { icons_div.show(); }, function() { icons_div.hide(); }
         );
-       
-        // Needed for floating elts in header.
-        $("<div style='clear: both'/>").appendTo(this.container_div);
     }
 };
 
@@ -327,7 +324,6 @@ extend(Drawable.prototype, {
     set_name: function(new_name) {
         this.old_name = this.config.get_value('name');
         this.config.set_value('name', new_name);
-        this.name_div.text(new_name);
     },
 
     /**
@@ -336,7 +332,6 @@ extend(Drawable.prototype, {
     revert_name: function() {
         if (this.old_name) {
             this.config.set_value('name', this.old_name);
-            this.name_div.text(this.old_name);
         }
     },
 
@@ -359,38 +354,6 @@ extend(Drawable.prototype, {
      * Build drawable's container div; this is the parent div for all drawable's elements.
      */
     build_container_div: function() {},
-
-    /**
-     * Build drawable's header div.
-     */
-    build_header_div: function() {},
-
-    /**
-     * Add an action icon to this object. Appends icon unless prepend flag is specified.
-     */
-    add_action_icon: function(name, title, css_class, on_click_fn, prepend, hide) {
-        var drawable = this;
-        this.action_icons[name] = $("<a/>").attr("title", title)
-                                           .addClass("icon-button").addClass(css_class).tooltip()
-                                           .click( function() { on_click_fn(drawable); } )
-                                           .appendTo(this.icons_div);
-        if (hide) {
-            this.action_icons[name].hide();
-        }
-    },
-
-    /**
-     * Build drawable's icons div from object's icons_dict.
-     */
-    build_action_icons: function(action_icons_def) {        
-        // Create icons.
-        var icon_dict;
-        for (var i = 0; i < action_icons_def.length; i++) {
-            icon_dict = action_icons_def[i];
-            this.add_action_icon(icon_dict.name, icon_dict.title, icon_dict.css_class, 
-                                 icon_dict.on_click_fn, icon_dict.prepend, icon_dict.hide);
-        }
-    },
     
     /**
      * Update icons.
@@ -589,6 +552,10 @@ var DrawableGroup = function(view, container, obj_dict) {
     // Set up filters.
     this.filters_manager = new filters_mod.FiltersManager(this);
     this.header_div.after(this.filters_manager.parent_div);
+
+    // HACK: add div to clear floating elements.
+    this.filters_manager.parent_div.after( $("<div style='clear: both'/>") );
+
     // For saving drawables' filter managers when group-level filtering is done:
     this.saved_filters_managers = [];
     
@@ -628,7 +595,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         {
             name: "filters_icon",
             title: "Filters",
-            css_class: "filters-icon",
+            css_class: "ui-slider-050",
             on_click_fn: function(group) {
                 // TODO: update Tooltip text.
                 if (group.filters_manager.visible()) {
@@ -658,13 +625,6 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         return container_div;
     },
 
-    build_header_div: function() {
-        var header_div = $("<div/>").addClass("track-header");
-        header_div.append($("<div/>").addClass(this.drag_handle_class));
-        this.name_div = $("<div/>").addClass("track-name").text(this.config.get_value('name')).appendTo(header_div);
-        return header_div;
-    },
-
     hide_contents: function () {
         this.tiles_div.hide();
     },
@@ -686,9 +646,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             this.action_icons.filters_icon.hide();
         }
         else if (num_drawables === 1) {
-            if (this.drawables[0] instanceof CompositeTrack) {
-                this.action_icons.composite_icon.show();
-            }
+            this.action_icons.composite_icon.toggle(this.drawables[0] instanceof CompositeTrack);
             this.action_icons.filters_icon.hide();
         }
         else { // There are 2 or more tracks.
@@ -777,12 +735,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 }
             
                 // Show/hide icon based on filter availability.
-                if (this.filters_manager.filters.length > 0) {   
-                    this.action_icons.filters_icon.show();
-                }
-                else {
-                    this.action_icons.filters_icon.hide();
-                }
+                this.action_icons.filters_icon.toggle(this.filters_manager.filters.length > 0);
             }
             else {
                 this.action_icons.filters_icon.hide();
@@ -924,7 +877,7 @@ var TracksterView = Backbone.View.extend({
         this.content_div = this.viewport_container;
         is_container(this.viewport_container, view);
         // Introduction div shown when there are no tracks.
-        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
+        this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container);
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
             visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, function(tracks) {
                 _.each(tracks, function(track) {
@@ -932,8 +885,6 @@ var TracksterView = Backbone.View.extend({
                 });
             });
         });
-        // Another label track at bottom
-        this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
         // Navigation at top
         this.nav_container = $("<div/>").addClass("trackster-nav-container").prependTo(this.top_container);
         this.nav = $("<div/>").addClass("trackster-nav").appendTo(this.nav_container);
@@ -1089,7 +1040,7 @@ var TracksterView = Backbone.View.extend({
         // Dragging in the top label track allows selecting a region to zoom in on selected region.
         this.top_labeltrack.bind( "dragstart", function( e, d ) {
             return $("<div/>").addClass('zoom-area').css(
-                "height", view.browser_content_div.height() + view.top_labeltrack.height() + view.nav_labeltrack.height() + 1
+                "height", view.browser_content_div.height() + view.top_labeltrack.height() + 1
             ).appendTo( $(this) );
         }).bind( "drag", function( e, d ) {
             $( d.proxy ).css({ left: Math.min( e.pageX, d.startX ) - view.container.offset().left, width: Math.abs( e.pageX - d.startX ) });
@@ -1111,11 +1062,9 @@ var TracksterView = Backbone.View.extend({
             view.request_redraw();
         });
 
-        // For vertical alignment, track mouse with simple line.
-        // Fixes needed for this to work:
-        // (a) make work with embedded visualizations;
-        // (b) seems to get stuck on tile overlaps.
+        // FIXME: this is still wonky for embedded visualizations.
         /*
+        // For vertical alignment, track mouse with simple line.
         var mouse_tracker_div = $('<div/>').addClass('mouse-pos').appendTo(parent_element);
 
         // Show tracker only when hovering over view.
@@ -1124,9 +1073,8 @@ var TracksterView = Backbone.View.extend({
                 mouse_tracker_div.show();
                 parent_element.mousemove(function(e) {
                     mouse_tracker_div.css({
-                        // -1 makes it appear next to the mouse w/o obscuring clicking
-                        // and dragging on view elements.
-                        left: e.pageX - 1
+                        // -1 makes line appear next to the mouse w/o preventing mouse actions.
+                        left: e.pageX - parent_element.offset().left - 1
                     });
                 });
             },
@@ -1138,7 +1086,6 @@ var TracksterView = Backbone.View.extend({
         */
         
         this.add_label_track( new LabelTrack( this, { content_div: this.top_labeltrack } ) );
-        this.add_label_track( new LabelTrack( this, { content_div: this.nav_labeltrack } ) );
         
         $(window).bind("resize", function() {
             // Stop previous timer.
@@ -1173,12 +1120,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
 
     /** Add or remove intro div depending on view state. */
     update_intro_div: function() {
-        if (this.drawables.length === 0) {
-            this.intro_div.show();
-        }
-        else {
-            this.intro_div.hide();
-        }
+        this.intro_div.toggle(this.drawables.length === 0);
     },
 
     /**
@@ -1345,7 +1287,6 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                 }
             }
 
-            view.reset_overview();
             view.request_redraw();
         }
     },
@@ -1432,6 +1373,13 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         drawable.init();
         this.changed();
         this.update_intro_div();
+
+        // When drawable config changes, mark view as changed. This
+        // captures most (all?) state change that needs to be saved.
+        var self = this;
+        drawable.config.on('change', function() {
+            self.changed();
+        });
     },
 
     add_label_track: function (label_track) {
@@ -1755,12 +1703,7 @@ var TracksterToolView = Backbone.View.extend({
      * Show or hide tool depending on tool visibility state.
      */
     set_visible: function() {
-        if (this.model.is_visible()) {
-            this.$el.show();
-        }
-        else {
-            this.$el.hide();
-        }
+        this.$el.toggle(this.model.is_visible());
     },
 
     /**
@@ -2324,14 +2267,6 @@ extend(Track.prototype, Drawable.prototype, {
         return $("<div/>").addClass('track').attr("id", "track_" + this.id);
     },
 
-    build_header_div: function() {
-        var header_div = $("<div class='track-header'/>");
-        if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(header_div); }
-        this.name_div = $("<div/>").addClass("track-name").appendTo(header_div).text(this.config.get_value('name'))
-                        .attr( "id", this.config.get_value('name').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
-        return header_div;
-    },
-
     /** 
      * Set track's dataset.
      */
@@ -2382,46 +2317,6 @@ extend(Track.prototype, Drawable.prototype, {
             track.config.set_value('height', track.visible_height_px);
             track.changed();
         }).appendTo(track.container_div);
-    },
-
-    /**
-     * Set track's modes and update mode icon popup.
-     */
-    set_display_modes: function(new_modes, init_mode) {
-        // Set modes, init mode.
-        this.display_modes = new_modes;
-        this.mode = (init_mode ? init_mode :
-                     (this.config && this.config.get_value('mode') ?
-                      this.config.get_value('mode') : this.display_modes[0])
-                    );
-        
-        this.action_icons.mode_icon.attr("title", "Set display mode (now: " + this.mode + ")");
-
-        // Setup popup menu for changing modes.
-        var track = this,
-            mode_mapping = {};
-        for (var i = 0, len = track.display_modes.length; i < len; i++) {
-            var mode = track.display_modes[i];
-            mode_mapping[mode] = function(mode) {
-                return function() { 
-                    track.change_mode(mode);
-                    // HACK: the popup menu messes with the track's hover event, so manually show/hide
-                    // icons div for now.
-                    track.icons_div.show(); 
-                    track.container_div.mouseleave(function() { track.icons_div.hide(); } ); };
-            }(mode);
-        }
-
-        make_popupmenu(this.action_icons.mode_icon, mode_mapping);
-    },
-
-    build_action_icons: function() {
-        Drawable.prototype.build_action_icons.call(this, this.action_icons_def);
-        
-        // Set up behavior for modes popup.
-        if (this.display_modes !== undefined) {
-            this.set_display_modes(this.display_modes);
-        }
     },
 
     /**
@@ -2778,24 +2673,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         // Show/hide filter icon.
         //
-        if (track.filters_available) {
-            track.action_icons.filters_icon.show();
-        }
-        else {
-            track.action_icons.filters_icon.hide();
-        }
+        track.action_icons.filters_icon.toggle(track.filters_available);
         
         //
         // Show/hide tool icons.
         //
-        if (track.tool) {
-            track.action_icons.tools_icon.show();
-            track.action_icons.param_space_viz_icon.show();
-        }
-        else {
-            track.action_icons.tools_icon.hide();
-            track.action_icons.param_space_viz_icon.hide();
-        }
+        track.action_icons.tools_icon.toggle(track.tool !== null);
+        track.action_icons.param_space_viz_icon.toggle(track.tool !== null);
     },
 
     /**
@@ -3326,15 +3210,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 });
 
 var LabelTrack = function (view, container) {
-    var obj_dict = {
-        resize: false
-    };
-    Track.call(this, view, container, obj_dict);
+    Track.call(this, view, container, {
+        resize: false,
+        header: false
+    });
     this.container_div.addClass( "label-track" );
 };
 extend(LabelTrack.prototype, Track.prototype, {
-    build_header_div: function() {},
-
     init: function() {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;  
@@ -3596,7 +3478,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
  * Displays reference genome data. 
  */
 var ReferenceTrack = function (view) {
-    TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false });
+    TiledTrack.call(this, view, { content_div: view.top_labeltrack }, { resize: false, header: false });
     
     // Use offset to ensure that bases at tile edges are drawn.
     this.left_offset = view.canvas_manager.char_width_px;
@@ -3613,8 +3495,6 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     config_params: _.union( Drawable.prototype.config_params, [
         { key: 'height', type: 'int', default_value: 13, hidden: true }
     ] ),
-
-    build_header_div: function() {},
 
     init: function() {
         this.data_manager.clear();
@@ -3925,12 +3805,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     break;
                 }
             }
-            if (!all_slotted) {
-                this.action_icons.show_more_rows_icon.show();
-            }
-            else {
-                this.action_icons.show_more_rows_icon.hide();
-            }
+            this.action_icons.show_more_rows_icon.toggle(!all_slotted);
         }
         else {
             this.action_icons.show_more_rows_icon.hide();

@@ -90,6 +90,27 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
             return file_path
     return None
 
+def create_hgrc_file( app, repository ):
+    # At this point, an entry for the repository is required to be in the hgweb.config
+    # file so we can call repository.repo_path( trans.app ).  Since we support both
+    # http and https, we set push_ssl to False to override the default (which is True)
+    # in the mercurial api.  The hg purge extension purges all files and directories
+    # not being tracked by mercurial in the current repository.  It'll remove unknown
+    # files and empty directories.  This is not currently used because it is not supported
+    #in the mercurial API.
+    repo = get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
+    fp = repo.opener( 'hgrc', 'wb' )
+    fp.write( '[paths]\n' )
+    fp.write( 'default = .\n' )
+    fp.write( 'default-push = .\n' )
+    fp.write( '[web]\n' )
+    fp.write( 'allow_push = %s\n' % repository.user.username )
+    fp.write( 'name = %s\n' % repository.name )
+    fp.write( 'push_ssl = false\n' )
+    fp.write( '[extensions]\n' )
+    fp.write( 'hgext.purge=' )
+    fp.close()
+
 def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
     """Retrieve a specified changectx from a repository."""
     for changeset in repo.changelog:
@@ -228,12 +249,12 @@ def get_reversed_changelog_changesets( repo ):
         reversed_changelog.insert( 0, changeset )
     return reversed_changelog
 
-def get_revision_label( trans, repository, changeset_revision, include_date=True, include_hash=True ):
+def get_revision_label( app, repository, changeset_revision, include_date=True, include_hash=True ):
     """
     Return a string consisting of the human read-able changeset rev and the changeset revision string
     which includes the revision date if the receive include_date is True.
     """
-    repo = get_repo_for_repository( trans.app, repository=repository, repo_path=None )
+    repo = get_repo_for_repository( app, repository=repository, repo_path=None )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         return get_revision_label_from_ctx( ctx, include_date=include_date, include_hash=include_hash )
@@ -243,11 +264,11 @@ def get_revision_label( trans, repository, changeset_revision, include_date=True
         else:
             return "-1"
 
-def get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=None,
+def get_rev_label_changeset_revision_from_repository_metadata( app, repository_metadata, repository=None,
                                                                include_date=True, include_hash=True ):
     if repository is None:
         repository = repository_metadata.repository
-    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( get_configured_ui(), repository.repo_path( app ) )
     changeset_revision = repository_metadata.changeset_revision
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:

@@ -1,5 +1,6 @@
 from sqlalchemy import desc, and_
 from galaxy import model, web
+from galaxy import managers
 from galaxy.web import error, url_for
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
@@ -284,6 +285,12 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
     _datasets_selection_grid = HistoryDatasetAssociationSelectionGrid()
     _page_selection_grid = PageSelectionGrid()
     _visualization_selection_grid = VisualizationSelectionGrid()
+
+    def __init__( self, app ):
+        super( PageController, self ).__init__( app )
+        self.mgrs = util.bunch.Bunch(
+            histories=managers.histories.HistoryManager()
+        )
 
     @web.expose
     @web.require_login()
@@ -718,6 +725,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         """
         Returns html suitable for embedding in another page.
         """
+        #TODO: should be moved to history controller and/or called via ajax from the template
         history = self.get_history( trans, id, False, True )
         if not history:
             return None
@@ -729,15 +737,22 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
 
         hda_dicts = []
         datasets = self.get_history_datasets( trans, history )
-        for hda in datasets:
-            hda_dict = self.get_hda_dict( trans, hda )
-            hda_dict[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, hda )
-            hda_dicts.append( hda_dict )
-        history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
-        history_dict[ 'annotation' ] = history.annotation
+        #for hda in datasets:
+        #    hda_dict = self.get_hda_dict( trans, hda )
+        #    hda_dict[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, hda )
+        #    hda_dicts.append( hda_dict )
+        #history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
+        #history_dict[ 'annotation' ] = history.annotation
+
+        # include all datasets: hidden, deleted, and purged
+        #TODO!: doubled query (hda_dictionaries + datasets)
+        history_data = self.mgrs.histories._get_history_data( trans, history )
+        history_dictionary = history_data[ 'history' ]
+        hda_dictionaries   = history_data[ 'contents' ]
+        history_dictionary[ 'annotation' ] = history.annotation
 
         filled = trans.fill_template( "history/embed.mako", item=history, item_data=datasets,
-            user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts )
+            user_is_owner=user_is_owner, history_dict=history_dictionary, hda_dicts=hda_dictionaries )
         return filled
 
     def _get_embed_html( self, trans, item_class, item_id ):

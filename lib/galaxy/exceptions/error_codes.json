@@ -60,6 +60,11 @@
     "message": "Supplied incorrect or incompatible tool meta parameters."
    },
    {
+    "name": "USER_AUTHENTICATION_FAILED",
+    "code": 401001,
+    "message": "Authentication failed, invalid credentials supplied."
+   },
+   {
     "name": "USER_NO_API_KEY",
     "code": 403001,
     "message": "API authentication required for this request"

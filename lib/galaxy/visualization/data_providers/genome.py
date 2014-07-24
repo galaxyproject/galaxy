@@ -6,11 +6,11 @@ import os, sys, re
 import pkg_resources
 import itertools
 import random
+import math
 
+pkg_resources.require( "numpy" )
 pkg_resources.require( "bx-python" )
 pkg_resources.require( "pysam" )
-pkg_resources.require( "numpy" )
-import numpy
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from bx.bbi.bigbed_file import BigBedFile
@@ -93,7 +93,10 @@ class FeatureLocationIndexDataProvider( BaseDataProvider ):
             else:
                 high = mid
 
+        # Need to move back one line because last line read may be included in
+        # results.
         position = low * line_len
+        textloc_file.seek( position )
 
         # At right point in file, generate hits.
         result = []
@@ -1057,7 +1060,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 r1 = [ read['start'], read['end'], read['cigar'], read['strand'], read['seq'] ]
                 r2 = [ read['mate_start'], read['mate_start'] ]
 
-            results.append( [ "%i_%s" % ( read_start, qname ), read_start, read_end, qname, r1, r2, [read[ 'mapq' ], 125] ] )
+            results.append( [ hash( "%i_%s" % ( read_start, qname ) ), read_start, read_end, qname, r1, r2, [read[ 'mapq' ], 125] ] )
 
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
@@ -1068,8 +1071,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             '''
             read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(),
                                                                      read[ start_field ],
-                                                                     ref_seq,
-                                                                     start,
+                                                                     ref_seq.sequence,
+                                                                     ref_seq.start,
                                                                      read[ cigar_field ] )
             read[ seq_field ] = read_seq
             read[ cigar_field ] = read_cigar
@@ -1088,7 +1091,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # if possible. Otherwise, convert cigar.
         if ref_seq:
             # Uppercase for easy comparison.
-            ref_seq = ref_seq.upper()
+            ref_seq.sequence = ref_seq.sequence.upper()
             process_read = compress_seq_and_cigar
         else:
             process_read = convert_cigar
@@ -1179,7 +1182,7 @@ class BBIDataProvider( GenomeDataProvider ):
                     var = summary.sum_squares[0] - mean
                     if valid_count > 1:
                         var /= valid_count - 1
-                    sd = numpy.sqrt( var )
+                    sd = math.sqrt( var )
                     min_val = summary.min_val[0]
                     max_val = summary.max_val[0]
 

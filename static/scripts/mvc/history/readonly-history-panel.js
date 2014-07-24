@@ -1,14 +1,14 @@
 define([
     "mvc/history/history-model",
-    "mvc/collection/dataset-collection-base",
+    "mvc/collection/hdca-base",
     "mvc/dataset/hda-base",
     "mvc/user/user-model",
     "mvc/base-mvc",
     "utils/localization"
-], function( historyModel, datasetCollectionBase, hdaBase, userModel, baseMVC, _l ){
+], function( HISTORY_MODEL, HDCA_BASE, HDA_BASE, USER, BASE_MVC, _l ){
 // ============================================================================
 /** session storage for individual history preferences */
-var HistoryPrefs = baseMVC.SessionStorageModel.extend({
+var HistoryPrefs = BASE_MVC.SessionStorageModel.extend({
     defaults : {
 //TODO:?? expandedHdas to array?
         expandedHdas : {},
@@ -60,6 +60,7 @@ HistoryPrefs.clearAll = function clearAll( historyId ){
 TODO:
 
 ============================================================================= */
+// base model and used as-is in history/view.mako
 /** @class  non-editable, read-only View/Controller for a history model.
  *  @name HistoryPanel
  *
@@ -75,7 +76,7 @@ TODO:
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
+var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends ReadOnlyHistoryPanel.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
@@ -83,7 +84,8 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     //logger              : console,
 
     /** class to use for constructing the HDA views */
-    HDAViewClass : hdaBase.HDABaseView,
+    HDAViewClass        : HDA_BASE.HDABaseView,
+    HDCAViewClass       : HDCA_BASE.HDCABaseView,
 
     tagName             : 'div',
     className           : 'history-panel',
@@ -97,7 +99,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     noneFoundMsg        : _l( 'No matching datasets found' ),
 
     // ......................................................................... SET UP
-    /** Set up the view, set up storage, bind listeners to HDACollection events
+    /** Set up the view, set up storage, bind listeners to HistoryContents events
      *  @param {Object} attributes optional settings for the panel
      */
     initialize : function( attributes ){
@@ -227,7 +229,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
             parsed = {
                 message : this._bePolite( msg ),
                 details : {
-                    user    : ( user instanceof userModel.User )?( user.toJSON() ):( user + '' ),
+                    user    : ( user instanceof USER.User )?( user.toJSON() ):( user + '' ),
                     source  : ( model instanceof Backbone.Model )?( model.toJSON() ):( model + '' ),
                     xhr     : xhr,
                     options : ( xhr )?( _.omit( options, 'xhr' ) ):( options )
@@ -276,7 +278,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
 
         panel.trigger( 'loading-history', panel );
         //console.info( 'loadHistory:', historyId, attributes, historyFn, hdaFn, hdaDetailIds );
-        var xhr = historyModel.History.getHistoryData( historyId, {
+        var xhr = HISTORY_MODEL.History.getHistoryData( historyId, {
                 historyFn       : historyFn,
                 hdaFn           : hdaFn,
                 hdaDetailIds    : attributes.initiallyExpanded || hdaDetailIds
@@ -321,7 +323,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
 ////TODO: global
 //            newHistoryJSON.user = Galaxy.currUser.toJSON();
 //        }
-        var model = new historyModel.History( newHistoryJSON, newHdaJSON, attributes );
+        var model = new HISTORY_MODEL.History( newHistoryJSON, newHdaJSON, attributes );
         this.setModel( model );
         return this;
     },
@@ -609,31 +611,35 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     /** Create an HDA view for the given HDA and set up listeners (but leave attachment for addHdaView)
      *  @param {HistoryDatasetAssociation} hda
      */
-    _createContentView : function( hda ){
-        var hdaId = hda.id,
-            historyContentType = hda.get( "history_content_type" ),
-            hdaView = null;
-        if( historyContentType === "dataset" ){
-            hdaView = new this.HDAViewClass({
-                model           : hda,
-                linkTarget      : this.linkTarget,
-                expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
-                //draggable       : true,
-                hasUser         : this.model.ownedByCurrUser(),
-                logger          : this.logger
-            });
-        } else {
-            hdaView = new datasetCollectionBase.DatasetCollectionBaseView({
-                model           : hda,
-                linkTarget      : this.linkTarget,
-                expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
-                //draggable       : true,
-                hasUser         : this.model.ownedByCurrUser(),
-                logger          : this.logger
-            });
+    _createContentView : function( content ){
+        var ContentClass = this._getContentClass( content ),
+            options = _.extend( this._getContentOptions( content ), {
+                    model : content
+                }),
+            contentView = new ContentClass( options );
+        this._setUpHdaListeners( contentView );
+        return contentView;
+    },
+
+    _getContentClass : function( content ){
+        var contentType = content.get( "history_content_type" );
+        switch( contentType ){
+            case 'dataset':
+                return this.HDAViewClass;
+            case 'dataset_collection':
+                return this.HDCAViewClass;
         }
-        this._setUpHdaListeners( hdaView );
-        return hdaView;
+        throw new TypeError( 'Unknown history_content_type: ' + contentType );
+    },
+
+    _getContentOptions : function( content ){
+        return {
+            linkTarget      : this.linkTarget,
+            expanded        : !!this.storage.get( 'expandedHdas' )[ content.id ],
+            //draggable       : true,
+            hasUser         : this.model.ownedByCurrUser(),
+            logger          : this.logger
+        };
     },
 
     /** Set up HistoryPanel listeners for HDAView events. Currently binds:
@@ -646,10 +652,10 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
             panel.errorHandler( model, xhr, options, msg );
         });
         // maintain a list of hdas whose bodies are expanded
-        hdaView.on( 'body-expanded', function( model ){
+        hdaView.on( 'expanded', function( model ){
             panel.storage.addExpandedHda( model );
         });
-        hdaView.on( 'body-collapsed', function( id ){
+        hdaView.on( 'collapsed', function( id ){
             panel.storage.removeExpandedHda( id );
         });
         return this;
@@ -697,7 +703,26 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
         return panel;
     },
 
-    //TODO: removeHdaView?
+//TODO: removeHdaView?
+    /** Set up/render a view for each HDA to be shown, init with model and listeners.
+     *      HDA views are cached to the map this.hdaViews (using the model.id as key).
+     *  @param {jQuery} $whereTo what dom element to prepend the HDA views to
+     *  @returns the number of visible hda views
+     */
+    views : function( at ){
+        var panel = this,
+            visibleHdas = this.model.hdas.getVisible(
+                this.storage.get( 'show_deleted' ),
+                this.storage.get( 'show_hidden' ),
+                this.filters
+            );
+        if( at !== undefined ){
+            return panel.hdaViews[ visibleHdas.at( at ).id ];
+        }
+        return visibleHdas.map( function( hda ){
+            return panel.hdaViews[ hda.id ];
+        });
+    },
 
     /** convenience alias to the model. Updates the hda list only (not the history) */
     refreshContents : function( detailIds, options ){
@@ -761,7 +786,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     /** Collapse all hda bodies and clear expandedHdas in the storage */
     collapseAllHdaBodies : function(){
         _.each( this.hdaViews, function( item ){
-            item.toggleBodyVisibility( null, false );
+            item.collapse();
         });
         this.storage.set( 'expandedHdas', {} );
         return this;
@@ -1010,8 +1035,16 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
     },
 
     // ........................................................................ misc
+    print : function(){
+        var panel = this;
+        panel.debug( this );
+        _.each( this.hdaViews, function( view, id ){
+            panel.debug( '\t ' + id, view );
+        });
+    },
+
     /** Return a string rep of the history */
-    toString    : function(){
+    toString : function(){
         return 'ReadOnlyHistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });

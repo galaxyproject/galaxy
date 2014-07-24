@@ -7,20 +7,28 @@ import urllib
 
 from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
+from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy import managers
+
 from galaxy import web
 from galaxy.web import url_for
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy import util
 from galaxy.util import listify, Params, string_as_bool, string_as_bool_or_none
-from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.util.json import to_json_string
-
-from galaxy.util.debugging import SimpleProfiler
 
 import logging
 log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
-    """Controller class that maps to the url root of Galaxy (i.e. '/')."""
+    """
+    Controller class that maps to the url root of Galaxy (i.e. '/').
+    """
+    def __init__( self, app ):
+        super( RootController, self ).__init__( app )
+        self.mgrs = util.bunch.Bunch(
+            histories=managers.histories.HistoryManager()
+        )
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -100,42 +108,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                           show_deleted=string_as_bool( show_deleted ),
                                           show_hidden=string_as_bool( show_hidden ) )
 
-    def _get_current_history_data( self, trans ):
-        history_dictionary = {}
-        hda_dictionaries   = []
-
-        try:
-            history = trans.get_history( create=True )
-            hdas = self.get_history_datasets( trans, history,
-                show_deleted=True, show_hidden=True, show_purged=True )
-
-            for hda in hdas:
-                hda_dict = {}
-                try:
-                    hda_dict = self.get_hda_dict( trans, hda )
-
-                except Exception, exc:
-                    # don't fail entire list if hda err's, record and move on
-                    log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
-                    hda_dict = self.get_hda_dict_with_error( trans, hda, str( exc ) )
-
-                hda_dictionaries.append( hda_dict )
-
-            # re-use the hdas above to get the history data...
-            history_dictionary = self.get_history_dict( trans, history, hda_dictionaries=hda_dictionaries )
-
-        except Exception, exc:
-            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
-            message = ( 'An error occurred getting the history data from the server. '
-                      + 'Please contact a Galaxy administrator if the problem persists.' )
-            history_dictionary[ 'error' ] = message
-
-        return {
-            'history'   : history_dictionary,
-            'hdas'      : hda_dictionaries
-        }
-
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, **kwd ):
         """
@@ -154,11 +126,11 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         show_hidden  = string_as_bool_or_none( show_hidden )
 
         history_dictionary = {}
-        hda_dictionaries   = []
+        hda_dictionaries = []
         try:
-            history_data = self._get_current_history_data( trans )
+            history_data = self.mgrs.histories._get_history_data( trans, trans.get_history( create=True ) )
             history_dictionary = history_data[ 'history' ]
-            hda_dictionaries   = history_data[ 'hdas' ]
+            hda_dictionaries   = history_data[ 'contents' ]
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
@@ -169,6 +141,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         return trans.fill_template_mako( "root/history.mako",
             history = history_dictionary, hdas = hda_dictionaries,
             show_deleted=show_deleted, show_hidden=show_hidden )
+
 
     ## ---- Dataset display / editing ----------------------------------------
     @web.expose

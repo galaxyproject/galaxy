@@ -92,7 +92,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         else:
             types = [ 'dataset', "dataset_collection" ]
 
-        contents_kwds = {'types': types}
+        contents_kwds = { 'types': types }
         if ids:
             ids = map( lambda id: trans.security.decode_id( id ), ids.split( ',' ) )
             contents_kwds[ 'ids' ] = ids
@@ -110,14 +110,14 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 details = util.listify( details )
 
         for content in history.contents_iter( **contents_kwds ):
-            if isinstance(content, trans.app.model.HistoryDatasetAssociation):
+            if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
                 encoded_content_id = trans.security.encode_id( content.id )
                 detailed = details == 'all' or ( encoded_content_id in details )
                 if detailed:
                     rval.append( self._detailed_hda_dict( trans, content ) )
                 else:
                     rval.append( self._summary_hda_dict( trans, history_id, content ) )
-            elif isinstance(content, trans.app.model.HistoryDatasetCollectionAssociation):
+            elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
                 rval.append( self.__collection_dict( trans, content ) )
         return rval
 
@@ -149,7 +149,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         }
 
     def __collection_dict( self, trans, dataset_collection_instance, view="collection" ):
-        return dictify_dataset_collection_instance( dataset_collection_instance, security=trans.security, parent=dataset_collection_instance.history, view=view )
+        return dictify_dataset_collection_instance( dataset_collection_instance,
+            security=trans.security, parent=dataset_collection_instance.history, view=view )
 
     def _detailed_hda_dict( self, trans, hda ):
         """
@@ -201,8 +202,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             )
             return self.__collection_dict( trans, dataset_collection_instance, view="element" )
         except Exception, e:
-            msg = "Error in history API at listing dataset collection: %s" % ( str(e) )
-            log.error( msg, exc_info=True )
+            log.exception( "Error in history API at listing dataset collection: %s", e )
             trans.response.status = 500
             return msg
 

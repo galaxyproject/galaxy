@@ -47,7 +47,7 @@ def main( options ):
                 response = submit( url, data, api_key )
             except Exception, e:
                 response = str( e )
-                log.exception( str( e ) )
+                print "Error attempting to create user using URL: ", url, " exception: ", str( e )
             create_response_dict = dict( response=response )
             create_response_dicts.append( create_response_dict )
 

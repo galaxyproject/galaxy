@@ -1,11 +1,12 @@
 define([
-    "mvc/dataset/hda-model",
+    "mvc/dataset/states",
     "mvc/dataset/hda-base",
     "mvc/tags",
     "mvc/annotations",
     "utils/localization"
-], function( hdaModel, hdaBase, tagsMod, annotationsMod, _l ){
+], function( STATES, HDA_BASE, TAGS, ANNOTATIONS, _l ){
 //==============================================================================
+var _super = HDA_BASE.HDABaseView;
 /** @class Editing view for HistoryDatasetAssociation.
  *  @name HDAEditView
  *
@@ -14,8 +15,12 @@ define([
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDAEditView = hdaBase.HDABaseView.extend(
+var HDAEditView = _super.extend(
 /** @lends HDAEditView.prototype */{
+
+    /** logger used to record this.log messages, commonly set to console */
+    // comment this out to suppress log output
+    //logger              : console,
 
     // ......................................................................... set up
     /** Set up the view, cache url templates, bind listeners.
@@ -26,7 +31,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
      *  @see HDABaseView#initialize
      */
     initialize  : function( attributes ){
-        hdaBase.HDABaseView.prototype.initialize.call( this, attributes );
+        _super.prototype.initialize.call( this, attributes );
         this.hasUser = attributes.hasUser;
 
         /** list of rendering functions for the default, primary icon-buttons. */
@@ -54,7 +59,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
      */
     _render_titleButtons : function(){
         // render the display, edit attr and delete icon-buttons
-        return hdaBase.HDABaseView.prototype._render_titleButtons.call( this ).concat([
+        return _super.prototype._render_titleButtons.call( this ).concat([
             this._render_editButton(),
             this._render_deleteButton()
         ]);
@@ -68,8 +73,8 @@ var HDAEditView = hdaBase.HDABaseView.extend(
     _render_editButton : function(){
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
-        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.DISCARDED )
-        ||  ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        if( ( this.model.get( 'state' ) === STATES.DISCARDED )
+        ||  ( this.model.get( 'state' ) === STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
         }
@@ -93,12 +98,12 @@ var HDAEditView = hdaBase.HDABaseView.extend(
             }
 
         // disable if still uploading
-        } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.UPLOAD ){
+        } else if( this.model.get( 'state' ) === STATES.UPLOAD ){
             editBtnData.disabled = true;
             editBtnData.title = _l( 'This dataset must finish uploading before it can be edited' );
 
         // disable if new
-        } else if( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NEW ){
+        } else if( this.model.get( 'state' ) === STATES.NEW ){
             editBtnData.disabled = true;
             editBtnData.title = _l( 'This dataset is not yet editable' );
         }
@@ -111,7 +116,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
      */
     _render_deleteButton : function(){
         // don't show delete if...
-        if( ( this.model.get( 'state' ) === hdaModel.HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        if( ( this.model.get( 'state' ) === STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             return null;
         }
@@ -141,7 +146,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_errButton : function(){
-        if( this.model.get( 'state' ) !== hdaModel.HistoryDatasetAssociation.STATES.ERROR ){
+        if( this.model.get( 'state' ) !== STATES.ERROR ){
             return null;
         }
         return faIconButton({
@@ -285,7 +290,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
 
     // ......................................................................... render main
     _buildNewRender : function(){
-        var $newRender = hdaBase.HDABaseView.prototype._buildNewRender.call( this );
+        var $newRender = _super.prototype._buildNewRender.call( this );
 
 //TODO: this won't localize easily
         var br = '<br />', p = '.',
@@ -320,7 +325,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
         var $link = $( '<a/>' ).attr({ href: this.urls.edit, target: this.linkTarget })
                 .text( _l( 'set it manually or retry auto-detection' ) ),
             $span = $( '<span/>' ).text( '. ' + _l( 'You may be able to' ) + ' ' ).append( $link ),
-            $body = hdaBase.HDABaseView.prototype._render_body_failed_metadata.call( this );
+            $body = _super.prototype._render_body_failed_metadata.call( this );
         $body.find( '.warningmessagesmall strong' ).append( $span );
         return $body;
     },
@@ -330,7 +335,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
      *  @see HDABaseView#_render_body_error
      */
     _render_body_error : function(){
-        var $body = hdaBase.HDABaseView.prototype._render_body_error.call( this );
+        var $body = _super.prototype._render_body_error.call( this );
         $body.find( '.dataset-actions .left' ).prepend( this._render_errButton() );
         return $body;
     },
@@ -341,7 +346,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
      *  @see HDABaseView#_render_body_ok
      */
     _render_body_ok : function(){
-        var $body = hdaBase.HDABaseView.prototype._render_body_ok.call( this );
+        var $body = _super.prototype._render_body_ok.call( this );
         // return shortened form if del'd
         if( this.model.isDeletedOrPurged() ){
             return $body;
@@ -360,7 +365,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
 
     _renderTags : function( $where ){
         var view = this;
-        this.tagsEditor = new tagsMod.TagsEditor({
+        this.tagsEditor = new TAGS.TagsEditor({
             model           : this.model,
             el              : $where.find( '.tags-display' ),
             onshowFirstTime : function(){ this.render(); },
@@ -377,7 +382,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
     },
     _renderAnnotation : function( $where ){
         var view = this;
-        this.annotationEditor = new annotationsMod.AnnotationEditor({
+        this.annotationEditor = new ANNOTATIONS.AnnotationEditor({
             model           : this.model,
             el              : $where.find( '.annotation-display' ),
             onshowFirstTime : function(){ this.render(); },
@@ -406,7 +411,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
 
     // ......................................................................... events
     /** event map */
-    events : _.extend( _.clone( hdaBase.HDABaseView.prototype.events ), {
+    events : _.extend( _.clone( _super.prototype.events ), {
         'click .dataset-undelete'       : function( ev ){ this.model.undelete(); return false; },
         'click .dataset-unhide'         : function( ev ){ this.model.unhide();   return false; },
         'click .dataset-purge'          : 'confirmPurge'
@@ -423,7 +428,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
     /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDAView(' + modelString + ')';
+        return 'HDAEditView(' + modelString + ')';
     }
 });
 
@@ -510,6 +515,7 @@ var HDAEditView = hdaBase.HDABaseView.extend(
 
 
 //==============================================================================
-return {
-    HDAEditView  : HDAEditView
-};});
+    return {
+        HDAEditView  : HDAEditView
+    };
+});

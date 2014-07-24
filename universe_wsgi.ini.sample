@@ -109,10 +109,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # only available for PostgreSQL and is highly recommended.
 #database_engine_option_server_side_cursors = False
 
-# Create only one connection to the database per thread, to reduce the
-# connection overhead.  Recommended when not using SQLite:
-#database_engine_option_strategy = threadlocal
-
 # Log all database transactions, can be useful for debugging and performance
 # profiling.  Logging is done via Python's 'logging' module under the qualname
 # 'galaxy.model.orm.logging_connection_proxy'
@@ -461,6 +457,10 @@ static_robots_txt = %(here)s/static/robots.txt
 
 #enable_cloud_launch = False
 #cloudlaunch_default_ami = ami-a7dbf6ce
+
+# Incremental Display Options
+
+#display_chunk_size = 65536
 
 # -- Advanced proxy features
 

@@ -4,20 +4,22 @@ import os
 import tarfile
 import tempfile
 from time import strftime
-from galaxy import eggs
+
 from galaxy import util
 from galaxy import web
 from galaxy.model.orm import and_
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
+
 from tool_shed.capsule import capsule_manager
-import tool_shed.repository_types.util as rt_util
+from tool_shed.metadata import repository_metadata_manager
+from tool_shed.repository_types import util as rt_util
+
 from tool_shed.util import basic_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 
@@ -192,10 +194,10 @@ class RepositoriesController( BaseAPIController ):
                 includes_tools_for_display_in_tool_panel, \
                 has_repository_dependencies, \
                 has_repository_dependencies_only_if_compiling_contained_td = \
-                    repository_maintenance_util.get_repo_info_dict( trans.app,
-                                                                    trans.user,
-                                                                    encoded_repository_id,
-                                                                    changeset_revision )
+                    repository_util.get_repo_info_dict( trans.app,
+                                                        trans.user,
+                                                        encoded_repository_id,
+                                                        changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
                 log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" % \
@@ -390,7 +392,8 @@ class RepositoriesController( BaseAPIController ):
             my_writable = True
         handled_repository_ids = []
         repository_ids = []
-        query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=my_writable, order=False )
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
+        query = rmm.get_query_for_setting_metadata_on_repositories( my_writable=my_writable, order=False )
         # Make sure repositories of type tool_dependency_definition are first in the list.
         for repository in query:
             if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
@@ -424,12 +427,12 @@ class RepositoriesController( BaseAPIController ):
                                      This param can be used as an alternative to the above encoded_ids_to_skip.
         """
 
-        def handle_repository( trans, repository, results ):
+        def handle_repository( trans, rmm, repository, results ):
             log.debug( "Resetting metadata on repository %s" % str( repository.name ) )
             repository_id = trans.security.encode_id( repository.id )
             try:
                 invalid_file_tups, metadata_dict = \
-                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
+                    rmm.reset_all_metadata_on_repository_in_tool_shed( repository_id )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
                                                                             invalid_file_tups,
@@ -448,7 +451,7 @@ class RepositoriesController( BaseAPIController ):
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
             return results
-
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
         start_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results = dict( start_time=start_time,
                         repository_status=[],
@@ -470,7 +473,7 @@ class RepositoriesController( BaseAPIController ):
             my_writable = util.asbool( payload.get( 'my_writable', False ) )
         else:
             my_writable = True
-        query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=my_writable, order=False )
+        query = rmm.get_query_for_setting_metadata_on_repositories( my_writable=my_writable, order=False )
         # First reset metadata on all repositories of type repository_dependency_definition.
         for repository in query:
             encoded_id = trans.security.encode_id( repository.id )
@@ -478,7 +481,7 @@ class RepositoriesController( BaseAPIController ):
                 log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
                            ( str( repository.id ), str( encoded_ids_to_skip ) ) )
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                results = handle_repository( trans, repository, results )
+                results = handle_repository( trans, rmm, repository, results )
         # Now reset metadata on all remaining repositories.
         for repository in query:
             encoded_id = trans.security.encode_id( repository.id )
@@ -486,7 +489,7 @@ class RepositoriesController( BaseAPIController ):
                 log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
                            ( str( repository.id ), str( encoded_ids_to_skip ) ) )
             elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                results = handle_repository( trans, repository, results )
+                results = handle_repository( trans, rmm, repository, results )
         stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results[ 'stop_time' ] = stop_time
         return json.dumps( results, sort_keys=True, indent=4 )
@@ -508,9 +511,9 @@ class RepositoriesController( BaseAPIController ):
             results = dict( start_time=start_time,
                             repository_status=[] )
             try:
+                rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
                 invalid_file_tups, metadata_dict = \
-                    metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans,
-                                                                                 trans.security.encode_id( repository.id ) )
+                    rmm.reset_all_metadata_on_repository_in_tool_shed( trans.security.encode_id( repository.id ) )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
                                                                             invalid_file_tups,

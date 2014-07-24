@@ -1462,6 +1462,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
         if (num_samples === 1) {
             row_height = feature_height = 
                 (w_scale < ctx.canvas.manager.char_width_px ? this.prefs.summary_height : row_height);
+            paint_utils.row_height = row_height;
             // No summary when there's a single sample.
             draw_summary = false;
         }

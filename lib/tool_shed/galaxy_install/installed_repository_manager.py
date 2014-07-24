@@ -7,16 +7,16 @@ import os
 from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
-from tool_shed.util import data_manager_util
-from tool_shed.util import datatype_util
-from tool_shed.util import repository_dependency_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
-from tool_shed.util import tool_util
 from tool_shed.util import xml_util
 from galaxy.model.orm import and_
 
-from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
+from tool_shed.galaxy_install.datatypes import custom_datatype_manager
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
+from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import data_manager
+from tool_shed.galaxy_install.tools import tool_panel_manager
 
 log = logging.getLogger( __name__ )
 
@@ -81,30 +81,31 @@ class InstalledRepositoryManager( object ):
         repository.deleted = False
         repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
+            tpm = tool_panel_manager.ToolPanelManager( self.app )
+            irmm = InstalledRepositoryMetadataManager( self.app, tpm )
             metadata = repository.metadata
-            repository_tools_tups = suc.get_repository_tools_tups( self.app, metadata )
+            repository_tools_tups = irmm.get_repository_tools_tups( metadata )
             # Reload tools into the appropriate tool panel section.
             tool_panel_dict = repository.metadata[ 'tool_panel_section' ]
-            tool_util.add_to_tool_panel( self.app,
-                                         repository.name,
-                                         repository_clone_url,
-                                         repository.installed_changeset_revision,
-                                         repository_tools_tups,
-                                         repository.owner,
-                                         shed_tool_conf,
-                                         tool_panel_dict,
-                                         new_install=False )
+            tpm.add_to_tool_panel( repository.name,
+                                   repository_clone_url,
+                                   repository.installed_changeset_revision,
+                                   repository_tools_tups,
+                                   repository.owner,
+                                   shed_tool_conf,
+                                   tool_panel_dict,
+                                   new_install=False )
             if repository.includes_data_managers:
                 tp, data_manager_relative_install_dir = repository.get_tool_relative_path( self.app )
                 # Hack to add repository.name here, which is actually the root of the installed repository
                 data_manager_relative_install_dir = os.path.join( data_manager_relative_install_dir, repository.name )
-                new_data_managers = data_manager_util.install_data_managers( self.app,
-                                                                             self.app.config.shed_data_manager_config_file,
-                                                                             metadata,
-                                                                             repository.get_shed_config_dict( self.app ),
-                                                                             data_manager_relative_install_dir,
-                                                                             repository,
-                                                                             repository_tools_tups )
+                dmh = data_manager.DataManagerHandler( self.app )
+                new_data_managers = dmh.install_data_managers( self.app.config.shed_data_manager_config_file,
+                                                               metadata,
+                                                               repository.get_shed_config_dict( self.app ),
+                                                               data_manager_relative_install_dir,
+                                                               repository,
+                                                               repository_tools_tups )
         self.install_model.context.add( repository )
         self.install_model.context.flush()
         if repository.includes_datatypes:
@@ -113,17 +114,17 @@ class InstalledRepositoryManager( object ):
             else:
                 repository_install_dir = os.path.abspath( relative_install_dir )
             # Activate proprietary datatypes.
-            installed_repository_dict = datatype_util.load_installed_datatypes( self.app,
-                                                                                repository,
-                                                                                repository_install_dir,
-                                                                                deactivate=False )
+            cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
+            installed_repository_dict = cdl.load_installed_datatypes( repository,
+                                                                      repository_install_dir,
+                                                                      deactivate=False )
             if installed_repository_dict:
                 converter_path = installed_repository_dict.get( 'converter_path' )
                 if converter_path is not None:
-                    datatype_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=False )
+                    cdl.load_installed_datatype_converters( installed_repository_dict, deactivate=False )
                 display_path = installed_repository_dict.get( 'display_path' )
                 if display_path is not None:
-                    datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=False )
+                    cdl.load_installed_display_applications( installed_repository_dict, deactivate=False )
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories( self, repository ):
         """
@@ -229,7 +230,7 @@ class InstalledRepositoryManager( object ):
         Return dictionaries containing the sets of installed and missing tool dependencies and repository
         dependencies associated with the repository defined by the received repo_info_dict.
         """
-        rdm = RepositoryDependencyManager( self.app )
+        rdim = repository_dependency_manager.RepositoryDependencyInstallManager( self.app )
         repository = None
         installed_rd = {}
         installed_td = {}
@@ -261,7 +262,7 @@ class InstalledRepositoryManager( object ):
                 installed_rd, missing_rd = \
                     self.get_installed_and_missing_repository_dependencies_for_new_or_updated_install( repo_info_tuple )
             # Discover all repository dependencies and retrieve information for installing them.
-            all_repo_info_dict = rdm.get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
+            all_repo_info_dict = rdim.get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
             has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
             has_repository_dependencies_only_if_compiling_contained_td = \
                 all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
@@ -299,7 +300,7 @@ class InstalledRepositoryManager( object ):
                                 missing_td[ td_key ] = td_dict
         else:
             # We have a single repository with (possibly) no defined repository dependencies.
-            all_repo_info_dict = rdm.get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
+            all_repo_info_dict = rdim.get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
             has_repository_dependencies = all_repo_info_dict.get( 'has_repository_dependencies', False )
             has_repository_dependencies_only_if_compiling_contained_td = \
                 all_repo_info_dict.get( 'has_repository_dependencies_only_if_compiling_contained_td', False )
@@ -341,8 +342,8 @@ class InstalledRepositoryManager( object ):
             installed_rd_tups = []
             missing_rd_tups = []
             for tsr in repository.repository_dependencies:
-                prior_installation_required = suc.set_prior_installation_required( self.app, repository, tsr )
-                only_if_compiling_contained_td = suc.set_only_if_compiling_contained_td( repository, tsr )
+                prior_installation_required = self.set_prior_installation_required( repository, tsr )
+                only_if_compiling_contained_td = self.set_only_if_compiling_contained_td( repository, tsr )
                 rd_tup = [ tsr.tool_shed,
                            tsr.name,
                            tsr.owner,
@@ -396,7 +397,13 @@ class InstalledRepositoryManager( object ):
         installed_repository_dependencies = {}
         missing_rd_tups = []
         installed_rd_tups = []
-        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+        description, \
+        repository_clone_url, \
+        changeset_revision, \
+        ctx_rev, \
+        repository_owner, \
+        repository_dependencies, \
+        tool_dependencies = \
             suc.get_repo_info_tuple_contents( repo_info_tuple )
         if repository_dependencies:
             description = repository_dependencies[ 'description' ]
@@ -615,6 +622,30 @@ class InstalledRepositoryManager( object ):
             type = str( tool_dependency.type )
         return ( tool_dependency.tool_shed_repository_id, str( tool_dependency.name ), str( tool_dependency.version ), type )
 
+    def handle_existing_tool_dependencies_that_changed_in_update( self, repository, original_dependency_dict,
+                                                                  new_dependency_dict ):
+        """
+        This method is called when a Galaxy admin is getting updates for an installed tool shed
+        repository in order to cover the case where an existing tool dependency was changed (e.g.,
+        the version of the dependency was changed) but the tool version for which it is a dependency
+        was not changed.  In this case, we only want to determine if any of the dependency information
+        defined in original_dependency_dict was changed in new_dependency_dict.  We don't care if new
+        dependencies were added in new_dependency_dict since they will just be treated as missing
+        dependencies for the tool.
+        """
+        updated_tool_dependency_names = []
+        deleted_tool_dependency_names = []
+        for original_dependency_key, original_dependency_val_dict in original_dependency_dict.items():
+            if original_dependency_key not in new_dependency_dict:
+                updated_tool_dependency = self.update_existing_tool_dependency( repository,
+                                                                                original_dependency_val_dict,
+                                                                                new_dependency_dict )
+                if updated_tool_dependency:
+                    updated_tool_dependency_names.append( updated_tool_dependency.name )
+                else:
+                    deleted_tool_dependency_names.append( original_dependency_val_dict[ 'name' ] )
+        return updated_tool_dependency_names, deleted_tool_dependency_names
+
     def handle_repository_install( self, repository ):
         """Load the dependency relationships for a repository that was just installed or reinstalled."""
         # Populate self.repository_dependencies_of_installed_repositories.
@@ -701,22 +732,24 @@ class InstalledRepositoryManager( object ):
             self.add_entry_to_installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies( tool_dependency )
 
     def load_proprietary_datatypes( self ):
+        cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
         for tool_shed_repository in self.context.query( self.install_model.ToolShedRepository ) \
-                                                   .filter( and_( self.install_model.ToolShedRepository.table.c.includes_datatypes==True,
-                                                                  self.install_model.ToolShedRepository.table.c.deleted==False ) ) \
-                                                   .order_by( self.install_model.ToolShedRepository.table.c.id ):
+                                                .filter( and_( self.install_model.ToolShedRepository.table.c.includes_datatypes==True,
+                                                               self.install_model.ToolShedRepository.table.c.deleted==False ) ) \
+                                                .order_by( self.install_model.ToolShedRepository.table.c.id ):
             relative_install_dir = self.get_repository_install_dir( tool_shed_repository )
             if relative_install_dir:
-                installed_repository_dict = datatype_util.load_installed_datatypes( self.app, tool_shed_repository, relative_install_dir )
+                installed_repository_dict = cdl.load_installed_datatypes( tool_shed_repository, relative_install_dir )
                 if installed_repository_dict:
                     self.installed_repository_dicts.append( installed_repository_dict )
 
     def load_proprietary_converters_and_display_applications( self, deactivate=False ):
+        cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
         for installed_repository_dict in self.installed_repository_dicts:
             if installed_repository_dict[ 'converter_path' ]:
-                datatype_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
+                cdl.load_installed_datatype_converters( installed_repository_dict, deactivate=deactivate )
             if installed_repository_dict[ 'display_path' ]:
-                datatype_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
+                cdl.load_installed_display_applications( installed_repository_dict, deactivate=deactivate )
 
     def purge_repository( self, repository ):
         """Purge a repository with status New (a white ghost) from the database."""
@@ -925,3 +958,109 @@ class InstalledRepositoryManager( object ):
                   repository_dependency.changeset_revision == changeset_revision ):
                 return True
         return False
+
+    def set_only_if_compiling_contained_td( self, repository, required_repository ):
+        """
+        Return True if the received required_repository is only needed to compile a tool
+        dependency defined for the received repository.
+        """
+        # This method is called only from Galaxy when rendering repository dependencies
+        # for an installed tool shed repository.
+        # TODO: Do we need to check more than changeset_revision here?
+        required_repository_tup = [ required_repository.tool_shed, \
+                                    required_repository.name, \
+                                    required_repository.owner, \
+                                    required_repository.changeset_revision ]
+        for tup in repository.tuples_of_repository_dependencies_needed_for_compiling_td:
+            partial_tup = tup[ 0:4 ]
+            if partial_tup == required_repository_tup:
+                return 'True'
+        return 'False'
+
+    def set_prior_installation_required( self, repository, required_repository ):
+        """
+        Return True if the received required_repository must be installed before the
+        received repository.
+        """
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app,
+                                                                               str( required_repository.tool_shed ) )
+        required_repository_tup = [ tool_shed_url,
+                                    str( required_repository.name ),
+                                    str( required_repository.owner ),
+                                    str( required_repository.changeset_revision ) ]
+        # Get the list of repository dependency tuples associated with the received repository
+        # where prior_installation_required is True.
+        required_rd_tups_that_must_be_installed = repository.requires_prior_installation_of
+        for required_rd_tup in required_rd_tups_that_must_be_installed:
+            # Repository dependency tuples in metadata include a prior_installation_required value,
+            # so strip it for comparision.
+            partial_required_rd_tup = required_rd_tup[ 0:4 ]
+            if partial_required_rd_tup == required_repository_tup:
+                # Return the string value of prior_installation_required, which defaults to 'False'.
+                return str( required_rd_tup[ 4 ] )
+        return 'False'
+
+    def update_existing_tool_dependency( self, repository, original_dependency_dict, new_dependencies_dict ):
+        """
+        Update an exsiting tool dependency whose definition was updated in a change set
+        pulled by a Galaxy administrator when getting updates to an installed tool shed
+        repository.  The original_dependency_dict is a single tool dependency definition,
+        an example of which is::
+    
+            {"name": "bwa",
+             "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ",
+             "type": "package",
+             "version": "0.6.2"}
+    
+        The new_dependencies_dict is the dictionary generated by the metadata_util.generate_tool_dependency_metadata method.
+        """
+        new_tool_dependency = None
+        original_name = original_dependency_dict[ 'name' ]
+        original_type = original_dependency_dict[ 'type' ]
+        original_version = original_dependency_dict[ 'version' ]
+        # Locate the appropriate tool_dependency associated with the repository.
+        tool_dependency = None
+        for tool_dependency in repository.tool_dependencies:
+            if tool_dependency.name == original_name and \
+                tool_dependency.type == original_type and \
+                    tool_dependency.version == original_version:
+                break
+        if tool_dependency and tool_dependency.can_update:
+            dependency_install_dir = tool_dependency.installation_directory( self.app )
+            removed_from_disk, error_message = \
+                tool_dependency_util.remove_tool_dependency_installation_directory( dependency_install_dir )
+            if removed_from_disk:
+                context = self.app.install_model.context
+                new_dependency_name = None
+                new_dependency_type = None
+                new_dependency_version = None
+                for new_dependency_key, new_dependency_val_dict in new_dependencies_dict.items():
+                    # Match on name only, hopefully this will be enough!
+                    if original_name == new_dependency_val_dict[ 'name' ]:
+                        new_dependency_name = new_dependency_val_dict[ 'name' ]
+                        new_dependency_type = new_dependency_val_dict[ 'type' ]
+                        new_dependency_version = new_dependency_val_dict[ 'version' ]
+                        break
+                if new_dependency_name and new_dependency_type and new_dependency_version:
+                    # Update all attributes of the tool_dependency record in the database.
+                    log.debug( "Updating version %s of tool dependency %s %s to have new version %s and type %s." % \
+                        ( str( tool_dependency.version ),
+                          str( tool_dependency.type ),
+                          str( tool_dependency.name ),
+                          str( new_dependency_version ),
+                          str( new_dependency_type ) ) )
+                    tool_dependency.type = new_dependency_type
+                    tool_dependency.version = new_dependency_version
+                    tool_dependency.status = self.app.install_model.ToolDependency.installation_status.UNINSTALLED
+                    tool_dependency.error_message = None
+                    context.add( tool_dependency )
+                    context.flush()
+                    new_tool_dependency = tool_dependency
+                else:
+                    # We have no new tool dependency definition based on a matching dependency name, so remove
+                    # the existing tool dependency record from the database.
+                    log.debug( "Deleting version %s of tool dependency %s %s from the database since it is no longer defined." % \
+                        ( str( tool_dependency.version ), str( tool_dependency.type ), str( tool_dependency.name ) ) )
+                    context.delete( tool_dependency )
+                    context.flush()
+        return new_tool_dependency

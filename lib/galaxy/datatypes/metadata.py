@@ -126,10 +126,21 @@ class MetadataCollection( object ):
                 rval[key] = self.spec[key].param.make_copy( value, target_context=self, source_context=to_copy )
         return rval
 
-    def from_JSON_dict( self, filename, path_rewriter=None ):
+    def from_JSON_dict( self, filename=None, path_rewriter=None, json_dict=None ):
         dataset = self.parent
-        log.debug( 'loading metadata from file for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
-        JSONified_dict = json.load( open( filename ) )
+        if filename is not None:
+            log.debug( 'loading metadata from file for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
+            JSONified_dict = json.load( open( filename ) )
+        elif json_dict is not None:
+            log.debug( 'loading metadata from dict for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
+            if isinstance( json_dict, basestring ):
+                JSONified_dict = json.loads( json_dict )
+            elif isinstance( json_dict, dict ):
+                JSONified_dict = json_dict
+            else:
+                raise ValueError( "json_dict must be either a dictionary or a string, got %s."  % ( type( json_dict ) ) )
+        else:
+            raise ValueError( "You must provide either a filename or a json_dict" )
         for name, spec in self.spec.items():
             if name in JSONified_dict:
                 from_ext_kwds = {}
@@ -143,13 +154,15 @@ class MetadataCollection( object ):
                 #metadata associated with our dataset, we'll delete it from our dataset's metadata dict
                 del dataset._metadata[ name ]
 
-    def to_JSON_dict( self, filename ):
+    def to_JSON_dict( self, filename=None ):
         #galaxy.model.customtypes.json_encoder.encode()
         meta_dict = {}
         dataset_meta_dict = self.parent._metadata
         for name, spec in self.spec.items():
             if name in dataset_meta_dict:
                 meta_dict[ name ] = spec.param.to_external_value( dataset_meta_dict[ name ] )
+        if filename is None:
+            return json.dumps( meta_dict )
         json.dump( meta_dict, open( filename, 'wb+' ) )
 
     def __getstate__( self ):

@@ -1,13 +1,14 @@
 define([
     "mvc/dataset/hda-edit",
     "mvc/history/history-panel",
+    "mvc/collection/collection-panel",
     "mvc/base-mvc",
     "utils/localization"
-], function( hdaEdit, hpanel, baseMVC, _l ){
+], function( HDA_EDIT, HISTORY_PANEL, DC_PANEL, BASE_MVC, _l ){
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
-var HistoryPanelPrefs = baseMVC.SessionStorageModel.extend({
+var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend({
     defaults : {
         /** is the panel currently showing the search/filter controls? */
         searching       : false,
@@ -30,6 +31,8 @@ HistoryPanelPrefs.storageKey = function storageKey(){
 TODO:
 
 ============================================================================= */
+var _super = HISTORY_PANEL.HistoryPanel;
+// used in root/index.mako
 /** @class View/Controller for the user's current history model as used in the history
  *      panel (current right hand panel).
  *  @name HistoryPanel
@@ -39,21 +42,21 @@ TODO:
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
+var CurrentHistoryPanel = _super.extend(
 /** @lends HistoryPanel.prototype */{
 
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
+    /** logger used to record this.log messages, commonly set to console */
+    // comment this out to suppress log output
     //logger              : console,
 
     /** class to use for constructing the HDA views */
-    HDAViewClass        : hdaEdit.HDAEditView,
+    HDAViewClass        : HDA_EDIT.HDAEditView,
 
     emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left tool menu to start" ),
     noneFoundMsg        : _l( "No matching datasets found" ),
 
     // ......................................................................... SET UP
-    /** Set up the view, set up storage, bind listeners to HDACollection events
+    /** Set up the view, set up storage, bind listeners to HistoryContents events
      *  @param {Object} attributes
      */
     initialize : function( attributes ){
@@ -65,7 +68,10 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
             id : HistoryPanelPrefs.storageKey()
         }, _.pick( attributes, _.keys( HistoryPanelPrefs.prototype.defaults ) )));
 
-        hpanel.HistoryPanel.prototype.initialize.call( this, attributes );
+        _super.prototype.initialize.call( this, attributes );
+
+        /** sub-views that will overlay this panel (collections) */
+        this.panelStack = [];
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
@@ -117,7 +123,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
 
     /** release/free/shutdown old models and set up panel for new models */
     setModel : function( model, attributes, render ){
-        hpanel.HistoryPanel.prototype.setModel.call( this, model, attributes, render );
+        _super.prototype.setModel.call( this, model, attributes, render );
         if( this.model ){
             this.log( 'checking for updates' );
             this.model.checkForUpdates();
@@ -128,7 +134,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     // ------------------------------------------------------------------------ history/hda event listening
     /** listening for history and HDA events */
     _setUpModelEventHandlers : function(){
-        hpanel.HistoryPanel.prototype._setUpModelEventHandlers.call( this );
+        _super.prototype._setUpModelEventHandlers.call( this );
         // ---- history
         // update the quota meter when current history changes size
         if( Galaxy && Galaxy.quotaMeter ){
@@ -246,14 +252,14 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
 
 
         } else {
-            hpanel.HistoryPanel.prototype._renderEmptyMsg.call( this, $whereTo );
+            _super.prototype._renderEmptyMsg.call( this, $whereTo );
         }
         return this;
     },
 
     /** In this override, save the search control visibility state to preferences */
     toggleSearchControls : function( eventOrSpeed, show ){
-        var visible = hpanel.HistoryPanel.prototype.toggleSearchControls.call( this, eventOrSpeed, show );
+        var visible = _super.prototype.toggleSearchControls.call( this, eventOrSpeed, show );
         this.preferences.set( 'searching', visible );
     },
 
@@ -263,7 +269,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     _renderTags : function( $where ){
         var panel = this;
         // render tags and show/hide based on preferences
-        hpanel.HistoryPanel.prototype._renderTags.call( this, $where );
+        _super.prototype._renderTags.call( this, $where );
         if( this.preferences.get( 'tagsEditorShown' ) ){
             this.tagsEditor.toggle( true );
         }
@@ -279,7 +285,7 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
     _renderAnnotation : function( $where ){
         var panel = this;
         // render annotation and show/hide based on preferences
-        hpanel.HistoryPanel.prototype._renderAnnotation.call( this, $where );
+        _super.prototype._renderAnnotation.call( this, $where );
         if( this.preferences.get( 'annotationEditorShown' ) ){
             this.annotationEditor.toggle( true );
         }
@@ -288,6 +294,54 @@ var CurrentHistoryPanel = hpanel.HistoryPanel.extend(
             function( annotationEditor ){
                 panel.preferences.set( 'annotationEditorShown', annotationEditor.hidden );
             });
+    },
+
+    // ------------------------------------------------------------------------ sub-views
+    /** Set up HistoryPanel listeners for HDAView events. In this override, handle collection expansion.
+     */
+    _setUpHdaListeners : function( hdaView ){
+        _super.prototype._setUpHdaListeners.call( this, hdaView );
+
+        //var historyView = this;
+        //hdaView.on( 'expanded', function( event, collectionView ){
+        //    //console.info( 'collection-expanded', event, collectionView );
+        //    historyView._addCollectionPanel( collectionView.model );
+        //});
+    },
+
+    _addCollectionPanel : function( model ){
+        var historyView = this;
+
+        var panel = new ( this._getCollectionPanelClass( model ) )({
+                model           : model,
+                HDAViewClass    : this.HDAViewClass
+            });
+        //console.debug( panel.$el );
+        //console.debug( JSON.stringify( panel.model.toJSON(), null, '  ' ) );
+        historyView.panelStack.push( panel );
+
+        historyView.$el.hide().parent().append( panel.$el );
+        panel.on( 'collection-close', function(){
+            historyView.$el.fadeIn( historyView.fxSpeed );
+            historyView.panelStack.pop();
+        });
+
+        //TODO: to hdca-model, hasDetails
+        if( !panel.model.get( 'elements' ) ){
+            var xhr = panel.model.fetch();
+            xhr.done( function(){
+                //console.debug( 'collection data fetched' );
+                //console.debug( JSON.stringify( panel.model.toJSON(), null, '  ' ) );
+                //TODO: (re-)render collection contents
+                panel.render();
+            });
+        } else {
+            panel.render();
+        }
+    },
+
+    _getCollectionPanelClass : function( model ){
+        return DC_PANEL.CollectionPanel;
     },
 
     // ........................................................................ external objects/MVC
