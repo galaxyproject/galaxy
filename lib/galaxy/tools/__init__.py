@@ -1391,7 +1391,7 @@ class Tool( object, Dictifiable ):
         # Load parameters (optional)
         input_elem = root.find("inputs")
         enctypes = set()
-        if input_elem:
+        if input_elem is not None:
             # Handle properties of the input form
             self.check_values = string_as_bool( input_elem.get("check_values", self.check_values ) )
             self.nginx_upload = string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
