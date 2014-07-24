@@ -27,6 +27,7 @@ var LibraryDatasetView = Backbone.View.extend({
     "click .btn-copy-link-to-clipboard"   :   "copyToClipboard",
     "click .btn-make-private"             :   "makeDatasetPrivate",
     "click .btn-remove-restrictions"      :   "removeDatasetRestrictions",
+    "click .toolbtn_save_permissions"     :   "savePermissions",
 
     // missing features below
     "click .toolbtn_save_modifications"   :   "comingSoon",
@@ -367,14 +368,14 @@ var LibraryDatasetView = Backbone.View.extend({
               dropdownCssClass: "bigdrop" // apply css that makes the dropdown taller
             };
 
-            this.accessSelectObject = new mod_select.View(access_select_options);
-            this.modifySelectObject = new mod_select.View(modify_select_options);
-            this.manageSelectObject = new mod_select.View(manage_select_options);
+            self.accessSelectObject = new mod_select.View(access_select_options);
+            self.modifySelectObject = new mod_select.View(modify_select_options);
+            self.manageSelectObject = new mod_select.View(manage_select_options);
         } else { // Non-admins have select with pre-loaded options
             var template = self.templateAccessSelect();
             $.get( "/api/libraries/datasets/" + self.id + "/permissions?scope=available", function( data ) {
                 $('.access_perm').html(template({options:data.roles}));
-                this.accessSelectObject = $('#access_select').select2();
+                self.accessSelectObject = $('#access_select').select2();
             }).fail(function() {
                 mod_toastr.error('An error occurred while fetching data with permissions. :(');
             });
@@ -398,19 +399,57 @@ var LibraryDatasetView = Backbone.View.extend({
     $.post("/api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
       self.model.set({is_unrestricted:false});
       self.showPermissions({fetched_permissions:fetched_permissions})
+      mod_toastr.success('The dataset is now private to you');
     }).fail(function(){
-      mod_toastr.error('An error occurred while making dataset private. :(');
+      mod_toastr.error('An error occurred while making dataset private :(');
     });
   },
 
   removeDatasetRestrictions: function(){
     var self = this;
-    $.post("/api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions").done(function(fetched_permissions) {
+    $.post("/api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
+    .done(function(fetched_permissions) {
       self.model.set({is_unrestricted:true});
       self.showPermissions({fetched_permissions:fetched_permissions})
-    }).fail(function(){
-      mod_toastr.error('An error occurred while making dataset unrestricted. :(');
+      mod_toastr.success('Access to this dataset is now unrestricted');
+    })
+    .fail(function(){
+      mod_toastr.error('An error occurred while making dataset unrestricted :(');
     });
+  },
+
+  savePermissions: function(event){
+    var self = this;
+    var access_roles = this.accessSelectObject.$el.select2('data');
+    var manage_roles = this.manageSelectObject.$el.select2('data');
+    var modify_roles = this.modifySelectObject.$el.select2('data');
+
+    var access_ids = [];
+    var manage_ids = [];
+    var modify_ids = [];
+
+    for (var i = access_roles.length - 1; i >= 0; i--) {
+      access_ids.push(access_roles[i].id);
+    };
+    for (var i = manage_roles.length - 1; i >= 0; i--) {
+      manage_ids.push(manage_roles[i].id);
+    };
+    for (var i = modify_roles.length - 1; i >= 0; i--) {
+      modify_ids.push(modify_roles[i].id);
+    };
+
+    // access_ids = typeof access_ids === 'string' ? access_ids : $.param(access_ids)
+    // manage_ids = typeof manage_ids === 'string' ? manage_ids : $.param(manage_ids)
+    // modify_ids = typeof modify_ids === 'string' ? modify_ids : $.param(modify_ids)
+
+    $.post("/api/libraries/datasets/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
+    .done(function(fetched_permissions){
+      //fetch dataset again
+      self.showPermissions({fetched_permissions:fetched_permissions})
+    })
+    .fail(function(){
+      mod_toastr.error('An error occurred while setting dataset permissions :(');
+    })
   },
 
   templateDataset : function(){
@@ -687,6 +726,17 @@ var LibraryDatasetView = Backbone.View.extend({
     
     tmpl_array.push('<div class="dataset_table">');
 
+    tmpl_array.push('<h2>Library-related permissions</h2>');
+    // tmpl_array.push('<p>You have the permission to modify this Library item. This includes changing its name, metadata, and other information.</p>');
+    tmpl_array.push('<h4>Roles that can modify the library item</h4>');
+    tmpl_array.push('<div id="modify_perm" class="modify_perm roles-selection"></div>');
+    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify name, metadata, and other information about this library item.</div>');
+    // tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
+    tmpl_array.push('<hr/>');
+
+    tmpl_array.push('<h2>Dataset-related permissions</h2>');
+    tmpl_array.push('<div class="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>');
+
     tmpl_array.push('<% if (!item.get("is_unrestricted")) { %>');
     tmpl_array.push(' <p>You can remove all access restrictions on this dataset. ');
     tmpl_array.push(' <button data-toggle="tooltip" data-placement="top" title="Everybody will be able to access the dataset." class="btn btn-default btn-remove-restrictions primary-button" type="button">');
@@ -703,28 +753,16 @@ var LibraryDatasetView = Backbone.View.extend({
     // tmpl_array.push(' <button data-toggle="tooltip" data-placement="top" title="Only you and the suers you choose will be able to access the dataset." class="btn btn-default btn-share-dataset primary-button" type="button"><span class="fa fa-share"> Share Privately</span></button>');
     // tmpl_array.push(' </p>');
     tmpl_array.push('<% } %>');
-    
-    tmpl_array.push('<hr/>');
 
-    tmpl_array.push('<h2>Library-related permissions</h2>');
-    tmpl_array.push('<div class="alert alert-success">You have the permission to modify this Library item. This includes changing its metadata and other information.</div>');
-    tmpl_array.push('<h4>Roles that can modify the library item</h4>');
-    tmpl_array.push('<div id="modify_perm" class="modify_perm roles-selection"></div>');
-    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify the information about this library item.</div>');
-    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
-    tmpl_array.push('<hr/>');
-
-    tmpl_array.push('<h2>Dataset-related permissions</h2>');
-    tmpl_array.push('<div class="alert alert-success">You have the permission to manage permissions on this dataset. That means you can control who can access it and also appoint others that can manage permissions on it.</div>');
-    tmpl_array.push('<div class="alert alert-warning">Changes made here will affect <strong>every</strong> library item and every history this dataset is part of.</div>');
-    tmpl_array.push('<h4>Roles that can access dataset</h4>');
+    // tmpl_array.push('<p>You have the permission to manage permissions on this dataset. That means you can control who can access it and also appoint others that can manage permissions on it.</p>');
+    tmpl_array.push('<h4>Roles that can access the dataset</h4>');
     tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User has to have <strong>all these roles</strong> in order to access this dataset. Users without access permission <strong>cannot</strong> have other permissions on this dataset. If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.</div>');
-    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
+    // tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
     tmpl_array.push('<h4>Roles that can manage permissions on the dataset</h4>');
     tmpl_array.push('<div id="manage_perm" class="manage_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.</div>');
-    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
 
 
 

@@ -181,7 +181,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :type   encoded_dataset_id:      an encoded id string      
 
         :param  action:     (required) describes what action should be performed
-                            available actions: make_private, remove_restrictions
+                            available actions: make_private, remove_restrictions, set_permissions
         :type   action:     string        
 
         :rtype:     dictionary
@@ -199,6 +199,16 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if not can_manage:
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to manage permissions on this dataset.' )
 
+        new_access_roles_ids = kwd.get( 'access_ids[]', None )
+        new_manage_roles_ids = kwd.get( 'manage_ids[]', None )
+        new_modify_roles_ids = kwd.get( 'modify_ids[]', None )
+        # if new_access_roles_ids is None:
+        #     new_access_roles_ids = kwd.get( 'access_ids', None )
+        # if new_manage_roles_ids is None:
+        #     new_manage_roles_ids = kwd.get( 'manage_ids', None )
+        # if new_modify_roles_ids is None:
+        #     new_modify_roles_ids = kwd.get( 'modify_ids', None )
+
         action = kwd.get( 'action', None )
         if action is None:
             raise exceptions.RequestParameterMissingException( 'The mandatory parameter "action" is missing.' )
@@ -214,11 +224,12 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             trans.sa_session.flush()
             if not trans.app.security_agent.dataset_is_private_to_user( trans, library_dataset ):
                 raise exceptions.InternalServerError( 'An error occured while making dataset private.' )
-        elif action == 'set_dataset_access_roles':
-            raise exceptions.NotImplemented()
-        elif action == 'set_dataset_manage_roles':
-            raise exceptions.NotImplemented()
-        elif action == 'set_library_dataset_modify_roles':
+        elif action == 'set_permissions':
+            # permission = { Action : [ Role, Role ] }
+            # trans.app.security_agent.set_dataset_permission( dataset, permission )
+
+
+            
             raise exceptions.NotImplemented()
         else:
             raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
