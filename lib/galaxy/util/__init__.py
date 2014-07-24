@@ -828,7 +828,7 @@ def read_dbnames(filename):
             db_base = name_to_db_base[name]
             ucsc_builds[db_base].sort()
             ucsc_builds[db_base].reverse()
-            ucsc_builds[db_base] = [(build, name) for build_rev, build, name in ucsc_builds[db_base]]
+            ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
             db_names = DBNames( db_names + ucsc_builds[db_base] )
         if len( db_names ) > 1 and len( man_builds ) > 0:
             db_names.append( ( db_names.default_value, '----- Additional Species Are Below -----' ) )
