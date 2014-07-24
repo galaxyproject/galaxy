@@ -20,8 +20,8 @@
         <param name="f2" type="data_collection" collection_type="paired" />
       </when>
       <when value="list">
-        <param name="f1" type="data_collection" collection_type="paired" />
-        <param name="f2" type="data_collection" collection_type="paired" />
+        <param name="f1" type="data_collection" collection_type="list" />
+        <param name="f2" type="data_collection" collection_type="list" />
       </when>
     </conditional>
   </inputs>
