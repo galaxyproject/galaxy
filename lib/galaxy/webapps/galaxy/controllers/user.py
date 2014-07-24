@@ -1514,7 +1514,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def delete_address( self, trans, cntrller, address_id=None, user_id=None ):
         try:
-            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decod_id( address_id ) )
+            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
         except:
             message = 'Invalid address is (%s)' % address_id
             status = 'error'
@@ -1522,7 +1522,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             user_address.deleted = True
             trans.sa_session.add( user_address )
             trans.sa_session.flush()
-            'Address (%s) deleted' % user_address.desc
+            message = 'Address (%s) deleted' % user_address.desc
             status = 'done'
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='manage_user_info',

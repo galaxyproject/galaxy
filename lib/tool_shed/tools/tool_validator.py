@@ -12,6 +12,7 @@ from tool_shed.util import basic_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
+from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
