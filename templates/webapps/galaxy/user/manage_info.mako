@@ -66,7 +66,7 @@ ${render_user_info()}
                             <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
                                 <td>
                                     <div class="form-row">
-                                        <label>${address.desc}:</label>
+                                        <label>${address.desc | h}:</label>
                                         ${address.get_html()}
                                     </div>
                                     <div class="form-row">
