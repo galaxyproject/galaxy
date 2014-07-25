@@ -1969,6 +1969,7 @@ extend(FeatureTrackTile.prototype, Tile.prototype);
  */
 FeatureTrackTile.prototype.predisplay_actions = function() {
     /*
+    FIXME: use a canvas library to handle popups.
     //
     // Add support for popups.
     //
@@ -2063,7 +2064,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     .mouseleave(function() {
         $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
     });
-*/
+    */
 };
 
 /**
