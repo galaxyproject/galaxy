@@ -2590,8 +2590,8 @@ DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     """
     """
-    dict_collection_visible_keys = ( 'id', 'name', 'collection_type' )
-    dict_element_visible_keys = ( 'id', 'name', 'collection_type' )
+    dict_collection_visible_keys = ( 'id', 'collection_type' )
+    dict_element_visible_keys = ( 'id', 'collection_type' )
 
     def __init__(
         self,
