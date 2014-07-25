@@ -412,27 +412,29 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
 
     def _setup_workflow_run( self, workflow, history_id=None ):
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
-        workflow_inputs = self._workflow_inputs( uploaded_workflow_id )
-        step_1 = step_2 = None
-        for key, value in workflow_inputs.iteritems():
-            label = value[ "label" ]
-            if label == "WorkflowInput1":
-                step_1 = key
-            if label == "WorkflowInput2":
-                step_2 = key
         if not history_id:
             history_id = self.dataset_populator.new_history()
         hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
         hda2 = self.dataset_populator.new_dataset( history_id, content="4 5 6" )
+        label_map = {
+            'WorkflowInput1': self._ds_entry(hda1),
+            'WorkflowInput2': self._ds_entry(hda2)
+        }
         workflow_request = dict(
             history="hist_id=%s" % history_id,
             workflow_id=uploaded_workflow_id,
-            ds_map=dumps( {
-                step_1: self._ds_entry(hda1),
-                step_2: self._ds_entry(hda2),
-            } ),
+            ds_map=self._build_ds_map( uploaded_workflow_id, label_map ),
         )
         return workflow_request, history_id
+
+    def _build_ds_map( self, workflow_id, label_map ):
+        workflow_inputs = self._workflow_inputs( workflow_id )
+        ds_map = {}
+        for key, value in workflow_inputs.iteritems():
+            label = value[ "label" ]
+            if label in label_map:
+                ds_map[ key ] = label_map[ label ]
+        return dumps( ds_map )
 
     def _setup_random_x2_workflow( self, name ):
         workflow = self.workflow_populator.load_random_x2_workflow( name )
