@@ -1,4 +1,5 @@
 import sqlite3
+import sqlparse
 import re
 
 
@@ -9,9 +10,8 @@ def connect(path):
 
 
 def is_read_only_query(query):
-    if re.match("select ", query, re.IGNORECASE):
-        if re.search("^([^\"]|\"[^\"]*\")*?;", query) or re.search("^([^\']|\'[^\']*\')*?;", query):
-            return False
-        else:
-            return True
-    return False
+	statements = sqlparse.parse(query)
+	for statement in statements:
+		if statement.get_type() != "SELECT":
+			return False
+	return True
