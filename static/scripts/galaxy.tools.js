@@ -86,7 +86,7 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
                     }).attr(
                         'title',
                         selectionType['select_by']
-                    );
+                    ).data( "index", iIndex );
                     view.formRow().find( "label" ).append( button );
                 }
             });
@@ -114,11 +114,13 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
             } else {
                 $("div#remap-row").css("display", "none");
             }
-            this.formRow().find( "i" ).each(function(index, iElement) {
+            this.formRow().find( "i" ).each(function(_, iElement) {
+                var $iElement = $(iElement);
+                var index = $iElement.data("index");
                 if(index == enableIndex) {
-                    $(iElement).css('color', 'black');
+                    $iElement.css('color', 'black');
                 } else {
-                    $(iElement).css('color', 'Gray');
+                    $iElement.css('color', 'Gray');
                 }
             });
             var $select = this.$( "select" );

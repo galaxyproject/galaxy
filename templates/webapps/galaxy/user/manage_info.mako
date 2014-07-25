@@ -49,7 +49,7 @@ ${render_user_info()}
                 <div class="form-row">
                 <div class="grid-header">
                     %for i, filter in enumerate( ['Active', 'Deleted', 'All'] ):
-                        %if i > 0:    
+                        %if i > 0:
                             <span>|</span>
                         %endif
                         %if show_filter == filter:
@@ -62,11 +62,11 @@ ${render_user_info()}
                 </div>
                 <table class="grid">
                     <tbody>
-                        %for index, address in enumerate(addresses):    
+                        %for index, address in enumerate(addresses):
                             <tr class="libraryRow libraryOrFolderRow" id="libraryRow">
                                 <td>
-                                    <div class="form-row">   
-                                        <label>${address.desc}:</label>
+                                    <div class="form-row">
+                                        <label>${address.desc | h}:</label>
                                         ${address.get_html()}
                                     </div>
                                     <div class="form-row">
@@ -82,7 +82,7 @@ ${render_user_info()}
                                         </ul>
                                     </div>
                                 </td>
-                             </tr>             
+                             </tr>
                         %endfor
                     </tbody>
                 </table>
