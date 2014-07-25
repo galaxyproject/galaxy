@@ -3731,16 +3731,16 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 // To draw incomplete features, copy original canvas and then draw incomplete features
                 // on the canvas.
                 var features = { data: _.values( all_incomplete_features ) },
-                    canvas = self.view.canvas_manager.new_canvas();
-                canvas.height = self.get_canvas_height(features, tile.mode, tile.w_scale, 100);
-                canvas.width = tile.canvas.width;
-                canvas.getContext('2d').drawImage(tile.canvas, 0, 0);
-                canvas.getContext('2d').translate(track.left_offset, 0);
-                var new_tile = self.draw_tile(features, canvas.getContext('2d'), 
+                    new_canvas = self.view.canvas_manager.new_canvas();
+                new_canvas.height = self.get_canvas_height(features, tile.mode, tile.w_scale, 100);
+                new_canvas.width = tile.canvas.width;
+                new_canvas.getContext('2d').drawImage(tile.canvas, 0, 0);
+                new_canvas.getContext('2d').translate(track.left_offset, 0);
+                var new_tile = self.draw_tile(features, new_canvas.getContext('2d'), 
                                               tile.mode, tile.region, tile.w_scale, tile.seq_data);
                 $(new_tile.canvas).addClass('incomplete_features');
                 $(tile.canvas).replaceWith($(new_tile.canvas));
-                tile.canvas = canvas;
+                tile.canvas = new_canvas;
             });
         }
                 
