@@ -189,13 +189,16 @@ class ToolsTestCase( api.ApiTestCase ):
             ],
         }
         outputs = self._cat1_outputs( history_id, inputs=inputs )
-        self.assertEquals( len( outputs ), 4 )
+        self.assertEquals( len( outputs ), 2 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         outputs_contents = [ self._get_content( history_id, dataset=o ).strip() for o in outputs ]
         assert "123\n789" in outputs_contents
-        assert "456\n789" in outputs_contents
-        assert "123\n0ab" in outputs_contents
         assert "456\n0ab" in outputs_contents
+        # TODO: Once cross production (instead of linking inputs) is an option
+        # again redo test with these checks...
+        # self.assertEquals( len( outputs ), 4 )
+        # assert "123\n0ab" in outputs_contents
+        # assert "456\n789" in outputs_contents
 
     @skip_without_tool( "cat1" )
     def test_map_over_collection( self ):
