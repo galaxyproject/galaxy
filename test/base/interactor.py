@@ -1,4 +1,5 @@
 import os
+import re
 from StringIO import StringIO
 from galaxy.tools.parameters import grouping
 from galaxy.tools import test
@@ -330,10 +331,11 @@ class GalaxyInteractorApi( object ):
         try:
             test_user = [ user for user in all_users if user["email"] == email ][0]
         except IndexError:
+            username = re.sub('[^a-z-]', '--', email.lower())
             data = dict(
                 email=email,
                 password='testuser',
-                username='admin-user',
+                username=username,
             )
             test_user = self._post( 'users', data, key=admin_key ).json()
         return test_user
