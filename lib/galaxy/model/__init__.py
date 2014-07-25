@@ -874,7 +874,7 @@ class UserGroupAssociation( object ):
 class History( object, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
-    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged', 'importable', 'slug' )
+    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged', 'importable', 'slug', 'empty' )
     default_name = 'Unnamed history'
 
     def __init__( self, id=None, name=None, user=None ):
@@ -890,6 +890,10 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         self.datasets = []
         self.galaxy_sessions = []
         self.tags = []
+
+    @property
+    def empty( self ):
+        return self.hid_counter == 1
 
     def _next_hid( self ):
         # this is overriden in mapping.py db_next_hid() method
