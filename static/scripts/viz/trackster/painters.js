@@ -1055,10 +1055,10 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             ctx.fillStyle = this.prefs.label_color;
             if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
-                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8, this.max_label_length);
+                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 9, this.max_label_length);
             } else {
                 ctx.textAlign = "right";
-                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8, this.max_label_length);
+                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 9, this.max_label_length);
             }
         }
         

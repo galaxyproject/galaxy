@@ -1968,6 +1968,7 @@ extend(FeatureTrackTile.prototype, Tile.prototype);
  * Sets up support for popups.
  */
 FeatureTrackTile.prototype.predisplay_actions = function() {
+    /*
     //
     // Add support for popups.
     //
@@ -2062,6 +2063,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     .mouseleave(function() {
         $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
     });
+*/
 };
 
 /**
@@ -3722,11 +3724,22 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 });
             });
 
-            // Draw features on each tile.
+            // Draw incomplete features on each tile.
             var self = this;
             _.each(tiles, function(tile) {
-                self.draw_tile({ 'data': _.values(all_incomplete_features) }, tile.canvas.getContext('2d'), 
-                               tile.mode, tile.region, w_scale, tile.seq_data, true);
+                // To draw incomplete features, copy original canvas and then draw incomplete features
+                // on the canvas.
+                var features = { data: _.values( all_incomplete_features ) },
+                    canvas = self.view.canvas_manager.new_canvas();
+                canvas.height = self.get_canvas_height(features, tile.mode, tile.w_scale, 100);
+                canvas.width = tile.canvas.width;
+                canvas.getContext('2d').drawImage(tile.canvas, 0, 0);
+                canvas.getContext('2d').translate(track.left_offset, 0);
+                var new_tile = self.draw_tile(features, canvas.getContext('2d'), 
+                                              tile.mode, tile.region, tile.w_scale, tile.seq_data);
+                $(new_tile.canvas).addClass('incomplete_features');
+                $(tile.canvas).replaceWith($(new_tile.canvas));
+                tile.canvas = canvas;
             });
         }
                 
