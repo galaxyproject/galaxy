@@ -16,13 +16,12 @@ from galaxy import eggs
 eggs.require( "Paste" )
 from paste import httpexceptions
 
-# Tool with a repeat parameter, to test state update.
-REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
+BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
     <command>echo "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>
     <inputs>
         <param type="text" name="param1" value="" />
         <repeat name="repeat1" label="Repeat 1">
-            <param type="text" name="param2" value="" />
+          %s
         </repeat>
     </inputs>
     <outputs>
@@ -30,6 +29,10 @@ REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
     </outputs>
 </tool>
 '''
+
+# Tool with a repeat parameter, to test state update.
+REPEAT_TOOL_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % '''<param type="text" name="param2" value="" />'''
+REPEAT_COLLECTION_PARAM_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % '''<param type="data_collection" name="param2" collection_type="paired" />'''
 
 
 class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.UsesTools ):
@@ -287,13 +290,48 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         } )
         self.__assert_exeuted( template, template_vars )
 
-    def __history_dataset_collection_for( self, hdas, id=1234 ):
-        collection = galaxy.model.DatasetCollection()
+    def test_subcollection_multirun_with_state_updates( self ):
+        self._init_tool( REPEAT_COLLECTION_PARAM_CONTENTS )
+        hda1, hda2 = self.__add_dataset( 1 ), self.__add_dataset( 2 )
+        collection = self.__history_dataset_collection_for( [ hda1, hda2 ], collection_type="list:paired" )
+        collection_id = self.app.security.encode_id( collection.id )
+        self.app.dataset_collections_service = Bunch(
+            match_collections=lambda collections: None
+        )
+        template, template_vars = self.__handle_with_incoming(
+            repeat1_add="dummy",
+        )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert len( state.inputs[ "repeat1" ] ) == 1
+        template, template_vars = self.__handle_with_incoming( state, **{
+            "repeat1_0|param2|__collection_multirun__": "%s|paired" % collection_id,
+            "repeat1_add": "dummy",
+        } )
+        state = self.__assert_rerenders_tool_without_errors( template, template_vars )
+        assert state.inputs[ "repeat1" ][ 0 ][ "param2|__collection_multirun__" ] == "%s|paired" % collection_id
+
+    def __history_dataset_collection_for( self, hdas, collection_type="list", id=1234 ):
+        collection = galaxy.model.DatasetCollection(
+            collection_type=collection_type,
+        )
         to_element = lambda hda: galaxy.model.DatasetCollectionElement(
             collection=collection,
             element=hda,
         )
-        collection.datasets = map(to_element, hdas)
+        elements = map(to_element, hdas)
+        if collection_type == "list:paired":
+            paired_collection = galaxy.model.DatasetCollection(
+                collection_type="paired",
+            )
+            paired_collection.elements = elements
+            list_dce = galaxy.model.DatasetCollectionElement(
+                collection=collection,
+                element=paired_collection,
+            )
+            elements = [ list_dce ]
+
+        collection.elements = elements
+
         history_dataset_collection_association = galaxy.model.HistoryDatasetCollectionAssociation(
             id=id,
             collection=collection,
@@ -349,13 +387,13 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         self.history.datasets.append( hda )
         return hda
 
-    def __add_collection_dataset( self, id, *hdas ):
+    def __add_collection_dataset( self, id, collection_type="paired", *hdas ):
         hdca = galaxy.model.HistoryDatasetCollectionAssociation()
         hdca.id = id
         collection = galaxy.model.DatasetCollection()
         hdca.collection = collection
         collection.elements = [ galaxy.model.DatasetCollectionElement(element=self.__add_dataset( 1 )) ]
-
+        collection.type = collection_type
         self.trans.sa_session.model_objects[ galaxy.model.HistoryDatasetCollectionAssociation ][ id ] = hdca
         self.history.dataset_collections.append( hdca )
         return hdca

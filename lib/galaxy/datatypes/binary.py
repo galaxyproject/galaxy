@@ -12,6 +12,7 @@ import struct
 import subprocess
 import tempfile
 import zipfile
+import sqlite3
 
 from urllib import urlencode, quote_plus
 from galaxy import eggs
@@ -545,3 +546,45 @@ class TwoBit (Binary):
             return "Binary TwoBit format nucleotide file (%s)" % (data.nice_size(dataset.get_size()))
 
 Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
+
+
+@dataproviders.decorators.has_dataproviders
+class SQlite ( Binary ):
+    file_ext = "sqlite"
+
+    # Connects and runs a query that should work on any real database 
+    # If the file is not sqlite, an exception will be thrown and the sniffer will return false
+    def sniff( self, filename ):
+        try:
+            conn = sqlite3.connect(filename)
+            schema_version=conn.cursor().execute("pragma schema_version").fetchone()
+            conn.close()
+            if schema_version is not None:
+                return True
+            return False
+        except:
+            return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek  = "SQLite Database"
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "SQLite Database (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+
+    @dataproviders.decorators.dataprovider_factory( 'sqlite', dataproviders.dataset.SQliteDataProvider.settings )
+    def sqlite_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.dataset.SQliteDataProvider( dataset_source, **settings )
+
+
+Binary.register_sniffable_binary_format("sqlite","sqlite",SQlite)
+
