@@ -12,7 +12,7 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 # row - first grabbing 8 lines at random and then 6.
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
-DEFAULT_HISTORY_TIMEOUT = 5  # Secs to wait on history to turn ok
+DEFAULT_HISTORY_TIMEOUT = 10  # Secs to wait on history to turn ok
 
 
 def skip_without_tool( tool_id ):
