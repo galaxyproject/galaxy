@@ -17,20 +17,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) sou
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-# Galaxy Local variables
-
-TOOLDATASHAREDDIR  = ../tool-data/shared
-TOOLDATABUILDFILES = $(TOOLDATASHAREDDIR)/ensembl/builds.txt \
-                     $(TOOLDATASHAREDDIR)/ncbi/builds.txt \
-                     $(TOOLDATASHAREDDIR)/ucsc/publicbuilds.txt
-
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext updaterst
-
-
-# Sphinx wants the build files to be there;  Copy the sample files into
-# place if we don't already have the build files.
-$(TOOLDATABUILDFILES) : 
-	/bin/cp $@.sample $@
 
 
 help:

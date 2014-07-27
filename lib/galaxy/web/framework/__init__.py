@@ -1260,18 +1260,6 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         return self.app.genome_builds.get_genome_build_names( trans=self )
 
     @property
-    def ucsc_builds( self ):
-        return util.dlnames['ucsc']
-
-    @property
-    def ensembl_builds( self ):
-        return util.dlnames['ensembl']
-
-    @property
-    def ncbi_builds( self ):
-        return util.dlnames['ncbi']
-
-    @property
     def user_ftp_dir( self ):
         identifier = self.app.config.ftp_upload_dir_identifier
         return os.path.join( self.app.config.ftp_upload_dir, getattr(self.user, identifier) )
