@@ -770,22 +770,6 @@ def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compar
     return True
 
 
-def get_ucsc_by_build(build):
-    sites = []
-    for site in ucsc_build_sites:
-        if build in site['builds']:
-            sites.append((site['name'], site['url']))
-    return sites
-
-
-def get_gbrowse_sites_by_build(build):
-    sites = []
-    for site in gbrowse_build_sites:
-        if build in site['builds']:
-            sites.append((site['name'], site['url']))
-    return sites
-
-
 def read_dbnames(filename):
     """ Read build names from file """
     class DBNames( list ):
@@ -843,30 +827,6 @@ def read_dbnames(filename):
     if len(db_names) < 1:
         db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
     return db_names
-
-
-def read_build_sites( filename, check_builds=True ):
-    """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
-    build_sites = []
-    try:
-        for line in open(filename):
-            try:
-                if line[0:1] == "#":
-                    continue
-                fields = line.replace("\r", "").replace("\n", "").split("\t")
-                site_name = fields[0]
-                site = fields[1]
-                if check_builds:
-                    site_builds = fields[2].split(",")
-                    site_dict = {'name': site_name, 'url': site, 'builds': site_builds}
-                else:
-                    site_dict = {'name': site_name, 'url': site}
-                build_sites.append( site_dict )
-            except:
-                continue
-    except:
-        print "ERROR: Unable to read builds for site file %s" % filename
-    return build_sites
 
 
 def relativize_symlinks( path, start=None, followlinks=False):
@@ -1128,9 +1088,6 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
-
-ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
-gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
 
 
 def galaxy_directory():
