@@ -141,6 +141,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy tool panel.  If the following setting remains commented, the default setting will be True.
 #check_migrate_tools = True
 
+# Tool config maintained by tool migration scripts. If you use the migration
+# scripts to install tools that have been migrated to the tool shed upon a new
+# release, they will be added to this tool config file.
+#migrated_tools_config = migrated_tools_conf.xml
+
 # File that contains the XML section and tool tags from all tool panel config
 # files integrated into a single file that defines the tool panel layout.  This
 # file can be changed by the Galaxy administrator to alter the layout of the
@@ -158,6 +163,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # If this option is not set to a valid path, installing tools with dependencies
 # from the Tool Shed will fail.
 #tool_dependency_dir = None
+
+# File containing the Galaxy Tool Sheds that should be made available to
+# install from in the admin interface
+#tool_sheds_config_file = tool_sheds_conf.xml
 
 # Enable automatic polling of relative tool sheds to see if any updates
 # are available for installed repositories.  Ideally only one Galaxy 
@@ -691,6 +700,7 @@ use_interactive = True
 # account by authenticating with an OpenID provider.
 #enable_openid = False
 #openid_config_file = openid_conf.xml
+#openid_consumer_cache_path = database/openid_consumer_cache
 
 # Optional list of email addresses of API users who can make calls on behalf of
 # other users
