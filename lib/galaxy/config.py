@@ -460,13 +460,13 @@ class Configuration( object ):
                 except Exception, e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
-        for path in (self.file_path, self.new_file_path,
-                     self.job_working_directory, self.cluster_files_directory,
-                     self.template_cache, self.ftp_upload_dir,
+        if self.object_store_config_file is None:
+            for path in (self.file_path, self.job_working_directory):
+                self._ensure_directory( path )
+        for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, './static/genetrack/plots',
-                     self.whoosh_index_dir, self.object_store_cache_path,
-                     os.path.join( self.tool_data_path, 'shared', 'jars' )):
+                     self.nginx_upload_store, self.whoosh_index_dir,
+                     self.object_store_cache_path):
             self._ensure_directory( path )
         # Check that required files exist
         tool_configs = self.tool_configs
