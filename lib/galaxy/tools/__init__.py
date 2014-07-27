@@ -132,7 +132,7 @@ class ToolBox( object, Dictifiable ):
         # File that contains the XML section and tool tags from all tool panel config files integrated into a
         # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
         # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
-        self.integrated_tool_panel_config = os.path.join( app.config.root, 'integrated_tool_panel.xml' )
+        self.integrated_tool_panel_config = app.config.integrated_tool_panel_config
         # In-memory dictionary that defines the layout of the tool_panel.xml file on disk.
         self.integrated_tool_panel = odict()
         self.integrated_tool_panel_config_has_contents = os.path.exists( self.integrated_tool_panel_config ) and os.stat( self.integrated_tool_panel_config ).st_size > 0
