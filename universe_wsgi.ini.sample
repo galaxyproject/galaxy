@@ -180,6 +180,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #   https://wiki.galaxyproject.org/Admin/DataIntegration
 #tool_data_path = tool-data
 
+# File containing old-style genome builds
+#builds_file_path = tool-data/shared/ucsc/builds.txt
+
 # Directory where chrom len files are kept, currently mainly used by trackster
 #len_file_path = tool-data/shared/ucsc/chrom
 

@@ -2,7 +2,7 @@
 Functionality for dealing with dbkeys.
 """
 #dbkeys read from disk using builds.txt
-from galaxy.util import dbnames
+from galaxy.util import read_dbnames
 from galaxy.util.json import from_json_string
 import os.path
 
@@ -17,7 +17,7 @@ class GenomeBuilds( object ):
         self._static_chrom_info_path = app.config.len_file_path
         # A dbkey can be listed multiple times, but with different names, so we can't use dictionaries for lookups
         if load_old_style:
-            self._static_dbkeys = list( dbnames )
+            self._static_dbkeys = list( read_dbnames( app.config.builds_file_path ) )
         else:
             self._static_dbkeys = []
 

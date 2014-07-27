@@ -796,6 +796,9 @@ def read_dbnames(filename):
         ucsc_builds = {}
         man_builds = []  # assume these are integers
         name_to_db_base = {}
+        if filename is None:
+            # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
+            filename = os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' )
         for line in open(filename):
             try:
                 if line[0:1] == "#":
@@ -1126,8 +1129,6 @@ def safe_str_cmp(a, b):
 
 galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
-# The dbnames list is used in edit attributes and the upload tool
-dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) )
 ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
 gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
 

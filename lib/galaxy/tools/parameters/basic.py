@@ -1002,7 +1002,7 @@ class GenomeBuildParameter( SelectToolParameter ):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.dbnames )
+    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
 
     >>> p = GenomeBuildParameter( None, XML(
     ... '''
@@ -1071,7 +1071,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     def _get_dbkey_names( self, trans=None ):
         if not self.tool:
             # Hack for unit tests, since we have no tool
-            return util.dbnames
+            return util.read_dbnames( None )
         return self.tool.app.genome_builds.get_genome_build_names( trans=trans )
 
 
