@@ -65,9 +65,20 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         assert first_input[ "name" ] == "WorkflowInput1"
 
     @skip_without_tool( "cat1" )
+    def test_run_workflow_by_index( self ):
+        self.__run_cat_workflow( inputs_by='step_index' )
+
+    @skip_without_tool( "cat1" )
+    def test_run_workflow_by_name( self ):
+        self.__run_cat_workflow( inputs_by='name' )
+
+    @skip_without_tool( "cat1" )
     def test_run_workflow( self ):
+        self.__run_cat_workflow( inputs_by='step_id' )
+
+    def __run_cat_workflow( self, inputs_by ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run" )
-        workflow_request, history_id = self._setup_workflow_run( workflow )
+        workflow_request, history_id = self._setup_workflow_run( workflow, inputs_by=inputs_by )
         # TODO: This should really be a post to workflows/<workflow_id>/run or
         # something like that.
         run_workflow_response = self._post( "workflows", data=workflow_request )
