@@ -204,14 +204,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         else:
             inputs = inputs or {}
             # New default is to reference steps by index of workflow step
-            # which is intrinstic to the workflow and independent of the state
+            # which is intrinsic to the workflow and independent of the state
             # of Galaxy at the time of workflow import.
             inputs_by = inputs_by or 'step_index'
 
         valid_inputs_by = [ 'step_id', 'step_index', 'name' ]
         if inputs_by not in valid_inputs_by:
             trans.response.status = 403
-            return "Invalid inputs_by specified '%s' must be one of %s"
+            error_message_template = "Invalid inputs_by specified '%s' must be one of %s"
+            error_message = error_message_template % ( inputs_by, valid_inputs_by )
+            raise ValueError( error_message )
 
         add_to_history = 'no_add_to_history' not in payload
         history_param = payload.get('history', '')
