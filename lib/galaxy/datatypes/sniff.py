@@ -97,7 +97,7 @@ def convert_newlines( fname, in_place=True, tmp_dir=None, tmp_prefix=None ):
 
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\r3 4")
-    >>> convert_newlines(fname)
+    >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> file(fname).read()
     '1 2\\n3 4\\n'
@@ -157,7 +157,7 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, 
 
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\r3 4")
-    >>> convert_newlines_sep2tabs(fname)
+    >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> file(fname).read()
     '1\\t2\\n3\\t4\\n'
