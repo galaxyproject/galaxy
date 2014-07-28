@@ -290,7 +290,7 @@ class WorkflowInvoker( object ):
                 step.state = step.module.get_runtime_state()
 
                 # This is an input step. Make sure we have an available input.
-                if step.type == 'data_input':
+                if step.type in [ 'data_input', 'data_collection_input' ]:
                     if self.inputs_by == "step_id":
                         key = str( step.id )
                     elif self.inputs_by == "name":

@@ -82,11 +82,17 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         latest_workflow = stored_workflow.latest_workflow
         inputs = {}
         for step in latest_workflow.steps:
-            if step.type == 'data_input':
+            step_type = step.type
+            if step_type in ['data_input', 'data_collection_input']:
                 if step.tool_inputs and "name" in step.tool_inputs:
-                    inputs[step.id] = {'label': step.tool_inputs['name'], 'value': ""}
+                    label = step.tool_inputs['name']
+                elif step_type == "data_input":
+                    label = "Input Dataset"
+                elif step_type == "data_collection_input":
+                    label = "Input Dataset Collection"
                 else:
-                    inputs[step.id] = {'label': "Input Dataset", 'value': ""}
+                    raise ValueError("Invalid step_type %s" % step_type)
+                inputs[step.id] = {'label': label, 'value': ""}
             else:
                 pass
                 # Eventually, allow regular tool parameters to be inserted and modified at runtime.
@@ -258,26 +264,35 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             try:
                 if inputs[k]['src'] == 'ldda':
                     ldda = trans.sa_session.query(self.app.model.LibraryDatasetDatasetAssociation).get(
-                            trans.security.decode_id(inputs[k]['id']))
+                        trans.security.decode_id(inputs[k]['id']))
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
-                    hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
+                    content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif inputs[k]['src'] == 'ld':
                     ldda = trans.sa_session.query(self.app.model.LibraryDataset).get(
-                            trans.security.decode_id(inputs[k]['id'])).library_dataset_dataset_association
+                        trans.security.decode_id(inputs[k]['id'])).library_dataset_dataset_association
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
-                    hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
+                    content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif inputs[k]['src'] == 'hda':
                     # Get dataset handle, add to dict and history if necessary
-                    hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(
-                            trans.security.decode_id(inputs[k]['id']))
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+                    content = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(
+                        trans.security.decode_id(inputs[k]['id']))
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), content.dataset )
+                elif inputs[k]['src'] == 'hdca':
+                    content = self.app.dataset_collections_service.get_dataset_collection_instance(
+                        trans,
+                        'history',
+                        inputs[k]['id']
+                    )
                 else:
                     trans.response.status = 400
                     return "Unknown dataset source '%s' specified." % inputs[k]['src']
-                if add_to_history and hda.history != history:
-                    hda = hda.copy()
-                    history.add_dataset(hda)
-                inputs[k]['hda'] = hda
+                if add_to_history and content.history != history:
+                    content = content.copy()
+                    if isinstance( content, self.app.model.HistoryDatasetAssociation ):
+                        history.add_dataset( content )
+                    else:
+                        history.add_dataset_collection( content )
+                inputs[k]['hda'] = content  # TODO: rename key to 'content', prescreen input ensure not populated explicitly
             except AssertionError:
                 trans.response.status = 400
                 return "Invalid Dataset '%s' Specified" % inputs[k]['id']
