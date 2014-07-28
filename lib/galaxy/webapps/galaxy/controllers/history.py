@@ -448,6 +448,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     # ......................................................................... html
     @web.expose
+    def citations( self, trans ):
+        # Get history
+        history = trans.history
+        history_id = trans.security.encode_id( history.id )
+        return trans.fill_template( "history/citations.mako", history=history, history_id=history_id )
+
+    @web.expose
     def display_structured( self, trans, id=None ):
         """
         Display a history as a nested structure showing the jobs and workflow

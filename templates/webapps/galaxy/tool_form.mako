@@ -2,6 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/base_panels.mako" import="overlay" />
 
+<% import galaxy.util %>
+
 <%def name="stylesheets()">
     ${h.css( "autocomplete_tagging", "base", "library" )}
     <style type="text/css">
@@ -14,6 +16,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "galaxy.panels", "libs/jquery/jstorage" )}
+    ${h.js( "libs/bibtex" )}
     <script type="text/javascript">
         require( [ "galaxy.tools" ] );
         window.enhanced_galaxy_tools = true;
@@ -386,3 +389,20 @@
         ${ render_msg( 'This tool was installed from a ToolShed, you may be able to find additional information by following this link: <a href="%s" target="_blank">%s</a>' % ( tool_url, tool_url ), 'info' ) }
     %endif
 %endif
+%if tool.citations:
+    <script>
+    require(["mvc/citation/citation-model", "mvc/citation/citation-view"
+    ], function( citationModel, citationView ){
+        $(function() {
+            var citations = new citationModel.ToolCitationCollection();
+            citations.tool_id = "${tool.id}";
+            var citation_list_view = new citationView.CitationListView({ collection: citations } );
+            citation_list_view.render();
+            citations.fetch();
+        } );
+    } );
+    </script>
+    <div id="citations">
+    </div>
+%endif
+
