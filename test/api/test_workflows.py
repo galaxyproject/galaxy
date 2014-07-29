@@ -103,6 +103,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.assertEquals("1 2 3\n4 5 6\n7 8 9\n0 a b\n", self.dataset_populator.get_history_dataset_content( history_id ) )
 
     @skip_without_tool( "cat1" )
     def test_extract_from_history( self ):

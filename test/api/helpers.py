@@ -120,6 +120,25 @@ class DatasetPopulator( object ):
         api_asserts.assert_status_code_is( tool_response, 200 )
         return tool_response.json()
 
+    def get_history_dataset_content( self, history_id, wait=True, **kwds ):
+        if wait:
+            assert_ok = kwds.get( "assert_ok", True )
+            self.wait_for_history( history_id, assert_ok=assert_ok )
+        # kwds should contain a 'dataset' object response, a 'dataset_id' or
+        # the last dataset in the history will be fetched.
+        contents_url = "histories/%s/contents" % history_id
+        if "dataset_id" in kwds:
+            dataset_id = kwds[ "dataset_id" ]
+        elif "dataset" in kwds:
+            dataset_id = kwds[ "dataset" ][ "id" ]
+        else:
+            dataset_contents = self.galaxy_interactor.get( contents_url ).json()
+            dataset_id = dataset_contents[ -1 ][ "id" ]
+
+        display_response = self.galaxy_interactor.get( "%s/%s/display" % ( contents_url, dataset_id ) )
+        assert display_response.status_code == 200
+        return display_response.content
+
 
 class WorkflowPopulator( object ):
     # Impulse is to make this a Mixin, but probably better as an object.
