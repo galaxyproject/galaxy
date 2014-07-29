@@ -22,6 +22,8 @@ from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.security import Action
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
+from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
 
 import logging
 log = logging.getLogger( __name__ )
@@ -202,12 +204,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         new_access_roles_ids = kwd.get( 'access_ids[]', None )
         new_manage_roles_ids = kwd.get( 'manage_ids[]', None )
         new_modify_roles_ids = kwd.get( 'modify_ids[]', None )
-        # if new_access_roles_ids is None:
-        #     new_access_roles_ids = kwd.get( 'access_ids', None )
-        # if new_manage_roles_ids is None:
-        #     new_manage_roles_ids = kwd.get( 'manage_ids', None )
-        # if new_modify_roles_ids is None:
-        #     new_modify_roles_ids = kwd.get( 'modify_ids', None )
 
         action = kwd.get( 'action', None )
         if action is None:
@@ -225,17 +221,98 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             if not trans.app.security_agent.dataset_is_private_to_user( trans, library_dataset ):
                 raise exceptions.InternalServerError( 'An error occured while making dataset private.' )
         elif action == 'set_permissions':
-            # permission = { Action : [ Role, Role ] }
-            # trans.app.security_agent.set_dataset_permission( dataset, permission )
 
+            # ACCESS DATASET ROLES
+            valid_access_roles = []
+            invalid_access_roles_names = []
+            if new_access_roles_ids is None:
+                trans.app.security_agent.make_dataset_public( dataset )
+            else:
+                #  Check whether we receive only one role, then it is not a list so we make it into one.
+                if isinstance(new_access_roles_ids, basestring):
+                    new_access_roles_ids = [ new_access_roles_ids ]
+                for role_id in new_access_roles_ids:
+                    role = self._load_role( trans, role_id )
+                    
+                    #  Check whether role is in the set of allowed roles
+                    valid_roles, total_roles = trans.app.security_agent.get_valid_dataset_roles( trans, dataset )
+                    if role in valid_roles:
+                        valid_access_roles.append( role )
+                    else:
+                        invalid_access_roles_names.append( role_id )
+                if len( invalid_access_roles_names ) > 0:
+                    log.debug( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_names ) )                
 
+                access_permission = dict( access=valid_access_roles )
+                trans.app.security_agent.set_dataset_permission( dataset, access_permission )
+
+            # MANAGE DATASET ROLES
+            valid_manage_roles = []
+            invalid_manage_roles_names = []
+            new_manage_roles_ids = util.listify( new_manage_roles_ids )
+            log.debug("new_manage_roles_ids: " + str(new_manage_roles_ids))
             
-            raise exceptions.NotImplemented()
+            #  Load all access roles to check 
+            active_access_roles = dataset.get_access_roles( trans )
+
+            for role_id in new_manage_roles_ids:
+                role = self._load_role( trans, role_id )
+
+                #  Check whether role is in the set of access roles
+                if role in active_access_roles:
+                    valid_manage_roles.append( role )
+                else:
+                    invalid_manage_roles_names.append( role_id )
+
+            if len( invalid_manage_roles_names ) > 0:
+                log.debug( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_names ) )                
+
+            manage_permission = { trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS : valid_manage_roles }
+            trans.app.security_agent.set_dataset_permission( dataset, manage_permission )
+
+            # MODIFY LIBRARY ITEM ROLES
+            valid_modify_roles = []
+            invalid_modify_roles_names = []
+            new_modify_roles_ids = util.listify( new_modify_roles_ids )
+            log.debug("new_modify_roles_ids: " + str(new_modify_roles_ids))
+            
+            #  Load all access roles to check 
+            active_access_roles = dataset.get_access_roles( trans )
+
+            for role_id in new_modify_roles_ids:
+                role = self._load_role( trans, role_id )
+
+                #  Check whether role is in the set of access roles
+                if role in active_access_roles:
+                    valid_modify_roles.append( role )
+                else:
+                    invalid_modify_roles_names.append( role_id )
+
+            if len( invalid_modify_roles_names ) > 0:
+                log.debug( "The following roles could not be added to the dataset manage permission: " + str( invalid_modify_roles_names ) )                
+
+            modify_permission = { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY : valid_modify_roles }
+            trans.app.security_agent.set_library_item_permission( library_dataset, modify_permission )
+
         else:
             raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
                                 'Allowed values are: "remove_restrictions", "make_private", "set_dataset_access_roles"' )
 
         return self.get_current_roles( trans, library_dataset )
+
+    def _load_role( self, trans, role_name ):
+        """
+        Method loads the role from the DB based on the given role name.
+        """
+        try:
+            role = trans.sa_session.query( trans.app.model.Role ).filter( trans.model.Role.table.c.name == role_name ).one()
+        except MultipleResultsFound:
+            raise exceptions.InconsistentDatabase( 'Multiple roles found with the same name. Name: ' + str( role_name ) )
+        except NoResultFound:
+            raise exceptions.RequestParameterInvalidException( 'No role found with the name provided. Name: ' + str( role_name ) )
+        except Exception, e:
+            raise exceptions.InternalServerError( 'Error loading from the database.' + str(e))
+        return role
 
     @expose_api
     def delete( self, trans, encoded_dataset_id, **kwd ):

@@ -221,7 +221,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     roles.append( item_permission.role )
         return roles
 
-    def get_valid_dataset_roles( self, trans, dataset, query, page, page_limit ):
+    def get_valid_dataset_roles( self, trans, dataset, query=None, page=None, page_limit=None ):
         """
         This method retrieves the list of possible roles that user can select
         in the dataset permissions form. Admins can select any role so the
@@ -237,7 +237,12 @@ class GalaxyRBACAgent( RBACAgent ):
             log.debug('search_query: ' + str(search_query))
 
         # Limit the query only to get the page needed
-        limit = page * page_limit
+        if page is not None and page_limit is not None:
+            paginated = True
+            limit = page * page_limit
+        else:
+            paginated = False
+        
         total_count = None
 
         # For public datasets admins can choose from all roles
@@ -247,16 +252,19 @@ class GalaxyRBACAgent( RBACAgent ):
             if query is not None:
                 db_query = db_query.filter( self.model.Role.table.c.name.like( search_query, escape='/' ) )
             total_count = db_query.count()
-            # Takes the least number of results from beginning that includes the requested page
-            roles = db_query.order_by( self.model.Role.table.c.name ).limit( limit ).all()
-
-            page_start = ( page * page_limit ) - page_limit
-            page_end = page_start + page_limit
-            if total_count < page_start:
-                # Return empty list if there are less results than the requested position
-                roles = []
+            if paginated:
+                # Takes the least number of results from beginning that includes the requested page
+                roles = db_query.order_by( self.model.Role.table.c.name ).limit( limit ).all()
+                page_start = ( page * page_limit ) - page_limit
+                page_end = page_start + page_limit
+                if total_count < page_start:
+                    # Return empty list if there are less results than the requested position
+                    roles = []
+                else:
+                    roles = roles[ page_start:page_end ]
             else:
-                roles = roles[ page_start:page_end ]
+                roles = db_query.order_by( self.model.Role.table.c.name )
+
         # Non-admin and public dataset
         elif self.dataset_is_public( dataset ):
             # Add the current user's private role
@@ -885,7 +893,7 @@ class GalaxyRBACAgent( RBACAgent ):
     def set_dataset_permission( self, dataset, permission={} ):
         """
         Set a specific permission on a dataset, leaving all other current permissions on the dataset alone.
-        Permission looks like: { Action : [ Role, Role ] }
+        Permission looks like: { Action.action : [ Role, Role ] }
         """
         flush_needed = False
         for action, roles in permission.items():
@@ -1007,6 +1015,27 @@ class GalaxyRBACAgent( RBACAgent ):
                             permissions = {}
                             permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = roles
                             self.set_dataset_permission( library_item.dataset, permissions )
+        if flush_needed:
+            self.sa_session.flush()
+
+    def set_library_item_permission( self, library_dataset, permission={} ):
+        """
+        Set a specific permission on a library item, leaving all other current permissions on the item alone.
+        Permission looks like: { Action.action : [ Role, Role ] }
+        """
+        flush_needed = False
+        for action, roles in permission.items():
+            if isinstance( action, Action ):
+                action = action.action
+            # Delete the current specific permission on the library_dataset if one exists
+            for dp in library_dataset.actions:
+                if dp.action == action:
+                    self.sa_session.delete( dp )
+                    flush_needed = True
+            # Add the new specific permission on the library_dataset
+            for dp in [ self.model.LibraryDatasetPermissions( action, library_dataset, role ) for role in roles ]:
+                self.sa_session.add( dp )
+                flush_needed = True
         if flush_needed:
             self.sa_session.flush()
 
