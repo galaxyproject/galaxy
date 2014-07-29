@@ -90,19 +90,19 @@ def check_newlines( fname, bytes_to_read=52428800 ):
     f.close()
     return False
 
-def convert_newlines( fname, in_place=True ):
+def convert_newlines( fname, in_place=True, tmp_dir=None, tmp_prefix=None ):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
 
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\r3 4")
-    >>> convert_newlines(fname)
+    >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> file(fname).read()
     '1 2\\n3 4\\n'
     """
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp( prefix=tmp_prefix, dir=tmp_dir )
     fp = os.fdopen( fd, "wt" )
     i = None
     for i, line in enumerate( file( fname, "U" ) ):
@@ -150,20 +150,20 @@ def sep2tabs( fname, in_place=True, patt="\\s+" ):
     else:
         return ( i, temp_name )
 
-def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+" ):
+def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix=None ):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice
 
     >>> fname = get_test_fname('temp.txt')
     >>> file(fname, 'wt').write("1 2\\r3 4")
-    >>> convert_newlines_sep2tabs(fname)
+    >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> file(fname).read()
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile( patt )
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp( prefix=tmp_prefix, dir=tmp_dir )
     fp = os.fdopen( fd, "wt" )
     for i, line in enumerate( file( fname, "U" ) ):
         line  = line.rstrip( '\r\n' )

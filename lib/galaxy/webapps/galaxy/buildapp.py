@@ -174,6 +174,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'ftp_file', 'ftp_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/citations', action='citations', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
@@ -181,6 +182,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
+    webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     webapp.mapper.resource( 'datatype',
                             'datatypes',

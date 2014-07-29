@@ -2078,7 +2078,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def from_html( self, value, trans, other_values={} ):
         if not value and not self.optional:
-            raise ValueError( "History does not include a dataset of the required format / build" )
+            raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
         if value in [None, "None"]:
             return None
         if isinstance( value, str ) and value.find( "," ) > 0:

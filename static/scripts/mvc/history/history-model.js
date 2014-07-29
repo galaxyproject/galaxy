@@ -212,17 +212,14 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         // get the history data
         return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyId );
     }
-    function countHdasFromHistory( historyData ){
+    function isEmpty( historyData ){
         // get the number of hdas accrd. to the history
-        if( !historyData || !historyData.state_ids ){ return 0; }
-        return _.reduce( historyData.state_ids, function( memo, list, state ){
-            return memo + list.length;
-        }, 0 );
+        return historyData && historyData.empty;
     }
     function getHdas( historyData ){
         // get the hda data
         // if no hdas accrd. to history: return empty immed.
-        if( !countHdasFromHistory( historyData ) ){ return []; }
+        if( isEmpty( historyData ) ){ return []; }
         // if there are hdas accrd. to history: get those as well
         if( _.isFunction( hdaDetailIds ) ){
             hdaDetailIds = hdaDetailIds( historyData );

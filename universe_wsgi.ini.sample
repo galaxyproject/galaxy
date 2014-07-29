@@ -124,12 +124,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # -- Files and directories
 
-# Path where genome builds are stored. This defaults to tool-data/genome
-#genome_data_path = tool-data/genome
-
-# URL for rsync server to download pre-built indexes.
-#rsync_url = rsync://datacache.galaxyproject.org/indexes
-
 # Dataset files are stored in this directory.
 #file_path = database/files
 
@@ -213,6 +207,13 @@ visualization_plugins_directory = config/plugins/visualizations
 # Mako templates are compiled as needed and cached for reuse, this directory is
 # used for the cache
 #template_cache_path = database/compiled_templates
+
+# Citation related caching. Tool citations information maybe fetched from
+# external sources such as http://dx.doi.org/ by Galaxy - the following parameters
+# can be used to control the caching used to store this information.
+#citation_cache_type=file
+#citation_cache_data_dir=database/citations/data
+#citation_cache_lock_dir=database/citations/lock
 
 # External service types config file, defines what types of external_services configurations 
 # are available in Galaxy.

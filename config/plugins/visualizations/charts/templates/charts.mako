@@ -21,6 +21,9 @@
         ## shared css
         ${h.css( 'base' )}
 
+        ## crossfilter
+        ${h.javascript_link( app_root + "plugins/crossfilter/crossfilter.js" )}
+
         ## canvg
         ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
         ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}

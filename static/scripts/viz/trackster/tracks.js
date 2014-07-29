@@ -1907,6 +1907,8 @@ var FeatureTrackTile = function(track, region, w_scale, canvas, data, mode, mess
     this.feature_mapper = feature_mapper;
     this.has_icons = false;
     this.incomplete_features = incomplete_features;
+    // Features drawn based on data from other tiles.
+    this.other_tiles_features_drawn = {};
     this.seq_data = seq_data;
     
     // Add message + action icons to tile's html.
@@ -1968,6 +1970,8 @@ extend(FeatureTrackTile.prototype, Tile.prototype);
  * Sets up support for popups.
  */
 FeatureTrackTile.prototype.predisplay_actions = function() {
+    /*
+    FIXME: use a canvas library to handle popups.
     //
     // Add support for popups.
     //
@@ -2062,6 +2066,7 @@ FeatureTrackTile.prototype.predisplay_actions = function() {
     .mouseleave(function() {
         $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
     });
+    */
 };
 
 /**
@@ -3711,7 +3716,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             });
 
         //
-        // Draw incomplete features across tiles.
+        // Finish drawing of features that span multiple tiles. Features that span multiple tiles
+        // are labeled incomplete on the tile level because they cannot be completely drawn.
         //
         if (line_track_tiles.length === 0) {
             // Gather incomplete features together.
@@ -3722,11 +3728,34 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 });
             });
 
-            // Draw features on each tile.
+            // Draw incomplete features on each tile.
             var self = this;
             _.each(tiles, function(tile) {
-                self.draw_tile({ 'data': _.values(all_incomplete_features) }, tile.canvas.getContext('2d'), 
-                               tile.mode, tile.region, w_scale, tile.seq_data, true);
+                // Remove features already drawn on tile originally.
+                var tile_incomplete_features =_.omit(all_incomplete_features, 
+                                                     _.map(tile.incomplete_features, function(f) { return f[0]; }));
+
+                // Remove features already drawn on tile in past postdraw actions.
+                tile_incomplete_features = _.omit(tile_incomplete_features, _.keys(tile.other_tiles_features_drawn));
+
+                // Draw tile's incomplete features.
+                if (_.size(tile_incomplete_features) !== 0) {
+                    // To draw incomplete features, create new canvas, copy original canvas/tile onto new 
+                    // canvas, and then draw incomplete features on the new canvas.
+                    var features = { data: _.values( tile_incomplete_features ) },
+                        new_canvas = self.view.canvas_manager.new_canvas(),
+                        new_canvas_ctx = new_canvas.getContext('2d');
+                    new_canvas.height = Math.max(tile.canvas.height, 
+                                                 self.get_canvas_height(features, tile.mode, tile.w_scale, 100));
+                    new_canvas.width = tile.canvas.width;
+                    new_canvas_ctx.drawImage(tile.canvas, 0, 0);
+                    new_canvas_ctx.translate(track.left_offset, 0);
+                    var new_tile = self.draw_tile(features, new_canvas_ctx, tile.mode, 
+                                                  tile.region, tile.w_scale, tile.seq_data);
+                    $(tile.canvas).replaceWith($(new_tile.canvas));
+                    tile.canvas = new_canvas;
+                    _.extend(tile.other_tiles_features_drawn, all_incomplete_features);
+                }
             });
         }
                 
