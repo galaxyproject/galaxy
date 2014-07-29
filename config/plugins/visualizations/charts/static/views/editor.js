@@ -4,18 +4,13 @@ define(['mvc/ui/ui-tabs', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils
         'plugin/views/group', 'plugin/views/settings', 'plugin/views/types'],
     function(Tabs, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView, TypesView) {
 
-// widget
-return Backbone.View.extend(
-{
-    // defaults options
-    optionsDefault: {
-        header  : true,
-        content : 'No content available.'
-    },
-    
+/**
+ *  The charts editor holds the tabs for selecting chart types, chart configuration
+ *  and data group selections.
+ */
+return Backbone.View.extend({
     // initialize
-    initialize: function(app, options)
-    {
+    initialize: function(app, options){
         // link this
         var self = this;
         
@@ -25,8 +20,8 @@ return Backbone.View.extend(
         // get current chart object
         this.chart = this.app.chart;
         
-        // configure options
-        this.options = Utils.merge(options, this.optionsDefault);
+        // message element
+        this.message = new Ui.Message();
         
         // create portlet
         this.portlet = new Portlet.View({
@@ -38,19 +33,15 @@ return Backbone.View.extend(
                     tooltip : 'Draw Chart',
                     title   : 'Draw',
                     onclick : function() {
-                        // show viewport
-                        self.app.go('viewer');
-                        
-                        // save chart
                         self._saveChart();
                     }
                 }),
                 'back'  : new Ui.ButtonIcon({
                     icon    : 'fa-caret-left',
                     tooltip : 'Return to Viewer',
-                    title   : 'Return',
+                    title   : 'Cancel',
                     onclick : function() {
-                        // show viewport
+                        // show viewer/viewport
                         self.app.go('viewer');
                         
                         // reset chart
@@ -64,21 +55,29 @@ return Backbone.View.extend(
         // grid with chart types
         //
         this.types = new TypesView(app, {
-            onchange   : function(type) {
+            onchange   : function(chart_type) {
+                // get chart definition
+                var chart_definition = self.app.types.get(chart_type);
+                if (!chart_definition) {
+                    console.debug('FAILED - Editor::onchange() - Chart type not supported.');
+                }
+        
+                // parse chart definition
+                self.chart.definition = chart_definition;
+        
                 // reset type relevant chart content
                 self.chart.settings.clear();
                 
                 // update chart type
-                self.chart.set({type: type});
+                self.chart.set({type: chart_type});
                 
                 // set modified flag
                 self.chart.set('modified', true);
+                
+                // log
+                console.debug('Editor::onchange() - Switched chart type.');
             },
             ondblclick  : function(chart_id) {
-                // show viewport
-                self.app.go('viewer');
-                        
-                // save chart
                 self._saveChart();
             }
         });
@@ -110,7 +109,6 @@ return Backbone.View.extend(
         var $main = $('<div/>');
         $main.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
         $main.append(Utils.wrap(this.title.$el));
-        $main.append(Utils.wrap((new Ui.Label({ title : 'Select a chart type:'})).$el));
         $main.append(Utils.wrap(this.types.$el));
         
         // add tab
@@ -135,6 +133,7 @@ return Backbone.View.extend(
         });
         
         // append tabs
+        this.portlet.append(this.message.$el);
         this.portlet.append(this.tabs.$el);
         
         // elements
@@ -193,20 +192,20 @@ return Backbone.View.extend(
         this.title.value(title);
     },
     
-    // update
+    // refresh group
     _refreshGroupKey: function() {
         var self = this;
         var counter = 0;
         this.chart.groups.each(function(group) {
             var title = group.get('key', '');
             if (title == '') {
-                title = 'Chart data';
+                title = 'Data label';
             }
             self.tabs.title(group.id, ++counter + ': ' + title);
         });
     },
     
-    // new group
+    // add group model
     _addGroupModel: function() {
         var group = new Group({
             id : Utils.uuid()
@@ -215,16 +214,13 @@ return Backbone.View.extend(
         return group;
     },
 
-    // add group
+    // add group tab
     _addGroup: function(group) {
         // link this
         var self = this;
         
         // create view
         var group_view = new GroupView(this.app, {group: group});
-        
-        // number of groups
-        var count = self.chart.groups.length;
         
         // add new tab
         this.tabs.add({
@@ -237,6 +233,9 @@ return Backbone.View.extend(
         
         // update titles
         this._refreshGroupKey();
+        
+        // reset
+        this.chart.set('modified', true);
     },
     
     // remove group
@@ -276,14 +275,43 @@ return Backbone.View.extend(
             date        : Utils.time()
         });
         
-        // ensure that data group is available
+        // make sure that at least one data group is available
         if (this.chart.groups.length == 0) {
-            this._addGroupModel();
+            this.message.update({message: 'Please select data columns before drawing the chart.'});
+            var group = this._addGroupModel();
+            this.tabs.show(group.id);
+            return;
         }
+        
+        // make sure that all necessary columns are assigned
+        var self = this;
+        var valid = true;
+        var chart_def = this.chart.definition;
+        this.chart.groups.each(function(group) {
+            if (!valid) {
+                return;
+            }
+            for (var key in chart_def.columns) {
+                if (group.attributes[key] == 'null') {
+                    self.message.update({status: 'danger', message: 'This chart type requires column types not found in your tabular file.'});
+                    self.tabs.show(group.id);
+                    valid = false;
+                    return;
+                }
+            }
+        });
+        
+        // validate if columns have been selected
+        if (!valid) {
+            return;
+        }
+        
+        // show viewport
+        this.app.go('viewer');
         
         // wait until chart is ready
         var self = this;
-        this.chart.deferred.execute(function() {
+        this.app.deferred.execute(function() {
             // save
             self.app.storage.save();
             

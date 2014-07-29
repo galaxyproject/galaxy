@@ -8,6 +8,7 @@ from galaxy.jobs.command_factory import build_command
 from galaxy.tools.deps import dependencies
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
+from galaxy.util import specs
 
 import errno
 from time import sleep
@@ -34,6 +35,82 @@ GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
 DEFAULT_GALAXY_URL = "http://localhost:8080"
 
+LWR_PARAM_SPECS = dict(
+    transport=dict(
+        map=specs.to_str_or_none,
+        valid=specs.is_in("urllib", "curl", None),
+        default=None
+    ),
+    cache=dict(
+        map=specs.to_bool_or_none,
+        default=None,
+    ),
+    url=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    galaxy_url=dict(
+        map=specs.to_str_or_none,
+        default=DEFAULT_GALAXY_URL,
+    ),
+    manager=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_consumer_timeout=dict(
+        map=lambda val: None if val == "None" else float(val),
+        default=None,
+    ),
+    amqp_connect_ssl_ca_certs=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_connect_ssl_keyfile=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_connect_ssl_certfile=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_connect_ssl_cert_reqs=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    # http://kombu.readthedocs.org/en/latest/reference/kombu.html#kombu.Producer.publish
+    amqp_publish_retry=dict(
+        map=specs.to_bool,
+        default=False,
+    ),
+    amqp_publish_priority=dict(
+        map=int,
+        valid=lambda x: 0 <= x and x <= 9,
+        default=0,
+    ),
+    # http://kombu.readthedocs.org/en/latest/reference/kombu.html#kombu.Exchange.delivery_mode
+    amqp_publish_delivery_mode=dict(
+        map=str,
+        valid=specs.is_in("transient", "persistent"),
+        default="persistent",
+    ),
+    amqp_publish_retry_max_retries=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_start=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_step=dict(
+        map=int,
+        default=None,
+    ),
+    amqp_publish_retry_interval_max=dict(
+        map=int,
+        default=None,
+    ),
+)
+
 
 class LwrJobRunner( AsynchronousJobRunner ):
     """
@@ -41,33 +118,30 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers, transport=None, cache=None, url=None, galaxy_url=DEFAULT_GALAXY_URL, **kwds ):
+    def __init__( self, app, nworkers, **kwds ):
         """Start the job runner """
-        super( LwrJobRunner, self ).__init__( app, nworkers )
+        super( LwrJobRunner, self ).__init__( app, nworkers, runner_param_specs=LWR_PARAM_SPECS, **kwds )
         self._init_worker_threads()
-        amqp_connect_ssl_args = {}
-        amqp_consumer_timeout = False
-        for kwd in kwds.keys():
-            if kwd.startswith('amqp_connect_ssl_'):
-                amqp_connect_ssl_args[kwd] = kwds[kwd]
-        client_manager_kwargs = {
-            'transport_type': transport,
-            'cache': string_as_bool_or_none(cache),
-            "url": url,
-            'amqp_connect_ssl_args': amqp_connect_ssl_args or None,
-            'manager': kwds.get("manager", None),
-        }
-        if 'amqp_consumer_timeout' in kwds:
-            if kwds['amqp_consumer_timeout'] == 'None':
-                client_manager_kwargs['amqp_consumer_timeout'] = None
-            else:
-                client_manager_kwargs['amqp_consumer_timeout'] = float(kwds['amqp_consumer_timeout'])
+        galaxy_url = self.runner_params.galaxy_url
+        if galaxy_url:
+            galaxy_url = galaxy_url.rstrip("/")
         self.galaxy_url = galaxy_url
-        self.client_manager = build_client_manager(**client_manager_kwargs)
-        if url:
+        self.__init_client_manager()
+        if self.runner_params.url:
+            # This is a message queue driven runner, don't monitor
+            # just setup required callback.
             self.client_manager.ensure_has_status_update_callback(self.__async_update)
         else:
             self._init_monitor_thread()
+
+    def __init_client_manager( self ):
+        client_manager_kwargs = {}
+        for kwd in 'url', 'manager', 'cache', 'transport':
+            client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
+        for kwd in self.runner_params.keys():
+            if kwd.startswith( 'amqp_' ):
+                client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
+        self.client_manager = build_client_manager(**client_manager_kwargs)
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination"""
@@ -98,10 +172,20 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return job_state
 
     def __async_update( self, full_status ):
-        job_id = full_status[ "job_id" ]
-        job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id( job_id )
-        job_state = self.__job_state( job, job_wrapper )
-        self.__update_job_state_for_lwr_status(job_state, full_status["status"])
+        while not hasattr( self.app, 'job_manager' ):
+            # The status update thread can start consuming before app is done initializing
+            log.debug( 'Received a status update message before app is initialized, waiting 5 seconds' )
+            sleep( 5 )
+        job_id = None
+        try:
+            job_id = full_status[ "job_id" ]
+            job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id( job_id )
+            job_state = self.__job_state( job, job_wrapper )
+            self.__update_job_state_for_lwr_status(job_state, full_status["status"])
+        except Exception:
+            log.exception( "Failed to update LWR job status for job_id %s" % job_id )
+            raise
+            # Nothing else to do? - Attempt to fail the job?
 
     def queue_job(self, job_wrapper):
         job_destination = job_wrapper.job_destination
@@ -172,9 +256,21 @@ class LwrJobRunner( AsynchronousJobRunner ):
                 metadata_kwds=metadata_kwds,
                 dependency_resolution=dependency_resolution,
             )
+            remote_working_directory = remote_job_config['working_directory']
+            # TODO: Following defs work for LWR, always worked for LWR but should be
+            # calculated at some other level.
+            remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
+            remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
+            container = self._find_container(
+                job_wrapper,
+                compute_working_directory=remote_working_directory,
+                compute_tool_directory=remote_tool_directory,
+                compute_job_directory=remote_job_directory,
+            )
             command_line = build_command(
                 self,
                 job_wrapper=job_wrapper,
+                container=container,
                 include_metadata=remote_metadata,
                 include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
@@ -246,7 +342,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         try:
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
-
+            remote_working_directory = run_results.get("working_directory", None)
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
             exit_code = run_results.get('returncode', None)
@@ -275,7 +371,12 @@ class LwrJobRunner( AsynchronousJobRunner ):
             self._handle_metadata_externally( job_wrapper, resolve_requirements=True )
         # Finish the job
         try:
-            job_wrapper.finish( stdout, stderr, exit_code )
+            job_wrapper.finish(
+                stdout,
+                stderr,
+                exit_code,
+                remote_working_directory=remote_working_directory
+            )
         except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
@@ -347,7 +448,10 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
     def __job_state( self, job, job_wrapper ):
         job_state = AsynchronousJobState()
-        job_state.job_id = str( job.get_job_runner_external_id() )
+        # TODO: Determine why this is set when using normal message queue updates
+        # but not CLI submitted MQ updates...
+        raw_job_id = job.get_job_runner_external_id() or job_wrapper.job_id
+        job_state.job_id = str( raw_job_id )
         job_state.runner_url = job_wrapper.get_job_runner_url()
         job_state.job_destination = job_wrapper.job_destination
         job_state.job_wrapper = job_wrapper

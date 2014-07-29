@@ -6,7 +6,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from tool_shed.util.shed_util_common import to_html_string
+    from tool_shed.util.basic_util import to_html_string
 
     is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated
@@ -61,7 +61,7 @@
 </%def>
 
 %if trans.webapp.name == 'tool_shed':
-    ${render_tool_shed_repository_actions( repository=repository, changeset_revision=changeset_revision )}
+    ${render_tool_shed_repository_actions( repository=repository, metadata=metadata, changeset_revision=changeset_revision )}
 %else:
     ${render_galaxy_repository_actions( repository=repository )}
 %endif

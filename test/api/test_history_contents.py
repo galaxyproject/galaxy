@@ -97,9 +97,7 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
         dataset_collection_response = self._post( "histories/%s/contents" % self.history_id, payload )
 
-        self._assert_status_code_is( dataset_collection_response, 200 )
-        dataset_collection = dataset_collection_response.json()
-        self._assert_has_keys( dataset_collection, "url", "name", "deleted" )
+        dataset_collection = self.__check_create_collection_response( dataset_collection_response )
 
         post_collection_count = self.__count_contents( type="dataset_collection" )
         post_dataset_count = self.__count_contents( type="dataset" )
@@ -143,6 +141,25 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._assert_status_code_is( update_response, 200 )
         show_response = self.__show( hdca )
         assert str( show_response.json()[ "name" ] ) == "newnameforpair"
+
+    def test_hdca_copy( self ):
+        hdca = self.dataset_collection_populator.create_pair_in_history( self.history_id ).json()
+        hdca_id = hdca[ "id" ]
+        second_history_id = self._new_history()
+        create_data = dict(
+            source='hdca',
+            content=hdca_id,
+        )
+        assert len( self._get( "histories/%s/contents/dataset_collections" % second_history_id ).json() ) == 0
+        create_response = self._post( "histories/%s/contents/dataset_collections" % second_history_id, create_data )
+        self.__check_create_collection_response( create_response )
+        assert len( self._get( "histories/%s/contents/dataset_collections" % second_history_id ).json() ) == 1
+
+    def __check_create_collection_response( self, response ):
+        self._assert_status_code_is( response, 200 )
+        dataset_collection = response.json()
+        self._assert_has_keys( dataset_collection, "url", "name", "deleted", "visible", "elements" )
+        return dataset_collection
 
     def __show( self, contents ):
         show_response = self._get( "histories/%s/contents/%ss/%s" % ( self.history_id, contents["history_content_type"], contents[ "id" ] ) )

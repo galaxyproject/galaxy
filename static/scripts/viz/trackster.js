@@ -1,3 +1,7 @@
+/**
+ * Top-level trackster code, used for creating/loading visualizations and user interface elements.
+ */
+
 // global variables
 var ui              = null;
 var view            = null;
@@ -8,7 +12,6 @@ require(
 [
     // load js libraries
     'utils/utils',
-    'libs/jquery/jstorage',
     'libs/jquery/jquery.event.drag',
     'libs/jquery/jquery.event.hover',
     'libs/jquery/jquery.mousewheel',
@@ -29,15 +32,357 @@ require(
 });
 
 // trackster viewer
-define( ["libs/backbone/backbone", "viz/trackster_ui"], function(backbone, trackster_ui) {
+define( ["libs/underscore", "base", "viz/trackster/tracks", "viz/visualization"], 
+        function(_, base, tracks, visualization) {
 
-var TracksterView = Backbone.View.extend(
+/**
+ * User interface controls for trackster 
+ */
+var TracksterUI = base.Base.extend({
+    initialize: function( baseURL ) {
+        this.baseURL = baseURL;
+    },
+
+    /**
+     * Save visualization, returning a Deferred object for the remote call to save.
+     */
+    save_viz: function() {
+        // show dialog
+        Galaxy.modal.show({title: "Saving...", body: "progress" });
+        
+        // Save bookmarks.
+        var bookmarks = [];
+        $(".bookmark").each(function() { 
+            bookmarks.push({
+                position: $(this).children(".position").text(),
+                annotation: $(this).children(".annotation").text()
+            });
+        });
+
+        // FIXME: give unique IDs to Drawables and save overview as ID.
+        var overview_track_name = (view.overview_drawable ? view.overview_drawable.config.get_value('name') : null),
+            viz_config = {
+                'view': view.to_dict(),
+                'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
+                'bookmarks': bookmarks
+            };
+
+        // Make call to save visualization.
+        return $.ajax({
+            url: galaxy_config.root + "visualization/save",
+            type: "POST",
+            dataType: "json",
+            data: {
+                'id'        : view.vis_id,
+                'title'     : view.config.get_value('name'),
+                'dbkey'     : view.dbkey,
+                'type'      : 'trackster',
+                'vis_json'  : JSON.stringify(viz_config)
+            }
+        }).success(function(vis_info) {
+            Galaxy.modal.hide();
+            view.vis_id = vis_info.vis_id;
+            view.has_changes = false;
+
+            // Needed to set URL when first saving a visualization.
+            window.history.pushState({}, "", vis_info.url + window.location.hash);
+        }).error(function() {
+            // show dialog
+            Galaxy.modal.show({
+                title   : "Could Not Save",
+                body    : "Could not save visualization. Please try again later.",
+                buttons : { "Cancel": function() { Galaxy.modal.hide(); } }
+            });
+        });
+    },
+
+    /**
+     * Create button menu
+     */ 
+    createButtonMenu: function() {
+        var self = this,
+            menu = create_icon_buttons_menu([
+            { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
+                visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, 
+                function(new_tracks) {
+                    _.each(new_tracks, function(track) {
+                        view.add_drawable( tracks.object_from_template(track, view, view) );
+                    });
+                });
+            } },
+            { icon_class: 'block--plus', title: 'Add group', on_click: function() { 
+                view.add_drawable( new tracks.DrawableGroup(view, view, { name: "New Group" }) );
+            } },
+            { icon_class: 'bookmarks', title: 'Bookmarks', on_click: function() { 
+                // HACK -- use style to determine if panel is hidden and hide/show accordingly.
+                force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));
+            } },
+            {
+                icon_class: 'globe',
+                title: 'Circster',
+                on_click: function() {
+                    window.location = self.baseURL + 'visualization/circster?id=' + view.vis_id;
+                }
+            },
+            { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
+                self.save_viz();
+            } },
+            {
+                icon_class: 'cross-circle',
+                title: 'Close',
+                on_click: function() {
+                    self.handle_unsaved_changes(view);
+                }
+            }
+        ], 
+        { 
+            tooltip_config: { placement: 'bottom' }
+        });
+        this.buttonMenu = menu;
+        return menu;
+    },
+
+    /**
+     * Use a popup to select a dataset of create bookmarks from
+     */
+    add_bookmarks: function() {
+        var self = this,
+            baseURL = this.baseURL;
+        
+        // show modal while loading history
+        Galaxy.modal.show({title: "Select dataset for new bookmarks", body: "progress" });
+                
+        $.ajax({
+            url: this.baseURL + "/visualization/list_histories",
+            data: { "f-dbkey": view.dbkey },
+            error: function() { alert( "Grid failed" ); },
+            success: function(table_html) {
+               
+                // show modal to select bookmarks
+                Galaxy.modal.show(
+                {
+                    title   : "Select dataset for new bookmarks",
+                    body    : table_html,
+                    buttons :
+                    {
+                        "Cancel": function()
+                        {
+                            Galaxy.modal.hide();
+                        },
+                        
+                        "Insert": function()
+                        {
+                            // Just use the first selected
+                            $('input[name=id]:checked,input[name=ldda_ids]:checked').first().each(function()
+                            {
+                                var data, id = $(this).val();
+                                if ($(this).attr("name") === "id")
+                                    data = { hda_id: id };
+                                else
+                                    data = { ldda_id: id};
+
+                                $.ajax({
+                                    url: this.baseURL + "/visualization/bookmarks_from_dataset",
+                                    data: data,
+                                    dataType: "json"
+                                }).then( function(data) {
+                                    for( i = 0; i < data.data.length; i++ ) {
+                                        var row = data.data[i];
+                                        self.add_bookmark( row[0], row[1] );
+                                    }
+                                });
+                            });
+                            Galaxy.modal.hide();
+                        }
+                    }
+                });
+            }
+        });
+    },
+
+    /**
+     * Add bookmark.
+     */
+    add_bookmark: function(position, annotation, editable) {
+        // Create HTML.
+        var bookmarks_container = $("#right .unified-panel-body"),
+            new_bookmark = $("<div/>").addClass("bookmark").appendTo(bookmarks_container);
+
+        var position_div = $("<div/>").addClass("position").appendTo(new_bookmark),
+            position_link = $("<a href=''/>").text(position).appendTo(position_div).click(function() {
+                view.go_to(position);
+                return false;
+            }),
+            annotation_div = $("<div/>").text(annotation).appendTo(new_bookmark);
+
+        // If editable, enable bookmark deletion and annotation editing.
+        if (editable) {
+            var delete_icon_container = $("<div/>").addClass("delete-icon-container").prependTo(new_bookmark).click(function (){
+                    // Remove bookmark.
+                    new_bookmark.slideUp("fast");
+                    new_bookmark.remove();
+                    view.has_changes = true;
+                    return false;
+                }),
+                delete_icon = $("<a href=''/>").addClass("icon-button delete").appendTo(delete_icon_container);
+            annotation_div.make_text_editable({
+                num_rows: 3,
+                use_textarea: true,
+                help_text: "Edit bookmark note"
+            }).addClass("annotation");
+        }
+
+        view.has_changes = true;
+        return new_bookmark;
+    },
+
+    /**
+     * Create a complete Trackster visualization. Returns view.
+     */
+    create_visualization: function(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
+        
+        // Create view.
+        var self = this,
+            view = new tracks.TracksterView(_.extend(view_config, {header: false}));
+        view.editor = true;
+        $.when( view.load_chroms_deferred ).then(function(chrom_info) {
+            // Viewport config.
+            if (viewport_config) {
+                var chrom = viewport_config.chrom,
+                    start = viewport_config.start,
+                    end = viewport_config.end,
+                    overview_drawable_name = viewport_config.overview;
+            
+                if (chrom && (start !== undefined) && end) {
+                    view.change_chrom(chrom, start, end);
+                }
+                else {
+                    // No valid viewport, so use first chromosome.
+                    view.change_chrom(chrom_info[0].chrom);
+                }
+            }
+            else {
+                // No viewport, so use first chromosome.
+                view.change_chrom(chrom_info[0].chrom);
+            }
+            
+            // Add drawables to view.
+            if (drawables_config) {
+                // FIXME: can from_dict() be used to create view and add drawables?
+                var drawable_config,
+                    drawable_type,
+                    drawable;
+                for (var i = 0; i < drawables_config.length; i++) {
+                    view.add_drawable( tracks.object_from_template( drawables_config[i], view, view ) );
+                }
+            }
+            
+            // Set overview.
+            var overview_drawable;
+            for (var i = 0; i < view.drawables.length; i++) {
+                if (view.drawables[i].config.get_value('name') === overview_drawable_name) {
+                    view.set_overview(view.drawables[i]);
+                    break;
+                }
+            }
+            
+            // Load bookmarks.
+            if (bookmarks_config) {
+                var bookmark;
+                for (var i = 0; i < bookmarks_config.length; i++) {
+                    bookmark = bookmarks_config[i];
+                    self.add_bookmark(bookmark['position'], bookmark['annotation'], editable);
+                }
+            }
+
+            // View has no changes as of yet.
+            view.has_changes = false;
+        });
+
+        // Final initialization.
+        this.set_up_router({view: view});
+        
+        return view;
+    },
+
+    /**
+     * Set up location router to use hashes as track browser locations.
+     */
+    set_up_router : function(options)
+    {
+        new visualization.TrackBrowserRouter(options);
+        Backbone.history.start();
+    },
+
+    /**
+     * Set up keyboard navigation for a visualization.
+     */
+    init_keyboard_nav: function(view) {
+        // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
+        $(document).keyup(function(e) {
+            // Do not navigate if arrow keys used in input element.
+            if ($(e.srcElement).is(':input')) {
+                return;
+            }
+            
+            // Key codes: left == 37, up == 38, right == 39, down == 40
+            switch(e.which) {
+                case 37:
+                    view.move_fraction(0.25);
+                    break;
+                case 38:
+                    var change = Math.round(view.viewport_container.height()/15.0);
+                    view.viewport_container.scrollTop( view.viewport_container.scrollTop() - 20);
+                    break;
+                case 39:
+                    view.move_fraction(-0.25);
+                    break;
+                case 40:
+                    var change = Math.round(view.viewport_container.height()/15.0);
+                    view.viewport_container.scrollTop( view.viewport_container.scrollTop() + 20);
+                    break;
+            }
+        });
+    },
+
+    /**
+     * Handle unsaved changes in visualization.
+     */
+    handle_unsaved_changes: function(view) {
+        if (view.has_changes) {
+            var self = this;
+            Galaxy.modal.show({
+                title: "Close visualization",
+                body: "There are unsaved changes to your visualization which will be lost if you do not save them.",
+                buttons: {
+                    "Cancel": function() { Galaxy.modal.hide(); },
+                    "Leave without Saving" : function() {
+                        $(window).off('beforeunload');
+                        window.location = galaxy_config.root + 'visualization';
+                    },
+                    "Save" : function() {
+                        $.when(self.save_viz()).then(function() {
+                            window.location = galaxy_config.root + 'visualization';
+                        });
+                    }
+                }
+            });
+                       
+        } 
+        else {
+            window.location = galaxy_config.root + 'visualization';
+        }
+    }
+
+});
+
+var TracksterView = base.Backbone.View.extend(
 {
     // initalize trackster
     initialize : function ()
     {
         // load ui
-        ui = new trackster_ui.TracksterUI(galaxy_config.root);
+        ui = new TracksterUI(galaxy_config.root);
 
         // create button menu
         ui.createButtonMenu();
@@ -198,7 +543,7 @@ var TracksterView = Backbone.View.extend(
                 url: galaxy_config.root + "api/datasets/" + galaxy_config.app.add_dataset,
                 data: { hda_ldda: 'hda', data_type: 'track_config' },
                 dataType: "json",
-                success: function(track_data) { view.add_drawable( trackster_ui.object_from_template(track_data, view, view) ); }
+                success: function(track_data) { view.add_drawable( tracks.object_from_template(track_data, view, view) ); }
             });
 
         // initialize icons
@@ -212,13 +557,18 @@ var TracksterView = Backbone.View.extend(
 
         // initialize keyboard
         ui.init_keyboard_nav(view);
+
+        $(window).on('beforeunload', function() {
+            if (view.has_changes) {
+                return "There are unsaved changes to your visualization that will be lost if you leave this page.";
+            }
+        });
     }
 });
 
-// return
 return {
+    TracksterUI: TracksterUI,
     GalaxyApp : TracksterView
 };
 
-// done
 });

@@ -18,7 +18,7 @@ from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
 
-from galaxy.managers import histories
+from galaxy.managers import histories, citations
 
 from galaxy import util
 from galaxy.util import string_as_bool
@@ -34,6 +34,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
 
     def __init__( self, app ):
         super( HistoriesController, self ).__init__( app )
+        self.citations_manager = citations.CitationsManager( app )
         self.mgrs = util.bunch.Bunch(
             histories=histories.HistoryManager()
         )
@@ -116,6 +117,20 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         history_data = self.get_history_dict( trans, history )
         history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
         return history_data
+
+    @expose_api_anonymous
+    def citations( self, trans, history_id, **kwd ):
+        history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ), check_ownership=False, check_accessible=True )
+        tool_ids = set([])
+        for dataset in history.datasets:
+            job = dataset.creating_job
+            if not job:
+                continue
+            tool_id = job.tool_id
+            if not tool_id:
+                continue
+            tool_ids.add(tool_id)
+        return map( lambda citation: citation.to_dict( "bibtex" ), self.citations_manager.citations_for_tool_ids( tool_ids ) )
 
     @expose_api
     def set_as_current( self, trans, id, **kwd ):
@@ -201,7 +216,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         delete( self, trans, id, **kwd )
         * DELETE /api/histories/{id}
             delete the history with the given ``id``
-        .. note:: Currently does not stop any active jobs in the history.
+        .. note:: Stops all active jobs in the history if purge is set.
 
         :type   id:     str
         :param  id:     the encoded id of the history to delete
@@ -235,6 +250,10 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             for hda in history.datasets:
                 if hda.purged:
                     continue
+                if hda.creating_job_associations:
+                    job = hda.creating_job_associations[0].job
+                    job.mark_deleted( self.app.config.track_jobs_in_database )
+                    self.app.job_manager.job_stop_queue.put( job.id )
                 hda.purged = True
                 trans.sa_session.add( hda )
                 trans.sa_session.flush()

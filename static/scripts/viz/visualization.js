@@ -894,8 +894,10 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend({
 
         // -- Set up config settings. -- 
         var models =  [
-            { key: 'name', value: this.get('dataset').get('name') },
-            { key: 'color' }
+            { key: 'name', default_value: this.get('dataset').get('name') },
+            { key: 'color' },
+            { key: 'min_value', label: 'Min Value', type: 'float', default_value: 0 },
+            { key: 'max_value', label: 'Max Value', type: 'float', default_value: 1 }
         ];
 
         this.set('config', config_mod.ConfigSettingCollection.from_models_and_saved_values(models, options.prefs));
@@ -1052,7 +1054,7 @@ var TrackBrowserRouter = Backbone.Router.extend({
         // Can't put regular expression in routes dictionary.
         // NOTE: parentheses are used to denote parameters returned to callback.
         this.route(/([\w]+)$/, 'change_location');
-        this.route(/([\w]+\:[\d,]+-[\d,]+)$/, 'change_location');
+        this.route(/([\w\+]+\:[\d,]+-[\d,]+)$/, 'change_location');
         
         // Handle navigate events from view.
         var self = this;

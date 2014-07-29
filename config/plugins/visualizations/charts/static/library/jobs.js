@@ -1,9 +1,10 @@
 // dependencies
 define(['utils/utils'], function(Utils) {
 
-// widget
-return Backbone.Model.extend(
-{
+/**
+ *  This class handles job submissions to the charts tool.
+ */
+return Backbone.Model.extend({
     // initialize
     initialize: function(app, options) {
         // link app
@@ -60,7 +61,7 @@ return Backbone.Model.extend(
         var chart_type          = chart.get('type');
         
         // get chart settings
-        var chart_settings  = this.app.types.get(chart_type);
+        var chart_definition    = chart.definition;
        
         // configure tool
         data = {
@@ -70,7 +71,7 @@ return Backbone.Model.extend(
                     'id'    : chart.get('dataset_id'),
                     'src'   : 'hda'
                 },
-                'module'    : chart_settings.execute,
+                'module'    : chart_definition.execute,
                 'columns'   : columns_string,
                 'settings'  : settings_string
             }

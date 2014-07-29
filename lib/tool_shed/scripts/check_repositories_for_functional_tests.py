@@ -28,8 +28,6 @@ from galaxy.model.orm import and_
 from galaxy.model.orm import not_
 from galaxy.model.orm import select
 from galaxy.util import listify
-from mercurial import hg
-from mercurial import ui
 from mercurial import __version__
 from optparse import OptionParser
 from time import strftime
@@ -110,7 +108,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         if tool_dicts is not None:
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = repository.repo_path( app )
-            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+            repo = hg_util.get_repo_for_repository( app, repository=None, repo_path=repo_dir, create=False )
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
             cloned_ok, error_message = hg_util.clone_repository( repo_dir, work_dir, changeset_revision )
             if cloned_ok:
@@ -316,14 +314,6 @@ def check_for_missing_test_files( test_definition, test_data_path ):
             missing_test_files.append( required_file )
     return missing_test_files
 
-def get_repo_changelog_tuples( repo_path ):
-    repo = hg.repository( ui.ui(), repo_path )
-    changelog_tuples = []
-    for changeset in repo.changelog:
-        ctx = repo.changectx( changeset )
-        changelog_tuples.append( ( ctx.rev(), str( ctx ) ) )
-    return changelog_tuples
-
 def main():
     '''Script that checks repositories to see if the tools contained within them have functional tests defined.'''
     parser = OptionParser()
@@ -368,8 +358,7 @@ def should_set_do_not_test_flag( app, repository, changeset_revision, testable_r
     would be redundant.
     """
     if not testable_revision:
-        repo_dir = repository.repo_path( app )
-        repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+        repo = hg_util.get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
         changeset_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
         if len( changeset_revisions ) > 1:
             latest_downloadable_revision = changeset_revisions[ -1 ]

@@ -13,10 +13,10 @@ var View = Backbone.View.extend(
         icon        : '',
         buttons     : null,
         body        : null,
-        height      : null,
+        scrollable  : true,
+        nopadding   : false,
         operations  : null,
-        placement   : 'bottom',
-        overflow    : 'auto'
+        placement   : 'bottom'
     },
     
     // elements
@@ -37,12 +37,24 @@ var View = Backbone.View.extend(
         this.$content = this.$el.find('#content');
         
         // link title
-        this.$title = this.$el.find('#title-text');
+        this.$title = this.$el.find('#portlet-header-text');
         
-        // set content height
-        if (this.options.height) {
-            this.$el.find('#body').css('height', this.options.height);
-            this.$el.find('#content').css('overflow', this.options.overflow);
+        // set content format
+        var $portlet_content = this.$el.find('#portlet-content');
+        if (!this.options.scrollable) {
+            if (this.options.title) {
+                $portlet_content.addClass('no-scroll');
+            } else {
+                $portlet_content.addClass('no-scroll-no-title');
+            }
+        } else {
+            $portlet_content.addClass('scroll');
+        }
+        
+        // set content padding
+        if (this.options.nopadding) {
+            $portlet_content.css('padding', '0px');
+            this.$content.css('padding', '0px');
         }
         
         // append buttons
@@ -139,33 +151,32 @@ var View = Backbone.View.extend(
         return $el.html();
     },
     
-    // fill template
+    // fill regular modal template
     _template: function(options) {
-        var tmpl =  '<div class="toolForm portlet-view no-highlight">';
+        var tmpl =  '<div class="ui-portlet">';
         
-        if (options.title || options.icon) {
-            tmpl +=     '<div id="title" class="toolFormTitle portlet-title">' +
-                            '<div id="operations" class="portlet-operations"/>' +
-                            '<div style="overflow: hidden;">';
+        if (options.title) {
+            tmpl +=     '<div id="portlet-header" class="portlet-header">' +
+                            '<div id="operations" style="float: right;"></div>' +
+                            '<h3>';
                             
             if (options.icon)
-                tmpl +=         '<div class="portlet-title-icon fa ' + options.icon + '">&nbsp;</div>';
+                tmpl +=         '<i class="icon fa ' + options.icon + '">&nbsp;</i>';
         
-            tmpl +=             '<div id="title-text" class="portlet-title-text">' + options.title + '</div>';
-            
-            tmpl +=         '</div>' +
+            tmpl +=             '<span id="portlet-header-text">' + options.title + '</span>' +
+                            '</h3>' +
                         '</div>';
         }
-        tmpl +=         '<div id="body" class="toolFormBody portlet-body">';
+        tmpl +=         '<div id="portlet-content" class="portlet-content">';
         
         if (options.placement == 'top') {
-            tmpl +=         '<div id="buttons" class="portlet-buttons"/>';
+            tmpl +=         '<div id="buttons" class="buttons"></div>';
         }
         
-        tmpl +=             '<div id="content" class="portlet-content"/>';
+        tmpl +=             '<div id="content" class="content"></div>';
         
         if (options.placement == 'bottom') {
-            tmpl +=         '<div id="buttons" class="portlet-buttons"/>';
+            tmpl +=         '<div id="buttons" class="buttons"></div>';
         }
         
         tmpl +=         '</div>' +

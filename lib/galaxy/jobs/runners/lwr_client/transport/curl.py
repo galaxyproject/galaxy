@@ -10,7 +10,7 @@ from os.path import getsize
 
 
 PYCURL_UNAVAILABLE_MESSAGE = \
-    "You are attempting to use the Pycurl version of the LWR client by pycurl is unavailable."
+    "You are attempting to use the Pycurl version of the LWR client but pycurl is unavailable."
 
 
 class PycurlTransport(object):

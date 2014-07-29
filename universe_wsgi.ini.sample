@@ -109,22 +109,20 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # only available for PostgreSQL and is highly recommended.
 #database_engine_option_server_side_cursors = False
 
-# Create only one connection to the database per thread, to reduce the
-# connection overhead.  Recommended when not using SQLite:
-#database_engine_option_strategy = threadlocal
-
 # Log all database transactions, can be useful for debugging and performance
 # profiling.  Logging is done via Python's 'logging' module under the qualname
 # 'galaxy.model.orm.logging_connection_proxy'
 #database_query_profiling_proxy = False
 
+# By default, Galaxy will use the same database to track user data and
+# tool shed install data. There are many situtations in which it is
+# valuable to seperate these - for instance bootstrapping fresh Galaxy
+# instances with pretested installs. The following optin can be used to
+# separate the tool shed install database (all other options listed above 
+# but prefixed with install_ are also available).
+#install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
+
 # -- Files and directories
-
-# Path where genome builds are stored. This defaults to tool-data/genome
-#genome_data_path = tool-data/genome
-
-# URL for rsync server to download pre-built indexes.
-#rsync_url = rsync://datacache.galaxyproject.org/indexes
 
 # Dataset files are stored in this directory.
 #file_path = database/files
@@ -209,6 +207,13 @@ visualization_plugins_directory = config/plugins/visualizations
 # Mako templates are compiled as needed and cached for reuse, this directory is
 # used for the cache
 #template_cache_path = database/compiled_templates
+
+# Citation related caching. Tool citations information maybe fetched from
+# external sources such as http://dx.doi.org/ by Galaxy - the following parameters
+# can be used to control the caching used to store this information.
+#citation_cache_type=file
+#citation_cache_data_dir=database/citations/data
+#citation_cache_lock_dir=database/citations/lock
 
 # External service types config file, defines what types of external_services configurations 
 # are available in Galaxy.
@@ -453,6 +458,10 @@ static_robots_txt = %(here)s/static/robots.txt
 
 #enable_cloud_launch = False
 #cloudlaunch_default_ami = ami-a7dbf6ce
+
+# Incremental Display Options
+
+#display_chunk_size = 65536
 
 # -- Advanced proxy features
 
@@ -796,8 +805,14 @@ use_interactive = True
 # the cluster that should be sourced by the user to set up the environment
 # prior to running tools.  This can be especially useful for running jobs as
 # the actual user, to remove the need to configure each user's environment
-# individually.  This only affects cluster jobs, not local jobs.
+# individually.
 #environment_setup_file = None
+
+
+# Optional file containing job resource data entry fields definition.
+# These fields will be presented to users in the tool forms and allow them to
+# overwrite default job resources such as number of processors, memory, and walltime.
+#job_resource_params_file = job_resource_params_conf.xml
 
 # If using job concurrency limits (configured in job_config_file), several
 # extra database queries must be performed to determine the number of jobs a
@@ -831,7 +846,7 @@ use_interactive = True
 # will automatically create and use a separate sqlite database located in your
 # <galaxy>/database folder (indicated in the commented out line below).
 
-#amqp_internal_connection = sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
+#amqp_internal_connection = sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
 
 

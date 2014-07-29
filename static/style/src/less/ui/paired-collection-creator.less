@@ -1,0 +1,385 @@
+// --- main layout elements
+.collection-creator {
+
+    height: 100%;
+    overflow: hidden;
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+
+    // ------------------------------------------------------------------------ general
+    ol, li {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    > *:not(.popover) {
+        padding: 0px 8px 0px 8px;
+    }
+    .btn {
+        border-color: #BFBFBF;
+    }
+
+    .vertically-spaced {
+        margin-top: 8px;
+    }
+    .scroll-container {
+        overflow: auto;
+        //overflow-y: scroll;
+    }
+    .truncate {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .empty-message {
+        color: grey;
+        font-style: italic;
+    }
+
+    // ------------------------------------------------------------------------ flex
+    &.flex-row-container,
+    .flex-row-container,
+    .flex-column-container {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+
+        -webkit-align-items: stretch;
+        -ms-align-items: stretch;
+        align-items: stretch;
+
+        -webkit-align-content: stretch;
+        -ms-align-content: stretch;
+        align-content: stretch;
+    }
+
+    // a series of vertical elements that will expand to fill available space
+    &.flex-row-container,
+    .flex-row-container {
+        -webkit-flex-direction: column;
+        -ms-flex-direction: column;
+        flex-direction: column;
+    }
+    .flex-row {
+        -webkit-flex: 1 auto;
+        -ms-flex: 1 auto;
+        flex: 1 0 auto;
+    }
+    .flex-row.no-flex {
+        -webkit-flex: 0 auto;
+        -ms-flex: 0 auto;
+        flex: 0 0 auto;
+    }
+
+    // a series of horizontal elements that will expand to fill available space
+    .flex-column-container {
+        -webkit-flex-direction: row;
+        -ms-flex-direction: row;
+        flex-direction: row;
+    }
+    .flex-column {
+        -webkit-flex: 1 auto;
+        -ms-flex: 1 auto;
+        flex: 1 1 auto;
+    }
+    .flex-column.no-flex {
+        -webkit-flex: 0 auto;
+        -ms-flex: 0 auto;
+        flex: 0 0 auto;
+    }
+
+    // ------------------------------------------------------------------------ sub-components
+    .choose-filters {
+        .help {
+            margin-bottom: 2px;
+            font-size: 90%;
+            color: grey;
+        }
+        button {
+            width: 100%;
+            margin-top: 2px;
+        }
+    }
+
+    .header .alert {
+        display: none;
+    }
+
+    // ------------------------------------------------------------------------ columns
+    .column {
+        width: 30%;
+    }
+    .column-title {
+        height: 22px;
+        line-height: 22px;
+        overflow: hidden;
+        &:hover {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .title {
+            font-weight: bold;
+        }
+        .title-info {
+            color: grey;
+            &:before {
+                content: ' - ';
+            }
+        }
+    }
+
+    .paired-column {
+        text-align: center;
+        // mess with these two to make center more/less priority
+        width: 22%;
+    }
+
+    // ------------------------------------------------------------------------ header
+    .header {
+        padding-bottom: 8px;
+
+        .main-help {
+            max-height: 36px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            padding: 8px;
+            background: #f8f8f8;
+            .help-content {
+                i {
+                    cursor: help;
+                    border-bottom: 1px dotted grey;
+                    font-style: normal;
+                    //font-weight: bold;
+                    //text-decoration: underline;
+                    //text-decoration-style: dashed;
+                }
+                ul, li {
+                    list-style: circle;
+                    margin-left: 16px;
+                }
+                p:first-child {
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                }
+                .less-help {
+                    display: inline-block;
+                    width: 100%;
+                    text-align: right;
+                }
+            }
+             .more-help {
+                //display: inline-block;
+                float: right;
+            }
+        }
+        .column-headers {
+            .column-header {
+                //min-height: 45px;
+                .unpaired-filter {
+                    width: 100%;
+                    .search-query {
+                        width: 100%;
+                        height: 22px;
+                    }
+                }
+            }
+        }
+        .paired-column a:not(:last-child) {
+            margin-right: 8px;
+        }
+        .reverse-column .column-title {
+            text-align: right;
+        }
+
+    }
+
+    // ------------------------------------------------------------------------ middle
+    .middle {
+    }
+    .unpaired-columns,
+    .paired-columns {
+        // huh! - giving these any static height will pull them in
+        height: 0;
+        // NOT setting the above will give a full-height page
+
+        border: 1px solid lightgrey;
+        border-width: 1px 0 1px 0;
+        //overflow-y: auto;
+        padding: 4px;
+    }
+    // ------------------------------------------------------------------------ unpaired
+    .paired-columns {
+        margin-bottom: 8px;
+    }
+
+    // ------------------------------------------------------------------------ middle
+    // ---- all
+    .column-datasets {
+        list-style: none;
+        overflow: hidden;
+
+        .dataset {
+            height: 32px;
+            margin-bottom: 2px;
+            border: 1px solid lightgrey;
+            border-radius: 3px;
+            padding: 0 8px 0 8px;
+            line-height: 28px;
+            cursor: pointer;
+            overflow: hidden;
+            &:last-child {
+                margin-bottom: 4px;
+            }
+        }
+    }
+
+    // ---- unpaired
+    .unpaired-columns {
+        .dataset.unpaired {
+            border-color: grey;
+            &:hover {
+                border-color: black;
+            }
+            &.selected {
+                border-color: black;
+                background: black;
+                color: white;
+            }
+        }
+        .forward-column {
+            .dataset.unpaired {
+                margin-right: 32px;
+            }
+        }
+        .paired-column {
+            .dataset.unpaired {
+                border-color: lightgrey;
+                color: lightgrey;
+                &:hover {
+                    border-color: black;
+                    color: black;
+                }
+            }
+        }
+        .reverse-column {
+            .dataset.unpaired {
+                text-align: right;
+                margin-left: 32px;
+            }
+        }
+    }
+
+    // ---- paritition/divider
+    .flexible-partition {
+        .flexible-partition-drag {
+            width: 100%;
+            height: 8px;
+            cursor: ns-resize;
+            &:hover {
+                background: lightgrey;
+            }
+        }
+        .column-header {
+            width: 100%;
+            text-align: center;
+            .column-title {
+                display: inline;
+                margin-right: 8px;
+            }
+        }
+    }
+
+    // ---- paired datasets
+    .paired-columns {
+        .dataset.paired {
+            background: #AFF1AF;
+            border-color: grey;
+            border-width: 2px;
+            &:hover,
+            &.emphasized {
+                border-color: black;
+            }
+        }
+        .forward-column {
+            .dataset.paired {
+                margin-left: 32px;
+                border-radius: 3px 0 0 3px;
+                border-right-color: grey;
+                border-right-width: 1px;
+                text-align: right;
+                &:after {
+                    margin-left: 8px;
+                    font-family: FontAwesome;
+                    content: '\f061';
+                }
+            }
+        }
+        .paired-column {
+            .dataset.paired {
+                border-radius: 0;
+                border-width: 2px 0 2px 0;
+                .dataset-name:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+        .reverse-column {
+            .dataset.paired {
+                margin-right: 32px;
+                border-radius: 0 3px 3px 0;
+                border-left-color: grey;
+                border-left-width: 1px;
+                &:before {
+                    margin-right: 8px;
+                    font-family: FontAwesome;
+                    content: '\f060';
+                }
+            }
+            .unpair-btn {
+                float: right;
+                margin-top: -34px;
+                width: 31px;
+                height: 32px;
+                //z-index: 1;
+                border-color: transparent;
+                //border-color: #BFBFBF;
+                background: transparent;
+                font-size: 120%;
+                &:hover {
+                    border-color: #BFBFBF;
+                    background: #DEDEDE;
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------ footer
+    .footer {
+        .collection-name-prompt.validation-warning:before {
+            //TODO: localize (somehow)
+            content: '(required)';
+            margin-right: 4px;
+            color: red;
+        }
+        .collection-name {
+            width: 50%;
+            &.validation-warning {
+                border-color: red;
+            }
+        }
+        .other-options > * {
+            // do not display the links to create other collections yet
+            display: none;
+            margin-left: 4px;
+        }
+        // actually appears/floats to the left of the input
+        .collection-name-prompt {
+            margin: 5px 4px 0 0;
+        }
+        padding-bottom: 8px;
+    }
+}

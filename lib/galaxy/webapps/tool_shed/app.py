@@ -9,7 +9,8 @@ from galaxy.openid.providers import OpenIDProviders
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
 from galaxy.tags.tag_handler import CommunityTagHandler
-from tool_shed.grids.util import RepositoryGridFilterManager
+from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 
 
@@ -64,6 +65,8 @@ class UniverseApplication( object ):
         # Let the Tool Shed's HgwebConfigManager know where the hgweb.config file is located.
         self.hgweb_config_manager = self.model.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
+        # Initialize the repository registry.
+        self.repository_registry = tool_shed.repository_registry.Registry( self )
         print >> sys.stderr, "Tool shed hgweb.config file is: ", self.hgweb_config_manager.hgweb_config
 
     def shutdown( self ):

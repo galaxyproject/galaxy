@@ -2,9 +2,10 @@
 define(['plugin/library/ui', 'plugin/library/ui-table-form', 'utils/utils'],
         function(Ui, TableForm, Utils) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  This class renders the chart configuration form.
+ */
+return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
         // link app
@@ -16,8 +17,9 @@ return Backbone.View.extend(
         // get current chart object
         this.chart = this.app.chart;
         
-        this.form = new TableForm.View({
-            title   : 'Chart options:',
+        // create settings
+        this.form = new TableForm.View(app, {
+            title   : 'Configuration',
             content : 'This chart type does not provide any options.'
         });
         
@@ -27,21 +29,19 @@ return Backbone.View.extend(
         // change
         var self = this;
         this.chart.on('change', function() {
-            self._refreshTable();
+            self._refresh();
         });
     },
     
     // update dataset
-    _refreshTable: function() {
-        // identify datasets
-        var chart_type = this.chart.get('type');
+    _refresh: function() {
+        // get settings
+        var chart_definition = this.chart.definition;
         
-        // check if dataset is available
-        if (!chart_type) {
+        // check if chart definition is available
+        if (!chart_definition) {
             return;
         }
-        // get settings
-        var chart_definition = this.app.types.get(chart_type);
         
         // set title
         this.form.title(chart_definition.category + ' - ' + chart_definition.title + ':');

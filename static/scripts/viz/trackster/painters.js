@@ -1,7 +1,5 @@
 define( ["libs/underscore"], function( _ ) {
 
-var extend = _.extend;
-
 /**
  * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
  * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
@@ -128,7 +126,7 @@ var Painter = function(data, view_start, view_end, prefs, mode) {
     this.view_start = view_start;
     this.view_end = view_end;
     // Drawing prefs
-    this.prefs = extend({}, this.default_prefs, prefs);
+    this.prefs = _.extend({}, this.default_prefs, prefs);
     this.mode = mode;
 };
 
@@ -354,7 +352,7 @@ var FeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_sca
 
 FeaturePainter.prototype.default_prefs = { block_color: "#FFF", connector_color: "#FFF" };
 
-extend(FeaturePainter.prototype, {
+_.extend(FeaturePainter.prototype, {
     get_required_height: function(rows_required, width) {
         // y_scale is the height per row
         var required_height = this.get_row_height(),
@@ -451,7 +449,7 @@ var LinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alp
     this.draw_individual_connectors = false;
 };
 
-extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
+_.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
     /**
      * Height of a single row, depends on mode
@@ -692,7 +690,7 @@ var ReadPainter = function(data, view_start, view_end, prefs, mode, alpha_scaler
     this.base_color_fn = base_color_fn;
 };
 
-extend(ReadPainter.prototype, FeaturePainter.prototype, {
+_.extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
      * Returns height based on mode.
      */
@@ -783,7 +781,9 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             char_width_px = ctx.canvas.manager.char_width_px,
             block_color = (strand === "+" ? this.prefs.detail_block_color : this.prefs.reverse_strand_color),
             pack_mode = (mode === 'Pack'),
-            paint_utils = new ReadPainterUtils(ctx, (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT), w_scale, mode),
+            draw_height = (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT),
+            rect_y = y_start + 1,
+            paint_utils = new ReadPainterUtils(ctx, draw_height, w_scale, mode),
             drawing_blocks = [];
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
@@ -813,10 +813,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
 
                 // Draw read base as rectangle.
                 ctx.fillStyle = block_color;
-                ctx.fillRect(s_start, 
-                             y_start + (pack_mode ? 1 : 4 ), 
-                             s_end - s_start, 
-                             (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
+                ctx.fillRect(s_start, rect_y, s_end - s_start, draw_height);
             }
         }
 
@@ -893,10 +890,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             }
                             // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
                             else if (w_scale > 0.05) {
-                                ctx.fillRect(c_start - gap, 
-                                             y_start + (pack_mode ? 1 : 4), 
-                                             Math.max( 1, Math.round(w_scale) ),
-                                             (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
+                                ctx.fillRect(c_start - gap, rect_y, Math.max( 1, Math.round(w_scale) ), draw_height);
                             }
                         }
                     }
@@ -913,7 +907,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
-                    paint_utils.draw_deletion(s_start, y_start + (pack_mode ? 1 : 4), cig_len);
+                    paint_utils.draw_deletion(s_start, rect_y, cig_len);
                     base_offset += cig_len;
                     break;
                 case "I": // Insertion.
@@ -1061,10 +1055,10 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             ctx.fillStyle = this.prefs.label_color;
             if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
-                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 8, this.max_label_length);
+                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_start + 9, this.max_label_length);
             } else {
                 ctx.textAlign = "right";
-                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 8, this.max_label_length);
+                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 9, this.max_label_length);
             }
         }
         
@@ -1081,7 +1075,7 @@ var ArcLinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, 
     this.draw_individual_connectors = true;
 };
 
-extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeaturePainter.prototype, {
+_.extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeaturePainter.prototype, {
 
     calculate_longest_feature_length: function () {
         var longest_feature_length = 0;
@@ -1340,7 +1334,7 @@ var ReadPainterUtils = function(ctx, row_height, px_per_base, mode) {
     this.delete_details_thickness = 0.2;
 };
 
-extend(ReadPainterUtils.prototype, {
+_.extend(ReadPainterUtils.prototype, {
     /**
      * Draw deletion of base(s). 
      * @param draw_detail if true, drawing in detail and deletion is drawn more subtly
@@ -1362,7 +1356,7 @@ var VariantPainter = function(data, view_start, view_end, prefs, mode, base_colo
     this.divider_height = 1;
 };
 
-extend(VariantPainter.prototype, Painter.prototype, {
+_.extend(VariantPainter.prototype, Painter.prototype, {
     /**
      * Height of a single row, depends on mode
      */
@@ -1462,6 +1456,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
         if (num_samples === 1) {
             row_height = feature_height = 
                 (w_scale < ctx.canvas.manager.char_width_px ? this.prefs.summary_height : row_height);
+            paint_utils.row_height = row_height;
             // No summary when there's a single sample.
             draw_summary = false;
         }

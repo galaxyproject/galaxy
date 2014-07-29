@@ -1,0 +1,116 @@
+{
+    "a_galaxy_workflow": "true", 
+    "annotation": "", 
+    "format-version": "0.1", 
+    "name": "MultipairTest223", 
+    "steps": {
+        "0": {
+            "annotation": "", 
+            "id": 0, 
+            "input_connections": {}, 
+            "inputs": [
+                {
+                    "description": "", 
+                    "name": "f1"
+                }
+            ], 
+            "name": "Input dataset collection", 
+            "outputs": [], 
+            "position": {
+                "left": 302.3333435058594, 
+                "top": 330
+            }, 
+            "tool_errors": null, 
+            "tool_id": null, 
+            "tool_state": "{\"collection_type\": \"paired\", \"name\": \"f1\"}", 
+            "tool_version": null, 
+            "type": "data_collection_input", 
+            "user_outputs": []
+        }, 
+        "1": {
+            "annotation": "", 
+            "id": 1, 
+            "input_connections": {}, 
+            "inputs": [
+                {
+                    "description": "", 
+                    "name": "f2"
+                }
+            ], 
+            "name": "Input dataset collection", 
+            "outputs": [], 
+            "position": {
+                "left": 288.3333435058594, 
+                "top": 446
+            }, 
+            "tool_errors": null, 
+            "tool_id": null, 
+            "tool_state": "{\"collection_type\": \"paired\", \"name\": \"f2\"}", 
+            "tool_version": null, 
+            "type": "data_collection_input", 
+            "user_outputs": []
+        }, 
+        "2": {
+            "annotation": "", 
+            "id": 2, 
+            "input_connections": {
+                "kind|f1": {
+                    "id": 0, 
+                    "output_name": "output"
+                }, 
+                "kind|f2": {
+                    "id": 1, 
+                    "output_name": "output"
+                }
+            }, 
+            "inputs": [], 
+            "name": "collection_two_paired", 
+            "outputs": [
+                {
+                    "name": "out1", 
+                    "type": "txt"
+                }
+            ], 
+            "position": {
+                "left": 782.3333740234375, 
+                "top": 200
+            }, 
+            "post_job_actions": {}, 
+            "tool_errors": null, 
+            "tool_id": "collection_two_paired", 
+            "tool_state": "{\"__page__\": 0, \"kind\": \"{\\\"f1\\\": null, \\\"f2\\\": null, \\\"collection_type\\\": \\\"paired\\\", \\\"__current_case__\\\": 0}\", \"__rerun_remap_job_id__\": null}", 
+            "tool_version": "0.1.0", 
+            "type": "tool", 
+            "user_outputs": []
+        }, 
+        "3": {
+            "annotation": "", 
+            "id": 3, 
+            "input_connections": {
+                "cond1|input1": {
+                    "id": 2, 
+                    "output_name": "out1"
+                }
+            }, 
+            "inputs": [], 
+            "name": "Concatenate datasets", 
+            "outputs": [
+                {
+                    "name": "out_file1", 
+                    "type": "input"
+                }
+            ], 
+            "position": {
+                "left": 1239.3333740234375, 
+                "top": 108.97916793823242
+            }, 
+            "post_job_actions": {}, 
+            "tool_errors": null, 
+            "tool_id": "cat2", 
+            "tool_state": "{\"__page__\": 0, \"__rerun_remap_job_id__\": null, \"cond1\": \"{\\\"datatype\\\": \\\"txt\\\", \\\"input1\\\": null, \\\"__current_case__\\\": 0}\"}", 
+            "tool_version": "1.0.0", 
+            "type": "tool", 
+            "user_outputs": []
+        }
+    }
+}

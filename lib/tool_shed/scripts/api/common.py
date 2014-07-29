@@ -8,11 +8,48 @@ new_path = [ os.path.join( os.path.dirname( __file__ ), '..', '..', '..', '..', 
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
-import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
+from tool_shed.util import hg_util
 
-from galaxy import eggs
-import pkg_resources
+
+class HTTPRedirectWithDataHandler( urllib2.HTTPRedirectHandler ):
+    
+    def __init__( self, method ):
+        '''
+        Upon first inspection, it would seem that this shouldn't be necessary, but for some reason
+        not having a constructor explicitly set the request method breaks PUT requests.
+        '''
+        self.valid_methods = [ 'GET', 'HEAD', 'POST', 'PUT', 'DELETE' ]
+        self.redirect_codes = [ '301', '302', '303', '307' ]
+        self.method = method
+
+    def redirect_request( self, request, fp, code, msg, headers, new_url ):
+        request_method = request.get_method()
+        if str( code ) in self.redirect_codes and request_method in self.valid_methods:
+            new_url = new_url.replace( ' ', '%20' )
+            request = urllib2.Request( new_url,
+                                       data=request.data,
+                                       headers=request.headers,
+                                       origin_req_host=request.get_origin_req_host(),
+                                       unverifiable=True )
+            if self.method in self.valid_methods:
+                if request.get_method() != self.method:
+                    request.get_method = lambda: self.method
+            return request
+        else:
+            urllib2.HTTPRedirectHandler.redirect_request( request, fp, code, msg, headers, new_url )
+
+def build_request_with_data( url, data, api_key, method ):
+    """Build a request with the received method."""
+    http_redirect_with_data_handler = HTTPRedirectWithDataHandler( method=method )
+    opener = urllib2.build_opener( http_redirect_with_data_handler )
+    urllib2.install_opener( opener )
+    url = make_url( url, api_key=api_key, args=None )
+    request = urllib2.Request( url, headers={ 'Content-Type': 'application/json' }, data=json.dumps( data ) )
+    request_method = request.get_method()
+    if request_method != method:
+        request.get_method = lambda: method
+    return opener, request
 
 def delete( api_key, url, data, return_formatted=True ):
     """
@@ -20,22 +57,23 @@ def delete( api_key, url, data, return_formatted=True ):
     'data' will become the JSON payload read by the Tool Shed.
     """
     try:
-        url = make_url( url, api_key=api_key, args=None )
-        req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
-        req.get_method = lambda: 'DELETE'
-        r = json.loads( urllib2.urlopen( req ).read() )
+        opener, request = build_request_with_data( url, data, api_key, 'DELETE' )
+        delete_request = opener.open( request )
+        response = json.loads( delete_request.read() )
     except urllib2.HTTPError, e:
         if return_formatted:
             print e
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
-    if not return_formatted:
-        return r
-    print 'Response'
-    print '--------'
-    print r
+            return dict( status='error', message=str( e.read( 1024 ) ) )
+    if return_formatted:
+        return response
+        print 'Response'
+        print '--------'
+        print response
+    else:
+        return response
 
 def display( url, api_key=None, return_formatted=True ):
     """Sends an API GET request and acts as a generic formatter for the JSON response."""
@@ -115,7 +153,7 @@ def get_latest_downloadable_changeset_revision_via_api( url, name, owner ):
         return None, error_message
     if len( changeset_revisions ) >= 1:
         return changeset_revisions[ -1 ], error_message
-    return suc.INITIAL_CHANGELOG_HASH, error_message
+    return hg_util.INITIAL_CHANGELOG_HASH, error_message
 
 def get_repository_dict( url, repository_dict ):
     """
@@ -176,16 +214,21 @@ def make_url( url, api_key=None, args=None ):
 
 def post( url, data, api_key=None ):
     """Do the POST."""
-    url = make_url( url, api_key=api_key, args=None )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ) )
-    return json.loads( urllib2.urlopen( req ).read() )
+    try:
+        opener, request = build_request_with_data( url, data, api_key, 'POST' )
+        post_request = opener.open( request )
+        return json.loads( post_request.read() )
+    except urllib2.HTTPError, e:
+        return dict( status='error', message=str( e.read( 1024 ) ) )
 
 def put( url, data, api_key=None ):
     """Do the PUT."""
-    url = make_url( url, api_key=api_key, args=None )
-    req = urllib2.Request( url, headers = { 'Content-Type': 'application/json' }, data = json.dumps( data ))
-    req.get_method = lambda: 'PUT'
-    return json.loads( urllib2.urlopen( req ).read() )
+    try:
+        opener, request = build_request_with_data( url, data, api_key, 'PUT' )
+        put_request = opener.open( request )
+        return json.loads( put_request.read() )
+    except urllib2.HTTPError, e:
+        return dict( status='error', message=str( e.read( 1024 ) ) )
 
 def submit( url, data, api_key=None, return_formatted=True ):
     """
@@ -193,22 +236,22 @@ def submit( url, data, api_key=None, return_formatted=True ):
     'data' will become the JSON payload read by the Tool Shed.
     """
     try:
-        r = post( url, data, api_key=api_key )
+        response = post( url, data, api_key=api_key )
     except urllib2.HTTPError, e:
         if return_formatted:
             print e
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. '+ str( e.read( 1024 ) )
+            return dict( status='error', message=str( e.read( 1024 ) ) )
     if not return_formatted:
-        return r
+        return response
     print 'Response'
     print '--------'
-    if type( r ) == list:
+    if type( response ) == list:
         # Currently the only implemented responses are lists of dicts, because submission creates
         # some number of collection elements.
-        for i in r:
+        for i in response:
             if type( i ) == dict:
                 if 'url' in i:
                     print i.pop( 'url' )
@@ -221,7 +264,7 @@ def submit( url, data, api_key=None, return_formatted=True ):
             else:
                 print i
     else:
-        print r
+        print response
 
 def update( api_key, url, data, return_formatted=True ):
     """
@@ -229,16 +272,17 @@ def update( api_key, url, data, return_formatted=True ):
     'data' will become the JSON payload read by the Tool Shed.
     """
     try:
-        r = put( url, data, api_key=api_key )
+        response = put( url, data, api_key=api_key )
     except urllib2.HTTPError, e:
         if return_formatted:
             print e
             print e.read( 1024 )
             sys.exit( 1 )
         else:
-            return 'Error. ' + str( e.read( 1024 ) )
-    if not return_formatted:
-        return r
-    print 'Response'
-    print '--------'
-    print r
+            return dict( status='error', message=str( e.read( 1024 ) ) )
+    if return_formatted:
+        print 'Response'
+        print '--------'
+        print response
+    else:
+        return response

@@ -65,6 +65,8 @@ class Configuration( object ):
             self.tool_dependency_dir = None
             self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
+        # Galaxy flavor Docker Image
+        self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.user_activation_on = kwargs.get( 'user_activation_on', None )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
@@ -83,6 +85,7 @@ class Configuration( object ):
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates/community" ), self.root )
         self.admin_users = kwargs.get( "admin_users", "" )
+        self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )

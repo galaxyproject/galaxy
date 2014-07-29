@@ -24,27 +24,30 @@ from galaxy.util import DATABASE_MAX_STRING_SIZE_PRETTY
 from galaxy.util import shrink_string_by_size
 from galaxy.util import unicodify
 
-from tool_shed.galaxy_install.tool_dependencies import td_common_util
 from tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
 
+from tool_shed.util import basic_util
+
 log = logging.getLogger( __name__ )
+
 
 class InstallEnvironment( object ):
     """Object describing the environment built up as part of the process of building and installing a package."""
 
 
-    def __init__( self, tool_shed_repository_install_dir, install_dir  ):
+    def __init__( self, app, tool_shed_repository_install_dir, install_dir  ):
         """
         The value of the received tool_shed_repository_install_dir is the root installation directory
         of the repository containing the tool dependency, and the value of the received install_dir is
         the root installation directory of the tool dependency.
         """
+        self.app = app
         self.env_shell_file_paths = []
         self.install_dir = install_dir
         self.tool_shed_repository_install_dir = tool_shed_repository_install_dir
 
     def __call__( self ):
-        with settings( warn_only=True, **td_common_util.get_env_var_values( self ) ):
+        with settings( warn_only=True, **basic_util.get_env_var_values( self ) ):
             with prefix( self.__setup_environment() ):
                 yield
 
@@ -120,12 +123,12 @@ class InstallEnvironment( object ):
                 log.debug( 'Invalid file %s specified, ignoring template_command action.' % str( env_shell_file_path ) )
         return env_vars
 
-    def handle_command( self, app, tool_dependency, cmd, return_output=False ):
+    def handle_command( self, tool_dependency, cmd, return_output=False ):
         """Handle a command and log the results."""
-        context = app.install_model.context
+        context = self.app.install_model.context
         command = str( cmd )
         output = self.handle_complex_command( command )
-        self.log_results( cmd, output, os.path.join( self.install_dir, td_common_util.INSTALLATION_LOG ) )
+        self.log_results( cmd, output, os.path.join( self.install_dir, basic_util.INSTALLATION_LOG ) )
         stdout = output.stdout
         stderr = output.stderr
         if len( stdout ) > DATABASE_MAX_STRING_SIZE:
@@ -135,7 +138,7 @@ class InstallEnvironment( object ):
             print "Length of stderr > %s, so only a portion will be saved in the database." % str( DATABASE_MAX_STRING_SIZE_PRETTY )
             stderr = shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         if output.return_code not in [ 0 ]:
-            tool_dependency.status = app.install_model.ToolDependency.installation_status.ERROR
+            tool_dependency.status = self.app.install_model.ToolDependency.installation_status.ERROR
             if stderr:
                 tool_dependency.error_message = unicodify( stderr )
             elif stdout:
@@ -214,18 +217,18 @@ class InstallEnvironment( object ):
             # Sleep a bit before asking the readers again.
             time.sleep( .1 )
             current_wait_time = time.time() - start_timer
-            if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > td_common_util.NO_OUTPUT_TIMEOUT:
+            if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > basic_util.NO_OUTPUT_TIMEOUT:
                 err_msg = "\nShutting down process id %s because it generated no output for the defined timeout period of %.1f seconds.\n" % \
-                        ( pid, td_common_util.NO_OUTPUT_TIMEOUT )
+                        ( pid, basic_util.NO_OUTPUT_TIMEOUT )
                 stderr_reader.lines.append( err_msg )
                 process_handle.kill()
                 break
         thread_lock.release()
         # Wait until each of the threads we've started terminate.  The following calls will block each thread
         # until it terminates either normally, through an unhandled exception, or until the timeout occurs.
-        stdio_thread.join( td_common_util.NO_OUTPUT_TIMEOUT )
-        stdout_reader.join( td_common_util.NO_OUTPUT_TIMEOUT )
-        stderr_reader.join( td_common_util.NO_OUTPUT_TIMEOUT )
+        stdio_thread.join( basic_util.NO_OUTPUT_TIMEOUT )
+        stdout_reader.join( basic_util.NO_OUTPUT_TIMEOUT )
+        stderr_reader.join( basic_util.NO_OUTPUT_TIMEOUT )
         # Close subprocess' file descriptors.
         error = self.close_file_descriptor( process_handle.stdout )
         error = self.close_file_descriptor( process_handle.stderr )

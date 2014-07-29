@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Export a specified repository revision and optionally all of its defined repository dependencies from the tool shed into a compressed archive.
+Export a specified repository revision and optionally all of its defined repository
+dependencies from the tool shed into a compressed archive.
 
 Here is a working example of how to use this script to export a repository from the tool shed.
 ./export.py --url http://testtoolshed.g2.bx.psu.edu --name chemicaltoolbox --owner bgruening --revision 4133dbf7ff4d --export_repository_dependencies True --download_dir /tmp
@@ -8,25 +9,44 @@ Here is a working example of how to use this script to export a repository from 
 
 import os
 import sys
+import tempfile
 import argparse
 import urllib2
 sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import display
 from common import submit
-from tool_shed.util import export_util
+from tool_shed.util import basic_util
 
+CAPSULE_FILENAME = 'capsule'
+CAPSULE_WITH_DEPENDENCIES_FILENAME = 'capsule_with_dependencies'
 CHUNK_SIZE = 2**20 # 1Mb
 
-def get_file_type_str( changeset_revision, file_type ):
-    if file_type == 'zip':
-        file_type_str = '%s.zip' % changeset_revision
-    elif file_type == 'bz2':
-        file_type_str = '%s.tar.bz2' % changeset_revision
-    elif file_type == 'gz':
-        file_type_str = '%s.tar.gz' % changeset_revision
+def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_revision, file_type,
+                                          export_repository_dependencies, use_tmp_archive_dir=False ):
+    tool_shed = remove_protocol_from_tool_shed_url( tool_shed_url )
+    file_type_str = basic_util.get_file_type_str( changeset_revision, file_type )
+    if self.export_repository_dependencies:
+        repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_WITH_DEPENDENCIES_FILENAME,
+                                                             tool_shed,
+                                                             name,
+                                                             owner,
+                                                             file_type_str )
     else:
-        file_type_str = ''
-    return file_type_str
+        repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_FILENAME,
+                                                             tool_shed,
+                                                             name,
+                                                             owner,
+                                                             file_type_str )
+    if use_tmp_archive_dir:
+        tmp_archive_dir = tempfile.mkdtemp( prefix="tmp-toolshed-arcdir" )
+        repositories_archive_filename = os.path.join( tmp_archive_dir, repositories_archive_filename )
+    return repositories_archive_filename
+
+def remove_protocol_from_tool_shed_url( tool_shed_url ):
+    protocol, base = tool_shed_url.split( '://' )
+    base = base.replace( ':', '_colon_' )
+    base = base.rstrip( '/' )
+    return base
 
 def string_as_bool( string ):
     if str( string ).lower() in ( 'true', 'yes', 'on' ):
@@ -61,14 +81,15 @@ def main( options ):
         if error_messages:
             print "Error attempting to export revision ", options.changeset_revision, " of repository ", options.name, " owned by ", options.owner, ":\n", error_messages
         else:
+            export_repository_dependencies = string_as_bool( options.export_repository_dependencies )
             repositories_archive_filename = \
-                export_util.generate_repository_archive_filename( base_tool_shed_url,
-                                                                  options.name,
-                                                                  options.owner,
-                                                                  options.changeset_revision,
-                                                                  file_type,
-                                                                  export_repository_dependencies=string_as_bool( options.export_repository_dependencies ),
-                                                                  use_tmp_archive_dir=False )
+                generate_repository_archive_filename( base_tool_shed_url,
+                                                      options.name,
+                                                      options.owner,
+                                                      options.changeset_revision,
+                                                      file_type,
+                                                      export_repository_dependencies=export_repository_dependencies,
+                                                      use_tmp_archive_dir=False )
             download_url = export_dict[ 'download_url' ]
             download_dir = os.path.abspath( options.download_dir )
             file_path = os.path.join( download_dir, repositories_archive_filename )

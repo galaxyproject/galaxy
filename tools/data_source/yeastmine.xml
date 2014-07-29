@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<tool name="YeastMine" id="yeastmine" tool_type="data_source">
+    <description>server</description>
+    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <inputs action="http://yeastmine.yeastgenome.org/yeastmine/begin.do" check_values="false" method="get"> 
+        <display>go to yeastMine server $GALAXY_URL</display>
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="auto" >
+            <value_translation>
+                <value galaxy_value="auto" remote_value="txt" /> <!-- intermine currently always provides 'txt', make this auto detect -->
+            </value_translation>
+        </request_param>
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>

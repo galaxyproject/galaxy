@@ -1,16 +1,30 @@
 define([
+    "mvc/dataset/states",
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-edit",
-    "mvc/collection/dataset-collection-edit",
+    "mvc/collection/hdca-edit",
+    "mvc/history/history-contents",
     "mvc/history/readonly-history-panel",
     "mvc/tags",
     "mvc/annotations",
     "utils/localization"
-], function( hdaModel, hdaEdit, datasetCollectionEdit, readonlyPanel, tagsMod, annotationsMod, _l ){
+], function(
+    STATES,
+    HDA_MODEL,
+    HDA_EDIT,
+    HDCA_EDIT,
+    HISTORY_CONTENTS,
+    READONLY_PANEL,
+    TAGS,
+    ANNOTATIONS,
+    _l
+){
 /* =============================================================================
 TODO:
 
 ============================================================================= */
+var _super = READONLY_PANEL.ReadOnlyHistoryPanel;
+// base class for current-history-panel and used as-is in history/view.mako
 /** @class Editable View/Controller for the history model.
  *  @name HistoryPanel
  *
@@ -25,18 +39,19 @@ TODO:
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
+var HistoryPanel = _super.extend(
 /** @lends HistoryPanel.prototype */{
 
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
+    /** logger used to record this.log messages, commonly set to console */
+    // comment this out to suppress log output
     //logger              : console,
 
     /** class to use for constructing the HDA views */
-    HDAViewClass : hdaEdit.HDAEditView,
+    HDAViewClass    : HDA_EDIT.HDAEditView,
+    HDCAViewClass   : HDCA_EDIT.HDCAEditView,
 
     // ......................................................................... SET UP
-    /** Set up the view, set up storage, bind listeners to HDACollection events
+    /** Set up the view, set up storage, bind listeners to HistoryContents events
      *  @param {Object} attributes
      */
     initialize : function( attributes ){
@@ -45,6 +60,8 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         // ---- set up instance vars
         /** selected hda ids */
         this.selectedHdaIds = [];
+        /** last selected hda */
+        this.lastSelectedViewId = null;
 
         /** editor for tags - sub-view */
         this.tagsEditor = null;
@@ -60,13 +77,13 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         this.annotationEditorShown  = attributes.annotationEditorShown || false;
         this.tagsEditorShown  = attributes.tagsEditorShown || false;
 
-        readonlyPanel.ReadOnlyHistoryPanel.prototype.initialize.call( this, attributes );
+        _super.prototype.initialize.call( this, attributes );
     },
 
     // ------------------------------------------------------------------------ panel rendering
     /** listening for history and HDA events */
     _setUpModelEventHandlers : function(){
-        readonlyPanel.ReadOnlyHistoryPanel.prototype._setUpModelEventHandlers.call( this );
+        _super.prototype._setUpModelEventHandlers.call( this );
 
         this.model.on( 'change:nice_size', this.updateHistoryDiskSize, this );
 
@@ -108,7 +125,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** render the tags sub-view controller */
     _renderTags : function( $where ){
         var panel = this;
-        this.tagsEditor = new tagsMod.TagsEditor({
+        this.tagsEditor = new TAGS.TagsEditor({
             model           : this.model,
             el              : $where.find( '.history-controls .tags-display' ),
             onshowFirstTime : function(){ this.render(); },
@@ -129,7 +146,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
     /** render the annotation sub-view controller */
     _renderAnnotation : function( $where ){
         var panel = this;
-        this.annotationEditor = new annotationsMod.AnnotationEditor({
+        this.annotationEditor = new ANNOTATIONS.AnnotationEditor({
             model           : this.model,
             el              : $where.find( '.history-controls .annotation-display' ),
             onshowFirstTime : function(){ this.render(); },
@@ -162,7 +179,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
      */
     _setUpBehaviours : function( $where ){
         $where = $where || this.$el;
-        readonlyPanel.ReadOnlyHistoryPanel.prototype._setUpBehaviours.call( this, $where );
+        _super.prototype._setUpBehaviours.call( this, $where );
 
         // anon users shouldn't have access to any of the following
         if( !this.model ){
@@ -204,22 +221,22 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         var panel = this,
             actions = [
                 {   html: _l( 'Hide datasets' ), func: function(){
-                        var action = hdaModel.HistoryDatasetAssociation.prototype.hide;
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype.hide;
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
                 },
                 {   html: _l( 'Unhide datasets' ), func: function(){
-                        var action = hdaModel.HistoryDatasetAssociation.prototype.unhide;
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype.unhide;
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
                 },
                 {   html: _l( 'Delete datasets' ), func: function(){
-                        var action = hdaModel.HistoryDatasetAssociation.prototype['delete'];
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype['delete'];
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
                 },
                 {   html: _l( 'Undelete datasets' ), func: function(){
-                        var action = hdaModel.HistoryDatasetAssociation.prototype.undelete;
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype.undelete;
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
                 }            ];
@@ -227,7 +244,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             actions.push({
                 html: _l( 'Permanently delete datasets' ), func: function(){
                     if( confirm( _l( 'This will permanently remove the data in your datasets. Are you sure?' ) ) ){
-                        var action = hdaModel.HistoryDatasetAssociation.prototype.purge;
+                        var action = HDA_MODEL.HistoryDatasetAssociation.prototype.purge;
                         panel.getSelectedHdaCollection().ajaxQueue( action );
                     }
                 }
@@ -237,14 +254,41 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             html: _l( 'Build Dataset List (Experimental)' ), func: function() {
                 panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "list" );
             }
-        } );
+        });
         actions.push( {
             // TODO: Only show quick pair if two things selected.
             html: _l( 'Build Dataset Pair (Experimental)' ), func: function() {
                 panel.getSelectedHdaCollection().promoteToHistoryDatasetCollection( panel.model, "paired" );
             }
-        } );
+        });
+        actions.push( {
+            // TODO: Only show quick pair if two things selected.
+            html: _l( 'Build List of Dataset Pairs (Experimental)' ),
+            func: _.bind( panel._showPairedCollectionModal, panel )
+        });
         return new PopupMenu( $where.find( '.history-dataset-action-popup-btn' ), actions );
+    },
+
+    _showPairedCollectionModal : function(){
+        var panel = this,
+            datasets = panel.getSelectedHdaCollection().toJSON().filter( function( content ){
+                return content.history_content_type === 'dataset'
+                    && content.state === STATES.OK;
+            });
+        if( datasets.length ){
+            require([ 'mvc/collection/paired-collection-creator' ], function( creator ){
+                window.creator = creator.pairedCollectionCreatorModal( datasets, {
+                    historyId : panel.model.id
+                });
+            });
+        } else {
+            //Galaxy.modal.show({
+            //    body : _l( 'No valid datasets were selected' ),
+            //    buttons : {
+            //        'Ok': function(){ Galaxy.modal.hide(); }
+            //    }
+            //});
+        }
     },
 
     // ------------------------------------------------------------------------ hda sub-views
@@ -267,39 +311,15 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
         } // otherwise, the hdaView rendering should handle it
     },
 
-    /** Create an HDA view for the given HDA (but leave attachment for addContentView above)
-     *  @param {HistoryDatasetAssociation} hda
-     */
-    _createContentView : function( hda ){
-        var hdaId = hda.get( 'id' ),
-            historyContentType = hda.get( 'history_content_type' ),
-            hdaView = null;
-
-        if( historyContentType == "dataset" ) { 
-            hdaView = new this.HDAViewClass({
-                model           : hda,
-                linkTarget      : this.linkTarget,
-                expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
-                //draggable       : true,
-                selectable      : this.selecting,
-                purgeAllowed    : this.purgeAllowed,
-                hasUser         : this.model.ownedByCurrUser(),
-                logger          : this.logger,
-                tagsEditorShown       : ( this.tagsEditor && !this.tagsEditor.hidden ),
-                annotationEditorShown : ( this.annotationEditor && !this.annotationEditor.hidden )
-            });
-        } else if ( historyContentType == "dataset_collection" ) {
-            hdaView = new datasetCollectionEdit.DatasetCollectionEditView({
-                model           : hda,
-                linkTarget      : this.linkTarget,
-                expanded        : this.storage.get( 'expandedHdas' )[ hdaId ],
-                //draggable       : true,
-                hasUser         : this.model.ownedByCurrUser(),
-                logger          : this.logger
-            });
-        }
-        this._setUpHdaListeners( hdaView );
-        return hdaView;
+    _getContentOptions : function( content ){
+        var options = _super.prototype._getContentOptions.call( this, content );
+        _.extend( options, {
+            selectable              : this.selecting,
+            purgeAllowed            : this.purgeAllowed,
+            tagsEditorShown         : ( this.tagsEditor && !this.tagsEditor.hidden ),
+            annotationEditorShown   : ( this.annotationEditor && !this.annotationEditor.hidden )
+        });
+        return options;
     },
 
     /** Set up HistoryPanel listeners for HDAView events. Currently binds:
@@ -308,16 +328,37 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
      */
     _setUpHdaListeners : function( hdaView ){
         var historyView = this;
-        readonlyPanel.ReadOnlyHistoryPanel.prototype._setUpHdaListeners.call( this, hdaView );
+        _super.prototype._setUpHdaListeners.call( this, hdaView );
 
         // maintain a list of hdas that are selected
-        hdaView.on( 'selected', function( hdaView ){
-            var id = hdaView.model.get( 'id' );
-            historyView.selectedHdaIds = _.union( historyView.selectedHdaIds, [ id ] );
+        hdaView.on( 'selected', function( hdaView, event ){
+            if( !event ){ return; }
+            //console.debug( 'selected', event );
+            var selectedIds = [];
+            //console.debug( historyView.lastSelectedViewId, historyView.hdaViews[ historyView.lastSelectedViewId ] );
+
+            // shift will select a range, but not set lastSelectedViewId
+            if( ( event.shiftKey )
+            &&  ( historyView.lastSelectedViewId && _.has( historyView.hdaViews, historyView.lastSelectedViewId ) ) ){
+                var lastSelectedView = historyView.hdaViews[ historyView.lastSelectedViewId ];
+                selectedIds = historyView.selectDatasetRange( hdaView, lastSelectedView )
+                    .map( function( view ){ return view.model.id; });
+
+            // only
+            } else {
+                var id = hdaView.model.id;
+                historyView.lastSelectedViewId = id;
+                //console.debug( 'lastSelectedViewId:', historyView.lastSelectedViewId );
+                selectedIds = [ id ];
+            }
+            //console.debug( 'selectedIds:', selectedIds );
+            historyView.selectedHdaIds = _.union( historyView.selectedHdaIds, selectedIds );
+            //TODO: might want to use getSelectedHdaViews instead managing these lists with ops
             //console.debug( 'selected', historyView.selectedHdaIds );
         });
-        hdaView.on( 'de-selected', function( hdaView ){
-            var id = hdaView.model.get( 'id' );
+        hdaView.on( 'de-selected', function( hdaView, event ){
+            //console.debug( 'de-selected', event );
+            var id = hdaView.model.id;
             historyView.selectedHdaIds = _.without( historyView.selectedHdaIds, id );
             //console.debug( 'de-selected', historyView.selectedHdaIds );
         });
@@ -363,7 +404,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 
     // ------------------------------------------------------------------------ panel events
     /** event map */
-    events : _.extend( _.clone( readonlyPanel.ReadOnlyHistoryPanel.prototype.events ), {
+    events : _.extend( _.clone( _super.prototype.events ), {
         'click .history-select-btn'                 : 'toggleSelectors',
         'click .history-select-all-datasets-btn'    : 'selectAllDatasets',
         'click .history-deselect-all-datasets-btn'  : 'deselectAllDatasets'
@@ -386,6 +427,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             view.showSelector();
         });
         this.selectedHdaIds = [];
+        this.lastSelectedViewId = null;
     },
 
     /** hide selectors on all visible hdas and associated controls */
@@ -397,6 +439,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
             view.hideSelector();
         });
         this.selectedHdaIds = [];
+        this.lastSelectedViewId = null;
     },
 
     /** show or hide selectors on all visible hdas and associated controls */
@@ -417,9 +460,19 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 
     /** deselect all visible hdas */
     deselectAllDatasets : function( event ){
+        this.lastSelectedViewId = null;
         _.each( this.hdaViews, function( view ){
             view.deselect( event );
         });
+    },
+
+    /** select a range of datasets between A and B */
+    selectDatasetRange : function( viewA, viewB ){
+        var range = this.hdaViewRange( viewA, viewB );
+        _.each( range, function( view ){
+            view.select();
+        });
+        return range;
     },
 
     /** return an array of all currently selected hdas */
@@ -431,7 +484,7 @@ var HistoryPanel = readonlyPanel.ReadOnlyHistoryPanel.extend(
 
     /** return an HdaCollection of the models of all currenly selected hdas */
     getSelectedHdaCollection : function(){
-        return new hdaModel.HDACollection( _.map( this.getSelectedHdaViews(), function( hdaView ){
+        return new HISTORY_CONTENTS.HistoryContents( _.map( this.getSelectedHdaViews(), function( hdaView ){
             return hdaView.model;
         }), { historyId: this.model.id });
     },

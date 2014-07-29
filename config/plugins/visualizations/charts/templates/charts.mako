@@ -21,19 +21,20 @@
         ## shared css
         ${h.css( 'base' )}
 
-        ## install nv.d3 module
-        ${h.javascript_link( app_root + "plugins/nvd3/nv.d3.js" )}
+        ## crossfilter
+        ${h.javascript_link( app_root + "plugins/crossfilter/crossfilter.js" )}
+
+        ## canvg
+        ${h.javascript_link( app_root + "plugins/canvg/rgbcolor.js" )}
+        ${h.javascript_link( app_root + "plugins/canvg/canvg.js" )}
+
+        ## nvd3
         ${h.stylesheet_link( app_root + "plugins/nvd3/nv.d3.css" )}
 
-        ## install highcharts module
-        ${h.javascript_link( app_root + "plugins/highcharts/highcharts.js" )}
-        ${h.javascript_link( app_root + "plugins/highcharts/highcharts-more.js" )}
-        
-        ## install heat map module
-        ${h.stylesheet_link( app_root + "plugins/heatmap/heatmap.css" )}
-
-        ## install boxplot module
-        ##${h.javascript_link( app_root + "plugins/box.js" )}
+        ## jqplot
+        ${h.stylesheet_link( app_root + "plugins/jqplot/jquery.jqplot.css" )}
+        ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.js" )}
+        ${h.javascript_link( app_root + "plugins/jqplot/jquery.jqplot.plugins.js" )}
 
         ## load merged/minified code
         ${h.javascript_link( app_root + "build-app.js" )}
@@ -44,7 +45,6 @@
 
     <body>
         <script type="text/javascript">
-
             // get configuration
             var config = {
                 root     : '${root}',
@@ -68,11 +68,14 @@
             require.config({
                 baseUrl: config.root + "static/scripts/",
                 paths: {
-                    "plugin": "${app_root}"
+                    "plugin"        : "${app_root}",
+                    "d3"            : "libs/d3"
                 },
                 shim: {
                     "libs/underscore": { exports: "_" },
-                    "libs/backbone/backbone": { exports: "Backbone" }
+                    "libs/backbone/backbone": { exports: "Backbone" },
+                    "d3": { exports: "d3"}
+
                 }
             });
 

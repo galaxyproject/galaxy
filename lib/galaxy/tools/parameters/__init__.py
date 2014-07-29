@@ -53,7 +53,7 @@ def check_param( trans, param, incoming_value, param_values, source='html' ):
     value = incoming_value
     error = None
     try:
-        if value is not None or isinstance( param, DataToolParameter ):
+        if value is not None or isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
             # Convert value from HTML representation
             if source == 'html':
                 value = param.from_html( value, trans, param_values )

@@ -29,7 +29,7 @@
     ${h.js( "libs/jquery/jquery.rating" )}
 </%def>
 
-${render_tool_shed_repository_actions( repository=repository )}
+${render_tool_shed_repository_actions( repository=repository, metadata=metadata )}
 
 %if message:
     ${render_msg( message, status )}

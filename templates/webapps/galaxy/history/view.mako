@@ -179,7 +179,6 @@ ${parent.javascripts()}
             var panelClass = panelMod[ panelToUse.className ],
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
                 historyModel = require( 'mvc/history/history-model' ),
-                hdaBaseView  = require( 'mvc/dataset/hda-base' ),
                 history = new historyModel.History( historyJSON, hdaJSON );
 
             window.historyPanel = new panelClass({

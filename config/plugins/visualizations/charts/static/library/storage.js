@@ -1,9 +1,10 @@
 // dependencies
-define(['utils/utils', 'plugin/models/chart', 'plugin/models/group'], function(Utils, Chart, Group) {
+define(['utils/utils', 'plugin/models/chart', 'plugin/models/group', 'mvc/visualization/visualization-model'], function(Utils, Chart, Group) {
 
-// collection
-return Backbone.Model.extend(
-{
+/**
+ *  This class saves and loads a chart through the api.
+ */
+return Backbone.Model.extend({
     // viz model
     vis: null,
     
@@ -44,7 +45,6 @@ return Backbone.Model.extend(
     
     // pack and save nested chart model
     save: function() {
-    
         // link chart
         var chart = this.app.chart;
         
@@ -94,6 +94,28 @@ return Backbone.Model.extend(
         if (!chart_dict.attributes) {
             return false;
         }
+        
+        // get chart type
+        var chart_type = chart_dict.attributes['type'];
+        
+        // check chart type
+        if (!chart_type) {
+            console.debug('Storage::load() - Chart type not provided. Invalid format.');
+            return false;
+        }
+        
+        // get chart definition
+        var chart_definition = this.app.types.get(chart_type);
+        if (!chart_definition) {
+            console.debug('Storage::load() - Chart type not supported. Please re-configure the chart. Resetting chart.');
+            return false;
+        }
+        
+        // initiating chart
+        console.debug('Storage::load() - Loading chart type ' + chart_type + '.');
+        
+        // parse chart definition
+        this.chart.definition = chart_definition;
         
         // main
         this.chart.set(chart_dict.attributes);

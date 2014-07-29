@@ -73,12 +73,13 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
             collection_type="list:paired",
             instance_type="history",
             history_id=self.history_id,
-            name="nested_collecion",
+            name="a nested collection",
             element_identifiers=json.dumps( element_identifiers ),
         )
         create_response = self._post( "dataset_collections", payload )
         dataset_collection = self._check_create_response( create_response )
         assert dataset_collection[ "collection_type" ] == "list:paired"
+        assert dataset_collection[ "name" ] == "a nested collection"
         returned_collections = dataset_collection[ "elements" ]
         assert len( returned_collections ) == 1, dataset_collection
         pair_1_element = returned_collections[ 0 ]

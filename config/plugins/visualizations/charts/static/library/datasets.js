@@ -1,7 +1,9 @@
 // dependencies
 define(['utils/utils'], function(Utils) {
 
-// widget
+/**
+ *  This class handles, formats and caches datasets.
+ */
 return Backbone.Collection.extend(
 {
     // list of datasets
@@ -11,8 +13,7 @@ return Backbone.Collection.extend(
     cache: {},
     
     // initialize
-    initialize: function(app, options)
-    {
+    initialize: function(app, options){
         // link app
         this.app = app;
         
@@ -20,52 +21,133 @@ return Backbone.Collection.extend(
         this.options = Utils.merge(options, this.optionsDefault);
     },
     
-    // wait
-    request: function(request_dictionary, success, error) {
-        // link this
-        var self = this;
-        
-        // check if column data is requested
+    // request handler
+    request: function(request_dictionary) {
         if (request_dictionary.groups) {
-            this._get(request_dictionary, success);
+            this._get_blocks(request_dictionary);
         } else {
-            // check if dataset is available from cache
-            var dataset = this.list[request_dictionary.id];
-            if (dataset) {
-                success(dataset);
-                return;
-            }
+            this._get_dataset(request_dictionary.id, request_dictionary.success, request_dictionary.error)
+        }
+    },
+    
+    // multiple request handler
+    _get_blocks: function(request_dictionary) {
+        // get callbacks
+        var success     = request_dictionary.success;
+        var progress    = request_dictionary.progress;
         
-            // request dataset
-            Utils.request('GET', config.root + 'api/datasets/' + request_dictionary.id, {}, function(dataset) {
-                switch (dataset.state) {
-                    case 'error':
-                        if (error) {
-                            error(dataset);
-                        }
+        // query block size
+        var query_size    = this.app.config.get('query_limit');
+        var query_timeout = this.app.config.get('query_timeout');
+        
+        // set range
+        var query_start = request_dictionary.start || 0;
+        var query_end   = query_start + request_dictionary.query_limit || query_start + this.app.config.get('query_limit');
+
+        // get query limit
+        var query_range = Math.abs(query_end - query_start);
+        if (query_range <= 0) {
+            console.debug('FAILED - Datasets::request() - Invalid query range.');
+            return;
+        }
+        
+        // get number of required queries
+        var query_number = Math.ceil(query_range / query_size) || 1;
+        
+        // get query dictionary template
+        var query_dictionary_template = $.extend(true, {}, request_dictionary);
+        
+        // reset query counter
+        var query_counter = 0;
+        
+        // fetch blocks
+        var self = this;
+        function fetch_blocks (query) {
+            self._get(query, function() {
+                // copy values from query into request_dictionary
+                var done = false;
+                for (var group_index in request_dictionary.groups) {
+                    // get source/destination
+                    destination_group = request_dictionary.groups[group_index];
+                    source_group = query.groups[group_index];
+                    
+                    // check if value fields already exist
+                    if (!destination_group.values) {
+                        destination_group.values = [];
+                    }
+                    
+                    // concat values
+                    destination_group.values = destination_group.values.concat(source_group.values);
+                    
+                    // validate
+                    if (source_group.values.length == 0) {
+                        done = true;
                         break;
-                    default:
-                        self.list[request_dictionary.id] = dataset;
-                        success(dataset);
+                    }
+                }
+                
+                // check if for remaining queries
+                if (++query_counter < query_number && !done) {
+                    // report progress
+                    if (progress) {
+                        progress(parseInt((query_counter / query_number) * 100));
+                    }
+                    
+                    // next query
+                    var start = query.start + query_size;
+                    query = $.extend(true, query_dictionary_template, {start: start});
+                    fetch_blocks(query);
+                } else {
+                    success();
                 }
             });
+        
+        };
+        
+        // prepare query
+        var query = $.extend(true, query_dictionary_template, {start: query_start});
+        
+        // get dataset meta data
+        this._get_dataset(request_dictionary.id, function() {
+            fetch_blocks(query);
+        });
+    },
+    
+    // get dataset
+    _get_dataset: function(id, success, error) {
+        // check if dataset is available from cache
+        var dataset = this.list[id];
+        if (dataset) {
+            success(dataset);
+            return;
         }
+    
+        // request dataset
+        var self = this;
+        Utils.request('GET', config.root + 'api/datasets/' + id, {}, function(dataset) {
+            switch (dataset.state) {
+                case 'error':
+                    if (error) {
+                        error(dataset);
+                    }
+                    break;
+                default:
+                    self.list[id] = dataset;
+                    success(dataset);
+            }
+        });
     },
     
     // get block id
     _block_id: function (options, column) {
-        return options.id + '_' + options.start + '_' + options.end + '_' + column;
+        return options.id + '_' + options.start + '_' + options.start + this.app.config.get('query_limit') + '_' + column;
     },
     
     // fills request dictionary with data from cache/response
     _get: function(request_dictionary, callback) {
-        // set start/end
-        if (!request_dictionary.start) {
-            request_dictionary.start = 0;
-        }
-        if (!request_dictionary.end) {
-            request_dictionary.end = this.app.config.get('query_limit');
-        }
+        // set start
+        request_dictionary.start = request_dictionary.start || 0;
+        
         // get column indices
         var column_list = [];
         var column_map  = {};
@@ -78,7 +160,7 @@ return Backbone.Collection.extend(
                 
                 // check if column is in cache
                 var block_id = this._block_id(request_dictionary, column);
-                if (this.cache[block_id]) {
+                if (this.cache[block_id] || column === 'auto' || column === 'zero') {
                     continue;
                 }
                 
@@ -91,7 +173,7 @@ return Backbone.Collection.extend(
             }
         }
         
-        // check length
+        // check length of blocks not available in cache
         if (column_list.length == 0) {
             // fill dictionary from cache
             this._fill_from_cache(request_dictionary);
@@ -107,7 +189,6 @@ return Backbone.Collection.extend(
         var dataset_request = {
             dataset_id  : request_dictionary.id,
             start       : request_dictionary.start,
-            end         : request_dictionary.end,
             columns     : column_list
         }
         
@@ -131,48 +212,97 @@ return Backbone.Collection.extend(
     
     // convert
     _fill_from_cache: function(request_dictionary) {
+        // identify start of request
+        var start = request_dictionary.start;
+        
         // log
-        console.debug('Datasets::_fill_from_cache() - Filling request from cache.');
+        console.debug('Datasets::_fill_from_cache() - Filling request from cache at ' + start + '.');
     
-        // collect all data into the defined groups
+        // identify end of request
+        var limit = 0;
+        for (var i in request_dictionary.groups) {
+            var group = request_dictionary.groups[i];
+            for (var key in group.columns) {
+                var column = group.columns[key];
+                var block_id = this._block_id(request_dictionary, column.index);
+                var column_data = this.cache[block_id];
+                if (column_data) {
+                    limit = Math.max(limit, column_data.length);
+                }
+            }
+        }
+        
+        // check length
+        if (limit == 0) {
+            console.debug('Datasets::_fill_from_cache() - Reached data range limit.');
+        }
+        
+        // initialize group values
         for (var i in request_dictionary.groups) {
             // get group
             var group = request_dictionary.groups[i];
             
-            // create array for values
+            // reset group
             group.values = [];
+        
+            // add values
+            for (var j = 0; j < limit; j++) {
+                // add default x values
+                group.values[j] = {
+                    x : parseInt(j) + start
+                };
+            }
+        }
+        
+        // collect all data into the defined groups
+        for (var i in request_dictionary.groups) {
+            // get group
+            var group = request_dictionary.groups[i];
             
             // fill value
             for (var key in group.columns) {
                 // get column
                 var column = group.columns[key];
           
-                // get block
-                var block_id = this._block_id(request_dictionary, column.index);
-                var column_data = this.cache[block_id];
-            
-                // go through column
-                for (k in column_data) {
-                    // initialize value
-                    var value = group.values[k];
-                    if (value === undefined) {
-                        // create new value field
-                        value = {
-                            x : parseInt(k) + request_dictionary.start
+                // check if auto block is requested
+                switch (column.index) {
+                    case 'auto':
+                        for (var j = 0; j < limit; j++) {
+                            // get value dictionary
+                            var value = group.values[j];
+                            
+                            // add auto value
+                            value[key] = parseInt(j) + start;
                         }
-                        
-                        // add to group
-                        group.values[k] = value;
-                    };
+                        break;
+                    case 'zero':
+                        for (var j = 0; j < limit; j++) {
+                            // get value dictionary
+                            var value = group.values[j];
+                            
+                            // add zero value
+                            value[key] = 0;
+                        }
+                        break;
+                    default:
+                        // get block
+                        var block_id = this._block_id(request_dictionary, column.index);
+                        var column_data = this.cache[block_id];
                     
-                    // get/fix value
-                    var v = column_data[k];
-                    if (isNaN(v) && !column.is_label) {
-                        v = 0;
-                    }
-                    
-                    // add to dict
-                    value[key] = v;
+                        // go through column
+                        for (var j = 0; j < limit; j++) {
+                            // get value dictionary
+                            var value = group.values[j];
+                            
+                            // get/fix value
+                            var v = column_data[j];
+                            if (isNaN(v) && !column.is_label) {
+                                v = 0;
+                            }
+                            
+                            // add to dict
+                            value[key] = v;
+                        }
                 }
             }
         }
@@ -184,17 +314,13 @@ return Backbone.Collection.extend(
         var offset  = dataset_request.start ? dataset_request.start : 0;
         
         // set limit
-        var limit   = Math.abs(dataset_request.end - dataset_request.start);
-        var query_limit = this.app.config.get('query_limit');
-        if (!limit || limit > query_limit) {
-            limit = query_limit;
-        }
+        var limit = this.app.config.get('query_limit');
         
         // check length
         var n_columns = 0;
         if (dataset_request.columns) {
             n_columns = dataset_request.columns.length;
-            console.debug('Datasets::_fetch() - Fetching ' + n_columns + ' column(s)');
+            console.debug('Datasets::_fetch() - Fetching ' + n_columns + ' column(s) at ' + offset + '.');
         }
         if (n_columns == 0) {
             console.debug('Datasets::_fetch() - No columns requested');

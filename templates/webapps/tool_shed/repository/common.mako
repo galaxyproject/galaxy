@@ -208,7 +208,7 @@
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
         from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
-        sharable_link = generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=changeset_revision )
+        sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
     %>
     ${sharable_link}
 </%def>
@@ -216,7 +216,7 @@
 <%def name="render_clone_str( repository )">
     <%
         from tool_shed.util.common_util import generate_clone_url_for_repository_in_tool_shed
-        clone_str = generate_clone_url_for_repository_in_tool_shed( trans, repository )
+        clone_str = generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
     %>
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
@@ -446,7 +446,7 @@
 
 <%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <% 
-        from tool_shed.util.shed_util_common import to_html_string
+        from tool_shed.util.basic_util import to_html_string
         encoded_id = trans.security.encode_id( failed_test.id )
     %>
     <tr class="datasetRow"

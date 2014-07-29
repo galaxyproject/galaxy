@@ -6,7 +6,8 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from tool_shed.util.shed_util_common import changeset_is_malicious
+    from tool_shed.util.basic_util import to_html_string
+    from tool_shed.util.metadata_util import is_malicious
     from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION
 
     if repository.metadata_revisions:
@@ -22,17 +23,17 @@
     else:
         is_deprecated = False
 
-    if changeset_is_malicious( trans, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
-        is_malicious = True
+    if is_malicious( trans.app, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
+        changeset_is_malicious = True
     else:
-        is_malicious = False
+        changeset_is_malicious = False
 
     if not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository ):
         can_push = True
     else:
         can_push = False
 
-    if not is_deprecated and not is_new and ( not is_malicious or can_push ):
+    if not is_deprecated and not is_new and ( not changeset_is_malicious or can_push ):
         can_download = True
     else:
         can_download = False

@@ -121,7 +121,7 @@ return Backbone.View.extend({
     _template_row: function(options) {
         return  '<tr>' +
                     '<td><div id="upload-ftp-add"/></td>' +
-                    '<td>' + options.path + '</td>' +
+                    '<td style="width: 200px"><p style="width: inherit; word-wrap: break-word;">' + options.path + '</p></td>' +
                     '<td style="white-space: nowrap;">' + Utils.bytesToString(options.size) + '</td>' +
                     '<td style="white-space: nowrap;">' + options.ctime + '</td>' +
                 '</tr>';

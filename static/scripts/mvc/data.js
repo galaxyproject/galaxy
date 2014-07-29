@@ -69,6 +69,8 @@ var TabularDataset = Dataset.extend({
 
         // If first data chunk is available, next chunk is 1.
         this.attributes.chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
+        this.attributes.chunk_url = galaxy_config.root + 'dataset/display?dataset_id=' + this.id;
+        this.attributes.url_viz = galaxy_config.root + 'visualization';
     },
 
     /**
@@ -120,6 +122,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     initialize: function(options) {
         // Row count for rendering.
         this.row_count = 0;
+        this.loading_chunk = false;
 
         // CSS colors used in table.
         this.header_color = '#AAA';
@@ -132,10 +135,32 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         });
     },
 
+    expand_to_container: function(){
+        if (this.$el.height() < this.scroll_elt.height()){
+            this.attempt_to_fetch();
+        }
+    },
+
+    attempt_to_fetch: function( func ){
+        var self = this;
+        if ( !this.loading_chunk && this.scrolled_to_bottom() ) {
+            this.loading_chunk = true;
+            this.loading_indicator.show();
+            $.when(self.model.get_next_chunk()).then(function(result) {
+                if (result) {
+                    self._renderChunk(result);
+                    self.loading_chunk = false;
+                }
+                self.loading_indicator.hide();
+                self.expand_to_container();
+            });
+        }
+    },
+
     render: function() {
         // Add loading indicator.
-        var loading_indicator = $('<div/>').attr('id', 'loading_indicator');
-        this.$el.append(loading_indicator);
+        this.loading_indicator = $('<div/>').attr('id', 'loading_indicator');
+        this.$el.append(this.loading_indicator);
 
         // Add data table and header.
         var data_table = $('<table/>').attr({
@@ -149,32 +174,25 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             header_row.append('<th>' + column_names.join('</th><th>') + '</th>');
         }
 
-        // Add first chunk.
-        var first_chunk = this.model.get('first_data_chunk');
+        // Render first chunk.
+        var self = this,
+            first_chunk = this.model.get('first_data_chunk');
         if (first_chunk) {
+            // First chunk is bootstrapped, so render now.
             this._renderChunk(first_chunk);
+        }
+        else {
+            // No bootstrapping, so get first chunk and then render.
+            $.when(self.model.get_next_chunk()).then(function(result) {
+                self._renderChunk(result);
+            });
         }
 
         // -- Show new chunks during scrolling. --
 
-        var self = this,
-            // Flag to ensure that only one chunk is loaded at a time.
-            loading_chunk = false;
-
         // Set up chunk loading when scrolling using the scrolling element.
-        this.scroll_elt.scroll(function() {
-            // If not already loading a chunk and have scrolled to the bottom of this element, get next chunk.
-            if ( !loading_chunk && self.scrolled_to_bottom() ) {
-                loading_chunk = true;
-                loading_indicator.show();
-                $.when(self.model.get_next_chunk()).then(function(result) {
-                    if (result) {
-                        self._renderChunk(result);
-                        loading_chunk = false;
-                        loading_indicator.hide();
-                    }
-                });
-            }
+        this.scroll_elt.scroll(function(){
+            self.attempt_to_fetch();
         });
     },
 
@@ -244,7 +262,9 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     _renderChunk: function(chunk) {
         var data_table = this.$el.find('table');
         _.each(chunk.ck_data.split('\n'), function(line, index) {
-            data_table.append(this._renderRow(line));
+            if (line !== ''){
+                data_table.append(this._renderRow(line));
+            }
         }, this);
     }
 });
@@ -610,8 +630,10 @@ var createModelAndView = function(model, view, model_config, parent_elt) {
  * and appends to parent_elt.
  */
 var createTabularDatasetChunkedView = function(options) {
-    // Create and set model.
-    options.model = new TabularDataset(options.dataset_config);
+    // If no model, create and set model from dataset config.
+    if (!options.model) {
+        options.model = new TabularDataset(options.dataset_config);
+    }
 
     var parent_elt = options.parent_elt;
     var embedded = options.embedded;
@@ -628,6 +650,10 @@ var createTabularDatasetChunkedView = function(options) {
 
     if (parent_elt) {
         parent_elt.append(view.$el);
+        // If we're sticking this in another element, once it's appended check
+        // to make sure we've filled enough space.
+        // Without this, the scroll elements don't work.
+        view.expand_to_container();
     }
 
     return view;

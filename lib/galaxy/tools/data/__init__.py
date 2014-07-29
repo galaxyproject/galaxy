@@ -34,6 +34,9 @@ class ToolDataTableManager( object ):
     def __getitem__( self, key ):
         return self.data_tables.__getitem__( key )
 
+    def __setitem__( self, key, value ):
+        return self.data_tables.__setitem__( key, value )
+
     def __contains__( self, key ):
         return self.data_tables.__contains__( key )
 
@@ -42,6 +45,9 @@ class ToolDataTableManager( object ):
             return self[ name ]
         except KeyError:
             return default
+
+    def set( self, name, value ):
+        self[ name ] = value
 
     def get_tables( self ):
         return self.data_tables
@@ -335,7 +341,7 @@ class TabularToolDataTable( ToolDataTable ):
         return rval
 
     def get_version_fields( self ):
-        return ( self._loaded_content_version, self.data )
+        return ( self._loaded_content_version, self.get_fields() )
 
     def parse_column_spec( self, config_element ):
         """
@@ -422,7 +428,7 @@ class TabularToolDataTable( ToolDataTable ):
             return default
         rval = default
         # Look for table entry.
-        for fields in self.data:
+        for fields in self.get_fields():
             if fields[ query_col ] == query_val:
                 rval = fields[ return_col ]
                 break
@@ -444,7 +450,7 @@ class TabularToolDataTable( ToolDataTable ):
         is_error = False
         if self.largest_index < len( fields ):
             fields = self._replace_field_separators( fields )
-            if fields not in self.data or allow_duplicates:
+            if fields not in self.get_fields() or allow_duplicates:
                 self.data.append( fields )
             else:
                 log.debug( "Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name )

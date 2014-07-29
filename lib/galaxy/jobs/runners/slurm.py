@@ -43,7 +43,9 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     log.warning( '(%s/%s) Job not found, assuming job check exceeded MinJobAge and completing as successful', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                     drmaa_state = self.drmaa_job_states.DONE
                 elif job_info['JobState'] == 'TIMEOUT':
+                    log.info( '(%s/%s) Job hit walltime', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                     ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
+                    ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 elif job_info['JobState'] == 'NODE_FAIL':
                     log.warning( '(%s/%s) Job failed due to node failure, attempting resubmission', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                     ajs.job_wrapper.change_state( model.Job.states.QUEUED, info = 'Job was resubmitted due to node failure' )
@@ -53,13 +55,16 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     except:
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
                 elif job_info['JobState'] == 'CANCELLED':
+                    log.info( '(%s/%s) Job was cancelled via slurm (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id )
                     ajs.fail_message = "This job failed because it was cancelled by an administrator."
                 else:
+                    log.warning( '(%s/%s) Job failed due to unknown reasons, JobState was: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info['JobState'] )
                     ajs.fail_message = "This job failed for reasons that could not be determined."
                 if drmaa_state == self.drmaa_job_states.FAILED:
                     ajs.fail_message += '\nPlease click the bug icon to report this problem if you need help.'
                     ajs.stop_job = False
                     self.work_queue.put( ( self.fail_job, ajs ) )
+                    return
             except Exception, e:
                 log.exception( '(%s/%s) Unable to inspect failed slurm job using scontrol, job will be unconditionally failed: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, e )
                 super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state = drmaa_state )

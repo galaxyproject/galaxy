@@ -30,7 +30,7 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
             'min_option_count': 2 // Don't show multiple select switch if only
                                   // one dataset available.
         },
-        'select_collection': { // NOT YET IMPLEMENTED
+        'select_collection': {
             'icon_class': 'fa-folder-o',
             'select_by': 'Run tool in parallel across dataset collection',
             'allow_remap': false
@@ -86,7 +86,7 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
                     }).attr(
                         'title',
                         selectionType['select_by']
-                    );
+                    ).data( "index", iIndex );
                     view.formRow().find( "label" ).append( button );
                 }
             });
@@ -110,15 +110,17 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
         enableSelectBy: function( enableIndex, onValue ) {
             var selectionType = SELECTION_TYPE[onValue];
             if(selectionType["allow_remap"]) {
-                $("div#remap-row").css("display", "none");
-            } else {
                 $("div#remap-row").css("display", "inherit");
+            } else {
+                $("div#remap-row").css("display", "none");
             }
-            this.formRow().find( "i" ).each(function(index, iElement) {
+            this.formRow().find( "i" ).each(function(_, iElement) {
+                var $iElement = $(iElement);
+                var index = $iElement.data("index");
                 if(index == enableIndex) {
-                    $(iElement).css('color', 'black');
+                    $iElement.css('color', 'black');
                 } else {
-                    $(iElement).css('color', 'Gray');
+                    $iElement.css('color', 'Gray');
                 }
             });
             var $select = this.$( "select" );

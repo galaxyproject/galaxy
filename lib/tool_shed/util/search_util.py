@@ -81,15 +81,17 @@ def search_names_versions( tool_dict, exact_matches_checked, match_tuples, repos
             match_tuples.append( ( repository_metadata.repository_id, repository_metadata.changeset_revision ) )
     return match_tuples
 
-def search_repository_metadata( trans, exact_matches_checked, tool_ids='', tool_names='', tool_versions='', workflow_names='', all_workflows=False ):
+def search_repository_metadata( app, exact_matches_checked, tool_ids='', tool_names='', tool_versions='',
+                                workflow_names='', all_workflows=False ):
+    sa_session=app.model.context.current
     match_tuples = []
     ok = True
     if tool_ids or tool_names or tool_versions:
-        for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                                                   .filter( trans.model.RepositoryMetadata.table.c.includes_tools == True ) \
-                                                   .join( trans.model.Repository ) \
-                                                   .filter( and_( trans.model.Repository.table.c.deleted == False,
-                                                                  trans.model.Repository.table.c.deprecated == False ) ):
+        for repository_metadata in sa_session.query( app.model.RepositoryMetadata ) \
+                                             .filter( app.model.RepositoryMetadata.table.c.includes_tools == True ) \
+                                             .join( app.model.Repository ) \
+                                             .filter( and_( app.model.Repository.table.c.deleted == False,
+                                                            app.model.Repository.table.c.deprecated == False ) ):
             metadata = repository_metadata.metadata
             if metadata:
                 tools = metadata.get( 'tools', [] )
@@ -140,11 +142,11 @@ def search_repository_metadata( trans, exact_matches_checked, tool_ids='', tool_
                         else:
                             ok = False
     elif workflow_names or all_workflows:
-        for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                                                   .filter( trans.model.RepositoryMetadata.table.c.includes_workflows == True ) \
-                                                   .join( trans.model.Repository ) \
-                                                   .filter( and_( trans.model.Repository.table.c.deleted == False,
-                                                                  trans.model.Repository.table.c.deprecated == False ) ):
+        for repository_metadata in sa_session.query( app.model.RepositoryMetadata ) \
+                                             .filter( app.model.RepositoryMetadata.table.c.includes_workflows == True ) \
+                                             .join( app.model.Repository ) \
+                                             .filter( and_( app.model.Repository.table.c.deleted == False,
+                                                            app.model.Repository.table.c.deprecated == False ) ):
             metadata = repository_metadata.metadata
             if metadata:
                 # metadata[ 'workflows' ] is a list of tuples where each contained tuple is

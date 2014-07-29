@@ -9,13 +9,6 @@ import tool_shed.util.shed_util_common as suc
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
 
-from galaxy import eggs
-eggs.require('mercurial')
-from mercurial import commands
-from mercurial import hg
-from mercurial import patch
-from mercurial import ui
-
 log = logging.getLogger( __name__ )
 
 
@@ -67,7 +60,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
                 rval = ''
-                repo = hg.repository( hg_util.get_configured_ui(), repository.repo_path( trans.app ) )
+                repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
                     rev, label = hg_util.get_rev_label_from_changeset_revision( repo, changeset_revision )
@@ -86,7 +79,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                 rval = ''
                 for repository_metadata in repository_metadata_revisions:
                     rev, label, changeset_revision = \
-                        hg_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
+                        hg_util.get_rev_label_changeset_revision_from_repository_metadata( trans.app,
                                                                                            repository_metadata,
                                                                                            repository=repository,
                                                                                            include_date=True,
@@ -311,7 +304,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
                 rval += 'edit_review'
             else:
                 rval +='browse_review'
-            revision_label = hg_util.get_revision_label( trans,
+            revision_label = hg_util.get_revision_label( trans.app,
                                                          review.repository,
                                                          review.changeset_revision,
                                                          include_date=True,

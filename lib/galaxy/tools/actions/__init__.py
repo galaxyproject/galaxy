@@ -114,6 +114,8 @@ class DefaultToolAction( object ):
                         #allow explicit conversion to be stored in job_parameter table
                         target_dict[ conversion_name ] = conversion_data.id  # a more robust way to determine JSONable value is desired
             elif isinstance( input, DataCollectionToolParameter ):
+                if not value:
+                    return
                 for i, v in enumerate( value.collection.dataset_instances ):
                     data = v
                     current_user_roles = trans.get_current_user_roles()

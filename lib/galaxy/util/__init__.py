@@ -7,9 +7,9 @@ Utility functions used systemwide.
 from __future__ import absolute_import
 
 import binascii
+import collections
 import errno
 import grp
-import json
 import logging
 import os
 import pickle
@@ -22,6 +22,8 @@ import string
 import sys
 import tempfile
 import threading
+
+from galaxy.util import json
 
 from email.MIMEText import MIMEText
 
@@ -46,10 +48,10 @@ import wchartype
 from .inflection import Inflector, English
 inflector = Inflector(English)
 
-log   = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 _lock = threading.RLock()
 
-CHUNK_SIZE = 65536 #64k
+CHUNK_SIZE = 65536  # 64k
 
 DATABASE_MAX_STRING_SIZE = 32768
 DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
@@ -60,6 +62,7 @@ DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [ NULL_CHAR ]
 
+
 def is_multi_byte( chars ):
     for char in chars:
         try:
@@ -67,17 +70,14 @@ def is_multi_byte( chars ):
         except UnicodeDecodeError:
             # Probably binary
             return False
-        if wchartype.is_asian( char ) or \
-            wchartype.is_full_width( char ) or \
-            wchartype.is_kanji( char ) or \
-            wchartype.is_hiragana( char ) or \
-            wchartype.is_katakana( char ) or \
-            wchartype.is_half_katakana( char ) or \
-            wchartype.is_hangul( char ) or \
-            wchartype.is_full_digit( char ) or \
-            wchartype.is_full_letter( char ):
+        if ( wchartype.is_asian( char ) or wchartype.is_full_width( char ) or
+             wchartype.is_kanji( char ) or wchartype.is_hiragana( char ) or
+             wchartype.is_katakana( char ) or wchartype.is_half_katakana( char )
+             or wchartype.is_hangul( char ) or wchartype.is_full_digit( char )
+             or wchartype.is_full_letter( char )):
             return True
     return False
+
 
 def is_binary( value, binary_chars=None ):
     """
@@ -97,6 +97,7 @@ def is_binary( value, binary_chars=None ):
             return True
     return False
 
+
 def get_charset_from_http_headers( headers, default=None ):
     rval = headers.get('content-type', None )
     if rval and 'charset=' in rval:
@@ -105,15 +106,17 @@ def get_charset_from_http_headers( headers, default=None ):
             return rval
     return default
 
+
 def synchronized(func):
     """This wrapper will serialize access to 'func' to a single thread. Use it as a decorator."""
     def caller(*params, **kparams):
-        _lock.acquire(True) # Wait
+        _lock.acquire(True)  # Wait
         try:
             return func(*params, **kparams)
         finally:
             _lock.release()
     return caller
+
 
 def file_iter(fname, sep=None):
     """
@@ -129,6 +132,7 @@ def file_iter(fname, sep=None):
         if line and line[0] != '#':
             yield line.split(sep)
 
+
 def file_reader( fp, chunk_size=CHUNK_SIZE ):
     """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
     while 1:
@@ -138,6 +142,7 @@ def file_reader( fp, chunk_size=CHUNK_SIZE ):
         yield data
     fp.close()
 
+
 def unique_id(KEY_SIZE=128):
     """
     Generates an unique id
@@ -146,8 +151,8 @@ def unique_id(KEY_SIZE=128):
     >>> len(set(ids))
     1000
     """
-    id  = str( random.getrandbits( KEY_SIZE ) )
-    return md5(id).hexdigest()
+    return md5(str( random.getrandbits( KEY_SIZE ) )).hexdigest()
+
 
 def parse_xml(fname):
     """Returns a parsed xml tree"""
@@ -161,6 +166,7 @@ def parse_xml_string(xml_string):
     tree = ElementTree.fromstring(xml_string)
     return tree
 
+
 def xml_to_string( elem, pretty=False ):
     """Returns a string from an xml tree"""
     if pretty:
@@ -168,11 +174,12 @@ def xml_to_string( elem, pretty=False ):
     try:
         return ElementTree.tostring( elem )
     except TypeError, e:
-        #assume this is a comment
+        # we assume this is a comment
         if hasattr( elem, 'text' ):
             return "<!-- %s -->\n" % ( elem.text )
         else:
             raise e
+
 
 def xml_element_compare( elem1, elem2 ):
     if not isinstance( elem1, dict ):
@@ -181,8 +188,10 @@ def xml_element_compare( elem1, elem2 ):
         elem2 = xml_element_to_dict( elem2 )
     return elem1 == elem2
 
+
 def xml_element_list_compare( elem_list1, elem_list2 ):
     return [ xml_element_to_dict( elem ) for elem in elem_list1  ] == [ xml_element_to_dict( elem ) for elem in elem_list2  ]
+
 
 def xml_element_to_dict( elem ):
     rval = {}
@@ -218,7 +227,6 @@ def xml_element_to_dict( elem ):
     return rval
 
 
-
 def pretty_print_xml( elem, level=0 ):
     pad = '    '
     i = "\n" + level * pad
@@ -236,25 +244,27 @@ def pretty_print_xml( elem, level=0 ):
             elem.tail = i + pad
     return elem
 
+
 def get_file_size( value, default=None ):
     try:
-        #try built-in
+        # try built-in
         return os.path.getsize( value )
     except:
         try:
-            #try built-in one name attribute
+            # try built-in one name attribute
             return os.path.getsize( value.name )
         except:
             try:
-                #try tell() of end of object
+                # try tell() of end of object
                 offset = value.tell()
                 value.seek( 0, 2 )
                 rval = value.tell()
                 value.seek( offset )
                 return rval
             except:
-                #return default value
+                # return default value
                 return default
+
 
 def shrink_stream_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
     rval = ''
@@ -290,6 +300,7 @@ def shrink_stream_by_size( value, size, join_by="..", left_larger=True, beginnin
             rval += data
     return rval
 
+
 def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
     if len( value ) > size:
         len_join_by = len( join_by )
@@ -309,29 +320,30 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
         value = "%s%s%s" % ( value[:left_index], join_by, value[-right_index:] )
     return value
 
+
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:
-        json_data = json.loads(json_data)
-    return json.dumps(json_data, sort_keys=True, indent=4 * ' ')
+        json_data = json.from_json_string(json_data)
+    return json.to_json_string(json_data, sort_keys=True, indent=4)
 
 # characters that are valid
-valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
+valid_chars = set(string.letters + string.digits + " -=_.()/+*^,:?!")
 
 # characters that are allowed but need to be escaped
-mapped_chars = { '>' :'__gt__',
-                 '<' :'__lt__',
-                 "'" :'__sq__',
-                 '"' :'__dq__',
-                 '[' :'__ob__',
-                 ']' :'__cb__',
-                 '{' :'__oc__',
-                 '}' :'__cc__',
-                 '@' : '__at__',
-                 '\n' : '__cn__',
-                 '\r' : '__cr__',
-                 '\t' : '__tc__',
-                 '#' : '__pd__'
-                 }
+mapped_chars = { '>': '__gt__',
+                 '<': '__lt__',
+                 "'": '__sq__',
+                 '"': '__dq__',
+                 '[': '__ob__',
+                 ']': '__cb__',
+                 '{': '__oc__',
+                 '}': '__cc__',
+                 '@': '__at__',
+                 '\n': '__cn__',
+                 '\r': '__cr__',
+                 '\t': '__tc__',
+                 '#': '__pd__'}
+
 
 def restore_text(text):
     """Restores sanitized text"""
@@ -340,6 +352,7 @@ def restore_text(text):
     for key, value in mapped_chars.items():
         text = text.replace(value, key)
     return text
+
 
 def sanitize_text(text):
     """
@@ -351,6 +364,7 @@ def sanitize_text(text):
     elif isinstance( text, list ):
         return [ _sanitize_text_helper(t) for t in text ]
 
+
 def _sanitize_text_helper(text):
     """Restricts the characters that are allowed in a string"""
 
@@ -361,8 +375,9 @@ def _sanitize_text_helper(text):
         elif c in mapped_chars:
             out.append(mapped_chars[c])
         else:
-            out.append('X') # makes debugging easier
+            out.append('X')  # makes debugging easier
     return ''.join(out)
+
 
 def sanitize_param(value):
     """Clean incoming parameters (strings or lists)"""
@@ -371,10 +386,12 @@ def sanitize_param(value):
     elif isinstance( value, list ):
         return map(sanitize_text, value)
     else:
-        raise Exception, 'Unknown parameter type (%s)' % ( type( value ) )
+        raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
 
 valid_filename_chars = set( string.ascii_letters + string.digits + '_.' )
 invalid_filenames = [ '', '.', '..' ]
+
+
 def sanitize_for_filename( text, default=None ):
     """
     Restricts the characters that are allowed in a filename portion; Returns default value or a unique id string if result is not a valid name.
@@ -416,17 +433,16 @@ def ready_name_for_url( raw_name ):
     return slug_base
 
 
-def in_directory( file, directory ):
+def in_directory( file, directory, local_path_module=os.path ):
     """
     Return true, if the common prefix of both is equal to directory
     e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
     """
 
     # Make both absolute.
-    directory = os.path.abspath( directory )
-    file = os.path.abspath( file )
-
-    return os.path.commonprefix( [ file, directory ] ) == directory
+    directory = local_path_module.abspath(directory)
+    file = local_path_module.abspath(file)
+    return local_path_module.commonprefix([file, directory]) == directory
 
 
 def merge_sorted_iterables( operator, *iterables ):
@@ -511,7 +527,7 @@ class Params( object ):
     def __init__( self, params, sanitize=True ):
         if sanitize:
             for key, value in params.items():
-                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]: #sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed.
+                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]:  # sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed.
                     self.__dict__[ key ] = sanitize_param( value )
                 else:
                     self.__dict__[ key ] = value
@@ -524,7 +540,7 @@ class Params( object ):
         """
         flat = []
         for key, value in self.__dict__.items():
-            if type(value) == type([]):
+            if isinstance(value, list):
                 for v in value:
                     flat.append( (key, v) )
             else:
@@ -550,16 +566,19 @@ class Params( object ):
     def update(self, values):
         self.__dict__.update(values)
 
+
 def rst_to_html( s ):
     """Convert a blob of reStructuredText to HTML"""
     log = logging.getLogger( "docutils" )
+
     class FakeStream( object ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
                 log.warn( str )
     return unicodify( docutils.core.publish_string( s,
-                writer=docutils.writers.html4css1.Writer(),
-                settings_overrides={ "embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream() } ) )
+                      writer=docutils.writers.html4css1.Writer(),
+                      settings_overrides={ "embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream() } ) )
+
 
 def xml_text(root, name=None):
     """Returns the text inside an element"""
@@ -581,6 +600,8 @@ def xml_text(root, name=None):
 # asbool implementation pulled from PasteDeploy
 truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
 falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
+
+
 def asbool(obj):
     if isinstance(obj, basestring):
         obj = obj.strip().lower()
@@ -598,6 +619,7 @@ def string_as_bool( string ):
         return True
     else:
         return False
+
 
 def string_as_bool_or_none( string ):
     """
@@ -617,6 +639,7 @@ def string_as_bool_or_none( string ):
     else:
         return False
 
+
 def listify( item, do_strip=False ):
     """
     Make a single item a single item list, or return a list if passed a
@@ -634,6 +657,7 @@ def listify( item, do_strip=False ):
     else:
         return [ item ]
 
+
 def commaify(amount):
     orig = amount
     new = re.sub("^(-?\d+)(\d{3})", '\g<1>,\g<2>', amount)
@@ -642,7 +666,8 @@ def commaify(amount):
     else:
         return commaify(new)
 
-def roundify(amount, sfs = 2):
+
+def roundify(amount, sfs=2):
     """
     Take a number in string form and truncate to 'sfs' significant figures.
     """
@@ -650,6 +675,7 @@ def roundify(amount, sfs = 2):
         return amount
     else:
         return amount[0:sfs] + '0'*(len(amount) - sfs)
+
 
 def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None ):
     """
@@ -690,8 +716,47 @@ def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
 def object_to_string( obj ):
     return binascii.hexlify( pickle.dumps( obj, 2 ) )
 
+
 def string_to_object( s ):
     return pickle.loads( binascii.unhexlify( s ) )
+
+
+class ParamsWithSpecs( collections.defaultdict ):
+    """
+    """
+
+    def __init__( self, specs=None, params=None ):
+        self.specs = specs or dict()
+        self.params = params or dict()
+        for name, value in self.params.items():
+            if name not in self.specs:
+                self._param_unknown_error( name )
+            if 'map' in self.specs[ name ]:
+                try:
+                    self.params[ name ] = self.specs[ name ][ 'map' ]( value )
+                except Exception:
+                    self._param_map_error( name, value )
+            if 'valid' in self.specs[ name ]:
+                if not self.specs[ name ][ 'valid' ]( value ):
+                    self._param_vaildation_error( name, value )
+
+        self.update( self.params )
+
+    def __missing__( self, name ):
+        return self.specs[ name ][ 'default' ]
+
+    def __getattr__( self, name ):
+        return self[ name ]
+
+    def _param_unknown_error( self, name ):
+        raise NotImplementedError()
+
+    def _param_map_error( self, name, value ):
+        raise NotImplementedError()
+
+    def _param_vaildation_error( self, name, value ):
+        raise NotImplementedError()
+
 
 def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compare_path=True ):
     url1 = urlparse( url1 )
@@ -704,18 +769,22 @@ def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compar
         return False
     return True
 
+
 def get_ucsc_by_build(build):
     sites = []
     for site in ucsc_build_sites:
         if build in site['builds']:
-            sites.append((site['name'],site['url']))
+            sites.append((site['name'], site['url']))
     return sites
+
+
 def get_gbrowse_sites_by_build(build):
     sites = []
     for site in gbrowse_build_sites:
         if build in site['builds']:
-            sites.append((site['name'],site['url']))
+            sites.append((site['name'], site['url']))
     return sites
+
 
 def read_dbnames(filename):
     """ Read build names from file """
@@ -725,47 +794,53 @@ def read_dbnames(filename):
     db_names = DBNames()
     try:
         ucsc_builds = {}
-        man_builds = [] #assume these are integers
+        man_builds = []  # assume these are integers
         name_to_db_base = {}
         for line in open(filename):
             try:
-                if line[0:1] == "#": continue
-                fields = line.replace("\r","").replace("\n","").split("\t")
-                #Special case of unspecified build is at top of list
-                if fields[0] == "?":
-                    db_names.insert(0,(fields[0],fields[1]))
+                if line[0:1] == "#":
                     continue
-                try: #manual build (i.e. microbes)
+                fields = line.replace("\r", "").replace("\n", "").split("\t")
+                # Special case of unspecified build is at top of list
+                if fields[0] == "?":
+                    db_names.insert(0, (fields[0], fields[1]))
+                    continue
+                try:  # manual build (i.e. microbes)
                     int(fields[0])
                     man_builds.append((fields[1], fields[0]))
-                except: #UCSC build
+                except:  # UCSC build
                     db_base = fields[0].rstrip('0123456789')
                     if db_base not in ucsc_builds:
                         ucsc_builds[db_base] = []
                         name_to_db_base[fields[1]] = db_base
-                    #we want to sort within a species numerically by revision number
+                    # we want to sort within a species numerically by revision number
                     build_rev = re.compile(r'\d+$')
-                    try: build_rev = int(build_rev.findall(fields[0])[0])
-                    except: build_rev = 0
-                    ucsc_builds[db_base].append((build_rev, fields[0],fields[1]))
-            except: continue
+                    try:
+                        build_rev = int(build_rev.findall(fields[0])[0])
+                    except:
+                        build_rev = 0
+                    ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
+            except:
+                continue
         sort_names = name_to_db_base.keys()
         sort_names.sort()
         for name in sort_names:
             db_base = name_to_db_base[name]
             ucsc_builds[db_base].sort()
             ucsc_builds[db_base].reverse()
-            ucsc_builds[db_base] = [(build, name) for build_rev, build, name in ucsc_builds[db_base]]
+            ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
             db_names = DBNames( db_names + ucsc_builds[db_base] )
-        if len( db_names ) > 1 and len( man_builds ) > 0: db_names.append( ( db_names.default_value, '----- Additional Species Are Below -----' ) )
+        if len( db_names ) > 1 and len( man_builds ) > 0:
+            db_names.append( ( db_names.default_value, '----- Additional Species Are Below -----' ) )
         man_builds.sort()
-        man_builds = [(build, name) for name, build  in man_builds]
+        man_builds = [(build, name) for name, build in man_builds]
         db_names = DBNames( db_names + man_builds )
     except Exception, e:
         print "ERROR: Unable to read builds file:", e
-    if len(db_names)<1:
+    if len(db_names) < 1:
         db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
     return db_names
+
 
 def read_ensembl( filename, ucsc ):
     """ Read Ensembl build names from file """
@@ -775,25 +850,30 @@ def read_ensembl( filename, ucsc ):
     ensembl_builds = list()
     try:
         for line in open( filename ):
-            if line[0:1] in [ '#', '\t' ]: continue
-            fields = line.replace("\r","").replace("\n","").split("\t")
-            if fields[0] in ucsc_builds: continue
+            if line[0:1] in [ '#', '\t' ]:
+                continue
+            fields = line.replace("\r", "").replace("\n", "").split("\t")
+            if fields[0] in ucsc_builds:
+                continue
             ensembl_builds.append( dict( dbkey=fields[0], release=fields[1], name=fields[2].replace( '_', ' ' ) ) )
     except Exception, e:
         print "ERROR: Unable to read builds file:", e
     return ensembl_builds
+
 
 def read_ncbi( filename ):
     """ Read NCBI build names from file """
     ncbi_builds = list()
     try:
         for line in open( filename ):
-            if line[0:1] in [ '#', '\t' ]: continue
-            fields = line.replace("\r","").replace("\n","").split("\t")
+            if line[0:1] in [ '#', '\t' ]:
+                continue
+            fields = line.replace("\r", "").replace("\n", "").split("\t")
             ncbi_builds.append( dict( dbkey=fields[0], name=fields[1] ) )
     except Exception, e:
         print "ERROR: Unable to read builds file:", e
     return ncbi_builds
+
 
 def read_build_sites( filename, check_builds=True ):
     """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
@@ -801,20 +881,23 @@ def read_build_sites( filename, check_builds=True ):
     try:
         for line in open(filename):
             try:
-                if line[0:1] == "#": continue
-                fields = line.replace("\r","").replace("\n","").split("\t")
+                if line[0:1] == "#":
+                    continue
+                fields = line.replace("\r", "").replace("\n", "").split("\t")
                 site_name = fields[0]
                 site = fields[1]
                 if check_builds:
                     site_builds = fields[2].split(",")
-                    site_dict = {'name':site_name, 'url':site, 'builds':site_builds}
+                    site_dict = {'name': site_name, 'url': site, 'builds': site_builds}
                 else:
-                    site_dict = {'name':site_name, 'url':site}
+                    site_dict = {'name': site_name, 'url': site}
                 build_sites.append( site_dict )
-            except: continue
+            except:
+                continue
     except:
-        print "ERROR: Unable to read builds for site file %s" %filename
+        print "ERROR: Unable to read builds for site file %s" % filename
     return build_sites
+
 
 def relativize_symlinks( path, start=None, followlinks=False):
     for root, dirs, files in os.walk( path, followlinks=followlinks ):
@@ -832,22 +915,25 @@ def relativize_symlinks( path, start=None, followlinks=False):
                 os.remove( symlink_file_name )
                 os.symlink( rel_path, symlink_file_name )
 
+
 def stringify_dictionary_keys( in_dict ):
-    #returns a new dictionary
-    #changes unicode keys into strings, only works on top level (does not recurse)
-    #unicode keys are not valid for expansion into keyword arguments on method calls
+    # returns a new dictionary
+    # changes unicode keys into strings, only works on top level (does not recurse)
+    # unicode keys are not valid for expansion into keyword arguments on method calls
     out_dict = {}
     for key, value in in_dict.iteritems():
         out_dict[ str( key ) ] = value
     return out_dict
 
+
 def recursively_stringify_dictionary_keys( d ):
     if isinstance(d, dict):
-        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k,v in d.iteritems()])
+        return dict([(k.encode( DEFAULT_ENCODING ), recursively_stringify_dictionary_keys(v)) for k, v in d.iteritems()])
     elif isinstance(d, list):
         return [recursively_stringify_dictionary_keys(x) for x in d]
     else:
         return d
+
 
 def mkstemp_ln( src, prefix='mkstemp_ln_' ):
     """
@@ -865,9 +951,10 @@ def mkstemp_ln( src, prefix='mkstemp_ln_' ):
             return (os.path.abspath(file))
         except OSError, e:
             if e.errno == errno.EEXIST:
-                continue # try again
+                continue  # try again
             raise
-    raise IOError, (errno.EEXIST, "No usable temporary file name found")
+    raise IOError(errno.EEXIST, "No usable temporary file name found")
+
 
 def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
     """
@@ -884,7 +971,7 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
         try:
             os.chmod( path, perms )
         except Exception, e:
-            log.warning( 'Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s' % ( oct( umask ), \
+            log.warning( 'Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s' % ( oct( umask ),
                                                                                                                       path,
                                                                                                                       oct( perms ),
                                                                                                                       oct( stat.S_IMODE( st.st_mode ) ),
@@ -900,10 +987,11 @@ def umask_fix_perms( path, umask, unmasked_perms, gid=None ):
             except:
                 desired_group = gid
                 current_group = st.st_gid
-            log.warning( 'Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % ( desired_group, \
+            log.warning( 'Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % ( desired_group,
                                                                                                           path,
                                                                                                           current_group,
                                                                                                           e ) )
+
 
 def docstring_trim(docstring):
     """Trimming python doc strings. Taken from: http://www.python.org/dev/peps/pep-0257/"""
@@ -931,6 +1019,7 @@ def docstring_trim(docstring):
     # Return a single string:
     return '\n'.join(trimmed)
 
+
 def nice_size(size):
     """
     Returns a readably formatted string with the size
@@ -950,13 +1039,14 @@ def nice_size(size):
     except:
         return '??? bytes'
     for ind, word in enumerate(words):
-        step  = 1024 ** (ind + 1)
+        step = 1024 ** (ind + 1)
         if step > size:
             size = size / float(1024 ** ind)
-            if word == 'bytes': # No decimals for bytes
+            if word == 'bytes':  # No decimals for bytes
                 return "%d bytes" % size
             return "%.1f %s" % (size, word)
     return '??? bytes'
+
 
 def size_to_bytes( size ):
     """
@@ -983,6 +1073,7 @@ def size_to_bytes( size ):
         return int( size * 1024 )
     elif multiple.startswith( 'b' ):
         return int( size )
+
 
 def send_mail( frm, to, subject, body, config ):
     """
@@ -1033,6 +1124,7 @@ def send_mail( frm, to, subject, body, config ):
     s.sendmail( frm, to, msg.as_string() )
     s.quit()
 
+
 def force_symlink( source, link_name ):
     try:
         os.symlink( source, link_name )
@@ -1043,12 +1135,13 @@ def force_symlink( source, link_name ):
         else:
             raise e
 
+
 def move_merge( source, target ):
-    #when using shutil and moving a directory, if the target exists,
-    #then the directory is placed inside of it
-    #if the target doesn't exist, then the target is made into the directory
-    #this makes it so that the target is always the target, and if it exists,
-    #the source contents are moved into the target
+    # when using shutil and moving a directory, if the target exists,
+    # then the directory is placed inside of it
+    # if the target doesn't exist, then the target is made into the directory
+    # this makes it so that the target is always the target, and if it exists,
+    # the source contents are moved into the target
     if os.path.isdir( source ) and os.path.exists( target ) and os.path.isdir( target ):
         for name in os.listdir( source ):
             move_merge( os.path.join( source, name ), os.path.join( target, name ) )
@@ -1064,7 +1157,7 @@ def safe_str_cmp(a, b):
         rv |= ord(x) ^ ord(y)
     return rv == 0
 
-galaxy_root_path = os.path.join(__path__[0], "..","..","..")
+galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 # The dbnames list is used in edit attributes and the upload tool
 dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) )
@@ -1074,6 +1167,7 @@ ncbi_names = read_ncbi( os.path.join( galaxy_root_path, "tool-data", "shared", "
 ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
 gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
 dlnames = dict(ucsc=ucsc_names, ensembl=ensembl_names, ncbi=ncbi_names)
+
 
 def galaxy_directory():
     return os.path.abspath(galaxy_root_path)

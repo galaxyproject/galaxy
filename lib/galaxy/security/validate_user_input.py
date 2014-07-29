@@ -1,4 +1,7 @@
+import logging
 import re
+
+log = logging.getLogger( __name__ )
 
 VALID_PUBLICNAME_RE = re.compile( "^[a-z0-9\-]+$" )
 VALID_PUBLICNAME_SUB = re.compile( "[^a-z0-9\-]" )

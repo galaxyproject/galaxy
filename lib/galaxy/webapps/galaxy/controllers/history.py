@@ -4,6 +4,7 @@ from cgi import escape
 import galaxy.util
 from galaxy import model
 from galaxy import web
+from galaxy import managers
 from galaxy.datatypes.data import nice_size
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.model.orm import and_, eagerload_all, func
@@ -194,6 +195,13 @@ class HistoryAllPublishedGrid( grids.Grid ):
 class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
                          UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, ExportsHistoryMixin,
                          ImportsHistoryMixin ):
+
+    def __init__( self, app ):
+        super( HistoryController, self ).__init__( app )
+        self.mgrs = util.bunch.Bunch(
+            histories=managers.histories.HistoryManager()
+        )
+
     @web.expose
     def index( self, trans ):
         return ""
@@ -204,6 +212,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         trans.response.set_content_type( 'text/xml' )
         return trans.fill_template( "/history/list_as_xml.mako" )
 
+    # ......................................................................... lists
     stored_list_grid = HistoryListGrid()
     shared_list_grid = SharedHistoryListGrid()
     published_list_grid = HistoryAllPublishedGrid()
@@ -437,6 +446,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Render the list view
         return self.shared_list_grid( trans, status=status, message=message, **kwargs )
 
+    # ......................................................................... html
+    @web.expose
+    def citations( self, trans ):
+        # Get history
+        history = trans.history
+        history_id = trans.security.encode_id( history.id )
+        return trans.fill_template( "history/citations.mako", history=history, history_id=history_id )
+
     @web.expose
     def display_structured( self, trans, id=None ):
         """
@@ -512,333 +529,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.fill_template( "history/display_structured.mako", items=items, history=history )
 
     @web.expose
-    def delete_hidden_datasets( self, trans ):
-        """
-        This method deletes all hidden datasets in the current history.
-        """
-        count = 0
-        for hda in trans.history.datasets:
-            if not hda.visible and not hda.deleted and not hda.purged:
-                hda.mark_deleted()
-                count += 1
-                trans.sa_session.add( hda )
-                trans.log_event( "HDA id %s has been deleted" % hda.id )
-        trans.sa_session.flush()
-        return trans.show_ok_message( "%d hidden datasets have been deleted" % count, refresh_frames=['history'] )
-
-    @web.expose
-    def purge_deleted_datasets( self, trans ):
-        count = 0
-        if trans.app.config.allow_user_dataset_purge:
-            for hda in trans.history.datasets:
-                if not hda.deleted or hda.purged:
-                    continue
-                if trans.user:
-                    trans.user.total_disk_usage -= hda.quota_amount( trans.user )
-                hda.purged = True
-                trans.sa_session.add( hda )
-                trans.log_event( "HDA id %s has been purged" % hda.id )
-                trans.sa_session.flush()
-                if hda.dataset.user_can_purge:
-                    try:
-                        hda.dataset.full_delete()
-                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
-                        trans.sa_session.add( hda.dataset )
-                    except:
-                        log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
-                count += 1
-        return trans.show_ok_message( "%d datasets have been deleted permanently" % count, refresh_frames=['history'] )
-
-    #TODO: use api instead
-    @web.expose
-    def delete_current( self, trans, purge=False ):
-        """Delete just the active history -- this does not require a logged in user."""
-        history = trans.get_history()
-        if history.users_shared_with:
-            return trans.show_error_message( "History (%s) has been shared with others, unshare it before deleting it.  " % history.name )
-        if not history.deleted:
-            history.deleted = True
-            trans.sa_session.add( history )
-            trans.sa_session.flush()
-            trans.log_event( "History id %d marked as deleted" % history.id )
-        if purge and trans.app.config.allow_user_dataset_purge:
-            for hda in history.datasets:
-                if trans.user:
-                    trans.user.total_disk_usage -= hda.quota_amount( trans.user )
-                hda.purged = True
-                trans.sa_session.add( hda )
-                trans.log_event( "HDA id %s has been purged" % hda.id )
-                trans.sa_session.flush()
-                if hda.dataset.user_can_purge:
-                    try:
-                        hda.dataset.full_delete()
-                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
-                        trans.sa_session.add( hda.dataset )
-                    except:
-                        log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
-            history.purged = True
-            self.sa_session.add( history )
-            self.sa_session.flush()
-        for hda in history.datasets:
-            # Not all datasets have jobs associated with them (e.g., datasets imported from libraries).
-            if hda.creating_job_associations:
-                # HDA has associated job, so try marking it deleted.
-                job = hda.creating_job_associations[0].job
-                if job.history_id == history.id and job.state in [ trans.app.model.Job.states.QUEUED, trans.app.model.Job.states.RUNNING, trans.app.model.Job.states.NEW ]:
-                    # No need to check other outputs since the job's parent history is this history
-                    job.mark_deleted( trans.app.config.track_jobs_in_database )
-                    trans.app.job_manager.job_stop_queue.put( job.id )
-        # Regardless of whether it was previously deleted, get or create default history.
-        trans.get_or_create_default_history()
-        return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
-
-    @web.expose
-    def unhide_datasets( self, trans, current=False, ids=None ):
-        """Unhide the datasets in the active history -- this does not require a logged in user."""
-        if not ids and galaxy.util.string_as_bool( current ):
-            histories = [ trans.get_history() ]
-            refresh_frames = ['history']
-        else:
-            raise NotImplementedError( "You can currently only unhide all the datasets of the current history." )
-        for history in histories:
-            history.unhide_datasets()
-            trans.sa_session.add( history )
-        trans.sa_session.flush()
-        return trans.show_ok_message( "Your datasets have been unhidden.", refresh_frames=refresh_frames )
-        #TODO: used in index.mako
-
-    @web.expose
-    def resume_paused_jobs( self, trans, current=False, ids=None ):
-        """Resume paused jobs the active history -- this does not require a logged in user."""
-        if not ids and galaxy.util.string_as_bool( current ):
-            histories = [ trans.get_history() ]
-            refresh_frames = ['history']
-        else:
-            raise NotImplementedError( "You can currently only resume all the datasets of the current history." )
-        for history in histories:
-            history.resume_paused_jobs()
-            trans.sa_session.add( history )
-        trans.sa_session.flush()
-        return trans.show_ok_message( "Your jobs have been resumed.", refresh_frames=refresh_frames )
-        #TODO: used in index.mako
-
-    @web.expose
-    @web.require_login( "rate items" )
-    @web.json
-    def rate_async( self, trans, id, rating ):
-        """ Rate a history asynchronously and return updated community data. """
-        history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
-        if not history:
-            return trans.show_error_message( "The specified history does not exist." )
-        # Rate history.
-        history_rating = self.rate_item( trans.sa_session, trans.get_user(), history, rating )
-        return self.get_ave_item_rating_data( trans.sa_session, history )
-        #TODO: used in display_base.mako
-
-    @web.expose
-    # TODO: Remove require_login when users are warned that, if they are not
-    # logged in, this will remove their current history.
-    @web.require_login( "use Galaxy histories" )
-    def import_archive( self, trans, **kwargs ):
-        """ Import a history from a file archive. """
-        # Set archive source and type.
-        archive_file = kwargs.get( 'archive_file', None )
-        archive_url = kwargs.get( 'archive_url', None )
-        archive_source = None
-        if archive_file:
-            archive_source = archive_file
-            archive_type = 'file'
-        elif archive_url:
-            archive_source = archive_url
-            archive_type = 'url'
-        # If no source to create archive from, show form to upload archive or specify URL.
-        if not archive_source:
-            return trans.show_form(
-                web.FormBuilder( web.url_for(controller='history', action='import_archive'), "Import a History from an Archive", submit_text="Submit" ) \
-                    .add_input( "text", "Archived History URL", "archive_url", value="", error=None )
-                    # TODO: add support for importing via a file.
-                    #.add_input( "file", "Archived History File", "archive_file", value=None, error=None )
-                                )
-        self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
-        return trans.show_message( "Importing history from '%s'. \
-                                    This history will be visible when the import is complete" % archive_source )
-        #TODO: used in this file and index.mako
-
-    @web.expose
-    def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
-        """ Export a history to an archive. """
-        #
-        # Get history to export.
-        #
-        if id:
-            history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
-        else:
-            # Use current history.
-            history = trans.history
-            id = trans.security.encode_id( history.id )
-
-        if not history:
-            return trans.show_error_message( "This history does not exist or you cannot export this history." )
-
-        #
-        # If history has already been exported and it has not changed since export, stream it.
-        #
-        jeha = history.latest_export
-        if jeha and jeha.up_to_date:
-            if jeha.ready:
-                return self.serve_ready_history_export( trans, jeha )
-            elif jeha.preparing:
-                return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
-                        % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
-
-        self.queue_history_export( trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted )
-        url = url_for( controller='history', action="export_archive", id=id, qualified=True )
-        return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
-                                    the archive or import it to another Galaxy server: \
-                                    <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
-        #TODO: used in this file and index.mako
-
-    @web.expose
-    @web.json
-    @web.require_login( "get history name and link" )
-    def get_name_and_link_async( self, trans, id=None ):
-        """ Returns history's name and link. """
-        history = self.get_history( trans, id, False )
-        if self.create_item_slug( trans.sa_session, history ):
-            trans.sa_session.flush()
-        return_dict = {
-            "name" : history.name,
-            "link" : url_for(controller='history', action="display_by_username_and_slug",
-                username=history.user.username, slug=history.slug ) }
-        return return_dict
-        #TODO: used in page/editor.mako
-
-    @web.expose
-    @web.require_login( "set history's accessible flag" )
-    def set_accessible_async( self, trans, id=None, accessible=False ):
-        """ Set history's importable attribute and slug. """
-        history = self.get_history( trans, id, True )
-        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ['True', 'true', 't', 'T'];
-        if history and history.importable != importable:
-            if importable:
-                self._make_item_accessible( trans.sa_session, history )
-            else:
-                history.importable = importable
-            trans.sa_session.flush()
-        return
-        #TODO: used in page/editor.mako
-
-    @web.expose
-    def get_item_content_async( self, trans, id ):
-        """ Returns item content in HTML format. """
-
-        history = self.get_history( trans, id, False, True )
-        if history is None:
-            raise web.httpexceptions.HTTPNotFound()
-
-        # Get datasets.
-        datasets = self.get_history_datasets( trans, history )
-        # Get annotations.
-        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
-        for dataset in datasets:
-            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
-        return trans.stream_template_mako( "/history/item_content.mako", item = history, item_data = datasets )
-        #TODO: used in embed_base.mako
-
-    @web.expose
-    def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
-        """Return autocomplete data for history names"""
-        user = trans.get_user()
-        if not user:
-            return
-
-        ac_data = ""
-        for history in ( trans.sa_session.query( model.History )
-                .filter_by( user=user )
-                .filter( func.lower( model.History.name ).like(q.lower() + "%") ) ):
-            ac_data = ac_data + history.name + "\n"
-        return ac_data
-        #TODO: used in grid_base.mako
-
-    @web.expose
-    def imp( self, trans, id=None, confirm=False, **kwd ):
-        """Import another user's history via a shared URL"""
-        msg = ""
-        user = trans.get_user()
-        user_history = trans.get_history()
-        # Set referer message
-        if 'referer' in kwd:
-            referer = kwd['referer']
-        else:
-            referer = trans.request.referer
-        if referer is not "":
-            referer_message = "<a href='%s'>return to the previous page</a>" % referer
-        else:
-            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
-
-        # include all datasets when copying?
-        all_datasets = util.string_as_bool( kwd.get( 'all_datasets', False ) )
-
-        # Do import.
-        if not id:
-            return trans.show_error_message( "You must specify a history you want to import.<br>You can %s." % referer_message, use_panels=True )
-        import_history = self.get_history( trans, id, check_ownership=False, check_accessible=False )
-        if not import_history:
-            return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
-        # History is importable if user is admin or it's accessible. TODO: probably want to have app setting to enable admin access to histories.
-        if not trans.user_is_admin() and not self.security_check( trans, import_history, check_ownership=False, check_accessible=True ):
-            return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
-        if user:
-            #dan: I can import my own history.
-            #if import_history.user_id == user.id:
-            #    return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
-            new_history = import_history.copy( target_user=user, all_datasets=all_datasets )
-            new_history.name = "imported: " + new_history.name
-            new_history.user_id = user.id
-            galaxy_session = trans.get_galaxy_session()
-            try:
-                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
-                                              .first()
-            except:
-                association = None
-            new_history.add_galaxy_session( galaxy_session, association=association )
-            trans.sa_session.add( new_history )
-            trans.sa_session.flush()
-            # Set imported history to be user's current history.
-            trans.set_history( new_history )
-            return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
-
-        elif not user_history or not user_history.datasets or confirm:
-            #TODO:?? should anon-users be allowed to include deleted datasets when importing?
-            #new_history = import_history.copy( activatable=include_deleted )
-            new_history = import_history.copy()
-            new_history.name = "imported: " + new_history.name
-            new_history.user_id = None
-            galaxy_session = trans.get_galaxy_session()
-            try:
-                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
-                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
-                                              .first()
-            except:
-                association = None
-            new_history.add_galaxy_session( galaxy_session, association=association )
-            trans.sa_session.add( new_history )
-            trans.sa_session.flush()
-            trans.set_history( new_history )
-            return trans.show_ok_message(
-                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s."""
-                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
-        return trans.show_warn_message( """
-            Warning! If you import this history, you will lose your current
-            history. <br>You can <a href="%s">continue and import this history</a> or %s.
-            """ % ( web.url_for(controller='history', action='imp',  id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
-        #TODO: used in history/view, display, embed
-
-    @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
         """
         View a history. If a history is importable, then it is viewable by any user.
@@ -870,22 +560,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                                + " or the owner of this history has not made it accessible." )
 
             # include all datasets: hidden, deleted, and purged
-            hdas = self.get_history_datasets( trans, history_to_view,
-                show_deleted=True, show_hidden=True, show_purged=True )
-            for hda in hdas:
-                hda_dict = {}
-                try:
-                    hda_dict = self.get_hda_dict( trans, hda )
-
-                except Exception, exc:
-                    # don't fail entire list if hda err's, record and move on
-                    log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
-                    hda_dict = self.get_hda_dict_with_error( trans, hda, str( exc ) )
-
-                hda_dictionaries.append( hda_dict )
-
-            # re-use the hdas above to get the history data...
-            history_dictionary = self.get_history_dict( trans, history_to_view, hda_dictionaries=hda_dictionaries )
+            history_data = self.mgrs.histories._get_history_data( trans, history_to_view )
+            history_dictionary = history_data[ 'history' ]
+            hda_dictionaries   = history_data[ 'contents' ]
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
@@ -911,12 +588,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Security check raises error if user cannot access history.
         self.security_check( trans, history, False, True)
 
-        # Get datasets and annotations
-        datasets = self.get_history_datasets( trans, history )
-        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
-        for dataset in datasets:
-            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
-
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
@@ -928,20 +599,22 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, history )
 
         # create ownership flag for template, dictify models
-        # note: adding original annotation since this is published - get_dict returns user-based annos
         user_is_owner = trans.user == history.user
-        hda_dicts = []
-        for hda in datasets:
-            hda_dict = self.get_hda_dict( trans, hda )
-            hda_dict[ 'annotation' ] = hda.annotation
-            hda_dicts.append( hda_dict )
-        history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
-        history_dict[ 'annotation' ] = history.annotation
+        history_data = self.mgrs.histories._get_history_data( trans, history )
+        history_dict = history_data[ 'history' ]
+        hda_dicts = history_data[ 'contents' ]
 
-        return trans.stream_template_mako( "history/display.mako", item=history, item_data=datasets,
+        history_dict[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, history )
+        # note: adding original annotation since this is published - get_dict returns user-based annos
+        #for hda_dict in hda_dicts:
+        #    hda_dict[ 'annotation' ] = hda.annotation
+        #    dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
+
+        return trans.stream_template_mako( "history/display.mako", item=history, item_data=[],
             user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts,
             user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
+    # ......................................................................... sharing & publishing
     @web.expose
     @web.require_login( "share Galaxy histories" )
     def sharing( self, trans, id=None, histories=[], **kwargs ):
@@ -1283,6 +956,334 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             msg += send_to_err
         return self.sharing( trans, histories=shared_histories, msg=msg )
 
+    # ......................................................................... actions/orig. async
+    @web.expose
+    def delete_hidden_datasets( self, trans ):
+        """
+        This method deletes all hidden datasets in the current history.
+        """
+        count = 0
+        for hda in trans.history.datasets:
+            if not hda.visible and not hda.deleted and not hda.purged:
+                hda.mark_deleted()
+                count += 1
+                trans.sa_session.add( hda )
+                trans.log_event( "HDA id %s has been deleted" % hda.id )
+        trans.sa_session.flush()
+        return trans.show_ok_message( "%d hidden datasets have been deleted" % count, refresh_frames=['history'] )
+
+    @web.expose
+    def purge_deleted_datasets( self, trans ):
+        count = 0
+        if trans.app.config.allow_user_dataset_purge:
+            for hda in trans.history.datasets:
+                if not hda.deleted or hda.purged:
+                    continue
+                if trans.user:
+                    trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.log_event( "HDA id %s has been purged" % hda.id )
+                trans.sa_session.flush()
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+                count += 1
+        return trans.show_ok_message( "%d datasets have been deleted permanently" % count, refresh_frames=['history'] )
+
+    #TODO: use api instead
+    @web.expose
+    def delete_current( self, trans, purge=False ):
+        """Delete just the active history -- this does not require a logged in user."""
+        history = trans.get_history()
+        if history.users_shared_with:
+            return trans.show_error_message( "History (%s) has been shared with others, unshare it before deleting it.  " % history.name )
+        if not history.deleted:
+            history.deleted = True
+            trans.sa_session.add( history )
+            trans.sa_session.flush()
+            trans.log_event( "History id %d marked as deleted" % history.id )
+        if purge and trans.app.config.allow_user_dataset_purge:
+            for hda in history.datasets:
+                if trans.user:
+                    trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+                hda.purged = True
+                trans.sa_session.add( hda )
+                trans.log_event( "HDA id %s has been purged" % hda.id )
+                trans.sa_session.flush()
+                if hda.dataset.user_can_purge:
+                    try:
+                        hda.dataset.full_delete()
+                        trans.log_event( "Dataset id %s has been purged upon the the purge of HDA id %s" % ( hda.dataset.id, hda.id ) )
+                        trans.sa_session.add( hda.dataset )
+                    except:
+                        log.exception( 'Unable to purge dataset (%s) on purge of hda (%s):' % ( hda.dataset.id, hda.id ) )
+            history.purged = True
+            self.sa_session.add( history )
+            self.sa_session.flush()
+        for hda in history.datasets:
+            # Not all datasets have jobs associated with them (e.g., datasets imported from libraries).
+            if hda.creating_job_associations:
+                # HDA has associated job, so try marking it deleted.
+                job = hda.creating_job_associations[0].job
+                if job.history_id == history.id and job.state in [ trans.app.model.Job.states.QUEUED, trans.app.model.Job.states.RUNNING, trans.app.model.Job.states.NEW ]:
+                    # No need to check other outputs since the job's parent history is this history
+                    job.mark_deleted( trans.app.config.track_jobs_in_database )
+                    trans.app.job_manager.job_stop_queue.put( job.id )
+        # Regardless of whether it was previously deleted, get or create default history.
+        trans.get_or_create_default_history()
+        return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
+
+    @web.expose
+    def unhide_datasets( self, trans, current=False, ids=None ):
+        """Unhide the datasets in the active history -- this does not require a logged in user."""
+        if not ids and galaxy.util.string_as_bool( current ):
+            histories = [ trans.get_history() ]
+            refresh_frames = ['history']
+        else:
+            raise NotImplementedError( "You can currently only unhide all the datasets of the current history." )
+        for history in histories:
+            history.unhide_datasets()
+            trans.sa_session.add( history )
+        trans.sa_session.flush()
+        return trans.show_ok_message( "Your datasets have been unhidden.", refresh_frames=refresh_frames )
+        #TODO: used in index.mako
+
+    @web.expose
+    def resume_paused_jobs( self, trans, current=False, ids=None ):
+        """Resume paused jobs the active history -- this does not require a logged in user."""
+        if not ids and galaxy.util.string_as_bool( current ):
+            histories = [ trans.get_history() ]
+            refresh_frames = ['history']
+        else:
+            raise NotImplementedError( "You can currently only resume all the datasets of the current history." )
+        for history in histories:
+            history.resume_paused_jobs()
+            trans.sa_session.add( history )
+        trans.sa_session.flush()
+        return trans.show_ok_message( "Your jobs have been resumed.", refresh_frames=refresh_frames )
+        #TODO: used in index.mako
+
+    @web.expose
+    @web.require_login( "rate items" )
+    @web.json
+    def rate_async( self, trans, id, rating ):
+        """ Rate a history asynchronously and return updated community data. """
+        history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
+        if not history:
+            return trans.show_error_message( "The specified history does not exist." )
+        # Rate history.
+        history_rating = self.rate_item( trans.sa_session, trans.get_user(), history, rating )
+        return self.get_ave_item_rating_data( trans.sa_session, history )
+        #TODO: used in display_base.mako
+
+    @web.expose
+    # TODO: Remove require_login when users are warned that, if they are not
+    # logged in, this will remove their current history.
+    @web.require_login( "use Galaxy histories" )
+    def import_archive( self, trans, **kwargs ):
+        """ Import a history from a file archive. """
+        # Set archive source and type.
+        archive_file = kwargs.get( 'archive_file', None )
+        archive_url = kwargs.get( 'archive_url', None )
+        archive_source = None
+        if archive_file:
+            archive_source = archive_file
+            archive_type = 'file'
+        elif archive_url:
+            archive_source = archive_url
+            archive_type = 'url'
+        # If no source to create archive from, show form to upload archive or specify URL.
+        if not archive_source:
+            return trans.show_form(
+                web.FormBuilder( web.url_for(controller='history', action='import_archive'), "Import a History from an Archive", submit_text="Submit" ) \
+                    .add_input( "text", "Archived History URL", "archive_url", value="", error=None )
+                    # TODO: add support for importing via a file.
+                    #.add_input( "file", "Archived History File", "archive_file", value=None, error=None )
+                                )
+        self.queue_history_import( trans, archive_type=archive_type, archive_source=archive_source )
+        return trans.show_message( "Importing history from '%s'. \
+                                    This history will be visible when the import is complete" % archive_source )
+        #TODO: used in this file and index.mako
+
+    @web.expose
+    def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
+        """ Export a history to an archive. """
+        #
+        # Get history to export.
+        #
+        if id:
+            history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
+        else:
+            # Use current history.
+            history = trans.history
+            id = trans.security.encode_id( history.id )
+
+        if not history:
+            return trans.show_error_message( "This history does not exist or you cannot export this history." )
+
+        #
+        # If history has already been exported and it has not changed since export, stream it.
+        #
+        jeha = history.latest_export
+        if jeha and jeha.up_to_date:
+            if jeha.ready:
+                return self.serve_ready_history_export( trans, jeha )
+            elif jeha.preparing:
+                return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
+                        % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
+
+        self.queue_history_export( trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted )
+        url = url_for( controller='history', action="export_archive", id=id, qualified=True )
+        return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
+                                    the archive or import it to another Galaxy server: \
+                                    <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
+        #TODO: used in this file and index.mako
+
+    @web.expose
+    @web.json
+    @web.require_login( "get history name and link" )
+    def get_name_and_link_async( self, trans, id=None ):
+        """ Returns history's name and link. """
+        history = self.get_history( trans, id, False )
+        if self.create_item_slug( trans.sa_session, history ):
+            trans.sa_session.flush()
+        return_dict = {
+            "name" : history.name,
+            "link" : url_for(controller='history', action="display_by_username_and_slug",
+                username=history.user.username, slug=history.slug ) }
+        return return_dict
+        #TODO: used in page/editor.mako
+
+    @web.expose
+    @web.require_login( "set history's accessible flag" )
+    def set_accessible_async( self, trans, id=None, accessible=False ):
+        """ Set history's importable attribute and slug. """
+        history = self.get_history( trans, id, True )
+        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
+        importable = accessible in ['True', 'true', 't', 'T'];
+        if history and history.importable != importable:
+            if importable:
+                self._make_item_accessible( trans.sa_session, history )
+            else:
+                history.importable = importable
+            trans.sa_session.flush()
+        return
+        #TODO: used in page/editor.mako
+
+    @web.expose
+    def get_item_content_async( self, trans, id ):
+        """ Returns item content in HTML format. """
+
+        history = self.get_history( trans, id, False, True )
+        if history is None:
+            raise web.httpexceptions.HTTPNotFound()
+
+        # Get datasets.
+        datasets = self.get_history_datasets( trans, history )
+        # Get annotations.
+        history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
+        for dataset in datasets:
+            dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
+        return trans.stream_template_mako( "/history/item_content.mako", item = history, item_data = datasets )
+        #TODO: used in embed_base.mako
+
+    @web.expose
+    def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
+        """Return autocomplete data for history names"""
+        user = trans.get_user()
+        if not user:
+            return
+
+        ac_data = ""
+        for history in ( trans.sa_session.query( model.History )
+                .filter_by( user=user )
+                .filter( func.lower( model.History.name ).like(q.lower() + "%") ) ):
+            ac_data = ac_data + history.name + "\n"
+        return ac_data
+        #TODO: used in grid_base.mako
+
+    @web.expose
+    def imp( self, trans, id=None, confirm=False, **kwd ):
+        """Import another user's history via a shared URL"""
+        msg = ""
+        user = trans.get_user()
+        user_history = trans.get_history()
+        # Set referer message
+        if 'referer' in kwd:
+            referer = kwd['referer']
+        else:
+            referer = trans.request.referer
+        if referer is not "":
+            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+        else:
+            referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
+
+        # include all datasets when copying?
+        all_datasets = util.string_as_bool( kwd.get( 'all_datasets', False ) )
+
+        # Do import.
+        if not id:
+            return trans.show_error_message( "You must specify a history you want to import.<br>You can %s." % referer_message, use_panels=True )
+        import_history = self.get_history( trans, id, check_ownership=False, check_accessible=False )
+        if not import_history:
+            return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
+        # History is importable if user is admin or it's accessible. TODO: probably want to have app setting to enable admin access to histories.
+        if not trans.user_is_admin() and not self.security_check( trans, import_history, check_ownership=False, check_accessible=True ):
+            return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
+        if user:
+            #dan: I can import my own history.
+            #if import_history.user_id == user.id:
+            #    return trans.show_error_message( "You cannot import your own history.<br>You can %s." % referer_message, use_panels=True )
+            new_history = import_history.copy( target_user=user, all_datasets=all_datasets )
+            new_history.name = "imported: " + new_history.name
+            new_history.user_id = user.id
+            galaxy_session = trans.get_galaxy_session()
+            try:
+                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
+                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
+                                              .first()
+            except:
+                association = None
+            new_history.add_galaxy_session( galaxy_session, association=association )
+            trans.sa_session.add( new_history )
+            trans.sa_session.flush()
+            # Set imported history to be user's current history.
+            trans.set_history( new_history )
+            return trans.show_ok_message(
+                message="""History "%s" has been imported. <br>You can <a href="%s" onclick="parent.window.location='%s';">start using this history</a> or %s."""
+                % ( new_history.name, web.url_for( '/' ), web.url_for( '/' ), referer_message ), use_panels=True )
+
+        elif not user_history or not user_history.datasets or confirm:
+            #TODO:?? should anon-users be allowed to include deleted datasets when importing?
+            #new_history = import_history.copy( activatable=include_deleted )
+            new_history = import_history.copy()
+            new_history.name = "imported: " + new_history.name
+            new_history.user_id = None
+            galaxy_session = trans.get_galaxy_session()
+            try:
+                association = trans.sa_session.query( trans.app.model.GalaxySessionToHistoryAssociation ) \
+                                              .filter_by( session_id=galaxy_session.id, history_id=new_history.id ) \
+                                              .first()
+            except:
+                association = None
+            new_history.add_galaxy_session( galaxy_session, association=association )
+            trans.sa_session.add( new_history )
+            trans.sa_session.flush()
+            trans.set_history( new_history )
+            return trans.show_ok_message(
+                message="""History "%s" has been imported. <br>You can <a href="%s">start using this history</a> or %s."""
+                % ( new_history.name, web.url_for( '/' ), referer_message ), use_panels=True )
+        return trans.show_warn_message( """
+            Warning! If you import this history, you will lose your current
+            history. <br>You can <a href="%s">continue and import this history</a> or %s.
+            """ % ( web.url_for(controller='history', action='imp',  id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
+        #TODO: used in history/view, display, embed
+
     @web.expose
     @web.require_login( "rename histories" )
     def rename( self, trans, id=None, name=None, **kwd ):
@@ -1361,7 +1362,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 name += " (active items only)"
                 new_history = history.copy( name=name, target_user=user )
         if len( histories ) == 1:
-            msg = 'New history "<a href="%s" target="_top">%s</a>" has been created.' % ( url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) ) , new_history.name )
+            switch_url = url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) )
+            msg = 'New history "<a href="%s" target="_top">%s</a>" has been created.' % ( switch_url, new_history.name )
         else:
             msg = 'Copied and created %d new histories.' % len( histories )
         return trans.show_ok_message( msg )

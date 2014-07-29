@@ -1,26 +1,26 @@
 // dependencies
 define(['mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils',
-        'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage',
+        'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage', 'plugin/library/deferred',
         'plugin/views/viewer', 'plugin/views/editor',
         'plugin/models/config', 'plugin/models/chart',
         'plugin/charts/types'],
-        function(   Modal, Portlet, Ui, Utils, Jobs, Datasets, Storage,
+        function(   Modal, Portlet, Ui, Utils, Jobs, Datasets, Storage, Deferred,
                     ViewerView, EditorView,
                     Config, Chart, Types
                 ) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  Main application class.
+ */
+return Backbone.View.extend({
     // initialize
-    initialize: function(options)
-    {
+    initialize: function(options){
         // deactivate all debugs outputs
         //window.console.debug = function() {};
         
         // link options
         this.options = options;
-    
+
         // link galaxy modal or create one
         if (Galaxy && Galaxy.modal) {
             this.modal = Galaxy.modal;
@@ -41,6 +41,7 @@ return Backbone.View.extend(
         this.jobs = new Jobs(this);
         this.datasets = new Datasets(this);
         this.storage = new Storage(this);
+        this.deferred = new Deferred();
         
         //
         // views
@@ -62,7 +63,7 @@ return Backbone.View.extend(
             
             // draw chart
             var self = this;
-            this.chart.deferred.execute(function() {
+            this.deferred.execute(function() {
                 self.chart.trigger('redraw');
             });
         }
@@ -86,17 +87,20 @@ return Backbone.View.extend(
         }
     },
     
-    // execute command
-    execute: function(options) {
-    },
-    
-    // unload
-    onunload: function() {
-    },
-    
-    // log
-    log: function(location, message) {
-        console.log(location + ' ' + message);
+    // get root path
+    chartPath: function(chart_type) {
+        // create path from id
+        var path = chart_type.split(/_(.+)/);
+        
+        // check path
+        if (path.length >= 2) {
+            // return path
+            return path[0] + '/' + path[1];
+        } else {
+            // log status
+            console.debug('FAILED App:chartPath() - Invalid format: ' + chart_type);
+        }
+        return undefined;
     }
 });
 

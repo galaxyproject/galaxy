@@ -25,7 +25,6 @@ class Tabular( data.Text ):
 
     # All tabular data is chunkable.
     CHUNKABLE = True
-    CHUNK_SIZE = 50000
 
     """Add metadata elements"""
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
@@ -262,13 +261,13 @@ class Tabular( data.Text ):
     def get_chunk(self, trans, dataset, chunk):
         ck_index = int(chunk)
         f = open(dataset.file_name)
-        f.seek(ck_index * self.CHUNK_SIZE)
+        f.seek(ck_index * trans.app.config.display_chunk_size)
         # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
         if f.tell() != 0:
             cursor = f.read(1)
             while cursor and cursor != '\n':
                 cursor = f.read(1)
-        ck_data = f.read(self.CHUNK_SIZE)
+        ck_data = f.read(trans.app.config.display_chunk_size)
         cursor = f.read(1)
         while cursor and ck_data[-1] != '\n':
             ck_data += cursor

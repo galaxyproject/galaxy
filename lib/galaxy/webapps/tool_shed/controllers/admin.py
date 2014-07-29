@@ -1,13 +1,18 @@
 import logging
+
+from galaxy import util
+from galaxy.util import inflector
+from galaxy import web
+
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.base.controllers.admin import Admin
-from galaxy import util
-from galaxy import web
-from galaxy.util import inflector
-import tool_shed.util.shed_util_common as suc
-import tool_shed.util.metadata_util as metadata_util
-from tool_shed.util import repository_maintenance_util
+
 import tool_shed.grids.admin_grids as admin_grids
+from tool_shed.metadata import repository_metadata_manager
+
+from tool_shed.util import metadata_util
+from tool_shed.util import repository_util
+from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -43,14 +48,14 @@ class AdminController( BaseUIController, Admin ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 if 'user_id' in kwd:
-                    user = suc.get_user( trans, kwd[ 'user_id' ] )
+                    user = suc.get_user( trans.app, kwd[ 'user_id' ] )
                     kwd[ 'f-email' ] = user.email
                     del kwd[ 'user_id' ]
                 else:
                     # The received id is the repository id, so we need to get the id of the user
                     # that uploaded the repository.
                     repository_id = kwd.get( 'id', None )
-                    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                    repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
@@ -58,7 +63,7 @@ class AdminController( BaseUIController, Admin ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 category_id = kwd.get( 'id', None )
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
                 if kwd[ 'id' ]:
@@ -82,7 +87,7 @@ class AdminController( BaseUIController, Admin ):
             changeset_revision_str = 'changeset_revision_'
             if k.startswith( changeset_revision_str ):
                 repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( tran.apps, repository_id )
                 if repository.tip( trans.app ) != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='browse_repositories',
@@ -103,7 +108,7 @@ class AdminController( BaseUIController, Admin ):
                 # The received id is a RepositoryMetadata object id, so we need to get the
                 # associated Repository and redirect to view_or_manage_repository with the
                 # changeset_revision.
-                repository_metadata = metadata_util.get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, kwd[ 'id' ] )
                 repository = repository_metadata.repository
                 kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
@@ -124,7 +129,7 @@ class AdminController( BaseUIController, Admin ):
             if not name or not description:
                 message = 'Enter a valid name and a description'
                 status = 'error'
-            elif suc.get_category_by_name( trans, name ):
+            elif suc.get_category_by_name( trans.app, name ):
                 message = 'A category with that name already exists'
                 status = 'error'
             else:
@@ -132,6 +137,8 @@ class AdminController( BaseUIController, Admin ):
                 category = trans.app.model.Category( name=name, description=description )
                 trans.sa_session.add( category )
                 trans.sa_session.flush()
+                # Update the Tool Shed's repository registry.
+                trans.app.repository_registry.add_category_entry( category )
                 message = "Category '%s' has been created" % category.name
                 status = 'done'
                 trans.response.send_redirect( web.url_for( controller='admin',
@@ -156,7 +163,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             deleted_repositories = ""
             for repository_id in ids:
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository:
                     if not repository.deleted:
                         # Mark all installable repository_metadata records as not installable.
@@ -171,6 +178,8 @@ class AdminController( BaseUIController, Admin ):
                         repository.deleted = True
                         trans.sa_session.add( repository )
                         trans.sa_session.flush()
+                        # Update the repository registry.
+                        trans.app.repository_registry.remove_entry( repository )
                         count += 1
                         deleted_repositories += " %s " % repository.name
             if count:
@@ -195,7 +204,7 @@ class AdminController( BaseUIController, Admin ):
             ids = util.listify( id )
             count = 0
             for repository_metadata_id in ids:
-                repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
+                repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, repository_metadata_id )
                 trans.sa_session.delete( repository_metadata )
                 trans.sa_session.flush()
                 count += 1
@@ -221,22 +230,33 @@ class AdminController( BaseUIController, Admin ):
                                                        action='manage_categories',
                                                        message=message,
                                                        status='error' ) )
-        category = suc.get_category( trans, id )
+        category = suc.get_category( trans.app, id )
+        original_category_name = str( category.name )
+        original_category_description = str( category.description )
         if kwd.get( 'edit_category_button', False ):
+            flush_needed = False
             new_name = kwd.get( 'name', '' ).strip()
             new_description = kwd.get( 'description', '' ).strip()
-            if category.name != new_name or category.description != new_description:
+            if original_category_name != new_name:
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif category.name != new_name and suc.get_category_by_name( trans, new_name ):
+                elif original_category_name != new_name and suc.get_category_by_name( trans.app, new_name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
                     category.name = new_name
+                    flush_needed = True
+                if original_category_description != new_description:
                     category.description = new_description
+                    if not flus_needed:
+                        flush_needed = True
+                if flush_needed:
                     trans.sa_session.add( category )
                     trans.sa_session.flush()
+                    if original_category_name != new_name:
+                        # Update the Tool Shed's repository registry.
+                        trans.app.repository_registry.edit_category_entry( original_category_name, new_name )
                     message = "The information has been saved for category '%s'" % ( category.name )
                     status = 'done'
                     return trans.response.send_redirect( web.url_for( controller='admin',
@@ -300,11 +320,14 @@ class AdminController( BaseUIController, Admin ):
     def manage_role_associations( self, trans, **kwd ):
         """Manage users, groups and repositories associated with a role."""
         role_id = kwd.get( 'id', None )
-        role = repository_maintenance_util.get_role_by_id( trans, role_id )
+        role = repository_util.get_role_by_id( trans.app, role_id )
         # We currently only have a single role associated with a repository, the repository admin role.
         repository_role_association = role.repositories[ 0 ]
         repository = repository_role_association.repository
-        associations_dict = repository_maintenance_util.handle_role_associations( trans, role, repository, **kwd )
+        associations_dict = repository_util.handle_role_associations( trans.app,
+                                                                      role,
+                                                                      repository,
+                                                                      **kwd )
         in_users = associations_dict.get( 'in_users', [] )
         out_users = associations_dict.get( 'out_users', [] )
         in_groups = associations_dict.get( 'in_groups', [] )
@@ -325,12 +348,16 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
+            message, status = rmm.reset_metadata_on_selected_repositories( **kwd )
         else:
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )
-        repositories_select_field = suc.build_repository_ids_select_field( trans )
+        repositories_select_field = rmm.build_repository_ids_select_field( name='repository_ids',
+                                                                           multiple=True,
+                                                                           display='checkboxes',
+                                                                           my_writable=False )
         return trans.fill_template( '/webapps/tool_shed/common/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,
@@ -348,7 +375,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_repositories = ""
             for repository_id in ids:
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository:
                     if repository.deleted:
                         # Inspect all repository_metadata records to determine those that are installable, and mark
@@ -367,6 +394,9 @@ class AdminController( BaseUIController, Admin ):
                         repository.deleted = False
                         trans.sa_session.add( repository )
                         trans.sa_session.flush()
+                        if not repository.deprecated:
+                            # Update the repository registry.
+                            trans.app.repository_registry.add_entry( repository )
                         count += 1
                         undeleted_repositories += " %s" % repository.name
             if count:
@@ -394,10 +424,12 @@ class AdminController( BaseUIController, Admin ):
             ids = util.listify( id )
             message = "Deleted %d categories: " % len( ids )
             for category_id in ids:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 category.deleted = True
                 trans.sa_session.add( category )
                 trans.sa_session.flush()
+                # Update the Tool Shed's repository registry.
+                trans.app.repository_registry.remove_category_entry( category )
                 message += " %s " % category.name
         else:
             message = "No category ids received for deleting."
@@ -422,7 +454,7 @@ class AdminController( BaseUIController, Admin ):
             purged_categories = ""
             message = "Purged %d categories: " % len( ids )
             for category_id in ids:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 if category.deleted:
                     # Delete RepositoryCategoryAssociations
                     for rca in category.repositories:
@@ -449,11 +481,13 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_categories = ""
             for category_id in ids:
-                category = suc.get_category( trans, category_id )
+                category = suc.get_category( trans.app, category_id )
                 if category.deleted:
                     category.deleted = False
                     trans.sa_session.add( category )
                     trans.sa_session.flush()
+                    # Update the Tool Shed's repository registry.
+                    trans.app.repository_registry.add_category_entry( category )
                     count += 1
                     undeleted_categories += " %s" % category.name
             message = "Undeleted %d categories: %s" % ( count, undeleted_categories )

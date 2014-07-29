@@ -321,7 +321,7 @@ class Workflow( object ):
         self.repository_metadata_id = repository_metadata_id
         self.repository_id = repository_id
 
-def build_data_managers_folder( trans, folder_id, data_managers, label=None ):
+def build_data_managers_folder( app, folder_id, data_managers, label=None ):
     """Return a folder hierarchy containing Data Managers."""
     if data_managers:
         if label is None:
@@ -359,7 +359,7 @@ def build_data_managers_folder( trans, folder_id, data_managers, label=None ):
         data_managers_root_folder = None
     return folder_id, data_managers_root_folder
 
-def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
+def build_datatypes_folder( app, folder_id, datatypes, label='Datatypes' ):
     """Return a folder hierarchy containing datatypes."""
     if datatypes:
         datatype_id = 0
@@ -424,7 +424,7 @@ def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
         datatypes_root_folder = None
     return folder_id, datatypes_root_folder
 
-def build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages=None, label=None ):
+def build_invalid_data_managers_folder( app, folder_id, data_managers, error_messages=None, label=None ):
     """Return a folder hierarchy containing invalid Data Managers."""
     if data_managers or error_messages:
         if label is None:
@@ -461,7 +461,7 @@ def build_invalid_data_managers_folder( trans, folder_id, data_managers, error_m
         data_managers_root_folder = None
     return folder_id, data_managers_root_folder
 
-def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid_repository_dependencies_dict ):
+def build_invalid_repository_dependencies_root_folder( app, folder_id, invalid_repository_dependencies_dict ):
     """Return a folder hierarchy containing invalid repository dependencies."""
     label = 'Invalid repository dependencies'
     if invalid_repository_dependencies_dict:
@@ -505,7 +505,7 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
         invalid_repository_dependencies_root_folder = None
     return folder_id, invalid_repository_dependencies_root_folder
 
-def build_invalid_tool_dependencies_root_folder( trans, folder_id, invalid_tool_dependencies_dict ):
+def build_invalid_tool_dependencies_root_folder( app, folder_id, invalid_tool_dependencies_dict ):
     """Return a folder hierarchy containing invalid tool dependencies."""
     # # INvalid tool dependencies are always packages like:
     # {"R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1" "error" : "some sting" }
@@ -550,7 +550,7 @@ def build_invalid_tool_dependencies_root_folder( trans, folder_id, invalid_tool_
         invalid_tool_dependencies_root_folder = None
     return folder_id, invalid_tool_dependencies_root_folder
 
-def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changeset_revision, repository=None, label='Invalid tools' ):
+def build_invalid_tools_folder( app, folder_id, invalid_tool_configs, changeset_revision, repository=None, label='Invalid tools' ):
     """Return a folder hierarchy containing invalid tools."""
     # TODO: Should we display invalid tools on the tool panel selection page when installing the repository into Galaxy?
     if invalid_tool_configs:
@@ -564,7 +564,7 @@ def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changese
             invalid_tool_id += 1
             if repository:
                 repository_id = repository.id
-                if trans.webapp.name == 'galaxy':
+                if app.name == 'galaxy':
                     repository_installation_status = repository.status
                 else:
                     repository_installation_status = None
@@ -581,7 +581,7 @@ def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changese
         invalid_tools_root_folder = None
     return folder_id, invalid_tools_root_folder
 
-def build_readme_files_folder( trans, folder_id, readme_files_dict, label='Readme files' ):
+def build_readme_files_folder( app, folder_id, readme_files_dict, label='Readme files' ):
     """Return a folder hierarchy containing readme text files."""
     if readme_files_dict:
         readme_id = 0
@@ -605,7 +605,7 @@ def build_readme_files_folder( trans, folder_id, readme_files_dict, label='Readm
         readme_files_root_folder = None
     return folder_id, readme_files_root_folder
 
-def build_repository_containers_for_galaxy( trans, repository, datatypes, invalid_tools, missing_repository_dependencies, missing_tool_dependencies,
+def build_repository_containers_for_galaxy( app, repository, datatypes, invalid_tools, missing_repository_dependencies, missing_tool_dependencies,
                                             readme_files_dict, repository_dependencies, tool_dependencies, valid_tools, workflows, valid_data_managers,
                                             invalid_data_managers, data_managers_errors, new_install=False, reinstalling=False ):
     """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
@@ -634,11 +634,11 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
         folder_id = 0
         # Datatypes container.
         if datatypes:
-            folder_id, datatypes_root_folder = build_datatypes_folder( trans, folder_id, datatypes )
+            folder_id, datatypes_root_folder = build_datatypes_folder( app, folder_id, datatypes )
             containers_dict[ 'datatypes' ] = datatypes_root_folder
         # Invalid tools container.
         if invalid_tools:
-            folder_id, invalid_tools_root_folder = build_invalid_tools_folder( trans,
+            folder_id, invalid_tools_root_folder = build_invalid_tools_folder( app,
                                                                                folder_id,
                                                                                invalid_tools,
                                                                                changeset_revision,
@@ -647,7 +647,7 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
             containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
         # Readme files container.
         if readme_files_dict:
-            folder_id, readme_files_root_folder = build_readme_files_folder( trans, folder_id, readme_files_dict )
+            folder_id, readme_files_root_folder = build_readme_files_folder( app, folder_id, readme_files_dict )
             containers_dict[ 'readme_files' ] = readme_files_root_folder
         # Installed repository dependencies container.
         if repository_dependencies:
@@ -655,7 +655,7 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
                 label = 'Repository dependencies'
             else:
                 label = 'Installed repository dependencies'
-            folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( trans=trans,
+            folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( app=app,
                                                                                                    folder_id=folder_id,
                                                                                                    repository_dependencies=repository_dependencies,
                                                                                                    label=label,
@@ -664,7 +664,7 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
         # Missing repository dependencies container.
         if missing_repository_dependencies:
             folder_id, missing_repository_dependencies_root_folder = \
-                build_repository_dependencies_folder( trans=trans,
+                build_repository_dependencies_folder( app=app,
                                                       folder_id=folder_id,
                                                       repository_dependencies=missing_repository_dependencies,
                                                       label='Missing repository dependencies',
@@ -677,7 +677,7 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
             else:
                 label = 'Installed tool dependencies'
             # We only want to display the Status column if the tool_dependency is missing.
-            folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( trans,
+            folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( app,
                                                                                        folder_id,
                                                                                        tool_dependencies,
                                                                                        label=label,
@@ -688,7 +688,7 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
         # Missing tool dependencies container.
         if missing_tool_dependencies:
             # We only want to display the Status column if the tool_dependency is missing.
-            folder_id, missing_tool_dependencies_root_folder = build_tool_dependencies_folder( trans,
+            folder_id, missing_tool_dependencies_root_folder = build_tool_dependencies_folder( app,
                                                                                                folder_id,
                                                                                                missing_tool_dependencies,
                                                                                                label='Missing tool dependencies',
@@ -698,7 +698,7 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
             containers_dict[ 'missing_tool_dependencies' ] = missing_tool_dependencies_root_folder
         # Valid tools container.
         if valid_tools:
-            folder_id, valid_tools_root_folder = build_tools_folder( trans,
+            folder_id, valid_tools_root_folder = build_tools_folder( app,
                                                                      folder_id,
                                                                      valid_tools,
                                                                      repository,
@@ -707,7 +707,7 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
             containers_dict[ 'valid_tools' ] = valid_tools_root_folder
         # Workflows container.
         if workflows:
-            folder_id, workflows_root_folder = build_workflows_folder( trans=trans,
+            folder_id, workflows_root_folder = build_workflows_folder( app=app,
                                                                        folder_id=folder_id,
                                                                        workflows=workflows,
                                                                        repository_metadata_id=None,
@@ -715,13 +715,13 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
                                                                        label='Workflows' )
             containers_dict[ 'workflows' ] = workflows_root_folder
         if valid_data_managers:
-            folder_id, valid_data_managers_root_folder = build_data_managers_folder( trans=trans,
+            folder_id, valid_data_managers_root_folder = build_data_managers_folder( app=app,
                                                                                      folder_id=folder_id,
                                                                                      data_managers=valid_data_managers,
                                                                                      label='Valid Data Managers' )
             containers_dict[ 'valid_data_managers' ] = valid_data_managers_root_folder
         if invalid_data_managers or data_managers_errors:
-            folder_id, invalid_data_managers_root_folder = build_invalid_data_managers_folder( trans=trans,
+            folder_id, invalid_data_managers_root_folder = build_invalid_data_managers_folder( app=app,
                                                                                                folder_id=folder_id,
                                                                                                data_managers=invalid_data_managers,
                                                                                                error_messages=data_managers_errors,
@@ -733,7 +733,7 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
         lock.release()
     return containers_dict
 
-def build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata,
+def build_repository_containers_for_tool_shed( app, repository, changeset_revision, repository_dependencies, repository_metadata,
                                                exclude=None ):
     """Return a dictionary of containers for the received repository's dependencies and contents for display in the tool shed."""
     if exclude is None:
@@ -757,14 +757,14 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             if metadata:
                 if 'datatypes' not in exclude and 'datatypes' in metadata:
                     datatypes = metadata[ 'datatypes' ]
-                    folder_id, datatypes_root_folder = build_datatypes_folder( trans, folder_id, datatypes )
+                    folder_id, datatypes_root_folder = build_datatypes_folder( app, folder_id, datatypes )
                     containers_dict[ 'datatypes' ] = datatypes_root_folder
             # Invalid repository dependencies container.
             if metadata:
                 if 'invalid_repository_dependencies' not in exclude and 'invalid_repository_dependencies' in metadata:
                     invalid_repository_dependencies = metadata[ 'invalid_repository_dependencies' ]
                     folder_id, invalid_repository_dependencies_root_folder = \
-                        build_invalid_repository_dependencies_root_folder( trans,
+                        build_invalid_repository_dependencies_root_folder( app,
                                                                            folder_id,
                                                                            invalid_repository_dependencies )
                     containers_dict[ 'invalid_repository_dependencies' ] = invalid_repository_dependencies_root_folder
@@ -773,7 +773,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                 if 'invalid_tool_dependencies' not in exclude and 'invalid_tool_dependencies' in metadata:
                     invalid_tool_dependencies = metadata[ 'invalid_tool_dependencies' ]
                     folder_id, invalid_tool_dependencies_root_folder = \
-                        build_invalid_tool_dependencies_root_folder( trans,
+                        build_invalid_tool_dependencies_root_folder( app,
                                                                      folder_id,
                                                                      invalid_tool_dependencies )
                     containers_dict[ 'invalid_tool_dependencies' ] = invalid_tool_dependencies_root_folder
@@ -781,7 +781,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             if metadata:
                 if 'invalid_tools' not in exclude and 'invalid_tools' in metadata:
                     invalid_tool_configs = metadata[ 'invalid_tools' ]
-                    folder_id, invalid_tools_root_folder = build_invalid_tools_folder( trans,
+                    folder_id, invalid_tools_root_folder = build_invalid_tools_folder( app,
                                                                                        folder_id,
                                                                                        invalid_tool_configs,
                                                                                        changeset_revision,
@@ -791,13 +791,13 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             # Readme files container.
             if metadata:
                 if 'readme_files' not in exclude and 'readme_files' in metadata:
-                    readme_files_dict = readme_util.build_readme_files_dict( trans, repository, changeset_revision, metadata )
-                    folder_id, readme_files_root_folder = build_readme_files_folder( trans, folder_id, readme_files_dict )
+                    readme_files_dict = readme_util.build_readme_files_dict( app, repository, changeset_revision, metadata )
+                    folder_id, readme_files_root_folder = build_readme_files_folder( app, folder_id, readme_files_dict )
                     containers_dict[ 'readme_files' ] = readme_files_root_folder
             if 'repository_dependencies' not in exclude:
                 # Repository dependencies container.
                 folder_id, repository_dependencies_root_folder = \
-                    build_repository_dependencies_folder( trans=trans,
+                    build_repository_dependencies_folder( app=app,
                                                           folder_id=folder_id,
                                                           repository_dependencies=repository_dependencies,
                                                           label='Repository dependencies',
@@ -808,7 +808,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             if metadata:
                 if 'tool_dependencies' not in exclude and 'tool_dependencies' in metadata:
                     tool_dependencies = metadata[ 'tool_dependencies' ]
-                    if trans.webapp.name == 'tool_shed':
+                    if app.name == 'tool_shed':
                         if 'orphan_tool_dependencies' in metadata:
                             # The use of the orphan_tool_dependencies category in metadata has been deprecated,
                             # but we still need to check in case the metadata is out of date.
@@ -818,7 +818,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                         if 'tools' not in exclude:
                             tools = metadata.get( 'tools', [] )
                             tools.extend( metadata.get( 'invalid_tools', [] ) )
-                    folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( trans,
+                    folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( app,
                                                                                                folder_id,
                                                                                                tool_dependencies,
                                                                                                missing=False,
@@ -828,7 +828,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             if metadata:
                 if 'tools' not in exclude and 'tools' in metadata:
                     valid_tools = metadata[ 'tools' ]
-                    folder_id, valid_tools_root_folder = build_tools_folder( trans,
+                    folder_id, valid_tools_root_folder = build_tools_folder( app,
                                                                              folder_id,
                                                                              valid_tools,
                                                                              repository,
@@ -839,7 +839,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             tool_test_results = galaxy.util.listify( repository_metadata.tool_test_results )
             # Only create and populate this folder if there are actual tool test results to display.
             if can_display_tool_test_results( tool_test_results, exclude=exclude ):
-                folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans,
+                folder_id, tool_test_results_root_folder = build_tool_test_results_folder( app,
                                                                                            folder_id,
                                                                                            tool_test_results,
                                                                                            label='Tool test results' )
@@ -848,7 +848,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             if metadata:
                 if 'workflows' not in exclude and 'workflows' in metadata:
                     workflows = metadata[ 'workflows' ]
-                    folder_id, workflows_root_folder = build_workflows_folder( trans=trans,
+                    folder_id, workflows_root_folder = build_workflows_folder( app=app,
                                                                                folder_id=folder_id,
                                                                                workflows=workflows,
                                                                                repository_metadata_id=repository_metadata.id,
@@ -860,12 +860,12 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                 if 'data_manager' not in exclude and 'data_manager' in metadata:
                     data_managers = metadata['data_manager'].get( 'data_managers', None )
                     folder_id, data_managers_root_folder = \
-                        build_data_managers_folder( trans, folder_id, data_managers, label="Data Managers" )
+                        build_data_managers_folder( app, folder_id, data_managers, label="Data Managers" )
                     containers_dict[ 'valid_data_managers' ] = data_managers_root_folder
                     error_messages = metadata['data_manager'].get( 'error_messages', None )
                     data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
                     folder_id, data_managers_root_folder = \
-                        build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages, label="Invalid Data Managers" )
+                        build_invalid_data_managers_folder( app, folder_id, data_managers, error_messages, label="Invalid Data Managers" )
                     containers_dict[ 'invalid_data_managers' ] = data_managers_root_folder
         except Exception, e:
             log.exception( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
@@ -873,7 +873,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             lock.release()
     return containers_dict
 
-def build_repository_dependencies_folder( trans, folder_id, repository_dependencies, label='Repository dependencies', installed=False ):
+def build_repository_dependencies_folder( app, folder_id, repository_dependencies, label='Repository dependencies', installed=False ):
     """Return a folder hierarchy containing repository dependencies."""
     if repository_dependencies:
         repository_dependency_id = 0
@@ -894,7 +894,7 @@ def build_repository_dependencies_folder( trans, folder_id, repository_dependenc
         repository_dependencies_root_folder.folders.append( repository_dependencies_folder )
         del repository_dependencies[ 'description' ]
         repository_dependencies_folder, folder_id, repository_dependency_id = \
-            populate_repository_dependencies_container( trans,
+            populate_repository_dependencies_container( app,
                                                         repository_dependencies_folder,
                                                         repository_dependencies,
                                                         folder_id,
@@ -904,7 +904,7 @@ def build_repository_dependencies_folder( trans, folder_id, repository_dependenc
         repository_dependencies_root_folder = None
     return folder_id, repository_dependencies_root_folder
 
-def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revision, valid=True, label='Valid tools' ):
+def build_tools_folder( app, folder_id, tool_dicts, repository, changeset_revision, valid=True, label='Valid tools' ):
     """Return a folder hierarchy containing valid tools."""
     if tool_dicts:
         container_object_tool_id = 0
@@ -912,7 +912,7 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
         tools_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
         folder = Folder( id=folder_id, key='tools', label=label, parent=tools_root_folder )
-        if trans.webapp.name == 'galaxy':
+        if app.name == 'galaxy':
             folder.description = 'click the name to inspect the tool metadata'
         tools_root_folder.folders.append( folder )
         # Insert a header row.
@@ -929,7 +929,7 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
         folder.valid_tools.append( tool )
         if repository:
             repository_id = repository.id
-            if trans.webapp.name == 'galaxy':
+            if app.name == 'galaxy':
                 repository_installation_status = repository.status
             else:
                 repository_installation_status = None
@@ -985,7 +985,7 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
         tools_root_folder = None
     return folder_id, tools_root_folder
 
-def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', missing=False,
+def build_tool_dependencies_folder( app, folder_id, tool_dependencies, label='Tool dependencies', missing=False,
                                     new_install=False, reinstalling=False ):
     """Return a folder hierarchy containing tool dependencies."""
     # When we're in Galaxy (not the tool shed) and the tool dependencies are not installed or are in an error state,
@@ -999,7 +999,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         tool_dependencies_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
         folder = Folder( id=folder_id, key='tool_dependencies', label=label, parent=tool_dependencies_root_folder )
-        if trans.webapp.name == 'galaxy':
+        if app.name == 'galaxy':
             if new_install or reinstalling:
                 folder.description = "repository tools require handling of these dependencies"
             elif missing and not new_install and not reinstalling:
@@ -1009,7 +1009,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         tool_dependencies_root_folder.folders.append( folder )
         # Insert a header row.
         tool_dependency_id += 1
-        if trans.webapp.name == 'galaxy':
+        if app.name == 'galaxy':
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
                                               version='Version',
@@ -1043,7 +1043,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                         type = 'unknown'
                         repository_id = 'unknown'
                         td_id = 'unknown'
-                    if trans.webapp.name == 'galaxy':
+                    if app.name == 'galaxy':
                         try:
                             installation_status = set_environment_dict.get( 'status', 'Never installed' )
                         except Exception, e:
@@ -1072,7 +1072,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                     type = 'unknown'
                     repository_id = 'unknown'
                     td_id = 'unknown'
-                if trans.webapp.name == 'galaxy':
+                if app.name == 'galaxy':
                     try:
                         installation_status = requirements_dict.get( 'status', 'Never installed' )
                     except Exception, e:
@@ -1092,7 +1092,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         tool_dependencies_root_folder = None
     return folder_id, tool_dependencies_root_folder
 
-def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, label='Tool test results' ):
+def build_tool_test_results_folder( app, folder_id, tool_test_results_dicts, label='Tool test results' ):
     """Return a folder hierarchy containing tool dependencies."""
     # This container is displayed only in the tool shed.
     if tool_test_results_dicts:
@@ -1449,7 +1449,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dicts, l
         tool_test_results_root_folder = None
     return folder_id, tool_test_results_root_folder
 
-def build_workflows_folder( trans, folder_id, workflows, repository_metadata_id=None, repository_id=None, label='Workflows' ):
+def build_workflows_folder( app, folder_id, workflows, repository_metadata_id=None, repository_id=None, label='Workflows' ):
     """
     Return a folder hierarchy containing workflow objects for each workflow dictionary in the received workflows list.  When
     this method is called from the tool shed, repository_metadata_id will have a value and repository_id will be None.  When
@@ -1554,7 +1554,7 @@ def generate_repository_dependencies_key_for_repository( toolshed_base_url, repo
 def generate_tool_dependencies_key( name, version, type ):
     return '%s%s%s%s%s' % ( str( name ), STRSEP, str( version ), STRSEP, str( type ) )
 
-def get_components_from_repository_dependency_for_installed_repository( trans, repository_dependency ):
+def get_components_from_repository_dependency_for_installed_repository( app, repository_dependency ):
     """Parse a repository dependency and return components necessary for proper display in Galaxy on the Manage repository page."""
     # Default prior_installation_required and only_if_compiling_contained_td to False.
     prior_installation_required = 'False'
@@ -1580,7 +1580,8 @@ def get_components_from_repository_dependency_for_installed_repository( trans, r
         tool_shed_repository_id = None
         installation_status = 'unknown'
     if tool_shed_repository_id:
-        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans, trans.security.encode_id( tool_shed_repository_id ) )
+        tool_shed_repository = suc.get_tool_shed_repository_by_id( app,
+                                                                   app.security.encode_id( tool_shed_repository_id ) )
         if tool_shed_repository:
             if tool_shed_repository.missing_repository_dependencies:
                 installation_status = '%s, missing repository dependencies' % installation_status
@@ -1613,7 +1614,7 @@ def get_folder( folder, key ):
         return get_folder( sub_folder, key )
     return None
 
-def handle_repository_dependencies_container_entry( trans, repository_dependencies_folder, rd_key, rd_value, folder_id,
+def handle_repository_dependencies_container_entry( app, repository_dependencies_folder, rd_key, rd_value, folder_id,
                                                     repository_dependency_id, folder_keys ):
     repository_components_tuple = get_components_from_key( rd_key )
     components_list = suc.extract_components_from_tuple( repository_components_tuple )
@@ -1646,7 +1647,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
         folder_id += 1
         sub_folder = Folder( id=folder_id, key=rd_key, label=label, parent=repository_dependencies_folder )
         repository_dependencies_folder.folders.append( sub_folder )
-    if trans.webapp.name == 'galaxy':
+    if app.name == 'galaxy':
         # Insert a header row.
         repository_dependency_id += 1
         repository_dependency = RepositoryDependency( id=repository_dependency_id,
@@ -1657,9 +1658,9 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
         # Insert the header row into the folder.
         sub_folder.repository_dependencies.append( repository_dependency )
     for repository_dependency in rd_value:
-        if trans.webapp.name == 'galaxy':
+        if app.name == 'galaxy':
             tool_shed_repository_id, installation_status, repository_dependency = \
-                get_components_from_repository_dependency_for_installed_repository( trans, repository_dependency )
+                get_components_from_repository_dependency_for_installed_repository( app, repository_dependency )
         else:
             tool_shed_repository_id = None
             installation_status = None
@@ -1717,7 +1718,7 @@ def key_is_current_repositorys_key( repository_name, repository_owner, changeset
         return True
     return False
 
-def populate_repository_dependencies_container( trans, repository_dependencies_folder, repository_dependencies, folder_id,
+def populate_repository_dependencies_container( app, repository_dependencies_folder, repository_dependencies, folder_id,
                                                 repository_dependency_id ):
     folder_keys = []
     for key in repository_dependencies.keys():
@@ -1725,7 +1726,7 @@ def populate_repository_dependencies_container( trans, repository_dependencies_f
             folder_keys.append( key )
     for key, value in repository_dependencies.items():
         repository_dependencies_folder, folder_id, repository_dependency_id = \
-            handle_repository_dependencies_container_entry( trans,
+            handle_repository_dependencies_container_entry( app,
                                                             repository_dependencies_folder,
                                                             key,
                                                             value,

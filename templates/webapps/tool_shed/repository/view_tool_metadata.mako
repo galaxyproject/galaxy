@@ -22,7 +22,7 @@
 <%inherit file="${inherit(context)}"/>
 
 %if render_repository_actions_for == 'tool_shed':
-    ${render_tool_shed_repository_actions( repository=repository, changeset_revision=changeset_revision )}
+    ${render_tool_shed_repository_actions( repository=repository, metadata=metadata, changeset_revision=changeset_revision )}
 %else:
     ${render_galaxy_repository_actions( repository=repository )}
 %endif

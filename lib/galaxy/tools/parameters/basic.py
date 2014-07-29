@@ -1712,10 +1712,15 @@ class DataToolParameter( BaseDataToolParameter ):
             if self.__display_multirun_option():
                 # Select multiple datasets, run multiple jobs.
                 multirun_key = "%s|__multirun__" % self.name
+                collection_multirun_key = "%s|__collection_multirun__" % self.name
                 if multirun_key in (other_values or {}):
                     multirun_value = listify( other_values[ multirun_key ] )
                     if multirun_value and len( multirun_value ) > 1:
                         default_field = "select_multiple"
+                elif collection_multirun_key in (other_values or {}):
+                    multirun_value = listify( other_values[ collection_multirun_key ] )
+                    if multirun_value:
+                        default_field = "select_collection"
                 else:
                     multirun_value = value
                 multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
@@ -2014,9 +2019,17 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         default_field = "select_single_collection"
         fields = odict()
 
+        collection_multirun_key = "%s|__collection_multirun__" % self.name
+        if collection_multirun_key in (other_values or {}):
+            multirun_value = other_values[ collection_multirun_key ]
+            if multirun_value:
+                default_field = "select_map_over_collections"
+        else:
+            multirun_value = value
+
         history = self._get_history( trans )
         fields[ "select_single_collection" ] = self._get_single_collection_field( trans=trans, history=history, value=value, other_values=other_values )
-        fields[ "select_map_over_collections" ] = self._get_select_dataset_collection_field( trans=trans, history=history, value=value, other_values=other_values )
+        fields[ "select_map_over_collections" ] = self._get_select_dataset_collection_field( trans=trans, history=history, value=multirun_value, other_values=other_values )
 
         return self._switch_fields( fields, default_field=default_field )
 
@@ -2065,7 +2078,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def from_html( self, value, trans, other_values={} ):
         if not value and not self.optional:
-            raise ValueError( "History does not include a dataset of the required format / build" )
+            raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
         if value in [None, "None"]:
             return None
         if isinstance( value, str ) and value.find( "," ) > 0:
