@@ -3,6 +3,8 @@ import logging
 import os
 import threading
 
+from galaxy import util
+
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import readme_util
