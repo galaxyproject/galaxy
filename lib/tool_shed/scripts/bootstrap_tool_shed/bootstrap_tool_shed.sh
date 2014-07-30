@@ -73,12 +73,11 @@ while : ; do
 	fi
 done
 
-echo -n "Retrieving admin user's API key..."
-api_key_json=`curl -s --user $admin_user_email:$admin_user_password $local_shed_url/api/authenticate/baseauth/`
-api_key=`echo $api_key_json | grep api_key | awk 'BEGIN { FS="\"" } ; { print \$4 }' | sed 's/\\s\+//'`
+echo -n "Retrieving admin user's API key from $local_shed_url..."
+api_key=`curl -s --user $admin_user_email:$admin_user_password $local_shed_url/api/authenticate/baseauth/ | sed 's/.\+api_key[^0-9a-f]\+\([0-9a-f]\+\).\+/\1/'`
 
 if [[ -z $api_key && ${api_key+x} ]] ; then
-	stop_err "Error getting API key for user $admin_user_email."
+		stop_err "Error getting API key for user $admin_user_email."
 fi
 
 echo " done."

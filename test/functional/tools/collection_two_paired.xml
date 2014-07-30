@@ -16,12 +16,12 @@
         <option value="list">List of Datasets</option>
       </param>
       <when value="paired">
-        <param name="f1" type="data_collection" collection_type="paired" />
-        <param name="f2" type="data_collection" collection_type="paired" />
+        <param name="f1" type="data_collection" collection_type="paired" label="F1" />
+        <param name="f2" type="data_collection" collection_type="paired" label="F2" />
       </when>
       <when value="list">
-        <param name="f1" type="data_collection" collection_type="list" />
-        <param name="f2" type="data_collection" collection_type="list" />
+        <param name="f1" type="data_collection" collection_type="list" label="F1" />
+        <param name="f2" type="data_collection" collection_type="list" label="F2" />
       </when>
     </conditional>
   </inputs>

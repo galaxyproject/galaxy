@@ -11,8 +11,10 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
+workflow_two_paired_str = resource_string( __name__, "test_workflow_two_paired.ga" )
 
-DEFAULT_HISTORY_TIMEOUT = 5  # Secs to wait on history to turn ok
+
+DEFAULT_HISTORY_TIMEOUT = 10  # Secs to wait on history to turn ok
 
 
 def skip_without_tool( tool_id ):
@@ -118,6 +120,25 @@ class DatasetPopulator( object ):
         api_asserts.assert_status_code_is( tool_response, 200 )
         return tool_response.json()
 
+    def get_history_dataset_content( self, history_id, wait=True, **kwds ):
+        if wait:
+            assert_ok = kwds.get( "assert_ok", True )
+            self.wait_for_history( history_id, assert_ok=assert_ok )
+        # kwds should contain a 'dataset' object response, a 'dataset_id' or
+        # the last dataset in the history will be fetched.
+        contents_url = "histories/%s/contents" % history_id
+        if "dataset_id" in kwds:
+            dataset_id = kwds[ "dataset_id" ]
+        elif "dataset" in kwds:
+            dataset_id = kwds[ "dataset" ][ "id" ]
+        else:
+            dataset_contents = self.galaxy_interactor.get( contents_url ).json()
+            dataset_id = dataset_contents[ -1 ][ "id" ]
+
+        display_response = self.galaxy_interactor.get( "%s/%s/display" % ( contents_url, dataset_id ) )
+        assert display_response.status_code == 200
+        return display_response.content
+
 
 class WorkflowPopulator( object ):
     # Impulse is to make this a Mixin, but probably better as an object.
@@ -139,6 +160,9 @@ class WorkflowPopulator( object ):
 
     def load_random_x2_workflow( self, name ):
         return self.load_workflow( name, content=workflow_random_x2_str )
+
+    def load_two_paired_workflow( self, name ):
+        return self.load_workflow( name, content=workflow_two_paired_str )
 
     def simple_workflow( self, name, **create_kwds ):
         workflow = self.load_workflow( name )

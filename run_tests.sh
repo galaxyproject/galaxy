@@ -88,7 +88,7 @@ do
               shift 1
           fi
           ;;
-          -with_framework_test_tools|--with_framework_test_tools)
+      -with_framework_test_tools|--with_framework_test_tools)
           with_framework_test_tools_arg="-with_framework_test_tools"
           shift
           ;;

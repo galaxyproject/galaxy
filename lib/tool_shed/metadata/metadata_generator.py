@@ -7,6 +7,7 @@ from galaxy import util
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.tools.data_manager.manager import DataManager
+from galaxy.tools.test import TestCollectionDef
 from galaxy.web import url_for
 
 from tool_shed.repository_types import util as rt_util
@@ -621,7 +622,13 @@ class MetadataGenerator( object ):
                             # </test>
                             inputs.append( ( param_name, values ) )
                         else:
-                            if len( values ) == 1:
+                            if isinstance( values, TestCollectionDef ):
+                                # Nested required files are being populated correctly,
+                                # not sure we need the value here to be anything else?
+                                collection_type = values.collection_type
+                                metadata_display_value = "%s collection" % collection_type
+                                inputs.append( ( param_name, metadata_display_value ) )
+                            elif len( values ) == 1:
                                 inputs.append( ( param_name, values[ 0 ] ) )
                             else:
                                 inputs.append( ( param_name, values ) )
