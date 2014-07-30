@@ -688,10 +688,10 @@ def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
 
 
 def object_to_string( obj ):
-    return binascii.hexlify( pickle.dumps( obj, 2 ) )
+    return binascii.hexlify( obj )
 
 def string_to_object( s ):
-    return pickle.loads( binascii.unhexlify( s ) )
+    return binascii.unhexlify( s )
 
 def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compare_path=True ):
     url1 = urlparse( url1 )
