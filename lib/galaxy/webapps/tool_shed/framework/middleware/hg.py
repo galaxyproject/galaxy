@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 
 CHUNK_SIZE = 65536
 
+
 class Hg( object ):
 
     def __init__( self, app, config ):
@@ -35,12 +36,20 @@ class Hg( object ):
             self.db_url = self.config[ 'database_connection' ]
         else:
             self.db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config[ 'database_file' ]
+        # Keep track of whether we're setting repository metadata so that we do not increment the times_downloaded
+        # count for the repository.
+        self.setting_repository_metadata = False
 
     def __call__( self, environ, start_response ):
+        if 'PATH_INFO' in environ:
+            path_info = environ[ 'PATH_INFO' ].lstrip( '/' )
+            if path_info == 'repository/reset_all_metadata':
+                self.setting_repository_metadata = True
         cmd = self.__get_hg_command( **environ )
         # The 'getbundle' command indicates that a mercurial client is getting a bundle of one or more changesets, indicating
-        # a clone or a pull.
-        if cmd == 'getbundle':
+        # a clone or a pull.  However, we do not want to increment the times_downloaded count if we're only setting repository
+        # metadata.
+        if cmd == 'getbundle' and not self.setting_repository_metadata:
             common, _ = environ[ 'HTTP_X_HGARG_1' ].split( '&' )
             # The 'common' parameter indicates the full sha-1 hash of the changeset the client currently has checked out. If
             # this is 0000000000000000000000000000000000000000, then the client is performing a fresh checkout. If it has any
