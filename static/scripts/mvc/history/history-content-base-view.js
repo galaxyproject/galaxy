@@ -8,6 +8,7 @@ define([
  *      Functionality here should be history-centric.
  */
 var HistoryContentViewMixin = {
+    //PRECONDITION: expects to be mixed into an BASE_MVC.ExpandableView
 
 //TODO: most of the fns/attrs here are basal to any sort of list view - consider moving
     initialize : function( attributes ){
@@ -42,9 +43,8 @@ var HistoryContentViewMixin = {
     _buildNewRender : function(){
         // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
         var $newRender = $( this.templates.skeleton( this.model.toJSON() ) );
-        var titleButtons = this._render_titleButtons();
-        $newRender.find( '.dataset-primary-actions' ).append( this._render_titleButtons() );
-        $newRender.children( '.dataset-body' ).replaceWith( this._renderBody() );
+        $newRender.find( '.primary-actions' ).append( this._render_primaryActions() );
+        $newRender.children( '.details' ).replaceWith( this._renderBody() );
         this._setUpBehaviors( $newRender );
         //this._renderSelectable( $newRender );
         return $newRender;
@@ -103,7 +103,7 @@ var HistoryContentViewMixin = {
     /** Render icon-button group for the common, most easily accessed actions.
      *  @returns {jQuery} rendered DOM or null
      */
-    _render_titleButtons : function(){
+    _render_primaryActions : function(){
         // override
         return [];
     },
@@ -120,7 +120,6 @@ var HistoryContentViewMixin = {
      */
     toggleExpanded : function( expand ){
         expand = ( expand === undefined )?( !this.expanded ):( expand );
-        this.warn( this + '.toggleExpanded, expand:', expand );
         if( expand ){
             this.expand();
         } else {
@@ -138,11 +137,11 @@ var HistoryContentViewMixin = {
         var contentView = this;
 
         function _renderBodyAndExpand(){
-            contentView.$el.children( '.dataset-body' ).replaceWith( contentView._renderBody() );
+            contentView.$( '.details' ).replaceWith( contentView._renderBody() );
             // needs to be set after the above or the slide will not show
             contentView.expanded = true;
-            contentView.$el.children( '.dataset-body' ).slideDown( contentView.fxSpeed, function(){
-                    contentView.trigger( 'expanded', contentView.model );
+            contentView.$( '.details' ).slideDown( contentView.fxSpeed, function(){
+                    contentView.trigger( 'expanded', contentView );
                 });
         }
         // fetch first if no details in the model
@@ -162,8 +161,8 @@ var HistoryContentViewMixin = {
     collapse : function(){
         var contentView = this;
         contentView.expanded = false;
-        this.$el.children( '.dataset-body' ).slideUp( contentView.fxSpeed, function(){
-            contentView.trigger( 'collapsed', contentView.model.id );
+        this.$( '.details' ).slideUp( contentView.fxSpeed, function(){
+            contentView.trigger( 'collapsed', contentView );
         });
     },
 
@@ -181,8 +180,8 @@ var HistoryContentViewMixin = {
         this.selectable = true;
         this.trigger( 'selectable', true, this );
 
-        this.$( '.dataset-primary-actions' ).hide();
-        this.$( '.dataset-selector' ).show();
+        this.$( '.primary-actions' ).hide();
+        this.$( '.selector' ).show();
     },
 
     /** remove the selection checkbox */
@@ -191,13 +190,13 @@ var HistoryContentViewMixin = {
         this.selectable = false;
         this.trigger( 'selectable', false, this );
 
-        this.$( '.dataset-selector' ).hide();
-        this.$( '.dataset-primary-actions' ).show();
+        this.$( '.selector' ).hide();
+        this.$( '.primary-actions' ).show();
     },
 
     /**  */
     toggleSelector : function(){
-        if( !this.$el.find( '.dataset-selector' ).is( ':visible' ) ){
+        if( !this.$el.find( '.selector' ).is( ':visible' ) ){
             this.showSelector();
         } else {
             this.hideSelector();
@@ -207,7 +206,7 @@ var HistoryContentViewMixin = {
     /** event handler for selection (also programmatic selection) */
     select : function( event ){
         // switch icon, set selected, and trigger event
-        this.$el.find( '.dataset-selector span' )
+        this.$el.find( '.selector span' )
             .removeClass( 'fa-square-o' ).addClass( 'fa-check-square-o' );
         if( !this.selected ){
             this.trigger( 'selected', this, event );
@@ -219,7 +218,7 @@ var HistoryContentViewMixin = {
     /** event handler for clearing selection (also programmatic deselection) */
     deselect : function( event ){
         // switch icon, set selected, and trigger event
-        this.$el.find( '.dataset-selector span' )
+        this.$el.find( '.selector span' )
             .removeClass( 'fa-check-square-o' ).addClass( 'fa-square-o' );
         if( this.selected ){
             this.trigger( 'de-selected', this, event );
@@ -243,14 +242,14 @@ var HistoryContentViewMixin = {
     draggableOn : function(){
         this.draggable = true;
         //TODO: I have no idea why this doesn't work with the events hash or jq.on()...
-        //this.$el.find( '.dataset-title-bar' )
+        //this.$el.find( '.title-bar' )
         //    .attr( 'draggable', true )
         //    .bind( 'dragstart', this.dragStartHandler, false )
         //    .bind( 'dragend',   this.dragEndHandler,   false );
         this.dragStartHandler = _.bind( this._dragStartHandler, this );
         this.dragEndHandler   = _.bind( this._dragEndHandler,   this );
 
-        var titleBar = this.$el.find( '.dataset-title-bar' ).attr( 'draggable', true ).get(0);
+        var titleBar = this.$el.find( '.title-bar' ).attr( 'draggable', true ).get(0);
         titleBar.addEventListener( 'dragstart', this.dragStartHandler, false );
         titleBar.addEventListener( 'dragend',   this.dragEndHandler,   false );
     },
@@ -258,7 +257,7 @@ var HistoryContentViewMixin = {
     /**  */
     draggableOff : function(){
         this.draggable = false;
-        var titleBar = this.$el.find( '.dataset-title-bar' ).attr( 'draggable', false ).get(0);
+        var titleBar = this.$el.find( '.title-bar' ).attr( 'draggable', false ).get(0);
         titleBar.removeEventListener( 'dragstart', this.dragStartHandler, false );
         titleBar.removeEventListener( 'dragend',   this.dragEndHandler,   false );
     },
@@ -292,14 +291,14 @@ var HistoryContentViewMixin = {
     // ......................................................................... events
     events : {
         // expand the body when the title is clicked or when in focus and space or enter is pressed
-        'click .dataset-title-bar'      : '_clickTitleBar',
-        'keydown .dataset-title-bar'    : '_keyDownTitleBar',
+        'click .title-bar'      : '_clickTitleBar',
+        'keydown .title-bar'    : '_keyDownTitleBar',
 
         // dragging - don't work, originalEvent === null
         //'dragstart .dataset-title-bar'  : 'dragStartHandler',
         //'dragend .dataset-title-bar'    : 'dragEndHandler'
 
-        'click .dataset-selector'       : 'toggleSelect'
+        'click .selector'       : 'toggleSelect'
     },
 
     _clickTitleBar : function( event ){
@@ -336,6 +335,7 @@ var HistoryContentBaseView = Backbone.View.extend( BASE_MVC.LoggableMixin ).exte
 /** @lends HistoryContentBaseView.prototype */HistoryContentViewMixin );
 
 //TODO: not sure base view class is warranted or even wise
+
 
 //==============================================================================
     return {

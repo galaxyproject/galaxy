@@ -23,9 +23,9 @@ var HistoryPrefs = BASE_MVC.SessionStorageModel.extend({
         this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
     },
     /** remove an hda id from the hash of expanded hdas */
-    removeExpandedHda : function( id ){
+    removeExpandedHda : function( model ){
         var key = 'expandedHdas';
-        this.save( key, _.omit( this.get( key ), id ) );
+        this.save( key, _.omit( this.get( key ), model.id ) );
     },
     toString : function(){
         return 'HistoryPrefs(' + this.id + ')';
@@ -196,7 +196,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
      *  @param {Object} msg             optional object containing error details
      */
     errorHandler : function( model, xhr, options, msg, details ){
-        console.error( model, xhr, options, msg, details );
+        this.error( model, xhr, options, msg, details );
 //TODO: getting JSON parse errors from jq migrate
 
         // interrupted ajax
@@ -262,7 +262,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
 
     /** loads a history & hdas w/ details (but does not make them the current history) */
     loadHistoryWithHDADetails : function( historyId, attributes, historyFn, hdaFn ){
-        //console.info( 'loadHistoryWithHDADetails:', historyId, attributes, historyFn, hdaFn );
+        //this.info( 'loadHistoryWithHDADetails:', historyId, attributes, historyFn, hdaFn );
         var hdaDetailIds = function( historyData ){
                 // will be called to get hda ids that need details from the api
 //TODO: non-visible HDAs are getting details loaded... either stop loading them at all or filter ids thru isVisible
@@ -277,7 +277,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
         attributes = attributes || {};
 
         panel.trigger( 'loading-history', panel );
-        //console.info( 'loadHistory:', historyId, attributes, historyFn, hdaFn, hdaDetailIds );
+        //this.info( 'loadHistory:', historyId, attributes, historyFn, hdaFn, hdaDetailIds );
         var xhr = HISTORY_MODEL.History.getHistoryData( historyId, {
                 historyFn       : historyFn,
                 hdaFn           : hdaFn,
@@ -652,11 +652,11 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
             panel.errorHandler( model, xhr, options, msg );
         });
         // maintain a list of hdas whose bodies are expanded
-        hdaView.on( 'expanded', function( model ){
-            panel.storage.addExpandedHda( model );
+        hdaView.on( 'expanded', function( view ){
+            panel.storage.addExpandedHda( view.model );
         });
-        hdaView.on( 'collapsed', function( id ){
-            panel.storage.removeExpandedHda( id );
+        hdaView.on( 'collapsed', function( view ){
+            panel.storage.removeExpandedHda( view.model );
         });
         return this;
     },
@@ -743,8 +743,6 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
     //},
 
     hdaViewRange : function( viewA, viewB ){
-        //console.debug( 'a: ', viewA, viewA.model );
-        //console.debug( 'b: ', viewB, viewB.model );
         if( viewA === viewB ){ return [ viewA ]; }
         //TODO: would probably be better if we cache'd the views as an ordered list (as well as a map)
         var panel = this,

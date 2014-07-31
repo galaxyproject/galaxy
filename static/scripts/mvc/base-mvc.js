@@ -221,10 +221,146 @@ function mixin( mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash ){
 
 
 //==============================================================================
+var ExpandableView = Backbone.View.extend( LoggableMixin ).extend({
+//TODO: Although the reasoning behind them is different, this shares a lot with HiddenUntilActivated above: combine them
+    //PRECONDITION: model must have method hasDetails
+
+    initialize : function( attributes ){
+        /** are the details of this view expanded/shown or not? */
+        this.expanded   = attributes.expanded || false;
+        this.log( '\t expanded:', this.expanded );
+    },
+
+    // ........................................................................ render main
+//TODO: for lack of a better place, add rendering logic here
+    fxSpeed : 'fast',
+
+    /** Render this content, set up ui.
+     *  @param {Integer} speed   the speed of the render
+     *  @fires rendered when rendered
+     *  @fires rendered:ready when first rendered and NO running HDAs
+     *  @returns {Object} this HDABaseView
+     */
+    render : function( speed ){
+        var $newRender = this._buildNewRender();
+        this._queueNewRender( $newRender, speed );
+        return this;
+    },
+
+    _buildNewRender : function(){
+        // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
+        var $newRender = $( this.templates.skeleton( this.model.toJSON() ) );
+        if( this.expanded ){
+            $newRender.children( '.details' ).replaceWith( this._renderDetails() );
+        }
+        this._setUpBehaviors( $newRender );
+        return $newRender;
+    },
+
+    /** Fade out the old el, replace with new dom, then fade in.
+     *  @param {Boolean} fade   whether or not to fade out/in when re-rendering
+     *  @fires rendered when rendered
+     *  @fires rendered:ready when first rendered and NO running HDAs
+     */
+    _queueNewRender : function( $newRender, speed ) {
+        speed = ( speed === undefined )?( this.fxSpeed ):( speed );
+        var view = this;
+
+        $( view ).queue( 'fx', [
+            function( next ){ this.$el.fadeOut( speed, next ); },
+            function( next ){
+                view._swapNewRender( $newRender );
+                next();
+            },
+            function( next ){ this.$el.fadeIn( speed, next ); },
+            function( next ){
+                this.trigger( 'rendered', view );
+                next();
+            }
+        ]);
+    },
+
+    _swapNewRender : function( $newRender ){
+        return this.$el.empty().attr( 'class', this.className ).append( $newRender.children() );
+    },
+
+    /** set up js behaviors, event handlers for elements within the given container
+     *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
+     */
+    _setUpBehaviors : function( $container ){
+        $container = $container || this.$el;
+        // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
+        make_popup_menus( $container );
+        $container.find( '[title]' ).tooltip({ placement : 'bottom' });
+    },
+
+    // ......................................................................... details
+    _renderDetails : function(){
+        // override this
+        return null;
+    },
+
+    // ......................................................................... expansion/details
+    /** Show or hide the body/details of history content.
+     *  @param {Boolean} expand if true, expand; if false, collapse
+     */
+    toggleExpanded : function( expand ){
+        expand = ( expand === undefined )?( !this.expanded ):( expand );
+        if( expand ){
+            this.expand();
+        } else {
+            this.collapse();
+        }
+        return this;
+    },
+
+    /** Render and show the full, detailed body of this view including extra data and controls.
+     *      note: if the model does not have detailed data, fetch that data before showing the body
+     *  @fires expanded when a body has been expanded
+     */
+    expand : function(){
+        var view = this;
+
+        function _renderDetailsAndExpand(){
+            view.$( '.details' ).replaceWith( view._renderDetails() );
+            // needs to be set after the above or the slide will not show
+            view.expanded = true;
+            view.$( '.details' ).slideDown( view.fxSpeed, function(){
+                    view.trigger( 'expanded', view );
+                });
+        }
+//TODO:?? remove
+        // fetch first if no details in the model
+        if( !view.model.hasDetails() ){
+            // we need the change event on HDCA's for the elements to be processed - so silent == false
+            view.model.fetch().always( function( model ){
+                _renderDetailsAndExpand();
+            });
+//TODO: no error handling
+        } else {
+            _renderDetailsAndExpand();
+        }
+    },
+
+    /** Hide the body/details of an HDA.
+     *  @fires collapsed when a body has been collapsed
+     */
+    collapse : function(){
+        var view = this;
+        view.expanded = false;
+        this.$( '.details' ).slideUp( view.fxSpeed, function(){
+            view.trigger( 'collapsed', view );
+        });
+    }
+
+});
+
+//==============================================================================
     return {
         LoggableMixin                   : LoggableMixin,
         SessionStorageModel             : SessionStorageModel,
         HiddenUntilActivatedViewMixin   : HiddenUntilActivatedViewMixin,
-        mixin                           : mixin
+        mixin                           : mixin,
+        ExpandableView                  : ExpandableView
     };
 });

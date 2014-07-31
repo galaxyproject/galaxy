@@ -124,8 +124,183 @@
 }
 
 
-// ---------------------------------------------------------------------------- datasets
-.hda.dataset {
+// ---------------------------------------------------------------------------- dataset states
+.hda.dataset .state-icon {
+    .fa-icon;
+    display: inline-block;
+    margin-right: 4px;
+    vertical-align: middle;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    font-size: 16px;
+}
+
+// ............................................................................ animated or composite state icons
+.state-icon-running {
+    //TODO: couldn't find a way to do this with fa/spinning.less as mixin
+    -webkit-animation: spin 2s infinite linear;
+    -moz-animation: spin 2s infinite linear;
+    -o-animation: spin 2s infinite linear;
+    animation: spin 2s infinite linear;
+
+    @-moz-keyframes spin {
+        0% { -moz-transform: rotate(0deg); }
+        100% { -moz-transform: rotate(359deg); }
+    }
+    @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(359deg); }
+    }
+    @-o-keyframes spin {
+        0% { -o-transform: rotate(0deg); }
+        100% { -o-transform: rotate(359deg); }
+    }
+    @-ms-keyframes spin {
+        0% { -ms-transform: rotate(0deg); }
+        100% { -ms-transform: rotate(359deg); }
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(359deg); }
+    }
+    &:before {
+        content: @fa-var-spinner;
+    }
+}
+
+.state-icon-upload {
+    overflow: hidden;
+
+    &:before {
+        display: inline-block;
+        -webkit-animation: eclipse 2s infinite linear;
+        -moz-animation: eclipse 2s infinite linear;
+        -o-animation: eclipse 2s infinite linear;
+        animation: eclipse 2s infinite linear;
+
+        @-moz-keyframes eclipse {
+            0% { -moz-transform: translate(0px,16px); }
+            100% { -moz-transform: translate(0px,-16px); }
+        }
+        @-webkit-keyframes eclipse {
+            0% { -webkit-transform: translate(0px,16px); }
+            100% { -webkit-transform: translate(0px,-16px); }
+        }
+        @-o-keyframes eclipse {
+            0% { -o-transform: translate(0px,16px); }
+            100% { -o-transform: translate(0px,-16px); }
+        }
+        @-ms-keyframes eclipse {
+            0% { -ms-transform: translate(0px,16px); }
+            100% { -ms-transform: translate(0px,-16px); }
+        }
+        @keyframes eclipse {
+            0% { transform: translate(0px,16px); }
+            100% { transform: translate(0px,-16px); }
+        }
+        content: @fa-var-arrow-up;
+    }
+}
+
+.state-icon-error {
+    background-color: white;
+    border-radius: 8px;
+    &:before {
+        font-size: 20px;
+        line-height: 16px;
+        color: red;
+        content: @fa-var-times-circle;
+    }
+}
+
+// ............................................................................ state bgs and icons
+.dataset {
+    // Change background/border color depending on state
+    &.state-ok,
+    &.state-failed_metadata {
+        background: @state-success-bg;
+        .state-icon {
+            display: none;
+        }
+    }
+
+    &.state-error,
+    &.state-empty {
+        background: @state-danger-bg;
+        .state-icon {
+            .state-icon-error;
+        }
+    }
+
+    &.state-upload {
+        background: @state-info-bg;
+        .state-icon {
+            .state-icon-upload;
+        }
+    }
+
+    &.state-queued {
+        background: @state-default-bg;
+        .state-icon {
+            &:before {
+                content: @fa-var-clock-o;
+            }
+        }
+    }
+
+    &.state-running,
+    &.state-setting_metadata {
+        background: @state-running-bg;
+        .state-icon {
+            .state-icon-running;
+        }
+    }
+
+    &.state-paused {
+        background: @state-paused-bg;
+        .state-icon {
+            &:before {
+                content: @fa-var-pause;
+            }
+        }
+    }
+
+    &.state-discarded {
+        background: @state-default-bg;
+        .state-icon {
+            &:before {
+                content: @fa-var-trash-o;
+            }
+        }
+    }
+
+    &.state-noPermission {
+        background: @state-default-bg;
+        filter: alpha(opacity=60);
+        -moz-opacity: .60;
+        opacity: .60;
+        .state-icon {
+            font-size: 20px;
+            &:before {
+                content: @fa-var-lock;
+            }
+        }
+    }
+
+    &.state-new {
+        background: @state-default-bg;
+        .state-icon {
+            &:before {
+                content: @fa-var-exclamation-circle;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------- datasets within the history panel
+.dataset {
     border: 1px solid @border-default-color;
 
     // body mixins
@@ -136,14 +311,13 @@
     .info-section {
         border-radius: 3px;
         border: 1px solid fadeout( @layout-border-color, 70% );
-        //background-color: fadeout( white, 60% );
         padding: 4px;
     }
     @spacing-top     : 6px;
     @spacing-right   : 10px;
     @spacing-bottom  : 6px;
     @spacing-left    : 8px;
-    .dataset-padding {
+    .padded {
         padding: @spacing-top @spacing-right @spacing-bottom @spacing-left;
     }
 
@@ -154,12 +328,10 @@
 
     .help-text {
         font-weight: normal;
-        // font-style: italic;
-        // font-size: 90%;
         color: #555;
     }
 
-    .dataset-selector {
+    .selector {
         float: left;
         // always initially hidden and zero width
         display: none;
@@ -173,28 +345,29 @@
         cursor: pointer;
         vertical-align: middle;
     }
-    .dataset-selector:hover {
+    .selector:hover {
         color: maroon;
     }
 
-    .dataset-title-bar {
+    .title-bar {
         cursor: pointer;
         outline: none;
-        .dataset-padding;
+        .padded;
 
-        .dataset-state-icon {
-        }
-        .dataset-title {
+        .title {
             display: inline;
             font-weight: bold;
             text-decoration: underline;
             word-wrap: break-word;
             word-break: break-all;
             line-height: 16px;
+            .hid:after {
+                content: ':';
+            }
         }
     }
 
-    .dataset-primary-actions {
+    .primary-actions {
         .icon-btn-group();
         float: right;
         margin: @spacing-top @spacing-right 0;
@@ -203,10 +376,8 @@
         }
     }
 
-    .dataset-body {
+    .details {
         display: none;
-        // background-color: fadeout( white, 70% );
-        //.dataset-padding;
         padding: 0px @spacing-right @spacing-bottom @spacing-left;
 
         [class$=messagesmall] {
@@ -226,57 +397,49 @@
             margin-right: 4px;
         }
 
-        .dataset-summary {
-            .dataset-blurb {
+        .summary {
+            .blurb {
                 margin-bottom: 2px;
             }
-            .dataset-datatype, .dataset-dbkey {
+            .datatype, .dbkey {
                 display: inline;
                 .value {
                     font-weight: bold;
                 }
             }
-            .dataset-datatype .value:after {
+            .datatype .value:after {
                 content: ',';
                 .help-text;
                 margin-right: 4px;
             }
-            .dataset-dbkey:after {
+            .dbkey:after {
                 content: ' ';
                 display: block;
                 .vertical-spacing;
             }
-            .dataset-info {
+            .info {
                 .info-section;
                 overflow: auto;
                 .value {
                     white-space: pre-line;
                 }
             }
-
             .job-error-text {
                 .info-section;
                 overflow: auto;
                 white-space: pre;
             }
-
             // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
             .vertical-spacing;
         }
 
-        .dataset-actions {
+        .actions {
             .left {
                 .icon-btn-group();
                 float: left;
                 .icon-btn {
                     margin-right: @icon-btn-margin;
                 }
-                //.icon-btn-group {
-                //    margin-right: @icon-btn-margin;
-                //    .icon-btn {
-                //        margin-right: 0;
-                //    }
-                //}
                 &:not(:empty) {
                     // can't use :empty on dataset-actions - will always have left & right, so
                     //  add gap to left (more likely to have children)
@@ -318,6 +481,7 @@
                 font-size: 10px;
                 font-style: italic;
                 color: grey;
+                //TODO: move out for localization
                 content : 'Click here to edit annotation';
             }
             textarea {
@@ -328,7 +492,7 @@
             }
         }
 
-        .dataset-display-applications {
+        .display-applications {
             .display-application:last-child {
                 .vertical-spacing;
             }
@@ -336,50 +500,27 @@
 
         .dataset-peek {
             .vertical-spacing;
-            pre.peek {
-                width: 100%;
-                margin: 0px;
-                border-radius: 3px;
-                background: white;
-                color: black;
+            width: 100%;
+            margin: 0px;
+            border-radius: 3px;
+            background: white;
+            color: black;
+            font-size: 10px;
+            overflow: auto;
+            th {
+                color: white;
+                background: @panel-primary-heading-bg;
+            }
+            table, th, tr, td {
+                font-family: @font-family-monospace;
                 font-size: 10px;
-                overflow: auto;
-                th {
-                    color: white;
-                    background: @panel-primary-heading-bg;
-                }
-                table, th, tr, td {
-                    font-family: @font-family-monospace;
-                    font-size: 10px;
-                }
             }
         }
     }
 
 }
 
-.hda.dataset .state-icon {
-    .fa-icon;
-    display: inline-block;
-    margin-right: 4px;
-    vertical-align: middle;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
-    text-align: center;
-    font-size: 16px;
-}
 
-.state-icon-error {
-    background-color: white;
-    border-radius: 8px;
-    &:before {
-        font-size: 20px;
-        line-height: 16px;
-        color: red;
-        content: @fa-var-times-circle;
-    }
-}
 
 // ---------------------------------------------------------------------------- history
 .history-panel {
@@ -409,13 +550,6 @@
         padding: 0px;
 
         .history-search-controls {
-            .history-search-input {
-                //margin-right: 22px;
-            }
-            //.history-search-advanced {
-            //    margin-top  : -21px;
-            //    float       : right;
-            //}
             display: none;
             padding: 0px 0px 8px 0px;
         }
@@ -494,6 +628,7 @@
                 font-size: 10px;
                 font-style: italic;
                 color: grey;
+                //TODO: move out for localization
                 content : 'Click here to edit annotation';
             }
             textarea {
@@ -549,153 +684,6 @@
         }
     }
 }
-
-.state-icon-running {
-    //TODO: couldn't find a way to do this with fa/spinning.less as mixin
-    -webkit-animation: spin 2s infinite linear;
-    -moz-animation: spin 2s infinite linear;
-    -o-animation: spin 2s infinite linear;
-    animation: spin 2s infinite linear;
-
-    @-moz-keyframes spin {
-        0% { -moz-transform: rotate(0deg); }
-        100% { -moz-transform: rotate(359deg); }
-    }
-    @-webkit-keyframes spin {
-        0% { -webkit-transform: rotate(0deg); }
-        100% { -webkit-transform: rotate(359deg); }
-    }
-    @-o-keyframes spin {
-        0% { -o-transform: rotate(0deg); }
-        100% { -o-transform: rotate(359deg); }
-    }
-    @-ms-keyframes spin {
-        0% { -ms-transform: rotate(0deg); }
-        100% { -ms-transform: rotate(359deg); }
-    }
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(359deg); }
-    }
-    &:before {
-        content: @fa-var-spinner;
-    }
-}
-
-.state-icon-upload {
-    overflow: hidden;
-
-    &:before {
-        display: inline-block;
-        -webkit-animation: eclipse 2s infinite linear;
-        -moz-animation: eclipse 2s infinite linear;
-        -o-animation: eclipse 2s infinite linear;
-        animation: eclipse 2s infinite linear;
-
-        @-moz-keyframes eclipse {
-            0% { -moz-transform: translate(0px,16px); }
-            100% { -moz-transform: translate(0px,-16px); }
-        }
-        @-webkit-keyframes eclipse {
-            0% { -webkit-transform: translate(0px,16px); }
-            100% { -webkit-transform: translate(0px,-16px); }
-        }
-        @-o-keyframes eclipse {
-            0% { -o-transform: translate(0px,16px); }
-            100% { -o-transform: translate(0px,-16px); }
-        }
-        @-ms-keyframes eclipse {
-            0% { -ms-transform: translate(0px,16px); }
-            100% { -ms-transform: translate(0px,-16px); }
-        }
-        @keyframes eclipse {
-            0% { transform: translate(0px,16px); }
-            100% { transform: translate(0px,-16px); }
-        }
-        content: @fa-var-arrow-up;
-    }
-}
-
-// Change background/border color depending on state
-.dataset.state-ok, .dataset.state-failed_metadata {
-    background: @state-success-bg;
-    .state-icon {
-        display: none;
-    }
-}
-
-.dataset.state-error,
-.dataset.state-empty {
-    background: @state-danger-bg;
-    .state-icon {
-        .state-icon-error;
-    }
-}
-
-.dataset.state-upload {
-    background: @state-info-bg;
-    .state-icon {
-        .state-icon-upload;
-    }
-}
-
-.dataset.state-queued {
-    background: @state-default-bg;
-    .state-icon {
-        &:before {
-            content: @fa-var-clock-o;
-        }
-    }
-}
-
-.dataset.state-running,
-.dataset.state-setting_metadata {
-    background: @state-running-bg;
-    .state-icon {
-        .state-icon-running;
-    }
-}
-
-.dataset.state-paused {
-    background: @state-paused-bg;
-    .state-icon {
-        &:before {
-            content: @fa-var-pause;
-        }
-    }
-}
-
-.dataset.state-discarded {
-    background: @state-default-bg;
-    .state-icon {
-        &:before {
-            content: @fa-var-trash-o;
-        }
-    }
-}
-
-.dataset.state-noPermission {
-    background: @state-default-bg;
-    filter: alpha(opacity=60);
-    -moz-opacity: .60;
-    opacity: .60;
-    .state-icon {
-        font-size: 20px;
-        &:before {
-            content: @fa-var-lock;
-        }
-    }
-}
-
-.dataset.state-new {
-    background: @state-default-bg;
-    .state-icon {
-        &:before {
-            content: @fa-var-exclamation-circle;
-        }
-    }
-}
-
 
 // ---------------------------------------------------------------------------- annotated-history-panel
 .annotated-history-panel {
@@ -769,7 +757,198 @@
     }
 }
 
-// ---------------------------------------------------------------------------- hdas
-.hda .hda-hid:after {
-    content: ':';
+
+// ---------------------------------------------------------------------------- older styles
+//TODO: these may still apply in mobile display, workflow stuff
+body.historyPage {
+    background: @side-panel-bg;
+    color: @base-text-color;
+    margin: 5px;
+    border: 0;
+    padding: 0;
 }
+
+// Control links at top of history
+div.historyLinks {
+    margin: 5px 5px;
+}
+
+// Default history item appearance
+div.historyItem {
+    margin: 0px -5px;
+    padding: 8px 10px;
+    border-top: solid @border-default-color 1px;
+    // border-left: solid @state-queued-border 5px;
+    border-right: none;
+    word-wrap: break-word;
+    background: @state-default-bg;
+    .state-icon {
+        display: inline-block;
+        vertical-align: middle;
+        width: 16px;
+        height: 16px;
+        background-position: 0 1px;
+        background-repeat: no-repeat;
+    }
+    .historyItemTitle {
+        font-weight: bold;
+        line-height: 16px;
+    }
+}
+
+.historyItemContainer:last-child div.historyItem {
+    border-bottom: solid @border-default-color 1px;
+}
+
+// Nested history items
+div.historyItem div.historyItem {
+    margin-right: -11px;
+}
+
+// Change background/border color depending on state
+div.historyItem-ok,
+div.historyItem-failed_metadata {
+    background: @state-success-bg;
+    .state-icon {
+        display: none;
+    }
+}
+
+//@import "sprite-history-states.less";
+
+div.historyItem-error {
+    background: @state-danger-bg;
+    .state-icon {
+        .sprite(@data_error);
+    }
+}
+
+div.historyItem-empty {
+    background: @state-danger-bg;
+    .state-icon {
+        .sprite(@data_empty);
+    }
+}
+
+div.historyItem-running {
+    background: @state-running-bg;
+    .state-icon {
+        background-image: url(data_running.gif);
+    }
+}
+
+div.historyItem-setting_metadata {
+    background: @state-running-bg;
+    .state-icon {
+        background-image: url(data_running.gif);
+    }
+}
+
+div.historyItem-upload {
+    background: @state-info-bg;
+    .state-icon {
+        background-image: url(data_upload.gif);
+    }
+}
+
+div.historyItem-queued {
+    background: @state-default-bg;
+    .state-icon {
+        .sprite(@data_queued);
+    }
+}
+
+div.historyItem-noPermission {
+    filter: alpha(opacity=60);
+    -moz-opacity: .60;
+    opacity: .60;
+    .state-icon {
+        line-height: 16px;
+        .fa-icon;
+        &:before {
+            content: "\f05e";
+        }
+    }
+}
+
+div.historyItem-paused {
+    background: @state-paused-bg;
+    .state-icon {
+        line-height: 16px;
+        .fa-icon;
+        &:before {
+            content: "\f04c";
+        }
+    }
+}
+
+div.historyItem-new {
+    .state-icon {
+        line-height: 16px;
+        .fa-icon;
+        &:before {
+            content: "\f071";
+        }
+    }
+}
+
+// Special case for showing the spinner but not changing the background
+div.historyItemTitleBar.spinner .state-icon {
+    background: url(data_running.gif) 0 1px no-repeat !important;
+}
+
+// Buttons
+div.historyItemButtons {
+    float: right;
+
+    @import "sprite-history-buttons.less";
+
+    .icon-button.display {
+        .sprite(@eye_icon);
+    }
+    .icon-button.display:hover {
+        .sprite(@eye_icon_dark);
+    }
+    .icon-button.display_disabled {
+        .sprite(@eye_icon_grey);
+    }
+    .icon-button.delete {
+        .sprite(@delete_icon);
+    }
+    .icon-button.delete:hover {
+        .sprite(@delete_icon_dark);
+    }
+    .icon-button.delete_disabled {
+        .sprite(@delete_icon_grey);
+    }
+    .icon-button.edit {
+        .sprite(@pencil_icon);
+    }
+    .icon-button.edit:hover {
+        .sprite(@pencil_icon_dark);
+    }
+    .icon-button.edit_disabled {
+        .sprite(@pencil_icon_grey);
+    }
+}
+
+div.historyItemBody div {
+    padding-top: 2px;
+}
+
+pre.peek {
+    background: white;
+    color: black;
+    width: 100%;
+    font-size: 10px;
+    overflow: auto;
+    th {
+        color: white;
+        background: @panel-primary-heading-bg;
+    }
+    table, th, tr, td {
+        font-family: @font-family-monospace;
+        font-size: 10px;
+    }
+}
+

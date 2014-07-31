@@ -105,11 +105,11 @@ var HistoryContentMixin = {
         return ( this.isDeletedOrPurged() || ready );
     },
 
-    /** Does this model already contain detailed data (as opposed to just summary level data)? */
-    hasDetails : function(){
-        // override
-        return true;
-    },
+    ///** Does this model already contain detailed data (as opposed to just summary level data)? */
+    //hasDetails : function(){
+    //    // override
+    //    return true;
+    //},
 
     /** Convenience function to match hda.has_data. */
     hasData : function(){
