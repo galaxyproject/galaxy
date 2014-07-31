@@ -714,11 +714,11 @@ def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
 
 
 def object_to_string( obj ):
-    return binascii.hexlify( pickle.dumps( obj, 2 ) )
+    return binascii.hexlify( obj )
 
 
 def string_to_object( s ):
-    return pickle.loads( binascii.unhexlify( s ) )
+    return binascii.unhexlify( s )
 
 
 class ParamsWithSpecs( collections.defaultdict ):
