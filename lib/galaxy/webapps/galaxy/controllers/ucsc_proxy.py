@@ -5,6 +5,7 @@ Contains the UCSC proxy
 from galaxy.web.base.controller import *
 
 import sys
+import json
 from galaxy import web, util
 
 import re, urllib, logging
@@ -33,7 +34,7 @@ class UCSCProxy( BaseUIController ):
         try:
             store = params.get("__GALAXY__", None)
             if store:
-                store = util.string_to_object(store)
+                store = json.loads(util.string_to_object(store))
             else:
                 store = {}
             UCSC_URL = 'UCSC_URL'
@@ -86,7 +87,7 @@ class UCSCProxy( BaseUIController ):
 
                 # Serialize store into a form element
                 store_text = "<INPUT TYPE=\"HIDDEN\" NAME=\"__GALAXY__\" ID=\"__GALAXY__\" VALUE=\"" \
-                             + util.object_to_string(store) + "\" \>"
+                             + json.dumps(util.object_to_string(store)) + "\" \>"
 
                 # Remove text regions that should not be exposed
                 for key,value in altered_regions.items():
