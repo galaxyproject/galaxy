@@ -337,6 +337,12 @@
                 </div>
             </span>
         %endif
+            <span class="pull-right">
+                <div class="icon-btn-group">
+                    <a href="${h.url_for( controller='root', action='index', tool_id=tool.id )}"
+                        target="_blank" class="icon-btn" title="Share this tool" data-toggle="tooltip" data-placement="bottom"><span class="fa fa-share"></span></a>
+                </div>
+            </span>
         </div>
         <div class="toolFormBody">
             <input type="hidden" name="refresh" value="refresh">
