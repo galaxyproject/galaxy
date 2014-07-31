@@ -525,29 +525,20 @@
 // ---------------------------------------------------------------------------- history
 .history-panel {
 
-    [class$="messagesmall"] {
-        margin: 0px;
-    }
-
-    .editable-text {
-        border: solid transparent 1px;
-    }
-    .editable-text:hover {
-        cursor: pointer;
-        border: 1px dotted #999999;
-    }
-
-    .message-container  {
-        cursor: pointer;
-    }
-    .message-container [class$=message] {
-        margin: 0px;
-        margin-bottom: 8px;
-    }
-
     .history-controls {
         margin: 10px;
         padding: 0px;
+
+        [class$="messagesmall"] {
+            margin: 0px;
+        }
+        .message-container  {
+            cursor: pointer;
+        }
+        .message-container [class$=message] {
+            margin: 0px;
+            margin-bottom: 8px;
+        }
 
         .history-search-controls {
             display: none;
@@ -566,6 +557,13 @@
             // keep the text in position
             margin: -2px 0px -2px -4px;
             font-weight: bold;
+        }
+        .editable-text {
+            border: solid transparent 1px;
+        }
+        .editable-text:hover {
+            cursor: pointer;
+            border: 1px dotted #999999;
         }
 
         .history-subtitle {

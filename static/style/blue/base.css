@@ -1735,15 +1735,15 @@ div.permissionContainer{padding-left:20px}
 .dataset .details .display-applications .display-application:last-child{margin-bottom:8px}
 .dataset .details .dataset-peek{margin-bottom:8px;width:100%;margin:0px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.dataset .details .dataset-peek th{color:white;background:#5f6990}
 .dataset .details .dataset-peek table,.dataset .details .dataset-peek th,.dataset .details .dataset-peek tr,.dataset .details .dataset-peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
-.history-panel [class$="messagesmall"]{margin:0px}
-.history-panel .editable-text{border:solid transparent 1px}
-.history-panel .editable-text:hover{cursor:pointer;border:1px dotted #999999}
-.history-panel .message-container{cursor:pointer}
-.history-panel .message-container [class$=message]{margin:0px;margin-bottom:8px}
-.history-panel .history-controls{margin:10px;padding:0px}.history-panel .history-controls .history-search-controls{display:none;padding:0px 0px 8px 0px}
+.history-panel .history-controls{margin:10px;padding:0px}.history-panel .history-controls [class$="messagesmall"]{margin:0px}
+.history-panel .history-controls .message-container{cursor:pointer}
+.history-panel .history-controls .message-container [class$=message]{margin:0px;margin-bottom:8px}
+.history-panel .history-controls .history-search-controls{display:none;padding:0px 0px 8px 0px}
 .history-panel .history-controls .history-title{margin-bottom:8px}
 .history-panel .history-controls .history-name{word-wrap:break-word;font-weight:bold}
 .history-panel .history-controls .history-title input{width:100%;margin:-2px 0 -2px -4px;font-weight:bold}
+.history-panel .history-controls .editable-text{border:solid transparent 1px}
+.history-panel .history-controls .editable-text:hover{cursor:pointer;border:1px dotted #999999}
 .history-panel .history-controls .history-subtitle{margin-bottom:8px}
 .history-panel .history-controls .history-size{float:left}
 .history-panel .history-controls .history-secondary-actions{display:inline-block;float:right}.history-panel .history-controls .history-secondary-actions .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
