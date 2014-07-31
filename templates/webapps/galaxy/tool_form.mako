@@ -325,9 +325,9 @@
             <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}
         %endif
 
+        <span class="pull-right">
         %if trans.app.config.biostar_url:
-            ## BioStar links
-            <span class="pull-right">
+                ## BioStar links
                 Help from Biostar
                 <div class="icon-btn-group">
                     <a href="${h.url_for( controller='biostar', action='biostar_tool_tag_redirect', tool_id=tool.id )}"
@@ -335,14 +335,12 @@
                     <a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}"
                         target="_blank" class="icon-btn" title="Ask a question about this tool" data-toggle="tooltip" data-placement="bottom"><span class="fa fa-question-circle"></a>
                 </div>
-            </span>
         %endif
-            <span class="pull-right">
-                <div class="icon-btn-group">
-                    <a href="${h.url_for( controller='root', action='index', tool_id=tool.id )}"
-                        target="_blank" class="icon-btn" title="Share this tool" data-toggle="tooltip" data-placement="bottom"><span class="fa fa-share"></span></a>
-                </div>
-            </span>
+            <div class="icon-btn-group">
+                <a href="#" data-link="${h.url_for( controller='root', action='index', tool_id=tool.id )}"
+                    class="icon-btn tool-share-link" title="Share this tool" data-toggle="tooltip" data-placement="bottom"><span class="fa fa-share"></span></a>
+            </div>
+        </span>
         </div>
         <div class="toolFormBody">
             <input type="hidden" name="refresh" value="refresh">
