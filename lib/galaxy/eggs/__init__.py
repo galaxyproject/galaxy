@@ -11,6 +11,7 @@ log.addHandler( logging.NullHandler() )
 import pkg_resources
 
 galaxy_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', '..', '..' ) )
+eggs_dir = os.environ.get( 'GALAXY_EGGS_PATH', os.path.join( galaxy_dir, 'eggs' ) )
 py = 'py%s' % sys.version[:3]
 
 class EggNotFetchable( Exception ):
@@ -49,7 +50,8 @@ class Egg( object ):
         if self.name is not None and self.version is not None:
             self.set_distribution()
     def set_dir( self ):
-        self.dir = os.path.join( galaxy_dir, 'eggs' )
+        global eggs_dir
+        self.dir = eggs_dir
         if not os.path.exists( self.dir ):
             os.makedirs( self.dir )
     def set_distribution( self ):
@@ -395,7 +397,7 @@ class GalaxyConfig( object ):
 
 def get_env():
     env = pkg_resources.Environment( search_path='', platform=pkg_resources.get_platform() )
-    for dist in pkg_resources.find_distributions( os.path.join( galaxy_dir, 'eggs' ), False ):
+    for dist in pkg_resources.find_distributions( eggs_dir, False ):
         env.add( dist )
     return env
 env = get_env()

@@ -141,6 +141,17 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy tool panel.  If the following setting remains commented, the default setting will be True.
 #check_migrate_tools = True
 
+# Tool config maintained by tool migration scripts. If you use the migration
+# scripts to install tools that have been migrated to the tool shed upon a new
+# release, they will be added to this tool config file.
+#migrated_tools_config = migrated_tools_conf.xml
+
+# File that contains the XML section and tool tags from all tool panel config
+# files integrated into a single file that defines the tool panel layout.  This
+# file can be changed by the Galaxy administrator to alter the layout of the
+# tool panel. If not present, Galaxy will create it.
+#integrated_tool_panel_config = integrated_tool_panel.xml
+
 # Default path to the directory containing the tools defined in tool_conf.xml.
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
 #tool_path = tools
@@ -152,6 +163,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # If this option is not set to a valid path, installing tools with dependencies
 # from the Tool Shed will fail.
 #tool_dependency_dir = None
+
+# File containing the Galaxy Tool Sheds that should be made available to
+# install from in the admin interface
+#tool_sheds_config_file = tool_sheds_conf.xml
 
 # Enable automatic polling of relative tool sheds to see if any updates
 # are available for installed repositories.  Ideally only one Galaxy 
@@ -179,6 +194,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # directory and the wiki for help:
 #   https://wiki.galaxyproject.org/Admin/DataIntegration
 #tool_data_path = tool-data
+
+# File containing old-style genome builds
+#builds_file_path = tool-data/shared/ucsc/builds.txt
 
 # Directory where chrom len files are kept, currently mainly used by trackster
 #len_file_path = tool-data/shared/ucsc/chrom
@@ -346,14 +364,13 @@ visualization_plugins_directory = config/plugins/visualizations
 # which browsers should be available.  URLs and builds available at these
 # browsers are defined in the specifield files.
 
-# UCSC browsers: tool-data/shared/ucsc/ucsc_build_sites.txt
+# UCSC browsers:
+#ucsc_build_sites = tool-data/shared/ucsc/ucsc_build_sites.txt
 #ucsc_display_sites = main,test,archaea,ucla
 
-# GBrowse servers: tool-data/shared/gbrowse/gbrowse_build_sites.txt
+# GBrowse servers:
+#gbrowse_build_sites = tool-data/shared/gbrowse/gbrowse_build_sites.txt
 #gbrowse_display_sites = modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225
-
-# GeneTrack servers: tool-data/shared/genetrack/genetrack_sites.txt
-#genetrack_display_sites = main,test
 
 # If use_remote_user = True, display application servers will be denied access
 # to Galaxy and so displaying datasets in these sites will fail.
@@ -683,6 +700,7 @@ use_interactive = True
 # account by authenticating with an OpenID provider.
 #enable_openid = False
 #openid_config_file = openid_conf.xml
+#openid_consumer_cache_path = database/openid_consumer_cache
 
 # Optional list of email addresses of API users who can make calls on behalf of
 # other users

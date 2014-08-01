@@ -53,13 +53,13 @@ var HDAEditView = _super.extend(
 
     // ......................................................................... edit attr, delete
     /** Render icon-button group for the common, most easily accessed actions.
-     *      Overrides _render_titleButtons to include edit and delete buttons.
-     *  @see HDABaseView#_render_titleButtons
+     *      Overrides _render_primaryActions to include edit and delete buttons.
+     *  @see HDABaseView#_render_primaryActions
      *  @returns {jQuery} rendered DOM
      */
-    _render_titleButtons : function(){
+    _render_primaryActions : function(){
         // render the display, edit attr and delete icon-buttons
-        return _super.prototype._render_titleButtons.call( this ).concat([
+        return _super.prototype._render_primaryActions.call( this ).concat([
             this._render_editButton(),
             this._render_deleteButton()
         ]);
@@ -85,7 +85,7 @@ var HDAEditView = _super.extend(
                 title       : _l( 'Edit attributes' ),
                 href        : this.urls.edit,
                 target      : this.linkTarget,
-                classes     : 'dataset-edit'
+                classes     : 'edit-btn'
             };
             
         // disable if purged or deleted and explain why in the tooltip
@@ -124,10 +124,10 @@ var HDAEditView = _super.extend(
         var self = this,
             deleteBtnData = {
                 title       : _l( 'Delete' ),
-                classes     : 'dataset-delete',
+                classes     : 'delete-btn',
                 onclick     : function() {
                     // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find( '.icon-btn.dataset-delete' ).trigger( 'mouseout' );
+                    self.$el.find( '.icon-btn.delete-btn' ).trigger( 'mouseout' );
                     self.model[ 'delete' ]();
                 }
         };
@@ -152,7 +152,7 @@ var HDAEditView = _super.extend(
         return faIconButton({
             title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
-            classes     : 'dataset-report-error-btn',
+            classes     : 'report-error-btn',
             target      : this.linkTarget,
             faIcon      : 'fa-bug'
         });
@@ -165,7 +165,7 @@ var HDAEditView = _super.extend(
         return faIconButton({
             title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
-            classes     : 'dataset-rerun-btn',
+            classes     : 'rerun-btn',
             target      : this.linkTarget,
             faIcon      : 'fa-refresh'
         });
@@ -205,7 +205,7 @@ var HDAEditView = _super.extend(
 
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
-            classes     : 'dataset-visualize-btn',
+            classes     : 'visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
 
@@ -254,7 +254,7 @@ var HDAEditView = _super.extend(
         }
         var $icon = faIconButton({
             title       : _l( 'Visualize' ),
-            classes     : 'dataset-visualize-btn',
+            classes     : 'visualize-btn',
             faIcon      : 'fa-bar-chart-o'
         });
 
@@ -298,18 +298,18 @@ var HDAEditView = _super.extend(
                 return [ '<a href="javascript:void(0)" class="', c, '">', t, '</a>' ].join( '' );
             };
 
-        $newRender.find( '.dataset-deleted-msg' ).append([
-            br, link( _l( 'Undelete it' ), 'dataset-undelete' ), p
+        $newRender.find( '.deleted-msg' ).append([
+            br, link( _l( 'Undelete it' ), 'undelete-link' ), p
         ].join( '' ));
 
         if( this.purgeAllowed ){
-            $newRender.find( '.dataset-deleted-msg' ).append([
-                br, link( _l( 'Permanently remove it from disk' ), 'dataset-purge' ), p
+            $newRender.find( '.deleted-msg' ).append([
+                br, link( _l( 'Permanently remove it from disk' ), 'purge-link' ), p
             ].join( '' ));
         }
 
-        $newRender.find( '.dataset-hidden-msg' ).append([
-            br, link( _l( 'Unhide it' ), 'dataset-unhide' ), p
+        $newRender.find( '.hidden-msg' ).append([
+            br, link( _l( 'Unhide it' ), 'unhide-link' ), p
         ].join( '' ));
 
         return $newRender;
@@ -336,7 +336,7 @@ var HDAEditView = _super.extend(
      */
     _render_body_error : function(){
         var $body = _super.prototype._render_body_error.call( this );
-        $body.find( '.dataset-actions .left' ).prepend( this._render_errButton() );
+        $body.find( '.actions .left' ).prepend( this._render_errButton() );
         return $body;
     },
 
@@ -351,11 +351,11 @@ var HDAEditView = _super.extend(
         if( this.model.isDeletedOrPurged() ){
             return $body;
         }
-        this.makeDbkeyEditLink( $body );
+        this._makeDbkeyEditLink( $body );
 
         // more actions/buttons
         if( this.hasUser ){
-            $body.find( '.dataset-actions .left' ).append( this._render_visualizationsButton() );
+            $body.find( '.actions .left' ).append( this._render_visualizationsButton() );
             //TODO: might be better to move these into the render() and call setElement here
             this._renderTags( $body );
             this._renderAnnotation( $body );
@@ -363,6 +363,7 @@ var HDAEditView = _super.extend(
         return $body;
     },
 
+    /**  */
     _renderTags : function( $where ){
         var view = this;
         this.tagsEditor = new TAGS.TagsEditor({
@@ -374,12 +375,14 @@ var HDAEditView = _super.extend(
             onhide          : function(){ view.tagsEditorShown = false; },
             $activator      : faIconButton({
                 title   : _l( 'Edit dataset tags' ),
-                classes : 'dataset-tag-btn',
+                classes : 'tag-btn',
                 faIcon  : 'fa-tags'
-            }).appendTo( $where.find( '.dataset-actions .right' ) )
+            }).appendTo( $where.find( '.actions .right' ) )
         });
         if( this.tagsEditorShown ){ this.tagsEditor.toggle( true ); }
     },
+
+    /**  */
     _renderAnnotation : function( $where ){
         var view = this;
         this.annotationEditor = new ANNOTATIONS.AnnotationEditor({
@@ -391,34 +394,35 @@ var HDAEditView = _super.extend(
             onhide          : function(){ view.annotationEditorShown = false; },
             $activator      : faIconButton({
                 title   : _l( 'Edit dataset annotation' ),
-                classes : 'dataset-annotate-btn',
+                classes : 'annotate-btn',
                 faIcon  : 'fa-comment'
-            }).appendTo( $where.find( '.dataset-actions .right' ) )
+            }).appendTo( $where.find( '.actions .right' ) )
         });
         if( this.annotationEditorShown ){ this.annotationEditor.toggle( true ); }
     },
 
-    makeDbkeyEditLink : function( $body ){
+    /**  */
+    _makeDbkeyEditLink : function( $body ){
         // make the dbkey a link to editing
         if( this.model.get( 'metadata_dbkey' ) === '?'
         &&  !this.model.isDeletedOrPurged() ){
             var editableDbkey = $( '<a class="value">?</a>' )
                 .attr( 'href', this.urls.edit )
                 .attr( 'target', this.linkTarget );
-            $body.find( '.dataset-dbkey .value' ).replaceWith( editableDbkey );
+            $body.find( '.dbkey .value' ).replaceWith( editableDbkey );
         }
     },
 
     // ......................................................................... events
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
-        'click .dataset-undelete'       : function( ev ){ this.model.undelete(); return false; },
-        'click .dataset-unhide'         : function( ev ){ this.model.unhide();   return false; },
-        'click .dataset-purge'          : 'confirmPurge'
+        'click .undelete-link'       : function( ev ){ this.model.undelete(); return false; },
+        'click .unhide-link'         : function( ev ){ this.model.unhide();   return false; },
+        'click .purge-link'          : '_confirmPurge'
     }),
     
     /** listener for item purge */
-    confirmPurge : function _confirmPurge( ev ){
+    _confirmPurge : function _confirmPurge( ev ){
         //TODO: confirm dialog
         this.model.purge();
         return false;
@@ -444,7 +448,7 @@ var HDAEditView = _super.extend(
 //TODO: should be imported from trackster.js
 //TODO: This function is redundant and also exists in data.js
     // create action
-    function create_trackster_action_fn (vis_url, dataset_params, dbkey) {
+    function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
         return function() {
             var listTracksParams = {};
             if (dbkey){

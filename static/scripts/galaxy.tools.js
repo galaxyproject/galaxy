@@ -5,6 +5,14 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
         $("input[name='" + name + "'][type='checkbox']").attr('checked', !!check);
     }
 
+    $(".tool-share-link").each( function() {
+        var href = $(this).attr("href");
+        var href = $(this).attr("data-link");
+        $(this).click(function() {
+            window.prompt("Copy to clipboard: Ctrl+C, Enter", href);
+        });
+    });
+
     // Inserts the Select All / Unselect All buttons for checkboxes
     $("div.checkUncheckAllPlaceholder").each( function() {
         var check_name = $(this).attr("checkbox_name");

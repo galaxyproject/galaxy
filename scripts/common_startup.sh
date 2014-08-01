@@ -26,10 +26,7 @@ SAMPLES="
     job_metrics_conf.xml.sample
     universe_wsgi.ini.sample
     lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
-    tool-data/shared/ncbi/builds.txt.sample
-    tool-data/shared/ensembl/builds.txt.sample
     tool-data/shared/ucsc/builds.txt.sample
-    tool-data/shared/ucsc/publicbuilds.txt.sample
     tool-data/shared/ucsc/ucsc_build_sites.txt.sample
     tool-data/shared/igv/igv_build_sites.txt.sample
     tool-data/shared/rviewer/rviewer_build_sites.txt.sample

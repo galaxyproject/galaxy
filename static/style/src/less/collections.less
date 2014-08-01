@@ -1,4 +1,89 @@
-
-.dataset-collections-panel {
+//============================================================================= collection element
+.dataset-collection-element {
+    border: 1px solid @border-default-color;
     background-color: white;
+    .title-bar {
+        padding: 8px;
+        .subtitle {
+            margin-top: 2px;
+            font-size: 90%;
+            color: grey;
+        }
+    }
+    .details {
+        display: none;
+        padding: 6px;
+    }
+}
+
+//.dataset-collection-element.dataset {
+//}
+//
+//.dataset-collection-element.dataset-collection {
+//}
+
+//============================================================================= collection
+//.dataset-collection {
+//}
+
+//============================================================================= collection panel
+.dataset-collection-panel {
+    margin: 0px;
+    padding: 0px;
+
+    .vertically-spaced {
+        margin-top: 4px;
+    }
+
+    .controls {
+        padding: 8px;
+        
+        .navigation {
+            margin-top: 4px;
+            .back {
+//TODO: to more generic less class
+                .fa-icon {
+                    font-weight: bold;
+                    text-decoration: none;
+                    margin-right: 4px;
+                }
+            }
+        }
+        .title {
+            margin-top: 12px;
+            .name {
+                font-weight: bold;
+            }
+        }
+        .subtitle {
+            color: grey;
+        }
+    }
+    .datasets-list {
+        margin-top: 8px;
+        .dataset-collection-element {
+            border-width: 1px 0px 0px 0px;
+            &:last-child {
+                border-bottom-width: 1px;
+            }
+        }
+    }
+}
+
+//============================================================================= collection inside history panel
+.history-panel .dataset-collection,
+.history-panel .hdca {
+    .subtitle {
+        margin-top: 2px;
+        font-size: 90%;
+        color: grey;
+    }
+}
+
+//============================================================================= collection panel inside history panel
+.history-panel .dataset-collection-panel {
+    .dataset-collection-element {
+//TODO: collections are currently stateless
+        background-color: @state-success-bg;
+    }
 }

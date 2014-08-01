@@ -15,7 +15,7 @@ else:
     import pkg_resources; pkg_resources.require( "elementtree" )
     from elementtree import ElementTree
 
-URL = "http://genome-test.cse.ucsc.edu/cgi-bin/das/dsn"
+URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
 
 def getbuilds(url):
     try:
@@ -33,7 +33,7 @@ def getbuilds(url):
         print "?\tunspecified (?)"
         sys.exit(1)
 
-    print "#Harvested from http://genome-test.cse.ucsc.edu/cgi-bin/das/dsn"
+    print "#Harvested from http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
     print "?\tunspecified (?)"
     for dsn in tree:
         build = dsn.find("SOURCE").attrib['id']

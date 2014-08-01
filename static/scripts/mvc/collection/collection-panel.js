@@ -1,13 +1,13 @@
 define([
     "mvc/collection/dataset-collection-base",
-    "mvc/dataset/hda-base",
     "mvc/base-mvc",
     "utils/localization"
-], function( DC_BASE, HDA_BASE, BASE_MVC, _l ){
+], function( DC_BASE, BASE_MVC, _l ){
 /* =============================================================================
 TODO:
 
 ============================================================================= */
+// =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection.
  *  @name CollectionPanel
  *
@@ -18,16 +18,19 @@ TODO:
  */
 var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends CollectionPanel.prototype */{
+    //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output
     //logger              : console,
 
     tagName             : 'div',
-    className           : 'history-panel',
+    className           : 'dataset-collection-panel',
 
     /** (in ms) that jquery effects will use */
     fxSpeed             : 'fast',
+
+    DCEViewClass        : DC_BASE.DCEBaseView,
 
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HistoryContents events
@@ -42,7 +45,10 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.log( this + '.initialize:', attributes );
 
         this.hasUser = attributes.hasUser;
-        this.HDAViewClass = attributes.HDAViewClass || HDA_BASE.HDABaseView;
+        this.panelStack = [];
+        this.parentName = attributes.parentName;
+
+        window.collectionPanel = this;
     },
 
     /** create any event listeners for the panel
@@ -74,7 +80,7 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.log( 'render:', speed, callback );
         // send a speed of 0 to have no fade in/out performed
         speed = ( speed === undefined )?( this.fxSpeed ):( speed );
-        //console.debug( this + '.render, fxSpeed:', speed );
+        //this.debug( this + '.render, fxSpeed:', speed );
         var panel = this,
             $newRender;
 
@@ -123,7 +129,13 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
      */
     renderModel : function( ){
         // tmp div for final swap in render
-        var $newRender = $( '<div/>' ).append( CollectionPanel.templates.panel( this.model.toJSON() ) );
+//TODO: ugh - reuse issue - refactor out
+        var type = this.model.get( 'collection_type' ) || this.model.object.get( 'collection_type' ),
+            json = _.extend( this.model.toJSON(), {
+                parentName  : this.parentName,
+                type        : type
+            }),
+            $newRender = $( '<div/>' ).append( this.templates.panel( json ) );
         this._setUpBehaviours( $newRender );
         this.renderContents( $newRender );
         return $newRender;
@@ -154,13 +166,15 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
      *  @returns the number of visible hda views
      */
     renderContents : function( $whereTo ){
-        //console.debug( 'renderContents, elements:', this.model.elements );
+        //this.debug( 'renderContents, elements:', this.model.elements );
         $whereTo = $whereTo || this.$el;
 
+        this.warn( this + '.renderContents:, model:', this.model );
         var panel = this,
             contentViews = {},
-            visibleContents = this.model.elements || [];
-        //this.log( 'renderContents, visibleContents:', visibleContents, $whereTo );
+            //NOTE: no filtering here
+            visibleContents = this.model.getVisibleContents();
+        this.log( 'renderContents, visibleContents:', visibleContents, $whereTo );
 
         this.$datasetsList( $whereTo ).empty();
         if( visibleContents && visibleContents.length ){
@@ -168,66 +182,92 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
                 var contentId = content.id,
                     contentView = panel._createContentView( content );
                 contentViews[ contentId ] = contentView;
-                panel.attachContentView( contentView.render(), $whereTo );
+                panel._attachContentView( contentView.render(), $whereTo );
             });
         }
         this.contentViews = contentViews;
         return this.contentViews;
     },
 
-    /**
-     *  @param {HistoryDatasetAssociation} content
-     */
+    /**  */
     _createContentView : function( content ){
-        //console.debug( 'content json:', JSON.stringify( content, null, '  ' ) );
+        //this.debug( 'content json:', JSON.stringify( content, null, '  ' ) );
         var contentView = null,
             ContentClass = this._getContentClass( content );
-        //console.debug( 'content.object json:', JSON.stringify( content.object, null, '  ' ) );
-        //console.debug( 'ContentClass:', ContentClass );
-        //console.debug( 'content:', content );
-        //console.debug( 'content.object:', content.object );
+        //this.debug( 'content.object json:', JSON.stringify( content.object, null, '  ' ) );
+        this.debug( 'ContentClass:', ContentClass );
+        //this.debug( 'content:', content );
+        this.debug( 'content.object:', content.object );
         contentView = new ContentClass({
-            model           : content.object,
+            model           : content,
             linkTarget      : this.linkTarget,
             //draggable       : true,
             hasUser         : this.hasUser,
             logger          : this.logger
         });
-        //this._setUpHdaListeners( contentView );
+        this.debug( 'contentView:', contentView );
+        this._setUpContentListeners( contentView );
         return contentView;
     },
 
+    /**  */
     _getContentClass : function( content ){
+        this.debug( this + '._getContentClass:', content );
         switch( content.get( 'element_type' ) ){
             case 'hda':
-                return this.HDAViewClass;
+                return this.DCEViewClass;
             case 'dataset_collection':
-                return DC_BASE.NestedDCEBaseView;
+                return this.DCEViewClass;
         }
         throw new TypeError( 'Unknown element type:', content.get( 'element_type' ) );
     },
 
-//    /** Set up HistoryPanel listeners for HDAView events. Currently binds:
-//     *      HDAView#body-visible, HDAView#body-hidden to store expanded states
-//     *  @param {HDAView} hdaView HDAView (base or edit) to listen to
-//     */
-//    _setUpHdaListeners : function( hdaView ){
-//        var panel = this;
-//        hdaView.on( 'error', function( model, xhr, options, msg ){
-//            panel.errorHandler( model, xhr, options, msg );
-//        });
-//        // maintain a list of hdas whose bodies are expanded
-//        hdaView.on( 'body-expanded', function( model ){
-//            panel.storage.addExpandedHda( model );
-//        });
-//        hdaView.on( 'body-collapsed', function( id ){
-//            panel.storage.removeExpandedHda( id );
-//        });
-//        return this;
-//    },
+    /** Set up listeners for content view events. In this override, handle collection expansion. */
+    _setUpContentListeners : function( contentView ){
+        var panel = this;
+        if( contentView.model.get( 'element_type' ) === 'dataset_collection' ){
+            contentView.on( 'expanded', function( collectionView ){
+                panel.info( 'expanded', collectionView );
+                panel._addCollectionPanel( collectionView );
+            });
+        }
+    },
+
+    /**  */
+    _addCollectionPanel : function( collectionView ){
+        var currPanel = this,
+            collectionModel = collectionView.model;
+
+        this.debug( 'collection panel (stack), collectionView:', collectionView );
+        this.debug( 'collection panel (stack), collectionModel:', collectionModel );
+        var panel = new PairCollectionPanel({
+                model       : collectionModel,
+                parentName  : this.model.get( 'name' )
+            });
+        currPanel.panelStack.push( panel );
+
+        currPanel.$( '.controls' ).add( '.datasets-list' ).hide();
+        currPanel.$el.append( panel.$el );
+        panel.on( 'close', function(){
+            currPanel.render();
+            collectionView.collapse();
+            currPanel.panelStack.pop();
+        });
+
+        //TODO: to hdca-model, hasDetails
+        if( !panel.model.hasDetails() ){
+            var xhr = panel.model.fetch();
+            xhr.done( function(){
+                //TODO: (re-)render collection contents
+                panel.render();
+            });
+        } else {
+            panel.render();
+        }
+    },
 
     /** attach an contentView to the panel */
-    attachContentView : function( contentView, $whereTo ){
+    _attachContentView : function( contentView, $whereTo ){
         $whereTo = $whereTo || this.$el;
         var $datasetsList = this.$datasetsList( $whereTo );
         $datasetsList.append( contentView.$el );
@@ -237,90 +277,102 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : {
-        'click .panel-navigation-back'       : 'close'
+        'click .navigation .back'       : 'close'
     },
 
     /**  */
     close : function( event ){
         this.$el.remove();
-        this.trigger( 'collection-close' );
+        this.trigger( 'close' );
     },
 
     // ........................................................................ misc
-    /** Return a string rep of the history */
+    /** string rep */
     toString    : function(){
         return 'CollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
 
+//----------------------------------------------------------------------------- TEMPLATES
+/** underscore templates */
+CollectionPanel.templates = CollectionPanel.prototype.templates = (function(){
+// use closure to run underscore template fn only once at module load
+    var _panelTemplate = _.template([
+        '<div class="controls">',
+            '<div class="navigation">',
+                '<a class="back" href="javascript:void(0)">',
+                    '<span class="fa fa-icon fa-angle-left"></span>',
+                    _l( 'Back to ' ), '<%- collection.parentName %>',
+                '</a>',
+            '</div>',
 
-//------------------------------------------------------------------------------ TEMPLATES
-var _panelTemplate = [
-    '<div class="history-controls">',
-        '<div class="panel-navigation">',
-            '<a class="panel-navigation-back" href="javascript:void(0)">', _l( 'Back' ), '</a>',
+            '<div class="title">',
+                '<div class="name"><%- collection.name || collection.element_identifier %></div>',
+                '<div class="subtitle">',
+//TODO: remove logic from template
+                    '<% if( collection.type === "list" ){ %>',
+                        _l( 'a list of datasets' ),
+                    '<% } else if( collection.type === "paired" ){ %>',
+                        _l( 'a pair of datasets' ),
+                    '<% } else if( collection.type === "list:paired" ){ %>',
+                        _l( 'a list of paired datasets' ),
+                    '<% } %>',
+                '</div>',
+            '</div>',
         '</div>',
+        // where the datasets/hdas are added
+        '<div class="datasets-list"></div>'
+    ].join( '' ));
 
-        '<div class="history-title">',
-            '<% if( collection.name ){ %>',
-                '<div class="history-name"><%= collection.hid %> : <%= collection.name %></div>',
-            '<% } %>',
-        '</div>',
+    // we override here in order to pass the localizer (_L) into the template scope - since we use it as a fn within
+    return {
+        panel : function( json ){
+            return _panelTemplate({ _l: _l, collection: json });
+        }
+    };
+}());
 
-        //'<div class="history-subtitle clear">',
-        //    '<% if( history.nice_size ){ %>',
-        //        '<div class="history-size"><%= history.nice_size %></div>',
-        //    '<% } %>',
-        //    '<div class="history-secondary-actions"></div>',
-        //'</div>',
-        //
-        //'<% if( history.deleted ){ %>',
-        //    '<div class="warningmessagesmall"><strong>',
-        //        _l( 'You are currently viewing a deleted history!' ),
-        //    '</strong></div>',
-        //'<% } %>',
-        //
-        //'<div class="message-container">',
-        //    '<% if( history.message ){ %>',
-        //        // should already be localized
-        //        '<div class="<%= history.status %>message"><%= history.message %></div>',
-        //    '<% } %>',
-        //'</div>',
-        //
-        //'<div class="quota-message errormessage">',
-        //    _l( 'You are over your disk quota' ), '. ',
-        //    _l( 'Tool execution is on hold until your disk usage drops below your allocated quota' ), '.',
-        //'</div>',
-        //
-        //'<div class="tags-display"></div>',
-        //'<div class="annotation-display"></div>',
-        //'<div class="history-dataset-actions">',
-        //    '<div class="btn-group">',
-        //        '<button class="history-select-all-datasets-btn btn btn-default"',
-        //                'data-mode="select">', _l( 'All' ), '</button>',
-        //        '<button class="history-deselect-all-datasets-btn btn btn-default"',
-        //                'data-mode="select">', _l( 'None' ), '</button>',
-        //    '</div>',
-        //    '<button class="history-dataset-action-popup-btn btn btn-default">',
-        //        _l( 'For all selected' ), '...</button>',
-        //'</div>',
-    '</div>',
-    // end history controls
 
-    // where the datasets/hdas are added
-    '<div class="datasets-list"></div>'
-
-].join( '' );
-
-CollectionPanel.templates = {
-    panel : function( JSON ){
-        return _.template( _panelTemplate, JSON, { variable: 'collection' });
+// =============================================================================
+/** @class non-editable, read-only View/Controller for a dataset collection. */
+var ListCollectionPanel = CollectionPanel.extend({
+    DCEViewClass        : DC_BASE.HDADCEBaseView,
+    // ........................................................................ misc
+    /** string rep */
+    toString    : function(){
+        return 'ListCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
-};
+});
+
+
+// =============================================================================
+/** @class non-editable, read-only View/Controller for a dataset collection. */
+var PairCollectionPanel = ListCollectionPanel.extend({
+    // ........................................................................ misc
+    /** string rep */
+    toString    : function(){
+        return 'PairCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+    }
+});
+
+
+// =============================================================================
+/** @class non-editable, read-only View/Controller for a dataset collection. */
+var ListOfPairsCollectionPanel = CollectionPanel.extend({
+    DCEViewClass        : DC_BASE.DCDCEBaseView,
+    // ........................................................................ misc
+    /** string rep */
+    toString    : function(){
+        return 'ListOfPairsCollectionPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
+    }
+});
 
 
 //==============================================================================
     return {
-        CollectionPanel: CollectionPanel
+        CollectionPanel             : CollectionPanel,
+        ListCollectionPanel         : ListCollectionPanel,
+        PairCollectionPanel         : PairCollectionPanel,
+        ListOfPairsCollectionPanel  : ListOfPairsCollectionPanel
     };
 });

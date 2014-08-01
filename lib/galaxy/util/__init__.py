@@ -714,11 +714,11 @@ def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
 
 
 def object_to_string( obj ):
-    return binascii.hexlify( pickle.dumps( obj, 2 ) )
+    return binascii.hexlify( obj )
 
 
 def string_to_object( s ):
-    return pickle.loads( binascii.unhexlify( s ) )
+    return binascii.unhexlify( s )
 
 
 class ParamsWithSpecs( collections.defaultdict ):
@@ -770,22 +770,6 @@ def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compar
     return True
 
 
-def get_ucsc_by_build(build):
-    sites = []
-    for site in ucsc_build_sites:
-        if build in site['builds']:
-            sites.append((site['name'], site['url']))
-    return sites
-
-
-def get_gbrowse_sites_by_build(build):
-    sites = []
-    for site in gbrowse_build_sites:
-        if build in site['builds']:
-            sites.append((site['name'], site['url']))
-    return sites
-
-
 def read_dbnames(filename):
     """ Read build names from file """
     class DBNames( list ):
@@ -796,6 +780,9 @@ def read_dbnames(filename):
         ucsc_builds = {}
         man_builds = []  # assume these are integers
         name_to_db_base = {}
+        if filename is None:
+            # Should only be happening with the galaxy.tools.parameters.basic:GenomeBuildParameter docstring unit test
+            filename = os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' )
         for line in open(filename):
             try:
                 if line[0:1] == "#":
@@ -840,63 +827,6 @@ def read_dbnames(filename):
     if len(db_names) < 1:
         db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
     return db_names
-
-
-def read_ensembl( filename, ucsc ):
-    """ Read Ensembl build names from file """
-    ucsc_builds = []
-    for build in ucsc:
-        ucsc_builds.append( build[0] )
-    ensembl_builds = list()
-    try:
-        for line in open( filename ):
-            if line[0:1] in [ '#', '\t' ]:
-                continue
-            fields = line.replace("\r", "").replace("\n", "").split("\t")
-            if fields[0] in ucsc_builds:
-                continue
-            ensembl_builds.append( dict( dbkey=fields[0], release=fields[1], name=fields[2].replace( '_', ' ' ) ) )
-    except Exception, e:
-        print "ERROR: Unable to read builds file:", e
-    return ensembl_builds
-
-
-def read_ncbi( filename ):
-    """ Read NCBI build names from file """
-    ncbi_builds = list()
-    try:
-        for line in open( filename ):
-            if line[0:1] in [ '#', '\t' ]:
-                continue
-            fields = line.replace("\r", "").replace("\n", "").split("\t")
-            ncbi_builds.append( dict( dbkey=fields[0], name=fields[1] ) )
-    except Exception, e:
-        print "ERROR: Unable to read builds file:", e
-    return ncbi_builds
-
-
-def read_build_sites( filename, check_builds=True ):
-    """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
-    build_sites = []
-    try:
-        for line in open(filename):
-            try:
-                if line[0:1] == "#":
-                    continue
-                fields = line.replace("\r", "").replace("\n", "").split("\t")
-                site_name = fields[0]
-                site = fields[1]
-                if check_builds:
-                    site_builds = fields[2].split(",")
-                    site_dict = {'name': site_name, 'url': site, 'builds': site_builds}
-                else:
-                    site_dict = {'name': site_name, 'url': site}
-                build_sites.append( site_dict )
-            except:
-                continue
-    except:
-        print "ERROR: Unable to read builds for site file %s" % filename
-    return build_sites
 
 
 def relativize_symlinks( path, start=None, followlinks=False):
@@ -1158,15 +1088,6 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
-
-# The dbnames list is used in edit attributes and the upload tool
-dbnames = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "builds.txt" ) )
-ucsc_names = read_dbnames( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "publicbuilds.txt" ) )
-ensembl_names = read_ensembl( os.path.join( galaxy_root_path, "tool-data", "shared", "ensembl", "builds.txt" ), ucsc_names )
-ncbi_names = read_ncbi( os.path.join( galaxy_root_path, "tool-data", "shared", "ncbi", "builds.txt" ) )
-ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
-gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
-dlnames = dict(ucsc=ucsc_names, ensembl=ensembl_names, ncbi=ncbi_names)
 
 
 def galaxy_directory():

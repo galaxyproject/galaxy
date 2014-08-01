@@ -16,6 +16,7 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.util import string_as_bool
 from galaxy.util import listify
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.build_sites import BuildSites
 from galaxy import eggs
 
 log = logging.getLogger( __name__ )
@@ -72,6 +73,7 @@ class Configuration( object ):
         self.enable_unique_workflow_defaults = string_as_bool( kwargs.get( 'enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
+        self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
@@ -83,6 +85,7 @@ class Configuration( object ):
             tcf = kwargs[ 'tool_config_files' ]
         else:
             tcf = 'tool_conf.xml,shed_tool_conf.xml'
+        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
@@ -221,7 +224,9 @@ class Configuration( object ):
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
+        self.ucsc_build_sites = resolve_path( kwargs.get( 'ucsc_build_sites', os.path.join( self.tool_data_path, 'shared', 'ucsc', 'ucsc_build_sites.txt') ), self.root )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
+        self.gbrowse_build_sites = resolve_path( kwargs.get( 'gbrowse_build_sites', os.path.join( self.tool_data_path, 'shared', 'gbrowse', 'gbrowse_build_sites.txt') ), self.root )
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
@@ -455,13 +460,13 @@ class Configuration( object ):
                 except Exception, e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
-        for path in (self.file_path, self.new_file_path,
-                     self.job_working_directory, self.cluster_files_directory,
-                     self.template_cache, self.ftp_upload_dir,
+        if self.object_store_config_file is None:
+            for path in (self.file_path, self.job_working_directory):
+                self._ensure_directory( path )
+        for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, './static/genetrack/plots',
-                     self.whoosh_index_dir, self.object_store_cache_path,
-                     os.path.join( self.tool_data_path, 'shared', 'jars' )):
+                     self.nginx_upload_store, self.whoosh_index_dir,
+                     self.object_store_cache_path):
             self._ensure_directory( path )
         # Check that required files exist
         tool_configs = self.tool_configs
@@ -568,6 +573,9 @@ class ConfiguresGalaxyMixin:
 
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
+
+    def _configure_build_sites( self ):
+        self.build_sites = BuildSites( self )
 
     def _configure_toolbox( self ):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
