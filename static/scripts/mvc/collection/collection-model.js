@@ -16,6 +16,7 @@ define([
  */
 var DatasetCollectionElement = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends DatasetCollectionElement.prototype */{
+
     //TODO:?? this model may be unneccessary - it reflects the api structure, but...
     //  if we munge the element with the element.object at parse, we can flatten the entire hierarchy
 
@@ -24,7 +25,6 @@ var DatasetCollectionElement = Backbone.Model.extend( BASE_MVC.LoggableMixin ).e
     //logger              : console,
 
     defaults : {
-        id                  : null,
         model_class         : 'DatasetCollectionElement',
         element_identifier  : null,
         element_index       : null,
@@ -41,39 +41,100 @@ var DatasetCollectionElement = Backbone.Model.extend( BASE_MVC.LoggableMixin ).e
 
         this.object = this._createObjectModel();
         this.on( 'change:object', function(){
-            //console.log( 'change:object' );
+            //this.log( 'change:object' );
 //TODO: prob. better to update the sub-model instead of re-creating it
             this.object = this._createObjectModel();
         });
     },
 
     _createObjectModel : function(){
-        //console.log( '_createObjectModel', this.get( 'object' ), this.object );
+        //this.log( '_createObjectModel', this.get( 'object' ), this.object );
         //TODO: same patterns as HDCA _createElementsModel - refactor to BASE_MVC.hasSubModel?
         if( _.isUndefined( this.object ) ){ this.object = null; }
         if( !this.get( 'object' ) ){ return this.object; }
 
-        var object = this.get( 'object' );
+        var object = this.get( 'object' ),
+            ObjectClass = this._getObjectClass();
         this.unset( 'object', { silent: true });
+        this.object = new ObjectClass( object );
 
+        return this.object;
+    },
+
+    _getObjectClass : function(){
         this.debug( 'DCE, element_type:', this.get( 'element_type' ) );
         switch( this.get( 'element_type' ) ){
             case 'dataset_collection':
-                this.object = new DatasetCollection( object );
-                break;
+                return DatasetCollection;
             case 'hda':
-                this.object = new HDA_MODEL.HistoryDatasetAssociation( object );
-                break;
-            default:
-                throw new TypeError( 'Unknown element_type: ' + this.get( 'element_type' ) );
+                return HDA_MODEL.HistoryDatasetAssociation;
         }
-        return this.object;
+        throw new TypeError( 'Unknown element_type: ' + this.get( 'element_type' ) );
+    },
+
+    toJSON : function(){
+        var json = Backbone.Model.prototype.toJSON.call( this );
+        if( this.object ){
+            json.object = this.object.toJSON();
+        }
+        return json;
+    },
+
+    hasDetails : function(){
+        return ( this.object !== null
+            &&   this.object.hasDetails() );
     },
 
     /** String representation. */
     toString : function(){
         var objStr = ( this.object )?( '' + this.object ):( this.get( 'element_identifier' ) );
         return ([ 'DatasetCollectionElement(', objStr, ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
+/** @class Backbone model for
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
+ */
+var HDADCE = DatasetCollectionElement.extend(
+/** @lends DatasetCollectionElement.prototype */{
+
+    _getObjectClass : function(){
+        return HDA_MODEL.HistoryDatasetAssociation;
+    },
+
+    /** String representation. */
+    toString : function(){
+        var objStr = ( this.object )?( '' + this.object ):( this.get( 'element_identifier' ) );
+        return ([ 'HDADCE(', objStr, ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
+/** @class Backbone model for
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
+ */
+var DCDCE = DatasetCollectionElement.extend(
+/** @lends DatasetCollectionElement.prototype */{
+
+    _getObjectClass : function(){
+        return DatasetCollection;
+    },
+
+    getVisibleContents : function(){
+        return this.object? this.object.getVisibleContents(): [];
+    },
+
+    /** String representation. */
+    toString : function(){
+        var objStr = ( this.object )?( '' + this.object ):( this.get( 'element_identifier' ) );
+        return ([ 'DCDCE(', objStr, ')' ].join( '' ));
     }
 });
 
@@ -87,7 +148,7 @@ var DatasetCollectionElement = Backbone.Model.extend( BASE_MVC.LoggableMixin ).e
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var DatasetCollectionElementCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
+var DCECollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends DatasetCollectionElementCollection.prototype */{
     model: DatasetCollectionElement,
 
@@ -107,6 +168,40 @@ var DatasetCollectionElementCollection = Backbone.Collection.extend( BASE_MVC.Lo
     /** String representation. */
     toString : function(){
          return ([ 'DatasetCollectionElementCollection(', this.length, ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
+/** @class Backbone collection for
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
+ */
+var HDADCECollection = DCECollection.extend(
+/** @lends DatasetCollectionElementCollection.prototype */{
+    model: HDADCE,
+
+    /** String representation. */
+    toString : function(){
+         return ([ 'HDADCECollection(', this.length, ')' ].join( '' ));
+    }
+});
+
+
+//==============================================================================
+/** @class Backbone collection for
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
+ */
+var DCDCECollection = DCECollection.extend(
+/** @lends DatasetCollectionElementCollection.prototype */{
+    model: DCDCE,
+
+    /** String representation. */
+    toString : function(){
+         return ([ 'DCDCECollection(', this.length, ')' ].join( '' ));
     }
 });
 
@@ -133,7 +228,7 @@ var DatasetCollection = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         collection_type     : 'list'
     },
 
-    collectionClass : DatasetCollectionElementCollection,
+    collectionClass : DCECollection,
 
     /**  */
     initialize : function( model, options ){
@@ -159,9 +254,23 @@ var DatasetCollection = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         return this.elements;
     },
 
+    toJSON : function(){
+        var json = Backbone.Model.prototype.toJSON.call( this );
+        if( this.elements ){
+            json.elements = this.elements.toJSON();
+        }
+        return json;
+    },
+
     hasDetails : function(){
 //TODO: this is incorrect for (accidentally) empty collections
+        this.debug( 'hasDetails:', this.elements.length );
         return this.elements.length !== 0;
+    },
+
+    getVisibleContents : function( filters ){
+        //TODO: filters unused for now
+        return this.elements;
     },
 
     // ........................................................................ misc
@@ -174,36 +283,10 @@ var DatasetCollection = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 
 
 //==============================================================================
-/** @class Backbone collection for a collection of collection collections collecting correctly.  */
-var DatasetCollectionCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend({
-
-    model: DatasetCollection,
-
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
-    //logger              : console,
-
-    /** Set up.
-     *  @see Backbone.Collection#initialize
-     */
-    initialize : function( models, options ){
-        options = options || {};
-        this.info( 'DatasetCollectionCollection.initialize:', models, options );
-        //this._setUpListeners();
-    },
-
-    /** String representation. */
-    toString : function(){
-         return ([ 'DatasetCollectionCollection(', this.get( 'name' ), ')' ].join( '' ));
-    }
-});
-
-
-//NOTE: the following prototypes may not be necessary - but I wanted to specifiy
-//  them (for now) and allow for the possibility of unique functionality
-//==============================================================================
 var ListDatasetCollection = DatasetCollection.extend(
 /** @lends ListDatasetCollection.prototype */{
+
+    collectionClass : HDADCECollection,
 
     /** String representation. */
     toString : function(){
@@ -213,7 +296,7 @@ var ListDatasetCollection = DatasetCollection.extend(
 
 
 //==============================================================================
-var PairDatasetCollection = DatasetCollection.extend(
+var PairDatasetCollection = ListDatasetCollection.extend(
 /** @lends ListDatasetCollection.prototype */{
 
     /** String representation. */
@@ -227,6 +310,8 @@ var PairDatasetCollection = DatasetCollection.extend(
 var ListPairedDatasetCollection = DatasetCollection.extend(
 /** @lends ListDatasetCollection.prototype */{
 
+    collectionClass : DCDCECollection,
+
     // list:paired is the only collection that itself contains collections
     //collectionClass : DatasetCollectionCollection,
 
@@ -239,10 +324,7 @@ var ListPairedDatasetCollection = DatasetCollection.extend(
 
 //==============================================================================
     return {
-        DatasetCollectionElement            : DatasetCollectionElement,
-        DatasetCollectionElementCollection  : DatasetCollectionElementCollection,
-        DatasetCollection                   : DatasetCollection,
-        DatasetCollectionCollection         : DatasetCollectionCollection,
+        //DatasetCollection                   : DatasetCollection,
         ListDatasetCollection               : ListDatasetCollection,
         PairDatasetCollection               : PairDatasetCollection,
         ListPairedDatasetCollection         : ListPairedDatasetCollection

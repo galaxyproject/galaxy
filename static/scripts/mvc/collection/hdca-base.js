@@ -22,8 +22,9 @@ var HDCABaseView = _super.extend( BASE_MVC.mixin( HCVMixin, {
     // comment this out to suppress log output
     //logger              : console,
 
+//TODO: not a dataset
     /**  */
-    className   : "dataset hda history-panel-hda",
+    className   : "dataset hdca history-panel-hda",
 
     /**  */
     initialize  : function( attributes ){
@@ -52,6 +53,26 @@ var HDCABaseView = _super.extend( BASE_MVC.mixin( HCVMixin, {
         return $body;
     },
 
+    /** In this override, do not slide down or render any body/details - allow the container to handle it
+     *  @fires expanded when a body has been expanded
+     */
+    expand : function(){
+        this.warn( this + '.expand' );
+        var contentView = this;
+
+        // fetch first if no details in the model
+        if( this.model.inReadyState() && !this.model.hasDetails() ){
+            // we need the change event on HDCA's for the elements to be processed - so silent == false
+            this.model.fetch().always( function( model ){
+                contentView.expanded = true;
+                contentView.trigger( 'expanded', contentView );
+            });
+        } else {
+            contentView.expanded = true;
+            contentView.trigger( 'expanded', contentView );
+        }
+    },
+
     // ......................................................................... misc
     /** String representation */
     toString : function(){
@@ -64,7 +85,8 @@ var HDCABaseView = _super.extend( BASE_MVC.mixin( HCVMixin, {
 HDCABaseView.templates = HDCABaseView.prototype.templates = (function(){
 // use closure to run underscore template fn only once at module load
     var skeletonTemplate = _.template([
-        '<div class="dataset hda">',
+//TODO: not a dataset
+        '<div class="dataset hdca">',
             '<div class="dataset-warnings">',
                 '<% if ( collection.deleted ) { %>',
                     '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
@@ -77,22 +99,32 @@ HDCABaseView.templates = HDCABaseView.prototype.templates = (function(){
                     '</div>',
                 '<% } %>',
             '</div>',
-            '<div class="dataset-selector"><span class="fa fa-2x fa-square-o"></span></div>',
-            '<div class="dataset-primary-actions"></div>',
-            '<div class="dataset-title-bar clear" tabindex="0">',
-                '<span class="dataset-state-icon state-icon"></span>',
-                '<div class="dataset-title">',
-                    '<span class="hda-hid"><%- collection.hid %></span> ',
-                    '<span class="dataset-name"><%- collection.name %></span>',
+            '<div class="selector"><span class="fa fa-2x fa-square-o"></span></div>',
+            '<div class="primary-actions"></div>',
+            '<div class="title-bar clear" tabindex="0">',
+                '<span class="state-icon"></span>',
+                '<div class="title">',
+                    '<span class="hid"><%- collection.hid %></span> ',
+                    '<span class="name"><%- collection.name %></span>',
+                '</div>',
+                '<div class="subtitle">',
+//TODO: remove from template logic
+                    '<% if( collection.collection_type === "list" ){ %>',
+                        _l( 'a list of datasets' ),
+                    '<% } else if( collection.collection_type === "paired" ){ %>',
+                        _l( 'a pair of datasets' ),
+                    '<% } else if( collection.collection_type === "list:paired" ){ %>',
+                        _l( 'a list of paired datasets' ),
+                    '<% } %>',
                 '</div>',
             '</div>',
-            '<div class="dataset-body"></div>',
+            '<div class="details"></div>',
         '</div>'
     ].join( '' ));
 
     var bodyTemplate = _.template([
-        '<div class="dataset-body">',
-            '<div class="dataset-summary">',
+        '<div class="details">',
+            '<div class="summary">',
             _l( 'A dataset collection.' ),
         '</div>'
     ].join( '' ));

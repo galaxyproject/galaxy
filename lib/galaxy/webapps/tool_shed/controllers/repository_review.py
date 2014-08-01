@@ -1,17 +1,26 @@
-import os, logging
-from galaxy import web, util
-from galaxy.web.base.controller import BaseUIController
-from galaxy.web.form_builder import SelectField, CheckboxField
+import logging
+import os
+
 from sqlalchemy.sql.expression import func
+
+from galaxy import util
+from galaxy import web
+
 from galaxy.model.orm import and_
-from galaxy.webapps.tool_shed.util import ratings_util
-from tool_shed.util.container_util import STRSEP
-import tool_shed.util.shed_util_common as suc
-from tool_shed.util import hg_util
-from tool_shed.util import review_util
 from galaxy.util.odict import odict
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.form_builder import CheckboxField
+from galaxy.web.form_builder import SelectField
+
+from galaxy.webapps.tool_shed.util import ratings_util
+
 import tool_shed.grids.repository_review_grids as repository_review_grids
 import tool_shed.grids.util as grids_util
+
+from tool_shed.util.container_util import STRSEP
+from tool_shed.util import hg_util
+from tool_shed.util import review_util
+from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 

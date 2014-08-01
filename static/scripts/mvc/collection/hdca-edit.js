@@ -23,13 +23,13 @@ var HDCAEditView = _super.extend({
 
     // ......................................................................... edit attr, delete
     /** Render icon-button group for the common, most easily accessed actions.
-     *      Overrides _render_titleButtons to include editing related buttons.
+     *      Overrides _render_primaryActions to include editing related buttons.
      *  @returns {jQuery} rendered DOM
      */
-    _render_titleButtons : function(){
-        this.log( this + '._render_titleButtons' );
+    _render_primaryActions : function(){
+        this.log( this + '._render_primaryActions' );
         // render the display, edit attr and delete icon-buttons
-        return _super.prototype._render_titleButtons.call( this )
+        return _super.prototype._render_primaryActions.call( this )
             .concat([
                 this._render_deleteButton()
             ]);

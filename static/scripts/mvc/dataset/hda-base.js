@@ -23,7 +23,7 @@ var HDABaseView = _super.extend(
     //logger              : console,
 
     tagName     : "div",
-    className   : "dataset hda history-panel-hda",
+    className   : "dataset hda history-content",
     id          : function(){ return 'hda-' + this.model.get( 'id' ); },
 
     fxSpeed     : 'fast',
@@ -96,7 +96,7 @@ var HDABaseView = _super.extend(
     /** In this override, render the dataset display button
      *  @returns {jQuery} rendered DOM
      */
-    _render_titleButtons : function(){
+    _render_primaryActions : function(){
         // render just the display for read-only
         return [ this._render_displayButton() ];
     },
@@ -115,7 +115,7 @@ var HDABaseView = _super.extend(
         
         var displayBtnData = {
             target      : this.linkTarget,
-            classes     : 'dataset-display'
+            classes     : 'display-btn'
         };
 
         // show a disabled display if the data's been purged
@@ -181,7 +181,7 @@ var HDABaseView = _super.extend(
         if( _.isEmpty( meta_files ) ){
             return $([
                 '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" ',
-                    'class="icon-btn dataset-download-btn">',
+                    'class="icon-btn download-btn">',
                     '<span class="fa fa-floppy-o"></span>',
                 '</a>'
             ].join( '' ) );
@@ -206,7 +206,7 @@ var HDABaseView = _super.extend(
 
                 '<div class="icon-btn-group">',
                     '<a href="' + urls.download + '" title="' + _l( 'Download' ) + '" ',
-                        'class="icon-btn dataset-download-btn">',
+                        'class="icon-btn download-btn">',
                         '<span class="fa fa-floppy-o"></span>',
                     // join these w/o whitespace or there'll be a gap when rendered
                     '</a><a class="icon-btn popup" id="' + menuId + '">',
@@ -256,7 +256,7 @@ var HDABaseView = _super.extend(
         primaryButtonArray = primaryButtonArray || [];
         var view = this,
             $body = $( HDABaseView.templates.body( _.extend( this.model.toJSON(), { body: body })));
-        $body.find( '.dataset-actions .left' ).append(
+        $body.find( '.actions .left' ).append(
             _.map( primaryButtonArray, function( renderingFn ){
                 return renderingFn.call( view );
             })
@@ -358,7 +358,7 @@ var HDABaseView = _super.extend(
             $body = $( HDABaseView.templates.body( this.model.toJSON() ) ),
             // prepend the download btn to the defaults and render
             btnRenderers = [ this._render_downloadButton ].concat( this.defaultPrimaryActionButtonRenderers );
-        $body.find( '.dataset-actions .left' ).append(
+        $body.find( '.actions .left' ).append(
             _.map( btnRenderers, function( renderingFn ){
                 return renderingFn.call( view );
             }));
@@ -385,11 +385,11 @@ var HDABaseView = _super.extend(
         var hdaView = this;
 
         function _renderBodyAndExpand(){
-            hdaView.$el.children( '.dataset-body' ).replaceWith( hdaView._renderBody() );
+            hdaView.$el.children( '.details' ).replaceWith( hdaView._renderBody() );
             //NOTE: needs to be set after the above or the slide will not show
             hdaView.expanded = true;
-            hdaView.$el.children( '.dataset-body' ).slideDown( hdaView.fxSpeed, function(){
-                    hdaView.trigger( 'expanded', hdaView.model );
+            hdaView.$el.children( '.details' ).slideDown( hdaView.fxSpeed, function(){
+                    hdaView.trigger( 'expanded', hdaView );
                 });
         }
         // fetch first if no details in the model
@@ -429,24 +429,24 @@ var HDABaseView = _super.extend(
 //TODO: possibly break these out into a sep. module
 var skeletonTemplate = _.template([
 '<div class="dataset hda">',
-    '<div class="dataset-warnings">',
+    '<div class="warnings">',
         // error during index fetch - show error on dataset
         '<% if( hda.error ){ %>',
             '<div class="errormessagesmall">',
-                _l( 'There was an error getting the data for this dataset' ), ':<%- hda.error %>',
+                _l( 'There was an error getting the data for this dataset' ), ': <%- hda.error %>',
             '</div>',
         '<% } %>',
 
         '<% if( hda.deleted ){ %>',
             // purged and deleted
             '<% if( hda.purged ){ %>',
-                '<div class="dataset-purged-msg warningmessagesmall"><strong>',
+                '<div class="purged-msg warningmessagesmall"><strong>',
                     _l( 'This dataset has been deleted and removed from disk' ) + '.',
                 '</strong></div>',
 
             // deleted not purged
             '<% } else { %>',
-                '<div class="dataset-deleted-msg warningmessagesmall"><strong>',
+                '<div class="deleted-msg warningmessagesmall"><strong>',
                     _l( 'This dataset has been deleted' ) + '.',
                 '</strong></div>',
             '<% } %>',
@@ -454,61 +454,61 @@ var skeletonTemplate = _.template([
 
         // hidden
         '<% if( !hda.visible ){ %>',
-            '<div class="dataset-hidden-msg warningmessagesmall"><strong>',
+            '<div class="hidden-msg warningmessagesmall"><strong>',
                 _l( 'This dataset has been hidden' ) + '.',
             '</strong></div>',
         '<% } %>',
     '</div>',
 
     // multi-select checkbox
-    '<div class="dataset-selector">',
+    '<div class="selector">',
         '<span class="fa fa-2x fa-square-o"></span>',
     '</div>',
     // space for title bar buttons
-    '<div class="dataset-primary-actions"></div>',
+    '<div class="primary-actions"></div>',
 
     // adding a tabindex here allows focusing the title bar and the use of keydown to expand the dataset display
-    '<div class="dataset-title-bar clear" tabindex="0">',
-        '<span class="dataset-state-icon state-icon"></span>',
-        '<div class="dataset-title">',
+    '<div class="title-bar clear" tabindex="0">',
+        '<span class="state-icon"></span>',
+        '<div class="title">',
             //TODO: remove whitespace and use margin-right
-            '<span class="hda-hid"><%- hda.hid %></span> ',
-            '<span class="dataset-name"><%- hda.name %></span>',
+            '<span class="hid"><%- hda.hid %></span> ',
+            '<span class="name"><%- hda.name %></span>',
         '</div>',
     '</div>',
 
-    '<div class="dataset-body"></div>',
+    '<div class="details"></div>',
 '</div>'
 ].join( '' ));
 
 var bodyTemplate = _.template([
-'<div class="dataset-body">',
+'<div class="details">',
     '<% if( hda.body ){ %>',
-        '<div class="dataset-summary">',
+        '<div class="summary">',
             '<%= hda.body %>',
         '</div>',
-        '<div class="dataset-actions clear">',
+        '<div class="actions clear">',
             '<div class="left"></div>',
             '<div class="right"></div>',
         '</div>',
 
     '<% } else { %>',
-        '<div class="dataset-summary">',
+        '<div class="summary">',
             '<% if( hda.misc_blurb ){ %>',
-                '<div class="dataset-blurb">',
+                '<div class="blurb">',
                     '<span class="value"><%- hda.misc_blurb %></span>',
                 '</div>',
             '<% } %>',
 
             '<% if( hda.data_type ){ %>',
-                '<div class="dataset-datatype">',
+                '<div class="datatype">',
                     '<label class="prompt">', _l( 'format' ), '</label>',
                     '<span class="value"><%- hda.data_type %></span>',
                 '</div>',
             '<% } %>',
 
             '<% if( hda.metadata_dbkey ){ %>',
-                '<div class="dataset-dbkey">',
+                '<div class="dbkey">',
                     '<label class="prompt">', _l( 'database' ), '</label>',
                     '<span class="value">',
                         '<%- hda.metadata_dbkey %>',
@@ -517,14 +517,14 @@ var bodyTemplate = _.template([
             '<% } %>',
 
             '<% if( hda.misc_info ){ %>',
-                '<div class="dataset-info">',
+                '<div class="info">',
                     '<span class="value"><%- hda.misc_info %></span>',
                 '</div>',
             '<% } %>',
         '</div>',
         // end dataset-summary
 
-        '<div class="dataset-actions clear">',
+        '<div class="actions clear">',
             '<div class="left"></div>',
             '<div class="right"></div>',
         '</div>',
@@ -533,7 +533,7 @@ var bodyTemplate = _.template([
             '<div class="tags-display"></div>',
             '<div class="annotation-display"></div>',
 
-            '<div class="dataset-display-applications">',
+            '<div class="display-applications">',
                 //TODO: the following two should be compacted
                 '<% _.each( hda.display_apps, function( app ){ %>',
                     '<div class="display-application">',

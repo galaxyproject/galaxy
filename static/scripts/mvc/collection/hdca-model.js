@@ -5,20 +5,15 @@ define([
 ], function( HISTORY_CONTENT, DC_MODEL, _l ){
 //==============================================================================
 var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
-/** @class Backbone model for (generic) Dataset Collection within a History.
- *  @constructs
- */
-    HistoryDatasetCollection = DC_MODEL.DatasetCollection.extend( hcontentMixin );
+    ListDC = DC_MODEL.ListDatasetCollection,
+    PairDC = DC_MODEL.PairDatasetCollection,
+    ListPairedDC = DC_MODEL.ListPairedDatasetCollection;
 
-
-//NOTE: the following prototypes may not be necessary - but I wanted to specifiy
-//  them (for now) and allow for the possibility of unique functionality
 //==============================================================================
-var ListDC = DC_MODEL.ListDatasetCollection,
 /** @class Backbone model for List Dataset Collection within a History.
  *  @constructs
  */
-    HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
+var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
 /** @lends HistoryListDatasetCollection.prototype */{
 
     initialize : function( model, options ){
@@ -36,11 +31,10 @@ var ListDC = DC_MODEL.ListDatasetCollection,
 
 
 //==============================================================================
-var PairDC = DC_MODEL.PairDatasetCollection,
 /** @class Backbone model for Pair Dataset Collection within a History.
  *  @constructs
  */
-    HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
+var HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
 /** @lends HistoryPairDatasetCollection.prototype */{
 
     initialize : function( model, options ){
@@ -58,11 +52,10 @@ var PairDC = DC_MODEL.PairDatasetCollection,
 
 
 //==============================================================================
-var ListPairedDC = DC_MODEL.ListPairedDatasetCollection,
 /** @class Backbone model for List of Pairs Dataset Collection within a History.
  *  @constructs
  */
-    HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).extend(
+var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).extend(
 /** @lends HistoryListPairedDatasetCollection.prototype */{
 
     initialize : function( model, options ){
@@ -81,7 +74,6 @@ var ListPairedDC = DC_MODEL.ListPairedDatasetCollection,
 
 //==============================================================================
     return {
-        HistoryDatasetCollection            : HistoryDatasetCollection,
         HistoryListDatasetCollection        : HistoryListDatasetCollection,
         HistoryPairDatasetCollection        : HistoryPairDatasetCollection,
         HistoryListPairedDatasetCollection  : HistoryListPairedDatasetCollection

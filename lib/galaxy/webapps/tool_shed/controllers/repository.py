@@ -20,13 +20,13 @@ from tool_shed.dependencies.repository import relation_builder
 
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
+from tool_shed.utility_containers import ToolShedUtilityContainerManager
 
 from tool_shed.tools import tool_validator
 from tool_shed.tools import tool_version_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
@@ -1273,12 +1273,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Only display repository dependencies if they exist.
             exclude = [ 'datatypes', 'invalid_repository_dependencies', 'invalid_tool_dependencies', 'invalid_tools',
                         'readme_files', 'tool_dependencies', 'tools', 'tool_test_results', 'workflows', 'data_manager' ]
-            containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
-                                                                                        repository,
-                                                                                        changeset_revision,
-                                                                                        repository_dependencies,
-                                                                                        repository_metadata,
-                                                                                        exclude=exclude )
+            tsucm = ToolShedUtilityContainerManager( trans.app )
+            containers_dict = tsucm.build_repository_containers( repository,
+                                                                 changeset_revision,
+                                                                 repository_dependencies,
+                                                                 repository_metadata,
+                                                                 exclude=exclude )
             export_repository_dependencies_check_box = CheckboxField( 'export_repository_dependencies', checked=True )
         else:
             containers_dict = None
@@ -2458,11 +2458,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         skip_tool_tests_check_box = CheckboxField( 'skip_tool_tests', checked=skip_tool_tests_checked )
         categories = suc.get_categories( trans.app )
         selected_categories = [ rca.category_id for rca in repository.categories ]
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
-                                                                                    repository,
-                                                                                    changeset_revision,
-                                                                                    repository_dependencies,
-                                                                                    repository_metadata )
+        tsucm = ToolShedUtilityContainerManager( trans.app )
+        containers_dict = tsucm.build_repository_containers( repository,
+                                                             changeset_revision,
+                                                             repository_dependencies,
+                                                             repository_metadata )
         heads = hg_util.get_repository_heads( repo )
         deprecated_repository_dependency_tups = \
             metadata_util.get_repository_dependency_tups_from_repository_metadata( trans.app,
@@ -2653,11 +2653,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
-                                                                                    repository,
-                                                                                    changeset_revision,
-                                                                                    repository_dependencies,
-                                                                                    repository_metadata )
+        tsucm = ToolShedUtilityContainerManager( trans.app )
+        containers_dict = tsucm.build_repository_containers( repository,
+                                                             changeset_revision,
+                                                             repository_dependencies,
+                                                             repository_metadata )
         return trans.fill_template( '/webapps/tool_shed/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     containers_dict=containers_dict,
@@ -3360,11 +3360,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             else:
                 message += malicious_error
             status = 'error'
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
-                                                                                    repository,
-                                                                                    changeset_revision,
-                                                                                    repository_dependencies,
-                                                                                    repository_metadata )
+        tsucm = ToolShedUtilityContainerManager( trans.app )
+        containers_dict = tsucm.build_repository_containers( repository,
+                                                             changeset_revision,
+                                                             repository_dependencies,
+                                                             repository_metadata )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         heads = hg_util.get_repository_heads( repo )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',

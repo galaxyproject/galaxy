@@ -34,7 +34,7 @@ TODO:
 var _super = HISTORY_PANEL.HistoryPanel;
 // used in root/index.mako
 /** @class View/Controller for the user's current history model as used in the history
- *      panel (current right hand panel).
+ *      panel (current right hand panel) of the analysis page.
  *  @name HistoryPanel
  *
  *  @augments Backbone.View
@@ -43,14 +43,11 @@ var _super = HISTORY_PANEL.HistoryPanel;
  *  @constructs
  */
 var CurrentHistoryPanel = _super.extend(
-/** @lends HistoryPanel.prototype */{
+/** @lends CurrentHistoryPanel.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output
     //logger              : console,
-
-    /** class to use for constructing the HDA views */
-    HDAViewClass        : HDA_EDIT.HDAEditView,
 
     emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left tool menu to start" ),
     noneFoundMsg        : _l( "No matching datasets found" ),
@@ -87,7 +84,7 @@ var CurrentHistoryPanel = _super.extend(
 
     /** loads a history & hdas w/ details and makes them the current history */
     switchToHistory : function( historyId, attributes ){
-        //console.info( 'switchToHistory:', historyId, attributes );
+        //this.info( 'switchToHistory:', historyId, attributes );
         var panel = this,
             historyFn = function(){
                 // make this current and get history data with one call
@@ -139,7 +136,7 @@ var CurrentHistoryPanel = _super.extend(
         // update the quota meter when current history changes size
         if( Galaxy && Galaxy.quotaMeter ){
             this.listenTo( this.model, 'change:nice_size', function(){
-                //console.info( '!! model size changed:', this.model.get( 'nice_size' ) )
+                //this.info( '!! model size changed:', this.model.get( 'nice_size' ) )
 //TODO: global
                 Galaxy.quotaMeter.update();
             });
@@ -243,7 +240,7 @@ var CurrentHistoryPanel = _super.extend(
                 $toolMenu.find( 'span:contains("Get Data")' )
                     .click();
                     //.fadeTo( 200, 0.1, function(){
-                    //    console.debug( this )
+                    //    this.debug( this )
                     //    $( this ).fadeTo( 200, 1.0 );
                     //});
             });
@@ -302,36 +299,43 @@ var CurrentHistoryPanel = _super.extend(
     _setUpHdaListeners : function( hdaView ){
         _super.prototype._setUpHdaListeners.call( this, hdaView );
 
-        //var historyView = this;
-        //hdaView.on( 'expanded', function( event, collectionView ){
-        //    //console.info( 'collection-expanded', event, collectionView );
-        //    historyView._addCollectionPanel( collectionView.model );
-        //});
+        var historyView = this;
+        if( hdaView instanceof historyView.HDCAViewClass ){
+            hdaView.off( 'expanded' );
+            hdaView.on( 'expanded', function( collectionView ){
+                this.info( 'expanded', collectionView );
+                historyView._addCollectionPanel( collectionView );
+            });
+            hdaView.off( 'collapsed' );
+        }
     },
 
-    _addCollectionPanel : function( model ){
-        var historyView = this;
+    _addCollectionPanel : function( collectionView ){
+        var historyView = this,
+            collectionModel = collectionView.model;
 
-        var panel = new ( this._getCollectionPanelClass( model ) )({
-                model           : model,
-                HDAViewClass    : this.HDAViewClass
+        this.debug( 'history panel (stack), collectionModel:', collectionModel );
+        var panel = new ( this._getCollectionPanelClass( collectionModel ) )({
+                model           : collectionModel,
+                HDAViewClass    : this.HDAViewClass,
+                parentName      : this.model.get( 'name' )
             });
-        //console.debug( panel.$el );
-        //console.debug( JSON.stringify( panel.model.toJSON(), null, '  ' ) );
         historyView.panelStack.push( panel );
 
-        historyView.$el.hide().parent().append( panel.$el );
-        panel.on( 'collection-close', function(){
-            historyView.$el.fadeIn( historyView.fxSpeed );
+        historyView.$( '.history-controls' ).add( '.datasets-list' ).hide();
+        historyView.$el.append( panel.$el );
+        panel.on( 'close', function(){
+            historyView.render();
+            collectionView.collapse();
             historyView.panelStack.pop();
         });
 
         //TODO: to hdca-model, hasDetails
-        if( !panel.model.get( 'elements' ) ){
+        if( !panel.model.hasDetails() ){
             var xhr = panel.model.fetch();
             xhr.done( function(){
-                //console.debug( 'collection data fetched' );
-                //console.debug( JSON.stringify( panel.model.toJSON(), null, '  ' ) );
+                //this.debug( 'collection data fetched' );
+                //this.debug( JSON.stringify( panel.model.toJSON(), null, '  ' ) );
                 //TODO: (re-)render collection contents
                 panel.render();
             });
@@ -341,7 +345,25 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     _getCollectionPanelClass : function( model ){
-        return DC_PANEL.CollectionPanel;
+        switch( model.get( 'collection_type' ) ){
+            case 'list':
+                return DC_PANEL.ListCollectionPanel;
+            case 'paired':
+                return DC_PANEL.PairCollectionPanel;
+            case 'list:paired':
+                return DC_PANEL.ListOfPairsCollectionPanel;
+        }
+        throw new TypeError( 'Uknown collection_type: ' + model.get( 'collection_type' ) );
+    },
+
+    /** In this override, check for any overlaid panels first
+     *  @param {HistoryDatasetAssociation} hda
+     */
+    addContentView : function( hda ){
+        if( this.panelStack.length ){
+            return this;
+        }
+        return _super.prototype.addContentView.call( this, hda );
     },
 
     // ........................................................................ external objects/MVC
