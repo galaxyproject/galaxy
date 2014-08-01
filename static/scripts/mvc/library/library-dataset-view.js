@@ -181,12 +181,18 @@ var LibraryDatasetView = Backbone.View.extend({
     this.options = _.extend(this.options, options);
     $(".tooltip").remove();
 
+    if (this.options.fetched_permissions !== undefined){
+      if (this.options.fetched_permissions.access_dataset_roles.length === 0){
+        this.model.set({is_unrestricted:true});
+      } else{
+        this.model.set({is_unrestricted:false});
+      }
+    }
     // Select works different for admins
     var is_admin = false;
     if (Galaxy.currUser){
       is_admin = Galaxy.currUser.isAdmin();
     }
-
     var template = this.templateDatasetPermissions();
     this.$el.html(template({item: this.model, is_admin: is_admin}));
 
@@ -438,14 +444,11 @@ var LibraryDatasetView = Backbone.View.extend({
       modify_ids.push(modify_roles[i].id);
     };
 
-    // access_ids = typeof access_ids === 'string' ? access_ids : $.param(access_ids)
-    // manage_ids = typeof manage_ids === 'string' ? manage_ids : $.param(manage_ids)
-    // modify_ids = typeof modify_ids === 'string' ? modify_ids : $.param(modify_ids)
-
     $.post("/api/libraries/datasets/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
+      mod_toastr.success('Permissions saved');
     })
     .fail(function(){
       mod_toastr.error('An error occurred while setting dataset permissions :(');
@@ -470,6 +473,9 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
     tmpl_array.push('   <% } %>');
 
+    // tmpl_array.push('   <% if (item.get("has_versions")) { %>');
+    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Show previous versions" class="btn btn-default toolbtn-previous-versions primary-button" type="button"><span class="fa fa-clock-o"></span> Versions</span></button>');
+    // tmpl_array.push('   <% } %>');
 
     tmpl_array.push('  </div>');
 
@@ -727,11 +733,9 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('<div class="dataset_table">');
 
     tmpl_array.push('<h2>Library-related permissions</h2>');
-    // tmpl_array.push('<p>You have the permission to modify this Library item. This includes changing its name, metadata, and other information.</p>');
     tmpl_array.push('<h4>Roles that can modify the library item</h4>');
     tmpl_array.push('<div id="modify_perm" class="modify_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify name, metadata, and other information about this library item.</div>');
-    // tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
     tmpl_array.push('<hr/>');
 
     tmpl_array.push('<h2>Dataset-related permissions</h2>');
@@ -754,18 +758,13 @@ var LibraryDatasetView = Backbone.View.extend({
     // tmpl_array.push(' </p>');
     tmpl_array.push('<% } %>');
 
-    // tmpl_array.push('<p>You have the permission to manage permissions on this dataset. That means you can control who can access it and also appoint others that can manage permissions on it.</p>');
     tmpl_array.push('<h4>Roles that can access the dataset</h4>');
     tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User has to have <strong>all these roles</strong> in order to access this dataset. Users without access permission <strong>cannot</strong> have other permissions on this dataset. If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.</div>');
-    // tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
     tmpl_array.push('<h4>Roles that can manage permissions on the dataset</h4>');
     tmpl_array.push('<div id="manage_perm" class="manage_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will loose the ability manage this dataset unless you are an admin.</div>');
     tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
-
-
-
 
     tmpl_array.push('</div>');
 

@@ -103,26 +103,18 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
         dataset = library_dataset.library_dataset_dataset_association.dataset
 
-        # User has to have manage permissions in order to see the roles.
+        # User has to have manage permissions permission in order to see the roles.
         can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, dataset ) or trans.user_is_admin()
         if not can_manage:
-            raise exceptions.InsufficientPermissionsException( 'You do not have proper permissions to access permissions.' )
+            raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to access permissions.' )
 
         scope = kwd.get( 'scope', None )
 
         if scope == 'current' or scope is None:
             return self.get_current_roles( trans, library_dataset )
-            # legit_roles = trans.app.security_agent.get_legitimate_roles( trans, dataset, 'library_admin' )
-            # log.debug( 'CXXXXXCXCXCXCXCXCC legit roles: ' + str( [ legit_role.name for legit_role in legit_roles ] ) )
-
-            # all_permissions = trans.app.security_agent.get_permissions( library_dataset )
-            # for k,v in all_permissions.items():
-                # log.debug( '*******************************************' )
-                # log.debug( 'permission action: ' + str( k.action ) )
-                # log.debug( 'permission roles: ' + str( [ role.name for role in v ] ) )
 
         #  Return roles that are available to select.
-        if scope == 'available':
+        elif scope == 'available':
             page = kwd.get( 'page', None )
             if page is not None:
                 page = int( page )
@@ -137,20 +129,14 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
             query = kwd.get( 'q', None )
 
-            # try:
-            #     library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
-            # except Exception, e:
-            #     raise exceptions.ObjectNotFound( 'Requested dataset was not found.' + str(e) )
-            # dataset = library_dataset.library_dataset_dataset_association.dataset
-            # library = library_dataset.folder.parent_library
-
-            roles, total_roles = trans.app.security_agent.get_valid_dataset_roles( trans, dataset, query, page, page_limit )
+            roles, total_roles = trans.app.security_agent.get_valid_roles( trans, dataset, query, page, page_limit )
 
             return_roles = []
             for role in roles:
                 return_roles.append( dict( id=role.name, name=role.name, type=role.type ) )
-
             return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
+        else:
+            raise exceptions.RequestParameterInvalidException( "The value of 'scope' parameter is invalid. Alllowed values: current, available" )
 
     def get_current_roles( self, trans, library_dataset):
         """
@@ -159,6 +145,9 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         :param  library_dataset:      the model object
         :type   library_dataset:      LibraryDataset
+
+        :rtype:     dictionary
+        :returns:   dict of current roles for all available permission types
         """
         dataset = library_dataset.library_dataset_dataset_association.dataset
 
@@ -179,15 +168,25 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         def update( self, trans, encoded_dataset_id, **kwd ):
             *POST /api/libraries/datasets/{encoded_dataset_id}/permissions
 
-        :param  encoded_dataset_id:      the encoded id of the dataset to make private
+        :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
         :type   encoded_dataset_id:      an encoded id string      
 
         :param  action:     (required) describes what action should be performed
                             available actions: make_private, remove_restrictions, set_permissions
         :type   action:     string        
 
+        :param  access_ids[]:      list of Role.name defining roles that should have access permission on the dataset
+        :type   access_ids[]:      string or list  
+        :param  manage_ids[]:      list of Role.name defining roles that should have manage permission on the dataset
+        :type   manage_ids[]:      string or list  
+        :param  modify_ids[]:      list of Role.name defining roles that should have modify permission on the library dataset item
+        :type   modify_ids[]:      string or list          
+
         :rtype:     dictionary
-        :returns:   dict of current roles for all permission types
+        :returns:   dict of current roles for all available permission types
+
+        :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
+                    RequestParameterMissingException
         """
         try:
             library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=False )
@@ -235,13 +234,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     role = self._load_role( trans, role_id )
                     
                     #  Check whether role is in the set of allowed roles
-                    valid_roles, total_roles = trans.app.security_agent.get_valid_dataset_roles( trans, dataset )
+                    valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, dataset )
                     if role in valid_roles:
                         valid_access_roles.append( role )
                     else:
                         invalid_access_roles_names.append( role_id )
                 if len( invalid_access_roles_names ) > 0:
-                    log.debug( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_names ) )                
+                    log.warning( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_names ) )                
 
                 access_permission = dict( access=valid_access_roles )
                 trans.app.security_agent.set_dataset_permission( dataset, access_permission )
@@ -250,7 +249,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             valid_manage_roles = []
             invalid_manage_roles_names = []
             new_manage_roles_ids = util.listify( new_manage_roles_ids )
-            log.debug("new_manage_roles_ids: " + str(new_manage_roles_ids))
             
             #  Load all access roles to check 
             active_access_roles = dataset.get_access_roles( trans )
@@ -265,7 +263,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     invalid_manage_roles_names.append( role_id )
 
             if len( invalid_manage_roles_names ) > 0:
-                log.debug( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_names ) )                
+                log.warning( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_names ) )                
 
             manage_permission = { trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS : valid_manage_roles }
             trans.app.security_agent.set_dataset_permission( dataset, manage_permission )
@@ -274,7 +272,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             valid_modify_roles = []
             invalid_modify_roles_names = []
             new_modify_roles_ids = util.listify( new_modify_roles_ids )
-            log.debug("new_modify_roles_ids: " + str(new_modify_roles_ids))
             
             #  Load all access roles to check 
             active_access_roles = dataset.get_access_roles( trans )
@@ -289,7 +286,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     invalid_modify_roles_names.append( role_id )
 
             if len( invalid_modify_roles_names ) > 0:
-                log.debug( "The following roles could not be added to the dataset manage permission: " + str( invalid_modify_roles_names ) )                
+                log.warning( "The following roles could not be added to the dataset modify permission: " + str( invalid_modify_roles_names ) )                
 
             modify_permission = { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY : valid_modify_roles }
             trans.app.security_agent.set_library_item_permission( library_dataset, modify_permission )
@@ -303,6 +300,14 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     def _load_role( self, trans, role_name ):
         """
         Method loads the role from the DB based on the given role name.
+
+        :param  role_name:      name of the role to load from the DB
+        :type   role_name:      string 
+
+        :rtype:     Role
+        :returns:   the loaded Role object
+
+        :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
         """
         try:
             role = trans.sa_session.query( trans.app.model.Role ).filter( trans.model.Role.table.c.name == role_name ).one()

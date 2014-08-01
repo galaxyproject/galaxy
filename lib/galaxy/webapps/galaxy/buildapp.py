@@ -241,7 +241,19 @@ def populate_api_routes( webapp, app ):
                            '/api/libraries/:id',
                            controller='libraries',
                            action='update',
-                           conditions=dict( method=[ "PATCH", 'PUT' ] ) )
+                           conditions=dict( method=[ "PATCH", "PUT" ] ) )
+
+    webapp.mapper.connect( 'show_library_permissions',
+                           '/api/libraries/:encoded_library_id/permissions',
+                           controller='libraries',
+                           action='get_permissions',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'set_library_permissions',
+                           '/api/libraries/:encoded_library_id/permissions',
+                           controller='libraries',
+                           action='set_permissions',
+                           conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.connect( 'show_lda_item',
                            '/api/libraries/datasets/:id',

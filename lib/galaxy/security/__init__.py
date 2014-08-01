@@ -95,6 +95,9 @@ class RBACAgent:
     def set_all_library_permissions( self, trans, dataset, permissions ):
         raise "Unimplemented Method"
 
+    def set_library_item_permission( self, library_item, permission ):
+        raise "Unimplemented Method"
+
     def library_is_public( self, library ):
         raise "Unimplemented Method"
 
@@ -221,10 +224,10 @@ class GalaxyRBACAgent( RBACAgent ):
                     roles.append( item_permission.role )
         return roles
 
-    def get_valid_dataset_roles( self, trans, dataset, query=None, page=None, page_limit=None ):
+    def get_valid_roles( self, trans, item, query=None, page=None, page_limit=None, is_library_access=False ):
         """
         This method retrieves the list of possible roles that user can select
-        in the dataset permissions form. Admins can select any role so the
+        in the item permissions form. Admins can select any role so the
         results are paginated in order to save the bandwidth and to speed
         things up.
         Standard users can select their own private role, any of their
@@ -245,8 +248,15 @@ class GalaxyRBACAgent( RBACAgent ):
         
         total_count = None
 
-        # For public datasets admins can choose from all roles
-        if trans.user_is_admin() and self.dataset_is_public( dataset ):
+        if isinstance( item, self.model.Library ) and self.library_is_public( item ):
+            is_public_item = True
+        elif isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ):
+            is_public_item = True
+        else:
+            is_public_item = False
+
+        # For public items and for library access admins can choose from all roles
+        if trans.user_is_admin() and ( is_public_item or is_library_access ):
             # Add all non-deleted roles that fit the query
             db_query = trans.sa_session.query( trans.app.model.Role ).filter( self.model.Role.table.c.deleted == False )
             if query is not None:
@@ -265,8 +275,8 @@ class GalaxyRBACAgent( RBACAgent ):
             else:
                 roles = db_query.order_by( self.model.Role.table.c.name )
 
-        # Non-admin and public dataset
-        elif self.dataset_is_public( dataset ):
+        # Non-admin and public item
+        elif is_public_item:
             # Add the current user's private role
             roles.append( self.get_private_user_role( trans.user ) )
             # Add the current user's sharing roles
@@ -279,10 +289,10 @@ class GalaxyRBACAgent( RBACAgent ):
                                                        self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                         .order_by( self.model.Role.table.c.name ):
                 roles.append( role )
-        # User is not admin and dataset is not public
+        # User is not admin and item is not public
         else:
             # If item has roles associated with the access permission, we need to start with them.
-            access_roles = dataset.get_access_roles( trans )
+            access_roles = item.get_access_roles( trans )
             for role in access_roles:
                 if trans.user_is_admin() or self.ok_to_display( trans.user, role ):
                     roles.append( role )
@@ -1018,7 +1028,7 @@ class GalaxyRBACAgent( RBACAgent ):
         if flush_needed:
             self.sa_session.flush()
 
-    def set_library_item_permission( self, library_dataset, permission={} ):
+    def set_library_item_permission( self, library_item, permission={} ):
         """
         Set a specific permission on a library item, leaving all other current permissions on the item alone.
         Permission looks like: { Action.action : [ Role, Role ] }
@@ -1027,15 +1037,20 @@ class GalaxyRBACAgent( RBACAgent ):
         for action, roles in permission.items():
             if isinstance( action, Action ):
                 action = action.action
-            # Delete the current specific permission on the library_dataset if one exists
-            for dp in library_dataset.actions:
-                if dp.action == action:
-                    self.sa_session.delete( dp )
+            # Delete the current specific permission on the library item if one exists
+            for item_permission in library_item.actions:
+                if item_permission.action == action:
+                    self.sa_session.delete( item_permission )
                     flush_needed = True
-            # Add the new specific permission on the library_dataset
-            for dp in [ self.model.LibraryDatasetPermissions( action, library_dataset, role ) for role in roles ]:
-                self.sa_session.add( dp )
-                flush_needed = True
+            # Add the new specific permission on the library item
+            if isinstance( library_item, self.model.LibraryDataset ):
+                for item_permission in [ self.model.LibraryDatasetPermissions( action, library_item, role ) for role in roles ]:
+                    self.sa_session.add( item_permission )
+                    flush_needed = True
+            elif isinstance ( library_item, self.model.LibraryPermissions):
+                for item_permission in [ self.model.LibraryPermissions( action, library_item, role ) for role in roles ]:
+                    self.sa_session.add( item_permission )
+                    flush_needed = True
         if flush_needed:
             self.sa_session.flush()
 
