@@ -2758,7 +2758,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var 
             // Index of first tile that overlaps visible region.
             tile_index = Math.floor( low / (resolution * TILE_SIZE) ),
-            tile_low,
+            // Base that first tile starts with.
+            tile_low = Math.floor(tile_index * TILE_SIZE * resolution),
             tile_region,
             tile_promise,
             tile_promises = [],
@@ -2766,7 +2767,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Draw tiles.
         while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
             // Get tile region.
-            tile_low = Math.floor(tile_index * TILE_SIZE * resolution);
             tile_region = new visualization.GenomeRegion({
                 chrom: this.view.chrom,
                 start: tile_low,
@@ -2778,7 +2778,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             $.when(tile_promise).then(function(tile) {
                 tiles.push(tile);
             });
+
+            // Go to next tile.
             tile_index += 1;
+            tile_low = tile_region.get('end');
         }
         
         // Step (c) for (re)moving tiles when clear_after is false.
@@ -3081,12 +3084,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         tile.predisplay_actions();
       
         // Position tile element based on current viewport.
-        var left = ( tile.low - (this.is_overview? this.view.max_low : this.view.low) ) * w_scale;
+        var left = Math.round( ( tile.low - (this.is_overview? this.view.max_low : this.view.low) ) * w_scale );
         if (this.left_offset) {
             left -= this.left_offset;
         }
         tile_element.css('left', left);
-        
+
         if ( tile_element.hasClass("remove") ) {
             // Step (b) for (re)moving tiles. See _draw() function for description of algorithm
             // for removing tiles.
