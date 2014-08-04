@@ -10,7 +10,7 @@ def load_tool(path):
     """
     Loads tool from file system and preprocesses tool macros.
     """
-    tree = parse_xml(path)
+    tree = raw_tool_xml_tree(path)
     root = tree.getroot()
 
     _import_macros(root, path)
@@ -36,6 +36,14 @@ def template_macro_params(root):
     for key, value in macro_dict.iteritems():
         param_dict[key] = value
     return param_dict
+
+
+def raw_tool_xml_tree(path):
+    """ Load raw (no macro expansion) tree representation of tool represented
+    at the specified path.
+    """
+    tree = parse_xml(path)
+    return tree
 
 
 def _import_macros(root, path):
