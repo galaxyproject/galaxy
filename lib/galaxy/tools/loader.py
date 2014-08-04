@@ -46,12 +46,21 @@ def raw_tool_xml_tree(path):
     return tree
 
 
+def imported_macro_paths(root):
+    macros_el = _macros_el(root)
+    return _imported_macro_paths_from_el(macros_el)
+
+
 def _import_macros(root, path):
     tool_dir = os.path.dirname(path)
-    macros_el = root.find('macros')
+    macros_el = _macros_el(root)
     if macros_el:
         macro_els = _load_macros(macros_el, tool_dir)
         _xml_set_children(macros_el, macro_els)
+
+
+def _macros_el(root):
+    return root.find('macros')
 
 
 def _macros_of_type(root, type, el_func):
@@ -167,6 +176,17 @@ def _load_embedded_macros(macros_el, tool_dir):
 def _load_imported_macros(macros_el, tool_dir):
     macros = []
 
+    for tool_relative_import_path in _imported_macro_paths_from_el(macros_el):
+        import_path = \
+            os.path.join(tool_dir, tool_relative_import_path)
+        file_macros = _load_macro_file(import_path, tool_dir)
+        macros.extend(file_macros)
+
+    return macros
+
+
+def _imported_macro_paths_from_el(macros_el):
+    imported_macro_paths = []
     macro_import_els = []
     if macros_el:
         macro_import_els = macros_el.findall("import")
@@ -174,12 +194,8 @@ def _load_imported_macros(macros_el, tool_dir):
         raw_import_path = macro_import_el.text
         tool_relative_import_path = \
             os.path.basename(raw_import_path)  # Sanitize this
-        import_path = \
-            os.path.join(tool_dir, tool_relative_import_path)
-        file_macros = _load_macro_file(import_path, tool_dir)
-        macros.extend(file_macros)
-
-    return macros
+        imported_macro_paths.append( tool_relative_import_path )
+    return imported_macro_paths
 
 
 def _load_macro_file(path, tool_dir):

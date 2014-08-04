@@ -69,7 +69,7 @@ from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
-from .loader import load_tool, template_macro_params, raw_tool_xml_tree
+from .loader import load_tool, template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 from .wrappers import (
     ToolParameterValueWrapper,
@@ -3002,6 +3002,8 @@ class Tool( object, Dictifiable ):
             external_path = code_elem.get( 'file' )
             if external_path:
                 external_paths.append( external_path )
+        external_paths.extend( imported_macro_paths( root ) )
+        # May also need to load external citation files as well at some point.
         return external_paths
 
 

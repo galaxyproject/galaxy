@@ -15,6 +15,10 @@ def test_finds_skips_empty_code_file_attribute():
     assert __external_files("""<tool><code /></tool>""") == []
 
 
+def test_finds_external_macro_file():
+    assert __external_files("""<tool><macros><import>cool_macros.xml</import></macros></tool>""") == ["cool_macros.xml"]
+
+
 def __external_files(contents):
     base_path = tempfile.mkdtemp()
     try:
