@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 
+from galaxy.tools import Tool
 from galaxy.tools import parameters
 from galaxy.tools.parameters import dynamic_options
 
@@ -311,15 +312,14 @@ class ToolValidator( object ):
         message = ''
         tmp_tool_config = hg_util.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
         if tmp_tool_config:
-            element_tree, error_message = xml_util.parse_xml( tmp_tool_config )
-            if element_tree is None:
+            tool_element, error_message = xml_util.parse_xml( tmp_tool_config )
+            if tool_element is None:
                 return tool, message
-            element_tree_root = element_tree.getroot()
-            # Look for code files required by the tool config.
+            # Look for external files required by the tool config.
             tmp_code_files = []
-            for code_elem in element_tree_root.findall( 'code' ):
-                code_file_name = code_elem.get( 'file' )
-                tmp_code_file_name = hg_util.copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
+            external_paths = Tool.get_externally_referenced_paths( tmp_tool_config )
+            for path in external_paths:
+                tmp_code_file_name = hg_util.copy_file_from_manifest( repo, ctx, path, work_dir )
                 if tmp_code_file_name:
                     tmp_code_files.append( tmp_code_file_name )
             tool, valid, message = self.load_tool_from_config( repository_id, tmp_tool_config )

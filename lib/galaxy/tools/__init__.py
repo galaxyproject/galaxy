@@ -69,7 +69,7 @@ from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
-from .loader import load_tool, template_macro_params
+from .loader import load_tool, template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 from .wrappers import (
     ToolParameterValueWrapper,
@@ -2988,6 +2988,23 @@ class Tool( object, Dictifiable ):
 
     def get_default_history_by_trans( self, trans, create=False ):
         return trans.get_history( create=create )
+
+    @classmethod
+    def get_externally_referenced_paths( self, path ):
+        """ Return relative paths to externally referenced files by the tool
+        described by file at `path`. External components should not assume things
+        about the structure of tool xml files (this is the tool's responsibility).
+        """
+        tree = raw_tool_xml_tree(path)
+        root = tree.getroot()
+        external_paths = []
+        for code_elem in root.findall( 'code' ):
+            external_path = code_elem.get( 'file' )
+            if external_path:
+                external_paths.append( external_path )
+        external_paths.extend( imported_macro_paths( root ) )
+        # May also need to load external citation files as well at some point.
+        return external_paths
 
 
 class OutputParameterJSONTool( Tool ):

@@ -196,7 +196,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         ctx.fillStyle = ctx.strokeStyle = painter_color;
         top_overflow = bot_overflow = false;
 
-        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
+        x_scaled = Math.ceil((data[i][0] - view_start) * w_scale);
         y = data[i][1];
 
         // Process Y (scaler) value.
