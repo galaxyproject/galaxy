@@ -105,6 +105,30 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         self.assertEquals("1 2 3\n4 5 6\n7 8 9\n0 a b\n", self.dataset_populator.get_history_dataset_content( history_id ) )
 
+    def test_workflow_stability( self ):
+        # Run this index stability test with following command:
+        #   ./run_tests.sh test/api/test_workflows.py:WorkflowsApiTestCase.test_workflow_stability
+        from pkg_resources import resource_string
+        for workflow_file in [ "test_workflow_topoambigouity.ga", "test_workflow_topoambigouity_auto_laidout.ga" ]:
+            workflow_str = resource_string( __name__, workflow_file )
+            workflow = self.workflow_populator.load_workflow( "test1", content=workflow_str )
+            last_step_map = self._step_map( workflow )
+            for i in range(10):
+                uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
+                download_response = self._get( "workflows/%s/download" % uploaded_workflow_id )
+                downloaded_workflow = download_response.json()
+                step_map = self._step_map(downloaded_workflow)
+                assert step_map == last_step_map
+                last_step_map = step_map
+
+    def _step_map(self, workflow):
+        # Build dict mapping 'tep index to input name.
+        step_map = {}
+        for step_index, step in workflow["steps"].iteritems():
+            if step[ "type" ] == "data_input":
+                step_map[step_index] = step["inputs"][0]["name"]
+        return step_map
+
     @skip_without_tool( "cat1" )
     def test_extract_from_history( self ):
         history_id = self.dataset_populator.new_history()
