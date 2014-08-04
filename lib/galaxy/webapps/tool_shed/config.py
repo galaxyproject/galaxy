@@ -53,6 +53,7 @@ class Configuration( object ):
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
+        self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared','ucsc','chrom') ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Install and test framework for testing tools contained in repositories.

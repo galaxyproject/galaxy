@@ -36,6 +36,9 @@ file_path = database/community_files
 # Temporary storage for additional datasets, this should be shared through the cluster
 new_file_path = database/tmp
 
+# File containing old-style genome builds
+#builds_file_path = tool-data/shared/ucsc/builds.txt
+
 # Session support (beaker)
 use_beaker_session = True
 session_type = memory
