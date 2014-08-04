@@ -31,7 +31,7 @@ viz_plugin_dir = os.path.join(viz_plugin_dir, "ipython")
 our_config_dir = os.path.join(viz_plugin_dir, "config")
 our_template_dir = os.path.join(viz_plugin_dir, "templates")
 ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
-                                                'bgruening/docker-ipython-notebook'})
+                                                'erasche/docker-rstudio-notebook'})
 ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
 # Ensure generation of notebook id is deterministic for the dataset. Replace with history id
@@ -67,13 +67,9 @@ HOST = request.host
 if ':' in HOST:
     HOST = HOST[0:HOST.index(':')]
 
-temp_dir = os.path.abspath( tempfile.mkdtemp() )
+PORT=7777
 
-# Generate a random password + salt
-notebook_pw_salt = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(12))
-notebook_pw = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(24))
-m = hashlib.sha1()
-m.update( notebook_pw + notebook_pw_salt )
+temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
 conf_file = {
     'history_id': history_id,
@@ -82,7 +78,6 @@ conf_file = {
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
     'docker_port': PORT,
-    'notebook_password': 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest()),
 }
 
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
@@ -95,15 +90,17 @@ if hda.datatype.__class__.__name__ != "Ipynb":
 else:
     shutil.copy( hda.file_name, empty_nb_path )
 
-docker_cmd = '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
+docker_cmd = '%s run -d --sig-proxy=true -p %s:8787 -v "%s:/import/" %s' % \
     (ipy_viz_config.get("docker", "command"), PORT, temp_dir, ipy_viz_config.get("docker", "image"))
 
 if ipy_viz_config.getboolean("main", "apache_urls"):
-    notebook_access_url = "http://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT )
-    notebook_login_url = "http://%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
-else:
-    notebook_access_url = "http://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
-    notebook_login_url = "http://%s:%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT, PORT )
+    notebook_access_url = "http://%s/rstudio/%s/" % ( HOST, PORT )
+    notebook_login_url = "http://%s/rstudio/%s/" % ( HOST, PORT )
+    apache_urls_jsvar = "true"
+#else:
+    #notebook_access_url = "http://%s:%s/rstudio/%s/notebooks/rstudio_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
+    #notebook_login_url = "http://%s:%s/rstudio/%s/login?next=%%2Frstudio%%2F%s%%2Fnotebooks%%2Frstudio_galaxy_notebook.ipynb" % ( HOST, PORT, PORT, PORT )
+    #apache_urls_jsvar = "false"
 subprocess.call(docker_cmd, shell=True)
 
 # We need to wait until the Image and IPython in loaded
@@ -113,40 +110,17 @@ time.sleep(1)
 %>
 <html>
 <head>
+${h.css( 'base' ) }
 ${h.js( 'libs/jquery/jquery' ) }
+${h.js( 'libs/toastr' ) }
 </head>
 <body>
+
 <script type="text/javascript">
-// On document ready
 $( document ).ready(function() {
-    // Make an AJAX POST
-    $.ajax({
-        type: "POST",
-        // to the Login URL
-        url: "${ notebook_login_url }",
-        // With our password
-        data: {
-            'password': '${ notebook_pw }'
-        },
-        // If that is successful, load the notebook
-        success: function(){
-            //Append an object to the body
-            $('body').append(
-                $('<object/>', {
-                    src: '${ notebook_access_url }',
-                    height: '100%',
-                    width: '100%'
-                }).append(
-                    // And an embed to the object
-                    $('<embed/>', {
-                        src: '${ notebook_access_url }',
-                        height: '100%',
-                        width: '100%'
-                    })
-                )
-            );
-        }
-    });
+    $('body').append('<object data="${ notebook_access_url }" height="100%" width="100%">'
+    +'<embed src="${ notebook_access_url }" height="100%" width="100%"/></object>'
+    );
 });
 </script>
 </body>
