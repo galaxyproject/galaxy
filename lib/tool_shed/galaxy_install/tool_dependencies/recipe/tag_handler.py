@@ -5,6 +5,7 @@ import tempfile
 from galaxy.model.orm import and_
 from galaxy.util import listify
 from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
+from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
@@ -48,11 +49,12 @@ class SyncDatabase( object ):
             pass
         sa_session = app.install_model.context
         can_install_tool_dependency = False
-        tool_dependency = get_tool_dependency_by_name_version_type_repository( app,
-                                                                               tool_shed_repository,
-                                                                               tool_dependency_name,
-                                                                               tool_dependency_version,
-                                                                               tool_dependency_type )
+        tool_dependency = \
+            tool_dependency_util.get_tool_dependency_by_name_version_type_repository( app,
+                                                                                      tool_shed_repository,
+                                                                                      tool_dependency_name,
+                                                                                      tool_dependency_version,
+                                                                                      tool_dependency_type )
         if tool_dependency.status == app.install_model.ToolDependency.installation_status.INSTALLING:
             # The tool dependency is in an Installing state, so we don't want to do anything to it.  If the tool
             # dependency is being installed by someone else, we don't want to interfere with that.  This assumes
