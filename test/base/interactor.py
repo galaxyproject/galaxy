@@ -325,16 +325,17 @@ class GalaxyInteractorApi( object ):
         )
         return self._post( "tools", files=files, data=data )
 
-    def ensure_user_with_email( self, email ):
+    def ensure_user_with_email( self, email, password=None ):
         admin_key = self.master_api_key
         all_users = self._get( 'users', key=admin_key ).json()
         try:
             test_user = [ user for user in all_users if user["email"] == email ][0]
         except IndexError:
             username = re.sub('[^a-z-]', '--', email.lower())
+            password = password or 'testpass'
             data = dict(
                 email=email,
-                password='testuser',
+                password=password,
                 username=username,
             )
             test_user = self._post( 'users', data, key=admin_key ).json()
