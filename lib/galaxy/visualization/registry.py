@@ -13,6 +13,7 @@ import galaxy.model
 from galaxy.web import url_for
 
 from galaxy.web.base import pluginframework
+from galaxy.managers import api_keys
 
 import logging
 log = logging.getLogger( __name__ )
@@ -337,6 +338,19 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         param_confs = plugin.config.get( 'params', {} )
         config = self.resource_parser.parse_config( trans, controller, param_confs, query_dict )
         return config
+
+    def fill_template( self, trans, plugin, template_filename, **kwargs ):
+        # TODO: As part of a future note plugin registry effort - move this
+        # override and let VisualizationsRegistry just revert to using parent's
+        # fill_template.
+        if 'get_api_key' not in kwargs:
+
+            def get_api_key():
+                return api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
+
+            kwargs[ 'get_api_key' ] = get_api_key
+
+        return super( VisualizationsRegistry, self ).fill_template( trans, plugin, template_filename, **kwargs )
 
 
 # ------------------------------------------------------------------- parsing the config file
