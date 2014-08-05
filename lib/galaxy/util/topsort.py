@@ -12,11 +12,16 @@ E.g.,
 
    topsort( [(1,2), (3,3)] )
 
-may return any of (but nothing other than)
+Valid topological sorts would be any of (but nothing other than)
 
    [3, 1, 2]
    [1, 3, 2]
    [1, 2, 3]
+
+... however this variant ensures that 'key' order (first element of
+tuple) is preserved so the following will be result returned:
+
+   [1, 3, 2]
 
 because those are the permutations of the input elements that
 respect the "1 precedes 2" and "3 precedes 3" input constraints.
@@ -31,8 +36,9 @@ then CycleError is raised, and the exception object supports
 many methods to help analyze and break the cycles.  This requires
 a good deal more code than topsort itself!
 """
-
+from galaxy.util.odict import odict as OrderedDict
 from exceptions import Exception
+
 
 class CycleError(Exception):
     def __init__(self, sofar, numpreds, succs):
@@ -83,7 +89,7 @@ class CycleError(Exception):
     def get_preds(self):
         if self.preds is not None:
             return self.preds
-        self.preds = preds = {}
+        self.preds = preds = OrderedDict()
         remaining_elts = self.get_elements()
         for x in remaining_elts:
             preds[x] = []
@@ -112,7 +118,7 @@ class CycleError(Exception):
         from random import choice
         x = choice(remaining_elts)
         answer = []
-        index = {}
+        index = OrderedDict()
         in_answer = index.has_key
         while not in_answer(x):
             index[x] = len(answer) # index of x in answer
@@ -124,8 +130,8 @@ class CycleError(Exception):
         return answer
 
 def topsort(pairlist):
-    numpreds = {}   # elt -> # of predecessors
-    successors = {} # elt -> list of successors
+    numpreds = OrderedDict()   # elt -> # of predecessors
+    successors = OrderedDict() # elt -> list of successors
     for first, second in pairlist:
         # make sure every elt is a key in numpreds
         if not numpreds.has_key(first):
@@ -174,8 +180,8 @@ def topsort(pairlist):
     return answer
 
 def topsort_levels(pairlist):
-    numpreds = {}   # elt -> # of predecessors
-    successors = {} # elt -> list of successors
+    numpreds = OrderedDict()   # elt -> # of predecessors
+    successors = OrderedDict() # elt -> list of successors
     for first, second in pairlist:
         # make sure every elt is a key in numpreds
         if not numpreds.has_key(first):

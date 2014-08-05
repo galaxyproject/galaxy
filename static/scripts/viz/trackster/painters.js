@@ -196,7 +196,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         ctx.fillStyle = ctx.strokeStyle = painter_color;
         top_overflow = bot_overflow = false;
 
-        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
+        x_scaled = Math.ceil((data[i][0] - view_start) * w_scale);
         y = data[i][1];
 
         // Process Y (scaler) value.
@@ -771,6 +771,11 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     offset += cig_len;
                 }
                 return offset;
+            },
+            // Gets drawing coordinate for a sequence coordinate. Assumes closure variables w_scale and tile_low.
+            get_draw_coord = function(sequence_coord) {
+                // -0.5 to offset sequence between bases.
+                return Math.floor( Math.max(0, (sequence_coord - tile_low - 0.5) * w_scale) );
             };
 
         ctx.textAlign = "center";
@@ -784,7 +789,9 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             draw_height = (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT),
             rect_y = y_start + 1,
             paint_utils = new ReadPainterUtils(ctx, draw_height, w_scale, mode),
-            drawing_blocks = [];
+            drawing_blocks = [],
+            s_start,
+            s_end;
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
@@ -799,10 +806,9 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             var block = drawing_blocks[i];
 
             if (is_overlap([feature_start + block[0], feature_start + block[1]], tile_region)) {
-                // -0.5 to offset sequence between bases.
-                var s_start = Math.floor( Math.max(-0.5 * w_scale, (feature_start + block[0] - tile_low - 0.5) * w_scale) ),
-                    s_end = Math.floor( Math.max(0, (feature_start + block[1] - tile_low - 0.5) * w_scale) );
-
+                s_start = get_draw_coord(feature_start + block[0]);
+                s_end = get_draw_coord(feature_start + block[1]);
+                
                 // Make sure that block is drawn even if it too small to be rendered officially; in this case,
                 // read is drawn at 1px.
                 // TODO: need to ensure that s_start, s_end are calculated the same for both slotting
@@ -823,11 +829,10 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 cig_op = "MIDNSHP=X"[ cig[0] ],
                 cig_len = cig[1];
 
-            var seq_start = feature_start + base_offset,
-                // -0.5 to offset sequence between bases.
-                s_start = Math.floor( Math.max(-0.5 * w_scale, (seq_start - tile_low - 0.5) * w_scale) ),
-                s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low - 0.5) * w_scale) );
-
+            var seq_start = feature_start + base_offset;
+            s_start = get_draw_coord(seq_start);
+            s_end = get_draw_coord(seq_start + cig_len);
+                
             // Skip feature if it's not in tile.
             if (!is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                 // Update offsets.
