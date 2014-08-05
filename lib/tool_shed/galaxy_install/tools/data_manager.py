@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
@@ -18,12 +19,19 @@ class DataManagerHandler( object ):
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
         """
-        fh = open( config_filename, 'wb' )
-        fh.write( '<?xml version="1.0"?>\n<data_managers>\n' )
-        for elem in config_elems:
-            fh.write( xml_util.xml_to_string( elem ) )
-        fh.write( '</data_managers>\n' )
-        fh.close()
+        lock = threading.Lock()
+        lock.acquire( True )
+        try:
+            fh = open( config_filename, 'wb' )
+            fh.write( '<?xml version="1.0"?>\n<data_managers>\n' )
+            for elem in config_elems:
+                fh.write( xml_util.xml_to_string( elem ) )
+            fh.write( '</data_managers>\n' )
+            fh.close()
+        except Exception, e:
+            log.exception( "Exception in DataManagerHandler.data_manager_config_elems_to_xml_file: %s" % str( e ) )
+        finally:
+            lock.release()
 
     def install_data_managers( self, shed_data_manager_conf_filename, metadata_dict, shed_config_dict,
                                relative_install_dir, repository, repository_tools_tups ):
