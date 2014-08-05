@@ -37,6 +37,7 @@ from galaxy.datatypes.data import Text
 
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
+from galaxy.managers import api_keys
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
@@ -286,16 +287,12 @@ class CreatesUsersMixin:
 class CreatesApiKeysMixin:
     """
     Mixing centralizing logic for creating API keys for user objects.
+
+    Deprecated - please use api_keys.ApiKeyManager for new development.
     """
 
     def create_api_key( self, trans, user ):
-        guid = trans.app.security.get_new_guid()
-        new_key = trans.app.model.APIKeys()
-        new_key.user_id = user.id
-        new_key.key = guid
-        trans.sa_session.add( new_key )
-        trans.sa_session.flush()
-        return guid
+        return api_keys.ApiKeyManager( trans.app ).create_api_key( user )
 
 
 class SharableItemSecurityMixin:
