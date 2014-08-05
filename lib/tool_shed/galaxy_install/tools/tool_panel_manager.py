@@ -1,7 +1,6 @@
 import logging
 import os
-import shutil
-import tempfile
+import threading
 
 import galaxy.tools
 from galaxy.tools.search import ToolBoxSearch
@@ -90,15 +89,19 @@ class ToolPanelManager( object ):
         Persist the current in-memory list of config_elems to a file named by the
         value of config_filename.
         """
-        fd, filename = tempfile.mkstemp( prefix="tmp-toolshed-cetxf"  )
-        os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
-        for elem in config_elems:
-            os.write( fd, '%s' % xml_util.xml_to_string( elem, use_indent=True ) )
-        os.write( fd, '</toolbox>\n' )
-        os.close( fd )
-        shutil.move( filename, os.path.abspath( config_filename ) )
-        os.chmod( config_filename, 0644 )
+        lock = threading.Lock()
+        lock.acquire( True )
+        try:
+            fh = open( config_filename, 'wb' )
+            fh.write( '<?xml version="1.0"?>\n<toolbox tool_path="%s">\n' % str( tool_path ) )
+            for elem in config_elems:
+                fh.write( xml_util.xml_to_string( elem, use_indent=True ) )
+            fh.write( '</toolbox>\n' )
+            fh.close()
+        except Exception, e:
+            log.exception( "Exception in ToolPanelManager.config_elems_to_xml_file: %s" % str( e ) )
+        finally:
+            lock.release()
 
     def generate_tool_elem( self, tool_shed, repository_name, changeset_revision, owner, tool_file_path,
                             tool, tool_section ):
