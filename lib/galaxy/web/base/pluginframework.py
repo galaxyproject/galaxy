@@ -588,6 +588,9 @@ class PageServingPluginManager( PluginManager ):
             ``plugin.template_path``
         :returns:       rendered template
         """
+        if 'plugin_path' not in kwargs:
+            kwargs[ 'plugin_path'] = os.path.abspath( plugin.path )
+
         # defined here to be overridden
         return trans.fill_template( template_filename, template_lookup=plugin.template_lookup, **kwargs )
 
