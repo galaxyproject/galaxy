@@ -94,7 +94,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td></td>');
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
     tmpl_array.push('  <td>');
-    tmpl_array.push('    <% if (content_item.get("can_manage")) { %><a href="#/folders/<%- content_item.get("folder_id") %>/permissions"><button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permissions-folder-btn show_on_hover" title="Manage permissions" style="display:none;"><span class="fa fa-group"></span></button></a><% } %>');
+    tmpl_array.push('    <% if (content_item.get("can_manage")) { %><a href="#/folders/<%- content_item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permissions-folder-btn show_on_hover" title="Manage permissions" style="display:none;"><span class="fa fa-group"></span></button></a><% } %>');
     tmpl_array.push('  </td>');
     tmpl_array.push('</tr>');
 

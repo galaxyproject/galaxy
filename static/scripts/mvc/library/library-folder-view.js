@@ -255,7 +255,7 @@ var FolderView = Backbone.View.extend({
     
 
     tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <a href="#/folders/<%= folder.get("id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to the folder contents" class="btn btn-default primary-button" type="button"><span class="fa fa-list"></span> Parent folder</span></button></a>');
+    tmpl_array.push('   <a href="#/folders/<%= folder.get("parent_id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to the parent folder" class="btn btn-default primary-button" type="button"><span class="fa fa-caret-left fa-lg"></span> Parent folder</span></button></a>');
     tmpl_array.push('  </div>');
 
     tmpl_array.push('<h1>Folder: <%= _.escape(folder.get("name")) %></h1>');
@@ -284,7 +284,7 @@ var FolderView = Backbone.View.extend({
     tmpl_array.push('<div id="modify_perm" class="modify_perm roles-selection"></div>');
     tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify this folder (name, etc.).</div>');
 
-    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
+    tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
 
     tmpl_array.push('</div>');
 
