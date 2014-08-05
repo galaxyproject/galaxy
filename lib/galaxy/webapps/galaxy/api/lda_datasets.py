@@ -111,7 +111,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         scope = kwd.get( 'scope', None )
 
         if scope == 'current' or scope is None:
-            return self.get_current_roles( trans, library_dataset )
+            return self._get_current_roles( trans, library_dataset )
 
         #  Return roles that are available to select.
         elif scope == 'available':
@@ -138,7 +138,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         else:
             raise exceptions.RequestParameterInvalidException( "The value of 'scope' parameter is invalid. Alllowed values: current, available" )
 
-    def get_current_roles( self, trans, library_dataset):
+    def _get_current_roles( self, trans, library_dataset):
         """
         Find all roles currently connected to relevant permissions 
         on the library dataset and the underlying dataset.
@@ -293,9 +293,9 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         else:
             raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
-                                'Allowed values are: "remove_restrictions", "make_private", "set_dataset_access_roles"' )
+                                'Allowed values are: "remove_restrictions", "make_private", "set_permissions"' )
 
-        return self.get_current_roles( trans, library_dataset )
+        return self._get_current_roles( trans, library_dataset )
 
     def _load_role( self, trans, role_name ):
         """

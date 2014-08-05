@@ -9,7 +9,7 @@ function(
         mod_select
         ) {
 
-var LibraryView = Backbone.View.extend({
+var FolderView = Backbone.View.extend({
   el: '#center',
 
   model: null,
@@ -25,13 +25,13 @@ var LibraryView = Backbone.View.extend({
   initialize: function(options){
     this.options = _.extend(this.options, options);
     if (this.options.id){
-      this.fetchLibrary();
+      this.fetchFolder();
     }
   },
 
-  fetchLibrary: function(options){
+  fetchFolder: function(options){
     this.options = _.extend(this.options, options);
-    this.model = new mod_library_model.Library({id:this.options.id});
+    this.model = new mod_library_model.FolderAsModel({id:this.options.id});
     var that = this;
     this.model.fetch({
       success: function() {
@@ -54,12 +54,13 @@ var LibraryView = Backbone.View.extend({
   render: function(options){
     $(".tooltip").remove();
     this.options = _.extend(this.options, options);
-    var template = this.templateLibrary();
+    var template = this.templateFolder();
     this.$el.html(template({item: this.model}));
+    $(".peek").html(this.model.get("peek"));
     $("#center [data-toggle]").tooltip();
   },
 
-  shareDataset: function(){
+  shareFolder: function(){
     mod_toastr.info('Feature coming soon.');
   },
 
@@ -71,26 +72,19 @@ var LibraryView = Backbone.View.extend({
     this.options = _.extend(this.options, options);
     $(".tooltip").remove();
 
-    if (this.options.fetched_permissions !== undefined){
-      if (this.options.fetched_permissions.access_library_role_list.length === 0){
-        this.model.set({is_unrestricted:true});
-      } else{
-        this.model.set({is_unrestricted:false});
-      }
-    }
     var is_admin = false;
     if (Galaxy.currUser){
       is_admin = Galaxy.currUser.isAdmin();
     } 
-    var template = this.templateLibraryPermissions();
-    this.$el.html(template({library: this.model, is_admin:is_admin}));
+    var template = this.templateFolderPermissions();
+    this.$el.html(template({folder: this.model, is_admin:is_admin}));
 
     var self = this;
     if (this.options.fetched_permissions === undefined){
-      $.get( "/api/libraries/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      $.get( "/api/folders/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
       }).fail(function(){
-          mod_toastr.error('An error occurred while fetching library permissions. :(');
+          mod_toastr.error('An error occurred while fetching folder permissions. :(');
       });
     } else {
       this.prepareSelectBoxes({});
@@ -114,19 +108,16 @@ var LibraryView = Backbone.View.extend({
     var fetched_permissions = this.options.fetched_permissions;
     var self = this;
 
-    var selected_access_library_roles = this._serializeRoles(fetched_permissions.access_library_role_list);
     var selected_add_item_roles = this._serializeRoles(fetched_permissions.add_library_item_role_list);
-    var selected_manage_library_roles = this._serializeRoles(fetched_permissions.manage_library_role_list);
-    var selected_modify_library_roles = this._serializeRoles(fetched_permissions.modify_library_role_list);
+    var selected_manage_folder_roles = this._serializeRoles(fetched_permissions.manage_folder_role_list);
+    var selected_modify_folder_roles = this._serializeRoles(fetched_permissions.modify_folder_role_list);
 
-    self.accessSelectObject = new mod_select.View(this._createSelectOptions(this, 'access_perm', selected_access_library_roles, true));
     self.addSelectObject = new mod_select.View(this._createSelectOptions(this, 'add_perm', selected_add_item_roles, false));
-    self.manageSelectObject = new mod_select.View(this._createSelectOptions(this, 'manage_perm', selected_manage_library_roles, false));
-    self.modifySelectObject = new mod_select.View(this._createSelectOptions(this, 'modify_perm', selected_modify_library_roles, false));
+    self.manageSelectObject = new mod_select.View(this._createSelectOptions(this, 'manage_perm', selected_manage_folder_roles, false));
+    self.modifySelectObject = new mod_select.View(this._createSelectOptions(this, 'modify_perm', selected_modify_folder_roles, false));
   },
 
-  _createSelectOptions: function(self, id, init_data, is_library_access){
-    is_library_access = is_library_access === true ? is_library_access : false;
+  _createSelectOptions: function(self, id, init_data){
     var select_options = {
       minimumInputLength: 0,
       css: id,
@@ -134,7 +125,7 @@ var LibraryView = Backbone.View.extend({
       placeholder: 'Click to select a role',
       container: self.$el.find('#' + id),
       ajax: {
-          url: "/api/libraries/" + self.id + "/permissions?scope=available&is_library_access=" + is_library_access,
+          url: "/api/folders/" + self.id + "/permissions?scope=available",
           dataType: 'json',
           quietMillis: 100,
           data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -190,30 +181,6 @@ var LibraryView = Backbone.View.extend({
     window.prompt("Copy to clipboard: Ctrl+C, Enter", href);
   },
 
-  makeDatasetPrivate: function(){
-    var self = this;
-    $.post("/api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
-      self.model.set({is_unrestricted:false});
-      self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('The dataset is now private to you');
-    }).fail(function(){
-      mod_toastr.error('An error occurred while making dataset private :(');
-    });
-  },
-
-  removeDatasetRestrictions: function(){
-    var self = this;
-    $.post("/api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
-    .done(function(fetched_permissions) {
-      self.model.set({is_unrestricted:true});
-      self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('Access to this dataset is now unrestricted');
-    })
-    .fail(function(){
-      mod_toastr.error('An error occurred while making dataset unrestricted :(');
-    });
-  },
-
   _extractIds: function(roles_list){
     ids_list = [];
     for (var i = roles_list.length - 1; i >= 0; i--) {
@@ -224,23 +191,22 @@ var LibraryView = Backbone.View.extend({
   savePermissions: function(event){
     var self = this;
 
-    var access_ids = this._extractIds(this.accessSelectObject.$el.select2('data'));
     var add_ids = this._extractIds(this.addSelectObject.$el.select2('data'));
     var manage_ids = this._extractIds(this.manageSelectObject.$el.select2('data'));
     var modify_ids = this._extractIds(this.modifySelectObject.$el.select2('data'));
 
-    $.post("/api/libraries/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
+    $.post("/api/folders/" + self.id + "/permissions?action=set_permissions", { 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
       mod_toastr.success('Permissions saved');
     })
     .fail(function(){
-      mod_toastr.error('An error occurred while setting library permissions :(');
+      mod_toastr.error('An error occurred while setting folder permissions :(');
     })
   },
 
-  templateLibrary : function(){
+  templateFolder : function(){
     var tmpl_array = [];
     // CONTAINER START
     tmpl_array.push('<div class="library_style_container">');
@@ -282,21 +248,21 @@ var LibraryView = Backbone.View.extend({
     return _.template(tmpl_array.join(''));
   },
 
-  templateLibraryPermissions : function(){
+  templateFolderPermissions : function(){
     var tmpl_array = [];
     // CONTAINER START
     tmpl_array.push('<div class="library_style_container">');
     
 
     tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <a href="#"><button data-toggle="tooltip" data-placement="top" title="Go back to the list of Libraries" class="btn btn-default primary-button" type="button"><span class="fa fa-list"></span> Libraries</span></button></a>');
+    tmpl_array.push('   <a href="#/folders/<%= folder.get("id") %>"><button data-toggle="tooltip" data-placement="top" title="Go back to the folder contents" class="btn btn-default primary-button" type="button"><span class="fa fa-list"></span> Parent folder</span></button></a>');
     tmpl_array.push('  </div>');
 
-    tmpl_array.push('<h1>Library: <%= _.escape(library.get("name")) %></h1>');
+    tmpl_array.push('<h1>Folder: <%= _.escape(folder.get("name")) %></h1>');
 
     tmpl_array.push('<div class="alert alert-warning">');
     tmpl_array.push('<% if (is_admin) { %>');
-    tmpl_array.push('You are logged in as an <strong>administrator</strong> therefore you can manage any library on this Galaxy instance. Please make sure you understand the consequences.');
+    tmpl_array.push('You are logged in as an <strong>administrator</strong> therefore you can manage any folder on this Galaxy instance. Please make sure you understand the consequences.');
     tmpl_array.push('<% } else { %>');
     tmpl_array.push('You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.');
     tmpl_array.push('<% }%>');
@@ -304,23 +270,19 @@ var LibraryView = Backbone.View.extend({
     
     tmpl_array.push('<div class="dataset_table">');
 
-    tmpl_array.push('<h2>Library permissions</h2>');
+    tmpl_array.push('<h2>Folder permissions</h2>');
 
-    tmpl_array.push('<h4>Roles that can access the library</h4>');
-    tmpl_array.push('<div id="access_perm" class="access_perm roles-selection"></div>');
-    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can access this library. If there are no access roles set on the library it is considered <strong>unrestricted</strong>.</div>');
-    
-    tmpl_array.push('<h4>Roles that can manage permissions on this library</h4>');
+    tmpl_array.push('<h4>Roles that can manage permissions on this folder</h4>');
     tmpl_array.push('<div id="manage_perm" class="manage_perm roles-selection"></div>');
-    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions on this library (includes giving access).</div>');
+    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can manage permissions on this folder.</div>');
 
-    tmpl_array.push('<h4>Roles that can add items to this library</h4>');
+    tmpl_array.push('<h4>Roles that can add items to this folder</h4>');
     tmpl_array.push('<div id="add_perm" class="add_perm roles-selection"></div>');
-    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can add items to this library (folders and datasets).</div>');
+    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can add items to this folder (folders and datasets).</div>');
 
-    tmpl_array.push('<h4>Roles that can modify this library</h4>');
+    tmpl_array.push('<h4>Roles that can modify this folder</h4>');
     tmpl_array.push('<div id="modify_perm" class="modify_perm roles-selection"></div>');
-    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify this library (name, synopsis, etc.).</div>');
+    tmpl_array.push('<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify this folder (name, etc.).</div>');
 
     tmpl_array.push('<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button"><span class="fa fa-floppy-o"></span> Save</span></button>');
 
@@ -335,7 +297,7 @@ var LibraryView = Backbone.View.extend({
 });
 
 return {
-    LibraryView: LibraryView
+    FolderView: FolderView
 };
 
 });

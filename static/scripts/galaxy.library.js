@@ -13,7 +13,8 @@ define([
     "mvc/library/library-librarytoolbar-view",
     "mvc/library/library-foldertoolbar-view",
     "mvc/library/library-dataset-view",
-    "mvc/library/library-library-view"
+    "mvc/library/library-library-view",
+    "mvc/library/library-folder-view"
     ],
 function(mod_masthead,
          mod_utils,
@@ -25,7 +26,8 @@ function(mod_masthead,
          mod_librarytoolbar_view,
          mod_foldertoolbar_view,
          mod_library_dataset_view,
-         mod_library_library_view
+         mod_library_library_view,
+         mod_library_folder_view
          ) {
 
 // ============================================================================
@@ -40,6 +42,7 @@ var LibraryRouter = Backbone.Router.extend({
   routes: {
     ""                                                     : "libraries",
     "library/:library_id/permissions"                      : "library_permissions",
+    "folders/:folder_id/permissions"                       : "folder_permissions",
     "folders/:id"                                          : "folder_content",
     "folders/:folder_id/datasets/:dataset_id"              : "dataset_detail",
     "folders/:folder_id/datasets/:dataset_id/permissions"  : "dataset_permissions",
@@ -125,10 +128,17 @@ var GalaxyLibrary = Backbone.View.extend({
        });
 
        this.library_router.on('route:library_permissions', function(library_id){
-          if (Galaxy.libraries.LibraryView){
+          if (Galaxy.libraries.libraryView){
             Galaxy.libraries.libraryView.$el.unbind('click');
           }
           Galaxy.libraries.libraryView = new mod_library_library_view.LibraryView({id: library_id, show_permissions: true});
+       });
+
+       this.library_router.on('route:folder_permissions', function(folder_id){
+          if (Galaxy.libraries.folderView){
+            Galaxy.libraries.folderView.$el.unbind('click');
+          }
+          Galaxy.libraries.folderView = new mod_library_folder_view.FolderView({id: folder_id, show_permissions: true});
        });
 
     Backbone.history.start({pushState: false});

@@ -32,10 +32,11 @@ class LibrariesController( BaseAPIController ):
         .. seealso:: :attr:`galaxy.model.Library.dict_collection_visible_keys`
 
         """
+        is_admin = trans.user_is_admin()
         query = trans.sa_session.query( trans.app.model.Library )
         deleted = kwd.get( 'deleted', 'missing' )
         try:
-            if not trans.user_is_admin():
+            if not is_admin:
                 # non-admins can't see deleted libraries
                 deleted = False
             else:
@@ -48,15 +49,17 @@ class LibrariesController( BaseAPIController ):
             # given value wasn't true/false but the user is admin so we don't filter on this parameter at all
             pass
 
-        current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
-        library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-        restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
-                                                             .filter( trans.model.LibraryPermissions.table.c.action == library_access_action )
-                                                             .distinct() ) ]
-        accessible_restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
-                                              .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
-                                                             trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ) ]
-        query = query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ), trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
+        if not is_admin:
+            # non-admins can see only allowed and public libraries
+            current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
+            library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
+            restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
+                                                                 .filter( trans.model.LibraryPermissions.table.c.action == library_access_action )
+                                                                 .distinct() ) ]
+            accessible_restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
+                                                  .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
+                                                                 trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ) ]
+            query = query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ), trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
         libraries = []
         for library in query:
             item = library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )
@@ -287,7 +290,7 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to access permissions of this library.' )
 
         scope = kwd.get( 'scope', None )
-        is_library_access = kwd.get( 'is_library_access', False )
+        is_library_access = util.string_as_bool( kwd.get( 'is_library_access', False ) )
 
         if scope == 'current' or scope is None:
             return self._get_current_roles( trans, library )
@@ -450,11 +453,10 @@ class LibrariesController( BaseAPIController ):
             permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_MANAGE : valid_manage_roles } )
             permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY : valid_modify_roles } )
 
-            # trans.app.security_agent.set_library_item_permission( library, permissions )
             trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
         else:
             raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
-                                'Allowed values are: "remove_restrictions", set_dataset_access_roles"' )
+                                'Allowed values are: "remove_restrictions", set_permissions"' )
 
         return self._get_current_roles( trans, library )
 

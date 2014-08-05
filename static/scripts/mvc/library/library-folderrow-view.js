@@ -82,7 +82,7 @@ var FolderRowView = Backbone.View.extend({
   templateRowFolder: function() {
     tmpl_array = [];
 
-    tmpl_array.push('<tr class="folder_row light" id="<%- content_item.id %>">');
+    tmpl_array.push('<tr class="folder_row light library-row" id="<%- content_item.id %>">');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Folder" class="fa fa-folder-o"></span>');
     tmpl_array.push('  </td>');
@@ -93,7 +93,9 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td>folder</td>');
     tmpl_array.push('  <td></td>');
     tmpl_array.push('  <td><%= _.escape(content_item.get("update_time")) %></td>'); // time updated
-    tmpl_array.push('  <td></td>');
+    tmpl_array.push('  <td>');
+    tmpl_array.push('    <% if (content_item.get("can_manage")) { %><a href="#/folders/<%- content_item.get("folder_id") %>/permissions"><button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permissions-folder-btn show_on_hover" title="Manage permissions" style="display:none;"><span class="fa fa-group"></span></button></a><% } %>');
+    tmpl_array.push('  </td>');
     tmpl_array.push('</tr>');
 
     return _.template(tmpl_array.join(''));
@@ -102,7 +104,7 @@ var FolderRowView = Backbone.View.extend({
   templateRowFile: function(){
     tmpl_array = [];
 
-    tmpl_array.push('<tr class="dataset_row light dataset" id="<%- content_item.id %>">');
+    tmpl_array.push('<tr class="dataset_row light library-row" id="<%- content_item.id %>">');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
     tmpl_array.push('  </td>');
@@ -125,7 +127,7 @@ var FolderRowView = Backbone.View.extend({
   templateRowDeletedFile: function(){
     tmpl_array = [];
 
-    tmpl_array.push('<tr class="active deleted_dataset dataset" id="<%- content_item.id %>">');
+    tmpl_array.push('<tr class="active deleted_dataset" id="<%- content_item.id %>">');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
     tmpl_array.push('  </td>');

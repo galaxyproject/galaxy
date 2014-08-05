@@ -720,7 +720,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('   <% }); %>');
     tmpl_array.push('</ol>');
 
-    tmpl_array.push('<h1>Permissions: <%= _.escape(item.get("name")) %></h1>');
+    tmpl_array.push('<h1>Dataset: <%= _.escape(item.get("name")) %></h1>');
 
     tmpl_array.push('<div class="alert alert-warning">');
     tmpl_array.push('<% if (is_admin) { %>');

@@ -53,6 +53,11 @@ var LibraryListView = Backbone.View.extend({
      *  or from a given array of library models,
      *  or renders an empty list in case no data is given. */
     render: function (options) {
+        /**
+         * need to hide manually because of the element removal
+         * bug in tooltip
+         */
+        $(".tooltip").hide();
         var template = this.templateLibraryList();
         var libraries_to_render = null;
         var include_deleted = Galaxy.libraries.preferences.get('with_deleted');

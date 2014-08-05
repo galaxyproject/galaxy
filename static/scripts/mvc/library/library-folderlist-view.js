@@ -88,6 +88,7 @@ var FolderListView = Backbone.View.extend({
   render: function (options) {
     this.options = _.defaults(this.options, options);
     var template = this.templateFolder();
+    $(".tooltip").hide();
 
     // TODO move to server
     // find the upper id in the full path
@@ -116,7 +117,7 @@ var FolderListView = Backbone.View.extend({
     var fetched_metadata = this.folderContainer.attributes.metadata;
     fetched_metadata.contains_file = typeof this.collection.findWhere({type: 'file'}) !== 'undefined';
     Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
-    $('.dataset').hover(function() {
+    $('.library-row').hover(function() {
       $(this).find('.show_on_hover').show();
     }, function () {
       $(this).find('.show_on_hover').hide();
@@ -156,7 +157,7 @@ var FolderListView = Backbone.View.extend({
    * @param {Item or FolderAsModel} model of the view that will be rendered
    */
   renderOne: function(model){
-    if (model.get('data_type') !== 'folder'){
+    if (model.get('type') !== 'folder'){
         this.options.contains_file = true;
         // model.set('readable_size', this.size_to_string(model.get('file_size')));
       }
@@ -168,7 +169,7 @@ var FolderListView = Backbone.View.extend({
 
     this.$el.find('#first_folder_item').after(rowView.el);
 
-    $('.dataset').hover(function() {
+    $('.library-row').hover(function() {
       $(this).find('.show_on_hover').show();
     }, function () {
       $(this).find('.show_on_hover').hide();

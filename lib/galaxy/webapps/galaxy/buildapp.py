@@ -325,6 +325,18 @@ def populate_api_routes( webapp, app ):
                             'folders',
                             path_prefix='/api' )
 
+    webapp.mapper.connect( 'show_folder_permissions',
+                           '/api/folders/:encoded_folder_id/permissions',
+                           controller='folders',
+                           action='get_permissions',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'set_folder_permissions',
+                           '/api/folders/:encoded_folder_id/permissions',
+                           controller='folders',
+                           action='set_permissions',
+                           conditions=dict( method=[ "POST" ] ) )
+
     webapp.mapper.resource( 'content',
                             'contents',
                             controller='folder_contents',

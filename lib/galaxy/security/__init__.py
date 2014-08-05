@@ -252,6 +252,8 @@ class GalaxyRBACAgent( RBACAgent ):
             is_public_item = True
         elif isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ):
             is_public_item = True
+        elif isinstance( item, self.model.LibraryFolder ):
+            is_public_item = True
         else:
             is_public_item = False
 
@@ -289,7 +291,8 @@ class GalaxyRBACAgent( RBACAgent ):
                                                        self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                         .order_by( self.model.Role.table.c.name ):
                 roles.append( role )
-        # User is not admin and item is not public
+        #  User is not admin and item is not public
+        #  User will see all the roles derived from the access roles on the item
         else:
             # If item has roles associated with the access permission, we need to start with them.
             access_roles = item.get_access_roles( trans )
