@@ -171,4 +171,10 @@ on protein function using the SIFT algorithm.
 Nat Protoc. 4(7):1073-81. Epub 2009 Jun 25.
 
   </help>
+  <citations>
+    <citation type="doi">10.1101/gr.176601</citation>
+    <citation type="doi">10.1101/gr.212802</citation>
+    <citation type="doi">10.1093/nar/gkg509</citation>
+    <citation type="doi">10.1038/nprot.2009.86</citation>
+  </citations>
 </tool>

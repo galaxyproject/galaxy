@@ -1,5 +1,8 @@
 <tool id="GeneBed_Maf_Fasta2" name="Stitch Gene blocks" version="1.0.1">
   <description>given a set of coding exon intervals</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
   <command interpreter="python">
     #if $maf_source_type.maf_source == "user" #interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_file --mafIndex=$maf_source_type.maf_file.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafSourceType=$maf_source_type.maf_source --geneBED --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
     #else                                     #interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_identifier --interval_file=$input1 --output_file=$out_file1 --mafSourceType=$maf_source_type.maf_source  --geneBED --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
@@ -87,12 +90,7 @@ The coding sequence of genes are usually composed of several coding exons. Each 
   * stitches blocks together and resolves overlaps based on alignment score;
   * outputs alignments in FASTA format.
 
-------
-
-**Citation**
-
-If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
-
-
-  </help>
+@HELP_CITATIONS@
+    </help>
+    <expand macro="citations" />
 </tool>

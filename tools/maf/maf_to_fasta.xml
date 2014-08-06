@@ -1,5 +1,8 @@
 <tool id="MAF_To_Fasta1" name="MAF to FASTA" version="1.0.1">
   <description>Converts a MAF formatted file to FASTA format</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
   <command interpreter="python">
     #if $fasta_target_type.fasta_type == "multiple" #maf_to_fasta_multiple_sets.py $input1 $out_file1 $fasta_target_type.species $fasta_target_type.complete_blocks
     #else                                           #maf_to_fasta_concat.py $fasta_target_type.species $input1 $out_file1
@@ -188,12 +191,7 @@ will be converted to (**note** that the second MAF block, which does not have mm
    - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line; 
    - An "e" line containing information about the size of the gap between the alignments that span the current block.
 
-------
-
-**Citation**
-
-If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
-
-
-  </help>
+@HELP_CITATIONS@
+    </help>
+    <expand macro="citations" />
 </tool>

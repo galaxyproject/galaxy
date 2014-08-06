@@ -1,5 +1,8 @@
 <tool id="vcf_to_maf_customtrack1" name="VCF to MAF Custom Track">
   <description>for display at UCSC</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
   <command interpreter="python">vcf_to_maf_customtrack.py '$out_file1'
     #if $vcf_source_type.vcf_file
     '${vcf_source_type.vcf_file[0].vcf_input.dbkey}'
@@ -121,12 +124,8 @@ Results in the following MAF custom track::
   s CHB+JPT_1.5       0 1 +       1 *------ 
   s CHB+JPT_2.5       0 7 +       7 *GGA*** 
   
-------
-
-**Citation**
-
-If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
-
+@HELP_CITATIONS@
     </help>
+    <expand macro="citations" />
 </tool>
 

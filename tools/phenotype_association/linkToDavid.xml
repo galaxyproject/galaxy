@@ -107,4 +107,8 @@ DAVID: database for annotation, visualization, and integrated discovery.
 Genome Biol. 4(5):P3. Epub 2003 Apr 3.
 
   </help>
+  <citations>
+    <citation type="doi">10.1038/nprot.2008.211</citation>
+    <citation type="doi">10.1186/gb-2003-4-5-p3</citation>
+  </citations>
 </tool>

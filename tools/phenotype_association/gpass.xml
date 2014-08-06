@@ -109,4 +109,7 @@ Fast and accurate significance approximation for genome-wide association studies
 Submitted.
 
   </help>
+  <citations>
+    <citation type="doi">10.1198/jasa.2011.ap10657</citation>
+  </citations>
 </tool>
