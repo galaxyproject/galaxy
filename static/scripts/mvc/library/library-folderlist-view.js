@@ -287,10 +287,6 @@ var FolderListView = Backbone.View.extend({
     $row.find('.fa-file').removeClass('fa-file').addClass('fa-file-o');
   },
 
-// MMMMMMMMMMMMMMMMMM
-// === TEMPLATES ====
-// MMMMMMMMMMMMMMMMMM
-
   templateFolder : function (){
       var tmpl_array = [];
 
@@ -330,7 +326,7 @@ var FolderListView = Backbone.View.extend({
 
       tmpl_array.push('   </tbody>');
       tmpl_array.push('</table>');
-      tmpl_array.push('<div class="empty-folder-message" style="display:none;">This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity">library security wikipage</a> or visit the <a href="https://biostar.usegalaxy.org/">Galaxy support site</a>.</div>');
+      tmpl_array.push('<div class="empty-folder-message" style="display:none;">This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">library security wikipage</a> or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.</div>');
 
       return _.template(tmpl_array.join(''));
   }

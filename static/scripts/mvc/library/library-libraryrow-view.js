@@ -118,7 +118,6 @@ var LibraryRowView = Backbone.View.extend({
 
   /* User clicked the 'cancel' button so we render normal rowView */
   cancel_library_modification: function(){
-    mod_toastr.info('Modifications canceled');
     this.edit_mode = false;
     this.repaint();
   },
@@ -238,12 +237,31 @@ var LibraryRowView = Backbone.View.extend({
     tmpl_array.push('                 <% } else { %>');
     tmpl_array.push('                   <td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>');
     tmpl_array.push('                 <% } %>');
-    tmpl_array.push('                 <td><%= _.escape(library.get("description")) %></td>');
-    tmpl_array.push('                 <td><%= _.escape(library.get("synopsis")) %></td>');
+
+    tmpl_array.push('                 <% if(library.get("description")) { %>');
+    tmpl_array.push('                   <% if( (library.get("description")).length> 80 ) { %>');
+    tmpl_array.push('                     <td data-toggle="tooltip" data-placement="bottom" title="<%= _.escape(library.get("description")) %>"><%= _.escape(library.get("description")).substring(0, 80) + "..." %></td>');
+    tmpl_array.push('                   <% } else { %>');
+    tmpl_array.push('                     <td><%= _.escape(library.get("description"))%></td>');
+    tmpl_array.push('                   <% } %>');
+    tmpl_array.push('                 <% } else { %>');
+    tmpl_array.push('                   <td></td>');
+    tmpl_array.push('                 <% } %>');
+
+    tmpl_array.push('                 <% if(library.get("synopsis")) { %>');
+    tmpl_array.push('                   <% if( (library.get("synopsis")).length> 120 ) { %>');
+    tmpl_array.push('                     <td data-toggle="tooltip" data-placement="bottom" title="<%= _.escape(library.get("synopsis")) %>"><%= _.escape(library.get("synopsis")).substring(0, 120) + "..." %></td>');
+    tmpl_array.push('                   <% } else { %>');
+    tmpl_array.push('                     <td><%= _.escape(library.get("synopsis"))%></td>');
+    tmpl_array.push('                   <% } %>');
+    tmpl_array.push('                 <% } else { %>');
+    tmpl_array.push('                   <td></td>');
+    tmpl_array.push('                 <% } %>');
+
     tmpl_array.push('               <% } else if(edit_mode){ %>');
-    tmpl_array.push('                 <td><input type="text" class="form-control input_library_name" placeholder="name" value="<%- library.get("name") %>"></td>');
-    tmpl_array.push('                 <td><input type="text" class="form-control input_library_description" placeholder="description" value="<%- library.get("description") %>"></td>');
-    tmpl_array.push('                 <td><input type="text" class="form-control input_library_synopsis" placeholder="synopsis" value="<%- library.get("synopsis") %>"></td>');
+    tmpl_array.push('                 <td><textarea rows="4" class="form-control input_library_name" placeholder="name" ><%- library.get("name") %></textarea></td>');
+    tmpl_array.push('                 <td><textarea rows="4"  class="form-control input_library_description" placeholder="description" ><%- library.get("description") %></textarea></td>');
+    tmpl_array.push('                 <td><textarea rows="4"  class="form-control input_library_synopsis" placeholder="synopsis" ><%- library.get("synopsis") %></textarea></td>');
     tmpl_array.push('               <% } %>');
     tmpl_array.push('               <td class="right-center">');
     tmpl_array.push('                   <% if( (library.get("public")) && (library.get("deleted") === false) ) { %>');
