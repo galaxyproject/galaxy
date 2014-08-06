@@ -94,7 +94,7 @@ var CitationView = Backbone.View.extend({
         return info + ".";
     },
     _asSentence: function(str) {
-        return str ? str + ". " : "";
+        return (str && str.trim()) ? str + ". " : "";
     }
 });
 
@@ -120,7 +120,7 @@ var CitationListView = Backbone.View.extend({
     },
 
     render: function() {
-        this.$el.html(this.citationsElement);
+        this.$el.html(this.citationsElement());
         this.collection.each(function( item ){
             this.renderCitation( item );
         }, this);
@@ -142,29 +142,40 @@ var CitationListView = Backbone.View.extend({
         this.$(".citations-formatted").show();
     },
 
-    citationsElement: [
-        '<div class="toolForm">',
-            '<div class="toolFormTitle">',
-                _l("Citations"),
-                ' <i class="fa fa-pencil-square-o citations-to-bibtex" title="Select all as BibTeX."></i>',
-                ' <i class="fa fa-times citations-to-formatted" title="Return to formatted citation list."></i>',
-            '</div>',
-            '<div class="toolFormBody" style="padding:5px 10px">',
-            '<div style="padding:5px 10px">',
-            '<b>Warning: This is a experimental feature.</b> Most Galaxy tools will not annotate',
-            ' citations explicitly at this time. When writing up your analysis, please manually',
-            ' review your histories and find all references',
-            ' that should be cited in order to completely describe your work. Also, please remember to',
-            ' <a href="https://wiki.galaxyproject.org/CitingGalaxy">cite Galaxy</a>.',
-            '</div>',
-            '<span class="citations-formatted"></span>',
-            '</div>',
-            '<div class="citations-bibtex toolFormBody" style="padding:5px 10px">',
-            '<textarea style="width: 100%; height: 500px;" class="citations-bibtex-text"></textarea>',
-            '</div>',
-        '</div>'
-    ].join( '' )
+    partialWarningElement: function() {
+        if( this.collection.partial ) {
+            return [
+                '<div style="padding:5px 10px">',
+                '<b>Warning: This is a experimental feature.</b> Most Galaxy tools will not annotate',
+                ' citations explicitly at this time. When writing up your analysis, please manually',
+                ' review your histories and find all references',
+                ' that should be cited in order to completely describe your work. Also, please remember to',
+                ' <a href="https://wiki.galaxyproject.org/CitingGalaxy">cite Galaxy</a>.',
+                '</div>',
+            ].join('');
+        } else {
+            return '';
+        }
+    },
 
+    citationsElement: function() {
+        return [
+            '<div class="toolForm">',
+                '<div class="toolFormTitle">',
+                    _l("Citations"),
+                    ' <i class="fa fa-pencil-square-o citations-to-bibtex" title="Select all as BibTeX."></i>',
+                    ' <i class="fa fa-times citations-to-formatted" title="Return to formatted citation list."></i>',
+                '</div>',
+                '<div class="toolFormBody" style="padding:5px 10px">',
+                this.partialWarningElement(),
+                '<span class="citations-formatted"></span>',
+                '</div>',
+                '<div class="citations-bibtex toolFormBody" style="padding:5px 10px">',
+                '<textarea style="width: 100%; height: 500px;" class="citations-bibtex-text"></textarea>',
+                '</div>',
+            '</div>'
+        ].join( '' );
+    }
 });
 
 //==============================================================================
