@@ -118,6 +118,7 @@ var LibraryRowView = Backbone.View.extend({
 
   /* User clicked the 'cancel' button so we render normal rowView */
   cancel_library_modification: function(){
+    // mod_toastr.info('Modifications canceled');
     this.edit_mode = false;
     this.repaint();
   },
@@ -185,6 +186,7 @@ var LibraryRowView = Backbone.View.extend({
         row_view.edit_mode = false;
         if (Galaxy.libraries.preferences.get('with_deleted') === false){
           $('.tooltip').hide();
+          row_view.repaint(library);
           row_view.$el.remove();
         } else if (Galaxy.libraries.preferences.get('with_deleted') === true){
           row_view.repaint(library);
