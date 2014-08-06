@@ -1021,7 +1021,7 @@ var TracksterView = Backbone.View.extend({
             d.current_x = d.offsetX;
             var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
             view.move_delta(delta_chrom);
-        })
+        });
         /*
         FIXME: Do not do this for now because it's too jittery. Some kind of gravity approach is 
         needed here because moving left/right should be difficult.
@@ -1600,7 +1600,7 @@ var TracksterTool = tools_mod.Tool.extend({
         // Restore tool visibility from state; default to hidden.
         var hidden = true;
         if (options.tool_state !== undefined && options.tool_state.hidden !== undefined) {
-            hidden = options.tool_state.hidden
+            hidden = options.tool_state.hidden;
         }
         this.set('hidden', hidden);
 
@@ -2756,22 +2756,22 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.tiles_div.children().addClass("remove");
 
         var 
+            // Tile width in bases.
+            tile_width = Math.floor(TILE_SIZE * resolution),
             // Index of first tile that overlaps visible region.
-            tile_index = Math.floor( low / (resolution * TILE_SIZE) ),
-            // Base that first tile starts with.
-            tile_low = Math.floor(tile_index * TILE_SIZE * resolution),
+            tile_index = Math.floor(low / tile_width),
             tile_region,
             tile_promise,
             tile_promises = [],
             tiles = [];
         // Draw tiles.
-        while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
+        while ( (tile_index * tile_width) < high ) {
             // Get tile region.
             tile_region = new visualization.GenomeRegion({
                 chrom: this.view.chrom,
-                start: tile_low,
+                start: tile_index * tile_width,
                 // Tile high cannot be larger than view.max_high, which the chromosome length.
-                end: Math.min( tile_low + Math.ceil( TILE_SIZE * resolution ), this.view.max_high )
+                end: Math.min( (tile_index + 1) * tile_width, this.view.max_high)
             });
             tile_promise = this.draw_helper(tile_region, w_scale, options);
             tile_promises.push(tile_promise);
@@ -2781,7 +2781,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
             // Go to next tile.
             tile_index += 1;
-            tile_low = tile_region.get('end');
         }
         
         // Step (c) for (re)moving tiles when clear_after is false.
