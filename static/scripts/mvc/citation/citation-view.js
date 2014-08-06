@@ -94,7 +94,7 @@ var CitationView = Backbone.View.extend({
         return info + ".";
     },
     _asSentence: function(str) {
-        return str ? str + ". " : "";
+        return (str && str.trim()) ? str + ". " : "";
     }
 });
 
