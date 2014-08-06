@@ -34,7 +34,7 @@ var FolderListView = Backbone.View.extend({
   events: {
     'click #select-all-checkboxes'  : 'selectAll',
     'click .dataset_row'            : 'selectClickedRow',
-    'click .sort-folder-link'       : 'sort_clicked'
+    'click .sort-folder-link'       : 'sortColumnClicked'
   },
 
   // cache of rendered views
@@ -194,7 +194,7 @@ var FolderListView = Backbone.View.extend({
   },
 
   /** User clicked the table heading = he wants to sort stuff */
-  sort_clicked : function(event){
+  sortColumnClicked : function(event){
     event.preventDefault();
     if (this.sort === 'asc'){
         this.sortFolder('name','desc');
@@ -205,6 +205,7 @@ var FolderListView = Backbone.View.extend({
     }
     this.render();
     this.renderAll();
+    this.checkEmptiness();
   },
 
   /**

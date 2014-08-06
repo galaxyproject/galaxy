@@ -53,10 +53,6 @@ var FolderRowView = Backbone.View.extend({
    * Undeletes the dataset on server and renders it again.
    */
   undelete_dataset : function(event){
-    /**
-     * need to hide manually because of the element removal
-     * bug in tooltip
-     */
     $(".tooltip").hide();
     var that = this;
     var dataset_id = $(event.target).closest('tr')[0].id;
