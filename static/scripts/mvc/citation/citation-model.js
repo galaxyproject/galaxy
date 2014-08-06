@@ -37,7 +37,8 @@ var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
 var BaseCitationCollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend( {
     /** root api url */
     urlRoot : galaxy_config.root + 'api',
-    model : Citation
+    partial : true, // Assume some tools in history/workflow may not be properly annotated yet.
+    model : Citation,
 } );
 
 var HistoryCitationCollection = BaseCitationCollection.extend( {
@@ -51,7 +52,8 @@ var ToolCitationCollection = BaseCitationCollection.extend( {
     /** complete api url */
     url : function() {
         return this.urlRoot + '/tools/' + this.tool_id + '/citations';
-    }
+    },
+    partial : false, // If a tool has citations, assume they are complete.
 } );
 
 //==============================================================================
