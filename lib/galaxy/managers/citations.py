@@ -157,8 +157,8 @@ class DoiCitation( BaseCitation ):
 
         if self.raw_bibtex is DoiCitation.BIBTEX_UNSET:
             return """@MISC{%s,
-                DOI = '%s',
-                note = 'Failed to fetch BibTeX for DOI.'
+                DOI = {%s},
+                note = {Failed to fetch BibTeX for DOI.}
             }""" % (self.__doi, self.__doi)
         else:
             return self.raw_bibtex
