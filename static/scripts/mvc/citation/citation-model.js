@@ -18,12 +18,19 @@ var Citation = Backbone.Model.extend( baseMVC.LoggableMixin ).extend( {
         var bibtex = this.attributes.content;
         var entry = new BibtexParser(bibtex).entries[0];
         this.entry = entry;
+        this._fields = {};
+        var rawFields = entry.Fields;
+        for(key in rawFields) {
+            var value = rawFields[ key ];
+            var lowerKey = key.toLowerCase();
+            this._fields[ lowerKey ] = value;
+        }
     },
     entryType: function() {
         return this.entry.EntryType;
     },
     fields: function() {
-        return this.entry.Fields;
+        return this._fields;
     }
 } );
 
