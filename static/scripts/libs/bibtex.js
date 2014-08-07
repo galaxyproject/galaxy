@@ -93,6 +93,7 @@ function BibtexParser(arg0) {
     'booklet'           : 14,
     'masterthesis'      : 15,
     'conference'        : 16
+    ,'data'             : 999 // Galaxy MOD: Handle @data citations coming from figshare.
   }
   /** @private */ this.MACROS_        = {
     'jan'               : 'January',
