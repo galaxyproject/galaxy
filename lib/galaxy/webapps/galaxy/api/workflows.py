@@ -161,8 +161,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         :param  workflow_name:               If from_history_id is set - name of the workflow to create when extracting a workflow from history
         :type   workflow_name:               str
         """
-
-        if len( set( ['workflow_id', 'installed_repository_file', 'from_history_id'] ).intersection( payload ) ) > 1:
+        ways_to_create = set( [
+            'workflow_id',
+            'installed_repository_file',
+            'from_history_id',
+            'shared_workflow_id',
+        ] )
+        if len( ways_to_create.intersection( payload ) ) > 1:
             trans.response.status = 403
             return "Only one among 'workflow_id', 'installed_repository_file', 'from_history_id' must be specified"
 
@@ -192,6 +197,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             item = stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             item[ 'url' ] = url_for( 'workflow', id=item[ 'id' ] )
             return item
+
+        if 'shared_workflow_id' in payload:
+            workflow_id = payload[ 'shared_workflow_id' ]
+            return self.__api_import_shared_workflow( trans, workflow_id, payload )
 
         workflow_id = payload.get( 'workflow_id', None )
         if not workflow_id:
@@ -409,7 +418,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return item
 
     @expose_api
-    def import_shared_workflow(self, trans, payload, **kwd):
+    def import_shared_workflow_deprecated(self, trans, payload, **kwd):
         """
         POST /api/workflows/import
         Import a workflow shared by other users.
@@ -423,6 +432,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         workflow_id = payload.get('workflow_id', None)
         if workflow_id is None:
             raise exceptions.ObjectAttributeMissingException( "Missing required parameter 'workflow_id'." )
+        self.__api_import_shared_workflow( trans, workflow_id, payload )
+
+    def __api_import_shared_workflow( self, trans, workflow_id, payload, **kwd ):
         try:
             stored_workflow = self.get_stored_workflow( trans, workflow_id, check_ownership=False )
         except:
