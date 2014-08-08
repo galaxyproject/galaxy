@@ -75,6 +75,26 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( upload_response, 200 )
         self._assert_user_has_workflow_with_name( "test_import (imported from API)" )
 
+    def test_import_deprecated( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_import_published_deprecated", publish=True )
+        with self._different_user():
+            other_import_response = self.__import_workflow( workflow_id )
+            self._assert_status_code_is( other_import_response, 200 )
+            self._assert_user_has_workflow_with_name( "imported: test_import_published_deprecated (imported from API)")
+
+    def test_not_importable_prevents_import( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_not_importportable" )
+        with self._different_user():
+            other_import_response = self.__import_workflow( workflow_id )
+            self._assert_status_code_is( other_import_response, 403 )
+
+    def test_import_published( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_import_published", publish=True )
+        with self._different_user():
+            other_import_response = self.__import_workflow( workflow_id, deprecated_route=True )
+            self._assert_status_code_is( other_import_response, 200 )
+            self._assert_user_has_workflow_with_name( "imported: test_import_published (imported from API)")
+
     def test_export( self ):
         uploaded_workflow_id = self.workflow_populator.simple_workflow( "test_for_export" )
         download_response = self._get( "workflows/%s/download" % uploaded_workflow_id )
@@ -609,3 +629,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( index_response, 200 )
         names = map( lambda w: w[ "name" ], index_response.json() )
         return names
+
+    def __import_workflow( self, workflow_id, deprecated_route=False ):
+        if deprecated_route:
+            route = "workflows/import"
+            import_data = dict(
+                workflow_id=workflow_id,
+            )
+        else:
+            route = "workflows"
+            import_data = dict(
+                shared_workflow_id=workflow_id,
+            )
+        return self._post( route, import_data )

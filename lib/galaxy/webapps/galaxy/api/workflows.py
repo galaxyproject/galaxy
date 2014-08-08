@@ -12,6 +12,7 @@ from galaxy.managers import histories
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.web.base.controller import UsesHistoryMixin
+from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
@@ -19,7 +20,7 @@ from galaxy.workflow.run import WorkflowRunConfig
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations, SharableMixin):
 
     def __init__( self, app ):
         super( BaseAPIController, self ).__init__( app )
@@ -393,7 +394,22 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
     def __api_import_new_workflow( self, trans, payload, **kwd ):
         data = payload['workflow']
 
-        workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source="API" )
+        publish = util.string_as_bool( payload.get( "publish", False ) )
+        # If 'publish' set, default to importable.
+        importable = util.string_as_bool( payload.get( "importable", publish ) )
+
+        if publish and not importable:
+            raise exceptions.RequestParameterInvalidException( "Published workflow must be importable." )
+
+        from_dict_kwds = dict(
+            source="API",
+            publish=publish,
+        )
+        workflow, missing_tool_tups = self._workflow_from_dict( trans, data, **from_dict_kwds )
+
+        if importable:
+            self._make_item_accessible( trans.sa_session, workflow )
+            trans.sa_session.flush()
 
         # galaxy workflow newly created id
         workflow_id = workflow.id
@@ -433,9 +449,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         except:
             raise exceptions.ObjectNotFound( "Malformed workflow id ( %s ) specified." % workflow_id )
         if stored_workflow.importable is False:
-            raise exceptions.MessageException( 'The owner of this workflow has disabled imports via this link.' )
+            raise exceptions.ItemAccessibilityException( 'The owner of this workflow has disabled imports via this link.' )
         elif stored_workflow.deleted:
-            raise exceptions.MessageException( "You can't import this workflow because it has been deleted." )
+            raise exceptions.ItemDeletionException( "You can't import this workflow because it has been deleted." )
         imported_workflow = self._import_shared_workflow( trans, stored_workflow )
         item = imported_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
         encoded_id = trans.security.encode_id(imported_workflow.id)
