@@ -6,8 +6,9 @@ from __future__ import absolute_import
 
 import logging
 from sqlalchemy import desc, or_
-from galaxy import exceptions, util, web
+from galaxy import exceptions, util
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.managers import histories
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.web.base.controller import UsesHistoryMixin
@@ -20,7 +21,11 @@ log = logging.getLogger(__name__)
 
 class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations):
 
-    @web.expose_api
+    def __init__( self, app ):
+        super( BaseAPIController, self ).__init__( app )
+        self.history_manager = histories.HistoryManager()
+
+    @expose_api
     def index(self, trans, **kwd):
         """
         GET /api/workflows
@@ -54,30 +59,21 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             rval.append(item)
         return rval
 
-    @web.expose_api
+    @expose_api
     def show(self, trans, id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}
 
         Displays information needed to run a workflow from the command line.
         """
-        workflow_id = id
-        try:
-            decoded_workflow_id = trans.security.decode_id(workflow_id)
-        except TypeError:
-            trans.response.status = 400
-            return "Malformed workflow id ( %s ) specified, unable to decode." % str(workflow_id)
-        try:
-            stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).get(decoded_workflow_id)
-            if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin():
-                if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                    trans.response.status = 400
-                    return("Workflow is neither importable, nor owned by or shared with current user")
-        except:
-            trans.response.status = 400
-            return "That workflow does not exist."
+        stored_workflow = self.__get_stored_workflow( trans, id )
+        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                message = "Workflow is neither importable, nor owned by or shared with current user"
+                raise exceptions.ItemAccessibilityException( message )
+
         item = stored_workflow.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
-        item['url'] = url_for('workflow', id=workflow_id)
+        item['url'] = url_for('workflow', id=id)
         item['owner'] = stored_workflow.user.username
         latest_workflow = stored_workflow.latest_workflow
         inputs = {}
@@ -114,7 +110,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         item['steps'] = steps
         return item
 
-    @web.expose_api
+    @expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/workflows
@@ -167,10 +163,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             'from_history_id',
             'shared_workflow_id',
             'workflow',
-        ] )
-        if len( ways_to_create.intersection( payload ) ) > 1:
-            trans.response.status = 403
-            return "Only one among 'workflow_id', 'installed_repository_file', 'from_history_id' must be specified"
+        ] ).intersection( payload )
+        if len( ways_to_create ) == 0:
+            message = "One parameter among - %s - must be specified" % ", ".join( ways_to_create )
+            raise exceptions.RequestParameterMissingException( message )
+
+        if len( ways_to_create ) > 1:
+            message = "Only one parameter among - %s - must be specified" % ", ".join( ways_to_create )
+            raise exceptions.RequestParameterInvalidException( message )
 
         if 'installed_repository_file' in payload:
             workflow_controller = trans.webapp.controllers[ 'workflow' ]
@@ -208,8 +208,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         workflow_id = payload.get( 'workflow_id', None )
         if not workflow_id:
-            trans.response.status = 403
-            return "Either workflow_id, installed_repository_file or from_history_id must be specified"
+            message = "Invalid workflow_id specified."
+            raise exceptions.RequestParameterInvalidException( message )
 
         # Pull other parameters out of payload.
         param_map = payload.get( 'parameters', {} )
@@ -238,34 +238,24 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         history_param = payload.get('history', '')
 
         # Get workflow + accessibility check.
-        stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
-            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                trans.response.status = 400
-                return("Workflow is not owned by or shared with current user")
+        stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
         workflow = stored_workflow.latest_workflow
 
         # Sanity checks.
-        if not workflow:
-            trans.response.status = 400
-            return "Workflow not found."
         if len( workflow.steps ) == 0:
-            trans.response.status = 400
-            return "Workflow cannot be run because it does not have any steps"
+            raise exceptions.MessageException( "Workflow cannot be run because it does not have any steps" )
         if workflow.has_cycles:
-            trans.response.status = 400
-            return "Workflow cannot be run because it contains cycles"
+            raise exceptions.MessageException( "Workflow cannot be run because it contains cycles" )
         if workflow.has_errors:
-            trans.response.status = 400
-            return "Workflow cannot be run because of validation errors in some steps"
+            message = "Workflow cannot be run because of validation errors in some steps"
+            raise exceptions.MessageException( message )
 
         # Get target history.
         if history_param.startswith('hist_id='):
             # Passing an existing history to use.
-            history = trans.sa_session.query(self.app.model.History).get(trans.security.decode_id(history_param[8:]))
-            if history.user != trans.user and not trans.user_is_admin():
-                trans.response.status = 400
-                return "Invalid History specified."
+            encoded_history_id = history_param[ 8: ]
+            history_id = self.__decode_id( trans, encoded_history_id, model_type="history" )
+            history = self.history_manager.get( trans, history_id, check_ownership=True )
         else:
             # Send workflow outputs to new history.
             history = self.app.model.History(name=history_param, user=trans.user)
@@ -297,8 +287,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
                         inputs[k]['id']
                     )
                 else:
-                    trans.response.status = 400
-                    return "Unknown dataset source '%s' specified." % inputs[k]['src']
+                    message = "Unknown workflow input source '%s' specified." % inputs[k]['src']
+                    raise exceptions.RequestParameterInvalidException( message )
                 if add_to_history and content.history != history:
                     content = content.copy()
                     if isinstance( content, self.app.model.HistoryDatasetAssociation ):
@@ -307,8 +297,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
                         history.add_dataset_collection( content )
                 inputs[k]['hda'] = content  # TODO: rename key to 'content', prescreen input ensure not populated explicitly
             except AssertionError:
-                trans.response.status = 400
-                return "Invalid Dataset '%s' Specified" % inputs[k]['id']
+                message = "Invalid workflow input '%s' specified" % inputs[k]['id']
+                raise exceptions.ItemAccessibilityException( message )
 
         # Run each step, connecting outputs to inputs
         replacement_dict = payload.get('replacement_params', {})
@@ -321,6 +311,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             param_map=param_map,
         )
 
+        # invoke may throw MessageExceptions on tool erors, failure
+        # to match up inputs, etc...
         outputs = invoke(
             trans=trans,
             workflow=workflow,
@@ -340,30 +332,22 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         return rval
 
-    @web.expose_api
+    @expose_api
     def workflow_dict( self, trans, workflow_id, **kwd ):
         """
         GET /api/workflows/{encoded_workflow_id}/download
         Returns a selected workflow as a json dictionary.
         """
-        try:
-            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception, e:
-            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
-        # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
-            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                trans.response.status = 400
-                return("Workflow is not owned by or shared with current user")
+        stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
 
         ret_dict = self._workflow_to_dict( trans, stored_workflow )
         if not ret_dict:
             # This workflow has a tool that's missing from the distribution
-            trans.response.status = 400
-            return "Workflow cannot be exported due to missing tools."
+            message = "Workflow cannot be exported due to missing tools."
+            raise exceptions.MessageException( message )
         return ret_dict
 
-    @web.expose_api
+    @expose_api
     def delete( self, trans, id, **kwd ):
         """
         DELETE /api/workflows/{encoded_workflow_id}
@@ -392,7 +376,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         # TODO: Unsure of response message to let api know that a workflow was successfully deleted
         return ( "Workflow '%s' successfully deleted" % stored_workflow.name )
 
-    @web.expose_api
+    @expose_api
     def import_new_workflow_deprecated(self, trans, payload, **kwd):
         """
         POST /api/workflows/upload
@@ -512,3 +496,32 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         if out is not None:
             return self.encode_all_ids( trans, out.to_dict('element'), True)
         return None
+
+    def __get_stored_accessible_workflow( self, trans, workflow_id ):
+        stored_workflow = self.__get_stored_workflow( trans, workflow_id )
+
+        # check to see if user has permissions to selected workflow
+        if stored_workflow.user != trans.user and not trans.user_is_admin():
+            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
+                message = "Workflow is not owned by or shared with current user"
+                raise exceptions.ItemAccessibilityException( message )
+
+        return stored_workflow
+
+    def __get_stored_workflow( self, trans, workflow_id ):
+        try:
+            workflow_id = self.__decode_id( trans, workflow_id )
+            query = trans.sa_session.query( trans.app.model.StoredWorkflow )
+            stored_workflow = query.get( workflow_id )
+        except Exception:
+            raise exceptions.ObjectNotFound( "No such workflow found - invalid workflow identifier." )
+        if stored_workflow is None:
+            raise exceptions.ObjectNotFound( "No such workflow found." )
+        return stored_workflow
+
+    def __decode_id( self, trans, workflow_id, model_type="workflow" ):
+        try:
+            return trans.security.decode_id( workflow_id )
+        except Exception:
+            message = "Malformed %s id ( %s ) specified, unable to decode" % ( model_type, workflow_id )
+            raise exceptions.MalformedId( message )
