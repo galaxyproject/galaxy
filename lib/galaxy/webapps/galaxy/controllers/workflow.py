@@ -1226,7 +1226,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                        url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
-    def run( self, trans, id, history_id=None, multiple_input_mode="product", hide_fixed_params=False, **kwargs ):
+    def run( self, trans, id, history_id=None, hide_fixed_params=False, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
         if stored.user != user:
@@ -1269,7 +1269,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # been POSTed
                 # List to gather values for the template
                 invocations = []
-                for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs, mode=multiple_input_mode):
+                for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs):
                     for step in workflow.steps:
                         step.upgrade_messages = {}
                         # Connections by input name
@@ -1653,9 +1653,9 @@ def _build_workflow_on_str(instance_ds_names):
         return " on %s and %s" % (", ".join(instance_ds_names[0:-1]), instance_ds_names[-1])
 
 
-def _expand_multiple_inputs(kwargs, mode):
+def _expand_multiple_inputs(kwargs):
     (single_inputs, matched_multi_inputs, multiplied_multi_inputs) = \
-       _split_inputs(kwargs, mode)
+       _split_inputs(kwargs)
 
     # Build up every combination of inputs to be run together.
     input_combos = _extend_with_matched_combos(single_inputs, matched_multi_inputs)
@@ -1714,7 +1714,7 @@ def _copy_and_extend_inputs(inputs, key, value):
     return new_inputs
 
 
-def _split_inputs(kwargs, mode):
+def _split_inputs(kwargs):
     """
     """
     input_keys = filter(lambda a: a.endswith('|input'), kwargs)
