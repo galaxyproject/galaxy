@@ -46,11 +46,21 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( index_response, 200 )
         assert isinstance( index_response.json(), list )
 
-    def test_import( self ):
+    def test_upload( self ):
+        self.__test_upload( use_deprecated_route=False )
+
+    def test_upload_deprecated( self ):
+        self.__test_upload( use_deprecated_route=True )
+
+    def __test_upload( self, use_deprecated_route ):
         data = dict(
             workflow=dumps( self.workflow_populator.load_workflow( name="test_import" ) ),
         )
-        upload_response = self._post( "workflows/upload", data=data )
+        if use_deprecated_route:
+            route = "workflows/upload"
+        else:
+            route = "workflows"
+        upload_response = self._post( route, data=data )
         self._assert_status_code_is( upload_response, 200 )
         self._assert_user_has_workflow_with_name( "test_import (imported from API)" )
 

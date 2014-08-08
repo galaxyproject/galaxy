@@ -166,6 +166,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             'installed_repository_file',
             'from_history_id',
             'shared_workflow_id',
+            'workflow',
         ] )
         if len( ways_to_create.intersection( payload ) ) > 1:
             trans.response.status = 403
@@ -201,6 +202,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         if 'shared_workflow_id' in payload:
             workflow_id = payload[ 'shared_workflow_id' ]
             return self.__api_import_shared_workflow( trans, workflow_id, payload )
+
+        if 'workflow' in payload:
+            return self.__api_import_new_workflow( trans, payload, **kwd )
 
         workflow_id = payload.get( 'workflow_id', None )
         if not workflow_id:
@@ -389,15 +393,20 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return ( "Workflow '%s' successfully deleted" % stored_workflow.name )
 
     @web.expose_api
-    def import_new_workflow(self, trans, payload, **kwd):
+    def import_new_workflow_deprecated(self, trans, payload, **kwd):
         """
         POST /api/workflows/upload
         Importing dynamic workflows from the api. Return newly generated workflow id.
         Author: rpark
 
         # currently assumes payload['workflow'] is a json representation of a workflow to be inserted into the database
-        """
 
+        Deprecated in favor to POST /api/workflows with encoded 'workflow' in
+        payload the same way.
+        """
+        return self.__api_import_new_workflow( trans, payload, **kwd )
+
+    def __api_import_new_workflow( self, trans, payload, **kwd ):
         data = payload['workflow']
 
         workflow, missing_tool_tups = self._workflow_from_dict( trans, data, source="API" )
