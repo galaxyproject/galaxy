@@ -3242,7 +3242,7 @@ extend(LabelTrack.prototype, Track.prototype, {
             width = this.view.container.width(),
             new_div = $("<div/>").addClass('label-container');
         while ( position < view.high ) {
-            var screenPosition = ( position - view.low ) / range * width;
+            var screenPosition = Math.floor( ( position - view.low ) / range * width );
             new_div.append( $("<div/>").addClass('label').text(commatize( position )).css( {
                 left: screenPosition
             }));
