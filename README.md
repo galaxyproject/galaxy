@@ -19,7 +19,7 @@ Copy the template and config folder in your ``GALAXY_ROOT/config/plugins/visuali
 Alternatively, you can clone the repository with
 
 ```bash
-git clone https://github.com/erasche/galaxy-rstudio.git config/plugins/viz/rstudio
+git clone https://github.com/erasche/galaxy-rstudio.git config/plugins/visualizations/rstudio
 ````
 
 The RStudio visualisation option should be visible next to the usual Charts or Trackster options in your visualisation menue.
