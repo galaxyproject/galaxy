@@ -9,6 +9,7 @@ from .helpers import DatasetCollectionPopulator
 from .helpers import skip_without_tool
 
 from base.interactor import delete_request  # requests like delete
+from galaxy.exceptions import error_codes
 
 
 # Workflow API TODO:
@@ -23,6 +24,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self.workflow_populator = WorkflowPopulator( self.galaxy_interactor )
         self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
         self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
+
+    def test_show_invalid_is_404( self ):
+        show_response = self._get( "workflow/%s" % self._random_key() )
+        self._assert_status_code_is( show_response, 404 )
+
+    def test_cannot_show_private_workflow( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_not_importportable" )
+        with self._different_user():
+            show_response = self._get( "workflows/%s" % workflow_id )
+            self._assert_status_code_is( show_response, 403 )
 
     def test_delete( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_delete" )
@@ -46,13 +57,43 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( index_response, 200 )
         assert isinstance( index_response.json(), list )
 
-    def test_import( self ):
+    def test_upload( self ):
+        self.__test_upload( use_deprecated_route=False )
+
+    def test_upload_deprecated( self ):
+        self.__test_upload( use_deprecated_route=True )
+
+    def __test_upload( self, use_deprecated_route ):
         data = dict(
             workflow=dumps( self.workflow_populator.load_workflow( name="test_import" ) ),
         )
-        upload_response = self._post( "workflows/upload", data=data )
+        if use_deprecated_route:
+            route = "workflows/upload"
+        else:
+            route = "workflows"
+        upload_response = self._post( route, data=data )
         self._assert_status_code_is( upload_response, 200 )
         self._assert_user_has_workflow_with_name( "test_import (imported from API)" )
+
+    def test_import_deprecated( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_import_published_deprecated", publish=True )
+        with self._different_user():
+            other_import_response = self.__import_workflow( workflow_id )
+            self._assert_status_code_is( other_import_response, 200 )
+            self._assert_user_has_workflow_with_name( "imported: test_import_published_deprecated (imported from API)")
+
+    def test_not_importable_prevents_import( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_not_importportable" )
+        with self._different_user():
+            other_import_response = self.__import_workflow( workflow_id )
+            self._assert_status_code_is( other_import_response, 403 )
+
+    def test_import_published( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_import_published", publish=True )
+        with self._different_user():
+            other_import_response = self.__import_workflow( workflow_id, deprecated_route=True )
+            self._assert_status_code_is( other_import_response, 200 )
+            self._assert_user_has_workflow_with_name( "imported: test_import_published (imported from API)")
 
     def test_export( self ):
         uploaded_workflow_id = self.workflow_populator.simple_workflow( "test_for_export" )
@@ -84,6 +125,29 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+
+    def test_cannot_run_inaccessible_workflow( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_run_cannot_access" )
+        workflow_request, history_id = self._setup_workflow_run( workflow )
+        with self._different_user():
+            run_workflow_response = self._post( "workflows", data=workflow_request )
+            self._assert_status_code_is( run_workflow_response, 403 )
+
+    def test_404_on_invalid_workflow( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_run_does_not_exist" )
+        workflow_request, history_id = self._setup_workflow_run( workflow )
+        workflow_request[ "workflow_id" ] = self._random_key()
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 404 )
+
+    def test_cannot_run_against_other_users_history( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_run_does_not_exist" )
+        workflow_request, history_id = self._setup_workflow_run( workflow )
+        with self._different_user():
+            other_history_id = self.dataset_populator.new_history()
+        workflow_request[ "history" ] = "hist_id=%s" % other_history_id
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 403 )
 
     @skip_without_tool( "cat1" )
     @skip_without_tool( "collection_two_paired" )
@@ -232,6 +296,20 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         collection_step = collection_steps[ 0 ]
         collection_step_state = loads( collection_step[ "tool_state" ] )
         self.assertEquals( collection_step_state[ "collection_type" ], u"paired" )
+
+    def test_empty_create( self ):
+        response = self._post( "workflows" )
+        self._assert_status_code_is( response, 400 )
+        self._assert_error_code_is( response, error_codes.USER_REQUEST_MISSING_PARAMETER )
+
+    def test_invalid_create_multiple_types( self ):
+        data = {
+            'shared_workflow_id': '1234567890abcdef',
+            'from_history_id': '1234567890abcdef'
+        }
+        response = self._post( "workflows", data )
+        self._assert_status_code_is( response, 400 )
+        self._assert_error_code_is( response, error_codes.USER_REQUEST_INVALID_PARAMETER )
 
     @skip_without_tool( "random_lines1" )
     def test_extract_mapping_workflow_from_history( self ):
@@ -551,3 +629,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( index_response, 200 )
         names = map( lambda w: w[ "name" ], index_response.json() )
         return names
+
+    def __import_workflow( self, workflow_id, deprecated_route=False ):
+        if deprecated_route:
+            route = "workflows/import"
+            import_data = dict(
+                workflow_id=workflow_id,
+            )
+        else:
+            route = "workflows"
+            import_data = dict(
+                shared_workflow_id=workflow_id,
+            )
+        return self._post( route, import_data )
