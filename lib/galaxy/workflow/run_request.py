@@ -1,9 +1,44 @@
 from galaxy import exceptions
 
 from galaxy.managers import histories
-from galaxy.workflow.run import WorkflowRunConfig
 
 INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input' ]
+
+
+class WorkflowRunConfig( object ):
+    """ Wrapper around all the ways a workflow execution can be parameterized.
+
+    :param target_history: History to execute workflow in.
+    :type target_history: galaxy.model.History.
+
+    :param replacement_dict: Workflow level parameters used for renaming post
+        job actions.
+    :type replacement_dict: dict
+
+    :param copy_inputs_to_history: Should input data parameters be copied to
+        target_history. (Defaults to False)
+    :type copy_inputs_to_history: bool
+
+    :param inputs: Map from step ids to dict's containing HDA for these steps.
+    :type inputs: dict
+
+    :param inputs_by: How inputs maps to inputs (datasets/collections) to workflows
+                      steps - by unencoded database id ('step_id'), index in workflow
+                      'step_index' (independent of database), or by input name for
+                      that step ('name').
+    :type inputs_by: str
+
+    :param param_map: Override step parameters - should be dict with step id keys and
+                      tool param name-value dicts as values.
+    :type param_map: dict
+    """
+
+    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={} ):
+        self.target_history = target_history
+        self.replacement_dict = replacement_dict
+        self.copy_inputs_to_history = copy_inputs_to_history
+        self.inputs = inputs
+        self.param_map = param_map
 
 
 def normalize_inputs(steps, inputs, inputs_by):
