@@ -63,6 +63,9 @@ def build_workflow_run_config( trans, workflow, payload ):
         if 'id' not in input_dict:
             message = "Not input id defined for input '%s'." % input_dict
             raise exceptions.RequestParameterInvalidException( message )
+        if 'content' in input_dict:
+            message = "Input cannot specify explicit 'content' attribute %s'." % input_dict
+            raise exceptions.RequestParameterInvalidException( message )
         input_source = input_dict['src']
         input_id = input_dict['id']
         try:
@@ -96,7 +99,7 @@ def build_workflow_run_config( trans, workflow, payload ):
                     history.add_dataset( content )
                 else:
                     history.add_dataset_collection( content )
-            input_dict['hda'] = content  # TODO: rename key to 'content', prescreen input ensure not populated explicitly
+            input_dict['content'] = content
         except AssertionError:
             message = "Invalid workflow input '%s' specified" % input_id
             raise exceptions.ItemAccessibilityException( message )

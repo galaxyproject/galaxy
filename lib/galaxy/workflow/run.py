@@ -224,7 +224,7 @@ class WorkflowInvoker( object ):
                 else:
                     raise Exception("Unknown history content encountered")
         if self.inputs:
-            outputs[ step.id ][ 'output' ] = self.inputs_by_step_id[ step.id ][ 'hda' ]
+            outputs[ step.id ][ 'output' ] = self.inputs_by_step_id[ step.id ][ 'content' ]
 
         return job
 
