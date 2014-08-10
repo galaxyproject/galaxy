@@ -1,7 +1,6 @@
 from .registry import DatasetCollectionTypesRegistry
 from .matching import MatchingCollections
 from .type_description import CollectionTypeDescriptionFactory
-from .util import validate_input_element_identifiers
 
 
 from galaxy import model
@@ -14,7 +13,7 @@ from galaxy.web.base.controller import (
     UsesTagsMixin,
 )
 from galaxy.managers import hdas  # TODO: Refactor all mixin use into managers.
-
+from galaxy.managers.collections_util import validate_input_element_identifiers
 from galaxy.util import validation
 from galaxy.util import odict
 

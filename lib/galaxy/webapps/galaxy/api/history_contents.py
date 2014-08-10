@@ -16,12 +16,9 @@ from galaxy.web.base.controller import UsesLibraryMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesTagsMixin
 
-from galaxy.dataset_collections.util import api_payload_to_create_params
-from galaxy.dataset_collections.util import dictify_dataset_collection_instance
-
-
 from galaxy.managers import histories
 from galaxy.managers import hdas
+from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
 
 import logging
 log = logging.getLogger( __name__ )

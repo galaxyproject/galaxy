@@ -9,7 +9,8 @@ from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string
 from galaxy.visualization.data_providers.genome import *
-from galaxy.dataset_collections.util import dictify_dataset_collection_instance
+
+from galaxy.managers.collections_util import dictify_dataset_collection_instance
 
 import logging
 log = logging.getLogger( __name__ )

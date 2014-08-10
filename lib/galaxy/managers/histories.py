@@ -10,9 +10,9 @@ from galaxy.model import orm
 
 from galaxy.managers import base as manager_base
 import galaxy.managers.hdas
+import galaxy.managers.collections_util
 
 import galaxy.web
-import galaxy.dataset_collections.util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -141,7 +141,7 @@ class HistoryManager( manager_base.ModelManager ):
         history and an array of serialized history contents respectively.
         """
         hda_mgr = galaxy.managers.hdas.HDAManager()
-        collection_dictifier = galaxy.dataset_collections.util.dictify_dataset_collection_instance
+        collection_dictifier = galaxy.managers.collections_util.dictify_dataset_collection_instance
 
         history_dictionary = {}
         contents_dictionaries = []
