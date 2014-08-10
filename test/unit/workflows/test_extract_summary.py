@@ -71,6 +71,10 @@ class MockHistory( object ):
     def __init__( self ):
         self.active_datasets = []
 
+    @property
+    def active_contents( self ):
+        return self.active_datasets
+
 
 class MockTrans( object ):
 
@@ -87,6 +91,7 @@ class MockHda( object ):
         self.id = 123
         self.state = state
         self.copied_from_history_dataset_association = None
+        self.history_content_type = "dataset"
         if job is not UNDEFINED_JOB:
             if not job:
                 job = model.Job()
