@@ -56,31 +56,39 @@ def build_workflow_run_config( trans, workflow, payload ):
         trans.sa_session.flush()
 
     # Set workflow inputs.
-    for k in inputs:
+    for input_dict in inputs.itervalues():
+        if 'src' not in input_dict:
+            message = "Not input source type defined for input '%s'." % input_dict
+            raise exceptions.RequestParameterInvalidException( message )
+        if 'id' not in input_dict:
+            message = "Not input id defined for input '%s'." % input_dict
+            raise exceptions.RequestParameterInvalidException( message )
+        input_source = input_dict['src']
+        input_id = input_dict['id']
         try:
-            if inputs[k]['src'] == 'ldda':
+            if input_source == 'ldda':
                 ldda = trans.sa_session.query(app.model.LibraryDatasetDatasetAssociation).get(
-                    trans.security.decode_id(inputs[k]['id']))
+                    trans.security.decode_id(input_id))
                 assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
                 content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-            elif inputs[k]['src'] == 'ld':
+            elif input_source == 'ld':
                 ldda = trans.sa_session.query(app.model.LibraryDataset).get(
-                    trans.security.decode_id(inputs[k]['id'])).library_dataset_dataset_association
+                    trans.security.decode_id(input_id)).library_dataset_dataset_association
                 assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
                 content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-            elif inputs[k]['src'] == 'hda':
+            elif input_source == 'hda':
                 # Get dataset handle, add to dict and history if necessary
                 content = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(
-                    trans.security.decode_id(inputs[k]['id']))
+                    trans.security.decode_id(input_id))
                 assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), content.dataset )
-            elif inputs[k]['src'] == 'hdca':
+            elif input_source == 'hdca':
                 content = app.dataset_collections_service.get_dataset_collection_instance(
                     trans,
                     'history',
-                    inputs[k]['id']
+                    input_id
                 )
             else:
-                message = "Unknown workflow input source '%s' specified." % inputs[k]['src']
+                message = "Unknown workflow input source '%s' specified." % input_source
                 raise exceptions.RequestParameterInvalidException( message )
             if add_to_history and content.history != history:
                 content = content.copy()
@@ -88,9 +96,9 @@ def build_workflow_run_config( trans, workflow, payload ):
                     history.add_dataset( content )
                 else:
                     history.add_dataset_collection( content )
-            inputs[k]['hda'] = content  # TODO: rename key to 'content', prescreen input ensure not populated explicitly
+            input_dict['hda'] = content  # TODO: rename key to 'content', prescreen input ensure not populated explicitly
         except AssertionError:
-            message = "Invalid workflow input '%s' specified" % inputs[k]['id']
+            message = "Invalid workflow input '%s' specified" % input_id
             raise exceptions.ItemAccessibilityException( message )
 
     # Run each step, connecting outputs to inputs
