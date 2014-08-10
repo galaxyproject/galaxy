@@ -46,12 +46,11 @@ class WorkflowRunConfig( object ):
     :type param_map: dict
     """
 
-    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, inputs_by='step_id', param_map={} ):
+    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={} ):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
         self.inputs = inputs
-        self.inputs_by = inputs_by
         self.param_map = param_map
 
 
@@ -73,9 +72,7 @@ class WorkflowInvoker( object ):
         self.target_history = workflow_run_config.target_history
         self.replacement_dict = workflow_run_config.replacement_dict
         self.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
-        self.inputs = workflow_run_config.inputs
-        self.inputs_by = workflow_run_config.inputs_by
-        self.inputs_by_step_id = {}
+        self.inputs_by_step_id = workflow_run_config.inputs
         self.param_map = workflow_run_config.param_map
 
         self.outputs = odict()
@@ -223,8 +220,8 @@ class WorkflowInvoker( object ):
                     outputs[ step.id ][ 'input_ds_copy' ] = new_hdca
                 else:
                     raise Exception("Unknown history content encountered")
-        if self.inputs:
-            outputs[ step.id ][ 'output' ] = self.inputs_by_step_id[ step.id ][ 'content' ]
+        if self.inputs_by_step_id:
+            outputs[ step.id ][ 'output' ] = self.inputs_by_step_id[ step.id ]
 
         return job
 
@@ -288,20 +285,6 @@ class WorkflowInvoker( object ):
             else:
                 step.module = modules.module_factory.from_workflow_step( self.trans, step )
                 step.state = step.module.get_runtime_state()
-
-                # This is an input step. Make sure we have an available input.
-                if step.type in [ 'data_input', 'data_collection_input' ]:
-                    if self.inputs_by == "step_id":
-                        key = str( step.id )
-                    elif self.inputs_by == "name":
-                        key = step.tool_inputs.get( 'name', None )
-                    else:
-                        key = str( step.order_index )
-                    if key not in self.inputs:
-                        message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
-                        raise exceptions.MessageException( message )
-                    else:
-                        self.inputs_by_step_id[ step.id ] = self.inputs[ key ]
 
 
 def _update_step_parameters(step, normalized_param_map):

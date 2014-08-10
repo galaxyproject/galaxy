@@ -3,6 +3,32 @@ from galaxy import exceptions
 from galaxy.managers import histories
 from galaxy.workflow.run import WorkflowRunConfig
 
+INPUT_STEP_TYPES = [ 'data_input', 'data_collection_input' ]
+
+
+def normalize_inputs(steps, inputs, inputs_by):
+    normalized_inputs = {}
+    for step in steps:
+        if step.type not in INPUT_STEP_TYPES:
+            continue
+
+        if inputs_by == "step_id":
+            inputs_key = str( step.id )
+        elif inputs_by == "step_index":
+            inputs_key = str( step.order_index )
+        elif inputs_by == "name":
+            inputs_key = step.tool_inputs.get( 'name', None )
+        else:
+            message = "Workflow cannot be run because unexpected inputs_by value specified."
+            raise exceptions.MessageException( message )
+        if inputs_key not in inputs:
+            message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
+            raise exceptions.MessageException( message )
+
+        normalized_inputs[ step.id ] = inputs[ inputs_key ][ 'content' ]
+
+    return normalized_inputs
+
 
 def normalize_step_parameters(steps, param_map):
     """ Take a complex param_map that can reference parameters by
@@ -73,13 +99,6 @@ def build_workflow_run_config( trans, workflow, payload ):
         # which is intrinsic to the workflow and independent of the state
         # of Galaxy at the time of workflow import.
         inputs_by = inputs_by or 'step_index'
-
-    valid_inputs_by = [ 'step_id', 'step_index', 'name' ]
-    if inputs_by not in valid_inputs_by:
-        trans.response.status = 403
-        error_message_template = "Invalid inputs_by specified '%s' must be one of %s"
-        error_message = error_message_template % ( inputs_by, valid_inputs_by )
-        raise ValueError( error_message )
 
     add_to_history = 'no_add_to_history' not in payload
     history_param = payload.get('history', '')
@@ -154,14 +173,15 @@ def build_workflow_run_config( trans, workflow, payload ):
             message = "Invalid workflow input '%s' specified" % input_id
             raise exceptions.ItemAccessibilityException( message )
 
+    normalized_inputs = normalize_inputs( workflow.steps, inputs, inputs_by )
+
     # Run each step, connecting outputs to inputs
     replacement_dict = payload.get('replacement_params', {})
 
     run_config = WorkflowRunConfig(
         target_history=history,
         replacement_dict=replacement_dict,
-        inputs=inputs,
-        inputs_by=inputs_by,
+        inputs=normalized_inputs,
         param_map=param_map,
     )
     return run_config
