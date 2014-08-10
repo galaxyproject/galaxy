@@ -41,9 +41,9 @@ class WorkflowRunConfig( object ):
                       that step ('name').
     :type inputs_by: str
 
-    :param param_map: Override tool and/or step parameters (see documentation on
-        _update_step_parameters below).
-    :type param_map:
+    :param param_map: Override step parameters - should be dict with step id keys and
+                      tool param name-value dicts as values.
+    :type param_map: dict
     """
 
     def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, inputs_by='step_id', param_map={} ):
@@ -304,36 +304,9 @@ class WorkflowInvoker( object ):
                         self.inputs_by_step_id[ step.id ] = self.inputs[ key ]
 
 
-def _update_step_parameters(step, param_map):
-    """
-    Update ``step`` parameters based on the user-provided ``param_map`` dict.
-
-    ``param_map`` should be structured as follows::
-
-      PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
-      PARAM_DICT = {NAME: VALUE, ...}
-
-    For backwards compatibility, the following (deprecated) format is
-    also supported for ``param_map``::
-
-      PARAM_MAP = {TOOL_ID: PARAM_DICT, ...}
-
-    in which case PARAM_DICT affects all steps with the given tool id.
-    If both by-tool-id and by-step-id specifications are used, the
-    latter takes precedence.
-
-    Finally (again, for backwards compatibility), PARAM_DICT can also
-    be specified as::
-
-      PARAM_DICT = {'param': NAME, 'value': VALUE}
-
-    Note that this format allows only one parameter to be set per step.
-    """
-    param_dict = param_map.get(step.tool_id, {}).copy()
-    param_dict.update(param_map.get(str(step.id), {}))
+def _update_step_parameters(step, normalized_param_map):
+    param_dict = normalized_param_map.get(step.id, {})
     if param_dict:
-        if 'param' in param_dict and 'value' in param_dict:
-            param_dict[param_dict['param']] = param_dict['value']
         step.state.inputs.update(param_dict)
 
 

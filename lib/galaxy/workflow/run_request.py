@@ -4,12 +4,62 @@ from galaxy.managers import histories
 from galaxy.workflow.run import WorkflowRunConfig
 
 
+def normalize_step_parameters(steps, param_map):
+    """ Take a complex param_map that can reference parameters by
+    step_id in the new flexible way or in the old one-parameter
+    per tep fashion or by tool id and normalize the parameters so
+    everything is referenced by a numeric step id.
+    """
+    normalized_param_map = {}
+    for step in steps:
+        param_dict = _step_parameters(step, param_map)
+        if param_dict:
+            normalized_param_map[step.id] = param_dict
+    return normalized_param_map
+
+
+def _step_parameters(step, param_map):
+    """
+    Update ``step`` parameters based on the user-provided ``param_map`` dict.
+
+    ``param_map`` should be structured as follows::
+
+      PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
+      PARAM_DICT = {NAME: VALUE, ...}
+
+    For backwards compatibility, the following (deprecated) format is
+    also supported for ``param_map``::
+
+      PARAM_MAP = {TOOL_ID: PARAM_DICT, ...}
+
+    in which case PARAM_DICT affects all steps with the given tool id.
+    If both by-tool-id and by-step-id specifications are used, the
+    latter takes precedence.
+
+    Finally (again, for backwards compatibility), PARAM_DICT can also
+    be specified as::
+
+      PARAM_DICT = {'param': NAME, 'value': VALUE}
+
+    Note that this format allows only one parameter to be set per step.
+    """
+    param_dict = param_map.get(step.tool_id, {}).copy()
+    param_dict.update(param_map.get(str(step.id), {}))
+    if param_dict:
+        if 'param' in param_dict and 'value' in param_dict:
+            param_dict[param_dict['param']] = param_dict['value']
+            del param_dict[ 'param' ]
+            del param_dict[ 'value' ]
+    return param_dict
+
+
 def build_workflow_run_config( trans, workflow, payload ):
     app = trans.app
     history_manager = histories.HistoryManager()
 
     # Pull other parameters out of payload.
     param_map = payload.get( 'parameters', {} )
+    param_map = normalize_step_parameters( workflow.steps, param_map )
     inputs = payload.get( 'inputs', None )
     inputs_by = payload.get( 'inputs_by', None )
     if inputs is None:
