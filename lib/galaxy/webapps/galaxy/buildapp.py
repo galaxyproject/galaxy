@@ -255,10 +255,16 @@ def populate_api_routes( webapp, app ):
                            action='set_permissions',
                            conditions=dict( method=[ "POST" ] ) )
 
-    webapp.mapper.connect( 'show_lda_item',
+    webapp.mapper.connect( 'show_ld_item',
                            '/api/libraries/datasets/:id',
                            controller='lda_datasets',
                            action='show',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'show_version_of_ld_item',
+                           '/api/libraries/datasets/:encoded_dataset_id/versions/:encoded_ldda_id',
+                           controller='lda_datasets',
+                           action='show_version',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'show_legitimate_lda_roles',

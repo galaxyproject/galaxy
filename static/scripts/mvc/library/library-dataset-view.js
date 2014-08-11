@@ -44,12 +44,15 @@ var LibraryDatasetView = Backbone.View.extend({
 
   fetchDataset: function(options){
     this.options = _.extend(this.options, options);
+
     this.model = new mod_library_model.Item({id:this.options.id});
     var that = this;
     this.model.fetch({
       success: function() {
         if (that.options.show_permissions){
             that.showPermissions();
+        } else if (that.options.show_version) {
+            that.fetchVersion();
         } else {
             that.render();
         }
@@ -65,12 +68,36 @@ var LibraryDatasetView = Backbone.View.extend({
   },
 
   render: function(options){
-    $(".tooltip").remove();
     this.options = _.extend(this.options, options);
+    $(".tooltip").remove();
     var template = this.templateDataset();
     this.$el.html(template({item: this.model}));
     $(".peek").html(this.model.get("peek"));
     $("#center [data-toggle]").tooltip();
+  },
+
+  fetchVersion: function(options){
+    this.options = _.extend(this.options, options);
+    that = this;
+    if (!this.options.ldda_id){
+      this.render();
+      mod_toastr.error('Library dataset version requested but no id provided.');
+    } else {
+      this.ldda = new mod_library_model.Ldda({id:this.options.ldda_id});
+      this.ldda.url = this.ldda.urlRoot + this.model.id + '/versions/' + this.ldda.id;
+      this.ldda.fetch({
+        success: function(){
+          that.renderVersion();
+        }
+      });
+    }
+  },
+
+  renderVersion: function(){
+    $(".tooltip").remove();
+    var template = this.templateVersion();
+    this.$el.html(template({item: this.model, ldda: this.ldda}));
+    $(".peek").html(this.ldda.get("peek"));
   },
 
   enableModification: function(){
@@ -473,9 +500,6 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Share dataset" class="btn btn-default toolbtn-share-dataset primary-button" type="button"><span class="fa fa-share"></span> Share</span></button>');
     tmpl_array.push('   <% } %>');
 
-    // tmpl_array.push('   <% if (item.get("has_versions")) { %>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Show previous versions" class="btn btn-default toolbtn-previous-versions primary-button" type="button"><span class="fa fa-clock-o"></span> Versions</span></button>');
-    // tmpl_array.push('   <% } %>');
 
     tmpl_array.push('  </div>');
 
@@ -492,10 +516,10 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('</ol>');
 
     tmpl_array.push('<% if (item.get("is_unrestricted")) { %>');
-    tmpl_array.push('  <p>');
+    tmpl_array.push('  <div class="alert alert-info">');
     tmpl_array.push('  This dataset is unrestricted so everybody can access it. Just share the URL of this page. ');
     tmpl_array.push('  <button data-toggle="tooltip" data-placement="top" title="Copy to clipboard" class="btn btn-default btn-copy-link-to-clipboard primary-button" type="button"><span class="fa fa-clipboard"></span> To Clipboard</span></button> ');
-    tmpl_array.push('  </p>');
+    tmpl_array.push('  </div>');
     tmpl_array.push('<% } %>');
 
     tmpl_array.push('<div class="dataset_table">');
@@ -595,6 +619,147 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('        <pre class="peek">');
     tmpl_array.push('        </pre>');
     tmpl_array.push('    </div>');
+
+    tmpl_array.push('   <% if (item.get("has_versions")) { %>');
+    tmpl_array.push('      <div>');
+    tmpl_array.push('      <h3>Expired versions:</h3>');
+    tmpl_array.push('      <ul>');
+    tmpl_array.push('      <% _.each(item.get("expired_versions"), function(version) { %>');
+    tmpl_array.push('        <li><a title="See details of this version" href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/versions/<%- version[0] %>"><%- version[1] %></a></li>');
+    tmpl_array.push('      <% }) %>');
+    tmpl_array.push('      <ul>');
+    tmpl_array.push('      </div>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('</div>');
+
+    // CONTAINER END
+    tmpl_array.push('</div>');
+
+    return _.template(tmpl_array.join(''));
+  }, 
+
+  templateVersion : function(){
+    var tmpl_array = [];
+    // CONTAINER START
+    tmpl_array.push('<div class="library_style_container">');
+
+    tmpl_array.push('  <div id="library_toolbar">');
+    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go to current dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-file-o"></span> Latest dataset</span></button><a>');
+    tmpl_array.push('  </div>');
+
+    // BREADCRUMBS
+    tmpl_array.push('<ol class="breadcrumb">');
+    tmpl_array.push('   <li><a title="Return to the list of libraries" href="#">Libraries</a></li>');
+    tmpl_array.push('   <% _.each(item.get("full_path"), function(path_item) { %>');
+    tmpl_array.push('   <% if (path_item[0] != item.id) { %>');
+    tmpl_array.push('   <li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ');
+    tmpl_array.push(    '<% } else { %>');
+    tmpl_array.push('   <li class="active"><span title="You are here"><%- path_item[1] %></span></li>');
+    tmpl_array.push('   <% } %>');
+    tmpl_array.push('   <% }); %>');
+    tmpl_array.push('</ol>');
+
+    tmpl_array.push('  <div class="alert alert-warning">This is an expired version of the library dataset: <%= _.escape(item.get("name")) %></div>');
+    
+    tmpl_array.push('<div class="dataset_table">');
+
+    tmpl_array.push('   <table class="grid table table-striped table-condensed">');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row" id="id_row" data-id="<%= _.escape(ldda.id) %>">Name</th>');
+    tmpl_array.push('           <td><%= _.escape(ldda.get("name")) %></td>');
+    tmpl_array.push('       </tr>');
+
+    tmpl_array.push('   <% if (ldda.get("data_type")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Data type</th>');
+    tmpl_array.push('           <td><%= _.escape(ldda.get("data_type")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("genome_build")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Genome build</th>');
+    tmpl_array.push('           <td><%= _.escape(ldda.get("genome_build")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("file_size")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Size</th>');
+    tmpl_array.push('           <td><%= _.escape(ldda.get("file_size")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("date_uploaded")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Date uploaded (UTC)</th>');
+    tmpl_array.push('           <td><%= _.escape(ldda.get("date_uploaded")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("uploaded_by")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Uploaded by</th>');
+    tmpl_array.push('           <td><%= _.escape(ldda.get("uploaded_by")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("metadata_data_lines")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Data Lines</th>');
+    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("metadata_data_lines")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("metadata_comment_lines")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Comment Lines</th>');
+    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("metadata_comment_lines")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("metadata_columns")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Number of Columns</th>');
+    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("metadata_columns")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("metadata_column_types")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Column Types</th>');
+    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("metadata_column_types")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("message")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Message</th>');
+    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("message")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("misc_blurb")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Miscellaneous blurb</th>');
+    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("misc_blurb")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('   <% if (ldda.get("misc_info")) { %>');
+    tmpl_array.push('       <tr>');
+    tmpl_array.push('           <th scope="row">Miscellaneous information</th>');
+    tmpl_array.push('           <td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>');
+    tmpl_array.push('       </tr>');
+    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('    </table>');
+    tmpl_array.push('    <div>');
+    tmpl_array.push('        <pre class="peek">');
+    tmpl_array.push('        </pre>');
+    tmpl_array.push('    </div>');
+
     tmpl_array.push('</div>');
 
     // CONTAINER END

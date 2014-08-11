@@ -40,13 +40,14 @@ var LibraryRouter = Backbone.Router.extend({
   },
 
   routes: {
-    ""                                                     : "libraries",
-    "library/:library_id/permissions"                      : "library_permissions",
-    "folders/:folder_id/permissions"                       : "folder_permissions",
-    "folders/:id"                                          : "folder_content",
-    "folders/:folder_id/datasets/:dataset_id"              : "dataset_detail",
-    "folders/:folder_id/datasets/:dataset_id/permissions"  : "dataset_permissions",
-    "folders/:folder_id/download/:format"                  : "download"
+    ""                                                              : "libraries",
+    "library/:library_id/permissions"                               : "library_permissions",
+    "folders/:folder_id/permissions"                                : "folder_permissions",
+    "folders/:id"                                                   : "folder_content",
+    "folders/:folder_id/datasets/:dataset_id"                       : "dataset_detail",
+    "folders/:folder_id/datasets/:dataset_id/permissions"           : "dataset_permissions",
+    "folders/:folder_id/datasets/:dataset_id/versions/:ldda_id"     : "dataset_version",
+    "folders/:folder_id/download/:format"                           : "download"
   },
 
   back: function() {
@@ -118,6 +119,12 @@ var GalaxyLibrary = Backbone.View.extend({
             Galaxy.libraries.datasetView.$el.unbind('click');
           }
           Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id});
+       });
+       this.library_router.on('route:dataset_version', function(folder_id, dataset_id, ldda_id){
+          if (Galaxy.libraries.datasetView){
+            Galaxy.libraries.datasetView.$el.unbind('click');
+          }
+          Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id, ldda_id: ldda_id, show_version: true});
        });
 
        this.library_router.on('route:dataset_permissions', function(folder_id, dataset_id){

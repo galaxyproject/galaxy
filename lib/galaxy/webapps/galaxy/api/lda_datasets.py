@@ -59,21 +59,57 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         full_path.insert(0, dataset_item)
         full_path = full_path[ ::-1 ]
 
-        nice_size = util.nice_size( int( library_dataset.library_dataset_dataset_association.get_size() ) )
-
-        date_uploaded = library_dataset.library_dataset_dataset_association.create_time.strftime( "%Y-%m-%d %I:%M %p" )
+        # Find expired versions of the library dataset
+        expired_ldda_versions = []
+        for expired_ldda in library_dataset.expired_datasets:
+            expired_ldda_versions.append( ( trans.security.encode_id( expired_ldda.id ), expired_ldda.name ) )
 
         rval = trans.security.encode_all_ids( library_dataset.to_dict() )
+        if len(expired_ldda_versions) > 0:
+            rval[ 'has_versions' ] = True
+            rval[ 'expired_versions' ] = expired_ldda_versions
         rval[ 'deleted' ] = library_dataset.deleted
         rval[ 'folder_id' ] = 'F' + rval[ 'folder_id' ]
         rval[ 'full_path' ] = full_path
-        rval[ 'file_size' ] = nice_size
-        rval[ 'date_uploaded' ] = date_uploaded
+        rval[ 'file_size' ] = util.nice_size( int( library_dataset.library_dataset_dataset_association.get_size() ) )
+        rval[ 'date_uploaded' ] = library_dataset.library_dataset_dataset_association.create_time.strftime( "%Y-%m-%d %I:%M %p" )
         rval[ 'can_user_modify' ] = trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset) or trans.user_is_admin()
         rval[ 'is_unrestricted' ] = trans.app.security_agent.dataset_is_public( library_dataset.library_dataset_dataset_association.dataset )
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
         rval[ 'can_user_manage' ] = trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
+        return rval
+
+    @expose_api
+    def show_version( self, trans, encoded_dataset_id, encoded_ldda_id, **kwd ):
+        """
+        show_version( self, trans, encoded_dataset_id, encoded_ldda_id, **kwd ):
+        * GET /api/libraries/datasets/:encoded_dataset_id/versions/:encoded_ldda_id
+            Displays information about specific version of the library_dataset (i.e. ldda).
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to query
+        :type   encoded_dataset_id:      an encoded id string
+
+        :param  encoded_ldda_id:      the encoded id of the ldda to query
+        :type   encoded_ldda_id:      an encoded id string
+
+        :rtype:     dictionary
+        :returns:   dict of ldda's details
+        """
+        try:
+            library_dataset = self.get_library_dataset( trans, id=encoded_dataset_id, check_ownership=False, check_accessible=True )
+        except Exception:
+            raise exceptions.ObjectNotFound( 'Requested library_dataset was not found.' )
+
+        try:
+            ldda = self.get_library_dataset_dataset_association( trans, id=encoded_ldda_id, check_ownership=False, check_accessible=False )
+        except Exception, e:
+            raise exceptions.ObjectNotFound( 'Requested version of library dataset was not found.' + str(e) )
+
+        if ldda not in library_dataset.expired_datasets:
+            raise exceptions.ObjectNotFound( 'Given library dataset does not have the requested version.' )
+
+        rval = trans.security.encode_all_ids( ldda.to_dict() )
         return rval
 
     @expose_api
@@ -93,7 +129,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :rtype:     dictionary
         :returns:   either dict of current roles for all permission types or
                            dict of available roles to choose from (is the same for any permission type)
-
         """
 
         current_user_roles = trans.get_current_user_roles()

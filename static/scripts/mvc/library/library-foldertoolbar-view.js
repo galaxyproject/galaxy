@@ -314,9 +314,10 @@ var FolderToolbarView = Backbone.View.extend({
     this.refreshUserHistoriesList(function(self){
       self.modal = Galaxy.modal;
       var template_modal = self.templateAddFilesInModal();
+      var folder_name = self.options.full_path[self.options.full_path.length - 1][1]
       self.modal.show({
           closing_events  : true,
-          title           : 'Add datasets from history to ' + self.options.folder_name,
+          title           : 'Add datasets from history to ' + folder_name,
           body            : template_modal({histories: self.histories.models}),
           buttons         : {
               'Add'       : function() {self.addAllDatasetsFromHistory();},
