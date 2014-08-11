@@ -1,33 +1,75 @@
+import json
 import logging
 import os
 import tarfile
 import tempfile
 from time import strftime
-from galaxy import eggs
+
 from galaxy import util
 from galaxy import web
-from galaxy.util import json
+from galaxy.model.orm import and_
 from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
-import tool_shed.repository_types.util as rt_util
-import tool_shed.util.shed_util_common as suc
-from tool_shed.galaxy_install import repository_util
+
+from tool_shed.capsule import capsule_manager
+from tool_shed.metadata import repository_metadata_manager
+from tool_shed.repository_types import util as rt_util
+
+from tool_shed.util import basic_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import import_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
+from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
-
-eggs.require( 'mercurial' )
-
-from mercurial import hg
 
 log = logging.getLogger( __name__ )
 
 
 class RepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with repositories in the Tool Shed."""
+
+    @web.expose_api
+    def add_repository_registry_entry( self, trans, payload, **kwd ):
+        """
+        POST /api/repositories/add_repository_registry_entry
+        Adds appropriate entries to the repository registry for the repository defined by the received name and owner.
+
+        :param key: the user's API key
+        
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed containing the Repository
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        """
+        response_dict = {}
+        if not trans.user_is_admin():
+            response_dict[ 'status' ] = 'error'
+            response_dict[ 'message' ] = "You are not authorized to add entries to this Tool Shed's repository registry."
+            return response_dict
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        tool_shed_url = tool_shed_url.rstrip( '/' )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        if repository is None:
+            error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
+            log.debug( error_message )
+            response_dict[ 'status' ] = 'error'
+            response_dict[ 'message' ] = error_message
+            return response_dict
+        # Update the repository registry.
+        trans.app.repository_registry.add_entry( repository )
+        response_dict[ 'status' ] = 'ok'
+        response_dict[ 'message' ] = 'Entries for repository %s owned by %s have been added to the Tool Shed repository registry.' \
+            % ( name, owner )
+        return response_dict
 
     @web.expose_api_anonymous
     def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
@@ -49,8 +91,7 @@ class RepositoriesController( BaseAPIController ):
                 error_message += "cannot locate repository %s owned by %s." % ( str( name ), str( owner ) )
                 log.debug( error_message )
                 return []
-            repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+            repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
             return ordered_installable_revisions
         else:
@@ -127,16 +168,15 @@ class RepositoriesController( BaseAPIController ):
                                                     action='show',
                                                     id=encoded_repository_id )
             # Get the repository_metadata information.
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                                      encoded_repository_id,
                                                                                      changeset_revision )
             if repository_metadata is None:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
-                repo_dir = repository.repo_path( trans.app )
-                repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+                repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
                 new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans,
+                repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                                          encoded_repository_id,
                                                                                          new_changeset_revision )
                 changeset_revision = new_changeset_revision
@@ -154,7 +194,10 @@ class RepositoriesController( BaseAPIController ):
                 includes_tools_for_display_in_tool_panel, \
                 has_repository_dependencies, \
                 has_repository_dependencies_only_if_compiling_contained_td = \
-                    repository_util.get_repo_info_dict( trans, encoded_repository_id, changeset_revision )
+                    repository_util.get_repo_info_dict( trans.app,
+                                                        trans.user,
+                                                        encoded_repository_id,
+                                                        changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
                 log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" % \
@@ -208,10 +251,14 @@ class RepositoriesController( BaseAPIController ):
         except tarfile.ReadError, e:
             log.debug( 'Error opening capsule file %s: %s' % ( str( capsule_file_name ), str( e ) ) )
             return {}
+        irm = capsule_manager.ImportRepositoryManager( trans.app,
+                                                       trans.request.host,
+                                                       trans.user,
+                                                       trans.user_is_admin() )
         capsule_dict[ 'tar_archive' ] = tar_archive
         capsule_dict[ 'capsule_file_name' ] = capsule_file_name
-        capsule_dict = import_util.extract_capsule_files( trans, **capsule_dict )
-        capsule_dict = import_util.validate_capsule( trans, **capsule_dict )
+        capsule_dict = irm.extract_capsule_files( **capsule_dict )
+        capsule_dict = irm.validate_capsule( **capsule_dict )
         status = capsule_dict.get( 'status', 'error' )
         if status == 'error':
             log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
@@ -223,12 +270,12 @@ class RepositoriesController( BaseAPIController ):
             return {}
         file_path = encoding_util.tool_shed_decode( encoded_file_path )
         export_info_file_path = os.path.join( file_path, 'export_info.xml' )
-        export_info_dict = import_util.get_export_info_dict( export_info_file_path )
+        export_info_dict = irm.get_export_info_dict( export_info_file_path )
         manifest_file_path = os.path.join( file_path, 'manifest.xml' )
         # The manifest.xml file has already been validated, so no error_message should be returned here.
-        repository_info_dicts, error_message = import_util.get_repository_info_from_manifest( manifest_file_path )
+        repository_info_dicts, error_message = irm.get_repository_info_from_manifest( manifest_file_path )
         # Determine the status for each exported repository archive contained within the capsule.
-        repository_status_info_dicts = import_util.get_repository_status_from_tool_shed( trans, repository_info_dicts )
+        repository_status_info_dicts = irm.get_repository_status_from_tool_shed( repository_info_dicts )
         # Generate a list of repository name / import results message tuples for display after the capsule is imported.
         import_results_tups = []
         # Only create repositories that do not yet exist and that the current user is authorized to create.  The
@@ -237,12 +284,10 @@ class RepositoriesController( BaseAPIController ):
             # Add the capsule_file_name and encoded_file_path to the repository_status_info_dict.
             repository_status_info_dict[ 'capsule_file_name' ] = capsule_file_name
             repository_status_info_dict[ 'encoded_file_path' ] = encoded_file_path
-            import_results_tups = \
-                repository_maintenance_util.create_repository_and_import_archive( trans,
-                                                                                  repository_status_info_dict,
-                                                                                  import_results_tups )
-        import_util.check_status_and_reset_downloadable( trans, import_results_tups )
-        suc.remove_dir( file_path )
+            import_results_tups = irm.create_repository_and_import_archive( repository_status_info_dict,
+                                                                            import_results_tups )
+        irm.check_status_and_reset_downloadable( import_results_tups )
+        basic_util.remove_dir( file_path )
         # NOTE: the order of installation is defined in import_results_tups, but order will be lost
         # when transferred to return_dict.
         return_dict = {}
@@ -255,16 +300,28 @@ class RepositoriesController( BaseAPIController ):
         return return_dict
 
     @web.expose_api_anonymous
-    def index( self, trans, deleted=False, **kwd ):
+    def index( self, trans, deleted=False, owner=None, name=None, **kwd ):
         """
         GET /api/repositories
+
+        :param deleted: True/False, displays repositories that are or are not set to deleted.
+        :param owner: the owner's public username.
+        :param name: the repository name.
+
         Displays a collection (list) of repositories.
         """
         # Example URL: http://localhost:9009/api/repositories
         repository_dicts = []
         deleted = util.asbool( deleted )
+        clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == False,
+                              trans.app.model.Repository.table.c.deleted == deleted ) ]
+        if owner is not None:
+            clause_list.append( and_( trans.app.model.User.table.c.username == owner, 
+                                      trans.app.model.Repository.table.c.user_id == trans.app.model.User.table.c.id ) )
+        if name is not None:
+            clause_list.append( trans.app.model.Repository.table.c.name == name )
         for repository in trans.sa_session.query( trans.app.model.Repository ) \
-                                          .filter( trans.app.model.Repository.table.c.deleted == deleted ) \
+                                          .filter( *clause_list ) \
                                           .order_by( trans.app.model.Repository.table.c.name ):
             repository_dict = repository.to_dict( view='collection',
                                                   value_mapper=self.__get_value_mapper( trans ) )
@@ -273,6 +330,48 @@ class RepositoriesController( BaseAPIController ):
                                                     id=trans.security.encode_id( repository.id ) )
             repository_dicts.append( repository_dict )
         return repository_dicts
+
+    @web.expose_api
+    def remove_repository_registry_entry( self, trans, payload, **kwd ):
+        """
+        POST /api/repositories/remove_repository_registry_entry
+        Removes appropriate entries from the repository registry for the repository defined by the received name and owner.
+
+        :param key: the user's API key
+        
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed containing the Repository
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        """
+        response_dict = {}
+        if not trans.user_is_admin():
+            response_dict[ 'status' ] = 'error'
+            response_dict[ 'message' ] = "You are not authorized to remove entries from this Tool Shed's repository registry."
+            return response_dict
+        tool_shed_url = payload.get( 'tool_shed_url', '' )
+        if not tool_shed_url:
+            raise HTTPBadRequest( detail="Missing required parameter 'tool_shed_url'." )
+        tool_shed_url = tool_shed_url.rstrip( '/' )
+        name = payload.get( 'name', '' )
+        if not name:
+            raise HTTPBadRequest( detail="Missing required parameter 'name'." )
+        owner = payload.get( 'owner', '' )
+        if not owner:
+            raise HTTPBadRequest( detail="Missing required parameter 'owner'." )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        if repository is None:
+            error_message = 'Cannot locate repository with name %s and owner %s,' % ( str( name ), str( owner ) )
+            log.debug( error_message )
+            response_dict[ 'status' ] = 'error'
+            response_dict[ 'message' ] = error_message
+            return response_dict
+        # Update the repository registry.
+        trans.app.repository_registry.remove_entry( repository )
+        response_dict[ 'status' ] = 'ok'
+        response_dict[ 'message' ] = 'Entries for repository %s owned by %s have been removed from the Tool Shed repository registry.' \
+            % ( name, owner )
+        return response_dict
 
     @web.expose_api
     def repository_ids_for_setting_metadata( self, trans, my_writable=False, **kwd ):
@@ -293,7 +392,8 @@ class RepositoriesController( BaseAPIController ):
             my_writable = True
         handled_repository_ids = []
         repository_ids = []
-        query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=my_writable, order=False )
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
+        query = rmm.get_query_for_setting_metadata_on_repositories( my_writable=my_writable, order=False )
         # Make sure repositories of type tool_dependency_definition are first in the list.
         for repository in query:
             if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
@@ -327,24 +427,31 @@ class RepositoriesController( BaseAPIController ):
                                      This param can be used as an alternative to the above encoded_ids_to_skip.
         """
 
-        def handle_repository( trans, repository, results ):
+        def handle_repository( trans, rmm, repository, results ):
             log.debug( "Resetting metadata on repository %s" % str( repository.name ) )
             repository_id = trans.security.encode_id( repository.id )
             try:
-                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
+                invalid_file_tups, metadata_dict = \
+                    rmm.reset_all_metadata_on_repository_in_tool_shed( repository_id )
                 if invalid_file_tups:
-                    message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
+                    message = tool_util.generate_message_for_invalid_tools( trans.app,
+                                                                            invalid_file_tups,
+                                                                            repository,
+                                                                            None,
+                                                                            as_html=False )
                     results[ 'unsuccessful_count' ] += 1
                 else:
-                    message = "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), str( repository.user.username ) )
+                    message = "Successfully reset metadata on repository %s owned by %s" % \
+                        ( str( repository.name ), str( repository.user.username ) )
                     results[ 'successful_count' ] += 1
             except Exception, e:
-                message = "Error resetting metadata on repository %s owned by %s: %s" % ( str( repository.name ), str( repository.user.username ), str( e ) )
+                message = "Error resetting metadata on repository %s owned by %s: %s" % \
+                    ( str( repository.name ), str( repository.user.username ), str( e ) )
                 results[ 'unsuccessful_count' ] += 1
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
             return results
-
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
         start_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results = dict( start_time=start_time,
                         repository_status=[],
@@ -366,7 +473,7 @@ class RepositoriesController( BaseAPIController ):
             my_writable = util.asbool( payload.get( 'my_writable', False ) )
         else:
             my_writable = True
-        query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=my_writable, order=False )
+        query = rmm.get_query_for_setting_metadata_on_repositories( my_writable=my_writable, order=False )
         # First reset metadata on all repositories of type repository_dependency_definition.
         for repository in query:
             encoded_id = trans.security.encode_id( repository.id )
@@ -374,7 +481,7 @@ class RepositoriesController( BaseAPIController ):
                 log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
                            ( str( repository.id ), str( encoded_ids_to_skip ) ) )
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                results = handle_repository( trans, repository, results )
+                results = handle_repository( trans, rmm, repository, results )
         # Now reset metadata on all remaining repositories.
         for repository in query:
             encoded_id = trans.security.encode_id( repository.id )
@@ -382,10 +489,10 @@ class RepositoriesController( BaseAPIController ):
                 log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
                            ( str( repository.id ), str( encoded_ids_to_skip ) ) )
             elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                results = handle_repository( trans, repository, results )
+                results = handle_repository( trans, rmm, repository, results )
         stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 )
+        return json.dumps( results, sort_keys=True, indent=4 )
 
     @web.expose_api
     def reset_metadata_on_repository( self, trans, payload, **kwd ):
@@ -404,27 +511,34 @@ class RepositoriesController( BaseAPIController ):
             results = dict( start_time=start_time,
                             repository_status=[] )
             try:
-                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans,
-                                                                                                                trans.security.encode_id( repository.id ) )
+                rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
+                invalid_file_tups, metadata_dict = \
+                    rmm.reset_all_metadata_on_repository_in_tool_shed( trans.security.encode_id( repository.id ) )
                 if invalid_file_tups:
-                    message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
+                    message = tool_util.generate_message_for_invalid_tools( trans.app,
+                                                                            invalid_file_tups,
+                                                                            repository,
+                                                                            None,
+                                                                            as_html=False )
                 else:
-                    message = "Successfully reset metadata on repository %s owned by %s" % ( str( repository.name ), str( repository.user.username ) )
+                    message = "Successfully reset metadata on repository %s owned by %s" % \
+                        ( str( repository.name ), str( repository.user.username ) )
             except Exception, e:
-                message = "Error resetting metadata on repository %s owned by %s: %s" % ( str( repository.name ), str( repository.user.username ), str( e ) )
+                message = "Error resetting metadata on repository %s owned by %s: %s" % \
+                    ( str( repository.name ), str( repository.user.username ), str( e ) )
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
             return results
 
         repository_id = payload.get( 'repository_id', None )
         if repository_id is not None:
-            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
             start_time = strftime( "%Y-%m-%d %H:%M:%S" )
             log.debug( "%s...resetting metadata on repository %s" % ( start_time, str( repository.name ) ) )
             results = handle_repository( trans, start_time, repository )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
             results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 )
+        return json.dumps( results, sort_keys=True, indent=4 )
 
     @web.expose_api_anonymous
     def show( self, trans, id, **kwd ):
@@ -435,7 +549,7 @@ class RepositoriesController( BaseAPIController ):
         :param id: the encoded id of the Repository object
         """
         # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
-        repository = suc.get_repository_in_tool_shed( trans, id )
+        repository = suc.get_repository_in_tool_shed( trans.app, id )
         if repository is None:
             log.debug( "Unable to locate repository record for id %s." % ( str( id ) ) )
             return {}

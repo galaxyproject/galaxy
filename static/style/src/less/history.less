@@ -62,25 +62,25 @@
     //color: @icon-btn-border;
 }
 .icon-btn-group {
-display: inline-block;
-.icon-btn:not(:last-child) {
-    margin: 0px;
-    border-radius: 0px;
-    border-right: none;
-}
-.icon-btn:first-child {
-    margin-right: 0px;
-    border-top-left-radius: 3px;
-    border-bottom-left-radius: 3px;
-}
-.icon-btn:last-child {
-    margin-left: 0px;
-    border-radius: 0px 3px 3px 0px;
-}
-.icon-btn:only-child {
-    margin: 0px;
-    border-radius: 3px;
-}
+    display: inline-block;
+    .icon-btn:not(:last-child) {
+        margin: 0px;
+        border-radius: 0px;
+        border-right: none;
+    }
+    .icon-btn:first-child {
+        margin-right: 0px;
+        border-top-left-radius: 3px;
+        border-bottom-left-radius: 3px;
+    }
+    .icon-btn:last-child {
+        margin-left: 0px;
+        border-radius: 0px 3px 3px 0px;
+    }
+    .icon-btn:only-child {
+        margin: 0px;
+        border-radius: 3px;
+    }
 }
 
 
@@ -97,7 +97,7 @@ display: inline-block;
         display     : inline-block;
 
         float       : right;
-        margin-top  : -23px;
+        margin-top  : -24px;
         margin-right : 4px;
 
         font-size   : 1.4em;
@@ -309,9 +309,7 @@ display: inline-block;
             .annotation {
                 .info-section;
                 white-space: pre-line;
-            }
-            .annotation:empty {
-                height: @icon-btn-size;
+                overflow: auto;
             }
             // fake placeholder for editable text annotation
             .annotation:empty:after {
@@ -487,9 +485,7 @@ display: inline-block;
                 border: 1px solid fadeout( @layout-border-color, 50% );
                 padding: 4px;
                 white-space: pre-line;
-            }
-            .annotation:empty {
-                height: @icon-btn-size;
+                overflow: auto;
             }
             // fake placeholder for editable text annotation
             .annotation:empty:after {

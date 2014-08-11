@@ -1,7 +1,9 @@
 // dependencies
 define(['utils/utils'], function(Utils) {
 
-// widget
+/**
+ *  This class handles, formats and caches datasets.
+ */
 return Backbone.Collection.extend(
 {
     // list of datasets
@@ -11,8 +13,7 @@ return Backbone.Collection.extend(
     cache: {},
     
     // initialize
-    initialize: function(app, options)
-    {
+    initialize: function(app, options){
         // link app
         this.app = app;
         

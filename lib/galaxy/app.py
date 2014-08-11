@@ -12,13 +12,13 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.registry import VisualizationsRegistry
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
-from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.base import pluginframework
 from galaxy.queue_worker import GalaxyQueueWorker
+from tool_shed.galaxy_install import update_repository_manager
 
 import logging
 log = logging.getLogger( __name__ )
@@ -80,12 +80,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         # Load Data Manager
         self.data_managers = DataManagers( self )
-        # If enabled, poll respective tool sheds to see if updates are available for any installed tool shed repositories.
-        if self.config.get_bool( 'enable_tool_shed_check', False ):
-            from tool_shed.galaxy_install import update_manager
-            self.update_manager = update_manager.UpdateManager( self )
-        else:
-            self.update_manager = None
+        # Load the update repository manager.
+        self.update_repository_manager = update_repository_manager.UpdateRepositoryManager( self )
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
@@ -96,8 +92,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
         load_history_imp_exp_tools( self.toolbox )
-        # Load genome indexer tool.
-        load_genome_index_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = None
         if self.config.visualization_plugins_directory:
@@ -159,8 +153,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.object_store.shutdown()
         if self.heartbeat:
             self.heartbeat.shutdown()
-        if self.update_manager:
-            self.update_manager.shutdown()
+        self.update_repository_manager.shutdown()
         if self.control_worker:
             self.control_worker.shutdown()
         try:

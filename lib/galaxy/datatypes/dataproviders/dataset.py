@@ -11,6 +11,8 @@ import base
 import line
 import column
 import external
+from galaxy.util import sqlite
+import re
 
 from galaxy import eggs
 eggs.require( 'bx-python' )
@@ -700,3 +702,27 @@ class BGzipTabixDataProvider( base.DataProvider ):
         #TODO: as samtools - need more info on output format
         raise NotImplementedError()
         super( BGzipTabixDataProvider, self ).__init__( dataset, **kwargs )
+
+
+class SQliteDataProvider( base.DataProvider ):
+    """
+    Data provider that uses a sqlite database file as its source.
+
+    Allows any query to be run and returns the resulting rows as sqlite3 row objects
+    """
+    settings = {
+        'query': 'str'
+    }
+
+    def __init__( self, source, query=None, **kwargs ):
+        self.query = query
+        self.connection = sqlite.connect(source.dataset.file_name)
+        super( SQliteDataProvider, self ).__init__( source, **kwargs )
+
+    def __iter__( self ):
+        if (self.query is not None) and sqlite.is_read_only_query(self.query):
+            for row in self.connection.cursor().execute(self.query):
+                yield row
+        else:
+            yield
+

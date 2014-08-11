@@ -1,14 +1,14 @@
 // dependencies
 define(['utils/utils', 'plugin/library/ui', 'mvc/ui/ui-portlet',
-        'plugin/models/group', 'plugin/views/viewport', 'plugin/library/screenshot'],
-        function(Utils, Ui, Portlet, Group, ViewportView, Screenshot) {
+        'plugin/views/viewport', 'plugin/library/screenshot'],
+        function(Utils, Ui, Portlet, ViewportView, Screenshot) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  This class renders the chart viewer which encapsulates the chart viewport.
+ */
+return Backbone.View.extend({
     // initialize
-    initialize: function(app, options)
-    {
+    initialize: function(app, options){
         // link app
         this.app = app;
         
@@ -152,7 +152,7 @@ return Backbone.View.extend(
     // wait for chart to be ready
     _wait: function(chart, callback) {
         // get chart
-        if (chart.deferred.ready()) {
+        if (this.app.deferred.ready()) {
             callback();
         } else {
             this.message.update({message: 'Your chart is currently being processed. Please wait and try again.'});

@@ -30,12 +30,12 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         if f_email:
             query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
         if deleted:
-            query = query.filter( trans.app.model.User.table.c.deleted == True )
+            query = query.filter( trans.app.model.User.table.c.deleted == True )  # noqa
             # only admins can see deleted users
             if not trans.user_is_admin():
                 return []
         else:
-            query = query.filter( trans.app.model.User.table.c.deleted == False )
+            query = query.filter( trans.app.model.User.table.c.deleted == False )  # noqa
             # special case: user can see only their own user
             if not trans.user_is_admin():
                 item = trans.user.to_dict( value_mapper={ 'id': trans.security.encode_id } )

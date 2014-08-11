@@ -35,10 +35,10 @@ import mako.template
 import mako.lookup
 import mako.runtime
 
-eggs.require( "pytz" ) # Used by Babel.
+eggs.require( "pytz" )  # Used by Babel.
 eggs.require( "Babel" )
 from babel.support import Translations
-from babel import Locale, UnknownLocaleError
+from babel import Locale
 
 eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
@@ -63,12 +63,14 @@ UCSC_SERVERS = (
     'hgw8.cse.ucsc.edu',
 )
 
+
 def expose( func ):
     """
     Decorator: mark a function as 'exposed' and thus web accessible
     """
     func.exposed = True
     return func
+
 
 def json( func ):
     @wraps(func)
@@ -80,6 +82,7 @@ def json( func ):
     decorator.exposed = True
     return decorator
 
+
 def json_pretty( func ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
@@ -89,6 +92,7 @@ def json_pretty( func ):
         decorator._orig = func
     decorator.exposed = True
     return decorator
+
 
 def require_login( verb="perform this action", use_panels=False, webapp='galaxy' ):
     def argcatcher( func ):
@@ -132,6 +136,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         payload = util.recursively_stringify_dictionary_keys( from_json_string( trans.request.body ) )
     return payload
 
+
 def expose_api_raw( func ):
     """
     Expose this function via the API but don't dump the results
@@ -139,7 +144,7 @@ def expose_api_raw( func ):
     """
     return expose_api( func, to_json=False )
 
-#DBTODO refactor these post-dist.
+
 def expose_api_raw_anonymous( func ):
     """
     Expose this function via the API but don't dump the results
@@ -147,11 +152,13 @@ def expose_api_raw_anonymous( func ):
     """
     return expose_api( func, to_json=False, user_required=False )
 
+
 def expose_api_anonymous( func, to_json=True ):
     """
     Expose this function via the API but don't require a set user.
     """
     return expose_api( func, to_json=to_json, user_required=False )
+
 
 def expose_api( func, to_json=True, user_required=True ):
     """
@@ -203,7 +210,7 @@ def expose_api( func, to_json=True, user_required=True ):
                 rval = to_json_string( rval )
             return rval
         except paste.httpexceptions.HTTPException:
-            raise # handled
+            raise  # handled
         except:
             log.exception( 'Uncaught exception in exposed API method:' )
             raise paste.httpexceptions.HTTPServerError()
@@ -363,9 +370,8 @@ def require_admin( func ):
     def decorator( self, trans, *args, **kwargs ):
         if not trans.user_is_admin():
             msg = "You must be an administrator to access this feature."
-            admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
             user = trans.get_user()
-            if not admin_users:
+            if not trans.app.config.admin_users_list:
                 msg = "You must be logged in as an administrator to access this feature, but no administrators are set in the Galaxy configuration."
             elif not user:
                 msg = "You must be logged in as an administrator to access this feature."
@@ -379,8 +385,10 @@ def require_admin( func ):
 
 NOT_SET = object()
 
+
 def error( message ):
     raise MessageException( message, type='error' )
+
 
 def form( *args, **kwargs ):
     return FormBuilder( *args, **kwargs )
@@ -405,15 +413,15 @@ class WebApplication( base.WebApplication ):
         # Then look in root directory
         paths.append( galaxy_app.config.template_path )
         # Create TemplateLookup with a small cache
-        return mako.lookup.TemplateLookup(
-            directories = paths,
-            module_directory = galaxy_app.config.template_cache,
-            collection_size = 500,
-            output_encoding = 'utf-8' )
+        return mako.lookup.TemplateLookup(directories=paths,
+                                          module_directory=galaxy_app.config.template_cache,
+                                          collection_size=500,
+                                          output_encoding='utf-8' )
 
     def handle_controller_exception( self, e, trans, **kwargs ):
         if isinstance( e, MessageException ):
-            #In the case of a controller exception, sanitize to make sure unsafe html input isn't reflected back to the user
+            # In the case of a controller exception, sanitize to make sure
+            # unsafe html input isn't reflected back to the user
             return trans.show_message( sanitize_html(e.err_msg), e.type )
 
     def make_body_iterable( self, trans, body ):
@@ -446,7 +454,8 @@ class WebApplication( base.WebApplication ):
                 for key in dir( module ):
                     T = getattr( module, key )
                     if inspect.isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
-                        self.add_ui_controller( name, T( app ) )
+                        controller = self._instantiate_controller( T, app )
+                        self.add_ui_controller( name, controller )
 
     def add_api_controllers( self, package_name, app ):
         """
@@ -472,7 +481,14 @@ class WebApplication( base.WebApplication ):
                     if inspect.isclass( T ) and not key.startswith("Base") and issubclass( T, BaseAPIController ):
                         # By default use module_name, but allow controller to override name
                         controller_name = getattr( T, "controller_name", name )
-                        self.add_api_controller( controller_name, T( app ) )
+                        controller = self._instantiate_controller( T, app )
+                        self.add_api_controller( controller_name, controller )
+
+    def _instantiate_controller( self, T, app ):
+        """ Extension point, allow apps to contstruct controllers differently,
+        really just used to stub out actual controllers for routes testing.
+        """
+        return T( app )
 
 
 class GalaxyWebTransaction( base.DefaultWebTransaction ):
@@ -509,7 +525,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         elif self.app.name == "reports":
             self.galaxy_session = None
         else:
-            #This is a web request, get or create session.
+            # This is a web request, get or create session.
             self._ensure_valid_session( session_cookie )
         if self.galaxy_session:
             # When we've authenticated by session, we have to check the
@@ -534,7 +550,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # Default to English
             locales = 'en'
         t = Translations.load( dirname='locale', locales=locales, domain='ginga' )
-        self.template_context.update ( dict( _=t.ugettext, n_=t.ugettext, N_=t.ungettext ) )
+        self.template_context.update( dict( _=t.ugettext, n_=t.ugettext, N_=t.ungettext ) )
 
     @property
     def anonymous( self ):
@@ -644,8 +660,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # using a server secret key.  Any other value is invalid and could pose security issues.
         self.response.cookies[name] = value
         self.response.cookies[name]['path'] = path
-        self.response.cookies[name]['max-age'] = 3600 * 24 * age # 90 days
-        tstamp = time.localtime ( time.time() + 3600 * 24 * age )
+        self.response.cookies[name]['max-age'] = 3600 * 24 * age  # 90 days
+        tstamp = time.localtime( time.time() + 3600 * 24 * age )
         self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp )
         self.response.cookies[name]['version'] = version
         try:
@@ -724,14 +740,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             if session_key:
                 # Retrieve the galaxy_session id via the unique session_key
                 galaxy_session = self.sa_session.query( self.app.model.GalaxySession ) \
-                                                .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key,
-                                                               self.app.model.GalaxySession.table.c.is_valid==True ) ) \
-                                                .first()
+                                                .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key, #noqa
+                                                               self.app.model.GalaxySession.table.c.is_valid==True ) ).first() #noqa
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to to check some
         # things now.
         if self.app.config.use_remote_user:
-            #If this is an api request, and they've passed a key, we let this go.
+            # If this is an api request, and they've passed a key, we let this go.
             assert self.app.config.remote_user_header in self.environ, \
                 "use_remote_user is set but %s header was not provided" % self.app.config.remote_user_header
             remote_user_email = self.environ[ self.app.config.remote_user_header ]
@@ -743,7 +758,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     # No user, associate
                     galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
                     galaxy_session_requires_flush = True
-                elif galaxy_session.user.email != remote_user_email and self.app.config.allow_user_impersonation and remote_user_email not in [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]:
+                elif (galaxy_session.user.email != remote_user_email and
+                      self.app.config.allow_user_impersonation and
+                      remote_user_email not in self.app.config.admin_users_list):
                     # Session exists but is not associated with the correct
                     # remote user, and the currently set remote_user is not a
                     # potentially impersonating admin.
@@ -828,9 +845,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             if self.request.path.startswith( external_display_path ):
                 request_path_split = self.request.path.split( '/' )
                 try:
-                    if self.app.datatypes_registry.display_applications.get( request_path_split[-5] ) and \
-                        request_path_split[-4] in self.app.datatypes_registry.display_applications.get( request_path_split[-5] ).links and \
-                        request_path_split[-3] != 'None':
+                    if (self.app.datatypes_registry.display_applications.get( request_path_split[-5] )
+                            and request_path_split[-4] in self.app.datatypes_registry.display_applications.get( request_path_split[-5] ).links
+                            and request_path_split[-3] != 'None'):
                         return
                 except IndexError:
                     pass
@@ -849,9 +866,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         galaxy_session = self.app.model.GalaxySession(
             session_key=session_key,
             is_valid=True,
-            remote_host = self.request.remote_host,
-            remote_addr = self.request.remote_addr,
-            referer = self.request.headers.get( 'Referer', None ) )
+            remote_host=self.request.remote_host,
+            remote_addr=self.request.remote_addr,
+            referer=self.request.headers.get( 'Referer', None ) )
         if prev_galaxy_session:
             # Invalidated an existing session for some reason, keep track
             galaxy_session.prev_session_id = prev_galaxy_session.id
@@ -868,9 +885,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             return None
         if getattr( self.app.config, "normalize_remote_user_email", False ):
             remote_user_email = remote_user_email.lower()
-        user = self.sa_session.query( self.app.model.User ) \
-                              .filter( self.app.model.User.table.c.email==remote_user_email ) \
-                              .first()
+        user = self.sa_session.query( self.app.model.User
+                ).filter( self.app.model.User.table.c.email==remote_user_email ).first() #noqa
         if user:
             # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
             # role and default user / history permissions were not set for remote users.  When a
@@ -903,7 +919,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # We set default user permissions, before we log in and set the default history permissions
             if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
                 self.app.security_agent.user_set_default_permissions( user )
-            #self.log_event( "Automatically created account '%s'", user.email )
+            # self.log_event( "Automatically created account '%s'", user.email )
         return user
 
     def __update_session_cookie( self, name='galaxysession' ):
@@ -973,7 +989,6 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name=cookie_name )
 
-
     def handle_user_logout( self, logout_all=False ):
         """
         Logout the current user:
@@ -986,10 +1001,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.add_all( ( prev_galaxy_session, self.galaxy_session ) )
         galaxy_user_id = prev_galaxy_session.user_id
         if logout_all and galaxy_user_id is not None:
-            for other_galaxy_session in self.sa_session.query( self.app.model.GalaxySession ) \
-                                            .filter( and_( self.app.model.GalaxySession.table.c.user_id==galaxy_user_id,
-                                                                self.app.model.GalaxySession.table.c.is_valid==True,
-                                                                self.app.model.GalaxySession.table.c.id!=prev_galaxy_session.id ) ):
+            for other_galaxy_session in self.sa_session.query( self.app.model.GalaxySession
+                    ).filter( and_( self.app.model.GalaxySession.table.c.user_id==galaxy_user_id, #noqa
+                                    self.app.model.GalaxySession.table.c.is_valid==True, #noqa
+                                    self.app.model.GalaxySession.table.c.id!=prev_galaxy_session.id ) ): #noqa
                 other_galaxy_session.is_valid = False
                 self.sa_session.add( other_galaxy_session )
         self.sa_session.flush()
@@ -1041,9 +1056,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # (b) has no datasets. If suitable history found, use it; otherwise, create
         # new history.
         unnamed_histories = self.sa_session.query( self.app.model.History ).filter_by(
-                                user=self.galaxy_session.user,
-                                name=self.app.model.History.default_name,
-                                deleted=False )
+            user=self.galaxy_session.user,
+            name=self.app.model.History.default_name,
+            deleted=False )
         default_history = None
         for history in unnamed_histories:
             if len( history.datasets ) == 0:
@@ -1096,8 +1111,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def user_is_admin( self ):
         if self.api_inherit_admin:
             return True
-        admin_users = [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]
-        return self.user and admin_users and self.user.email in admin_users
+        return self.user and self.user.email in self.app.config.admin_users_list
 
     def user_can_do_run_as( self ):
         run_as_users = [ user for user in self.app.config.get( "api_allow_run_as", "" ).split( "," ) if user ]
@@ -1180,8 +1194,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         Convenience method for displaying a simple page with a single HTML
         form.
         """
-        return self.fill_template( template, form=form, header=header, use_panels=( form.use_panels or use_panels ),
-                                    active_view=active_view )
+        return self.fill_template( template, form=form, header=header,
+                                   use_panels=( form.use_panels or use_panels ),
+                                   active_view=active_view )
 
     def fill_template(self, filename, **kwargs):
         """
@@ -1214,9 +1229,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
-        ## return template.render( **data )
+
         def render( environ, start_response ):
             response_write = start_response( self.response.wsgi_status(), self.response.wsgi_headeritems() )
+
             class StreamBuffer( object ):
                 def write( self, d ):
                     response_write( d.encode( 'utf-8' ) )
@@ -1240,7 +1256,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         Returns the builds defined by galaxy and the builds defined by
         the user (chromInfo in history).
         """
-        #FIXME: This method should be removed
+        # FIXME: This method should be removed
         return self.app.genome_builds.get_genome_build_names( trans=self )
 
     @property
@@ -1363,8 +1379,9 @@ class Bunch( dict ):
     Bunch based on a dict
     """
     def __getattr__( self, key ):
-        if key not in self: raise AttributeError, key
+        if key not in self:
+            raise AttributeError(key)
         return self[key]
+
     def __setattr__( self, key, value ):
         self[key] = value
-

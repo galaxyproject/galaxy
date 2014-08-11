@@ -65,6 +65,8 @@ class Configuration( object ):
             self.tool_dependency_dir = None
             self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
+        # Galaxy flavor Docker Image
+        self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.user_activation_on = kwargs.get( 'user_activation_on', None )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
@@ -83,6 +85,7 @@ class Configuration( object ):
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates/community" ), self.root )
         self.admin_users = kwargs.get( "admin_users", "" )
+        self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
@@ -127,6 +130,9 @@ class Configuration( object ):
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
+        self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
+        self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "database/tool_shed_citations/data" ), self.root )
+        self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )
 
     def get( self, key, default ):
         return self.config_dict.get( key, default )

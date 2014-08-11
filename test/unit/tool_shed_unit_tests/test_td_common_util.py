@@ -2,7 +2,7 @@ from os.path import join
 from contextlib import contextmanager
 from galaxy.util import parse_xml_string
 
-from tool_shed.galaxy_install.tool_dependencies import td_common_util
+from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
 
 TEST_DEPENDENCIES_DIR = "/opt/galaxy/dependencies"
@@ -45,16 +45,16 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
     required_for_install_env_sh = '/path/to/existing.sh'
     all_env_paths = [ required_for_install_env_sh ]
     action_dict = {}
+    env_manager = EnvManager( mock_app )
 
     r_env_sh = '/path/to/go/env.sh'
 
-    def mock_get_env_shell_file_paths( app, elem ):
-        assert app == mock_app
+    def mock_get_env_shell_file_paths( elem ):
         assert elem.get( 'name' ) == "package_r_3_0_1"
         return [ r_env_sh ]
 
-    with __mock_common_util_method( "get_env_shell_file_paths", mock_get_env_shell_file_paths ):
-        td_common_util.get_env_shell_file_paths_from_setup_environment_elem( mock_app, all_env_paths, action_elem, action_dict )
+    with __mock_common_util_method( env_manager, "get_env_shell_file_paths", mock_get_env_shell_file_paths ):
+        env_manager.get_env_shell_file_paths_from_setup_environment_elem( all_env_paths, action_elem, action_dict )
         ## Verify old env files weren't deleted.
         assert required_for_install_env_sh in all_env_paths
         ## Verify new ones added.
@@ -70,10 +70,10 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
 ## Poor man's mocking. Need to get a real mocking library as real Galaxy development
 ## dependnecy.
 @contextmanager
-def __mock_common_util_method( name, mock_method ):
-    real_method = getattr( td_common_util, name )
+def __mock_common_util_method( env_manager, name, mock_method ):
+    real_method = getattr( env_manager, name )
     try:
-        setattr( td_common_util, name, mock_method )
+        setattr( env_manager, name, mock_method )
         yield
     finally:
-        setattr( td_common_util, name, real_method )
+        setattr( env_manager, name, real_method )

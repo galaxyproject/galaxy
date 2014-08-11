@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<toolbox tool_path="test/functional/tools">
+<toolbox tool_path="${tool_conf_dir}">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="composite.xml" />
@@ -21,4 +21,6 @@
   <tool file="collection_paired_test.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
+  <tool file="collection_two_paired.xml" />
+  <tool file="collection_optional_param.xml" />
 </toolbox>

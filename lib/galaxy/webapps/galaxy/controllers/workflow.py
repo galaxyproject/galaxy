@@ -227,7 +227,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug, format='html' ):
-        """ 
+        """
         Display workflow based on a username and slug. Format can be html, json, or json-download.
         """
 
@@ -236,7 +236,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         user = session.query( model.User ).filter_by( username=username ).first()
         stored_workflow = trans.sa_session.query( model.StoredWorkflow ).filter_by( user=user, slug=slug, deleted=False ).first()
         encoded_id = trans.security.encode_id( stored_workflow.id )
-        
+
         # Display workflow in requested format.
         if format == 'html':
             return self._display( trans, stored_workflow )
@@ -580,9 +580,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             session = trans.sa_session
             session.add( stored_workflow )
             session.flush()
-            # Display the management page
-            trans.set_message( "Workflow '%s' created" % stored_workflow.name )
-            return self.list( trans )
+            return self.editor( trans, id=trans.security.encode_id(stored_workflow.id ))
         else:
             return form( url_for(controller="workflow", action="create"), "Create New Workflow", submit_text="Create", use_panels=True ) \
                     .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" ) \
@@ -1224,7 +1222,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Index page with message
             workflow_id = trans.security.encode_id( stored_workflow.id )
             return trans.show_message( 'Workflow "%s" created from current history. You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.' %
-                                       ( workflow_name, url_for( controller='workflow', action='editor', id=workflow_id ), 
+                                       ( workflow_name, url_for( controller='workflow', action='editor', id=workflow_id ),
                                        url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose

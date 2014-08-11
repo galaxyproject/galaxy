@@ -22,6 +22,7 @@
 .group-handle{cursor:move;float:left;background:#eee url('../images/tracks/block.png');width:12px;height:12px}
 .group{min-height:20px;border-top:1px solid #888;border-bottom:1px solid #888}.group>.track-header{position:relative;float:left}
 .track-header{height:16px;position:absolute;z-index:2;background-color:rgba(1,1,1,0.1);border-radius:5px;padding:0px 2px;text-align:left;margin:2px;}.track-header:hover{background-color:#DDDDDD}
+.track-header .track-name{max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .track-header .menubutton{margin-left:0px}
 .track-name{float:left;margin-top:2px}
 .tiles{background:url('../images/tracks/diag_bg.gif');position:relative;overflow:hidden}

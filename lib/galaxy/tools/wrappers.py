@@ -1,9 +1,19 @@
 import pipes
+from galaxy import exceptions
 from galaxy.util.none_like import NoneDataset
 from galaxy.util import odict
 
 from logging import getLogger
 log = getLogger( __name__ )
+
+# Fields in .log files corresponding to paths, must have one of the following
+# field names and all such fields are assumed to be paths. This is to allow
+# remote ComputeEnvironments (such as one used by LWR) determine what values to
+# rewrite or transfer...
+PATH_ATTRIBUTES = [ "path" ]
+# ... by default though - don't rewrite anything (if no ComputeEnviornment
+# defined or ComputeEnvironment doesn't supply a rewriter).
+DEFAULT_PATH_REWRITER = lambda x: x
 
 
 class ToolParameterValueWrapper( object ):
@@ -88,9 +98,6 @@ class InputValueWrapper( ToolParameterValueWrapper ):
         return getattr( self.value, key )
 
 
-DEFAULT_PATH_REWRITER = lambda x: x
-
-
 class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     """
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
@@ -112,7 +119,11 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         def __getattr__( self, name ):
             if name not in self._fields:
                 self._fields[ name ] = self._input.options.get_field_by_name_for_value( name, self._value, None, self._other_values )
-            return self._input.separator.join( map( self._path_rewriter, map( str, self._fields[ name ] ) ) )
+            values = map( str, self._fields[ name ] )
+            if name in PATH_ATTRIBUTES:
+                # If we infer this is a path, rewrite it if needed.
+                values = map( self._path_rewriter, values )
+            return self._input.separator.join( values )
 
     def __init__( self, input, value, app, other_values={}, path_rewriter=None ):
         self.input = input
@@ -123,7 +134,9 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
         self.fields = self.SelectToolParameterFieldWrapper( input, value, other_values, self._path_rewriter )
 
     def __str__( self ):
-        return self.input.to_param_dict_string( self.value, other_values=self._other_values, value_map=self._path_rewriter )
+        # Assuming value is never a path - otherwise would need to pass
+        # along following argument value_map=self._path_rewriter.
+        return self.input.to_param_dict_string( self.value, other_values=self._other_values )
 
     def __getattr__( self, key ):
         return getattr( self.input, key )
@@ -196,9 +209,28 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
 
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
+            # Path to dataset was rewritten for this job.
             return self.false_path
         elif self.false_extra_files_path is not None and key == 'extra_files_path':
+            # Path to extra files was rewritten for this job.
             return self.false_extra_files_path
+        elif key == 'extra_files_path':
+            try:
+                # Assume it is an output and that this wrapper
+                # will be set with correct "files_path" for this
+                # job.
+                return self.files_path
+            except AttributeError:
+                # Otherwise, we have an input - delegate to model and
+                # object store to find the static location of this
+                # directory.
+                try:
+                    return self.dataset.extra_files_path
+                except exceptions.ObjectNotFound:
+                    # NestedObjectstore raises an error here
+                    # instead of just returning a non-existent
+                    # path like DiskObjectStore.
+                    raise
         else:
             return getattr( self.dataset, key )
 
@@ -237,6 +269,12 @@ class DatasetCollectionWrapper( object, HasDatasets ):
     def __init__( self, has_collection, dataset_paths=[], **kwargs ):
         super(DatasetCollectionWrapper, self).__init__()
 
+        if has_collection is None:
+            self.__input_supplied = False
+            return
+        else:
+            self.__input_supplied = True
+
         if hasattr( has_collection, "name" ):
             # It is a HistoryDatasetCollectionAssociation
             collection = has_collection.collection
@@ -262,24 +300,41 @@ class DatasetCollectionWrapper( object, HasDatasets ):
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append( element_wrapper )
 
-        self.element_instances = element_instances
-        self.element_instance_list = element_instance_list
+        self.__element_instances = element_instances
+        self.__element_instance_list = element_instance_list
 
     def keys( self ):
-        return self.element_instances.keys()
+        if not self.__input_supplied:
+            return []
+        return self.__element_instances.keys()
 
     @property
     def is_collection( self ):
         return True
 
+    @property
+    def is_input_supplied( self ):
+        return self.__input_supplied
+
     def __getitem__( self, key ):
+        if not self.__input_supplied:
+            return None
         if isinstance( key, int ):
-            return self.element_instance_list[ key ]
+            return self.__element_instance_list[ key ]
         else:
-            return self.element_instances[ key ]
+            return self.__element_instances[ key ]
 
     def __getattr__( self, key ):
-        return self.element_instances[ key ]
+        if not self.__input_supplied:
+            return None
+        return self.__element_instances[ key ]
 
     def __iter__( self ):
-        return self.element_instance_list.__iter__()
+        if not self.__input_supplied:
+            return [].__iter__()
+        return self.__element_instance_list.__iter__()
+
+    def __nonzero__( self ):
+        # Fail `#if $param` checks in cheetah is optional input
+        # not specified or if resulting collection is empty.
+        return self.__input_supplied and bool( self.__element_instance_list )

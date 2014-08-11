@@ -35,6 +35,7 @@ errorpage = """
 </html>
 """
 
+
 class RemoteUser( object ):
     def __init__( self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_header=None ):
         self.app = app
@@ -42,9 +43,10 @@ class RemoteUser( object ):
         self.display_servers = display_servers or []
         self.admin_users = admin_users or []
         self.remote_user_header = remote_user_header or 'HTTP_REMOTE_USER'
+
     def __call__( self, environ, start_response ):
         # Allow display servers
-        if self.display_servers and environ.has_key( 'REMOTE_ADDR' ):
+        if self.display_servers and 'REMOTE_ADDR' in environ:
             try:
                 host = socket.gethostbyaddr( environ[ 'REMOTE_ADDR' ] )[0]
             except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
@@ -57,7 +59,7 @@ class RemoteUser( object ):
         # Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
         path_info = environ.get('PATH_INFO', '')
-        if environ.has_key( self.remote_user_header ) and environ[ self.remote_user_header ] != '(null)':
+        if environ.get(self.remote_user_header, '(null)') != '(null)':
             if not environ[ self.remote_user_header ].count( '@' ):
                 if self.maildomain is not None:
                     environ[ self.remote_user_header ] += '@' + self.maildomain
@@ -74,17 +76,28 @@ class RemoteUser( object ):
                         before you may access Galaxy.
                     """
                     return self.error( start_response, title, message )
-            if path_info.startswith( '/user/create' ) and environ[ self.remote_user_header ] in self.admin_users:
-                pass # admins can create users
+            if not path_info.startswith('/user'):
+                # shortcut the following whitelist for non-user-controller
+                # requests.
+                pass
+            elif path_info.startswith( '/user/create' ) and environ[ self.remote_user_header ] in self.admin_users:
+                pass  # admins can create users
             elif path_info.startswith( '/user/logout' ) and environ[ self.remote_user_header ] in self.admin_users:
                 pass  # Admin users may be impersonating, allow logout.
             elif path_info.startswith( '/user/api_keys' ):
-                pass # api keys can be managed when remote_user is in use
+                pass  # api keys can be managed when remote_user is in use
             elif path_info.startswith( '/user/edit_username' ):
-                pass # username can be managed when remote_user is in use
+                pass  # username can be managed when remote_user is in use
             elif path_info.startswith( '/user/dbkeys' ):
-                pass # dbkeys can be managed when remote_user is in use
+                pass  # dbkeys can be managed when remote_user is in use
+            elif path_info.startswith( '/user/toolbox_filters' ):
+                pass  # toolbox filters can be managed when remote_user is in use
+            elif path_info.startswith( '/user/set_default_permissions' ):
+                pass  # default permissions can be managed when remote_user is in use
+            elif path_info == '/user' or path_info == '/user/':
+                pass  # We do allow access to the root user preferences page.
             elif path_info.startswith( '/user' ):
+                # Any other endpoint in the user controller is off limits
                 title = "Access to Galaxy user controls is disabled"
                 message = """
                     User controls are disabled when Galaxy is configured
@@ -105,6 +118,7 @@ class RemoteUser( object ):
                 <p>Please contact your local Galaxy administrator.
             """
             return self.error( start_response, title, message )
+
     def error( self, start_response, title="Access denied", message="Please contact your local Galaxy administrator." ):
         start_response( '403 Forbidden', [('Content-type', 'text/html')] )
         return [errorpage % (title, message)]

@@ -20,6 +20,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         self.config = bunch.Bunch(
             job_config_file=os.path.join( self.temp_directory, "job_conf.xml" ),
             use_tasked_jobs=False,
+            job_resource_params_file="/tmp/fake_absent_path",
         )
         self.__write_config_from( SIMPLE_JOB_CONF )
         self.app = bunch.Bunch( config=self.config, job_metrics=MockJobMetrics() )
@@ -99,16 +100,17 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
         assert limits.walltime is None
         assert limits.walltime_delta is None
         assert limits.output_size is None
-        assert limits.concurrent_jobs == {}
+        assert limits.destination_user_concurrent_jobs == {}
+        assert limits.destination_total_concurrent_jobs == {}
 
     def test_limit_overrides( self ):
         self.__with_advanced_config()
         limits = self.job_config.limits
         assert limits.registered_user_concurrent_jobs == 2
         assert limits.anonymous_user_concurrent_jobs == 1
-        assert limits.concurrent_jobs[ "local" ] == 1
-        assert limits.concurrent_jobs[ "mycluster" ] == 2
-        assert limits.concurrent_jobs[ "longjobs" ] == 1
+        assert limits.destination_user_concurrent_jobs[ "local" ] == 1
+        assert limits.destination_user_concurrent_jobs[ "mycluster" ] == 2
+        assert limits.destination_user_concurrent_jobs[ "longjobs" ] == 1
         assert limits.walltime_delta == datetime.timedelta( 0, 0, 0, 0, 0, 24 )
 
     def test_env_parsing( self ):

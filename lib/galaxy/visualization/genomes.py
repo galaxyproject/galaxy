@@ -31,10 +31,11 @@ class GenomeRegion( object ):
     A genomic region on an individual chromosome.
     """
 
-    def __init__( self, chrom = None, start = 0, end = 0 ):
+    def __init__( self, chrom = None, start = 0, end = 0, sequence=None ):
         self.chrom = chrom
         self.start = int( start )
         self.end = int( end )
+        self.sequence = sequence
 
     def __str__( self ):
         return self.chrom + ":" + str( self.start ) + "-" + str( self.end )
@@ -356,6 +357,6 @@ class Genomes( object ):
             twobit = TwoBitFile( open( twobit_file_name ) )
             if chrom in twobit:
                 seq_data = twobit[chrom].get( int(low), int(high) )
-                return { 'dataset_type': 'refseq', 'data': seq_data }
+                return GenomeRegion( chrom=chrom, start=low, end=high, sequence=seq_data )
         except IOError:
             return None

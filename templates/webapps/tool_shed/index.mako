@@ -155,6 +155,11 @@
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='upload_capsule' )}">Import repository capsule</a>
                         </div>
+                        %if trans.app.config.enable_galaxy_flavor_docker_image:
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_galaxy_docker_image' )}">Create Galaxy Docker Image</a>
+                            </div>
+                        %endif
                         %if can_review_repositories:
                             <div class="toolSectionPad"></div>
                             <div class="toolSectionTitle">
@@ -216,6 +221,11 @@
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='/user', action='login' )}">Login to create a repository</a>
                         </div>
+                        %if trans.app.config.enable_galaxy_flavor_docker_image:
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_galaxy_docker_image' )}">Create Galaxy Docker Image</a>
+                            </div>
+                        %endif
                     %endif
                 %endif
             </div>

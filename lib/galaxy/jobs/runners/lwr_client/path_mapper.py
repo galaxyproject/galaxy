@@ -53,9 +53,6 @@ class PathMapper(object):
         return remote_path
 
     def check_for_arbitrary_rewrite(self, local_path):
-        if not os.path.exists(local_path):
-            return None, []
-
         path = str(local_path)  # Use false_path if needed.
         action = self.action_mapper.action(path, path_type.UNSTRUCTURED)
         if not action.staging_needed:

@@ -56,7 +56,7 @@ ${render_galaxy_repository_actions( repository )}
                         for name, repo_info_tuple in repo_info_dict.items():
                             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
                             break
-                        status_label = get_tool_shed_repository_status_label( trans,
+                        status_label = get_tool_shed_repository_status_label( trans.app,
                                                                               tool_shed_repository=None,
                                                                               name=name,
                                                                               owner=repository_owner,

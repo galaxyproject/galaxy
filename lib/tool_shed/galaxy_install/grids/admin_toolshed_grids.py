@@ -103,7 +103,7 @@ class InstalledRepositoryGrid( grids.Grid ):
     class StatusColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_shed_repository ):
-            return suc.get_tool_shed_repository_status_label( trans, tool_shed_repository )
+            return suc.get_tool_shed_repository_status_label( trans.app, tool_shed_repository )
 
 
     class ToolShedColumn( grids.TextColumn ):
@@ -194,9 +194,7 @@ class InstalledRepositoryGrid( grids.Grid ):
                    grids.GridOperation( label="Deactivate or uninstall",
                                         condition=( lambda item: \
                                                     not item.deleted and \
-                                                    item.status not in \
-                                                        [ tool_shed_install.ToolShedRepository.installation_status.ERROR,
-                                                          tool_shed_install.ToolShedRepository.installation_status.NEW ] ),
+                                                    item.status != tool_shed_install.ToolShedRepository.installation_status.NEW ),
                                         allow_multiple=False,
                                         url_args=dict( controller='admin_toolshed',
                                                        action='browse_repositories',
@@ -214,7 +212,14 @@ class InstalledRepositoryGrid( grids.Grid ):
                                         target=None,
                                         url_args=dict( controller='admin_toolshed',
                                                        action='browse_repositories',
-                                                       operation='activate or reinstall' ) ) ]
+                                                       operation='activate or reinstall' ) ),
+                   grids.GridOperation( label="Purge",
+                                        condition=( lambda item: item.is_new ),
+                                        allow_multiple=False,
+                                        target=None,
+                                        url_args=dict( controller='admin_toolshed',
+                                                       action='browse_repositories',
+                                                       operation='purge' ) ) ]
     standard_filters = []
     default_filter = dict( deleted="False" )
     num_rows_per_page = 50

@@ -1,9 +1,10 @@
 // dependencies
 define(['plugin/charts/jqplot/common/plot-config', 'plugin/charts/tools'], function(configmaker, Tools) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  This is the common wrapper for jqplot based visualizations.
+ */
+return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
         // get parameters

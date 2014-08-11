@@ -70,25 +70,54 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
     webapp.add_route( '/search', controller='search', action='index' )
 
-    # ================
-    # =====  API =====
-    # ================
+    # TODO: Refactor above routes into external method to allow testing in
+    # isolation as well.
+    populate_api_routes( webapp, app )
 
+    # ==== Done
+    # Indicate that all configuration settings have been provided
+    webapp.finalize_config()
+
+    # Wrap the webapp in some useful middleware
+    if kwargs.get( 'middleware', True ):
+        webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
+    if asbool( kwargs.get( 'static_enabled', True ) ):
+        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
+        #webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=None, **kwargs )
+    if asbool(kwargs.get('pack_scripts', False)):
+        pack_scripts()
+    # Close any pooled database connections before forking
+    try:
+        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
+    except:
+        pass
+     # Close any pooled database connections before forking
+    try:
+        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
+    except:
+        pass
+
+    # Return
+    return webapp
+
+
+def populate_api_routes( webapp, app ):
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
 
     valid_history_contents_types = [
         'dataset',
         'dataset_collection',
     ]
-    # This must come before history contents below.
+
     # Accesss HDA details via histories/:history_id/contents/datasets/:hda_id
-    webapp.mapper.resource( "typed_content",
+    webapp.mapper.resource( "content_typed",
                             "{type:%s}s" % "|".join( valid_history_contents_types ),
-                            name_prefix="history_content_",
+                            name_prefix="history_",
                             controller='history_contents',
                             path_prefix='/api/histories/:history_id/contents',
                             parent_resources=dict( member_name='history', collection_name='histories' ),
                           )
+
     # Legacy access to HDA details via histories/:history_id/contents/:hda_id
     webapp.mapper.resource( 'content',
                                 'contents',
@@ -145,6 +174,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource( 'ftp_file', 'ftp_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/citations', action='citations', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
@@ -152,6 +182,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
+    webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     webapp.mapper.resource( 'datatype',
                             'datatypes',
@@ -349,32 +380,6 @@ def app_factory( global_conf, **kwargs ):
     webapp.mapper.connect( "create", "/api/metrics",
         controller="metrics", action="create", conditions=dict( method=["POST"] ) )
 
-
-    # ==== Done
-    # Indicate that all configuration settings have been provided
-    webapp.finalize_config()
-
-    # Wrap the webapp in some useful middleware
-    if kwargs.get( 'middleware', True ):
-        webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
-    if asbool( kwargs.get( 'static_enabled', True ) ):
-        webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
-        #webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=None, **kwargs )
-    if asbool(kwargs.get('pack_scripts', False)):
-        pack_scripts()
-    # Close any pooled database connections before forking
-    try:
-        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
-    except:
-        pass
-     # Close any pooled database connections before forking
-    try:
-        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
-    except:
-        pass
-
-    # Return
-    return webapp
 
 def pack_scripts():
     from glob import glob

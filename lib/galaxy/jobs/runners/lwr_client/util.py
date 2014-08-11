@@ -7,6 +7,8 @@ from os.path import join
 import os.path
 import hashlib
 import shutil
+import json
+import base64
 
 
 def unique_path_prefix(path):
@@ -63,29 +65,25 @@ def directory_files(directory):
     return contents
 
 
-def parse_amqp_connect_ssl_params(params):
-    ssl = None
-    rval = None
-    ssl_options = []
-    if params:
-        ssl_options = filter(lambda x: x.startswith('amqp_connect_ssl_'), params.keys())
-    if ssl_options:
-        ssl = __import__('ssl')
-        rval = {}
-    for option in ssl_options:
-        value = params.get(option)
-        option = option.replace('amqp_connect_ssl_', '', 1)
-        if option == 'cert_reqs':
-            value = getattr(ssl, value.upper())
-        rval[option] = value
-    return rval
-
-
 def filter_destination_params(destination_params, prefix):
     destination_params = destination_params or {}
     return dict([(key[len(prefix):], destination_params[key])
                  for key in destination_params
                  if key.startswith(prefix)])
+
+
+def to_base64_json(data):
+    """
+
+    >>> x = from_base64_json(to_base64_json(dict(a=5)))
+    >>> x["a"]
+    5
+    """
+    return base64.b64encode(json.dumps(data))
+
+
+def from_base64_json(data):
+    return json.loads(base64.b64decode(data))
 
 
 class PathHelper(object):
@@ -137,7 +135,7 @@ class PathHelper(object):
             message_template = "Cannot compute new path for file %s, does not start with %s."
             message = message_template % (posix_path, old_base)
             raise Exception(message)
-        stripped_path = posix_path[ len(old_base): ]
+        stripped_path = posix_path[len(old_base):]
         while stripped_path.startswith("/"):
             stripped_path = stripped_path[1:]
         path_parts = stripped_path.split(self.separator)

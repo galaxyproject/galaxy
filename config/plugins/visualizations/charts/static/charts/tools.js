@@ -2,8 +2,7 @@
 define(['utils/utils'], function(Utils) {
 
 // render
-function panelHelper (app, options)
-{
+function panelHelper (app, options) {
     // link this
     var self = this;
     
@@ -42,7 +41,7 @@ function panelHelper (app, options)
             }
             
             // unregister process
-            chart.deferred.done(process_id);
+            app.deferred.done(process_id);
         } catch (err) {
             // log
             console.debug('FAILED: Tools::panelHelper() - ' + err);
@@ -51,7 +50,7 @@ function panelHelper (app, options)
             chart.state('failed', err);
             
             // unregister process
-            chart.deferred.done(process_id);
+            app.deferred.done(process_id);
         }
     };
     

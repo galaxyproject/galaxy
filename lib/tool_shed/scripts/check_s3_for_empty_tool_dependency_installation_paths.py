@@ -12,8 +12,7 @@ eggs.require( 'boto' )
 
 import boto
 
-from tool_shed.galaxy_install.tool_dependencies import td_common_util
-
+from tool_shed.util.basic_util import INSTALLATION_LOG
 
 class BucketList( object ):
     
@@ -77,7 +76,7 @@ class BucketList( object ):
             # This would not be the case in a Galaxy instance, since the Galaxy admin will need to verify the contents of
             # the installation path in order to determine which action should be taken.
             elif len( tool_dependency_path_contents ) == 2 and \
-                tool_dependency_path_contents[1].name.endswith( td_common_util.INSTALLATION_LOG ):
+                tool_dependency_path_contents[1].name.endswith( INSTALLATION_LOG ):
                 empty_directories.append( tool_dependency_path_contents[ 0 ] )
         return [ item.name for item in empty_directories ]
     
@@ -106,7 +105,7 @@ def main( args ):
         print 'No empty installation paths found, exiting.'
         return 0
     print 'The following %d tool dependency installation paths were found to be empty or contain only the file %s.' % \
-        ( len( dependency_cleaner.empty_installation_paths ), td_common_util.INSTALLATION_LOG )
+        ( len( dependency_cleaner.empty_installation_paths ), INSTALLATION_LOG )
     if asbool( args.delete ):
         dependency_cleaner.delete_empty_installation_paths()
     else:

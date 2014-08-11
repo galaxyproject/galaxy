@@ -31,7 +31,7 @@ ${render_galaxy_repository_actions( repository )}
             %for tool_dependency in repository.tool_dependencies:
                 <%
                     if tool_dependency.error_message:
-                        from tool_shed.util.shed_util_common import to_html_string
+                        from tool_shed.util.basic_util import to_html_string
                         error_message = to_html_string( tool_dependency.error_message )
                     else:
                         error_message = ''

@@ -2,6 +2,7 @@
 histories.
 """
 from galaxy.util.odict import odict
+from galaxy import exceptions
 from galaxy import model
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
@@ -88,6 +89,8 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
     for hid in dataset_collection_ids:
         step = model.WorkflowStep()
         step.type = 'data_collection_input'
+        if hid not in summary.collection_types:
+            raise exceptions.RequestParameterInvalidException( "hid %s does not appear to be a collection" % hid )
         collection_type = summary.collection_types[ hid ]
         step.tool_inputs = dict( name="Input Dataset Collection", collection_type=collection_type )
         hid_to_output_pair[ hid ] = ( step, 'output' )
@@ -314,6 +317,13 @@ def __cleanup_param_values( inputs, values ):
                     rep_index = rep_values['__index__']
                     cleanup( "%s%s_%d|" % (prefix, key, rep_index ), input.inputs, group_values[i] )
             elif isinstance( input, Conditional ):
+                # Scrub dynamic resource related parameters from workflows,
+                # they cause problems and the workflow probably should include
+                # their state in workflow encoding.
+                if input.is_job_resource_conditional:
+                    if input.name in values:
+                        del values[input.name]
+                    return
                 group_values = values[input.name]
                 current_case = group_values['__current_case__']
                 cleanup( "%s%s|" % ( prefix, key ), input.cases[current_case].inputs, group_values )

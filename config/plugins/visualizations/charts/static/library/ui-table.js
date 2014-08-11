@@ -1,7 +1,10 @@
+// dependencies
 define(['utils/utils'], function(Utils) {
 
-var View = Backbone.View.extend(
-{
+/**
+ *  This class creates a ui table element.
+ */
+var View = Backbone.View.extend({
     // current row
     row: null,
     

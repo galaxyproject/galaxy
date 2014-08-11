@@ -11,6 +11,8 @@
 
 cd `dirname $0`
 
+./scripts/common_startup.sh --skip-samples
+
 GALAXY_REPORTS_CONFIG=${GALAXY_REPORTS_CONFIG:-reports_wsgi.ini}
 GALAXY_REPORTS_PID=${GALAXY_REPORTS_PID:-reports_webapp.pid}
 GALAXY_REPORTS_LOG=${GALAXY_REPORTS_LOG:-reports_webapp.log}

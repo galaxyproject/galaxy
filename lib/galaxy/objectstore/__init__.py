@@ -623,9 +623,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 'irods':
         from .rods import IRODSObjectStore
         return IRODSObjectStore(config=config, config_xml=config_xml)
-    elif store == 'lwr':
-        from .lwr import LwrObjectStore
-        return LwrObjectStore(config=config, config_xml=config_xml)
+    elif store == 'pulsar':
+        from .pulsar import PulsarObjectStore
+        return PulsarObjectStore(config=config, config_xml=config_xml)
     else:
         log.error("Unrecognized object store definition: {0}".format(store))
 

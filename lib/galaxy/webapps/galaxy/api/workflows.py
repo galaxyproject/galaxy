@@ -6,21 +6,19 @@ from __future__ import absolute_import
 
 import logging
 from sqlalchemy import desc, or_
-from galaxy import exceptions
-from galaxy import util
-from galaxy import web
+from galaxy import exceptions, util, web
+from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.web.base.controller import UsesHistoryMixin
+from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
-from galaxy.workflow.extract import extract_workflow
-
 
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations):
 
     @web.expose_api
     def index(self, trans, **kwd):
@@ -36,9 +34,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
-            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == True ) )
+            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == True ) ) #noqa -- sqlalchemy comparison
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
-                filter1, trans.app.model.StoredWorkflow.table.c.deleted == False ).order_by(
+                filter1, trans.app.model.StoredWorkflow.table.c.deleted == False ).order_by( #noqa -- sqlalchemy comparison
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
             item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf.id)
@@ -47,7 +45,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
-                trans.app.model.StoredWorkflow.deleted == False ).order_by(
+                trans.app.model.StoredWorkflow.deleted == False ).order_by( #noqa -- sqlalchemy comparison
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
             item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
@@ -71,7 +69,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             return "Malformed workflow id ( %s ) specified, unable to decode." % str(workflow_id)
         try:
             stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).get(decoded_workflow_id)
-            if stored_workflow.importable == False and stored_workflow.user != trans.user and not trans.user_is_admin():
+            if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin():
                 if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                     trans.response.status = 400
                     return("Workflow is neither importable, nor owned by or shared with current user")
@@ -84,22 +82,30 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         latest_workflow = stored_workflow.latest_workflow
         inputs = {}
         for step in latest_workflow.steps:
-            if step.type == 'data_input':
+            step_type = step.type
+            if step_type in ['data_input', 'data_collection_input']:
                 if step.tool_inputs and "name" in step.tool_inputs:
-                    inputs[step.id] = {'label': step.tool_inputs['name'], 'value': ""}
+                    label = step.tool_inputs['name']
+                elif step_type == "data_input":
+                    label = "Input Dataset"
+                elif step_type == "data_collection_input":
+                    label = "Input Dataset Collection"
                 else:
-                    inputs[step.id] = {'label': "Input Dataset", 'value': ""}
+                    raise ValueError("Invalid step_type %s" % step_type)
+                inputs[step.id] = {'label': label, 'value': ""}
             else:
                 pass
                 # Eventually, allow regular tool parameters to be inserted and modified at runtime.
                 # p = step.get_required_parameters()
         item['inputs'] = inputs
+        item['annotation'] = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
         steps = {}
         for step in latest_workflow.steps:
             steps[step.id] = {'id': step.id,
                               'type': step.type,
                               'tool_id': step.tool_id,
                               'tool_version': step.tool_version,
+                              'annotation': self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step ),
                               'tool_inputs': step.tool_inputs,
                               'input_steps': {}}
             for conn in step.input_connections:
@@ -194,13 +200,32 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         # Pull other parameters out of payload.
         param_map = payload.get( 'parameters', {} )
-        ds_map = payload.get( 'ds_map', {} )
+        inputs = payload.get( 'inputs', None )
+        inputs_by = payload.get( 'inputs_by', None )
+        if inputs is None:
+            # Default to legacy behavior - read ds_map and reference steps
+            # by unencoded step id (a raw database id).
+            inputs = payload.get( 'ds_map', {} )
+            inputs_by = inputs_by or 'step_id'
+        else:
+            inputs = inputs or {}
+            # New default is to reference steps by index of workflow step
+            # which is intrinsic to the workflow and independent of the state
+            # of Galaxy at the time of workflow import.
+            inputs_by = inputs_by or 'step_index'
+
+        valid_inputs_by = [ 'step_id', 'step_index', 'name' ]
+        if inputs_by not in valid_inputs_by:
+            trans.response.status = 403
+            error_message_template = "Invalid inputs_by specified '%s' must be one of %s"
+            error_message = error_message_template % ( inputs_by, valid_inputs_by )
+            raise ValueError( error_message )
+
         add_to_history = 'no_add_to_history' not in payload
         history_param = payload.get('history', '')
 
         # Get workflow + accessibility check.
-        stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(
-                        trans.security.decode_id(workflow_id))
+        stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 trans.response.status = 400
@@ -223,9 +248,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         # Get target history.
         if history_param.startswith('hist_id='):
-            #Passing an existing history to use.
-            history = trans.sa_session.query(self.app.model.History).get(
-                    trans.security.decode_id(history_param[8:]))
+            # Passing an existing history to use.
+            history = trans.sa_session.query(self.app.model.History).get(trans.security.decode_id(history_param[8:]))
             if history.user != trans.user and not trans.user_is_admin():
                 trans.response.status = 400
                 return "Invalid History specified."
@@ -236,33 +260,42 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             trans.sa_session.flush()
 
         # Set workflow inputs.
-        for k in ds_map:
+        for k in inputs:
             try:
-                if ds_map[k]['src'] == 'ldda':
+                if inputs[k]['src'] == 'ldda':
                     ldda = trans.sa_session.query(self.app.model.LibraryDatasetDatasetAssociation).get(
-                            trans.security.decode_id(ds_map[k]['id']))
+                        trans.security.decode_id(inputs[k]['id']))
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
-                    hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-                elif ds_map[k]['src'] == 'ld':
+                    content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
+                elif inputs[k]['src'] == 'ld':
                     ldda = trans.sa_session.query(self.app.model.LibraryDataset).get(
-                            trans.security.decode_id(ds_map[k]['id'])).library_dataset_dataset_association
+                        trans.security.decode_id(inputs[k]['id'])).library_dataset_dataset_association
                     assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset )
-                    hda = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-                elif ds_map[k]['src'] == 'hda':
+                    content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
+                elif inputs[k]['src'] == 'hda':
                     # Get dataset handle, add to dict and history if necessary
-                    hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(
-                            trans.security.decode_id(ds_map[k]['id']))
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+                    content = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(
+                        trans.security.decode_id(inputs[k]['id']))
+                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), content.dataset )
+                elif inputs[k]['src'] == 'hdca':
+                    content = self.app.dataset_collections_service.get_dataset_collection_instance(
+                        trans,
+                        'history',
+                        inputs[k]['id']
+                    )
                 else:
                     trans.response.status = 400
-                    return "Unknown dataset source '%s' specified." % ds_map[k]['src']
-                if add_to_history and hda.history != history:
-                    hda = hda.copy()
-                    history.add_dataset(hda)
-                ds_map[k]['hda'] = hda
+                    return "Unknown dataset source '%s' specified." % inputs[k]['src']
+                if add_to_history and content.history != history:
+                    content = content.copy()
+                    if isinstance( content, self.app.model.HistoryDatasetAssociation ):
+                        history.add_dataset( content )
+                    else:
+                        history.add_dataset_collection( content )
+                inputs[k]['hda'] = content  # TODO: rename key to 'content', prescreen input ensure not populated explicitly
             except AssertionError:
                 trans.response.status = 400
-                return "Invalid Dataset '%s' Specified" % ds_map[k]['id']
+                return "Invalid Dataset '%s' Specified" % inputs[k]['id']
 
         # Run each step, connecting outputs to inputs
         replacement_dict = payload.get('replacement_params', {})
@@ -270,7 +303,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         run_config = WorkflowRunConfig(
             target_history=history,
             replacement_dict=replacement_dict,
-            ds_map=ds_map,
+            inputs=inputs,
+            inputs_by=inputs_by,
             param_map=param_map,
         )
 
@@ -311,7 +345,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         ret_dict = self._workflow_to_dict( trans, stored_workflow )
         if not ret_dict:
-            #This workflow has a tool that's missing from the distribution
+            # This workflow has a tool that's missing from the distribution
             trans.response.status = 400
             return "Workflow cannot be exported due to missing tools."
         return ret_dict
@@ -338,12 +372,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             trans.response.status = 403
             return("Workflow is not owned by current user")
 
-        #Mark a workflow as deleted
+        # Mark a workflow as deleted
         stored_workflow.deleted = True
         trans.sa_session.flush()
 
         # TODO: Unsure of response message to let api know that a workflow was successfully deleted
-        #return 'OK'
         return ( "Workflow '%s' successfully deleted" % stored_workflow.name )
 
     @web.expose_api
@@ -394,7 +427,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             stored_workflow = self.get_stored_workflow( trans, workflow_id, check_ownership=False )
         except:
             raise exceptions.ObjectNotFound( "Malformed workflow id ( %s ) specified." % workflow_id )
-        if stored_workflow.importable == False:
+        if stored_workflow.importable is False:
             raise exceptions.MessageException( 'The owner of this workflow has disabled imports via this link.' )
         elif stored_workflow.deleted:
             raise exceptions.MessageException( "You can't import this workflow because it has been deleted." )
@@ -417,13 +450,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         """
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception, e:
+        except Exception:
             raise exceptions.ObjectNotFound()
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 raise exceptions.ItemOwnershipException()
-        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
+        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter_by(workflow_id=stored_workflow.latest_workflow_id)
         out = []
         for r in results:
             out.append( self.encode_all_ids( trans, r.to_dict(), True) )
@@ -446,14 +479,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception, e:
+        except Exception:
             raise exceptions.ObjectNotFound()
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 raise exceptions.ItemOwnershipException()
-        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter(self.app.model.WorkflowInvocation.workflow_id==stored_workflow.latest_workflow_id)
-        results = results.filter(self.app.model.WorkflowInvocation.id == trans.security.decode_id(usage_id))
+        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter_by(workflow_id=stored_workflow.latest_workflow_id)
+        results = results.filter_by(id=trans.security.decode_id(usage_id))
         out = results.first()
         if out is not None:
             return self.encode_all_ids( trans, out.to_dict('element'), True)

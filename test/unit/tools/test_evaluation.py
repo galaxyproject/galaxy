@@ -142,10 +142,17 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
             <option value="/old/path/mouse">Mouse</option>
         </param>''')
         parameter = SelectToolParameter( self.tool, xml )
+
+        def get_field_by_name_for_value( name, value, trans, other_values ):
+            assert value == "/old/path/human"
+            assert name == "path"
+            return ["/old/path/human"]
+
+        parameter.options = Bunch(get_field_by_name_for_value=get_field_by_name_for_value)
         self.tool.set_params( {
             "index_path": parameter
         } )
-        self.tool._command_line = "prog1 $index_path"
+        self.tool._command_line = "prog1 $index_path.fields.path"
 
         def test_path_rewriter(v):
             if v:

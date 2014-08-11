@@ -1,6 +1,7 @@
 """Middle-ware for handling hg authentication for users pushing change sets to local repositories."""
-import os
+import json
 import logging
+import os
 import sqlalchemy
 import sys
 import tempfile
@@ -9,11 +10,8 @@ from paste.httpheaders import AUTH_TYPE
 from paste.httpheaders import REMOTE_USER
 
 from galaxy.util import asbool
-from galaxy.util import json
-from galaxy.webapps.tool_shed import model
 from galaxy.util.hash_util import new_secure_hash
-import tool_shed.util.shed_util_common as suc
-from tool_shed.util import commit_util
+from tool_shed.util import hg_util
 import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
@@ -23,6 +21,7 @@ import mercurial.__version__
 log = logging.getLogger(__name__)
 
 CHUNK_SIZE = 65536
+
 
 class Hg( object ):
 
@@ -37,12 +36,20 @@ class Hg( object ):
             self.db_url = self.config[ 'database_connection' ]
         else:
             self.db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config[ 'database_file' ]
+        # Keep track of whether we're setting repository metadata so that we do not increment the times_downloaded
+        # count for the repository.
+        self.setting_repository_metadata = False
 
     def __call__( self, environ, start_response ):
+        if 'PATH_INFO' in environ:
+            path_info = environ[ 'PATH_INFO' ].lstrip( '/' )
+            if path_info == 'repository/reset_all_metadata':
+                self.setting_repository_metadata = True
         cmd = self.__get_hg_command( **environ )
         # The 'getbundle' command indicates that a mercurial client is getting a bundle of one or more changesets, indicating
-        # a clone or a pull.
-        if cmd == 'getbundle':
+        # a clone or a pull.  However, we do not want to increment the times_downloaded count if we're only setting repository
+        # metadata.
+        if cmd == 'getbundle' and not self.setting_repository_metadata:
             common, _ = environ[ 'HTTP_X_HGARG_1' ].split( '&' )
             # The 'common' parameter indicates the full sha-1 hash of the changeset the client currently has checked out. If
             # this is 0000000000000000000000000000000000000000, then the client is performing a fresh checkout. If it has any
@@ -55,13 +62,15 @@ class Hg( object ):
                     connection = engine.connect()
                     path_info = environ[ 'PATH_INFO' ].lstrip( '/' )
                     user_id, repository_name = self.__get_user_id_repository_name_from_path_info( connection, path_info )
-                    sql_cmd = "SELECT times_downloaded FROM repository WHERE user_id = %d AND name = '%s'" % ( user_id, repository_name.lower() )
+                    sql_cmd = "SELECT times_downloaded FROM repository WHERE user_id = %d AND name = '%s'" % \
+                        ( user_id, repository_name.lower() )
                     result_set = connection.execute( sql_cmd )
                     for row in result_set:
                         # Should only be 1 row...
                         times_downloaded = row[ 'times_downloaded' ]
                     times_downloaded += 1
-                    sql_cmd = "UPDATE repository SET times_downloaded = %d WHERE user_id = %d AND name = '%s'" % ( times_downloaded, user_id, repository_name.lower() )
+                    sql_cmd = "UPDATE repository SET times_downloaded = %d WHERE user_id = %d AND name = '%s'" % \
+                        ( times_downloaded, user_id, repository_name.lower() )
                     connection.execute( sql_cmd )
                     connection.close()
         elif cmd in [ 'unbundle', 'pushkey' ]:
@@ -104,7 +113,7 @@ class Hg( object ):
                     fh.write( chunk )
                 fh.close()
                 fh = open( tmp_filename, 'rb' )
-                changeset_groups = json.from_json_string( commit_util.bundle_to_json( fh ) )
+                changeset_groups = json.loads( hg_util.bundle_to_json( fh ) )
                 fh.close()
                 try:
                     os.unlink( tmp_filename )
@@ -131,9 +140,9 @@ class Hg( object ):
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
                                     if filename and isinstance( filename, str ):
-                                        if filename == suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
+                                        if filename == rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME:
                                             # Make sure the any complex repository dependency definitions contain valid <repository> tags.
-                                            is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
+                                            is_valid, error_msg = self.repository_tags_are_valid( filename, change_list )
                                             if not is_valid:
                                                 log.debug( error_msg )
                                                 return self.__display_exception_remotely( start_response, error_msg )
@@ -150,9 +159,9 @@ class Hg( object ):
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
                                     if filename and isinstance( filename, str ):
-                                        if filename == suc.TOOL_DEPENDENCY_DEFINITION_FILENAME:
+                                        if filename == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                                             # Make sure the any complex repository dependency definitions contain valid <repository> tags.
-                                            is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
+                                            is_valid, error_msg = self.repository_tags_are_valid( filename, change_list )
                                             if not is_valid:
                                                 log.debug( error_msg )
                                                 return self.__display_exception_remotely( start_response, error_msg )
@@ -171,11 +180,11 @@ class Hg( object ):
                                     # We possibly found an altered file entry.
                                     filename, change_list = entry
                                     if filename and isinstance( filename, str ):
-                                        if filename in [ suc.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-                                                        suc.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
+                                        if filename in [ rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                                         rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME ]:
                                             # We check both files since tool dependency definitions files can contain complex
                                             # repository dependency definitions.
-                                            is_valid, error_msg = commit_util.repository_tags_are_valid( filename, change_list )
+                                            is_valid, error_msg = self.repository_tags_are_valid( filename, change_list )
                                             if not is_valid:
                                                 log.debug( error_msg )
                                                 return self.__display_exception_remotely( start_response, error_msg )
@@ -186,6 +195,54 @@ class Hg( object ):
             else:
                 return result.wsgi_application( environ, start_response )
         return self.app( environ, start_response )
+
+    def __authenticate( self, username, password ):
+        db_password = None
+        # Instantiate a database connection
+        engine = sqlalchemy.create_engine( self.db_url )
+        connection = engine.connect()
+        result_set = connection.execute( "select email, password from galaxy_user where username = '%s'" % username.lower() )
+        for row in result_set:
+            # Should only be 1 row...
+            db_email = row[ 'email' ]
+            db_password = row[ 'password' ]
+        connection.close()
+        if db_password:
+            # Check if password matches db_password when hashed.
+            return new_secure_hash( text_type=password ) == db_password
+        return False
+
+    def __authenticate_remote_user( self, environ, username, password ):
+        """
+        Look after a remote user and "authenticate" - upstream server should already have achieved
+        this for us, but we check that the user exists at least. Hg allow_push = must include username
+        - some versions of mercurial blow up with 500 errors.
+        """
+        db_username = None
+        ru_email = environ[ 'HTTP_REMOTE_USER' ].lower()
+        ## Instantiate a database connection...
+        engine = sqlalchemy.create_engine( self.db_url )
+        connection = engine.connect()
+        result_set = connection.execute( "select email, username, password from galaxy_user where email = '%s'" % ru_email )
+        for row in result_set:
+            # Should only be 1 row...
+            db_email = row[ 'email' ]
+            db_password = row[ 'password' ]
+            db_username = row[ 'username' ]
+        connection.close()
+        if db_username:
+            # We could check the password here except that the function galaxy.web.framework.get_or_create_remote_user()
+            # does some random generation of a password - so that no-one knows the password and only the hash is stored...
+            return db_username == username
+        return False
+
+    def __basic_authentication( self, environ, username, password ):
+        """The environ parameter is needed in basic authentication.  We also check it if use_remote_user is true."""
+        if asbool( self.config.get( 'use_remote_user', False ) ):
+            assert "HTTP_REMOTE_USER" in environ, "use_remote_user is set but no HTTP_REMOTE_USER variable"
+            return self.__authenticate_remote_user( environ, username, password )
+        else:
+            return self.__authenticate( username, password )
 
     def __display_exception_remotely( self, start_response, msg ):
         # Display the exception to the remote user's command line.
@@ -214,49 +271,37 @@ class Hg( object ):
             user_id = row[ 'id' ]
         return user_id, repository_name
 
-    def __basic_authentication( self, environ, username, password ):
-        """The environ parameter is needed in basic authentication.  We also check it if use_remote_user is true."""
-        if asbool( self.config.get( 'use_remote_user', False ) ):
-            assert "HTTP_REMOTE_USER" in environ, "use_remote_user is set but no HTTP_REMOTE_USER variable"
-            return self.__authenticate_remote_user( environ, username, password )
-        else:
-            return self.__authenticate( username, password )
-
-    def __authenticate( self, username, password ):
-        db_password = None
-        # Instantiate a database connection
-        engine = sqlalchemy.create_engine( self.db_url )
-        connection = engine.connect()
-        result_set = connection.execute( "select email, password from galaxy_user where username = '%s'" % username.lower() )
-        for row in result_set:
-            # Should only be 1 row...
-            db_email = row[ 'email' ]
-            db_password = row[ 'password' ]
-        connection.close()
-        if db_password:
-            # Check if password matches db_password when hashed.
-            return new_secure_hash( text_type=password ) == db_password
-        return False
-
-    def __authenticate_remote_user( self, environ, username, password ):
+    def repository_tag_is_valid( self, filename, line ):
         """
-        Look after a remote user and "authenticate" - upstream server should already have achieved this for us, but we check that the
-        user exists at least. Hg allow_push = must include username - some versions of mercurial blow up with 500 errors.
+        Checks changes made to <repository> tags in a dependency definition file being pushed to the
+        Tool Shed from the command line to ensure that all required attributes exist.
         """
-        db_username = None
-        ru_email = environ[ 'HTTP_REMOTE_USER' ].lower()
-        ## Instantiate a database connection...
-        engine = sqlalchemy.create_engine( self.db_url )
-        connection = engine.connect()
-        result_set = connection.execute( "select email, username, password from galaxy_user where email = '%s'" % ru_email )
-        for row in result_set:
-            # Should only be 1 row...
-            db_email = row[ 'email' ]
-            db_password = row[ 'password' ]
-            db_username = row[ 'username' ]
-        connection.close()
-        if db_username:
-            # We could check the password here except that the function galaxy.web.framework.get_or_create_remote_user() does some random generation of
-            # a password - so that no-one knows the password and only the hash is stored...
-            return db_username == username
-        return False
+        required_attributes = [ 'toolshed', 'name', 'owner', 'changeset_revision' ]
+        defined_attributes = line.split()
+        for required_attribute in required_attributes:
+            defined = False
+            for defined_attribute in defined_attributes:
+                if defined_attribute.startswith( required_attribute ):
+                    defined = True
+                    break
+            if not defined:
+                error_msg = 'The %s file contains a <repository> tag that is missing the required attribute %s.  ' % \
+                    ( filename, required_attribute )
+                error_msg += 'Automatically populating dependency definition attributes occurs only when using '
+                error_msg += 'the Tool Shed upload utility.  '
+                return False, error_msg
+        return True, ''
+    
+    def repository_tags_are_valid( self, filename, change_list ):
+        """
+        Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing
+        changes to the tool shed on the command line.
+        """
+        tag = '<repository'
+        for change_dict in change_list:
+            lines = get_change_lines_in_file_for_tag( tag, change_dict )
+            for line in lines:
+                is_valid, error_msg = repository_tag_is_valid( filename, line )
+                if not is_valid:
+                    return False, error_msg
+        return True, ''

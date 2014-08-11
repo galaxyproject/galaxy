@@ -11,8 +11,12 @@ scripts/scramble/build
 scripts/scramble/lib
 scripts/scramble/archives
 
+# Python virtualenv
+.venv
+
 # Database stuff
 database/beaker_sessions
+database/citations
 database/community_files
 database/compiled_templates
 database/files
@@ -35,6 +39,7 @@ tool_shed_webapp.lock
 tool_shed_webapp.log
 tool_shed_webapp.pid
 hgweb.config*
+lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml
 
 # Reports Runtime Files
 reports_webapp.lock
@@ -61,6 +66,7 @@ job_conf.xml
 data_manager_conf.xml
 shed_data_manager_conf.xml
 object_store_conf.xml
+job_metrics_conf.xml
 config/*
 static/welcome.html.*
 static/welcome.html

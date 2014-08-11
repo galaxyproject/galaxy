@@ -136,7 +136,15 @@ var View = Backbone.View.extend(
         });
     },
     
-    // adds and displays a new frame/window
+    /**
+     * Adds and displays a new frame.
+     *
+     * options:
+     *  type: 'url' or 'other' ; if 'url', 'content' is treated as a URL and loaded into an iframe; 
+     *        if 'other', content is treated as a function or raw HTML. content function is passed a single 
+     *        argument that is the frame's content DOM element
+     *  content: the content to be loaded into the frame.
+     */
     add: function(options)
     {
         // frame default options
@@ -180,11 +188,20 @@ var View = Backbone.View.extend(
 
         // append
         var $frame_el = null;
-        if (options.type == 'url') {
+        if (options.type === 'url') {
             $frame_el = $(this._template_frame_url(frame_id.substring(1), options.title, options.content));
-        } else {
+        } 
+        else if (options.type === 'other') {
             $frame_el = $(this._template_frame(frame_id.substring(1), options.title));
-            $frame_el.find('.f-content').append(options.content);
+
+            // Load content into frame.
+            var content_elt = $frame_el.find('.f-content');
+            if (_.isFunction(options.content)) {
+                options.content(content_elt);
+            }
+            else {
+                content_elt.append(options.content);
+            }
         }
         $(this.el).append($frame_el);
         
@@ -529,13 +546,23 @@ var View = Backbone.View.extend(
         this.hide();
     },
     
-    // scroll
+    /**
+     * Fired when scrolling occurs on panel.
+     */
     _event_panel_scroll: function(e)
     {
         // check
         if (this.event.type !== null || !this.visible)
             return;
-            
+
+        // Stop propagation if scrolling is happening inside a frame.
+        // TODO: could propagate scrolling if at top/bottom of frame.
+        var frames = $(e.srcElement).parents('.frame')
+        if (frames.length !== 0) {
+            e.stopPropagation();
+            return;
+        }
+
         // prevent
         e.preventDefault();
 

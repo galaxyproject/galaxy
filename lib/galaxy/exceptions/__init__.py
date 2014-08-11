@@ -86,6 +86,11 @@ class RequestParameterInvalidException( MessageException ):
     err_code = error_codes.USER_REQUEST_INVALID_PARAMETER
 
 
+class AuthenticationFailed( MessageException ):
+    status_code = 401
+    err_code = error_codes.USER_AUTHENTICATION_FAILED
+
+
 class AuthenticationRequired( MessageException ):
     status_code = 403
     #TODO: as 401 and send WWW-Authenticate: ???
@@ -110,6 +115,11 @@ class ConfigDoesNotAllowException( MessageException ):
 class InsufficientPermissionsException( MessageException ):
     status_code = 403
     err_code = error_codes.INSUFFICIENT_PERMISSIONS
+
+
+class AdminRequiredException( MessageException ):
+    status_code = 403
+    err_code = error_codes.ADMIN_REQUIRED
 
 
 class ObjectNotFound( MessageException ):

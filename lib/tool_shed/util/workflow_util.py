@@ -1,5 +1,6 @@
 import logging
 import os
+
 import galaxy.tools
 import galaxy.tools.parameters
 import galaxy.webapps.galaxy.controllers.workflow
@@ -9,10 +10,12 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.modules import InputDataModule
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
-import tool_shed.util.shed_util_common as suc
+
+from tool_shed.tools import tool_validator
+
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
-from tool_shed.util import tool_util
+from tool_shed.util import shed_util_common as suc
 
 eggs.require( "SVGFig" )
 import svgfig
@@ -57,11 +60,14 @@ class RepoToolModule( ToolModule ):
         self.tool_id = tool_id
         self.tool = None
         self.errors = None
+        self.tv = tool_validator.ToolValidator( trans.app )
         if trans.webapp.name == 'tool_shed':
             # We're in the tool shed.
             for tool_dict in tools_metadata:
                 if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
-                    repository, self.tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
+                    repository, self.tool, message = self.tv.load_tool_from_changeset_revision( repository_id,
+                                                                                                changeset_revision,
+                                                                                                tool_dict[ 'tool_config' ] )
                     if message and self.tool is None:
                         self.errors = 'unavailable'
                     break
@@ -176,13 +182,13 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     workflow_name = encoding_util.tool_shed_decode( workflow_name )
     if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
-        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, repository_metadata_id )
         repository_id = trans.security.encode_id( repository_metadata.repository_id )
         changeset_revision = repository_metadata.changeset_revision
         metadata = repository_metadata.metadata
     else:
         # We're in Galaxy.
-        repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
+        repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
         changeset_revision = repository.changeset_revision
         metadata = repository.metadata
     # metadata[ 'workflows' ] is a list of tuples where each contained tuple is

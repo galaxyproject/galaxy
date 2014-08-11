@@ -1,7 +1,15 @@
-define(["utils/utils", "libs/underscore", "libs/d3", "viz/visualization", "utils/config"], function(utils, _, d3, visualization, config) {
+// load required libraries
+require(
+[
+    'utils/utils',
+    'libs/farbtastic',
+], function(mod_utils)
+{
+    // load css
+    mod_utils.cssLoadFile("static/style/circster.css");
+});
 
-// Load needed CSS.
-utils.cssLoadFile("static/style/circster.css");
+define(["libs/underscore", "libs/d3", "viz/visualization", "utils/config"], function(_, d3, visualization, config) {
 
 /**
  * Utility class for working with SVG.
@@ -72,14 +80,14 @@ var UsesTicks = {
              .attr("y1", tick_coords[3])
              .style("stroke", "#000");
         
-        ticks.append("text")
-            .attr("x", text_coords[0])
-            .attr("y", text_coords[1])
-            .attr("dx", text_coords[2])
-            .attr("dy", text_coords[3])
-            .attr("text-anchor", text_anchor)
-            .attr("transform", textTransform)
-        .text(function(d) { return d.label; });
+        return ticks.append("text")
+                    .attr("x", text_coords[0])
+                    .attr("y", text_coords[1])
+                    .attr("dx", text_coords[2])
+                    .attr("dy", text_coords[3])
+                    .attr("text-anchor", text_anchor)
+                    .attr("transform", textTransform)
+                    .text(function(d) { return d.label; });
     },
 
     /**
@@ -572,11 +580,13 @@ var CircsterTrackView = Backbone.View.extend({
                     return rval;
                 }), function(p_data) { return p_data === null; } );
 
-                // Transition each path.
+                // Transition each path for data and color.
+                var color = track.get('config').get_value('color');
                 chrom_data_paths.each(function(path, index) {
-                    d3.select(this).transition().duration(1000).attr('d', path_data[index]);
+                    d3.select(this).transition().duration(1000)
+                                   .style('stroke', color).style('fill', color)
+                                   .attr('d', path_data[index]);
                 });
-                
             });
         }
     },
@@ -587,16 +597,14 @@ var CircsterTrackView = Backbone.View.extend({
     _transition_labels: function() {},
 
     /**
-     * Update data bounds.
+     * Update data bounds. If there are new_bounds, use them; otherwise use 
+     * default data bounds.
      */
-    _update_data_bounds: function() {
+    _update_data_bounds: function(new_bounds) {
         var old_bounds = this.data_bounds;
-        this.data_bounds = this.get_data_bounds(this.track.get('data_manager').get_genome_wide_data(this.genome));
-
-        // If bounds have changed, transition all paths to use the new data bounds.
-        if (this.data_bounds[0] < old_bounds[0] || this.data_bounds[1] > old_bounds[1]) {
-            this._transition_chrom_data();
-        }
+        this.data_bounds = new_bounds || 
+                           this.get_data_bounds(this.track.get('data_manager').get_genome_wide_data(this.genome));
+        this._transition_chrom_data();
     },
 
     /**
@@ -612,6 +620,13 @@ var CircsterTrackView = Backbone.View.extend({
         $.when(track.get('data_manager').get_genome_wide_data(this.genome)).then(function(genome_wide_data) {
             // Set bounds.
             self.data_bounds = self.get_data_bounds(genome_wide_data);
+
+            // Set min, max value in config so that they can be adjusted. Make this silent
+            // because these attributes are watched for changes and the viz is updated
+            // accordingly (set up in initialize). Because we are setting up, we don't want 
+            // the watch to trigger events here.
+            track.get('config').set_value('min_value', self.data_bounds[0], {silent: true});
+            track.get('config').set_value('max_value', self.data_bounds[1], {silent: true});
 
             // Merge chroms layout with data.
             layout_and_data = _.zip(chrom_arcs, genome_wide_data),
@@ -746,6 +761,31 @@ _.extend(CircsterChromLabelTrackView.prototype, UsesTicks);
  */
 var CircsterQuantitativeTrackView = CircsterTrackView.extend({
 
+    initialize: function(options) {
+        CircsterTrackView.prototype.initialize.call(this, options);
+
+        // When config settings change, update view.
+        var track_config = this.track.get('config');
+        track_config.get('min_value').on('change:value', this._update_min_max, this);
+        track_config.get('max_value').on('change:value', this._update_min_max, this);
+        track_config.get('color').on('change:value', this._transition_chrom_data, this);
+    },
+
+    /**
+     * Update track when min and/or max are changed.
+     */
+    _update_min_max: function() {
+        var track_config = this.track.get('config'),
+            new_bounds = [track_config.get_value('min_value'), track_config.get_value('max_value')];
+        this._update_data_bounds(new_bounds);
+
+        // FIXME: this works to update tick/text bounds, but there's probably a better way to do this
+        // by updating the data itself.
+        this.parent_elt.selectAll('.min_max').text(function(d, i) {
+            return new_bounds[i];
+        });
+    },
+
     /**
      * Returns quantile for an array of numbers.
      */
@@ -816,8 +856,26 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
                 return "rotate(90)";
             };
 
+        // FIXME: 
+        // (1) using min_max class below is needed for _update_min_max, which could be improved.
+        // (2) showing config on tick click should be replaced by proper track config icon.
+
         // Draw min, max on first chrom only.
-        this.drawTicks(this.parent_elt, [ this.chroms_layout[0] ], this._data_bounds_ticks_fn(), textTransform, true);
+        var ticks = this.drawTicks(this.parent_elt, [ this.chroms_layout[0] ], 
+                                   this._data_bounds_ticks_fn(), textTransform, true)
+                        .classed('min_max', true);
+
+        // Show config when ticks are clicked on.
+        _.each(ticks, function(tick) {
+            $(tick).click(function() {
+                var view = new config.ConfigSettingCollectionView({
+                    collection: self.track.get('config')
+                });
+                view.render_in_modal('Configure Track'); 
+            });
+        });
+
+
 
         /*
         // Filter for visible chroms, then for every third chrom so that labels attached to only every
@@ -909,7 +967,7 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
         
         // For max, use 98% quantile in attempt to avoid very large values. However, this max may be 0 
         // for sparsely populated data, so use max in that case.
-        return [ _.min(values), this._quantile(values, 0.5) || _.max(values) ];
+        return [ _.min(values), this._quantile(values, 0.98) || _.max(values) ];
     }
 });
 

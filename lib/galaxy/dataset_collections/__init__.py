@@ -138,6 +138,21 @@ class DatasetCollectionsService(
         changed = self._set_from_dict( trans, dataset_collection_instance, payload )
         return changed
 
+    def copy(
+        self,
+        trans,
+        parent,  # PRECONDITION: security checks on ability to add to parent occurred during load.
+        source,
+        encoded_source_id,
+    ):
+        assert source == "hdca"  # for now
+        source_hdca = self.__get_history_collection_instance( trans, encoded_source_id )
+        new_hdca = source_hdca.copy()
+        parent.add_dataset_collection( new_hdca )
+        trans.sa_session.add( new_hdca )
+        trans.sa_session.flush()
+        return source_hdca
+
     def _set_from_dict( self, trans, dataset_collection_instance, new_data ):
         # Blatantly stolen from UsesHistoryDatasetAssociationMixin.set_hda_from_dict.
 

@@ -11,6 +11,7 @@ import pipes
 import re
 import shutil
 import sys
+import string
 import tempfile
 import threading
 import traceback
@@ -68,7 +69,7 @@ from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
-from .loader import load_tool, template_macro_params
+from .loader import load_tool, template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 from .wrappers import (
     ToolParameterValueWrapper,
@@ -85,6 +86,16 @@ from .wrappers import (
 log = logging.getLogger( __name__ )
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile( '''\$\{.+?\}''' )
+
+JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
+    <param name="__job_resource__select" type="select" label="Job Resource Parameters">
+        <option value="no">Use default job resource parameters</option>
+        <option value="yes">Specify job resource parameters</option>
+    </param>
+    <when value="no"></when>
+    <when value="yes">
+    </when>
+</conditional>"""
 
 
 class ToolNotFoundException( Exception ):
@@ -145,7 +156,7 @@ class ToolBox( object, Dictifiable ):
                 self.init_tools( config_filename )
             except:
                 log.exception( "Error loading tools defined in config %s", config_filename )
-        if self.integrated_tool_panel_config_has_contents:
+        if self.app.name == 'galaxy' and self.integrated_tool_panel_config_has_contents:
             # Load self.tool_panel based on the order in self.integrated_tool_panel.
             self.load_tool_panel()
         if app.config.update_integrated_tool_panel:
@@ -204,8 +215,7 @@ class ToolBox( object, Dictifiable ):
             config_elems = []
         else:
             parsing_shed_tool_conf = False
-            # Default to backward compatible config setting.
-            tool_path = self.tool_root_dir
+        tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self.integrated_tool_panel_config_has_contents
         for _, elem in enumerate( root ):
@@ -232,6 +242,17 @@ class ToolBox( object, Dictifiable ):
             if shed_config_dict[ 'config_filename' ] == filename:
                 return shed_config_dict
         return default
+
+    def __resolve_tool_path(self, tool_path, config_filename):
+        if not tool_path:
+            # Default to backward compatible config setting.
+            tool_path = self.tool_root_dir
+        else:
+            # Allow use of __tool_conf_dir__ in toolbox config files.
+            tool_conf_dir = os.path.dirname(config_filename)
+            tool_path_vars = {"tool_conf_dir": tool_conf_dir}
+            tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
+        return tool_path
 
     def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
         # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
@@ -553,6 +574,8 @@ class ToolBox( object, Dictifiable ):
                     # a new repository, so any included tools can be loaded into the tool panel.
                     can_load_into_panel_dict = True
             tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id )
+            if string_as_bool(elem.get( 'hidden', False )):
+                tool.hidden = True
             key = 'tool_%s' % str( tool.id )
             if can_load_into_panel_dict:
                 if guid is not None:
@@ -678,6 +701,24 @@ class ToolBox( object, Dictifiable ):
         elif root.get( 'tool_type', None ) is not None:
             ToolClass = tool_types.get( root.get( 'tool_type' ) )
         else:
+            # Normal tool - only insert dynamic resource parameters for these
+            # tools.
+            if hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
+                tool_id = root.get( 'id' ) if root else None
+                parameters = self.app.job_config.get_tool_resource_parameters( tool_id )
+                if parameters:
+                    inputs = root.find('inputs')
+                    # If tool has not inputs, create some so we can insert conditional
+                    if not inputs:
+                        inputs = ElementTree.fromstring( "<inputs></inputs>")
+                        root.append( inputs )
+                    # Insert a conditional allowing user to specify resource parameters.
+                    conditional_element = ElementTree.fromstring( JOB_RESOURCE_CONDITIONAL_XML )
+                    when_yes_elem = conditional_element.findall( "when" )[ 1 ]
+                    for parameter in parameters:
+                        when_yes_elem.append( parameter )
+                    inputs.append( conditional_element )
+
             ToolClass = Tool
         return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
 
@@ -1234,7 +1275,7 @@ class Tool( object, Dictifiable ):
                 executable = self.version_string_cmd.split()[0]
                 abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
                 command_line = self.version_string_cmd.replace(executable, abs_executable, 1)
-                self.version_string_cmd = self.interpreter + " " + command_line
+                self.version_string_cmd = version_cmd_interpreter + " " + command_line
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
@@ -1316,7 +1357,12 @@ class Tool( object, Dictifiable ):
         self.__tests_populated = False
 
         # Requirements (dependencies)
-        self.requirements = parse_requirements_from_xml( root )
+        requirements, containers = parse_requirements_from_xml( root )
+        self.requirements = requirements
+        self.containers = containers
+
+        self.citations = self._parse_citations( root )
+
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(root)
         # Trackster configuration.
@@ -1348,7 +1394,7 @@ class Tool( object, Dictifiable ):
         # Load parameters (optional)
         input_elem = root.find("inputs")
         enctypes = set()
-        if input_elem:
+        if input_elem is not None:
             # Handle properties of the input form
             self.check_values = string_as_bool( input_elem.get("check_values", self.check_values ) )
             self.nginx_upload = string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
@@ -1642,6 +1688,20 @@ class Tool( object, Dictifiable ):
             if ( None != trace ):
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
+
+    def _parse_citations( self, root ):
+        citations = []
+        citations_elem = root.find("citations")
+        if not citations_elem:
+            return citations
+
+        for citation_elem in citations_elem:
+            if citation_elem.tag != "citation":
+                pass
+            citation = self.app.citations_manager.parse_citation( citation_elem, self.tool_dir )
+            if citation:
+                citations.append( citation )
+        return citations
 
     # TODO: This method doesn't have to be part of the Tool class.
     def parse_error_level( self, err_level ):
@@ -2360,7 +2420,18 @@ class Tool( object, Dictifiable ):
                     # Get value of test param and determine current case
                     value, test_param_error = \
                         check_param( trans, input.test_param, test_incoming, context, source=source )
-                    current_case = input.get_current_case( value, trans )
+                    try:
+                        current_case = input.get_current_case( value, trans )
+                    except ValueError, e:
+                        #load default initial value
+                        if not test_param_error:
+                            test_param_error = str( e )
+                        if trans is not None:
+                            history = trans.get_history()
+                        else:
+                            history = None
+                        value = input.test_param.get_initial_value( trans, context, history=history )
+                        current_case = input.get_current_case( value, trans )
                 if current_case != old_current_case:
                     # Current case has changed, throw away old state
                     group_state = state[input.name] = {}
@@ -2453,13 +2524,16 @@ class Tool( object, Dictifiable ):
                     incoming_value = get_incoming_value( incoming, key, None )
                     value, error = check_param( trans, input, incoming_value, context, source=source )
                     # If a callback was provided, allow it to process the value
+                    input_name = input.name
                     if item_callback:
-                        old_value = state.get( input.name, None )
+                        old_value = state.get( input_name, None )
                         value, error = item_callback( trans, key, input, value, error, old_value, context )
                     if error:
-                        errors[ input.name ] = error
-                    state[ input.name ] = value
-                    state.update( self.__meta_properties_for_state( key, incoming, incoming_value, value )  )
+                        errors[ input_name ] = error
+
+                    state[ input_name ] = value
+                    meta_properties = self.__meta_properties_for_state( key, incoming, incoming_value, value, input_name )
+                    state.update( meta_properties )
         return errors
 
     def __remove_meta_properties( self, incoming ):
@@ -2473,12 +2547,17 @@ class Tool( object, Dictifiable ):
                 del result[ key ]
         return result
 
-    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val ):
+    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val, input_name ):
         meta_properties = {}
-        multirun_key = "%s|__multirun__" % key
-        if multirun_key in incoming:
-            multi_value = incoming[ multirun_key ]
-            meta_properties[ multirun_key ] = multi_value
+        meta_property_suffixes = [
+            "__multirun__",
+            "__collection_multirun__",
+        ]
+        for meta_property_suffix in meta_property_suffixes:
+            multirun_key = "%s|%s" % ( key, meta_property_suffix )
+            if multirun_key in incoming:
+                multi_value = incoming[ multirun_key ]
+                meta_properties[ "%s|%s" % ( input_name, meta_property_suffix ) ] = multi_value
         return meta_properties
 
     @property
@@ -2559,10 +2638,13 @@ class Tool( object, Dictifiable ):
             # No value, insert the default
             if input.name not in values:
                 if isinstance( input, Conditional ):
-                    messages[ input.name ] = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                    cond_messages = {}
+                    if not input.is_job_resource_conditional:
+                        cond_messages = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
+                        messages[ input.name ] = cond_messages
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
-                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
+                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, cond_messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Repeat ):
                     if input.min:
                         messages[ input.name ] = []
@@ -2907,6 +2989,23 @@ class Tool( object, Dictifiable ):
     def get_default_history_by_trans( self, trans, create=False ):
         return trans.get_history( create=create )
 
+    @classmethod
+    def get_externally_referenced_paths( self, path ):
+        """ Return relative paths to externally referenced files by the tool
+        described by file at `path`. External components should not assume things
+        about the structure of tool xml files (this is the tool's responsibility).
+        """
+        tree = raw_tool_xml_tree(path)
+        root = tree.getroot()
+        external_paths = []
+        for code_elem in root.findall( 'code' ):
+            external_path = code_elem.get( 'file' )
+            if external_path:
+                external_paths.append( external_path )
+        external_paths.extend( imported_macro_paths( root ) )
+        # May also need to load external citation files as well at some point.
+        return external_paths
+
 
 class OutputParameterJSONTool( Tool ):
     """
@@ -3148,7 +3247,9 @@ class DataManagerTool( OutputParameterJSONTool ):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool, DataManagerTool ]:
+for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
+                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
+                    DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 

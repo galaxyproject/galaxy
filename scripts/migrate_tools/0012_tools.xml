@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<toolshed name="toolshed.g2.bx.psu.edu">
+    <repository changeset_revision="08a01b2ce4cd" owner="devteam" name="column_maker" description="Compute an expression on every row">
+        <tool file="stats/column_maker.xml" id="Add_a_column1" version="1.1.0" />
+    </repository>
+    <repository changeset_revision="24e01abf9e34" owner="devteam" name="correlation" description="Correlation for numeric columns">
+        <tool file="stats/cor.xml" id="cor2" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="fabda887a71f" owner="devteam" name="count_gff_features" description="Count GFF Features">
+        <tool file="stats/count_gff_features.xml" id="count_gff_features" version="0.1" />
+    </repository>
+    <repository changeset_revision="a6f0d355b05f" owner="devteam" name="dna_filtering" description="Filter on ambiguities in polymorphism datasets">
+        <tool file="stats/dna_filtering.xml" id="dna_filter" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="04cdbd00dcec" owner="devteam" name="generate_pc_lda_matrix" description="Generate A Matrix for using PC and LDA">
+        <tool file="stats/generate_matrix_for_pca_lda.xml" id="generate_matrix_for_pca_and_lda1" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="6ff47de059a0" owner="devteam" name="histogram" description="Histogram of a numeric column">
+        <tool file="plotting/histogram2.xml" id="histogram_rpy" version="1.0.3" />
+    </repository>
+    <repository changeset_revision="f38763b52f33" owner="devteam" name="lda_analysis" description="Perform Linear Discriminant Analysis">
+        <tool file="stats/lda_analy.xml" id="lda_analy1" version="1.0.1" />
+    </repository>
+    <repository changeset_revision="783d91de9e6d" owner="devteam" name="mine" description="Maximal Information-based Nonparametric Exploration">
+        <tool file="stats/MINE.xml" id="maximal_information_based_nonparametric_exploration" version="0.0.1" />
+    </repository>
+    <repository changeset_revision="5ebbb889236a" owner="devteam" name="pearson_correlation" description="Pearson and apos Correlation between any two numeric columns">
+        <tool file="stats/correlation.xml" id="Pearson_and_apos_Correlation1" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="d281062566f9" owner="devteam" name="pgsnp2gd_snp" description="Convert from pgSnp to gd_snp">
+        <tool file="phenotype_association/pgSnp2gd_snp.xml" id="pgSnp2gd_snp" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="c5ab37076128" owner="devteam" name="plot_from_lda" description="Draw ROC plot on &#34;Perform LDA&#34; output">
+        <tool file="stats/plot_from_lda.xml" id="plot_for_lda_output1" version="1.0.1" />
+    </repository>
+    <repository changeset_revision="c12b0759203b" owner="devteam" name="scatterplot" description="Scatterplot of two numeric columns">
+        <tool file="plotting/scatterplot.xml" id="scatterplot_rpy" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="72ea0d13dd66" owner="devteam" name="snpfreq" description="snpFreq significant SNPs in case-control data">
+        <tool file="phenotype_association/snpFreq.xml" id="hgv_snpFreq" version="1.0.1" />
+    </repository>
+    <repository changeset_revision="618e56c3109b" owner="devteam" name="ucsc_custom_track" description="Build custom track for UCSC genome browser">
+        <tool file="visualization/build_ucsc_custom_track.xml" id="build_ucsc_custom_track_1" version="1.0.0" />
+    </repository>
+    <repository changeset_revision="5fca46616675" owner="devteam" name="vcf2pgsnp" description="VCF to pgSnp">
+        <tool file="phenotype_association/vcf2pgSnp.xml" id="vcf2pgSnp" version="1.0.0" />
+    </repository>
+</toolshed>

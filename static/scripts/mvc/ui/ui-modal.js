@@ -173,7 +173,7 @@ var View = Backbone.View.extend({
     
     // fill regular modal template
     _template: function(title) {
-        return  '<div class="modal">' +
+        return  '<div class="ui-modal modal">' +
                     '<div class="modal-backdrop fade in" style="z-index: -1;"></div>' +
                     '<div class="modal-dialog">' +
                         '<div class="modal-content">' +

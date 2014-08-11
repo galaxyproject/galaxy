@@ -13,6 +13,7 @@ from galaxy import eggs
 eggs.require( 'mercurial' )
 eggs.require( "nose" )
 
+import json
 import logging
 import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
@@ -31,16 +32,17 @@ from common import get_api_url
 from common import get_latest_downloadable_changeset_revision_via_api
 from common import get_repository_dict
 from common import json_from_url
+from common import submit
 from common import update
 
 from galaxy.util import asbool
 from galaxy.util import listify
 from galaxy.util import unicodify
-from galaxy.util.json import to_json_string
 import galaxy.webapps.tool_shed.model.mapping
 
 from nose.plugins import Plugin
 from tool_shed.util import common_util
+from tool_shed.util import hg_util
 from tool_shed.util import tool_dependency_util
 
 from tool_shed.util.xml_util import parse_xml
@@ -355,8 +357,8 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
             # Filter deprecated repositories in the initial query.  Repositories included in the query may have
             # repository dependencies that are deprecated though.
             if not deprecated:
-                changeset_revision = baseline_repository_dict.get( 'changeset_revision', suc.INITIAL_CHANGELOG_HASH )
-                if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                changeset_revision = baseline_repository_dict.get( 'changeset_revision', hg_util.INITIAL_CHANGELOG_HASH )
+                if changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     # If testing repositories of type tool_dependency_definition, filter accordingly.
                     if test_framework == TOOL_DEPENDENCY_DEFINITIONS and \
                         repository_dict.get( 'type', None ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
@@ -691,8 +693,8 @@ def parse_exclude_list( xml_filename ):
         else:
             xml_element = tool_shed
     for reason_section in xml_element:
-        reason_text = reason_section.find( 'text' )
-        if reason_text:
+        reason_text = reason_section.find( 'text', None )
+        if reason_text is not None:
             reason = str( reason_text.text )
         else:
             reason = 'No reason provided.'
@@ -985,7 +987,7 @@ def populate_galaxy_shed_tools_dict_file( galaxy_shed_tools_dict_file, shed_tool
     """
     if shed_tools_dict is None:
         shed_tools_dict = {}
-    file( galaxy_shed_tools_dict_file, 'w' ).write( to_json_string( shed_tools_dict ) )
+    file( galaxy_shed_tools_dict_file, 'w' ).write( json.dumps( shed_tools_dict ) )
 
 def print_install_and_test_results( install_stage_type, install_and_test_statistics_dict, error_message ):
     "Print statistics for the current test run."
@@ -1081,11 +1083,34 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
             owner = repository_dict.get( 'owner', None )
             changeset_revision = repository_dict.get( 'changeset_revision', None )
             if name is None or owner is None or changeset_revision is None:
-                print 'Entries for name, owner or changeset_revision missing from repository_dict %s' % repository_dict
+                print 'Entries for name: ', name, ' owner: ', owner, ' or changeset_revision: ', changeset_revision, \
+                    ' missing from repository_dict:' % repository_dict
             else:
                 name = str( name )
                 owner = str( owner )
                 changeset_revision = str( changeset_revision )
+                # With regard to certification level one, the status of this repository may or may not have changed between
+                # this install and test run and the previous install and test run.  Rather than attempting to determine if
+                # anything has changed here, we'll let the Tool Shed's repository registry handle the process of proper
+                # categorization.  To enable this, we'll just remove entries from the Tool Shed's repository registry and
+                # then add them back.  This will ensure proper categorization for this repository.
+                registry_params = dict( tool_shed_url=galaxy_tool_shed_url, name=name, owner=owner )
+                print "Removing entries for repository ", name, " owned by ", owner, "from the Tool Shed's repository registry."
+                url = '%s' % ( common_util.url_join( galaxy_tool_shed_url, 'api', 'repositories', 'remove_repository_registry_entry' ) )
+                response_dict = submit( url, registry_params, api_key=tool_shed_api_key, return_formatted=False )
+                status = response_dict.get( 'status', 'ok' )
+                if status == 'error':
+                    default_message = 'An unknown error occurred attempting to remove entries from the repository registry.'
+                    error_message = response_dict.get( 'message', default_message )
+                    print error_message
+                print "Adding entries for repository ", name, " owned by ", owner, "into the Tool Shed's repository registry."
+                url = '%s' % ( common_util.url_join( galaxy_tool_shed_url, 'api', 'repositories', 'add_repository_registry_entry' ) )
+                response_dict = submit( url, registry_params, api_key=tool_shed_api_key, return_formatted=False )
+                status = response_dict.get( 'status', 'ok' )
+                if status == 'error':
+                    default_message = 'An unknown error occurred attempting to add entries into the repository registry.'
+                    error_message = response_dict.get( 'message', default_message )
+                    print error_message
                 print '\n=============================================================\n'
                 print 'Inserting the following into tool_test_results for revision %s of repository %s owned by %s:\n%s' % \
                     ( changeset_revision, name, owner, str( tool_test_results_dict ) )
@@ -1094,7 +1119,7 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
                 params[ 'tool_test_results' ] = tool_test_results_dicts
                 # Set the time_last_tested entry so that the repository_metadata.time_last_tested will be set in the tool shed.
                 params[ 'time_last_tested' ] = 'This entry will result in this value being set via the Tool Shed API.'
-                url = '%s' % ( common_util.url_join( galaxy_tool_shed_url,'api', 'repository_revisions', str( metadata_revision_id ) ) )
+                url = '%s' % ( common_util.url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', str( metadata_revision_id ) ) )
                 print 'url: ', url
                 print 'params: ', params
                 try:

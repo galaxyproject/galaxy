@@ -5,14 +5,9 @@ from galaxy import web
 from galaxy import util
 from galaxy.model.orm import and_, not_, select
 from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
-from tool_shed.util import export_util
+from tool_shed.capsule import capsule_manager
 from tool_shed.util import hg_util
 import tool_shed.util.shed_util_common as suc
-
-from galaxy import eggs
-eggs.require( 'mercurial' )
-
-from mercurial import hg
 
 log = logging.getLogger( __name__ )
 
@@ -58,14 +53,14 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.debug( error_message )
             return None, error_message
         repository_id = trans.security.encode_id( repository.id )
-        return export_util.export_repository( trans,
-                                              tool_shed_url,
-                                              repository_id,
-                                              str( repository.name ),
-                                              changeset_revision,
-                                              file_type,
-                                              export_repository_dependencies,
-                                              api=True )
+        erm = capsule_manager.ExportRepositoryManager( app=trans.app,
+                                                       user=trans.user,
+                                                       tool_shed_url=tool_shed_url,
+                                                       repository=repository,
+                                                       changeset_revision=changeset_revision,
+                                                       export_repository_dependencies=export_repository_dependencies,
+                                                       using_api=True )
+        return erm.export_repository()
 
     def __get_value_mapper( self, trans ):
         value_mapper = { 'id' : trans.security.encode_id,
@@ -146,7 +141,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         # Example URL: http://localhost:9009/api/repository_revisions/repository_dependencies/bb125606ff9ea620
         repository_dependencies_dicts = []
-        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, id )
         if repository_metadata is None:
             log.debug( 'Invalid repository_metadata id received: %s' % str( id ) )
             return repository_dependencies_dicts
@@ -164,17 +159,19 @@ class RepositoryRevisionsController( BaseAPIController ):
                     continue
                 repository_dependency_id = trans.security.encode_id( repository_dependency.id )
                 repository_dependency_repository_metadata = \
-                    suc.get_repository_metadata_by_changeset_revision( trans, repository_dependency_id, changeset_revision )
+                    suc.get_repository_metadata_by_changeset_revision( trans.app, repository_dependency_id, changeset_revision )
                 if repository_dependency_repository_metadata is None:
                     # The changeset_revision column in the repository_metadata table has been updated with a new
                     # value value, so find the changeset_revision to which we need to update.
-                    repo_dir = repository_dependency.repo_path( trans.app )
-                    repo = hg.repository( hg_util.get_configured_ui(), repo_dir )
+                    repo = hg_util.get_repo_for_repository( trans.app,
+                                                            repository=repository_dependency,
+                                                            repo_path=None,
+                                                            create=False )
                     new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository_dependency,
                                                                                            repo,
                                                                                            changeset_revision )
                     repository_dependency_repository_metadata = \
-                        suc.get_repository_metadata_by_changeset_revision( trans,
+                        suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                            repository_dependency_id,
                                                                            new_changeset_revision )
                     if repository_dependency_repository_metadata is None:
@@ -217,12 +214,12 @@ class RepositoryRevisionsController( BaseAPIController ):
         :param id: the encoded id of the `RepositoryMetadata` object
         """
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
-        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, id )
         if repository_metadata is None:
             log.debug( 'Cannot locate repository_metadata with id %s' % str( id ) )
             return {}
         encoded_repository_id = trans.security.encode_id( repository_metadata.repository_id )
-        repository = suc.get_repository_by_id( trans, encoded_repository_id )
+        repository = suc.get_repository_by_id( trans.app, encoded_repository_id )
         repository_metadata_dict = repository_metadata.to_dict( view='element',
                                                                 value_mapper=self.__get_value_mapper( trans ) )
         repository_metadata_dict[ 'url' ] = web.url_for( controller='repositories',
@@ -235,11 +232,13 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         PUT /api/repository_revisions/{encoded_repository_metadata_id}/{payload}
         Updates the value of specified columns of the repository_metadata table based on the key / value pairs in payload.
+        
+        :param id: the encoded id of the `RepositoryMetadata` object
         """
         repository_metadata_id = kwd.get( 'id', None )
         if repository_metadata_id is None:
             raise HTTPBadRequest( detail="Missing required parameter 'id'." )
-        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans.app, repository_metadata_id )
         if repository_metadata is None:
             decoded_repository_metadata_id = trans.security.decode_id( repository_metadata_id )
             log.debug( 'Cannot locate repository_metadata with id %s' % str( decoded_repository_metadata_id ) )

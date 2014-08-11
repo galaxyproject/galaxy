@@ -68,7 +68,9 @@ class ToolShedRepository( object ):
 
     @property
     def can_deactivate( self ):
-        return self.status not in [ self.installation_status.DEACTIVATED, self.installation_status.UNINSTALLED ]
+        return self.status not in [ self.installation_status.DEACTIVATED,
+                                    self.installation_status.ERROR,
+                                    self.installation_status.UNINSTALLED ]
 
     @property
     def can_reinstall_or_activate( self ):
@@ -77,6 +79,9 @@ class ToolShedRepository( object ):
     def get_sharable_url( self, app ):
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, self.tool_shed )
         if tool_shed_url:
+            # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
+            # the last part of a URL if it does not end with a forward slash.
+            tool_shed_url = '%s/' % tool_shed_url
             return urljoin( tool_shed_url, 'view/%s/%s' % ( self.owner, self.name ) )
         return tool_shed_url
 
@@ -238,7 +243,7 @@ class ToolShedRepository( object ):
     def is_deactivated_or_installed( self ):
         return self.status in [ self.installation_status.DEACTIVATED,
                                 self.installation_status.INSTALLED ]
-    
+
     @property
     def is_installed( self ):
         return self.status == self.installation_status.INSTALLED
@@ -248,6 +253,10 @@ class ToolShedRepository( object ):
         if self.tool_shed_status:
             return asbool( self.tool_shed_status.get( 'latest_installable_revision', False ) )
         return False
+
+    @property
+    def is_new( self ):
+        return self.status == self.installation_status.NEW
 
     @property
     def missing_repository_dependencies( self ):
@@ -629,11 +638,11 @@ class ToolVersion( object, Dictifiable ):
 
     def to_dict( self, view='element' ):
         rval = super( ToolVersion, self ).to_dict( view=view )
-        rval['tool_name'] = self.tool_id
+        rval[ 'tool_name' ] = self.tool_id
         for a in self.parent_tool_association:
-            rval['parent_tool_id'] = a.parent_id
+            rval[ 'parent_tool_id' ] = a.parent_id
         for a in self.child_tool_association:
-            rval['child_tool_id'] = a.tool_id
+            rval[ 'child_tool_id' ] = a.tool_id
         return rval
 
 

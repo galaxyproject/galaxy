@@ -1,9 +1,10 @@
 // dependencies
 define(['plugin/charts/tools'], function(Tools) {
 
-// widget
-return Backbone.View.extend(
-{
+/**
+ *  This is the common wrapper for nvd3 based visualizations.
+ */
+return Backbone.View.extend({
     // initialize
     initialize: function(app, options) {
         // get parameters
@@ -97,6 +98,7 @@ return Backbone.View.extend(
             }
         });
         
+        // return
         return true;
     },
     

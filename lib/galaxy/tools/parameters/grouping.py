@@ -472,7 +472,7 @@ class Conditional( Group ):
         for index, case in enumerate( self.cases ):
             if str_value == case.value:
                 return index
-        raise Exception( "No case matched value:", self.name, str_value )
+        raise ValueError( "No case matched value:", self.name, str_value )
     def value_to_basic( self, value, app ):
         rval = dict()
         current_case = rval['__current_case__'] = value['__current_case__']
@@ -539,6 +539,10 @@ class Conditional( Group ):
         cond_dict[ "cases" ] = map( nested_to_dict, self.cases )
         cond_dict[ "test_param" ] = nested_to_dict( self.test_param )
         return cond_dict
+
+    @property
+    def is_job_resource_conditional(self):
+        return self.name == "__job_resource"
 
 
 class ConditionalWhen( object, Dictifiable ):

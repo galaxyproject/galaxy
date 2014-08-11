@@ -3,7 +3,7 @@
 <%def name="render_tool_shed_repository_actions( repository, metadata=None, changeset_revision=None )">
     <%
         from tool_shed.util.review_util import can_browse_repository_reviews, changeset_revision_reviewed_by_user, get_review_by_repository_id_changeset_revision_user_id
-        from tool_shed.util.shed_util_common import changeset_is_malicious
+        from tool_shed.util.metadata_util import is_malicious
 
         if repository.metadata_revisions:
             has_metadata = True
@@ -27,14 +27,14 @@
         else:
             is_new = False
 
-        if changeset_is_malicious( trans, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
-            is_malicious = True
+        if is_malicious( trans.app, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
+            changeset_is_malicious = True
         else:
-            is_malicious = False
+            changeset_is_malicious = False
 
         can_browse_contents = not is_new
 
-        if can_browse_repository_reviews( trans, repository ):
+        if can_browse_repository_reviews( trans.app, trans.user, repository ):
             can_browse_reviews = True
         else:
             can_browse_reviews = False
@@ -54,7 +54,7 @@
         else:
             can_push = False
 
-        if not is_deprecated and not is_new and not is_malicious:
+        if not is_deprecated and not is_new and not changeset_is_malicious:
             can_download = True
         else:
             can_download = False
@@ -79,7 +79,7 @@
                 can_review_repository = True
             else:
                 can_review_repository = False
-            if changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision ):
+            if changeset_revision_reviewed_by_user( trans.user, repository, changeset_revision ):
                 reviewed_by_user = True
             else:
                 reviewed_by_user = False
@@ -88,7 +88,7 @@
             reviewed_by_user = False
 
         if reviewed_by_user:
-            review = get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+            review = get_review_by_repository_id_changeset_revision_user_id( app=trans.app,
                                                                              repository_id=trans.security.encode_id( repository.id ),
                                                                              changeset_revision=changeset_revision,
                                                                              user_id=trans.security.encode_id( trans.user.id ) )

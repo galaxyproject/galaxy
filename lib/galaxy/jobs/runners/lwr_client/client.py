@@ -8,6 +8,8 @@ from .decorators import parseJson
 from .decorators import retry
 from .util import copy
 from .util import ensure_directory
+from .util import to_base64_json
+
 
 import logging
 log = logging.getLogger(__name__)
@@ -285,16 +287,25 @@ class JobClient(BaseJobClient):
         self._raw_execute("download_output", output_params, output_path=output_path)
 
 
-class MessageJobClient(BaseJobClient):
+class BaseMessageJobClient(BaseJobClient):
 
     def __init__(self, destination_params, job_id, client_manager):
-        super(MessageJobClient, self).__init__(destination_params, job_id)
+        super(BaseMessageJobClient, self).__init__(destination_params, job_id)
         if not self.job_directory:
             error_message = "Message-queue based LWR client requires destination define a remote job_directory to stage files into."
             raise Exception(error_message)
         self.client_manager = client_manager
 
-    def launch(self, command_line, dependencies_description=None, env=[], remote_staging=[], job_config=None):
+    def clean(self):
+        del self.client_manager.status_cache[self.job_id]
+
+    def full_status(self):
+        full_status = self.client_manager.status_cache.get(self.job_id, None)
+        if full_status is None:
+            raise Exception("full_status() called before a final status was properly cached with cilent manager.")
+        return full_status
+
+    def _build_setup_message(self, command_line, dependencies_description, env, remote_staging, job_config):
         """
         """
         launch_params = dict(command_line=command_line, job_id=self.job_id)
@@ -313,21 +324,54 @@ class MessageJobClient(BaseJobClient):
             # before queueing.
             setup_params = _setup_params_from_job_config(job_config)
             launch_params["setup_params"] = setup_params
+        return launch_params
+
+
+class MessageJobClient(BaseMessageJobClient):
+
+    def launch(self, command_line, dependencies_description=None, env=[], remote_staging=[], job_config=None):
+        """
+        """
+        launch_params = self._build_setup_message(
+            command_line,
+            dependencies_description=dependencies_description,
+            env=env,
+            remote_staging=remote_staging,
+            job_config=job_config
+        )
         response = self.client_manager.exchange.publish("setup", launch_params)
         log.info("Job published to setup message queue.")
         return response
 
-    def clean(self):
-        del self.client_manager.status_cache[self.job_id]
-
-    def full_status(self):
-        full_status = self.client_manager.status_cache.get(self.job_id, None)
-        if full_status is None:
-            raise Exception("full_status() called before a final status was properly cached with cilent manager.")
-        return full_status
-
     def kill(self):
         self.client_manager.exchange.publish("kill", dict(job_id=self.job_id))
+
+
+class MessageCLIJobClient(BaseMessageJobClient):
+
+    def __init__(self, destination_params, job_id, client_manager, shell):
+        super(MessageCLIJobClient, self).__init__(destination_params, job_id, client_manager)
+        self.remote_lwr_path = destination_params["remote_lwr_path"]
+        self.shell = shell
+
+    def launch(self, command_line, dependencies_description=None, env=[], remote_staging=[], job_config=None):
+        """
+        """
+        launch_params = self._build_setup_message(
+            command_line,
+            dependencies_description=dependencies_description,
+            env=env,
+            remote_staging=remote_staging,
+            job_config=job_config
+        )
+        base64_message = to_base64_json(launch_params)
+        submit_command = os.path.join(self.remote_lwr_path, "scripts", "submit.bash")
+        # TODO: Allow configuration of manager, app, and ini path...
+        self.shell.execute("nohup %s --base64 %s &" % (submit_command, base64_message))
+
+    def kill(self):
+        # TODO
+        pass
 
 
 class InputCachingJobClient(JobClient):

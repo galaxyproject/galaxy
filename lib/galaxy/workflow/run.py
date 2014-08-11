@@ -32,19 +32,26 @@ class WorkflowRunConfig( object ):
         target_history. (Defaults to False)
     :type copy_inputs_to_history: bool
 
-    :param ds_map: Map from step ids to dict's containing HDA for these steps.
-    :type ds_map: dict
+    :param inputs: Map from step ids to dict's containing HDA for these steps.
+    :type inputs: dict
+
+    :param inputs_by: How inputs maps to inputs (datasets/collections) to workflows
+                      steps - by unencoded database id ('step_id'), index in workflow
+                      'step_index' (independent of database), or by input name for
+                      that step ('name').
+    :type inputs_by: str
 
     :param param_map: Override tool and/or step parameters (see documentation on
         _update_step_parameters below).
     :type param_map:
     """
 
-    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, ds_map={}, param_map={} ):
+    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, inputs_by='step_id', param_map={} ):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
-        self.ds_map = ds_map
+        self.inputs = inputs
+        self.inputs_by = inputs_by
         self.param_map = param_map
 
 
@@ -66,7 +73,9 @@ class WorkflowInvoker( object ):
         self.target_history = workflow_run_config.target_history
         self.replacement_dict = workflow_run_config.replacement_dict
         self.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
-        self.ds_map = workflow_run_config.ds_map
+        self.inputs = workflow_run_config.inputs
+        self.inputs_by = workflow_run_config.inputs_by
+        self.inputs_by_step_id = {}
         self.param_map = workflow_run_config.param_map
 
         self.outputs = odict()
@@ -200,7 +209,7 @@ class WorkflowInvoker( object ):
         outputs[ step.id ] = out_data
 
         # Web controller may set copy_inputs_to_history, API controller always sets
-        # ds_map.
+        # inputs.
         if self.copy_inputs_to_history:
             for input_dataset_hda in out_data.values():
                 content_type = input_dataset_hda.history_content_type
@@ -214,8 +223,8 @@ class WorkflowInvoker( object ):
                     outputs[ step.id ][ 'input_ds_copy' ] = new_hdca
                 else:
                     raise Exception("Unknown history content encountered")
-        if self.ds_map:
-            outputs[ step.id ][ 'output' ] = self.ds_map[ str( step.id ) ][ 'hda' ]
+        if self.inputs:
+            outputs[ step.id ][ 'output' ] = self.inputs_by_step_id[ step.id ][ 'hda' ]
 
         return job
 
@@ -277,13 +286,22 @@ class WorkflowInvoker( object ):
                     message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
                     raise exceptions.MessageException( message )
             else:
-                # This is an input step. Make sure we have an available input.
-                if step.type == 'data_input' and str( step.id ) not in self.ds_map:
-                    message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
-                    raise exceptions.MessageException( message )
-
                 step.module = modules.module_factory.from_workflow_step( self.trans, step )
                 step.state = step.module.get_runtime_state()
+
+                # This is an input step. Make sure we have an available input.
+                if step.type in [ 'data_input', 'data_collection_input' ]:
+                    if self.inputs_by == "step_id":
+                        key = str( step.id )
+                    elif self.inputs_by == "name":
+                        key = step.tool_inputs.get( 'name', None )
+                    else:
+                        key = str( step.order_index )
+                    if key not in self.inputs:
+                        message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
+                        raise exceptions.MessageException( message )
+                    else:
+                        self.inputs_by_step_id[ step.id ] = self.inputs[ key ]
 
 
 def _update_step_parameters(step, param_map):

@@ -426,7 +426,7 @@ class RepositoryMetadataGrid( grids.Grid ):
 
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
-            return hg_util.get_revision_label( trans,
+            return hg_util.get_revision_label( trans.app,
                                                repository,
                                                repository_metadata.changeset_revision,
                                                include_date=True,

@@ -27,42 +27,30 @@ def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_sta
     cigar_ops = 'MIDNSHP=X'
     for op_tuple in cigar:
         op, op_len = op_tuple
-
+        
         # Op is index into string 'MIDNSHP=X'
         if op == 0: # Match
-            # If region falls outside ref_seq data, leave as M.
-            if ref_seq_start - read_start > op_len:
-                # Region falls completely outside of reference.
-                new_cigar += '%iM' % ( op_len )
-            else:
-                # Some of region overlap reference.
-                total_count = 0
-                if read_start < ref_seq_start:
-                    new_cigar += '%iM' % ( ref_seq_start - read_start )
-                    read_pos = ref_seq_start - read_start
-                    ref_seq_pos = 0
-                    total_count = read_pos
+            # Transform Ms to =s and Xs using reference.
+            new_op = ''
+            total_count = 0
+            while total_count < op_len and ref_seq_pos < len( ref_seq ):
+                match, count = _match_mismatch_counter( read_seq, read_pos, ref_seq, ref_seq_pos )
+                # Use min because count cannot exceed remainder of operation.
+                count = min( count, op_len - total_count )
+                if match:
+                    new_op = '='
+                else:
+                    new_op = 'X'
+                    # Include mismatched bases in new read sequence.
+                    new_read_seq += read_seq[ read_pos:read_pos + count ]
+                new_cigar += '%i%s' % ( count, new_op )
+                total_count += count
+                read_pos += count
+                ref_seq_pos += count
 
-                # Transform Ms to =s and Xs using reference.
-                new_op = ''
-                while total_count < op_len and ref_seq_pos < len( ref_seq ):
-                    match, count = _match_mismatch_counter( read_seq, read_pos, ref_seq, ref_seq_pos )
-                    # Use min because count cannot exceed remainder of operation.
-                    count = min( count, op_len - total_count )
-                    if match:
-                        new_op = '='
-                    else:
-                        new_op = 'X'
-                        # Include mismatched bases in new read sequence.
-                        new_read_seq += read_seq[ read_pos:read_pos + count ]
-                    new_cigar += '%i%s' % ( count, new_op )
-                    total_count += count
-                    read_pos += count
-                    ref_seq_pos += count
-
-                # If end of read falls outside of ref_seq data, leave as M.
-                if total_count < op_len:
-                    new_cigar += '%iM' % ( op_len - total_count )
+            # If end of read falls outside of ref_seq data, leave as M.
+            if total_count < op_len:
+                new_cigar += '%iM' % ( op_len - total_count )
         elif op == 1: # Insertion
             new_cigar += '%i%s' % ( op_len, cigar_ops[ op ] )
             # Include insertion bases in new read sequence.

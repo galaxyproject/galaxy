@@ -43,11 +43,19 @@ class CliInterface(object):
         Return shell and job interface defined by and configured via
         specified params.
         """
-        shell_plugin = shell_params.get('plugin', DEFAULT_SHELL_PLUGIN)
-        job_plugin = job_params['plugin']
-        shell = self.cli_shells[shell_plugin](**shell_params)
-        job_interface = self.cli_job_interfaces[job_plugin](**job_params)
+        shell = self.get_shell_plugin(shell_params)
+        job_interface = self.get_job_interface(job_params)
         return shell, job_interface
+
+    def get_shell_plugin(self, shell_params):
+        shell_plugin = shell_params.get('plugin', DEFAULT_SHELL_PLUGIN)
+        shell = self.cli_shells[shell_plugin](**shell_params)
+        return shell
+
+    def get_job_interface(self, job_params):
+        job_plugin = job_params['plugin']
+        job_interface = self.cli_job_interfaces[job_plugin](**job_params)
+        return job_interface
 
 
 def split_params(params):

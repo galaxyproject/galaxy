@@ -32,7 +32,7 @@ var ConfigSetting = Backbone.Model.extend({
      * Cast and set value. This should be instead of
      *  setting.set('value', new_value)
      */
-    set_value: function(value) {
+    set_value: function(value, options) {
         var type = this.get('type');
 
         if (type === 'float') {
@@ -43,7 +43,7 @@ var ConfigSetting = Backbone.Model.extend({
         }
         // TODO: handle casting from string to bool?
 
-        this.set('value', value);
+        this.set({value: value}, options);
     }
 }, {
     // This is a master list of default settings for known settings.
@@ -101,10 +101,10 @@ var ConfigSettingCollection = Backbone.Collection.extend({
     /**
      * Set value for a setting.
      */
-    set_value: function(key, value) {
+    set_value: function(key, value, options) {
         var s = this.get(key);
         if (s) {
-            return s.set_value(value);
+            return s.set_value(value, options);
         }
 
         return undefined;

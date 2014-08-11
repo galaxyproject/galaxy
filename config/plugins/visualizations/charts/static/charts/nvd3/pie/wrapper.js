@@ -28,7 +28,7 @@ return Backbone.View.extend(
             chart.state('ok', 'Pie chart has been drawn.');
         
             // unregister process
-            chart.deferred.done(process_id);
+            app.deferred.done(process_id);
         }
         
         // request data

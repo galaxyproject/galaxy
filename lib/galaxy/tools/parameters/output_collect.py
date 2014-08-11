@@ -100,13 +100,36 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 sa_session.flush()
             primary_data.state = outdata.state
             #add tool/metadata provided information
-            new_primary_datasets_attributes = new_primary_datasets.get( os.path.split( filename )[-1] )
+            new_primary_datasets_attributes = new_primary_datasets.get( os.path.split( filename )[-1], {} )
             if new_primary_datasets_attributes:
                 dataset_att_by_name = dict( ext='extension' )
                 for att_set in [ 'name', 'info', 'ext', 'dbkey' ]:
                     dataset_att_name = dataset_att_by_name.get( att_set, att_set )
                     setattr( primary_data, dataset_att_name, new_primary_datasets_attributes.get( att_set, getattr( primary_data, dataset_att_name ) ) )
-            primary_data.set_meta()
+                extra_files_path = new_primary_datasets_attributes.get( 'extra_files', None )
+                if extra_files_path:
+                    extra_files_path_joined = os.path.join( job_working_directory, extra_files_path )
+                    for root, dirs, files in os.walk( extra_files_path_joined ):
+                        extra_dir = os.path.join( primary_data.extra_files_path, root.replace( extra_files_path_joined, '', 1 ).lstrip( os.path.sep ) )
+                        for f in files:
+                            app.object_store.update_from_file( primary_data.dataset,
+                                extra_dir=extra_dir,
+                                alt_name=f,
+                                file_name=os.path.join( root, f ),
+                                create=True,
+                                dir_only=True,
+                                preserve_symlinks=True
+                            )
+                    # FIXME: 
+                    # since these are placed into the job working dir, let the standard
+                    # Galaxy cleanup methods handle this (for now?)
+                    # there was an extra_files_path dir, attempt to remove it
+                    #shutil.rmtree( extra_files_path_joined )
+            metadata_dict = new_primary_datasets_attributes.get( 'metadata', None )
+            if metadata_dict:
+                primary_data.metadata.from_JSON_dict( json_dict=metadata_dict )
+            else:
+                primary_data.set_meta()
             primary_data.set_peek()
             sa_session.add( primary_data )
             sa_session.flush()

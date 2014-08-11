@@ -9,7 +9,8 @@ from galaxy.openid.providers import OpenIDProviders
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
 from galaxy.tags.tag_handler import CommunityTagHandler
-from tool_shed.grids.util import RepositoryGridFilterManager
+from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 
 
@@ -51,6 +52,9 @@ class UniverseApplication( object ):
         # because the Tool Shed should always have an empty dictionary!
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_path )
         self.genome_builds = GenomeBuilds( self )
+        # Citation manager needed to load tools.
+        from galaxy.managers.citations import CitationsManager
+        self.citations_manager = CitationsManager( self )
         # The Tool Shed makes no use of a Galaxy toolbox, but this attribute is still required.
         self.toolbox = tools.ToolBox( [], self.config.tool_path, self )
         # Initialize the Tool Shed security agent.
@@ -64,6 +68,8 @@ class UniverseApplication( object ):
         # Let the Tool Shed's HgwebConfigManager know where the hgweb.config file is located.
         self.hgweb_config_manager = self.model.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
+        # Initialize the repository registry.
+        self.repository_registry = tool_shed.repository_registry.Registry( self )
         print >> sys.stderr, "Tool shed hgweb.config file is: ", self.hgweb_config_manager.hgweb_config
 
     def shutdown( self ):

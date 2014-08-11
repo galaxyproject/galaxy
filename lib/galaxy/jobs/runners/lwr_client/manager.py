@@ -8,14 +8,14 @@ from os import getenv
 from .client import JobClient
 from .client import InputCachingJobClient
 from .client import MessageJobClient
+from .client import MessageCLIJobClient
 from .interface import HttpLwrInterface
 from .interface import LocalLwrInterface
 from .object_client import ObjectStoreClient
 from .transport import get_transport
 from .util import TransferEventManager
-from .util import parse_amqp_connect_ssl_params
 from .destination import url_to_destination_params
-from .amqp_exchange import LwrExchange
+from .amqp_exchange_factory import get_exchange
 
 
 from logging import getLogger
@@ -44,7 +44,7 @@ class ClientManager(object):
             self.job_manager_interface_args = dict(job_manager=kwds['job_manager'], file_cache=kwds['file_cache'])
         else:
             self.job_manager_interface_class = HttpLwrInterface
-            transport_type = kwds.get('transport_type', None)
+            transport_type = kwds.get('transport', None)
             transport = get_transport(transport_type)
             self.job_manager_interface_args = dict(transport=transport)
         cache = kwds.get('cache', None)
@@ -72,17 +72,18 @@ class ClientManager(object):
         pass
 
 
+try:
+    from galaxy.jobs.runners.util.cli import factory as cli_factory
+except ImportError:
+    from lwr.managers.util.cli import factory as cli_factory
+
+
 class MessageQueueClientManager(object):
 
     def __init__(self, **kwds):
         self.url = kwds.get('url')
         self.manager_name = kwds.get("manager", None) or "_default_"
-        self.connect_ssl = parse_amqp_connect_ssl_params(kwds.get('amqp_connect_ssl_args', None))
-        timeout = kwds.get('amqp_consumer_timeout', False)
-        if timeout is False:
-            self.exchange = LwrExchange(self.url, self.manager_name, self.connect_ssl)
-        else:
-            self.exchange = LwrExchange(self.url, self.manager_name, self.connect_ssl, timeout=timeout)
+        self.exchange = get_exchange(self.url, self.manager_name, kwds)
         self.status_cache = {}
         self.callback_lock = threading.Lock()
         self.callback_thread = None
@@ -96,12 +97,16 @@ class MessageQueueClientManager(object):
             def callback_wrapper(body, message):
                 try:
                     if "job_id" in body:
-                        self.status_cache[body["job_id"]] = body
+                        job_id = body["job_id"]
+                        self.status_cache[job_id] = body
                     log.debug("Handling asynchronous status update from remote LWR.")
                     callback(body)
                 except Exception:
                     log.exception("Failure processing job status update message.")
-                message.ack()
+                except BaseException as e:
+                    log.exception("Failure processing job status update message - BaseException type %s" % type(e))
+                finally:
+                    message.ack()
 
             def run():
                 self.exchange.consume("status_update", callback_wrapper, check=self)
@@ -122,9 +127,15 @@ class MessageQueueClientManager(object):
         return self.active
 
     def get_client(self, destination_params, job_id, **kwargs):
+        if job_id is None:
+            raise Exception("Cannot generate LWR client for empty job_id.")
         destination_params = _parse_destination_params(destination_params)
         destination_params.update(**kwargs)
-        return MessageJobClient(destination_params, job_id, self)
+        if 'shell_plugin' in destination_params:
+            shell = cli_factory.get_shell(destination_params)
+            return MessageCLIJobClient(destination_params, job_id, self, shell)
+        else:
+            return MessageJobClient(destination_params, job_id, self)
 
 
 class ObjectStoreClientManager(object):
@@ -135,7 +146,7 @@ class ObjectStoreClientManager(object):
             self.interface_args = dict(object_store=kwds['object_store'])
         else:
             self.interface_class = HttpLwrInterface
-            transport_type = kwds.get('transport_type', None)
+            transport_type = kwds.get('transport', None)
             transport = get_transport(transport_type)
             self.interface_args = dict(transport=transport)
         self.extra_client_kwds = {}
