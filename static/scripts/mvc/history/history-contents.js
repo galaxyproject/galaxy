@@ -13,13 +13,12 @@ define([
  *      Dataset collections on the other hand are not mixed and (so far) can only contain either
  *          HDAs or child dataset collections on one level.
  *      This is why this does not inherit from any of the DatasetCollections (currently).
- *
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
 var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends HistoryContents.prototype */{
+//TODO:?? may want to inherit from some MixedModelCollection
+//TODO:?? also consider inheriting from a 'DatasetList'
+//TODO: can we decorate the mixed models using the model fn below (instead of having them build their own type_id)?
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output
@@ -27,6 +26,11 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
+        //console.debug( 'HistoryContents.model:', attrs, options );
+
+//TODO: can we move the type_id stuff here?
+        //attrs.type_id = typeIdStr( attrs );
+
         if( attrs.history_content_type === "dataset" ) {
             return new HDA_MODEL.HistoryDatasetAssociation( attrs, options );
         
@@ -89,7 +93,8 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     running : function(){
         var idList = [];
         this.each( function( item ){
-            if( !item.inReadyState() ){
+            var isRunning = !item.inReadyState();
+            if( isRunning ){
                 idList.push( item.get( 'id' ) );
             }
         });
@@ -194,9 +199,9 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         // see Backbone.Collection.set and _prepareModel
         var collection = this;
         models = _.map( models, function( model ){
-            var attrs = model.attributes || model; // Handle raw json or Backbone model.
-            var typeId = HISTORY_CONTENT.HistoryContent.typeIdStr( attrs.history_content_type, attrs.id );
-            var existing = collection.get( typeId );
+            var attrs = model.attributes || model,
+                typeId = HISTORY_CONTENT.typeIdStr( attrs.history_content_type, attrs.id ),
+                existing = collection.get( typeId );
             if( !existing ){ return model; }
 
             // merge the models _BEFORE_ calling the superclass version
@@ -212,6 +217,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         by the server.
     **/
     promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){
+//TODO: seems like this would be better in mvc/collections
         options = options || {};
         options.url = this.url();
         options.type = "POST";

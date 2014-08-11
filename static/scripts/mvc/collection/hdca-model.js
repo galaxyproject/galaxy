@@ -3,7 +3,15 @@ define([
     "mvc/collection/collection-model",
     "utils/localization"
 ], function( HISTORY_CONTENT, DC_MODEL, _l ){
-//==============================================================================
+/*==============================================================================
+
+Models for DatasetCollections contained within a history.
+
+TODO:
+    these might be compactable to one class if some duplication with
+    collection-model is used.
+
+==============================================================================*/
 var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
     ListDC = DC_MODEL.ListDatasetCollection,
     PairDC = DC_MODEL.PairDatasetCollection,
@@ -19,8 +27,6 @@ var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
     initialize : function( model, options ){
         ListDC.prototype.initialize.call( this, model, options );
         hcontentMixin.initialize.call( this, model, options );
-        //TODO: in lieu of any state info for collections, show as 'ok'
-        this.set( 'state', 'ok', { silent: true });
     },
 
     /** String representation. */
@@ -40,8 +46,6 @@ var HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
     initialize : function( model, options ){
         PairDC.prototype.initialize.call( this, model, options );
         hcontentMixin.initialize.call( this, model, options );
-        //TODO: in lieu of any state info for collections, show as 'ok'
-        this.set( 'state', 'ok', { silent: true });
     },
 
     /** String representation. */
@@ -61,8 +65,6 @@ var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).ex
     initialize : function( model, options ){
         ListPairedDC.prototype.initialize.call( this, model, options );
         hcontentMixin.initialize.call( this, model, options );
-        //TODO: in lieu of any state info for collections, show as 'ok'
-        this.set( 'state', 'ok', { silent: true });
     },
 
     /** String representation. */

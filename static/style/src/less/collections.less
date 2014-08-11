@@ -1,18 +1,15 @@
 //============================================================================= collection element
 .dataset-collection-element {
-    border: 1px solid @border-default-color;
-    background-color: white;
+    .has-job-state-mixin;
     .title-bar {
-        padding: 8px;
         .subtitle {
             margin-top: 2px;
             font-size: 90%;
-            color: grey;
+            color: #777;
         }
     }
     .details {
         display: none;
-        padding: 6px;
     }
 }
 
@@ -23,8 +20,9 @@
 //}
 
 //============================================================================= collection
-//.dataset-collection {
-//}
+.history-content.dataset-collection {
+    .has-job-state-mixin;
+}
 
 //============================================================================= collection panel
 .dataset-collection-panel {
@@ -43,9 +41,10 @@
             .back {
 //TODO: to more generic less class
                 .fa-icon {
+                    margin-right: 4px;
+                    font-size: 120%;
                     font-weight: bold;
                     text-decoration: none;
-                    margin-right: 4px;
                 }
             }
         }
@@ -56,7 +55,7 @@
             }
         }
         .subtitle {
-            color: grey;
+            color: #777;
         }
     }
     .datasets-list {
@@ -71,19 +70,14 @@
 }
 
 //============================================================================= collection inside history panel
-.history-panel .dataset-collection,
-.history-panel .hdca {
+.history-panel .dataset-collection {
     .subtitle {
         margin-top: 2px;
         font-size: 90%;
-        color: grey;
+        color: #777;
     }
 }
 
 //============================================================================= collection panel inside history panel
-.history-panel .dataset-collection-panel {
-    .dataset-collection-element {
-//TODO: collections are currently stateless
-        background-color: @state-success-bg;
-    }
-}
+//.history-panel .dataset-collection-panel {
+//}

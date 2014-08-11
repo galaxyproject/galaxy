@@ -6,57 +6,38 @@ define([
 //==============================================================================
 var _super = HDCA_BASE.HDCABaseView;
 /** @class Editing view for HistoryDatasetCollectionAssociation.
- *  @name DatasetCollectionEditView
- *
- *  @augments HDCABaseView
- *  @constructs
  */
 var HDCAEditView = _super.extend({
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
-    initialize  : function( attributes ){
-        _super.prototype.initialize.call( this, attributes );
-    },
-
-    // ......................................................................... edit attr, delete
-    /** Render icon-button group for the common, most easily accessed actions.
-     *      Overrides _render_primaryActions to include editing related buttons.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_primaryActions : function(){
-        this.log( this + '._render_primaryActions' );
+    // ......................................................................... delete
+    /** In this override, add the delete button. */
+    _renderPrimaryActions : function(){
+        this.log( this + '._renderPrimaryActions' );
         // render the display, edit attr and delete icon-buttons
-        return _super.prototype._render_primaryActions.call( this )
+        return _super.prototype._renderPrimaryActions.call( this )
             .concat([
-                this._render_deleteButton()
+                this._renderDeleteButton()
             ]);
     },
 
-    /** Render icon-button to delete this hda.
-     *  @returns {jQuery} rendered DOM
-     */
-    _render_deleteButton : function(){
+    /** Render icon-button to delete this collection. */
+    _renderDeleteButton : function(){
         var self = this,
-            deleteBtnData = {
-                title       : _l( 'Delete' ),
-                classes     : 'dataset-delete',
-                onclick     : function() {
-                    // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find( '.icon-btn.dataset-delete' ).trigger( 'mouseout' );
-                    self.model[ 'delete' ]();
-                }
-        };
-        if( self.model.get( 'deleted' ) ){
-            deleteBtnData = {
-                title       : _l( 'Dataset collection is already deleted' ),
-                disabled    : true
-            };
-        }
-        deleteBtnData.faIcon = 'fa-times';
-        return faIconButton( deleteBtnData );
+            deleted = this.model.get( 'deleted' );
+        return faIconButton({
+            title       : deleted? _l( 'Dataset collection is already deleted' ): _l( 'Delete' ),
+            classes     : 'delete-btn',
+            faIcon      : 'fa-times',
+            disabled    : deleted,
+            onclick     : function() {
+                // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
+                self.$el.find( '.icon-btn.delete-btn' ).trigger( 'mouseout' );
+                self.model[ 'delete' ]();
+            }
+        });
     },
 
     // ......................................................................... misc

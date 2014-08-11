@@ -17,7 +17,6 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends History.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
     // values from api (may need more)
@@ -37,33 +36,33 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     // ........................................................................ set up/tear down
     /** Set up the model
      *  @param {Object} historyJSON model data for this History
-     *  @param {Object[]} hdaJSON   array of model data for this History's HDAs
+     *  @param {Object[]} contentsJSON   array of model data for this History's contents (hdas or collections)
      *  @param {Object} options     any extra settings including logger
      */
-    initialize : function( historyJSON, hdaJSON, options ){
+    initialize : function( historyJSON, contentsJSON, options ){
         options = options || {};
         this.logger = options.logger || null;
-        this.log( this + ".initialize:", historyJSON, hdaJSON, options );
+        this.log( this + ".initialize:", historyJSON, contentsJSON, options );
 
         /** HistoryContents collection of the HDAs contained in this history. */
-        this.log( 'creating history contents:', hdaJSON );
-        this.hdas = new HISTORY_CONTENTS.HistoryContents( hdaJSON || [], { historyId: this.get( 'id' )});
+        this.log( 'creating history contents:', contentsJSON );
+        this.contents = new HISTORY_CONTENTS.HistoryContents( contentsJSON || [], { historyId: this.get( 'id' )});
         //// if we've got hdas passed in the constructor, load them
-        //if( hdaJSON && _.isArray( hdaJSON ) ){
-        //    this.log( 'resetting history contents:', hdaJSON );
-        //    this.hdas.reset( hdaJSON );
+        //if( contentsJSON && _.isArray( contentsJSON ) ){
+        //    this.log( 'resetting history contents:', contentsJSON );
+        //    this.contents.reset( contentsJSON );
         //}
 
         this._setUpListeners();
 
-        /** cached timeout id for the HDA updater */
+        /** cached timeout id for the dataset updater */
         this.updateTimeoutId = null;
         // set up update timeout if needed
         //this.checkForUpdates();
     },
 
     /** set up any event listeners for this history including those to the contained HDAs
-     *  events: error:hdas  if an error occurred with the HDA collection
+     *  events: error:contents  if an error occurred with the contents collection
      */
     _setUpListeners : function(){
         this.on( 'error', function( model, xhr, options, msg, details ){
@@ -71,23 +70,23 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         });
 
         // hda collection listening
-        if( this.hdas ){
-            this.listenTo( this.hdas, 'error', function(){
-                this.trigger.apply( this, [ 'error:hdas' ].concat( jQuery.makeArray( arguments ) ) );
+        if( this.contents ){
+            this.listenTo( this.contents, 'error', function(){
+                this.trigger.apply( this, [ 'error:contents' ].concat( jQuery.makeArray( arguments ) ) );
             });
         }
-        // if the model's id changes ('current' or null -> an actual id), update the hdas history_id
+        // if the model's id changes ('current' or null -> an actual id), update the contents history_id
         this.on( 'change:id', function( model, newId ){
-            if( this.hdas ){
-                this.hdas.historyId = newId;
+            if( this.contents ){
+                this.contents.historyId = newId;
             }
         }, this );
     },
 
     //TODO: see base-mvc
     //onFree : function(){
-    //    if( this.hdas ){
-    //        this.hdas.free();
+    //    if( this.contents ){
+    //        this.contents.free();
     //    }
     //},
 
@@ -113,21 +112,23 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         return true;
     },
 
-    hdaCount : function(){
+    /**  */
+    contentsCount : function(){
         return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
     },
 
     // ........................................................................ ajax
-    /** does the HDA collection indicate they're still running and need to be updated later? delay + update if needed
-     *  @param {Function} onReadyCallback   function to run when all HDAs are in the ready state
+    /** does the contents collection indicate they're still running and need to be updated later?
+     *      delay + update if needed
+     *  @param {Function} onReadyCallback   function to run when all contents are in the ready state
      *  events: ready
      */
     checkForUpdates : function( onReadyCallback ){
         //this.info( 'checkForUpdates' )
 
-        // get overall History state from collection, run updater if History has running/queued hdas
+        // get overall History state from collection, run updater if History has running/queued contents
         //  boiling it down on the client to running/not
-        if( this.hdas.running().length ){
+        if( this.contents.running().length ){
             this.setUpdateTimeout();
 
         } else {
@@ -139,7 +140,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         return this;
     },
 
-    /** create a timeout (after UPDATE_DELAY or delay ms) to refetch the HDA collection. Clear any prev. timeout */
+    /** create a timeout (after UPDATE_DELAY or delay ms) to refetch the contents. Clear any prev. timeout */
     setUpdateTimeout : function( delay ){
         delay = delay || History.UPDATE_DELAY;
         var history = this;
@@ -160,13 +161,13 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         }
     },
 
-    /* update the HDA collection getting full detailed model data for any hda whose id is in detailIds
+    /* update the contents, getting full detailed model data for any whose id is in detailIds
      *  set up to run this again in some interval of time
-     *  @param {String[]} detailIds list of HDA ids to get detailed model data for
+     *  @param {String[]} detailIds list of content ids to get detailed model data for
      *  @param {Object} options     std. backbone fetch options map
      */
     refresh : function( detailIds, options ){
-        //this.info( 'refresh:', detailIds, this.hdas );
+        //this.info( 'refresh:', detailIds, this.contents );
         detailIds = detailIds || [];
         options = options || {};
         var history = this;
@@ -176,8 +177,8 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         if( detailIds.length ){
             options.data.details = detailIds.join( ',' );
         }
-        var xhr = this.hdas.fetch( options );
-        xhr.done( function( hdaModels ){
+        var xhr = this.contents.fetch( options );
+        xhr.done( function( models ){
             history.checkForUpdates( function(){
                 // fetch the history inside onReadyCallback in order to recalc history size
                 this.fetch();
@@ -275,19 +276,13 @@ History.getHistoryData = function getHistoryData( historyId, options ){
 //==============================================================================
 /** @class A collection of histories (per user).
  *      (stub) currently unused.
- *  @name HistoryCollection
- *
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
 var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends HistoryCollection.prototype */{
     model   : History,
     urlRoot : galaxy_config.root + 'api/histories'
     
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
+    /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 });
 

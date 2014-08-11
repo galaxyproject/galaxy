@@ -1,11 +1,12 @@
 define([
     "mvc/history/history-model",
     "mvc/collection/hdca-base",
+    "mvc/dataset/dataset-list-element",
     "mvc/dataset/hda-base",
     "mvc/user/user-model",
     "mvc/base-mvc",
     "utils/localization"
-], function( HISTORY_MODEL, HDCA_BASE, HDA_BASE, USER, BASE_MVC, _l ){
+], function( HISTORY_MODEL, HDCA_BASE, DATASET_LI, HDA_BASE, USER, BASE_MVC, _l ){
 // ============================================================================
 /** session storage for individual history preferences */
 var HistoryPrefs = BASE_MVC.SessionStorageModel.extend({
@@ -84,7 +85,8 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
     //logger              : console,
 
     /** class to use for constructing the HDA views */
-    HDAViewClass        : HDA_BASE.HDABaseView,
+    //HDAViewClass        : HDA_BASE.HDABaseView,
+    HDAViewClass        : DATASET_LI.DatasetListItemView,
     HDCAViewClass       : HDCA_BASE.HDCABaseView,
 
     tagName             : 'div',
@@ -367,7 +369,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
         if( this.model ){
             this.model.clearUpdateTimeout();
             this.stopListening( this.model );
-            this.stopListening( this.model.hdas );
+            this.stopListening( this.model.contents );
             //TODO: see base-mvc
             //this.model.free();
         }
@@ -421,11 +423,11 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
         // ---- hdas
         // bind events from the model's hda collection
         // note: don't listen to the hdas for errors, history will pass that to us
-        //this.model.hdas.on( 'reset', this.addAll, this );
-        this.model.hdas.on( 'add', this.addContentView, this );
+        //this.model.contents.on( 'reset', this.addAll, this );
+        this.model.contents.on( 'add', this.addContentView, this );
 
         // on a model error - bounce it up to the panel and remove it from the model
-        this.model.on( 'error error:hdas', function( model, xhr, options, msg ){
+        this.model.on( 'error error:contents', function( model, xhr, options, msg ){
             this.errorHandler( model, xhr, options, msg );
         }, this );
         return this;
@@ -580,7 +582,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
             newHdaViews = {},
             // only render the shown hdas
             //TODO: switch to more general filtered pattern
-            visibleHdas = this.model.hdas.getVisible(
+            visibleHdas = this.model.contents.getVisible(
                 this.storage.get( 'show_deleted' ),
                 this.storage.get( 'show_hidden' ),
                 this.filters
@@ -711,7 +713,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
      */
     views : function( at ){
         var panel = this,
-            visibleHdas = this.model.hdas.getVisible(
+            visibleHdas = this.model.contents.getVisible(
                 this.storage.get( 'show_deleted' ),
                 this.storage.get( 'show_hidden' ),
                 this.filters
@@ -737,8 +739,8 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
     // *  note: finds and returns the _first_ matching
     // */
     //findHdaView : function( terms ){
-    //    if( !this.model || !this.model.hdas.length ){ return undefined; }
-    //    var model = this.model.hdas.findWhere( terms );
+    //    if( !this.model || !this.model.contents.length ){ return undefined; }
+    //    var model = this.model.contents.findWhere( terms );
     //    return ( model )?( this.hdaViews[ model.id ] ):( undefined );
     //},
 
@@ -748,7 +750,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
         var panel = this,
             withinSet = false,
             set = [];
-        this.model.hdas.getVisible(
+        this.model.contents.getVisible(
             this.storage.get( 'show_deleted' ),
             this.storage.get( 'show_hidden' ),
             this.filters
@@ -828,12 +830,12 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
 
         function onFirstSearch( searchFor ){
             //this.log( 'onFirstSearch', searchFor, panel );
-            if( panel.model.hdas.haveDetails() ){
+            if( panel.model.contents.haveDetails() ){
                 panel.searchHdas( searchFor );
                 return;
             }
             panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
-            panel.model.hdas.fetchAllDetails({ silent: true })
+            panel.model.contents.fetchAllDetails({ silent: true })
                 .always( function(){
                     panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
                 })
@@ -1026,7 +1028,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
      *  @returns {HistoryPanel} the panel
      */
     scrollToHid : function( hid ){
-        var hda = this.model.hdas.getByHid( hid );
+        var hda = this.model.contents.getByHid( hid );
         // do nothing if hid not found
         if( !hda ){ return this; }
         return this.scrollToId( hda.id );
