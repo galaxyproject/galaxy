@@ -38,7 +38,7 @@ class BuildSites( object ):
         self._build_sites['ucsc'] = self.read_build_sites( self._app.config.ucsc_build_sites )
         self._build_sites['gbrowse'] = self.read_build_sites( self._app.config.gbrowse_build_sites )
 
-    def get_site_by_build( self, site_type, build ):
+    def _get_site_by_build( self, site_type, build ):
         sites = []
         for site in self._build_sites[site_type]:
             if build in site['builds']:

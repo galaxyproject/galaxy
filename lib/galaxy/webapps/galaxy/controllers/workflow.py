@@ -51,7 +51,7 @@ class StoredWorkflowListGrid( grids.Grid ):
     use_panels = True
     title = "Saved Workflows"
     model_class = model.StoredWorkflow
-    default_filter = { "name" : "All", "tags": "All" }
+    default_filter = { "name": "All", "tags": "All" }
     default_sort_key = "-update_time"
     columns = [
         grids.TextColumn( "Name", key="name", attach_popup=True, filterable="advanced" ),
@@ -62,10 +62,11 @@ class StoredWorkflowListGrid( grids.Grid ):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-        "Search",
-        cols_to_filter=[ columns[0], columns[1] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+            "Search",
+            cols_to_filter=[ columns[0], columns[1] ],
+            key="free-text-search", visible=False, filterable="standard"
+        )
+    )
     operations = [
         grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Run", condition=( lambda item: not item.deleted ), async_compatible=False ),
@@ -95,19 +96,24 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-        "Search name, annotation, owner, and tags",
-        cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+            "Search name, annotation, owner, and tags",
+            cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ],
+            key="free-text-search", visible=False, filterable="standard"
+        )
+    )
     operations = [
-        grids.GridOperation( "Import",
-                            condition=( lambda item: not item.deleted ),
-                            allow_multiple=False,
-                            url_args=dict( action="imp" ) ),
-        grids.GridOperation( "Save as File",
-                            condition=( lambda item: not item.deleted ),
-                            allow_multiple=False,
-                            url_args=dict( action="export_to_file" ) ),
+        grids.GridOperation(
+            "Import",
+            condition=( lambda item: not item.deleted ),
+            allow_multiple=False,
+            url_args=dict( action="imp")
+        ),
+        grids.GridOperation(
+            "Save as File",
+            condition=( lambda item: not item.deleted ),
+            allow_multiple=False,
+            url_args=dict( action="export_to_file" )
+        ),
     ]
 
     def build_initial_query( self, trans, **kwargs ):
@@ -275,7 +281,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, stored_workflow )
         return trans.fill_template_mako( "workflow/display.mako", item=stored_workflow, item_data=stored_workflow.latest_workflow.steps,
-                                            user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+                                         user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     @web.expose
     def get_item_content_async( self, trans, id ):
@@ -390,7 +396,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
         # Do import.
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
-        if stored.importable == False:
+        if stored.importable is False:
             return trans.show_error_message( "The owner of this workflow has disabled imports via this link.<br>You can %s" % referer_message, use_panels=True )
         elif stored.deleted:
             return trans.show_error_message( "You can't import this workflow because it has been deleted.<br>You can %s" % referer_message, use_panels=True )
@@ -415,7 +421,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if 'annotation' in kwargs:
             # Set workflow annotation; sanitize annotation before adding it.
             annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
-            self.add_item_annotation( trans.sa_session, trans.get_user(), stored,  annotation )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), stored, annotation )
         trans.sa_session.flush()
         return trans.fill_template( 'workflow/edit_attributes.mako',
                                     stored=stored,
@@ -511,7 +517,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """ Returns workflow's name and link. """
         stored = self.get_stored_workflow( trans, id )
 
-        return_dict = { "name" : stored.name, "link" : url_for(controller='workflow', action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
+        return_dict = { "name": stored.name, "link": url_for(controller='workflow', action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
         return return_dict
 
     @web.expose
@@ -583,8 +589,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             return self.editor( trans, id=trans.security.encode_id(stored_workflow.id ))
         else:
             return form( url_for(controller="workflow", action="create"), "Create New Workflow", submit_text="Create", use_panels=True ) \
-                    .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" ) \
-                    .add_text( "workflow_annotation", "Workflow Annotation", value="", help="A description of the workflow; annotation is shown alongside shared or published workflows." )
+                .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" ) \
+                .add_text( "workflow_annotation", "Workflow Annotation", value="", help="A description of the workflow; annotation is shown alongside shared or published workflows." )
 
     @web.expose
     def delete( self, trans, id=None ):
@@ -665,7 +671,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         module = module_factory.new( trans, type, **kwargs )
         return {
             'type': module.type,
-            'name':  module.get_name(),
+            'name': module.get_name(),
             'tool_id': module.get_tool_id(),
             'tool_state': module.get_state(),
             'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
@@ -750,9 +756,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
                 'form_html': module.get_config_form(),
-                'annotation' : annotation_str,
-                'post_job_actions' : {},
-                'workflow_outputs' : []
+                'annotation': annotation_str,
+                'post_job_actions': {},
+                'workflow_outputs': []
             }
             # Connections
             input_connections = step.input_connections
@@ -838,8 +844,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
         if errors:
             return dict( name=workflow.name,
-                             message="This workflow includes missing or invalid tools. It cannot be saved until the following steps are removed or the missing tools are enabled.",
-                             errors=errors)
+                         message="This workflow includes missing or invalid tools. It cannot be saved until the following steps are removed or the missing tools are enabled.",
+                         errors=errors )
         # First pass to build step objects and populate basic values
         for key, step_dict in data['steps'].iteritems():
             # Create the model class for the step
@@ -932,18 +938,19 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         workflow_content = json.dumps( workflow_dict, indent=4, sort_keys=True )
 
         # Create myExperiment request.
-        request_raw = trans.fill_template( "workflow/myexp_export.mako", \
-                                            workflow_name=workflow_dict['name'], \
-                                            workflow_description=workflow_dict['annotation'], \
-                                            workflow_content=workflow_content, \
-                                            workflow_svg=self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
-                                            )
+        request_raw = trans.fill_template(
+            "workflow/myexp_export.mako",
+            workflow_name=workflow_dict['name'],
+            workflow_description=workflow_dict['annotation'],
+            workflow_content=workflow_content,
+            workflow_svg=self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
+        )
         # strip() b/c myExperiment XML parser doesn't allow white space before XML; utf-8 handles unicode characters.
         request = unicode( request_raw.strip(), 'utf-8' )
 
         # Do request and get result.
         auth_header = base64.b64encode( '%s:%s' % ( myexp_username, myexp_password ))
-        headers = { "Content-type": "text/xml", "Accept": "text/xml", "Authorization" : "Basic %s" % auth_header }
+        headers = { "Content-type": "text/xml", "Accept": "text/xml", "Authorization": "Basic %s" % auth_header }
         myexp_url = trans.app.config.get( "myexperiment_url", self.__myexp_url )
         conn = httplib.HTTPConnection( myexp_url )
         # NOTE: blocks web thread.
@@ -958,14 +965,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         myexp_workflow_id = parser.tag_content
         workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( controller='workflow', action='list' )
         if myexp_workflow_id:
-            return trans.show_message( \
+            return trans.show_message(
                 """Workflow '%s' successfully exported to myExperiment. <br/>
                 <a href="http://%s/workflows/%s">Click here to view the workflow on myExperiment</a> %s
                 """ % ( stored.name, myexp_url, myexp_workflow_id, workflow_list_str ),
                 use_panels=True )
         else:
-            return trans.show_error_message( \
-                "Workflow '%s' could not be exported to myExperiment. Error: %s %s" % \
+            return trans.show_error_message(
+                "Workflow '%s' could not be exported to myExperiment. Error: %s %s" %
                 ( stored.name, response_data, workflow_list_str ), use_panels=True )
 
     @web.json_pretty
@@ -1205,10 +1212,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             jobs, warnings = summarize( trans )
             # Render
             return trans.fill_template(
-                        "workflow/build_from_current_history.mako",
-                        jobs=jobs,
-                        warnings=warnings,
-                        history=history
+                "workflow/build_from_current_history.mako",
+                jobs=jobs,
+                warnings=warnings,
+                history=history
             )
         else:
             stored_workflow = extract_workflow(
@@ -1223,10 +1230,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             workflow_id = trans.security.encode_id( stored_workflow.id )
             return trans.show_message( 'Workflow "%s" created from current history. You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.' %
                                        ( workflow_name, url_for( controller='workflow', action='editor', id=workflow_id ),
-                                       url_for( controller='workflow', action='run', id=workflow_id ) ) )
+                                         url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
-    def run( self, trans, id, history_id=None, multiple_input_mode="product", hide_fixed_params=False, **kwargs ):
+    def run( self, trans, id, history_id=None, hide_fixed_params=False, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
         if stored.user != user:
@@ -1269,7 +1276,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # been POSTed
                 # List to gather values for the template
                 invocations = []
-                for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs, mode=multiple_input_mode):
+                for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs):
                     for step in workflow.steps:
                         step.upgrade_messages = {}
                         # Connections by input name
@@ -1350,8 +1357,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         trans.sa_session.flush()
                 if invocations:
                     return trans.fill_template( "workflow/run_complete.mako",
-                                                    workflow=stored,
-                                                    invocations=invocations )
+                                                workflow=stored,
+                                                invocations=invocations )
             else:
                 # Prepare each step
                 missing_tools = []
@@ -1388,24 +1395,27 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
                 if missing_tools:
                     stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
-                    return trans.fill_template("workflow/run.mako",
-                                                steps=[],
-                                                workflow=stored,
-                                                hide_fixed_params=hide_fixed_params,
-                                                missing_tools=missing_tools)
+                    return trans.fill_template(
+                        "workflow/run.mako",
+                        steps=[],
+                        workflow=stored,
+                        hide_fixed_params=hide_fixed_params,
+                        missing_tools=missing_tools
+                    )
             # Render the form
             stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
             return trans.fill_template(
-                        "workflow/run.mako",
-                        steps=workflow.steps,
-                        workflow=stored,
-                        has_upgrade_messages=has_upgrade_messages,
-                        step_version_changes=step_version_changes,
-                        errors=errors,
-                        incoming=kwargs,
-                        history_id=history_id,
-                        hide_fixed_params=hide_fixed_params,
-                        enable_unique_defaults=trans.app.config.enable_unique_workflow_defaults)
+                "workflow/run.mako",
+                steps=workflow.steps,
+                workflow=stored,
+                has_upgrade_messages=has_upgrade_messages,
+                step_version_changes=step_version_changes,
+                errors=errors,
+                incoming=kwargs,
+                history_id=history_id,
+                hide_fixed_params=hide_fixed_params,
+                enable_unique_defaults=trans.app.config.enable_unique_workflow_defaults
+            )
         finally:
             # restore the active history
             if saved_history is not None:
@@ -1484,12 +1494,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
         # Render the form
         return trans.fill_template(
-                    "workflow/tag_outputs.mako",
-                    steps=workflow.steps,
-                    workflow=stored,
-                    has_upgrade_messages=has_upgrade_messages,
-                    errors=errors,
-                    incoming=kwargs
+            "workflow/tag_outputs.mako",
+            steps=workflow.steps,
+            workflow=stored,
+            has_upgrade_messages=has_upgrade_messages,
+            errors=errors,
+            incoming=kwargs
         )
 
     @web.expose
@@ -1539,7 +1549,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     shared_by_others=shared_by_others,
                                     ids_in_menu=ids_in_menu,
                                     message=message,
-                                    refresh_frames=['tools'] )
+                                    refresh_frames=refresh_frames )
 
     def _workflow_to_svg_canvas( self, trans, stored ):
         workflow = stored.latest_workflow
@@ -1619,17 +1629,17 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             if len(step_dict['data_inputs']) > 0:
                 box_height += 15
                 sep_y = y + len(step_dict['data_inputs']) * line_px + 40
-                text.append( svgfig.Line(x-margin, sep_y, x+width-margin, sep_y).SVG() ) #
+                text.append( svgfig.Line(x - margin, sep_y, x + width - margin, sep_y).SVG() )
 
             # input/output box
-            boxes.append( svgfig.Rect(x-margin, y+30, x+width-margin, y+30+box_height, fill="#ffffff").SVG() )
+            boxes.append( svgfig.Rect(x - margin, y + 30, x + width - margin, y + 30 + box_height, fill="#ffffff").SVG() )
 
             for conn, output_dict in step_dict['input_connections'].iteritems():
                 in_coords = in_pos[step_dict['id']][conn]
                 out_conn_pos = out_pos[output_dict['id']][output_dict['output_name']]
                 adjusted = (out_conn_pos[0] + widths[output_dict['id']], out_conn_pos[1])
-                text.append( svgfig.SVG("circle", cx=out_conn_pos[0]+widths[output_dict['id']]-margin, cy=out_conn_pos[1]-margin, r=5, fill="#ffffff" ) )
-                connectors.append( svgfig.Line(adjusted[0], adjusted[1]-margin, in_coords[0]-10, in_coords[1], arrow_end="true" ).SVG() )
+                text.append( svgfig.SVG("circle", cx=out_conn_pos[0] + widths[output_dict['id']] - margin, cy=out_conn_pos[1] - margin, r=5, fill="#ffffff" ) )
+                connectors.append( svgfig.Line(adjusted[0], adjusted[1] - margin, in_coords[0] - 10, in_coords[1], arrow_end="true" ).SVG() )
 
         canvas.append(connectors)
         canvas.append(boxes)
@@ -1653,17 +1663,15 @@ def _build_workflow_on_str(instance_ds_names):
         return " on %s and %s" % (", ".join(instance_ds_names[0:-1]), instance_ds_names[-1])
 
 
-def _expand_multiple_inputs(kwargs, mode):
-    (single_inputs, matched_multi_inputs, multiplied_multi_inputs) = \
-       _split_inputs(kwargs, mode)
+def _expand_multiple_inputs(kwargs):
+    (single_inputs, matched_multi_inputs, multiplied_multi_inputs) = _split_inputs(kwargs)
 
     # Build up every combination of inputs to be run together.
     input_combos = _extend_with_matched_combos(single_inputs, matched_multi_inputs)
     input_combos = _extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
 
     # Input name that are multiply specified
-    multi_input_keys = \
-      matched_multi_inputs.keys() + multiplied_multi_inputs.keys()
+    multi_input_keys = matched_multi_inputs.keys() + multiplied_multi_inputs.keys()
 
     for input_combo in input_combos:
         for key, value in input_combo.iteritems():
@@ -1714,7 +1722,7 @@ def _copy_and_extend_inputs(inputs, key, value):
     return new_inputs
 
 
-def _split_inputs(kwargs, mode):
+def _split_inputs(kwargs):
     """
     """
     input_keys = filter(lambda a: a.endswith('|input'), kwargs)

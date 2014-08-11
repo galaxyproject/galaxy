@@ -55,9 +55,9 @@ var CitationView = Backbone.View.extend({
                     this._asSentence(fields.note);
         }
         var doiUrl = "";
-        if( fields.DOI ) {
-            doiUrl = 'http://dx.doi.org/' + fields.DOI;
-            ref += '[<a href="' + doiUrl + '">doi:' + fields.DOI + "</a>]";
+        if( fields.doi ) {
+            doiUrl = 'http://dx.doi.org/' + fields.doi;
+            ref += '[<a href="' + doiUrl + '">doi:' + fields.doi + "</a>]";
         }
         var url = fields.url || doiUrl;
         if( url ) {

@@ -144,7 +144,7 @@ var CurrentHistoryPanel = _super.extend(
 
         // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
-        this.model.hdas.on( 'state:ready', function( hda, newState, oldState ){
+        this.model.contents.on( 'state:ready', function( hda, newState, oldState ){
             if( ( !hda.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
                 this.removeHdaView( this.hdaViews[ hda.id ] );

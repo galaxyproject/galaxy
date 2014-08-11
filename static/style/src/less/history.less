@@ -125,7 +125,8 @@
 
 
 // ---------------------------------------------------------------------------- dataset states
-.hda.dataset .state-icon {
+//.dataset .state-icon {
+.state-icon {
     .fa-icon;
     display: inline-block;
     margin-right: 4px;
@@ -216,7 +217,7 @@
 }
 
 // ............................................................................ state bgs and icons
-.dataset {
+.has-job-state-mixin {
     // Change background/border color depending on state
     &.state-ok,
     &.state-failed_metadata {
@@ -301,102 +302,9 @@
 
 // ---------------------------------------------------------------------------- datasets within the history panel
 .dataset {
-    border: 1px solid @border-default-color;
-
-    // body mixins
-    @vertical-gap: 8px;
-    .vertical-spacing {
-        margin-bottom: @vertical-gap;
-    }
-    .info-section {
-        border-radius: 3px;
-        border: 1px solid fadeout( @layout-border-color, 70% );
-        padding: 4px;
-    }
-    @spacing-top     : 6px;
-    @spacing-right   : 10px;
-    @spacing-bottom  : 6px;
-    @spacing-left    : 8px;
-    .padded {
-        padding: @spacing-top @spacing-right @spacing-bottom @spacing-left;
-    }
-
-    [class$=messagesmall] {
-        margin: @spacing-top @spacing-right ( @spacing-bottom - 4 ) @spacing-left;
-        font-size: 90%;
-    }
-
-    .help-text {
-        font-weight: normal;
-        color: #555;
-    }
-
-    .selector {
-        float: left;
-        // always initially hidden and zero width
-        display: none;
-        width: 32px;
-        height: 32px;
-        //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-        margin: 0px 0px -( @spacing-bottom ) 0px;
-        padding: ( @spacing-top + 2 ) 0px 2px ( @spacing-left - 1 );
-        font-size: 80%;
-        color: @btn-default-color;
-        cursor: pointer;
-        vertical-align: middle;
-    }
-    .selector:hover {
-        color: maroon;
-    }
-
-    .title-bar {
-        cursor: pointer;
-        outline: none;
-        .padded;
-
-        .title {
-            display: inline;
-            font-weight: bold;
-            text-decoration: underline;
-            word-wrap: break-word;
-            word-break: break-all;
-            line-height: 16px;
-            .hid:after {
-                content: ':';
-            }
-        }
-    }
-
-    .primary-actions {
-        .icon-btn-group();
-        float: right;
-        margin: @spacing-top @spacing-right 0;
-        .icon-btn {
-            margin-left: @icon-btn-margin;
-        }
-    }
+    .has-job-state-mixin;
 
     .details {
-        display: none;
-        padding: 0px @spacing-right @spacing-bottom @spacing-left;
-
-        [class$=messagesmall] {
-            margin: 0px 0px 8px 0px;
-        }
-
-        label {
-            margin: 0px;
-            padding: 0px;
-            font-weight: normal;
-        }
-        .prompt {
-            .help-text;
-        }
-        .prompt:after {
-            content: ':';
-            margin-right: 4px;
-        }
-
         .summary {
             .blurb {
                 margin-bottom: 2px;
@@ -409,31 +317,39 @@
             }
             .datatype .value:after {
                 content: ',';
-                .help-text;
+                .list-item .help-text;
                 margin-right: 4px;
             }
             .dbkey:after {
                 content: ' ';
                 display: block;
-                .vertical-spacing;
+                .list-item .vertical-spacing;
             }
             .info {
-                .info-section;
+                .list-item .info-section;
                 overflow: auto;
                 .value {
                     white-space: pre-line;
                 }
             }
             .job-error-text {
-                .info-section;
+                .list-item .info-section;
                 overflow: auto;
                 white-space: pre;
             }
             // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
-            .vertical-spacing;
+            .list-item .vertical-spacing;
         }
 
         .actions {
+            // bit hacky here bc dropdown wrapped in div
+            .metafile-dropdown {
+                display: inline-block;
+            }
+            .visualizations-dropdown {
+                display: inline-block;
+            }
+            
             .left {
                 .icon-btn-group();
                 float: left;
@@ -443,7 +359,13 @@
                 &:not(:empty) {
                     // can't use :empty on dataset-actions - will always have left & right, so
                     //  add gap to left (more likely to have children)
-                    .vertical-spacing;
+                    .list-item .vertical-spacing;
+                }
+                // have to reapply here - dropdown wrapped in div
+                .icon-btn.visualization-btn {
+                    margin-left: 0px;
+                    border-radius: 0px 3px 3px 0px;
+                    border-right: 1px solid @icon-btn-border;
                 }
             }
             .right {
@@ -458,7 +380,7 @@
         //TODO: move these out
         .tags-display {
             display: none;
-            .vertical-spacing;
+            .list-item .vertical-spacing;
             .select2-container {
                 min-width: 0px;
                 .select2-choices {
@@ -468,9 +390,9 @@
         }
         .annotation-display {
             display: none;
-            .vertical-spacing;
+            .list-item .vertical-spacing;
             .annotation {
-                .info-section;
+                .list-item .info-section;
                 white-space: pre-line;
                 overflow: auto;
             }
@@ -494,12 +416,12 @@
 
         .display-applications {
             .display-application:last-child {
-                .vertical-spacing;
+                .list-item .vertical-spacing;
             }
         }
 
         .dataset-peek {
-            .vertical-spacing;
+            .list-item .vertical-spacing;
             width: 100%;
             margin: 0px;
             border-radius: 3px;
@@ -507,6 +429,8 @@
             color: black;
             font-size: 10px;
             overflow: auto;
+
+//TODO: there doesn't seem to be a way to pad text-only peeks (binary data, etc.)
             th {
                 color: white;
                 background: @panel-primary-heading-bg;
@@ -517,10 +441,20 @@
             }
         }
     }
-
 }
 
 
+.history-content.dataset,
+.history-content.dataset-collection {
+
+    .title-bar {
+        .title {
+            .hid:after {
+                content: ':';
+            }
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------- history
 .history-panel {
@@ -652,34 +586,17 @@
     }
 
     // display only a top border on all
-    .dataset {
+    .list-item.history-content {
         border-width: 1px 0px 0px 0px;
-    }
-
-    // add a bottom border on the last
-    .dataset:last-child {
-        border-width: 1px 0px 1px 0px;
+        // add a bottom border on the last
+        &:last-child {
+            border-width: 1px 0px 1px 0px;
+        }
     }
 
     .empty-history-message {
         display: none;
         margin: 0px 10px 0px 10px;
-    }
-
-    // for both history and dataset tags
-    //TODO: move this out
-    .tag-button {
-        display: inline-block;
-        height: 20px;
-        margin: 2px 2px 0px 0px;
-        border: 1px solid grey;
-        border-radius: 3px 10px 10px 3px;
-        padding: 2px 4px 2px 4px;
-        background-color: #EEE;
-        line-height: 13px;
-        .tag-name {
-            margin-right: 2px;
-        }
     }
 }
 

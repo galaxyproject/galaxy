@@ -1,109 +1,59 @@
 define([
+    "mvc/dataset/dataset-list-element",
     "mvc/base-mvc",
     "utils/localization"
-], function( BASE_MVC, _l ){
+], function( DATASET_LI, BASE_MVC, _l ){
 /* global Backbone, LoggableMixin */
 //==============================================================================
+var ListItemView = BASE_MVC.ListItemView;
 /** @class Read only view for DatasetCollection.
- *  @name DCBaseView
- *
- *  @augments Backbone.View
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
-var DCBaseView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
+var DCBaseView = ListItemView.extend({
+//TODO: may not be needed
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
-    /**  */
-    className   : "dataset-collection",
+    className   : ListItemView.prototype.className + " dataset-collection",
     /**  */
     fxSpeed     : 'fast',
 
-    /**  */
+//TODO: ununsed
+    /** set up */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( 'DCBaseView.initialize:', attributes );
+        ListItemView.prototype.initialize.call( this, attributes );
     },
 
-    // ........................................................................ render main
-    /** Render this content, set up ui.
-     *  @param {Boolean} fade   whether or not to fade out/in when re-rendering
-     *  @fires rendered when rendered
-     *  @fires rendered:ready when first rendered and NO running HDAs
-     *  @returns {Object} this HDABaseView
+    /** In this override, don't show`or render any details (no need to do anything here)
+     *      - currently the parent control will load a panel for this collection over itself
+     *  @fires expanded when a body has been expanded
      */
-    render : function( fade ){
-        var $newRender = this._buildNewRender();
-        this._queueNewRender( $newRender, fade );
-        return this;
-    },
-
-    _buildNewRender : function(){
-        // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
-        var $newRender = $( this.templates.skeleton( this.model.toJSON() ) );
-        $newRender.find( '.primary-actions' ).append( this._render_primaryActions() );
-        this._setUpBehaviors( $newRender );
-        //this._renderSelectable( $newRender );
-        return $newRender;
-    },
-
-    /** Fade out the old el, replace with new dom, then fade in.
-     *  @param {Boolean} fade   whether or not to fade out/in when re-rendering
-     *  @fires rendered when rendered
-     *  @fires rendered:ready when first rendered and NO running HDAs
-     */
-    _queueNewRender : function( $newRender, fade ) {
-        fade = ( fade === undefined )?( true ):( fade );
+    expand : function(){
         var view = this;
-
-        // fade the old render out (if desired)
-        if( fade ){
-            $( view ).queue( function( next ){ this.$el.fadeOut( view.fxSpeed, next ); });
-        }
-        // empty the old render, swap in the new render contents
-        $( view ).queue( function( next ){
-//TODO:?? change to replaceWith pattern?
-            this.$el.empty().attr( 'class', view.className ).append( $newRender.children() );
-            next();
-        });
-        // fade the new in
-        if( fade ){
-            $( view ).queue( function( next ){ this.$el.fadeIn( view.fxSpeed, next ); });
-        }
-        // trigger an event to know we're ready
-        $( view ).queue( function( next ){
-            this.trigger( 'rendered', view );
-            next();
-        });
+        return view._fetchModelDetails()
+            .always(function(){
+                view.trigger( 'expanded', view );
+            });
     },
 
-    /** set up js behaviors, event handlers for elements within the given container
-     *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
-     */
-    _setUpBehaviors : function( $container ){
-        $container = $container || this.$el;
-        make_popup_menus( $container );
-        $container.find( '[title]' ).tooltip({ placement : 'bottom' });
-    },
-
-    // ........................................................................ titlebar buttons
-    /** Render icon-button group for the common, most easily accessed actions.
-     *  @returns {jQuery} rendered DOM or null
-     */
-    _render_primaryActions : function(){
-        // override
-        return [];
-    },
-
-    // ......................................................................... misc
-    events : {
-        'click .title-bar' : function( event ){
-            this.trigger( 'expanded', this );
+    // ......................................................................... rendering
+    //TODO:?? possibly move to listItem
+    /** render a subtitle to show the user what sort of collection this is */
+    _renderSubtitle : function(){
+        var $subtitle = $( '<div class="subtitle"></div>' );
+        //TODO: would be good to get this in the subtitle
+        //var len = this.model.elements.length;
+        switch( this.model.get( 'collection_type' ) ){
+            case 'list':
+                return $subtitle.text( _l( 'a list of datasets' ) );
+            case 'paired':
+                return $subtitle.text( _l( 'a pair of datasets' ) );
+            case 'list:paired':
+                return $subtitle.text( _l( 'a list of paired datasets' ) );
         }
+        return $subtitle;
     },
 
     // ......................................................................... misc
@@ -114,102 +64,46 @@ var DCBaseView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     }
 });
 
-/** templates for DCBaseViews (skeleton and body) */
-DCBaseView.templates = DCBaseView.prototype.templates = (function(){
-// use closure to run underscore template fn only once at module load
-    var skeletonTemplate = _.template([
-        '<div class="dataset-collection">',
-            '<div class="primary-actions"></div>',
-            '<div class="title-bar clear" tabindex="0">',
-                '<div class="title">',
-                    '<span class="name"><%- collection.element_identifier %></span>',
-                '</div>',
+// ............................................................................ TEMPLATES
+/** underscore templates */
+DCBaseView.prototype.templates = (function(){
+
+    // use element identifier
+    var titleBarTemplate = BASE_MVC.wrapTemplate([
+        '<div class="title-bar clear" tabindex="0">',
+            '<div class="title">',
+                '<span class="name"><%- collection.element_identifier || collection.name %></span>',
             '</div>',
-            '<div class="details"></div>',
+            '<div class="subtitle"></div>',
         '</div>'
-    ].join( '' ));
+    ], 'collection' );
 
-    var bodyTemplate = _.template([
-        '<div class="details">',
-            '<div class="summary">', _l( 'A dataset collection.' ), '</div>',
-        '</div>'
-    ].join( '' ));
-
-    // we override here in order to pass the localizer (_L) into the template scope - since we use it as a fn within
-    return {
-        skeleton : function( collectionJSON ){
-            return skeletonTemplate({ _l: _l, collection: collectionJSON });
-        },
-        body : function( collectionJSON ){
-            return bodyTemplate({ _l: _l, collection: collectionJSON });
-        }
-    };
+    return _.extend( {}, ListItemView.prototype.templates, {
+        titleBar : titleBarTemplate
+    });
 }());
 
 
 //==============================================================================
 /** @class Read only view for DatasetCollectionElement.
- *  @name DCBaseView
- *
- *  @augments Backbone.View
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
-var DCEBaseView = BASE_MVC.ExpandableView.extend({
+var DCEBaseView = ListItemView.extend({
+//TODO: this might be expendable - compacted with HDADCEBaseView
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output
-    //logger              : console,
+    logger              : console,
 
-    /**  */
-    className   : "dataset-collection-element collection-dataset dataset",
-    /**  */
+    /** add the DCE class to the list item */
+    className   : ListItemView.prototype.className + " dataset-collection-element",
+    /** jq fx speed for this view */
     fxSpeed     : 'fast',
 
     /**  */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( 'DCEBaseView.initialize:', attributes );
-        BASE_MVC.ExpandableView.prototype.initialize.call( this, attributes );
-    },
-
-    // ......................................................................... renderers
-    /** Render the enclosing div of the hda body and, if expanded, the html in the body
-     *  @returns {jQuery} rendered DOM
-     */
-    _renderDetails : function(){
-        var $details = $( this.templates.details( this.model.toJSON() ) );
-        this._setUpBehaviors( $details );
-        // only render the body html if it's being shown
-        if( this.expanded ){
-            $details.show();
-        }
-        return $details;
-    },
-
-    // ......................................................................... events
-    events : {
-        // expand the body when the title is clicked or when in focus and space or enter is pressed
-        'click .title-bar'      : '_clickTitleBar',
-        'keydown .title-bar'    : '_keyDownTitleBar'
-    },
-
-    _clickTitleBar : function( event ){
-        event.stopPropagation();
-        this.toggleExpanded();
-    },
-
-    _keyDownTitleBar : function( event ){
-        // bail (with propagation) if keydown and not space or enter
-        var KEYCODE_SPACE = 32, KEYCODE_RETURN = 13;
-        if( event && ( event.type === 'keydown' )
-        &&( event.keyCode === KEYCODE_SPACE || event.keyCode === KEYCODE_RETURN ) ){
-            this.toggleExpanded();
-            event.stopPropagation();
-            return false;
-        }
-        return true;
+        ListItemView.prototype.initialize.call( this, attributes );
     },
 
     // ......................................................................... misc
@@ -220,239 +114,109 @@ var DCEBaseView = BASE_MVC.ExpandableView.extend({
     }
 });
 
-/** templates for DCBaseViews (skeleton and body) */
-DCEBaseView.templates = DCEBaseView.prototype.templates = (function(){
-// use closure to run underscore template fn only once at module load
-    var skeletonTemplate = _.template([
-        '<div class="dataset-collection-element collection-dataset dataset">',
-            '<div class="primary-actions"></div>',
-            '<div class="title-bar clear" tabindex="0">',
-                '<span class="state-icon"></span>',
-                '<div class="title">',
-                    '<span class="name"><%- collection.element_identifier %></span>',
-                '</div>',
-            '</div>',
-            '<div class="details"></div>',
-        '</div>'
-    ].join( '' ));
+// ............................................................................ TEMPLATES
+/** underscore templates */
+DCEBaseView.prototype.templates = (function(){
 
-    var bodyTemplate = _.template([
-        '<div class="details">',
-            '<div class="summary">',
-                _l( 'A dataset collection element.' ),
+    // use the element identifier here - since that will persist and the user will need it
+    var titleBarTemplate = BASE_MVC.wrapTemplate([
+        '<div class="title-bar clear" tabindex="0">',
+            '<div class="title">',
+                '<span class="name"><%- element.element_identifier %></span>',
             '</div>',
+            '<div class="subtitle"></div>',
         '</div>'
-    ].join( '' ));
+    ], 'element' );
 
-    // we override here in order to pass the localizer (_L) into the template scope - since we use it as a fn within
-    return {
-        skeleton : function( collectionJSON ){
-            return skeletonTemplate({ _l: _l, collection: collectionJSON });
-        },
-        body : function( collectionJSON ){
-            return bodyTemplate({ _l: _l, collection: collectionJSON });
-        }
-    };
+    return _.extend( {}, ListItemView.prototype.templates, {
+        titleBar : titleBarTemplate
+    });
 }());
 
 
 //==============================================================================
-/** @class Read only view for DatasetCollectionElement.
- *  @name DCBaseView
- *
- *  @augments Backbone.View
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
+/** @class Read only view for a DatasetCollectionElement that is also an HDA.
  */
-var HDADCEBaseView = DCEBaseView.extend({
+var DatasetDCEBaseView = DATASET_LI.DatasetListItemView.extend({
+
+    className   : DATASET_LI.DatasetListItemView.prototype.className + " dataset-collection-element",
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output
     //logger              : console,
 
-    // ......................................................................... misc
-    /** String representation */
-    toString : function(){
-        var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDADCEBaseView(' + modelString + ')';
-    }
-});
-
-/** templates for DCBaseViews (skeleton and body) */
-HDADCEBaseView.templates = HDADCEBaseView.prototype.templates = (function(){
-// use closure to run underscore template fn only once at module load
-    var skeletonTemplate = _.template([
-        '<div class="dataset-collection-element dataset">',
-            '<div class="primary-actions"></div>',
-            '<div class="title-bar clear" tabindex="0">',
-                '<span class="state-icon"></span>',
-                '<div class="title">',
-//TODO:?? re-check this: in pairs the name and identifier are different - but not otherwise
-                    '<span class="name"><%- element.element_identifier %></span>',
-                '</div>',
-//                '<% if( element.element_identifier !== hda.name ){ %>',
-//                    '<div class="subtitle"><%- element.element_identifier %></div>',
-//                '<% } %>',
-            '</div>',
-            '<div class="details"></div>',
-        '</div>'
-    ].join( '' ));
-
-    var detailsTemplate = _.template([
-        '<div class="details">',
-            '<div class="summary">',
-                '<% if( hda.misc_blurb ){ %>',
-                    '<div class="blurb">',
-                        '<span class="value"><%- hda.misc_blurb %></span>',
-                    '</div>',
-                '<% } %>',
-
-                '<% if( hda.data_type ){ %>',
-                    '<div class="datatype">',
-                        '<label class="prompt">', _l( 'format' ), '</label>',
-                        '<span class="value"><%- hda.data_type %></span>',
-                    '</div>',
-                '<% } %>',
-
-                '<% if( hda.metadata_dbkey ){ %>',
-                    '<div class="dbkey">',
-                        '<label class="prompt">', _l( 'database' ), '</label>',
-                        '<span class="value">',
-                            '<%- hda.metadata_dbkey %>',
-                        '</span>',
-                    '</div>',
-                '<% } %>',
-
-                '<% if( hda.misc_info ){ %>',
-                    '<div class="info">',
-                        '<span class="value"><%- hda.misc_info %></span>',
-                    '</div>',
-                '<% } %>',
-            '</div>',
-            // end dataset-summary
-
-            '<div class="actions clear">',
-                '<div class="left"></div>',
-                '<div class="right"></div>',
-            '</div>',
-
-            '<% if( !hda.deleted ){ %>',
-                '<div class="tags-display"></div>',
-                '<div class="annotation-display"></div>',
-
-                '<div class="display-applications">',
-                    //TODO: the following two should be compacted
-                    '<% _.each( hda.display_apps, function( app ){ %>',
-                        '<div class="display-application">',
-                            '<span class="display-application-location"><%- app.label %></span> ',
-                            '<span class="display-application-links">',
-                                '<% _.each( app.links, function( link ){ %>',
-                                    '<a target="<%= link.target %>" href="<%= link.href %>">',
-                                        '<% print( _l( link.text ) ); %>',
-                                    '</a> ',
-                                '<% }); %>',
-                            '</span>',
-                        '</div>',
-                    '<% }); %>',
-
-                    '<% _.each( hda.display_types, function( app ){ %>',
-                        '<div class="display-application">',
-                            '<span class="display-application-location"><%- app.label %></span> ',
-                            '<span class="display-application-links">',
-                                '<% _.each( app.links, function( link ){ %>',
-                                    '<a target="<%= link.target %>" href="<%= link.href %>">',
-                                        '<% print( _l( link.text ) ); %>',
-                                    '</a> ',
-                                '<% }); %>',
-                            '</span>',
-                        '</div>',
-                    '<% }); %>',
-                '</div>',
-
-                '<% if( hda.peek ){ %>',
-                    '<pre class="dataset-peek"><%= hda.peek %></pre>',
-                '<% } %>',
-
-            '<% } %>',
-            // end if !deleted
-
-        '</div>'
-    ].join( '' ));
-
-    // we override here in order to pass the localizer (_L) into the template scope - since we use it as a fn within
-    return {
-        skeleton : function( json ){
-            return skeletonTemplate({ _l: _l, element: json, hda: json.object });
-        },
-        details : function( json ){
-            return detailsTemplate({ _l: _l, element: json, hda: json.object });
-        }
-    };
-}());
-
-
-//==============================================================================
-/** @class Read only view for DatasetCollectionElement.
- *  @name DCBaseView
- *
- *  @augments Backbone.View
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
- */
-var DCDCEBaseView = DCEBaseView.extend({
-
-    /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
-    //logger              : console,
-
-    // ......................................................................... misc
-    /** String representation */
-    expand : function(){
-        this.trigger( 'expanded', this );
+    /**  */
+    initialize  : function( attributes ){
+        if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
+        this.log( 'DatasetDCEBaseView.initialize:', attributes );
+        DATASET_LI.DatasetListItemView.prototype.initialize.call( this, attributes );
     },
 
     // ......................................................................... misc
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'DCDCEBaseView(' + modelString + ')';
+        return 'DatasetDCEBaseView(' + modelString + ')';
     }
 });
 
-/** templates for DCBaseViews (skeleton and body) */
-DCDCEBaseView.templates = DCDCEBaseView.prototype.templates = (function(){
-// use closure to run underscore template fn only once at module load
-    var skeletonTemplate = _.template([
-        '<div class="dataset-collection-element dataset-collection">',
-            '<div class="primary-actions"></div>',
-            '<div class="title-bar clear" tabindex="0">',
-                '<span class="state-icon"></span>',
-                '<div class="title">',
-                    '<span class="name"><%- element.element_identifier %></span>',
-                '</div>',
-//TODO: currently correct, but needs logic if more nested types are added
-                '<div class="subtitle">', _l( 'paired datasets' ), '</div>',
-            '</div>',
-            '<div class="details"></div>',
-        '</div>'
-    ].join( '' ));
+// ............................................................................ TEMPLATES
+/** underscore templates */
+DatasetDCEBaseView.prototype.templates = (function(){
 
-    // we override here in order to pass the localizer (_L) into the template scope - since we use it as a fn within
-    return {
-        skeleton : function( json ){
-            return skeletonTemplate({ _l: _l, element: json, collection: json.object });
-        }
-    };
+    // use the element identifier here and not the dataset name
+    //TODO:?? can we steal the DCE titlebar?
+    var titleBarTemplate = BASE_MVC.wrapTemplate([
+        '<div class="title-bar clear" tabindex="0">',
+            '<span class="state-icon"></span>',
+            '<div class="title">',
+                '<span class="name"><%- element.element_identifier %></span>',
+            '</div>',
+        '</div>'
+    ], 'element' );
+
+    return _.extend( {}, DATASET_LI.DatasetListItemView.prototype.templates, {
+        titleBar : titleBarTemplate
+    });
 }());
+
+//==============================================================================
+/** @class Read only view for a DatasetCollectionElement that is also a DatasetCollection
+ *      (a nested DC).
+ */
+var NestedDCDCEBaseView = DCBaseView.extend({
+
+    className   : DCBaseView.prototype.className + " dataset-collection-element",
+
+    /** logger used to record this.log messages, commonly set to console */
+    // comment this out to suppress log output
+    //logger              : console,
+
+    /** In this override, add the state as a class for use with state-based CSS */
+    _swapNewRender : function( $newRender ){
+        DATASET_LI.DatasetListItemView.prototype._swapNewRender.call( this, $newRender );
+//TODO: model currently has no state
+        var state = this.model.get( 'state' ) || 'ok';
+        //if( this.model.has( 'state' ) ){
+        this.$el.addClass( 'state-' + state );
+        //}
+        return this.$el;
+    },
+
+    // ......................................................................... misc
+    /** String representation */
+    toString : function(){
+        var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
+        return 'NestedDCDCEBaseView(' + modelString + ')';
+    }
+});
 
 
 //==============================================================================
     return {
         DCBaseView          : DCBaseView,
         DCEBaseView         : DCEBaseView,
-        HDADCEBaseView      : HDADCEBaseView,
-        DCDCEBaseView       : DCDCEBaseView
+        DatasetDCEBaseView  : DatasetDCEBaseView,
+        NestedDCDCEBaseView : NestedDCDCEBaseView
     };
 });

@@ -5,11 +5,10 @@ from galaxy import util
 from galaxy import web
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.dataset_collections.util import api_payload_to_create_params
-from galaxy.dataset_collections.util import dictify_dataset_collection_instance
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import HTTPBadRequest, url_for
+from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound

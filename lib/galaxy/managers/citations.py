@@ -49,7 +49,7 @@ class DoiCache( object ):
 
     def _raw_get_bibtex( self, doi ):
         dx_url = "http://dx.doi.org/" + doi
-        headers = {'Accept': "text/bibliography; style=bibtex" }
+        headers = {'Accept': 'text/bibliography; style=bibtex, application/x-bibtex'}
         req = urllib2.Request(dx_url, data="", headers=headers)
         response = urllib2.urlopen(req)
         bibtex = response.read()

@@ -1,7 +1,13 @@
 define([
     "mvc/dataset/states",
     "mvc/dataset/hda-model",
+    "mvc/dataset/hda-base",
     "mvc/dataset/hda-edit",
+    "mvc/dataset/dataset-list-element",
+    "mvc/dataset/editable-dataset-list-element",
+    "mvc/collection/dataset-collection-base",
+    "mvc/collection/dataset-collection-edit",
+    "mvc/collection/hdca-base",
     "mvc/collection/hdca-edit",
     "mvc/history/history-contents",
     "mvc/history/readonly-history-panel",
@@ -11,7 +17,13 @@ define([
 ], function(
     STATES,
     HDA_MODEL,
+    HDA_BASE,
     HDA_EDIT,
+    DATASET_LI,
+    EDIT_DATASET_LI,
+    DC_BASE,
+    DC_EDIT,
+    HDCA_BASE,
     HDCA_EDIT,
     HISTORY_CONTENTS,
     READONLY_PANEL,
@@ -47,7 +59,14 @@ var HistoryPanel = _super.extend(
     //logger              : console,
 
     /** class to use for constructing the HDA views */
+    //HDAViewClass    : DATASET_LI.DatasetListItemView,
+    //HDAViewClass    : EDIT_DATASET_LI.EditableDatasetListItemView,
+    //HDAViewClass    : HDA_BASE.HDABaseView,
     HDAViewClass    : HDA_EDIT.HDAEditView,
+
+    //HDCAViewClass   : DC_BASE.DCBaseView,
+    //HDCAViewClass   : DC_EDIT.DCEditView,
+    //HDCAViewClass   : HDCA_BASE.HDCABaseView,
     HDCAViewClass   : HDCA_EDIT.HDCAEditView,
 
     // ......................................................................... SET UP
@@ -87,9 +106,9 @@ var HistoryPanel = _super.extend(
 
         this.model.on( 'change:nice_size', this.updateHistoryDiskSize, this );
 
-        this.model.hdas.on( 'change:deleted', this._handleHdaDeletionChange, this );
-        this.model.hdas.on( 'change:visible', this._handleHdaVisibleChange, this );
-        this.model.hdas.on( 'change:purged', function( hda ){
+        this.model.contents.on( 'change:deleted', this._handleHdaDeletionChange, this );
+        this.model.contents.on( 'change:visible', this._handleHdaVisibleChange, this );
+        this.model.contents.on( 'change:purged', function( hda ){
             // hafta get the new nice-size w/o the purged hda
             this.model.fetch();
         }, this );

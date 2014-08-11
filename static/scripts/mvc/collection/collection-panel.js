@@ -21,7 +21,6 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
     tagName             : 'div',
@@ -30,7 +29,8 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     /** (in ms) that jquery effects will use */
     fxSpeed             : 'fast',
 
-    DCEViewClass        : DC_BASE.DCEBaseView,
+    DatasetDCEViewClass : DC_BASE.DatasetDCEBaseView,
+    NestedDCEViewClass  : DC_BASE.NestedDCEBaseView,
 
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HistoryContents events
@@ -47,8 +47,6 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.hasUser = attributes.hasUser;
         this.panelStack = [];
         this.parentName = attributes.parentName;
-
-        window.collectionPanel = this;
     },
 
     /** create any event listeners for the panel
@@ -194,10 +192,8 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         //this.debug( 'content json:', JSON.stringify( content, null, '  ' ) );
         var contentView = null,
             ContentClass = this._getContentClass( content );
-        //this.debug( 'content.object json:', JSON.stringify( content.object, null, '  ' ) );
         this.debug( 'ContentClass:', ContentClass );
-        //this.debug( 'content:', content );
-        this.debug( 'content.object:', content.object );
+        this.debug( 'content:', content );
         contentView = new ContentClass({
             model           : content,
             linkTarget      : this.linkTarget,
@@ -213,6 +209,7 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     /**  */
     _getContentClass : function( content ){
         this.debug( this + '._getContentClass:', content );
+        this.debug( 'DCEViewClass:', this.DCEViewClass );
         switch( content.get( 'element_type' ) ){
             case 'hda':
                 return this.DCEViewClass;
@@ -336,7 +333,9 @@ CollectionPanel.templates = CollectionPanel.prototype.templates = (function(){
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
 var ListCollectionPanel = CollectionPanel.extend({
-    DCEViewClass        : DC_BASE.HDADCEBaseView,
+
+    DCEViewClass        : DC_BASE.DatasetDCEBaseView,
+
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
@@ -348,6 +347,7 @@ var ListCollectionPanel = CollectionPanel.extend({
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
 var PairCollectionPanel = ListCollectionPanel.extend({
+
     // ........................................................................ misc
     /** string rep */
     toString    : function(){
@@ -359,7 +359,9 @@ var PairCollectionPanel = ListCollectionPanel.extend({
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
 var ListOfPairsCollectionPanel = CollectionPanel.extend({
-    DCEViewClass        : DC_BASE.DCDCEBaseView,
+
+    DCEViewClass        : DC_BASE.NestedDCDCEBaseView,
+
     // ........................................................................ misc
     /** string rep */
     toString    : function(){

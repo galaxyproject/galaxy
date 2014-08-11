@@ -13,46 +13,10 @@ from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools.execute import execute
 from galaxy.util.odict import odict
 from galaxy.workflow import modules
+from galaxy.workflow.run_request import WorkflowRunConfig
 
 import logging
 log = logging.getLogger( __name__ )
-
-
-class WorkflowRunConfig( object ):
-    """ Wrapper around all the ways a workflow execution can be parameterized.
-
-    :param target_history: History to execute workflow in.
-    :type target_history: galaxy.model.History.
-
-    :param replacement_dict: Workflow level parameters used for renaming post
-        job actions.
-    :type replacement_dict: dict
-
-    :param copy_inputs_to_history: Should input data parameters be copied to
-        target_history. (Defaults to False)
-    :type copy_inputs_to_history: bool
-
-    :param inputs: Map from step ids to dict's containing HDA for these steps.
-    :type inputs: dict
-
-    :param inputs_by: How inputs maps to inputs (datasets/collections) to workflows
-                      steps - by unencoded database id ('step_id'), index in workflow
-                      'step_index' (independent of database), or by input name for
-                      that step ('name').
-    :type inputs_by: str
-
-    :param param_map: Override tool and/or step parameters (see documentation on
-        _update_step_parameters below).
-    :type param_map:
-    """
-
-    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, inputs_by='step_id', param_map={} ):
-        self.target_history = target_history
-        self.replacement_dict = replacement_dict
-        self.copy_inputs_to_history = copy_inputs_to_history
-        self.inputs = inputs
-        self.inputs_by = inputs_by
-        self.param_map = param_map
 
 
 def invoke( trans, workflow, workflow_run_config ):
@@ -73,9 +37,7 @@ class WorkflowInvoker( object ):
         self.target_history = workflow_run_config.target_history
         self.replacement_dict = workflow_run_config.replacement_dict
         self.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
-        self.inputs = workflow_run_config.inputs
-        self.inputs_by = workflow_run_config.inputs_by
-        self.inputs_by_step_id = {}
+        self.inputs_by_step_id = workflow_run_config.inputs
         self.param_map = workflow_run_config.param_map
 
         self.outputs = odict()
@@ -223,8 +185,8 @@ class WorkflowInvoker( object ):
                     outputs[ step.id ][ 'input_ds_copy' ] = new_hdca
                 else:
                     raise Exception("Unknown history content encountered")
-        if self.inputs:
-            outputs[ step.id ][ 'output' ] = self.inputs_by_step_id[ step.id ][ 'hda' ]
+        if self.inputs_by_step_id:
+            outputs[ step.id ][ 'output' ] = self.inputs_by_step_id[ step.id ]
 
         return job
 
@@ -289,51 +251,10 @@ class WorkflowInvoker( object ):
                 step.module = modules.module_factory.from_workflow_step( self.trans, step )
                 step.state = step.module.get_runtime_state()
 
-                # This is an input step. Make sure we have an available input.
-                if step.type in [ 'data_input', 'data_collection_input' ]:
-                    if self.inputs_by == "step_id":
-                        key = str( step.id )
-                    elif self.inputs_by == "name":
-                        key = step.tool_inputs.get( 'name', None )
-                    else:
-                        key = str( step.order_index )
-                    if key not in self.inputs:
-                        message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
-                        raise exceptions.MessageException( message )
-                    else:
-                        self.inputs_by_step_id[ step.id ] = self.inputs[ key ]
 
-
-def _update_step_parameters(step, param_map):
-    """
-    Update ``step`` parameters based on the user-provided ``param_map`` dict.
-
-    ``param_map`` should be structured as follows::
-
-      PARAM_MAP = {STEP_ID: PARAM_DICT, ...}
-      PARAM_DICT = {NAME: VALUE, ...}
-
-    For backwards compatibility, the following (deprecated) format is
-    also supported for ``param_map``::
-
-      PARAM_MAP = {TOOL_ID: PARAM_DICT, ...}
-
-    in which case PARAM_DICT affects all steps with the given tool id.
-    If both by-tool-id and by-step-id specifications are used, the
-    latter takes precedence.
-
-    Finally (again, for backwards compatibility), PARAM_DICT can also
-    be specified as::
-
-      PARAM_DICT = {'param': NAME, 'value': VALUE}
-
-    Note that this format allows only one parameter to be set per step.
-    """
-    param_dict = param_map.get(step.tool_id, {}).copy()
-    param_dict.update(param_map.get(str(step.id), {}))
+def _update_step_parameters(step, normalized_param_map):
+    param_dict = normalized_param_map.get(step.id, {})
     if param_dict:
-        if 'param' in param_dict and 'value' in param_dict:
-            param_dict[param_dict['param']] = param_dict['value']
         step.state.inputs.update(param_dict)
 
 
