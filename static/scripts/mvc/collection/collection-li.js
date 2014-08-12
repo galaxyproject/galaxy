@@ -1,5 +1,5 @@
 define([
-    "mvc/dataset/dataset-list-element",
+    "mvc/dataset/dataset-li",
     "mvc/base-mvc",
     "utils/localization"
 ], function( DATASET_LI, BASE_MVC, _l ){
@@ -8,7 +8,7 @@ define([
 var ListItemView = BASE_MVC.ListItemView;
 /** @class Read only view for DatasetCollection.
  */
-var DCBaseView = ListItemView.extend({
+var DCListItemView = ListItemView.extend({
 //TODO: may not be needed
 
     /** logger used to record this.log messages, commonly set to console */
@@ -22,7 +22,7 @@ var DCBaseView = ListItemView.extend({
     /** set up */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
-        this.log( 'DCBaseView.initialize:', attributes );
+        this.log( this + '(DCListItemView).initialize:', attributes );
         ListItemView.prototype.initialize.call( this, attributes );
     },
 
@@ -60,13 +60,13 @@ var DCBaseView = ListItemView.extend({
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'DCBaseView(' + modelString + ')';
+        return 'DCListItemView(' + modelString + ')';
     }
 });
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DCBaseView.prototype.templates = (function(){
+DCListItemView.prototype.templates = (function(){
 
     // use element identifier
     var titleBarTemplate = BASE_MVC.wrapTemplate([
@@ -87,8 +87,8 @@ DCBaseView.prototype.templates = (function(){
 //==============================================================================
 /** @class Read only view for DatasetCollectionElement.
  */
-var DCEBaseView = ListItemView.extend({
-//TODO: this might be expendable - compacted with HDADCEBaseView
+var DCEListItemView = ListItemView.extend({
+//TODO: this might be expendable - compacted with HDAListItemView
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output
@@ -102,7 +102,7 @@ var DCEBaseView = ListItemView.extend({
     /**  */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
-        this.log( 'DCEBaseView.initialize:', attributes );
+        this.log( 'DCEListItemView.initialize:', attributes );
         ListItemView.prototype.initialize.call( this, attributes );
     },
 
@@ -110,13 +110,13 @@ var DCEBaseView = ListItemView.extend({
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'DCEBaseView(' + modelString + ')';
+        return 'DCEListItemView(' + modelString + ')';
     }
 });
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DCEBaseView.prototype.templates = (function(){
+DCEListItemView.prototype.templates = (function(){
 
     // use the element identifier here - since that will persist and the user will need it
     var titleBarTemplate = BASE_MVC.wrapTemplate([
@@ -135,20 +135,20 @@ DCEBaseView.prototype.templates = (function(){
 
 
 //==============================================================================
-/** @class Read only view for a DatasetCollectionElement that is also an HDA.
+/** @class Read only view for a DatasetCollectionElement that is also an DatasetAssociation
+ *      (a dataset contained in a dataset collection).
  */
-var DatasetDCEBaseView = DATASET_LI.DatasetListItemView.extend({
+var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend({
 
     className   : DATASET_LI.DatasetListItemView.prototype.className + " dataset-collection-element",
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
     /**  */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
-        this.log( 'DatasetDCEBaseView.initialize:', attributes );
+        this.log( 'DatasetDCEListItemView.initialize:', attributes );
         DATASET_LI.DatasetListItemView.prototype.initialize.call( this, attributes );
     },
 
@@ -156,13 +156,13 @@ var DatasetDCEBaseView = DATASET_LI.DatasetListItemView.extend({
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'DatasetDCEBaseView(' + modelString + ')';
+        return 'DatasetDCEListItemView(' + modelString + ')';
     }
 });
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-DatasetDCEBaseView.prototype.templates = (function(){
+DatasetDCEListItemView.prototype.templates = (function(){
 
     // use the element identifier here and not the dataset name
     //TODO:?? can we steal the DCE titlebar?
@@ -180,13 +180,14 @@ DatasetDCEBaseView.prototype.templates = (function(){
     });
 }());
 
+
 //==============================================================================
 /** @class Read only view for a DatasetCollectionElement that is also a DatasetCollection
  *      (a nested DC).
  */
-var NestedDCDCEBaseView = DCBaseView.extend({
+var NestedDCDCEListItemView = DCListItemView.extend({
 
-    className   : DCBaseView.prototype.className + " dataset-collection-element",
+    className   : DCListItemView.prototype.className + " dataset-collection-element",
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output
@@ -194,7 +195,7 @@ var NestedDCDCEBaseView = DCBaseView.extend({
 
     /** In this override, add the state as a class for use with state-based CSS */
     _swapNewRender : function( $newRender ){
-        DATASET_LI.DatasetListItemView.prototype._swapNewRender.call( this, $newRender );
+        DCListItemView.prototype._swapNewRender.call( this, $newRender );
 //TODO: model currently has no state
         var state = this.model.get( 'state' ) || 'ok';
         //if( this.model.has( 'state' ) ){
@@ -207,16 +208,16 @@ var NestedDCDCEBaseView = DCBaseView.extend({
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'NestedDCDCEBaseView(' + modelString + ')';
+        return 'NestedDCDCEListItemView(' + modelString + ')';
     }
 });
 
 
 //==============================================================================
     return {
-        DCBaseView          : DCBaseView,
-        DCEBaseView         : DCEBaseView,
-        DatasetDCEBaseView  : DatasetDCEBaseView,
-        NestedDCDCEBaseView : NestedDCDCEBaseView
+        DCListItemView          : DCListItemView,
+        DCEListItemView         : DCEListItemView,
+        DatasetDCEListItemView  : DatasetDCEListItemView,
+        NestedDCDCEListItemView : NestedDCDCEListItemView
     };
 });

@@ -1,7 +1,7 @@
 define([
-    "mvc/history/history-content-base",
-    "mvc/dataset/hda-model",
-    "mvc/collection/hdca-model",
+    "mvc/history/history-content-model",
+    "mvc/history/hda-model",
+    "mvc/history/hdca-model",
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC, _l ){

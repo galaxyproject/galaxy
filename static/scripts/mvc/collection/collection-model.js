@@ -2,7 +2,7 @@ define([
     "mvc/dataset/dataset-model",
     "mvc/base-mvc",
     "utils/localization"
-], function( DATASET, BASE_MVC, _l ){
+], function( DATASET_MODEL, BASE_MVC, _l ){
 //==============================================================================
 /*
 Notes:
@@ -118,13 +118,13 @@ var DCECollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 //==============================================================================
 /** @class Backbone model for a dataset collection element that is a dataset (HDA).
  */
-var DatasetDCE = DATASET.DatasetAssociation.extend( BASE_MVC.mixin( DatasetCollectionElementMixin,
+var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( DatasetCollectionElementMixin,
 /** @lends DatasetDCE.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-    defaults : _.extend( {}, DATASET.DatasetAssociation.prototype.defaults, DatasetCollectionElementMixin.defaults ),
+    defaults : _.extend( {}, DATASET_MODEL.DatasetAssociation.prototype.defaults, DatasetCollectionElementMixin.defaults ),
 
     // because all objects have constructors (as this hashmap would even if this next line wasn't present)
     //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
@@ -132,7 +132,7 @@ var DatasetDCE = DATASET.DatasetAssociation.extend( BASE_MVC.mixin( DatasetColle
     /** call the mixin constructor */
     constructor : function( attributes, options ){
         this.debug( '\t DatasetDCE.constructor:', attributes, options );
-        //DATASET.DatasetAssociation.prototype.constructor.call( this, attributes, options );
+        //DATASET_MODEL.DatasetAssociation.prototype.constructor.call( this, attributes, options );
         DatasetCollectionElementMixin.constructor.call( this, attributes, options );
     },
 
@@ -140,7 +140,7 @@ var DatasetDCE = DATASET.DatasetAssociation.extend( BASE_MVC.mixin( DatasetColle
     /** set up */
     initialize : function( attributes, options ){
         this.debug( this + '(DatasetDCE).initialize:', attributes, options );
-        DATASET.DatasetAssociation.prototype.initialize.call( this, attributes, options );
+        DATASET_MODEL.DatasetAssociation.prototype.initialize.call( this, attributes, options );
     },
 
     /** String representation. */

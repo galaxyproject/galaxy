@@ -1,8 +1,7 @@
 define([
-    "mvc/dataset/states",
-    "mvc/collection/dataset-collection-base",
+    "mvc/collection/collection-li",
     "utils/localization"
-], function( STATES, DC_BASE_VIEW, _l ){
+], function( DC_LI, _l ){
 //==============================================================================
 /*
 
@@ -11,29 +10,24 @@ NOTE: not much going on here. Until we find out what operations a user will need
 
 */
 //==============================================================================
-var _super = DC_BASE_VIEW.DCBaseView;
-/** @class Editing view for DatasetCollection.
- *  @name DatasetCollectionEditView
- *
- *  @augments DCBaseView
- *  @constructs
+var _super = DC_LI.DCListItemView;
+/** @class Editing view for DatasetCollectionElement.
  */
-var DCEditView = _super.extend({
+var DCEListItemEdit = _super.extend({
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
     // ......................................................................... misc
     /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'DCEditView(' + modelString + ')';
+        return 'DCEListItemEdit(' + modelString + ')';
     }
 });
 
 //==============================================================================
     return {
-        DCEditView : DCEditView
+        DCEListItemEdit : DCEListItemEdit
     };
 });

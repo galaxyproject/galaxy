@@ -1,13 +1,13 @@
 define([
-    "mvc/dataset/hda-base",
-    "mvc/history/readonly-history-panel",
+    "mvc/history/history-panel",
+    "mvc/history/hda-li",
     "utils/localization"
-], function( HDA_BASE, READONLY_HPANEL, _l ){
+], function( HPANEL, HDA_LI, _l ){
 /* =============================================================================
 TODO:
 
 ============================================================================= */
-var _super = READONLY_HPANEL.ReadOnlyHistoryPanel;
+var _super = HPANEL.ReadOnlyHistoryPanel;
 // used in history/display.mako and history/embed.mako
 /** @class View/Controller for a tabular view of the history model.
  *  @name AnnotatedHistoryPanel
@@ -31,8 +31,9 @@ var AnnotatedHistoryPanel = _super.extend(
 
     className    : 'annotated-history-panel',
 
+    //TODO:?? possibly into own annotated class
     /** class to use for constructing the HDA views */
-    HDAViewClass : HDA_BASE.HDABaseView,
+    //HDAViewClass : HDA_LI.HDAListItemView,
 
     // ------------------------------------------------------------------------ panel rendering
     /** render with history data

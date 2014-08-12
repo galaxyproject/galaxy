@@ -74,11 +74,10 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
             'meta_download' : 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name='
         };
 //TODO: global
-        if( galaxy_config && galaxy_config.root ){
-            _.each( urls, function( key, value ){
-                urls[ key ] = galaxy_config.root + value;
-            });
-        }
+        var root = ( galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' );
+        _.each( urls, function( value, key ){
+            urls[ key ] = root + value;
+        });
         this.urls = urls;
         return urls;
     },

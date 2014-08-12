@@ -20,7 +20,7 @@ $(function(){
 <script type="text/javascript">
 define( 'app', function(){
     require([
-        'mvc/history/current-history-panel'
+        'mvc/history/history-panel-edit-current'
     ], function( historyPanel ){
         $(function(){
             // history module is already in the dpn chain from the panel. We can re-scope it here.

@@ -1,15 +1,15 @@
 define([
-    "mvc/dataset/editable-dataset-list-element",
-    "mvc/dataset/hda-base",
+    "mvc/dataset/dataset-li-edit",
+    "mvc/history/hda-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( DATASET_EDIT, HDA_BASE, BASE_MVC, _l ){
+], function( DATASET_LI_EDIT, HDA_LI, BASE_MVC, _l ){
 //==============================================================================
-var _super = DATASET_EDIT.EditableDatasetListItemView;
+var _super = DATASET_LI_EDIT.DatasetListItemEdit;
 /** @class Editing view for HistoryDatasetAssociation.
  */
-var HDAEditView = _super.extend(
-/** @lends HDAEditView.prototype */{
+var HDAListItemEdit = _super.extend(
+/** @lends HDAListItemEdit.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
@@ -26,14 +26,14 @@ var HDAEditView = _super.extend(
     /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDAEditView(' + modelString + ')';
+        return 'HDAListItemEdit(' + modelString + ')';
     }
 });
 
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-HDAEditView.prototype.templates = (function(){
+HDAListItemEdit.prototype.templates = (function(){
 //TODO: move to require text! plugin
 
     var warnings = _.extend( {}, _super.prototype.templates.warnings, {
@@ -49,8 +49,8 @@ HDAEditView.prototype.templates = (function(){
     });
 
     return _.extend( {}, _super.prototype.templates, {
-        //NOTE: *steal* the HDABaseView titleBar
-        titleBar : HDA_BASE.HDABaseView.prototype.templates.titleBar,
+        //NOTE: *steal* the HDAListItemView titleBar
+        titleBar : HDA_LI.HDAListItemView.prototype.templates.titleBar,
         warnings : warnings
     });
 }());
@@ -58,6 +58,6 @@ HDAEditView.prototype.templates = (function(){
 
 //==============================================================================
     return {
-        HDAEditView  : HDAEditView
+        HDAListItemEdit  : HDAListItemEdit
     };
 });

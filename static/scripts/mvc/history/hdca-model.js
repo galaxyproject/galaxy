@@ -1,8 +1,8 @@
 define([
-    "mvc/history/history-content-base",
     "mvc/collection/collection-model",
+    "mvc/history/history-content-model",
     "utils/localization"
-], function( HISTORY_CONTENT, DC_MODEL, _l ){
+], function( DC_MODEL, HISTORY_CONTENT, _l ){
 /*==============================================================================
 
 Models for DatasetCollections contained within a history.

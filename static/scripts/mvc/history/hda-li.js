@@ -1,5 +1,5 @@
 define([
-    "mvc/dataset/dataset-list-element",
+    "mvc/dataset/dataset-li",
     "mvc/base-mvc",
     "utils/localization"
 ], function( DATASET_LI, BASE_MVC, _l ){
@@ -11,8 +11,8 @@ var _super = DATASET_LI.DatasetListItemView;
  *      the primary thing this class does (currently) is override templates
  *      to render the HID.
  */
-var HDABaseView = _super.extend(
-/** @lends HDABaseView.prototype */{
+var HDAListItemView = _super.extend(
+/** @lends HDAListItemView.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
@@ -27,13 +27,13 @@ var HDABaseView = _super.extend(
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDABaseView(' + modelString + ')';
+        return 'HDAListItemView(' + modelString + ')';
     }
 });
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-HDABaseView.prototype.templates = (function(){
+HDAListItemView.prototype.templates = (function(){
 //TODO: move to require text! plugin
 
     var titleBarTemplate = BASE_MVC.wrapTemplate([
@@ -69,6 +69,6 @@ HDABaseView.prototype.templates = (function(){
 
 //==============================================================================
     return {
-        HDABaseView  : HDABaseView
+        HDAListItemView  : HDAListItemView
     };
 });

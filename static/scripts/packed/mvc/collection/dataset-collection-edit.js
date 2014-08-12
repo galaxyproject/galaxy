@@ -1,1 +1,0 @@
-define(["mvc/dataset/states","mvc/collection/dataset-collection-base","utils/localization"],function(b,e,c){var d=e.DCBaseView;var a=d.extend({toString:function(){var f=(this.model)?(this.model+""):("(no model)");return"DCEditView("+f+")"}});return{DCEditView:a}});

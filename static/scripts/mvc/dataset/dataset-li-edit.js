@@ -1,6 +1,6 @@
 define([
     "mvc/dataset/states",
-    "mvc/dataset/dataset-list-element",
+    "mvc/dataset/dataset-li",
     "mvc/tags",
     "mvc/annotations",
     "mvc/base-mvc",
@@ -9,15 +9,9 @@ define([
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
 /** @class Editing view for DatasetAssociation.
- *  @name EditableDatasetListItemView
- *
- *  @augments HDABaseView
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
-var EditableDatasetListItemView = _super.extend(
-/** @lends EditableDatasetListItemView.prototype */{
+var DatasetListItemEdit = _super.extend(
+/** @lends DatasetListItemEdit.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
@@ -285,7 +279,7 @@ var EditableDatasetListItemView = _super.extend(
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-EditableDatasetListItemView.prototype.templates = (function(){
+DatasetListItemEdit.prototype.templates = (function(){
 //TODO: move to require text! plugin
 
     var warnings = _.extend( {}, _super.prototype.templates.warnings, {
@@ -352,6 +346,6 @@ EditableDatasetListItemView.prototype.templates = (function(){
 
 //==============================================================================
     return {
-        EditableDatasetListItemView : EditableDatasetListItemView
+        DatasetListItemEdit : DatasetListItemEdit
     };
 });

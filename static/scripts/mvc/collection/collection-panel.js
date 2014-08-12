@@ -1,20 +1,15 @@
 define([
-    "mvc/collection/dataset-collection-base",
+    "mvc/collection/collection-model",
+    "mvc/collection/collection-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( DC_BASE, BASE_MVC, _l ){
+], function( DC_MODEL, DC_LI, BASE_MVC, _l ){
 /* =============================================================================
 TODO:
 
 ============================================================================= */
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection.
- *  @name CollectionPanel
- *
- *  @augments Backbone.View
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
 var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends CollectionPanel.prototype */{
@@ -29,8 +24,8 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     /** (in ms) that jquery effects will use */
     fxSpeed             : 'fast',
 
-    DatasetDCEViewClass : DC_BASE.DatasetDCEBaseView,
-    NestedDCEViewClass  : DC_BASE.NestedDCEBaseView,
+    DatasetDCEViewClass  : DC_LI.DatasetDCEListItemView,
+    NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView,
 
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HistoryContents events
@@ -44,9 +39,13 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         }
         this.log( this + '.initialize:', attributes );
 
+        this.linkTarget = attributes.linkTarget || '_blank';
+
         this.hasUser = attributes.hasUser;
         this.panelStack = [];
         this.parentName = attributes.parentName;
+
+        //window.collectionPanel = this;
     },
 
     /** create any event listeners for the panel
@@ -70,7 +69,7 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     },
 
     // ------------------------------------------------------------------------ panel rendering
-    /** Render urls, historyPanel body, and hdas (if any are shown)
+    /** Render panel
      *  @fires: rendered    when the panel is attached and fully visible
      *  @see Backbone.View#render
      */
@@ -122,7 +121,7 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         return this;
     },
 
-    /** render with history data
+    /** render with collection data
      *  @returns {jQuery} dom fragment as temporary container to be swapped out later
      */
     renderModel : function( ){
@@ -139,7 +138,7 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         return $newRender;
     },
 
-    /** Set up HistoryPanel js/widget behaviours */
+    /** Set up js/widget behaviours */
     _setUpBehaviours : function( $where ){
         //TODO: these should be either sub-MVs, or handled by events
         $where = $where || this.$el;
@@ -152,16 +151,16 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     $container : function(){
         return ( this.findContainerFn )?( this.findContainerFn.call( this ) ):( this.$el.parent() );
     },
-    /** where hdaViews are attached */
+    /** where list content views are attached */
     $datasetsList : function( $where ){
         return ( $where || this.$el ).find( '.datasets-list' );
     },
 
     // ------------------------------------------------------------------------ sub-views
-    /** Set up/render a view for each HDA to be shown, init with model and listeners.
-     *      HDA views are cached to the map this.hdaViews (using the model.id as key).
-     *  @param {jQuery} $whereTo what dom element to prepend the HDA views to
-     *  @returns the number of visible hda views
+    /** Set up/render a view for each DCE to be shown, init with model and listeners.
+     *      DCE views are cached to the map this.contentViews (using the model.id as key).
+     *  @param {jQuery} $whereTo what dom element to prepend the DCE views to
+     *  @returns the number of visible DCE views
      */
     renderContents : function( $whereTo ){
         //this.debug( 'renderContents, elements:', this.model.elements );
@@ -172,7 +171,7 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             contentViews = {},
             //NOTE: no filtering here
             visibleContents = this.model.getVisibleContents();
-        this.log( 'renderContents, visibleContents:', visibleContents, $whereTo );
+        //this.debug( 'renderContents, visibleContents:', visibleContents, $whereTo );
 
         this.$datasetsList( $whereTo ).empty();
         if( visibleContents && visibleContents.length ){
@@ -192,8 +191,8 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         //this.debug( 'content json:', JSON.stringify( content, null, '  ' ) );
         var contentView = null,
             ContentClass = this._getContentClass( content );
-        this.debug( 'ContentClass:', ContentClass );
-        this.debug( 'content:', content );
+        //this.debug( 'content:', content );
+        //this.debug( 'ContentClass:', ContentClass );
         contentView = new ContentClass({
             model           : content,
             linkTarget      : this.linkTarget,
@@ -201,20 +200,20 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             hasUser         : this.hasUser,
             logger          : this.logger
         });
-        this.debug( 'contentView:', contentView );
+        //this.debug( 'contentView:', contentView );
         this._setUpContentListeners( contentView );
         return contentView;
     },
 
     /**  */
     _getContentClass : function( content ){
-        this.debug( this + '._getContentClass:', content );
-        this.debug( 'DCEViewClass:', this.DCEViewClass );
+        //this.debug( this + '._getContentClass:', content );
+//TODO: subclasses use DCEViewClass - but are currently unused - decide
         switch( content.get( 'element_type' ) ){
             case 'hda':
-                return this.DCEViewClass;
+                return this.DatasetDCEViewClass;
             case 'dataset_collection':
-                return this.DCEViewClass;
+                return this.NestedDCDCEViewClass;
         }
         throw new TypeError( 'Unknown element type:', content.get( 'element_type' ) );
     },
@@ -232,14 +231,16 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 
     /**  */
     _addCollectionPanel : function( collectionView ){
+//TODO: a bit hackish
         var currPanel = this,
             collectionModel = collectionView.model;
 
-        this.debug( 'collection panel (stack), collectionView:', collectionView );
-        this.debug( 'collection panel (stack), collectionModel:', collectionModel );
+        //this.debug( 'collection panel (stack), collectionView:', collectionView );
+        //this.debug( 'collection panel (stack), collectionModel:', collectionModel );
         var panel = new PairCollectionPanel({
                 model       : collectionModel,
-                parentName  : this.model.get( 'name' )
+                parentName  : this.model.get( 'name' ),
+                linkTarget  : this.linkTarget
             });
         currPanel.panelStack.push( panel );
 
@@ -277,7 +278,7 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         'click .navigation .back'       : 'close'
     },
 
-    /**  */
+    /** close/remove this collection panel */
     close : function( event ){
         this.$el.remove();
         this.trigger( 'close' );
@@ -334,7 +335,8 @@ CollectionPanel.templates = CollectionPanel.prototype.templates = (function(){
 /** @class non-editable, read-only View/Controller for a dataset collection. */
 var ListCollectionPanel = CollectionPanel.extend({
 
-    DCEViewClass        : DC_BASE.DatasetDCEBaseView,
+    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+    DatasetDCEViewClass : DC_LI.DatasetDCEListItemView,
 
     // ........................................................................ misc
     /** string rep */
@@ -360,7 +362,8 @@ var PairCollectionPanel = ListCollectionPanel.extend({
 /** @class non-editable, read-only View/Controller for a dataset collection. */
 var ListOfPairsCollectionPanel = CollectionPanel.extend({
 
-    DCEViewClass        : DC_BASE.NestedDCDCEBaseView,
+    //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+    NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView,
 
     // ........................................................................ misc
     /** string rep */

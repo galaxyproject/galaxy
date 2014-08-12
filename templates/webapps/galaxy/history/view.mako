@@ -167,8 +167,9 @@ ${parent.javascripts()}
         historyJSON  = ${h.to_json_string( history )},
         hdaJSON      = ${h.to_json_string( hdas )};
         panelToUse   = ( userIsOwner )?
-            ({ location: 'mvc/history/history-panel',           className: 'HistoryPanel' }):
-            ({ location: 'mvc/history/readonly-history-panel',  className: 'ReadOnlyHistoryPanel' });
+//TODO: change class names
+            ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanel' }):
+            ({ location: 'mvc/history/history-panel',       className: 'ReadOnlyHistoryPanel' });
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"

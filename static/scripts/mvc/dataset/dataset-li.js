@@ -13,7 +13,6 @@ var DatasetListItemView = _super.extend(
 /** @lends DatasetListItemView.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger      : console,
 
     className   : _super.prototype.className + " dataset",
