@@ -1,8 +1,8 @@
 define([
-    "mvc/history/history-content-base",
     "mvc/collection/collection-model",
+    "mvc/history/history-content-model",
     "utils/localization"
-], function( HISTORY_CONTENT, DC_MODEL, _l ){
+], function( DC_MODEL, HISTORY_CONTENT, _l ){
 /*==============================================================================
 
 Models for DatasetCollections contained within a history.
@@ -19,7 +19,6 @@ var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
 
 //==============================================================================
 /** @class Backbone model for List Dataset Collection within a History.
- *  @constructs
  */
 var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
 /** @lends HistoryListDatasetCollection.prototype */{

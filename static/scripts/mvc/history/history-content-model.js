@@ -34,20 +34,24 @@ var HistoryContentMixin = {
     // Build a new id (type_id) that prefixes the history_content_type so the bbone collection can differentiate
     idAttribute : 'type_id',
 
+    /** override constructor to build type_id and insert into original attributes */
     constructor : function( attrs, options ){
         attrs.type_id = typeIdStr( attrs.history_content_type, attrs.id );
         this.debug( 'HistoryContentMixin.constructor:', attrs.type_id );
         Backbone.Model.apply( this, arguments );
     },
 
+    /** object level fn for building the type_id string */
     _typeIdStr : function(){
         return typeIdStr( this.get( 'history_content_type' ), this.get( 'id' ) );
     },
 
+    /** add listener to re-create type_id when the id changes */
     initialize : function( attrs, options ){
         this.on( 'change:id', this._createTypeId );
     },
 
+    /** set the type_id in the model attributes */
     _createTypeId : function(){
         this.set( 'type_id', this._typeIdStr() );
     },
@@ -90,12 +94,12 @@ var HistoryContentMixin = {
         return url;
     },
 
-    /** save this HDA as not visible */
+    /** save this content as not visible */
     hide : function( options ){
         if( !this.get( 'visible' ) ){ return jQuery.when(); }
         return this.save( { visible: false }, options );
     },
-    /** save this HDA as visible */
+    /** save this content as visible */
     unhide : function( options ){
         if( this.get( 'visible' ) ){ return jQuery.when(); }
         return this.save( { visible: true }, options );
@@ -114,6 +118,7 @@ var HistoryContentMixin = {
 
 
 //==============================================================================
+//TODO: needed?
 /** @class (Concrete/non-mixin) base model for content items.
  */
 var HistoryContent = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend( HistoryContentMixin );

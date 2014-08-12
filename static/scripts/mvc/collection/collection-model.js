@@ -2,7 +2,7 @@ define([
     "mvc/dataset/dataset-model",
     "mvc/base-mvc",
     "utils/localization"
-], function( DATASET, BASE_MVC, _l ){
+], function( DATASET_MODEL, BASE_MVC, _l ){
 //==============================================================================
 /*
 Notes:
@@ -47,7 +47,7 @@ any YAGNI).
  *      When collection elements are passed from the API, the underlying element is
  *          in a sub-object 'object' (IOW, a DCE representing an HDA will have HDA json in element.object).
  *      This mixin uses the constructor and parse methods to merge that JSON with the DCE attribtues
- *          effectively changing a DCE from a container to a subclass.
+ *          effectively changing a DCE from a container to a subclass (has a --> is a).
  */
 var DatasetCollectionElementMixin = {
 
@@ -82,7 +82,7 @@ var DatasetCollectionElementMixin = {
 };
 
 //TODO: unused?
-/** Concrete class of Generic DatasetCollectionElement */
+/** @class Concrete class of Generic DatasetCollectionElement */
 var DatasetCollectionElement = Backbone.Model
     .extend( BASE_MVC.LoggableMixin )
     .extend( DatasetCollectionElementMixin );
@@ -94,7 +94,6 @@ var DCECollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends DCECollection.prototype */{
     model: DatasetCollectionElement,
 
-    // comment this out to suppress log output
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
@@ -118,13 +117,16 @@ var DCECollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 //==============================================================================
 /** @class Backbone model for a dataset collection element that is a dataset (HDA).
  */
-var DatasetDCE = DATASET.DatasetAssociation.extend( BASE_MVC.mixin( DatasetCollectionElementMixin,
+var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( DatasetCollectionElementMixin,
 /** @lends DatasetDCE.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-    defaults : _.extend( {}, DATASET.DatasetAssociation.prototype.defaults, DatasetCollectionElementMixin.defaults ),
+    defaults : _.extend( {},
+        DATASET_MODEL.DatasetAssociation.prototype.defaults,
+        DatasetCollectionElementMixin.defaults
+    ),
 
     // because all objects have constructors (as this hashmap would even if this next line wasn't present)
     //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
@@ -132,7 +134,7 @@ var DatasetDCE = DATASET.DatasetAssociation.extend( BASE_MVC.mixin( DatasetColle
     /** call the mixin constructor */
     constructor : function( attributes, options ){
         this.debug( '\t DatasetDCE.constructor:', attributes, options );
-        //DATASET.DatasetAssociation.prototype.constructor.call( this, attributes, options );
+        //DATASET_MODEL.DatasetAssociation.prototype.constructor.call( this, attributes, options );
         DatasetCollectionElementMixin.constructor.call( this, attributes, options );
     },
 
@@ -140,7 +142,7 @@ var DatasetDCE = DATASET.DatasetAssociation.extend( BASE_MVC.mixin( DatasetColle
     /** set up */
     initialize : function( attributes, options ){
         this.debug( this + '(DatasetDCE).initialize:', attributes, options );
-        DATASET.DatasetAssociation.prototype.initialize.call( this, attributes, options );
+        DATASET_MODEL.DatasetAssociation.prototype.initialize.call( this, attributes, options );
     },
 
     /** String representation. */
@@ -162,7 +164,7 @@ var DatasetDCECollection = DCECollection.extend(
     //logger              : console,
 
 //TODO: unused?
-    /**  */
+    /** set up */
     initialize : function( attributes, options ){
         this.debug( this + '(DatasetDCECollection).initialize:', attributes, options );
         DCECollection.prototype.initialize.call( this, attributes, options );
@@ -203,7 +205,7 @@ var DatasetCollection = Backbone.Model
     /** Which class to use for elements */
     collectionClass : DCECollection,
 
-    /**  */
+    /** set up: create elements instance var and (on changes to elements) update them  */
     initialize : function( model, options ){
         this.debug( this + '(DatasetCollection).initialize:', model, options, this );
         //historyContent.HistoryContent.prototype.initialize.call( this, attrs, options );
@@ -269,6 +271,7 @@ var DatasetCollection = Backbone.Model
     },
 
     // ........................................................................ searchable
+    /** searchable attributes for collections */
     searchAttributes : [
         'name'
     ],
@@ -291,6 +294,7 @@ var ListDatasetCollection = DatasetCollection.extend(
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
+    /** override since we know the collection will only contain datasets */
     collectionClass : DatasetDCECollection,
 
 //TODO: unused?
@@ -368,10 +372,11 @@ var NestedDCDCECollection = DCECollection.extend(
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
     
+    /** This is a collection of nested collections */
     model: NestedDCDCE,
 
 //TODO: unused?
-    /**  */
+    /** set up */
     initialize : function( attrs, options ){
         this.debug( this + '(NestedDCDCECollection).initialize:', attrs, options );
         DCECollection.prototype.initialize.call( this, attrs, options );
@@ -394,7 +399,10 @@ var NestedPairDCDCE = PairDatasetCollection.extend( BASE_MVC.mixin( DatasetColle
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-    /**  */
+    // because all objects have constructors (as this hashmap would even if this next line wasn't present)
+    //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
+    //  - re-apply manually it now
+    /** This is both a collection and a collection element - call the constructor */
     constructor : function( attributes, options ){
         this.debug( '\t NestedPairDCDCE.constructor:', attributes, options );
         //DatasetCollection.constructor.call( this, attributes, options );
@@ -418,10 +426,11 @@ var NestedPairDCDCECollection = NestedDCDCECollection.extend(
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
+    /** We know this collection is composed of only nested pair collections */
     model: NestedPairDCDCE,
 
 //TODO: unused?
-    /**  */
+    /** set up */
     initialize : function( attrs, options ){
         this.debug( this + '(NestedPairDCDCECollection).initialize:', attrs, options );
         NestedDCDCECollection.prototype.initialize.call( this, attrs, options );
@@ -443,11 +452,11 @@ var ListPairedDatasetCollection = DatasetCollection.extend(
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-    // list:paired is the only collection that itself contains collections
+    /** list:paired is the only collection that itself contains collections */
     collectionClass : NestedPairDCDCECollection,
 
 //TODO: unused?
-    /**  */
+    /** set up */
     initialize : function( attributes, options ){
         this.debug( this + '(ListPairedDatasetCollection).initialize:', attributes, options );
         DatasetCollection.prototype.initialize.call( this, attributes, options );

@@ -1,21 +1,20 @@
 define([
     "mvc/dataset/states",
-    "mvc/collection/dataset-collection-base",
+    "mvc/collection/collection-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( STATES, DC_BASE, BASE_MVC, _l ){
+], function( STATES, DC_LI, BASE_MVC, _l ){
 /* global Backbone */
 //==============================================================================
-var _super = DC_BASE.DCBaseView;
+var _super = DC_LI.DCListItemView;
 /** @class Read only view for HistoryDatasetCollectionAssociation (a dataset collection inside a history).
  */
-var HDCABaseView = _super.extend({
+var HDCAListItemView = _super.extend(
+/** @lends HDCAListItemView.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-//TODO: not a dataset
-    /**  */
     className   : _super.prototype.className + " history-content",
 
     /** In this override, add the state as a class for use with state-based CSS */
@@ -33,12 +32,12 @@ var HDCABaseView = _super.extend({
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDCABaseView(' + modelString + ')';
+        return 'HDCAListItemView(' + modelString + ')';
     }
 });
 
 /** underscore templates */
-HDCABaseView.prototype.templates = (function(){
+HDCAListItemView.prototype.templates = (function(){
 
 // could steal this from hda-base (or use mixed content)
     var titleBarTemplate = BASE_MVC.wrapTemplate([
@@ -62,6 +61,6 @@ HDCABaseView.prototype.templates = (function(){
 
 //==============================================================================
     return {
-        HDCABaseView        : HDCABaseView
+        HDCAListItemView : HDCAListItemView
     };
 });

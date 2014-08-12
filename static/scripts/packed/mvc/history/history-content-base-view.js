@@ -1,1 +1,0 @@
-define(["mvc/base-mvc","utils/localization"],function(a,b){var d={initialize:function(e){}};var c=a.ExpandableView.extend(d);return{HistoryContentViewMixin:d,HistoryContentBaseView:c}});

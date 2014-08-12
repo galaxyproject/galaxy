@@ -940,10 +940,9 @@ class JobWrapper( object ):
     def mark_as_resubmitted( self ):
         job = self.get_job()
         self.sa_session.refresh( job )
-        # TODO: Enable this code once a UI for resubmitted datasets exists
-        #for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
-        #    dataset._state = model.Dataset.states.RESUBMITTED
-        #    self.sa_session.add( dataset )
+        for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
+            dataset._state = model.Dataset.states.RESUBMITTED
+            self.sa_session.add( dataset )
         job.state = model.Job.states.RESUBMITTED
         self.sa_session.add( job )
         self.sa_session.flush()

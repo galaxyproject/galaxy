@@ -230,6 +230,7 @@ spaceghost.then( function refreshButton(){
 // broken in webkit w/ jq 1.7
 spaceghost.historypanel.waitForHdas( function(){
     this.test.comment( 'HDAs can be expanded by clicking on the name' );
+    this.debug( this.jsonStr( testUploadInfo ) );
     var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
     this.click( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.title );

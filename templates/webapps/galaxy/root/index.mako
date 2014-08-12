@@ -208,7 +208,7 @@
         <div id="current-history-panel" class="history-panel"></div>
         ## Don't bootstrap data here - confuses the browser history: load via API
         <script type="text/javascript">
-        require([ "mvc/history/current-history-panel" ], function( historyPanel ){
+        require([ "mvc/history/history-panel-edit-current" ], function( historyPanel ){
             $(function(){
                 var currPanel = new historyPanel.CurrentHistoryPanel({
                     el              : $( "#current-history-panel" ),

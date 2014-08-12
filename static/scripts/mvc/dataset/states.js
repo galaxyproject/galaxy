@@ -27,8 +27,9 @@ var STATES = {
     PAUSED              : 'paused',
     /** metadata discovery/setting failed or errored (but otherwise ok) */
     FAILED_METADATA     : 'failed_metadata',
+//TODO: not in trans.app.model.Dataset.states - is in database
     /** not accessible to the current user (i.e. due to permissions) */
-    NOT_VIEWABLE        : 'noPermission',   // not in trans.app.model.Dataset.states
+    NOT_VIEWABLE        : 'noPermission',
     /** deleted while uploading */
     DISCARDED           : 'discarded',
     /** the tool producing this dataset failed */

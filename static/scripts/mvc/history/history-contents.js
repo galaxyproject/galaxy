@@ -1,7 +1,7 @@
 define([
-    "mvc/history/history-content-base",
-    "mvc/dataset/hda-model",
-    "mvc/collection/hdca-model",
+    "mvc/history/history-content-model",
+    "mvc/history/hda-model",
+    "mvc/history/hdca-model",
     "mvc/base-mvc",
     "utils/localization"
 ], function( HISTORY_CONTENT, HDA_MODEL, HDCA_MODEL, BASE_MVC, _l ){
@@ -26,7 +26,6 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
-        //console.debug( 'HistoryContents.model:', attrs, options );
 
 //TODO: can we move the type_id stuff here?
         //attrs.type_id = typeIdStr( attrs );
@@ -70,24 +69,25 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     },
 
     // ........................................................................ common queries
-    /** Get the ids of every hda in this collection
+    /** Get the ids of every item in this collection
      *  @returns array of encoded ids
      */
     ids : function(){
-        return this.map( function( hda ){ return hda.get('id'); });
+//TODO: is this still useful since type_id
+        return this.map( function( item ){ return item.get('id'); });
     },
 
-    /** Get hdas that are not ready
-     *  @returns array of HDAs
+    /** Get contents that are not ready
+     *  @returns array of content models
      */
     notReady : function(){
-        return this.filter( function( hda ){
-            return !hda.inReadyState();
+        return this.filter( function( content ){
+            return !content.inReadyState();
         });
     },
 
-    /** Get the id of every hda in this collection not in a 'ready' state (running).
-     *  @returns an array of hda ids
+    /** Get the id of every model in this collection not in a 'ready' state (running).
+     *  @returns an array of model ids
      *  @see HistoryDatasetAssociation#inReadyState
      */
     running : function(){
@@ -95,24 +95,26 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         this.each( function( item ){
             var isRunning = !item.inReadyState();
             if( isRunning ){
+//TODO: is this still correct since type_id
                 idList.push( item.get( 'id' ) );
             }
         });
         return idList;
     },
 
-    /** Get the hda with the given hid
+    /** Get the model with the given hid
      *  @param {Int} hid the hid to search for
-     *  @returns {HistoryDatasetAssociation} the hda with the given hid or undefined if not found
+     *  @returns {HistoryDatasetAssociation} the model with the given hid or undefined if not found
      */
     getByHid : function( hid ){
-        return _.first( this.filter( function( hda ){ return hda.get( 'hid' ) === hid; }) );
+        return _.first( this.filter( function( content ){ return content.get( 'hid' ) === hid; }) );
     },
 
-    /** Get every 'shown' hda in this collection based on show_deleted/hidden
-     *  @param {Boolean} show_deleted are we showing deleted hdas?
-     *  @param {Boolean} show_hidden are we showing hidden hdas?
-     *  @returns array of hda models
+    //TODO:?? this may belong in the containing view
+    /** Get every 'shown' model in this collection based on show_deleted/hidden
+     *  @param {Boolean} show_deleted are we showing deleted content?
+     *  @param {Boolean} show_hidden are we showing hidden content?
+     *  @returns array of content models
      *  @see HistoryDatasetAssociation#isVisible
      */
     getVisible : function( show_deleted, show_hidden, filters ){
@@ -131,13 +133,13 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         return filteredHdas;
     },
 
-    /** return true if any hdas don't have details */
+    /** return true if any contents don't have details */
     haveDetails : function(){
-        return this.all( function( hda ){ return hda.hasDetails(); });
+        return this.all( function( content ){ return content.hasDetails(); });
     },
 
     // ........................................................................ ajax
-    /** fetch detailed model data for all HDAs in this collection */
+    /** fetch detailed model data for all contents in this collection */
     fetchAllDetails : function( options ){
         options = options || {};
         var detailsFlag = { details: 'all' };
@@ -145,8 +147,8 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         return this.fetch( options );
     },
 
-    /** using a queue, perform hdaAjaxFn on each of the hdas in this collection */
-    ajaxQueue : function( hdaAjaxFn, options ){
+    /** using a queue, perform ajaxFn on each of the models in this collection */
+    ajaxQueue : function( ajaxFn, options ){
         var deferred = jQuery.Deferred(),
             startingLength = this.length,
             responses = [];
@@ -157,12 +159,12 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         }
 
         // use reverse order (stylistic choice)
-        var ajaxFns = this.chain().reverse().map( function( hda, i ){
+        var ajaxFns = this.chain().reverse().map( function( content, i ){
             return function(){
-                var xhr = hdaAjaxFn.call( hda, options );
+                var xhr = ajaxFn.call( content, options );
                 // if successful, notify using the deferred to allow tracking progress
                 xhr.done( function( response ){
-                    deferred.notify({ curr: i, total: startingLength, response: response, model: hda });
+                    deferred.notify({ curr: i, total: startingLength, response: response, model: content });
                 });
                 // (regardless of previous error or success) if not last ajax call, shift and call the next
                 //  if last fn, resolve deferred
@@ -183,17 +185,18 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     },
 
     // ........................................................................ sorting/filtering
-    /** return a new collection of HDAs whose attributes contain the substring matchesWhat */
+    /** return a new collection of contents whose attributes contain the substring matchesWhat */
     matches : function( matchesWhat ){
-        return this.filter( function( hda ){
-            return hda.matches( matchesWhat );
+        return this.filter( function( content ){
+            return content.matches( matchesWhat );
         });
     },
 
     // ........................................................................ misc
+    /** override to get a correct/smarter merge when incoming data is partial */
     set : function( models, options ){
         // arrrrrrrrrrrrrrrrrg...
-        // override to get a correct/smarter merge when incoming data is partial (e.g. stupid backbone)
+        //  (e.g. stupid backbone)
         //  w/o this partial models from the server will fill in missing data with model defaults
         //  and overwrite existing data on the client
         // see Backbone.Collection.set and _prepareModel
@@ -213,7 +216,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         Backbone.Collection.prototype.set.call( this, models, options );
     },
 
-    /** Convert this ad-hoc collection of HDAs to a formal collection tracked
+    /** Convert this ad-hoc collection of hdas to a formal collection tracked
         by the server.
     **/
     promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){

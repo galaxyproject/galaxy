@@ -10,7 +10,7 @@ var searchableMixin = BASE_MVC.SearchableModelMixin;
  *  The DA's are made searchable (by attribute) by mixing in SearchableModelMixin.
  */
 var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
-        BASE_MVC.mixin( searchableMixin, {
+        BASE_MVC.mixin( searchableMixin, /** @lends DatasetAssociation.prototype */{
 
     /** default attributes for a model */
     defaults : {
@@ -43,8 +43,10 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         //annotation          : ''
     },
 
-    initialize : function( attrs, options ){
-        this.debug( 'Dataset.initialize', attrs, options );
+    /** instance vars and listeners */
+    initialize : function( attributes, options ){
+        this.debug( this + '(Dataset).initialize', attributes, options );
+
         //!! this state is not in trans.app.model.Dataset.states - set it here -
         if( !this.get( 'accessible' ) ){
             this.set( 'state', STATES.NOT_VIEWABLE );
@@ -62,7 +64,6 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         var id = this.get( 'id' );
         if( !id ){ return {}; }
         var urls = {
-//TODO: how many of these are still used?
             'purge'         : 'datasets/' + id + '/purge_async',
             'display'       : 'datasets/' + id + '/display/?preview=True',
             'edit'          : 'datasets/' + id + '/edit',
@@ -74,11 +75,10 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
             'meta_download' : 'dataset/get_metadata_file?hda_id=' + id + '&metadata_name='
         };
 //TODO: global
-        if( galaxy_config && galaxy_config.root ){
-            _.each( urls, function( key, value ){
-                urls[ key ] = galaxy_config.root + value;
-            });
-        }
+        var root = ( galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' );
+        _.each( urls, function( value, key ){
+            urls[ key ] = root + value;
+        });
         this.urls = urls;
         return urls;
     },
@@ -147,6 +147,7 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         return this.save( { deleted: false }, options );
     },
 
+    /** remove the file behind this dataset from the filesystem (if permitted) */
     purge : function _purge( options ){
 //TODO: use, override model.destroy, HDA.delete({ purge: true })
         if( this.get( 'purged' ) ){ return jQuery.when(); }
@@ -161,7 +162,7 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         //    }, options ));
         //
         //xhr.done( function( response ){
-        //    console.debug( 'response', response );
+        //    hda.debug( 'response', response );
         //    //hda.set({ deleted: true, purged: true });
         //    hda.set( response );
         //});

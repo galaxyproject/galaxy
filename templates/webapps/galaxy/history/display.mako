@@ -53,7 +53,7 @@
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
-    })([ 'mvc/history/annotated-history-panel' ], function( panelMod ){
+    })([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
         // history module is already in the dpn chain from the panel. We can re-scope it here.
         var historyModel = require( 'mvc/history/history-model' ),
             history = new historyModel.History( historyJSON, hdaJSON, {

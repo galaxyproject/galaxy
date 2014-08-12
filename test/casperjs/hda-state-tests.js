@@ -321,7 +321,7 @@ spaceghost.then( function(){
     // set state directly through model, wait for re-render
     //TODO: not ideal to test this
     this.evaluate( function(){
-        return Galaxy.currHistoryPanel.model.hdas.at( 0 ).set( 'state', 'new' );
+        return Galaxy.currHistoryPanel.model.contents.at( 0 ).set( 'state', 'new' );
     });
     this.wait( 1000, function(){
         this.test.comment( 'HDAs in the "new" state should be well formed' );
@@ -359,7 +359,7 @@ spaceghost.then( function(){
             var errorString = 'Blah!';
 
             this.evaluate( function( errorString ){
-                return Galaxy.currHistoryPanel.model.hdas.getByHid( 1 ).set( 'error', errorString );
+                return Galaxy.currHistoryPanel.model.contents.getByHid( 1 ).set( 'error', errorString );
             }, errorString );
 
             // wait for re-render
@@ -382,8 +382,8 @@ spaceghost.then( function revertStateAndCollapse(){
 
     this.historypanel.thenCollapseHda( uploadSelector, function(){
         this.evaluate( function(){
-            Galaxy.currHistoryPanel.model.hdas.getByHid( 1 ).unset( 'error' );
-            return Galaxy.currHistoryPanel.model.hdas.at( 0 ).set( 'state', 'ok' );
+            Galaxy.currHistoryPanel.model.contents.getByHid( 1 ).unset( 'error' );
+            return Galaxy.currHistoryPanel.model.contents.at( 0 ).set( 'state', 'ok' );
         });
     });
     this.wait( 1000 );

@@ -1,13 +1,14 @@
 define([
     "mvc/dataset/states",
-    "mvc/collection/hdca-base",
+    "mvc/history/hdca-li",
     "utils/localization"
-], function( STATES, HDCA_BASE, _l ){
+], function( STATES, HDCA_LI, _l ){
 //==============================================================================
-var _super = HDCA_BASE.HDCABaseView;
+var _super = HDCA_LI.HDCAListItemView;
 /** @class Editing view for HistoryDatasetCollectionAssociation.
  */
-var HDCAEditView = _super.extend({
+var HDCAListItemEdit = _super.extend(
+/** @lends HDCAListItemEdit.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
@@ -44,12 +45,12 @@ var HDCAEditView = _super.extend({
     /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDCAEditView(' + modelString + ')';
+        return 'HDCAListItemEdit(' + modelString + ')';
     }
 });
 
 //==============================================================================
     return {
-        HDCAEditView : HDCAEditView
+        HDCAListItemEdit : HDCAListItemEdit
     };
 });

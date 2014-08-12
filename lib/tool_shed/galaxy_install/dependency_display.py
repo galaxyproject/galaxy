@@ -153,7 +153,7 @@ class DependencyDisplayer( object ):
             # Updating should cause no problems here since a tool dependency cannot be included
             # in both dictionaries.
             tool_dependencies.update( orphan_tool_dependencies )
-            if tool_dependencies and ( tools or invalid_tools ):
+            if tool_dependencies and tools:
                 for td_key, requirements_dict in tool_dependencies.items():
                     if td_key == 'set_environment':
                         # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]

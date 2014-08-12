@@ -1,14 +1,14 @@
 define([
-    "mvc/dataset/hda-edit",
-    "mvc/history/history-panel",
+    "mvc/history/history-panel-edit",
     "mvc/collection/collection-panel",
     "mvc/base-mvc",
     "utils/localization"
-], function( HDA_EDIT, HISTORY_PANEL, DC_PANEL, BASE_MVC, _l ){
+], function( HPANEL_EDIT, DC_PANEL, BASE_MVC, _l ){
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
-var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend({
+var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend(
+/** @lends HistoryPanelPrefs.prototype */{
     defaults : {
         /** is the panel currently showing the search/filter controls? */
         searching       : false,
@@ -31,7 +31,7 @@ HistoryPanelPrefs.storageKey = function storageKey(){
 TODO:
 
 ============================================================================= */
-var _super = HISTORY_PANEL.HistoryPanel;
+var _super = HPANEL_EDIT.HistoryPanel;
 // used in root/index.mako
 /** @class View/Controller for the user's current history model as used in the history
  *      panel (current right hand panel) of the analysis page.
@@ -318,7 +318,8 @@ var CurrentHistoryPanel = _super.extend(
         var panel = new ( this._getCollectionPanelClass( collectionModel ) )({
                 model           : collectionModel,
                 HDAViewClass    : this.HDAViewClass,
-                parentName      : this.model.get( 'name' )
+                parentName      : this.model.get( 'name' ),
+                linkTarget      : this.linkTarget
             });
         historyView.panelStack.push( panel );
 

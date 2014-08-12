@@ -1,6 +1,6 @@
 define([
     "mvc/dataset/dataset-model",
-    "mvc/history/history-content-base",
+    "mvc/history/history-content-model",
     "mvc/base-mvc",
     "utils/localization"
 ], function( DATASET, HISTORY_CONTENT, BASE_MVC, _l ){
@@ -13,7 +13,6 @@ var HistoryDatasetAssociation = _super.extend( BASE_MVC.mixin( hcontentMixin,
 /** @lends HistoryDatasetAssociation.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
     // because all objects have constructors (as this hashmap would even if this next line wasn't present)
