@@ -1,6 +1,6 @@
 import os,sys
 
-#--------read tool_conf.xml.sample to get all the tool xml file names-----------
+#--------read tool_conf.xml to get all the tool xml file names-----------
 onoff = 1
 tool_list = []
 for line in open("tool_conf.xml", "r"):
