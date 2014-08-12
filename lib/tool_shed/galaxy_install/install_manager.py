@@ -694,7 +694,8 @@ class InstallRepositoryManager( object ):
                                                                                             name,
                                                                                             owner,
                                                                                             changeset_revision )
-        installed_tool_shed_repositories = self.__install_repositories( repository_revision_dict,
+        installed_tool_shed_repositories = self.__install_repositories( tool_shed_url,
+                                                                        repository_revision_dict,
                                                                         repo_info_dicts,
                                                                         install_options )
         return installed_tool_shed_repositories
@@ -788,7 +789,7 @@ class InstallRepositoryManager( object ):
             # at this point because repository dependencies may have added additional repositories for installation
             # along with the single specified repository.
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
-                initiate_repository_installation( self.app, installation_dict )
+                self.initiate_repository_installation( installation_dict )
             # Some repositories may have repository dependencies that are required to be installed before the
             # dependent repository, so we'll order the list of tsr_ids to ensure all repositories install in
             # the required order.

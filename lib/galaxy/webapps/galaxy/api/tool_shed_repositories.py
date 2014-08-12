@@ -239,8 +239,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         self.__ensure_can_install_repos( trans )
         install_repository_manager = InstallRepositoryManager( trans.app )
-        installed_tool_shed_repositories = install_repository_manager.install( trans.app,
-                                                                               tool_shed_url,
+        installed_tool_shed_repositories = install_repository_manager.install( tool_shed_url,
                                                                                name,
                                                                                owner,
                                                                                changeset_revision,
