@@ -19,7 +19,6 @@ var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
 
 //==============================================================================
 /** @class Backbone model for List Dataset Collection within a History.
- *  @constructs
  */
 var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
 /** @lends HistoryListDatasetCollection.prototype */{

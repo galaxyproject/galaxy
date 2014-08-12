@@ -9,13 +9,12 @@ define([
 var _super = DC_LI.DCListItemView;
 /** @class Read only view for HistoryDatasetCollectionAssociation (a dataset collection inside a history).
  */
-var HDCAListItemView = _super.extend({
+var HDCAListItemView = _super.extend(
+/** @lends HDCAListItemView.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-//TODO: not a dataset
-    /**  */
     className   : _super.prototype.className + " history-content",
 
     /** In this override, add the state as a class for use with state-based CSS */

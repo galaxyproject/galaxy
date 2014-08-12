@@ -8,7 +8,8 @@ define([
 var ListItemView = BASE_MVC.ListItemView;
 /** @class Read only view for DatasetCollection.
  */
-var DCListItemView = ListItemView.extend({
+var DCListItemView = ListItemView.extend(
+/** @lends DCListItemView.prototype */{
 //TODO: may not be needed
 
     /** logger used to record this.log messages, commonly set to console */
@@ -26,7 +27,7 @@ var DCListItemView = ListItemView.extend({
         ListItemView.prototype.initialize.call( this, attributes );
     },
 
-    /** In this override, don't show`or render any details (no need to do anything here)
+    /** In this override, don't show or render any details (no need to do anything here)
      *      - currently the parent control will load a panel for this collection over itself
      *  @fires expanded when a body has been expanded
      */
@@ -87,7 +88,8 @@ DCListItemView.prototype.templates = (function(){
 //==============================================================================
 /** @class Read only view for DatasetCollectionElement.
  */
-var DCEListItemView = ListItemView.extend({
+var DCEListItemView = ListItemView.extend(
+/** @lends DCEListItemView.prototype */{
 //TODO: this might be expendable - compacted with HDAListItemView
 
     /** logger used to record this.log messages, commonly set to console */
@@ -99,7 +101,7 @@ var DCEListItemView = ListItemView.extend({
     /** jq fx speed for this view */
     fxSpeed     : 'fast',
 
-    /**  */
+    /** set up */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( 'DCEListItemView.initialize:', attributes );
@@ -138,14 +140,15 @@ DCEListItemView.prototype.templates = (function(){
 /** @class Read only view for a DatasetCollectionElement that is also an DatasetAssociation
  *      (a dataset contained in a dataset collection).
  */
-var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend({
+var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
+/** @lends DatasetDCEListItemView.prototype */{
 
     className   : DATASET_LI.DatasetListItemView.prototype.className + " dataset-collection-element",
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-    /**  */
+    /** set up */
     initialize  : function( attributes ){
         if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( 'DatasetDCEListItemView.initialize:', attributes );
@@ -185,7 +188,8 @@ DatasetDCEListItemView.prototype.templates = (function(){
 /** @class Read only view for a DatasetCollectionElement that is also a DatasetCollection
  *      (a nested DC).
  */
-var NestedDCDCEListItemView = DCListItemView.extend({
+var NestedDCDCEListItemView = DCListItemView.extend(
+/** @lends NestedDCDCEListItemView.prototype */{
 
     className   : DCListItemView.prototype.className + " dataset-collection-element",
 

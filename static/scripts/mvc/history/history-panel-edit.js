@@ -333,9 +333,9 @@ var HistoryPanel = _super.extend(
         // maintain a list of hdas that are selected
         hdaView.on( 'selected', function( hdaView, event ){
             if( !event ){ return; }
-            //console.debug( 'selected', event );
+            //this.debug( 'selected', event );
             var selectedIds = [];
-            //console.debug( historyView.lastSelectedViewId, historyView.hdaViews[ historyView.lastSelectedViewId ] );
+            //this.debug( historyView.lastSelectedViewId, historyView.hdaViews[ historyView.lastSelectedViewId ] );
 
             // shift will select a range, but not set lastSelectedViewId
             if( ( event.shiftKey )
@@ -348,19 +348,19 @@ var HistoryPanel = _super.extend(
             } else {
                 var id = hdaView.model.id;
                 historyView.lastSelectedViewId = id;
-                //console.debug( 'lastSelectedViewId:', historyView.lastSelectedViewId );
+                //this.debug( 'lastSelectedViewId:', historyView.lastSelectedViewId );
                 selectedIds = [ id ];
             }
-            //console.debug( 'selectedIds:', selectedIds );
+            //this.debug( 'selectedIds:', selectedIds );
             historyView.selectedHdaIds = _.union( historyView.selectedHdaIds, selectedIds );
             //TODO: might want to use getSelectedHdaViews instead managing these lists with ops
-            //console.debug( 'selected', historyView.selectedHdaIds );
+            //this.debug( 'selected', historyView.selectedHdaIds );
         });
         hdaView.on( 'de-selected', function( hdaView, event ){
-            //console.debug( 'de-selected', event );
+            //this.debug( 'de-selected', event );
             var id = hdaView.model.id;
             historyView.selectedHdaIds = _.without( historyView.selectedHdaIds, id );
-            //console.debug( 'de-selected', historyView.selectedHdaIds );
+            //this.debug( 'de-selected', historyView.selectedHdaIds );
         });
     },
 

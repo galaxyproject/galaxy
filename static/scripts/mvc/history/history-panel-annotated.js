@@ -23,7 +23,7 @@ var _super = HPANEL.ReadOnlyHistoryPanel;
  *  @constructs
  */
 var AnnotatedHistoryPanel = _super.extend(
-/** @lends HistoryPanel.prototype */{
+/** @lends AnnotatedHistoryPanel.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     // comment this out to suppress log output

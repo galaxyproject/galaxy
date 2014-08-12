@@ -13,7 +13,8 @@ NOTE: not much going on here. Until we find out what operations a user will need
 var _super = DC_LI.DCListItemView;
 /** @class Editing view for DatasetCollectionElement.
  */
-var DCEListItemEdit = _super.extend({
+var DCEListItemEdit = _super.extend(
+/** @lends DCEListItemEdit.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,

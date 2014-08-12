@@ -7,7 +7,8 @@ define([
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
-var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend({
+var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend(
+/** @lends HistoryPanelPrefs.prototype */{
     defaults : {
         /** is the panel currently showing the search/filter controls? */
         searching       : false,

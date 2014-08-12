@@ -8,7 +8,9 @@ define([
 ], function( HISTORY_MODEL, HDA_LI, HDCA_LI, USER, BASE_MVC, _l ){
 // ============================================================================
 /** session storage for individual history preferences */
-var HistoryPrefs = BASE_MVC.SessionStorageModel.extend({
+var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
+/** @lends HistoryPrefs.prototype */{
+
     defaults : {
 //TODO:?? expandedHdas to array?
         expandedHdas : {},
@@ -85,6 +87,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
 
     /** class to use for constructing the HDA views */
     HDAViewClass        : HDA_LI.HDAListItemView,
+    /** class to use for constructing the HDCA views */
     HDCAViewClass       : HDCA_LI.HDCAListItemView,
 
     tagName             : 'div',
@@ -753,17 +756,17 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
             this.storage.get( 'show_hidden' ),
             this.filters
         ).each( function( hda ){
-            //console.debug( 'checking: ', hda.get( 'name' ) );
+            //panel.debug( 'checking: ', hda.get( 'name' ) );
             if( withinSet ){
-                //console.debug( '\t\t adding: ', hda.get( 'name' ) );
+                //panel.debug( '\t\t adding: ', hda.get( 'name' ) );
                 set.push( panel.hdaViews[ hda.id ] );
                 if( hda === viewA.model || hda === viewB.model ){
-                    //console.debug( '\t found last: ', hda.get( 'name' ) );
+                    //panel.debug( '\t found last: ', hda.get( 'name' ) );
                     withinSet = false;
                 }
             } else {
                 if( hda === viewA.model || hda === viewB.model ){
-                    //console.debug( 'found first: ', hda.get( 'name' ) );
+                    //panel.debug( 'found first: ', hda.get( 'name' ) );
                     withinSet = true;
                     set.push( panel.hdaViews[ hda.id ] );
                 }

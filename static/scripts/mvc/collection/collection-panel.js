@@ -24,7 +24,9 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     /** (in ms) that jquery effects will use */
     fxSpeed             : 'fast',
 
+    /** sub view class used for datasets */
     DatasetDCEViewClass  : DC_LI.DatasetDCEListItemView,
+    /** sub view class used for nested collections */
     NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView,
 
     // ......................................................................... SET UP
@@ -229,7 +231,7 @@ var CollectionPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         }
     },
 
-    /**  */
+    /** When a sub-collection is clicked, hide the current panel and render the sub-collection in its own panel  */
     _addCollectionPanel : function( collectionView ){
 //TODO: a bit hackish
         var currPanel = this,
@@ -333,9 +335,11 @@ CollectionPanel.templates = CollectionPanel.prototype.templates = (function(){
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListCollectionPanel = CollectionPanel.extend({
+var ListCollectionPanel = CollectionPanel.extend(
+/** @lends ListCollectionPanel.prototype */{
 
     //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+    /** sub view class used for datasets */
     DatasetDCEViewClass : DC_LI.DatasetDCEListItemView,
 
     // ........................................................................ misc
@@ -348,7 +352,8 @@ var ListCollectionPanel = CollectionPanel.extend({
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var PairCollectionPanel = ListCollectionPanel.extend({
+var PairCollectionPanel = ListCollectionPanel.extend(
+/** @lends PairCollectionPanel.prototype */{
 
     // ........................................................................ misc
     /** string rep */
@@ -360,9 +365,11 @@ var PairCollectionPanel = ListCollectionPanel.extend({
 
 // =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListOfPairsCollectionPanel = CollectionPanel.extend({
+var ListOfPairsCollectionPanel = CollectionPanel.extend(
+/** @lends ListOfPairsCollectionPanel.prototype */{
 
     //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
+    /** sub view class used for nested collections */
     NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView,
 
     // ........................................................................ misc

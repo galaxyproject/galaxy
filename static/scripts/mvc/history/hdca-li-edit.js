@@ -7,7 +7,8 @@ define([
 var _super = HDCA_LI.HDCAListItemView;
 /** @class Editing view for HistoryDatasetCollectionAssociation.
  */
-var HDCAListItemEdit = _super.extend({
+var HDCAListItemEdit = _super.extend(
+/** @lends HDCAListItemEdit.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
