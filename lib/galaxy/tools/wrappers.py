@@ -202,9 +202,9 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
     def is_collection( self ):
         return False
 
-    def is_of_type( self, ext ):
-        datatype = self.datatypes_registry.get_datatype_by_extension( ext )
-        return self.dataset.datatype.matches_any( [ datatype ] )
+    def is_of_type( self, *exts ):
+        datatypes = [ self.datatypes_registry.get_datatype_by_extension( e ) for e in exts ]
+        return self.dataset.datatype.matches_any( datatypes )
 
     def __str__( self ):
         if self.false_path is not None:
