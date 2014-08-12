@@ -694,7 +694,8 @@ class InstallRepositoryManager( object ):
                                                                                             name,
                                                                                             owner,
                                                                                             changeset_revision )
-        installed_tool_shed_repositories = self.__install_repositories( repository_revision_dict,
+        installed_tool_shed_repositories = self.__install_repositories( tool_shed_url,
+                                                                        repository_revision_dict,
                                                                         repo_info_dicts,
                                                                         install_options )
         return installed_tool_shed_repositories
