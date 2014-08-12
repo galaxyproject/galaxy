@@ -80,7 +80,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         rval[ 'can_user_manage' ] = trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset) or trans.user_is_admin()
         return rval
 
-    @expose_api
+    @expose_api_anonymous
     def show_version( self, trans, encoded_dataset_id, encoded_ldda_id, **kwd ):
         """
         show_version( self, trans, encoded_dataset_id, encoded_ldda_id, **kwd ):

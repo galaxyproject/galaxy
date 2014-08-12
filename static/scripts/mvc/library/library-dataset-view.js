@@ -88,6 +88,13 @@ var LibraryDatasetView = Backbone.View.extend({
       this.ldda.fetch({
         success: function(){
           that.renderVersion();
+        },
+        error: function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error(response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error ocurred :(');
+          }
         }
       });
     }
@@ -153,8 +160,12 @@ var LibraryDatasetView = Backbone.View.extend({
     var self = this;
     this.histories = new mod_library_model.GalaxyHistories();
     this.histories.fetch({
-      success: function (){
-        callback(self);
+      success: function (histories){
+        if (histories.length === 0){
+          mod_toastr.warning('You have to create history first. Click this to do so.', '', {onclick: function() {window.location='/';}});
+        } else {
+          callback(self);
+        }
       },
       error: function(model, response){
         if (typeof response.responseJSON !== "undefined"){
@@ -645,7 +656,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
 
     tmpl_array.push('  <div id="library_toolbar">');
-    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go to current dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-file-o"></span> Latest dataset</span></button><a>');
+    tmpl_array.push('   <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>"><button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-default primary-button" type="button"><span class="fa fa-caret-left fa-lg"></span> Latest dataset</span></button><a>');
     tmpl_array.push('  </div>');
 
     // BREADCRUMBS

@@ -161,10 +161,13 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # Check whether user can modify the current folder
         can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
-
+        parent_library_id = None
+        if folder.parent_library is not None:
+            parent_library_id = trans.security.encode_id( folder.parent_library.id )
         metadata = dict( full_path=full_path,
                          can_add_library_item=can_add_library_item,
-                         can_modify_folder=can_modify_folder )
+                         can_modify_folder=can_modify_folder,
+                         parent_library_id=parent_library_id )
         folder_container = dict( metadata=metadata, folder_contents=folder_contents )
         return folder_container
 

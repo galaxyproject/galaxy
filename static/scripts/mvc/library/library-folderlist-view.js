@@ -100,7 +100,7 @@ var FolderListView = Backbone.View.extend({
       upper_folder_id = path[path.length-2][0];
     }
 
-    this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, id: this.options.id, upper_folder_id: upper_folder_id, order: this.sort}));
+    this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, parent_library_id: this.folderContainer.attributes.metadata.parent_library_id, id: this.options.id, upper_folder_id: upper_folder_id, order: this.sort}));
 
     // initialize the library tooltips
     $("#center [data-toggle]").tooltip();
@@ -304,7 +304,7 @@ var FolderListView = Backbone.View.extend({
       tmpl_array.push('</ol>');
 
       // FOLDER CONTENT
-      tmpl_array.push('<table id="folder_table" class="grid table table-condensed">');
+      tmpl_array.push('<table data-library-id="<%- parent_library_id  %>" id="folder_table" class="grid table table-condensed">');
       tmpl_array.push('   <thead>');
       tmpl_array.push('       <th class="button_heading"></th>');
       tmpl_array.push('       <th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');

@@ -346,8 +346,12 @@ var FolderToolbarView = Backbone.View.extend({
         self.histories.get(history_id).set({'contents' : history_contents});
         self.modal.$el.find('#selected_history_content').html(history_contents_template({history_contents: history_contents.models.reverse()}));
       },
-      error: function(){
-        mod_toastr.error('An error ocurred :(');
+      error: function(model, response){
+        if (typeof response.responseJSON !== "undefined"){
+          mod_toastr.error(response.responseJSON.err_msg);
+        } else {
+          mod_toastr.error('An error ocurred :(');
+        }
       }
     });
   },
@@ -516,17 +520,36 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   showLibInfo: function(){
-    var self = this;
-    var template = this.templateLibInfoInModal();
-    this.modal = Galaxy.modal;
-    this.modal.show({
-        closing_events  : true,
-        title           : 'Library Information',
-        body            : template({library:library}),
-        buttons         : {
-            'Close'     : function() {Galaxy.modal.hide();}
+    var library_id = Galaxy.libraries.folderListView.folderContainer.attributes.metadata.parent_library_id;
+    var library = null;
+    var that = this;
+    if (Galaxy.libraries.libraryListView !== null){
+      library = Galaxy.libraries.libraryListView.collection.get(library_id);
+    } else {
+      library = new mod_library_model.Library({id: library_id});
+      library.fetch({
+        success: function(){
+          var template = that.templateLibInfoInModal();
+          that.modal = Galaxy.modal;
+          that.modal.show({
+              closing_events  : true,
+              title           : 'Library Information',
+              body            : template({library:library}),
+              buttons         : {
+                  'Close'     : function() {Galaxy.modal.hide();}
+              }
+          });
+        },
+        error: function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error(response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error ocurred :(');
+          }
         }
-    });
+      })
+    }
+
   },
 
   templateToolBar: function(){
@@ -536,7 +559,8 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
     // TOOLBAR START
     tmpl_array.push(' <div id="library_toolbar">');
-    tmpl_array.push('   <span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"><input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> include deleted</input></span>');
+    tmpl_array.push('       <span><strong>DATA LIBRARIES</strong></span>');
+    tmpl_array.push('   <span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"> | <input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> include deleted | </input></span>');
     tmpl_array.push('   <div class="btn-group add-library-items" style="display:none;">');
     tmpl_array.push('     <button data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
     tmpl_array.push('     <button data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="btn btn-default toolbtn_add_files primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');
@@ -553,7 +577,9 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('     </ul>');
     tmpl_array.push('   </div>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
+    tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
+    tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button btn-xs" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
+
     tmpl_array.push(' </div>');
     // TOOLBAR END
     tmpl_array.push(' <div id="folder_items_element">');
@@ -568,6 +594,13 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array = [];
 
     tmpl_array.push('<div id="lif_info_modal">');
+    tmpl_array.push('<h2>Library name:</h2>');
+    tmpl_array.push('<p><%- library.get("name") %></p>');
+    tmpl_array.push('<h3>Library description:</h3>');
+    tmpl_array.push('<p><%- library.get("description") %></p>');
+    tmpl_array.push('<h3>Library synopsis:</h3>');
+    tmpl_array.push('<p><%- library.get("synopsis") %></p>');
+
     tmpl_array.push('</div>');
 
     return _.template(tmpl_array.join(''));

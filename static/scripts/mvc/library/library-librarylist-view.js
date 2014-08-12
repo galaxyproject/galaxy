@@ -29,15 +29,12 @@ var LibraryListView = Backbone.View.extend({
 
     initialize : function(options){
         this.options = _.defaults(this.options || {}, options);
-        var viewContext = this;
-
+        var that = this;
         this.rowViews = {};
-
         this.collection = new mod_library_model.Libraries();
-
         this.collection.fetch({
           success: function(){
-            viewContext.render();
+            that.render();
           },
           error: function(model, response){
               if (typeof response.responseJSON !== "undefined"){
@@ -53,10 +50,6 @@ var LibraryListView = Backbone.View.extend({
      *  or from a given array of library models,
      *  or renders an empty list in case no data is given. */
     render: function (options) {
-        /**
-         * need to hide manually because of the element removal
-         * bug in tooltip
-         */
         $(".tooltip").hide();
         var template = this.templateLibraryList();
         var libraries_to_render = null;

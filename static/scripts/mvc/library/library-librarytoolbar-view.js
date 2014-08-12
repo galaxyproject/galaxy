@@ -116,12 +116,19 @@ var LibraryToolbarView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
     // TOOLBAR
     tmpl_array.push('  <div id="toolbar_form">');
-    tmpl_array.push('   <% if(admin_user === true) { %>');
-    tmpl_array.push('       <div id="library_toolbar">');
-    tmpl_array.push('           <span data-toggle="tooltip" data-placement="top" title="Include deleted libraries"><input id="include_deleted_chk" style="margin: 0;" type="checkbox"> include deleted</input></span>');
-    tmpl_array.push('           <span data-toggle="tooltip" data-placement="top" title="Create New Library"><button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button><span>');
+    tmpl_array.push('      <div id="library_toolbar">');
+    tmpl_array.push('       <span><strong>DATA LIBRARIES</strong></span>');
+    tmpl_array.push('           <% if(admin_user === true) { %>');
+    tmpl_array.push('               <span data-toggle="tooltip" data-placement="top" title="Include deleted libraries"> | <input id="include_deleted_chk" style="margin: 0;" type="checkbox"> include deleted |</input></span>');
+    tmpl_array.push('               <span data-toggle="tooltip" data-placement="top" title="Create New Library"><button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button></span>');
+    tmpl_array.push('           <% } %>');
+    tmpl_array.push('           <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/ListOfLibraries" target="_blank"><button class="primary-button btn-xs" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
     tmpl_array.push('       </div>');
-    tmpl_array.push('   <% } %>');
+
+    tmpl_array.push('  <div>');
+    tmpl_array.push('  ');
+    tmpl_array.push('  </div>');
+
     tmpl_array.push('  </div>');
     tmpl_array.push('  <div id="libraries_element">');
     // table with libraries will append here
