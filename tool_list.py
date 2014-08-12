@@ -3,7 +3,7 @@ import os,sys
 #--------read tool_conf.xml.sample to get all the tool xml file names-----------
 onoff = 1
 tool_list = []
-for line in open("tool_conf.xml.sample", "r"):
+for line in open("tool_conf.xml", "r"):
    if line.find("<!--") != -1:
       onoff = 0
    if line.find("file") != -1 and onoff==1:
