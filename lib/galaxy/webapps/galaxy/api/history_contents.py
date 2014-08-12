@@ -131,15 +131,20 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         api_type = "file"
         encoded_id = trans.security.encode_id( hda.id )
+        # TODO: handle failed_metadata here as well
+        state = hda.state
+        if state == trans.app.model.Dataset.states.RESUBMITTED:
+            state = hda.dataset.state
         return {
             'id'    : encoded_id,
             'history_id' : encoded_history_id,
             'name'  : hda.name,
             'type'  : api_type,
-            'state'  : hda.state,
+            'state'  : state,
             'deleted': hda.deleted,
             'visible': hda.visible,
             'purged': hda.purged,
+            'resubmitted': hda._state == trans.app.model.Dataset.states.RESUBMITTED,
             'hid'   : hda.hid,
             'history_content_type' : hda.history_content_type,
             'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
@@ -157,6 +162,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             hda_dict = self.get_hda_dict( trans, hda )
             hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
             hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+            if hda_dict[ 'state' ] == trans.app.model.Dataset.states.RESUBMITTED:
+                hda_dict[ 'state' ] = hda.dataset.state
+                hda_dict[ 'resubmitted' ] = True
             return hda_dict
         except Exception, exc:
             # catch error here - returning a briefer hda_dict with an error attribute
