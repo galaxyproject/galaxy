@@ -35,6 +35,7 @@ var DatasetListItemView = _super.extend(
 
     /** event listeners */
     _setUpListeners : function(){
+//TODO:?? may want to move this to ListItemView (although this is only needed in the *narrow* panel views (current))
         // hide the primary actions in the title bar when selectable
         this.on( 'selectable', function( isSelectable ){
             if( isSelectable ){
@@ -207,9 +208,10 @@ var DatasetListItemView = _super.extend(
 
     /** Defer to the appropo summary rendering fn based on state */
     _renderSummary : function(){
-        var summaryRenderFn = this.templates.summaries[ this.model.get( 'state' ) ];
+        var json = this.model.toJSON(),
+            summaryRenderFn = this.templates.summaries[ json.state ];
         summaryRenderFn = summaryRenderFn || this.templates.summaries.unknown;
-        return summaryRenderFn( this.model.toJSON(), this );
+        return summaryRenderFn( json, this );
     },
 
     /** Render the external display application links */
@@ -408,16 +410,28 @@ DatasetListItemView.prototype.templates = (function(){
         '<div>', _l( 'The job creating this dataset was cancelled before completion' ), '</div>'
     ], 'dataset' );
     summaryTemplates[ STATES.QUEUED ] = BASE_MVC.wrapTemplate([
-        '<div>', _l( 'This job is waiting to run' ), '</div>'
+        '<div>',
+            '<% if( dataset.resubmitted ){ %>',
+                _l( 'The job creating this dataset has been resubmitted is now waiting to run' ),
+            '<% } else { %>',
+                _l( 'This job is waiting to run' ),
+            '<% } %>',
+        '</div>'
+    ], 'dataset' );
+    summaryTemplates[ STATES.RUNNING ] = BASE_MVC.wrapTemplate([
+        '<div>',
+            '<% if( dataset.resubmitted ){ %>',
+                _l( 'The job creating this dataset has been resubmitted is now running' ),
+            '<% } else { %>',
+                _l( 'This job is currently running' ),
+            '<% } %>',
+        '</div>'
     ], 'dataset' );
     summaryTemplates[ STATES.UPLOAD ] = BASE_MVC.wrapTemplate([
         '<div>', _l( 'This dataset is currently uploading' ), '</div>'
     ], 'dataset' );
     summaryTemplates[ STATES.SETTING_METADATA ] = BASE_MVC.wrapTemplate([
         '<div>', _l( 'Metadata is being auto-detected' ), '</div>'
-    ], 'dataset' );
-    summaryTemplates[ STATES.RUNNING ] = BASE_MVC.wrapTemplate([
-        '<div>', _l( 'This job is currently running' ), '</div>'
     ], 'dataset' );
     summaryTemplates[ STATES.PAUSED ] = BASE_MVC.wrapTemplate([
         '<div>', _l( 'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume' ), '</div>'
