@@ -1482,10 +1482,10 @@ class Tool( object, Dictifiable ):
                     help_footer = help_footer + help_page.tail
         # Each page has to rendered all-together because of backreferences allowed by rst
         try:
-            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer,
+            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer ),
                                             input_encoding='utf-8', output_encoding='utf-8',
                                             default_filters=[ 'decode.utf8' ],
-                                            encoding_errors='replace' ) )
+                                            encoding_errors='replace' )
                                   for x in self.help_by_page ]
         except:
             log.exception( "error in multi-page help for tool %s" % self.name )
