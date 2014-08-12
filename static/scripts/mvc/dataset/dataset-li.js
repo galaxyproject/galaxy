@@ -16,6 +16,10 @@ var DatasetListItemView = _super.extend(
     //logger      : console,
 
     className   : _super.prototype.className + " dataset",
+    //TODO:?? doesn't exactly match an hda's type_id
+    id          : function(){
+        return [ 'dataset', this.model.get( 'id' ) ].join( '-' );
+    },
 
     /** Set up: instance vars, options, and event handlers */
     initialize : function( attributes ){
@@ -240,7 +244,7 @@ var DatasetListItemView = _super.extend(
         // gen. safe to show in all cases
         return faIconButton({
             title       : _l( 'View details' ),
-            classes     : 'dataset-params-btn',
+            classes     : 'params-btn',
             href        : this.model.urls.show_params,
             target      : this.linkTarget,
             faIcon      : 'fa-info-circle'

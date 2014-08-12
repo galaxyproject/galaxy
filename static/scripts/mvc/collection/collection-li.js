@@ -16,7 +16,11 @@ var DCListItemView = ListItemView.extend(
     //logger              : console,
 
     className   : ListItemView.prototype.className + " dataset-collection",
-    /**  */
+    id          : function(){
+        return [ 'dataset_collection', this.model.get( 'id' ) ].join( '-' );
+    },
+
+    /** jq speed for effects used */
     fxSpeed     : 'fast',
 
 //TODO: ununsed
