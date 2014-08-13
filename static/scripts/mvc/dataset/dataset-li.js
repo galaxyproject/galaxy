@@ -4,7 +4,13 @@ define([
     "utils/localization"
 ], function( STATES, BASE_MVC, _l ){
 /* global Backbone */
-//==============================================================================
+/*==============================================================================
+TODO:
+    straighten out state rendering and templates used
+    inaccessible/STATES.NOT_VIEWABLE is a special case
+    simplify button rendering
+
+==============================================================================*/
 var _super = BASE_MVC.ListItemView;
 /** @class Read only list view for either LDDAs, HDAs, or HDADCEs.
  *      Roughly, any DatasetInstance (and not a raw Dataset).
@@ -196,9 +202,16 @@ var DatasetListItemView = _super.extend(
      */
     _renderDetails : function(){
         //TODO: generalize to be allow different details for each state
+
+        // no access - render nothing but a message
+        if( this.model.get( 'state' ) === STATES.NOT_VIEWABLE ){
+            return $( this.templates.noAccess( this.model.toJSON(), this ) );
+        }
+
         var $details = _super.prototype._renderDetails.call( this );
         $details.find( '.actions .left' ).empty().append( this._renderSecondaryActions() );
-        $details.find( '.summary' ).html( this._renderSummary() );
+        $details.find( '.summary' ).html( this._renderSummary() )
+            .prepend( this._renderDetailMessages() );
         $details.find( '.display-applications' ).html( this._renderDisplayApplications() );
 
 //TODO: double tap
@@ -212,6 +225,18 @@ var DatasetListItemView = _super.extend(
             summaryRenderFn = this.templates.summaries[ json.state ];
         summaryRenderFn = summaryRenderFn || this.templates.summaries.unknown;
         return summaryRenderFn( json, this );
+    },
+
+    /** Render messages to be displayed only when the details are shown */
+    _renderDetailMessages : function(){
+        var view = this,
+            $warnings = $( '<div class="detail-messages"></div>' ),
+            json = view.model.toJSON();
+//TODO:! unordered (map)
+        _.each( view.templates.detailMessages, function( templateFn ){
+            $warnings.append( $( templateFn( json, view ) ) );
+        });
+        return $warnings;
     },
 
     /** Render the external display application links */
@@ -369,6 +394,14 @@ DatasetListItemView.prototype.templates = (function(){
         '</div>'
     ], 'dataset' );
 
+    var noAccessTemplate = BASE_MVC.wrapTemplate([
+        '<div class="details">',
+            '<div class="summary">',
+                _l( 'You do not have permission to view this dataset' ),
+            '</div>',
+        '</div>'
+    ], 'dataset' );
+
 //TODO: still toooooooooooooo complex - rework
     var summaryTemplates = {};
     summaryTemplates[ STATES.OK ] = summaryTemplates[ STATES.FAILED_METADATA ] = BASE_MVC.wrapTemplate([
@@ -410,22 +443,10 @@ DatasetListItemView.prototype.templates = (function(){
         '<div>', _l( 'The job creating this dataset was cancelled before completion' ), '</div>'
     ], 'dataset' );
     summaryTemplates[ STATES.QUEUED ] = BASE_MVC.wrapTemplate([
-        '<div>',
-            '<% if( dataset.resubmitted ){ %>',
-                _l( 'The job creating this dataset has been resubmitted is now waiting to run' ),
-            '<% } else { %>',
-                _l( 'This job is waiting to run' ),
-            '<% } %>',
-        '</div>'
+        '<div>', _l( 'This job is waiting to run' ), '</div>'
     ], 'dataset' );
     summaryTemplates[ STATES.RUNNING ] = BASE_MVC.wrapTemplate([
-        '<div>',
-            '<% if( dataset.resubmitted ){ %>',
-                _l( 'The job creating this dataset has been resubmitted is now running' ),
-            '<% } else { %>',
-                _l( 'This job is currently running' ),
-            '<% } %>',
-        '</div>'
+        '<div>', _l( 'This job is currently running' ), '</div>'
     ], 'dataset' );
     summaryTemplates[ STATES.UPLOAD ] = BASE_MVC.wrapTemplate([
         '<div>', _l( 'This dataset is currently uploading' ), '</div>'
@@ -450,6 +471,18 @@ DatasetListItemView.prototype.templates = (function(){
         '<div>Error: unknown dataset state: "<%- dataset.state %>"</div>'
     ], 'dataset' );
 
+    // messages to be displayed only within the details section ('below the fold')
+    var detailMessageTemplates = {
+        resubmitted : BASE_MVC.wrapTemplate([
+            // deleted not purged
+            '<% if( model.resubmitted ){ %>',
+                '<div class="resubmitted-msg infomessagesmall">',
+                    _l( 'The job creating this dataset has been resubmitted' ),
+                '</div>',
+            '<% } %>'
+        ])
+    };
+
     // this is applied to both old and new style display apps
     var displayApplicationsTemplate = BASE_MVC.wrapTemplate([
         '<% _.each( apps, function( app ){ %>',
@@ -469,7 +502,9 @@ DatasetListItemView.prototype.templates = (function(){
     return _.extend( {}, _super.prototype.templates, {
         warnings    : warnings,
         details     : detailsTemplate,
+        noAccess    : noAccessTemplate,
         summaries   : summaryTemplates,
+        detailMessages      : detailMessageTemplates,
         displayApplications : displayApplicationsTemplate
     });
 }());

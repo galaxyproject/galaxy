@@ -1684,13 +1684,13 @@ div.permissionContainer{padding-left:20px}
 .dataset .details .actions .left .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
 .dataset .details .actions .left .icon-btn:only-child{margin:0px;border-radius:3px}
 .dataset .details .actions .left .icon-btn{margin-right:2px}
-.dataset .details .actions .left:not(:empty){margin-bottom:8px}
 .dataset .details .actions .left .icon-btn.visualization-btn{margin-left:0px;border-radius:0px 3px 3px 0px;border-right:1px solid #bfbfbf}
 .dataset .details .actions .right{display:inline-block;float:right}.dataset .details .actions .right .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
 .dataset .details .actions .right .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
 .dataset .details .actions .right .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
 .dataset .details .actions .right .icon-btn:only-child{margin:0px;border-radius:3px}
 .dataset .details .actions .right .icon-btn{margin-left:2px}
+.dataset .details .actions:not(:last-child){margin-bottom:8px}
 .dataset .details .tags-display{display:none;margin-bottom:8px}.dataset .details .tags-display .select2-container{min-width:0px}.dataset .details .tags-display .select2-container .select2-choices{border-radius:3px}
 .dataset .details .annotation-display{display:none;margin-bottom:8px}.dataset .details .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.30000000000000004);padding:4px;white-space:pre-line;overflow:auto}
 .dataset .details .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}

@@ -356,11 +356,6 @@
                 .icon-btn {
                     margin-right: @icon-btn-margin;
                 }
-                &:not(:empty) {
-                    // can't use :empty on dataset-actions - will always have left & right, so
-                    //  add gap to left (more likely to have children)
-                    .list-item .vertical-spacing;
-                }
                 // have to reapply here - dropdown wrapped in div
                 .icon-btn.visualization-btn {
                     margin-left: 0px;
@@ -374,6 +369,9 @@
                 .icon-btn {
                     margin-left: @icon-btn-margin;
                 }
+            }
+            &:not(:last-child) {
+                .list-item .vertical-spacing;
             }
         }
 
