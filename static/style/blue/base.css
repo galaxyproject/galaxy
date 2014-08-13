@@ -1821,9 +1821,11 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator .column-title .title{font-weight:bold}
 .collection-creator .column-title .title-info{color:grey}.collection-creator .column-title .title-info:before{content:' - '}
 .collection-creator .paired-column{text-align:center;width:22%}
-.collection-creator .header{padding-bottom:8px}.collection-creator .header .main-help{max-height:36px;margin-bottom:16px;overflow:hidden;padding:8px;background:#f8f8f8}.collection-creator .header .main-help .help-content i{cursor:help;border-bottom:1px dotted grey;font-style:normal}
+.collection-creator .header{padding-bottom:8px}.collection-creator .header .main-help{margin-bottom:17px;overflow:hidden;padding:15px;background:#f8f8f8}.collection-creator .header .main-help:not(.expanded){max-height:49px}.collection-creator .header .main-help:not(.expanded) .help-content p:first-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.collection-creator .header .main-help:not(.expanded) .help-content>*:not(:first-child){display:none}
+.collection-creator .header .main-help.expanded{max-height:none}
+.collection-creator .header .main-help .help-content i{cursor:help;border-bottom:1px dotted grey;font-style:normal}
 .collection-creator .header .main-help .help-content ul,.collection-creator .header .main-help .help-content li{list-style:circle;margin-left:16px}
-.collection-creator .header .main-help .help-content p:first-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .collection-creator .header .main-help .help-content .less-help{display:inline-block;width:100%;text-align:right}
 .collection-creator .header .main-help .more-help{float:right}
 .collection-creator .header .column-headers .column-header .unpaired-filter{width:100%}.collection-creator .header .column-headers .column-header .unpaired-filter .search-query{width:100%;height:22px}
