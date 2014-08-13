@@ -907,7 +907,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     break;
                 case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
-                    ctx.fillRect(s_start, y_start + 5, s_end - s_start, 1);
+                    ctx.fillRect(s_start, rect_y + (draw_height - 1)/2, s_end - s_start, 1);
                     // No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
@@ -1017,6 +1017,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             f_start = Math.floor( Math.max(-0.5 * w_scale, (feature_start - tile_low - 0.5) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)) ),
             y_start = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
+            draw_height = (mode === 'Pack' ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT),
             label_color = this.prefs.label_color;
         
         // Draw read.
@@ -1049,7 +1050,8 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 b2_start = Math.floor( Math.max(-0.5 * w_scale, (feature[5][0] - tile_low - 0.5) * w_scale) );
             if (connector && b2_start > b1_end) {
                 ctx.fillStyle = CONNECTOR_COLOR;
-                dashedLine(ctx, b1_end, y_start + 5, b2_start, y_start + 5);
+                var line_height = y_start + 1 + (draw_height - 1)/2;
+                dashedLine(ctx, b1_end, line_height, b2_start, line_height);
             }
         } else {
             // Read is single.

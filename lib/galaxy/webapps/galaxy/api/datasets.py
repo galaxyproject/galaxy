@@ -199,12 +199,12 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         if isinstance( data_provider, (SamDataProvider, BamDataProvider ) ):
             # Get reference sequence.
             if dataset.dbkey:
-                # FIXME: increase region 500bp each way to provide sequence for overlapping reads. As reads
-                # get longer, this will need to be increased and/or a handle to the genomic data may be need
-                # to be given to the data provider.
+                # FIXME: increase region 1M each way to provide sequence for
+                # spliced/gapped reads. Probably should provide refseq object
+                # directly to data provider.
                 region = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, 
-                                                     low=( max( 0, int( low  ) - 500 ) ), 
-                                                     high=( int( high ) + 500 ) )
+                                                     low=( max( 0, int( low  ) - 1000000 ) ), 
+                                                     high=( int( high ) + 1000000 ) )
 
             # Get mean depth.
             if not indexer:
