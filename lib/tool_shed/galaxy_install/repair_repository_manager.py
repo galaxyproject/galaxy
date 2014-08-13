@@ -1,4 +1,3 @@
-import os
 import tempfile
 import logging
 
@@ -109,7 +108,7 @@ class RepairRepositoryManager():
             tool_panel_section_dict = metadata.get( 'tool_panel_section', None )
             if tool_panel_section_dict:
                 # The repository must be in the uninstalled state.  The structure of tool_panel_section_dict is:
-                # {<tool guid> : 
+                # {<tool guid> :
                 # [{ 'id':<section id>, 'name':<section name>, 'version':<section version>, 'tool_config':<tool config file name> }]}
                 # Here is an example:
                 # {"localhost:9009/repos/test/filter/Filter1/1.1.0":
@@ -160,7 +159,7 @@ class RepairRepositoryManager():
             except Exception, e:
                 error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
                 log.debug( error_message )
-                repair_dict [ repository.name ] = error_message
+                repair_dict[ repository.name ] = error_message
         elif repository.status not in [ self.app.install_model.ToolShedRepository.installation_status.INSTALLED ]:
             shed_tool_conf, tool_path, relative_install_dir = \
                 suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
