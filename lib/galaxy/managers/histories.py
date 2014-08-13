@@ -221,6 +221,19 @@ class HistoryManager( manager_base.ModelManager ):
 
         return history_dict
 
+    def most_recent( self, trans, user=None, deleted=False ):
+        user = user or trans.user
+        if not user:
+            return None if trans.history.deleted else trans.history
+
+        #TODO: dup with by_user - should return query from there and call first and not all
+        history_model = trans.model.History
+        query = ( trans.sa_session.query( history_model )
+                  .filter( history_model.user == user )
+                  .order_by( orm.desc( history_model.table.c.update_time ) ) )
+        if not deleted:
+            query = query.filter( history_model.deleted == False )
+        return query.first()
 
 # =============================================================================
 class HistorySerializer( manager_base.ModelSerializer ):

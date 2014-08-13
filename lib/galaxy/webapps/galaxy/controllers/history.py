@@ -1034,7 +1034,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     # No need to check other outputs since the job's parent history is this history
                     job.mark_deleted( trans.app.config.track_jobs_in_database )
                     trans.app.job_manager.job_stop_queue.put( job.id )
-        # Regardless of whether it was previously deleted, get or create default history.
+
+        # Regardless of whether it was previously deleted, get the most recent history or create a new one.
+        most_recent_history = self.mgrs.histories.most_recent( trans, user=trans.user, deleted=False )
+        if most_recent_history:
+            trans.set_history( most_recent_history )
+            return trans.show_ok_message( "History deleted, your most recent history is now active",
+                refresh_frames=['history'] )
+
         trans.get_or_create_default_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
 
