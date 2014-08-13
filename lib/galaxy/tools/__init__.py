@@ -1061,6 +1061,7 @@ class Tool( object, Dictifiable ):
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
+    default_template = 'tool_form.mako'
 
     def __init__( self, config_file, root, app, guid=None, repository_id=None ):
         """Load a tool from the config named by `config_file`"""
@@ -2011,7 +2012,7 @@ class Tool( object, Dictifiable ):
                     return self.__no_display_interface_response()
                 if len(incoming):
                     self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
-                return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
+                return self.default_template, dict( errors={}, tool_state=state, param_values={}, incoming={} )
 
         all_errors = []
         all_params = []
@@ -2029,7 +2030,7 @@ class Tool( object, Dictifiable ):
             # error messages
             if any( all_errors ):
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
-                template = "tool_form.mako"
+                template = self.default_template
                 template_vars = dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif all_pages or state.page == self.last_page:
@@ -2091,7 +2092,7 @@ class Tool( object, Dictifiable ):
             # Just a refresh, render the form with updated state and errors.
             if not self.display_interface:
                 return self.__no_display_interface_response()
-            return 'tool_form.mako', dict( errors=errors, tool_state=state )
+            return self.default_template, dict( errors=errors, tool_state=state )
 
     def __handle_page_advance( self, trans, state, errors ):
         state.page += 1
@@ -2099,7 +2100,7 @@ class Tool( object, Dictifiable ):
         self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
         if not self.display_interface:
             return self.__no_display_interface_response()
-        return 'tool_form.mako', dict( errors=errors, tool_state=state )
+        return self.default_template, dict( errors=errors, tool_state=state )
 
     def __no_display_interface_response( self ):
         return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )

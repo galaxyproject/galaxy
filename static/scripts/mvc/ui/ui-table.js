@@ -32,7 +32,7 @@ var View = Backbone.View.extend({
         this.options = Utils.merge(options, this.optionsDefault);
         
         // create new element
-        var $el = $(this._template(options));
+        var $el = $(this._template(this.options));
         
         // link sub-elements
         this.$thead = $el.find('thead');

@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils', 'plugin/library/ui-select', 'plugin/library/ui-button-menu', 'mvc/ui/ui-modal'],
+define(['utils/utils', 'mvc/ui/ui-select-default', 'mvc/ui/ui-button-menu', 'mvc/ui/ui-modal'],
         function(Utils, Select, ButtonMenu, Modal) {
 
 /**

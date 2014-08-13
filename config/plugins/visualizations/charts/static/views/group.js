@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
+define(['mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils'],
         function(Table, Ui, Utils) {
 
 /**

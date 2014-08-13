@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils', 'plugin/library/ui'], function(Utils, Ui) {
+define(['utils/utils', 'mvc/ui/ui-misc'], function(Utils, Ui) {
 
 /**
  *  This class renders the chart type selection grid.
