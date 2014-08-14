@@ -1,3 +1,6 @@
+""" Tool shed helper methods for dealing with workflows - only two methods are
+utilized outside of this modules - generate_workflow_image and import_workflow.
+"""
 import logging
 import os
 
@@ -6,7 +9,7 @@ import galaxy.tools.parameters
 import galaxy.webapps.galaxy.controllers.workflow
 from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.render import WorkflowCanvas, MARGIN, LINE_SPACING
+from galaxy.workflow.render import WorkflowCanvas
 from galaxy.workflow.modules import InputDataModule
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
@@ -106,6 +109,7 @@ class RepoToolModule( ToolModule ):
 
     def get_data_inputs( self ):
         data_inputs = []
+
         def callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( input, galaxy.tools.parameters.DataToolParameter ):
                 data_inputs.append( dict( name=prefixed_name,
@@ -125,16 +129,16 @@ class RepoToolModule( ToolModule ):
         if self.tool:
             data_inputs = None
             for name, tool_output in self.tool.outputs.iteritems():
-                if tool_output.format_source != None:
+                if tool_output.format_source is not None:
                     # Default to special name "input" which remove restrictions on connections
                     formats = [ 'input' ]
-                    if data_inputs == None:
+                    if data_inputs is None:
                         data_inputs = self.get_data_inputs()
                     # Find the input parameter referenced by format_source
                     for di in data_inputs:
                         # Input names come prefixed with conditional and repeat names separated by '|',
                         # so remove prefixes when comparing with format_source.
-                        if di[ 'name' ] != None and di[ 'name' ].split( '|' )[ -1 ] == tool_output.format_source:
+                        if di[ 'name' ] is not None and di[ 'name' ].split( '|' )[ -1 ] == tool_output.format_source:
                             formats = di[ 'extensions' ]
                 else:
                     formats = [ tool_output.format ]
@@ -169,6 +173,7 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
         return self.module_types[ type ].from_workflow_step( trans, repository_id, changeset_revision, tools_metadata, step )
 
 module_factory = RepoWorkflowModuleFactory( dict( data_input=RepoInputDataModule, tool=RepoToolModule ) )
+
 
 def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, repository_id=None ):
     """
@@ -225,6 +230,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     trans.response.set_content_type( "image/svg+xml" )
     return canvas.standalone_xml()
 
+
 def get_workflow_data_inputs( step, module ):
     if module.type == 'tool':
         if module.tool:
@@ -239,6 +245,7 @@ def get_workflow_data_inputs( step, module ):
                 data_inputs.append( data_inputs_dict )
             return data_inputs
     return module.get_data_inputs()
+
 
 def get_workflow_data_outputs( step, module, steps ):
     if module.type == 'tool':
@@ -263,6 +270,7 @@ def get_workflow_data_outputs( step, module, steps ):
             data_outputs.append( data_outputs_dict )
             return data_outputs
     return module.get_data_outputs()
+
 
 def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id, changeset_revision ):
     """
@@ -334,6 +342,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     # Return the in-memory Workflow object for display or later persistence to the Galaxy database.
     return workflow, missing_tool_tups
 
+
 def get_workflow_module_name( module, missing_tool_tups ):
     module_name = module.get_name()
     if module.type == 'tool' and module_name == 'unavailable':
@@ -343,6 +352,7 @@ def get_workflow_module_name( module, missing_tool_tups ):
                 module_name = '%s' % missing_tool_name
                 break
     return module_name
+
 
 def import_workflow( trans, repository, workflow_name ):
     """Import a workflow contained in an installed tool shed repository into Galaxy (this method is called only from Galaxy)."""
@@ -402,14 +412,15 @@ def import_workflow( trans, repository, workflow_name ):
         status = 'error'
     return workflow, status, message
 
-def save_workflow( trans, workflow, workflow_dict = None):
+
+def save_workflow( trans, workflow, workflow_dict=None):
     """Use the received in-memory Workflow object for saving to the Galaxy database."""
     stored = trans.model.StoredWorkflow()
     stored.name = workflow.name
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     stored.user = trans.user
-    if workflow_dict and workflow_dict.get('annotation',''):
+    if workflow_dict and workflow_dict.get('annotation', ''):
         annotation = sanitize_html( workflow_dict['annotation'], 'utf-8', 'text/html' )
         new_annotation = trans.model.StoredWorkflowAnnotationAssociation()
         new_annotation.annotation = annotation
