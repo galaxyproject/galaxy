@@ -1585,13 +1585,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             module_data_outputs = module.get_data_outputs()
             workflow_canvas.add_text( module_data_inputs, module_data_outputs, step, module_name )
 
-        for step_dict in data:
-            fill = "#EBD9B2"
-            width = workflow_canvas.widths[step_dict['id']]
-            workflow_canvas.add_boxes( step_dict, width, fill )
-            for conn, output_dict in step_dict['input_connections'].iteritems():
-                workflow_canvas.add_connection( step_dict, conn, output_dict )
-
+        workflow_canvas.add_steps( data )
         workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
         return canvas
 

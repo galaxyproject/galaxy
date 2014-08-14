@@ -233,18 +233,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         data.append( step_dict )
         module_name = get_workflow_module_name( module, missing_tool_tups )
         workflow_canvas.add_text( module_data_inputs, module_data_outputs, step, module_name )
-    for step_dict in data:
-        # Only highlight missing tools if displaying in the tool shed.
-        tool_unavailable = step_dict[ 'tool_errors' ]
-        if trans.webapp.name == 'tool_shed' and tool_unavailable:
-            fill = "#EBBCB2"
-        else:
-            fill = "#EBD9B2"
-
-        width = workflow_canvas.widths[ step_dict[ 'id' ] ]
-        workflow_canvas.add_boxes( step_dict, width, fill )
-        for conn, output_dict in step_dict[ 'input_connections' ].iteritems():
-            workflow_canvas.add_connection( step_dict, conn, output_dict )
+    workflow_canvas.add_steps( data, highlight_errors=True )
     workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
     trans.response.set_content_type( "image/svg+xml" )
     return canvas.standalone_xml()

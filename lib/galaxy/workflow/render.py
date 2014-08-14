@@ -117,3 +117,17 @@ class WorkflowCanvas( object ):
                                              in_coords[ 0 ] - 10,
                                              in_coords[ 1 ],
                                              arrow_end="true" ).SVG() )
+
+    def add_steps( self, data, highlight_errors=False ):
+        # Only highlight missing tools if displaying in the tool shed.
+        for step_dict in data:
+            tool_unavailable = step_dict[ 'tool_errors' ]
+            if highlight_errors and tool_unavailable:
+                fill = "#EBBCB2"
+            else:
+                fill = "#EBD9B2"
+
+            width = self.widths[ step_dict[ 'id' ] ]
+            self.add_boxes( step_dict, width, fill )
+            for conn, output_dict in step_dict[ 'input_connections' ].iteritems():
+                self.add_connection( step_dict, conn, output_dict )
