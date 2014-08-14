@@ -39,7 +39,7 @@ from galaxy.workflow.steps import (
     edgelist_for_workflow_steps,
     order_workflow_steps_with_levels,
 )
-from galaxy.worklfow.render import WorkflowCanvas
+from galaxy.workflow.render import WorkflowCanvas, MARGIN, LINE_SPACING
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -1559,14 +1559,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         canvas = workflow_canvas.canvas
         text = workflow_canvas.text
         connectors = workflow_canvas.connectors
-        boxes = workflow_canvas.boxes
-        in_pos = {}
-        out_pos = {}
-        margin = 5
-        line_px = 16  # how much spacing between input/outputs
-        widths = {}  # store px width for boxes of each step
-        max_width, max_x, max_y = 0, 0, 0
-
+        margin = MARGIN
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
@@ -1588,61 +1581,27 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             data.append(step_dict)
 
             x, y = step.position['left'], step.position['top']
-            count = 0
 
             max_len = len(module.get_name()) * 1.5
             text.append( svgfig.Text(x, y + 20, module.get_name(), **{"font-size": "14px"} ).SVG() )
 
-            y += 45
-            for di in module.get_data_inputs():
-                cur_y = y + count * line_px
-                if step.order_index not in in_pos:
-                    in_pos[step.order_index] = {}
-                in_pos[step.order_index][di['name']] = (x, cur_y)
-                text.append( svgfig.Text(x, cur_y, di['label']).SVG() )
-                count += 1
-                max_len = max(max_len, len(di['label']))
-
-            if len(module.get_data_inputs()) > 0:
-                y += 15
-
-            for do in module.get_data_outputs():
-                cur_y = y + count * line_px
-                if step.order_index not in out_pos:
-                    out_pos[step.order_index] = {}
-                out_pos[step.order_index][do['name']] = (x, cur_y)
-                text.append( svgfig.Text(x, cur_y, do['name']).SVG() )
-                count += 1
-                max_len = max(max_len, len(do['name']))
-
-            widths[step.order_index] = max_len * 5.5
-            max_x = max(max_x, step.position['left'])
-            max_y = max(max_y, step.position['top'])
-            max_width = max(max_width, widths[step.order_index])
+            module_data_inputs = module.get_data_inputs()
+            module_data_outputs = module.get_data_outputs()
+            order_index = step.order_index
+            workflow_canvas.add_text( module_data_inputs, module_data_outputs, order_index, x, y, max_len )
 
         for step_dict in data:
-            width = widths[step_dict['id']]
-            x, y = step_dict['position']['left'], step_dict['position']['top']
-            boxes.append( svgfig.Rect(x - margin, y, x + width - margin, y + 30, fill="#EBD9B2").SVG() )
-            box_height = (len(step_dict['data_inputs']) + len(step_dict['data_outputs'])) * line_px + margin
-
-            # Draw separator line
-            if len(step_dict['data_inputs']) > 0:
-                box_height += 15
-                sep_y = y + len(step_dict['data_inputs']) * line_px + 40
-                text.append( svgfig.Line(x - margin, sep_y, x + width - margin, sep_y).SVG() )
-
-            # input/output box
-            boxes.append( svgfig.Rect(x - margin, y + 30, x + width - margin, y + 30 + box_height, fill="#ffffff").SVG() )
-
+            fill = "#EBD9B2"
+            width = workflow_canvas.widths[step_dict['id']]
+            workflow_canvas.add_boxes( step_dict, width, fill )
             for conn, output_dict in step_dict['input_connections'].iteritems():
-                in_coords = in_pos[step_dict['id']][conn]
-                out_conn_pos = out_pos[output_dict['id']][output_dict['output_name']]
-                adjusted = (out_conn_pos[0] + widths[output_dict['id']], out_conn_pos[1])
-                text.append( svgfig.SVG("circle", cx=out_conn_pos[0] + widths[output_dict['id']] - margin, cy=out_conn_pos[1] - margin, r=5, fill="#ffffff" ) )
+                in_coords = workflow_canvas.in_pos[step_dict['id']][conn]
+                out_conn_pos = workflow_canvas.out_pos[output_dict['id']][output_dict['output_name']]
+                adjusted = (out_conn_pos[0] + workflow_canvas.widths[output_dict['id']], out_conn_pos[1])
+                text.append( svgfig.SVG("circle", cx=out_conn_pos[0] + workflow_canvas.widths[output_dict['id']] - margin, cy=out_conn_pos[1] - margin, r=5, fill="#ffffff" ) )
                 connectors.append( svgfig.Line(adjusted[0], adjusted[1] - margin, in_coords[0] - 10, in_coords[1], arrow_end="true" ).SVG() )
 
-        workflow_canvas.finish( max_x, max_width, max_y )
+        workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
         return canvas
 
 

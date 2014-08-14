@@ -7,7 +7,7 @@ import galaxy.webapps.galaxy.controllers.workflow
 from galaxy import eggs
 from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.worklfow.render import WorkflowCanvas
+from galaxy.workflow.render import WorkflowCanvas, MARGIN, LINE_SPACING
 from galaxy.workflow.modules import InputDataModule
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
@@ -212,16 +212,9 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     canvas = workflow_canvas.canvas
     text = workflow_canvas.text
     connectors = workflow_canvas.connectors
-    boxes = workflow_canvas.boxes
 
-    in_pos = {}
-    out_pos = {}
-    margin = 5
-    # Spacing between input/outputs.
-    line_px = 16
+    margin = MARGIN
     # Store px width for boxes of each step.
-    widths = {}
-    max_width, max_x, max_y = 0, 0, 0
     for step in workflow.steps:
         step.upgrade_messages = {}
         module = module_factory.from_workflow_step( trans, repository_id, changeset_revision, tools_metadata, step )
@@ -239,72 +232,42 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         step_dict[ 'input_connections' ] = input_conn_dict
         data.append( step_dict )
         x, y = step.position[ 'left' ], step.position[ 'top' ]
-        count = 0
         module_name = get_workflow_module_name( module, missing_tool_tups )
         max_len = len( module_name ) * 1.5
         text.append( svgfig.Text( x, y + 20, module_name, **{ "font-size": "14px" } ).SVG() )
-        y += 45
-        for di in module_data_inputs:
-            cur_y = y + count * line_px
-            if step.order_index not in in_pos:
-                in_pos[ step.order_index ] = {}
-            in_pos[ step.order_index ][ di[ 'name' ] ] = ( x, cur_y )
-            text.append( svgfig.Text( x, cur_y, di[ 'label' ] ).SVG() )
-            count += 1
-            max_len = max( max_len, len( di[ 'label' ] ) )
-        if len( module.get_data_inputs() ) > 0:
-            y += 15
-        for do in module_data_outputs:
-            cur_y = y + count * line_px
-            if step.order_index not in out_pos:
-                out_pos[ step.order_index ] = {}
-            out_pos[ step.order_index ][ do[ 'name' ] ] = ( x, cur_y )
-            text.append( svgfig.Text( x, cur_y, do[ 'name' ] ).SVG() )
-            count += 1
-            max_len = max( max_len, len( do['name' ] ) )
-        widths[ step.order_index ] = max_len * 5.5
-        max_x = max( max_x, step.position[ 'left' ] )
-        max_y = max( max_y, step.position[ 'top' ] )
-        max_width = max( max_width, widths[ step.order_index ] )
+        order_index = step.order_index
+        workflow_canvas.add_text( module_data_inputs, module_data_outputs, order_index, x, y, max_len )
     for step_dict in data:
-        tool_unavailable = step_dict[ 'tool_errors' ]
-        width = widths[ step_dict[ 'id' ] ]
-        x, y = step_dict[ 'position' ][ 'left' ], step_dict[ 'position' ][ 'top' ]
         # Only highlight missing tools if displaying in the tool shed.
+        tool_unavailable = step_dict[ 'tool_errors' ]
         if trans.webapp.name == 'tool_shed' and tool_unavailable:
             fill = "#EBBCB2"
         else:
             fill = "#EBD9B2"
-        boxes.append( svgfig.Rect( x - margin, y, x + width - margin, y + 30, fill=fill ).SVG() )
-        box_height = ( len( step_dict[ 'data_inputs' ] ) + len( step_dict[ 'data_outputs' ] ) ) * line_px + margin
-        # Draw separator line.
-        if len( step_dict[ 'data_inputs' ] ) > 0:
-            box_height += 15
-            sep_y = y + len( step_dict[ 'data_inputs' ] ) * line_px + 40
-            text.append( svgfig.Line( x - margin, sep_y, x + width - margin, sep_y ).SVG() )
-        # Define an input/output box.
-        boxes.append( svgfig.Rect( x - margin, y + 30, x + width - margin, y + 30 + box_height, fill="#ffffff" ).SVG() )
+
+        width = workflow_canvas.widths[ step_dict[ 'id' ] ]
+        workflow_canvas.add_boxes( step_dict, width, fill )
         for conn, output_dict in step_dict[ 'input_connections' ].iteritems():
-            in_coords = in_pos[ step_dict[ 'id' ] ][ conn ]
+            in_coords = workflow_canvas.in_pos[ step_dict[ 'id' ] ][ conn ]
             # out_pos_index will be a step number like 1, 2, 3...
             out_pos_index = output_dict[ 'id' ]
             # out_pos_name will be a string like 'o', 'o2', etc.
             out_pos_name = output_dict[ 'output_name' ]
-            if out_pos_index in out_pos:
+            if out_pos_index in workflow_canvas.out_pos:
                 # out_conn_index_dict will be something like:
                 # 7: {'o': (824.5, 618)}
-                out_conn_index_dict = out_pos[ out_pos_index ]
+                out_conn_index_dict = workflow_canvas.out_pos[ out_pos_index ]
                 if out_pos_name in out_conn_index_dict:
-                    out_conn_pos = out_pos[ out_pos_index ][ out_pos_name ]
+                    out_conn_pos = workflow_canvas.out_pos[ out_pos_index ][ out_pos_name ]
                 else:
                     # Take any key / value pair available in out_conn_index_dict.
                     # A problem will result if the dictionary is empty.
                     if out_conn_index_dict.keys():
                         key = out_conn_index_dict.keys()[0]
-                        out_conn_pos = out_pos[ out_pos_index ][ key ]
-            adjusted = ( out_conn_pos[ 0 ] + widths[ output_dict[ 'id' ] ], out_conn_pos[ 1 ] )
+                        out_conn_pos = workflow_canvas.out_pos[ out_pos_index ][ key ]
+            adjusted = ( out_conn_pos[ 0 ] + workflow_canvas.widths[ output_dict[ 'id' ] ], out_conn_pos[ 1 ] )
             text.append( svgfig.SVG( "circle",
-                                     cx=out_conn_pos[ 0 ] + widths[ output_dict[ 'id' ] ] - margin,
+                                     cx=out_conn_pos[ 0 ] + workflow_canvas.widths[ output_dict[ 'id' ] ] - margin,
                                      cy=out_conn_pos[ 1 ] - margin,
                                      r = 5,
                                      fill="#ffffff" ) )
@@ -313,7 +276,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
                                             in_coords[ 0 ] - 10,
                                             in_coords[ 1 ],
                                             arrow_end = "true" ).SVG() )
-    workflow_canvas.finish( max_x, max_width, max_y )
+    workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
     trans.response.set_content_type( "image/svg+xml" )
     return canvas.standalone_xml()
 
