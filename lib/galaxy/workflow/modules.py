@@ -5,6 +5,9 @@ Modules used in building workflows
 import logging
 import re
 
+from galaxy import eggs
+eggs.require( "elementtree" )
+
 from elementtree.ElementTree import Element
 
 import galaxy.tools
