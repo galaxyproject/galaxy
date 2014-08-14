@@ -190,6 +190,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
     //    this.hdaViews = null;
     //},
 
+//TODO: break this out
     // ........................................................................ error handling
     /** Event handler for errors (from the panel, the history, or the history's HDAs)
      *  @param {Model or View} model    the (Backbone) source of the error
@@ -202,6 +203,8 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
         this.error( model, xhr, options, msg, details );
 //TODO: getting JSON parse errors from jq migrate
 
+        window.xhr = xhr;
+        
         // interrupted ajax
         if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
 
@@ -211,6 +214,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
 
         // otherwise, show an error message inside the panel
         } else {
+            // if sentry is available, attempt to get the event id
             var parsed = this._parseErrorMessage( model, xhr, options, msg, details );
             // it's possible to have a triggered error before the message container is rendered - wait for it to show
             if( !this.$messages().is( ':visible' ) ){
@@ -226,18 +230,25 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
     /** Parse an error event into an Object usable by displayMessage based on the parameters
      *      note: see errorHandler for more info on params
      */
-    _parseErrorMessage : function( model, xhr, options, msg, details ){
+    _parseErrorMessage : function( model, xhr, options, msg, details, sentryId ){
         var user = Galaxy.currUser,
             // add the args (w/ some extra info) into an obj
             parsed = {
                 message : this._bePolite( msg ),
                 details : {
-                    user    : ( user instanceof USER.User )?( user.toJSON() ):( user + '' ),
-                    source  : ( model instanceof Backbone.Model )?( model.toJSON() ):( model + '' ),
+                    message : msg,
+                    raven   : ( window.Raven )?( Raven.lastEventId() ):( undefined ),
+                    agent   : navigator.userAgent,
+                    // add ajax data from Galaxy object cache
+                    url     : ( window.Galaxy )?( Galaxy.lastAjax.url ):( undefined ),
+                    data    : ( window.Galaxy )?( Galaxy.lastAjax.data ):( undefined ),
+                    options : ( xhr )?( _.omit( options, 'xhr' ) ):( options ),
                     xhr     : xhr,
-                    options : ( xhr )?( _.omit( options, 'xhr' ) ):( options )
+                    source  : ( _.isFunction( model.toJSON ) )?( model.toJSON() ):( model + '' ),
+                    user    : ( user instanceof USER.User )?( user.toJSON() ):( user + '' )
                 }
             };
+
         // add any extra details passed in
         _.extend( parsed.details, details || {} );
         // fancy xhr.header parsing (--> obj)

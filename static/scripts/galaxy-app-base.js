@@ -59,6 +59,8 @@ GalaxyApp.prototype._init = function init( options ){
     //    options.onload();
     //}
 
+    self._setUpListeners();
+
     return self;
 };
 
@@ -120,6 +122,28 @@ GalaxyApp.prototype._initUser = function _initUser( userJSON ){
     //TODO: temp - old alias
     self.currUser = self.user;
     return self;
+};
+
+/** Set up DOM/jQuery/Backbone event listeners enabled for all pages */
+GalaxyApp.prototype._setUpListeners = function _setUpListeners(){
+    var self = this;
+
+    // hook to jq beforeSend to record the most recent ajax call and cache some data about it
+    /** cached info about the last ajax call made through jQuery */
+    self.lastAjax = {};
+    $( document ).bind( 'ajaxSend', function( ev, xhr, options ){
+        var data = options.data;
+        try {
+            data = JSON.parse( data );
+        } catch( err ){}
+
+        self.lastAjax = {
+            url     : location.href.slice( 0, -1 ) + options.url,
+            data    : data
+        };
+        //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
+    });
+
 };
 
 /** string rep */
