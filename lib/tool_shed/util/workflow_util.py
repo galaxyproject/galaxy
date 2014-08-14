@@ -29,12 +29,6 @@ class RepoInputDataModule( InputDataModule ):
     name = "Input dataset"
 
     @classmethod
-    def new( Class, trans, tools_metadata=None, tool_id=None ):
-        module = Class( trans )
-        module.state = dict( name="Input Dataset" )
-        return module
-
-    @classmethod
     def from_dict( Class, trans, step_dict, repository_id, changeset_revision, tools_metadata=None, secure=True ):
         module = Class( trans )
         state = json.from_json_string( step_dict[ "tool_state" ] )
@@ -79,12 +73,6 @@ class RepoToolModule( ToolModule ):
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
-
-    @classmethod
-    def new( Class, trans, repository_id, changeset_revision, tools_metadata, tool_id=None ):
-        module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
-        module.state = module.tool.new_state( trans, all_pages=True )
-        return module
 
     @classmethod
     def from_dict( Class, trans, step_dict, repository_id, changeset_revision, tools_metadata, secure=True ):
