@@ -195,8 +195,8 @@ def build_workflow_run_config( trans, workflow, payload ):
                     #could be found amoung fereration partners
                     message = "Input cannot find UUID: %s." % input_id
                     raise exceptions.RequestParameterInvalidException( message )
+                assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset )
                 content = history.add_dataset(dataset)
-                assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), content.dataset )
             elif input_source == 'hdca':
                 content = app.dataset_collections_service.get_dataset_collection_instance(
                     trans,
