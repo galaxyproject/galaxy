@@ -254,7 +254,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
                 # 7: {'o': (824.5, 618)}
                 out_conn_index_dict = workflow_canvas.out_pos[ out_pos_index ]
                 if out_pos_name in out_conn_index_dict:
-                    out_conn_pos = workflow_canvas.out_pos[ out_pos_index ][ out_pos_name ]
+                    out_conn_pos = out_conn_index_dict[ out_pos_name ]
                 else:
                     # Take any key / value pair available in out_conn_index_dict.
                     # A problem will result if the dictionary is empty.
