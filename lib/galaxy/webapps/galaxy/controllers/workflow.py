@@ -1590,18 +1590,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             width = workflow_canvas.widths[step_dict['id']]
             workflow_canvas.add_boxes( step_dict, width, fill )
             for conn, output_dict in step_dict['input_connections'].iteritems():
-                in_coords = workflow_canvas.in_pos[step_dict['id']][conn]
-                # out_pos_index will be a step number like 1, 2, 3...
-                out_pos_index = output_dict[ 'id' ]
-                # out_pos_name will be a string like 'o', 'o2', etc.
-                out_pos_name = output_dict[ 'output_name' ]
-                # out_conn_index_dict will be something like:
-                # 7: {'o': (824.5, 618)}
-                out_conn_index_dict = workflow_canvas.out_pos[ out_pos_index ]
-                out_conn_pos = out_conn_index_dict[out_pos_name]
-                adjusted = (out_conn_pos[0] + workflow_canvas.widths[output_dict['id']], out_conn_pos[1])
-                text.append( svgfig.SVG("circle", cx=out_conn_pos[0] + workflow_canvas.widths[output_dict['id']] - margin, cy=out_conn_pos[1] - margin, r=5, fill="#ffffff" ) )
-                connectors.append( svgfig.Line(adjusted[0], adjusted[1] - margin, in_coords[0] - 10, in_coords[1], arrow_end="true" ).SVG() )
+                workflow_canvas.add_connection( step_dict, conn, output_dict )
 
         workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
         return canvas
