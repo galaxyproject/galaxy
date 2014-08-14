@@ -1034,13 +1034,6 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend({
 );
 
 /**
- * Configuration data for a Trackster track.
- */
-var TrackConfig = Backbone.Model.extend({
-    
-});
-
-/**
  * -- Routers --
  */
 
@@ -1081,7 +1074,6 @@ return {
     GenomeVisualization: GenomeVisualization,
     GenomeReferenceDataManager: GenomeReferenceDataManager,
     TrackBrowserRouter: TrackBrowserRouter,
-    TrackConfig: TrackConfig,
     Visualization: Visualization,
     select_datasets: select_datasets
 };
