@@ -32,7 +32,7 @@ var GalaxyFrame = Backbone.View.extend(
         {
             icon        : 'fa-th',
             tooltip     : 'Enable/Disable Scratchbook',
-            onclick     : function() { self._activate() },
+            onclick     : function() { self._activate(); },
             onunload    : function() {
                 if (self.frames.length() > 0) {
                     return "You opened " + self.frames.length() + " frame(s) which will be lost.";
@@ -50,9 +50,9 @@ var GalaxyFrame = Backbone.View.extend(
             tooltip     : 'Show/Hide Scratchbook',
             onclick     : function(e) {
                 if (self.frames.visible) {
-                    self.frames.hide()
+                    self.frames.hide();
                 } else {
-                    self.frames.show()
+                    self.frames.show();
                 }
             },
             with_number : true
@@ -70,7 +70,7 @@ var GalaxyFrame = Backbone.View.extend(
         // refresh menu
         this.frames.setOnChange(function() {
             self._refresh();
-        })
+        });
         this._refresh();
     },
     
@@ -98,7 +98,7 @@ var GalaxyFrame = Backbone.View.extend(
             var $galaxy_main = $(window.parent.document).find('#galaxy_main');
             if (options.target == 'galaxy_main' || options.target == 'center')
             {
-                if ($galaxy_main.length == 0)
+                if ($galaxy_main.length === 0)
                 {
                     var href = options.content;
                     if (href.indexOf('?') == -1)
@@ -151,7 +151,7 @@ var GalaxyFrame = Backbone.View.extend(
         this.button_load.number(this.frames.length());
         
         // check
-        if(this.frames.length() == 0)
+        if(this.frames.length() === 0)
             this.button_load.hide();
         else
             this.button_load.show();
