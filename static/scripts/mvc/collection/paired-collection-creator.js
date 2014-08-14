@@ -1207,10 +1207,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     toggleExtensions : function( force ){
         var creator = this;
         creator.removeExtensions = ( force !== undefined )?( force ):( !creator.removeExtensions );
-        console.debug( 'toggleExtensions:', creator.removeExtensions );
 
         _.each( creator.paired, function( pair ){
-            console.debug( pair );
             // don't overwrite custom names
             if( pair.customizedName ){ return; }
             pair.name = creator._guessNameForPair( pair.forward, pair.reverse );
