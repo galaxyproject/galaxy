@@ -1840,16 +1840,19 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator .unpaired-columns .paired-column .dataset.unpaired{border-color:lightgrey;color:lightgrey}.collection-creator .unpaired-columns .paired-column .dataset.unpaired:hover{border-color:black;color:black}
 .collection-creator .unpaired-columns .reverse-column .dataset.unpaired{text-align:right;margin-left:32px}
 .collection-creator .flexible-partition .flexible-partition-drag{width:100%;height:8px;cursor:ns-resize}.collection-creator .flexible-partition .flexible-partition-drag:hover{background:lightgrey}
-.collection-creator .flexible-partition .column-header{width:100%;text-align:center}.collection-creator .flexible-partition .column-header .column-title{display:inline;margin-right:8px}
+.collection-creator .flexible-partition .column-header{width:100%;text-align:center}.collection-creator .flexible-partition .column-header .column-title{display:inline}
+.collection-creator .flexible-partition .column-header>*:not(:last-child){margin-right:8px}
+.collection-creator .flexible-partition .column-header .remove-extensions-link{display:none}
 .collection-creator .paired-columns .dataset.paired{background:#AFF1AF;border-color:grey;border-width:2px}.collection-creator .paired-columns .dataset.paired:hover,.collection-creator .paired-columns .dataset.paired.emphasized{border-color:black}
 .collection-creator .paired-columns .forward-column .dataset.paired{margin-left:32px;border-radius:3px 0 0 3px;border-right-color:grey;border-right-width:1px;text-align:right}.collection-creator .paired-columns .forward-column .dataset.paired:after{margin-left:8px;font-family:FontAwesome;content:'\f061'}
 .collection-creator .paired-columns .paired-column .dataset.paired{border-radius:0;border-width:2px 0 2px 0}.collection-creator .paired-columns .paired-column .dataset.paired .dataset-name:hover{text-decoration:underline}
 .collection-creator .paired-columns .reverse-column .dataset.paired{margin-right:32px;border-radius:0 3px 3px 0;border-left-color:grey;border-left-width:1px}.collection-creator .paired-columns .reverse-column .dataset.paired:before{margin-right:8px;font-family:FontAwesome;content:'\f060'}
 .collection-creator .paired-columns .reverse-column .unpair-btn{float:right;margin-top:-34px;width:31px;height:32px;border-color:transparent;background:transparent;font-size:120%}.collection-creator .paired-columns .reverse-column .unpair-btn:hover{border-color:#BFBFBF;background:#DEDEDE}
-.collection-creator .footer{padding-bottom:8px}.collection-creator .footer .collection-name-prompt.validation-warning:before{content:'(required)';margin-right:4px;color:red}
-.collection-creator .footer .collection-name{width:50%}.collection-creator .footer .collection-name.validation-warning{border-color:red}
-.collection-creator .footer .other-options>*{display:none;margin-left:4px}
-.collection-creator .footer .collection-name-prompt{margin:5px 4px 0 0}
+.collection-creator .footer{padding-bottom:8px}.collection-creator .footer .attributes .remove-extensions-prompt{line-height:32px}.collection-creator .footer .attributes .remove-extensions-prompt .remove-extensions{display:inline-block;width:24px;height:24px}
+.collection-creator .footer .attributes .collection-name-prompt{margin:5px 4px 0 0}
+.collection-creator .footer .attributes .collection-name-prompt.validation-warning:before{content:'(required)';margin-right:4px;color:red}
+.collection-creator .footer .attributes .collection-name{width:50%}.collection-creator .footer .attributes .collection-name.validation-warning{border-color:red}
+.collection-creator .footer .actions .other-options>*{display:none;margin-left:4px}
 .toolMenuContainer{color:#000;background:#dfe5f9;min-height:100%;padding:5px 10px}
 div.toolSectionPad{margin:0;padding:0;height:5px;font-size:0px}
 div.toolSectionWrapper{margin-bottom:5px}

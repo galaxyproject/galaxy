@@ -301,7 +301,12 @@
             text-align: center;
             .column-title {
                 display: inline;
+            }
+            & > *:not(:last-child) {
                 margin-right: 8px;
+            }
+            .remove-extensions-link {
+                display: none;
             }
         }
     }
@@ -372,26 +377,39 @@
 
     // ------------------------------------------------------------------------ footer
     .footer {
-        .collection-name-prompt.validation-warning:before {
-            //TODO: localize (somehow)
-            content: '(required)';
-            margin-right: 4px;
-            color: red;
-        }
-        .collection-name {
-            width: 50%;
-            &.validation-warning {
-                border-color: red;
+        .attributes {
+            .remove-extensions-prompt {
+                //margin-right: 32px;
+                line-height: 32px;
+                .remove-extensions {
+                    display: inline-block;
+                    width: 24px;
+                    height: 24px;
+                }
+            }
+            // actually appears/floats to the left of the input
+            .collection-name-prompt {
+                margin: 5px 4px 0 0;
+            }
+            .collection-name-prompt.validation-warning:before {
+                //TODO: localize (somehow)
+                content: '(required)';
+                margin-right: 4px;
+                color: red;
+            }
+            .collection-name {
+                width: 50%;
+                &.validation-warning {
+                    border-color: red;
+                }
             }
         }
-        .other-options > * {
-            // do not display the links to create other collections yet
-            display: none;
-            margin-left: 4px;
-        }
-        // actually appears/floats to the left of the input
-        .collection-name-prompt {
-            margin: 5px 4px 0 0;
+        .actions {
+            .other-options > * {
+                // do not display the links to create other collections yet
+                display: none;
+                margin-left: 4px;
+            }
         }
         padding-bottom: 8px;
     }

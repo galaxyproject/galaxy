@@ -50,6 +50,10 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             this.strategy = attributes.strategy;
         }
 
+        /** remove file extensions (\.*) from created pair names? */
+        this.removeExtensions = true;
+        //this.removeExtensions = false;
+
         /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
         this.oncancel = attributes.oncancel;
         /** fn to call when the collection is created (scoped to this) */
@@ -423,11 +427,19 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     },
 
     /** try to find a good pair name for the given fwd and rev datasets */
-    _guessNameForPair : function( fwd, rev ){
+    _guessNameForPair : function( fwd, rev, removeExtensions ){
+        removeExtensions = ( removeExtensions !== undefined )?( removeExtensions ):( this.removeExtensions );
         var lcs = this._naiveStartingAndEndingLCS(
+//TODO: won't work with regex
             fwd.name.replace( this.filters[0], '' ),
             rev.name.replace( this.filters[1], '' )
         );
+        if( removeExtensions ){
+            var lastDotIndex = lcs.lastIndexOf( '.' );
+            if( lastDotIndex > 0 ){
+                lcs = lcs.slice( 0, lastDotIndex );
+            }
+        }
         //TODO: optionally remove extension
         return lcs || ( fwd.name + ' & ' + rev.name );
     },
@@ -579,12 +591,15 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** render the middle including unpaired and paired sections (which may be hidden) */
     _renderMiddle : function( speed, callback ){
         var $middle = this.$( '.middle' ).empty().html( PairedCollectionCreator.templates.middle() );
+
+        // (re-) hide the un/paired panels based on instance vars
         //TODO: use replaceWith
         if( this.unpairedPanelHidden ){
             this.$( '.unpaired-columns' ).hide();
         } else if( this.pairedPanelHidden ){
             this.$( '.paired-columns' ).hide();
         }
+
         this._renderUnpaired();
         this._renderPaired();
         return $middle;
@@ -666,7 +681,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         //console.debug( '-- renderUnpairedEmpty' );
         var $msg = $( '<div class="empty-message"></div>' )
             .text( '(' + _l( 'no remaining unpaired datasets' ) + ')' );
-        this.$( '.unpaired-columns .paired-column .column-datasets' ).prepend( $msg );
+        this.$( '.unpaired-columns .paired-column .column-datasets' ).empty().prepend( $msg );
         return $msg;
     },
     /** a message to display when no unpaired can be shown with the current filters */
@@ -674,7 +689,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         //console.debug( '-- renderUnpairedEmpty' );
         var $msg = $( '<div class="empty-message"></div>' )
             .text( '(' + _l( 'no datasets were found matching the current filters' ) + ')' );
-        this.$( '.unpaired-columns .paired-column .column-datasets' ).prepend( $msg );
+        this.$( '.unpaired-columns .paired-column .column-datasets' ).empty().prepend( $msg );
         return $msg;
     },
 
@@ -691,6 +706,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         if( this.paired.length === 0 ){
             this._renderPairedEmpty();
             //TODO: would be best to return here (the $columns)
+        } else {
+            // show/hide 'remove extensions link' when any paired and they seem to have extensions
+            this.$( '.remove-extensions-link' ).show();
         }
 
         this.paired.forEach( function( pair, i ){
@@ -721,6 +739,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** render the footer, completion controls, and cancel controls */
     _renderFooter : function( speed, callback ){
         var $footer = this.$( '.footer' ).empty().html( PairedCollectionCreator.templates.footer() );
+        this.$( '.remove-extensions' ).prop( 'checked', this.removeExtensions );
         if( typeof this.oncancel === 'function' ){
             this.$( '.cancel-create.btn' ).show();
         }
@@ -861,12 +880,12 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         'mousedown .flexible-partition-drag'        : '_startPartitionDrag',
         // paired
         'click .paired-columns .paired-column .dataset-name' : '_clickPairName',
-        'click .unpair-btn'                         : '_clickUnpair',
-
         'mouseover .dataset.paired'                 : '_hoverPaired',
         'mouseout .dataset.paired'                  : '_hoverOutPaired',
+        'click .unpair-btn'                         : '_clickUnpair',
 
         // footer
+        'change .remove-extensions'                 : function( ev ){ this.toggleExtensions(); },
         'change .collection-name'                   : '_changeName',
         'click .cancel-create'                      : function( ev ){
             if( typeof this.oncancel === 'function' ){
@@ -1130,6 +1149,10 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             response = prompt( 'Enter a new name for the pair:', pair.name );
         if( response ){
             pair.name = response;
+            // set a flag (which won't be passed in json creation) for manual naming so we don't overwrite these
+            //  when adding/removing extensions
+            //TODO: kinda hacky
+            pair.customizedName = true;
             $control.text( pair.name );
         }
     },
@@ -1181,6 +1204,22 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     },
 
     // ........................................................................ footer
+    toggleExtensions : function( force ){
+        var creator = this;
+        creator.removeExtensions = ( force !== undefined )?( force ):( !creator.removeExtensions );
+        console.debug( 'toggleExtensions:', creator.removeExtensions );
+
+        _.each( creator.paired, function( pair ){
+            console.debug( pair );
+            // don't overwrite custom names
+            if( pair.customizedName ){ return; }
+            pair.name = creator._guessNameForPair( pair.forward, pair.reverse );
+        });
+
+        creator._renderPaired();
+        creator._renderFooter();
+    },
+
     /** handle a collection name change */
     _changeName : function( ev ){
         this._validationWarning( 'name', !!this._getName() );
@@ -1330,9 +1369,17 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
     /** creation and cancel controls */
     footer : _.template([
         '<div class="attributes clear">',
-            '<input class="collection-name form-control pull-right" ',
-                'placeholder="', _l( 'Enter a name for your new list' ), '" />',
-            '<div class="collection-name-prompt pull-right">', _l( 'Name' ), ':</div>',
+            '<div class="clear">',
+                '<label class="remove-extensions-prompt pull-right">',
+                    _l( 'Remove file extensions from pair names' ), '?',
+                    '<input class="remove-extensions pull-right" type="checkbox" />',
+                '</label>',
+            '</div>',
+            '<div class="clear">',
+                '<input class="collection-name form-control pull-right" ',
+                    'placeholder="', _l( 'Enter a name for your new list' ), '" />',
+                '<div class="collection-name-prompt pull-right">', _l( 'Name' ), ':</div>',
+            '</div>',
         '</div>',
 
         '<div class="actions clear vertically-spaced">',
@@ -1409,6 +1456,10 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
             'To unpair individual dataset pairs, click the ',
                 '<i data-target=".unpair-btn">unpair buttons ( <span class="fa fa-unlink"></span> )</i>. ',
             'Click the <i data-target=".unpair-all-link">"Unpair all" link</i> to unpair all pairs.'
+        ].join( '' )), '</p>',
+        '<p>', _l([
+            'You can include or remove the file extensions (e.g. ".fastq") from your pair names by toggling the ',
+                '<i data-target=".remove-extensions-prompt">"Remove file extensions from pair names?"</i> control.'
         ].join( '' )), '</p>',
         '<p>', _l([
             'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
