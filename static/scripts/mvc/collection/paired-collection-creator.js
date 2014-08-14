@@ -146,13 +146,16 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** filter fn to apply to forward datasets */
     _filterFwdFn : function( dataset ){
-        // simple contains for now - add more when new feat. are added (regex, etc.)
-        return dataset.name.indexOf( this.filters[0] ) >= 0;
+//TODO: this treats *all* strings as regex which may confuse people
+        var regexp = new RegExp( this.filters[0] );
+        return regexp.test( dataset.name );
+        //return dataset.name.indexOf( this.filters[0] ) >= 0;
     },
 
     /** filter fn to apply to reverse datasets */
     _filterRevFn : function( dataset ){
-        return dataset.name.indexOf( this.filters[1] ) >= 0;
+        var regexp = new RegExp( this.filters[1] );
+        return regexp.test( dataset.name );
     },
 
     /** add a dataset to the unpaired list in it's proper order */
@@ -500,7 +503,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         //
         }
 
-        //var xhr = jQuery.ajax({
+//TODO:?? Can't we use ListPairedCollection.create()
         var ajaxData = {
             type            : 'dataset_collection',
             collection_type : 'list:paired',
@@ -513,23 +516,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         return jQuery.ajax( url, {
             type        : 'POST',
             contentType : 'application/json',
+            dataType    : 'json',
             data        : JSON.stringify( ajaxData )
         })
         .fail( function( xhr, status, message ){
-            //TODO: extract method
-            console.error( xhr, status, message );
-            var content = _l( 'An error occurred while creating this collection' );
-            if( xhr ){
-                if( xhr.readyState === 0 && xhr.status === 0 ){
-                    content += ': ' + _l( 'Galaxy could not be reached and may be updating.' )
-                        + _l( ' Try again in a few minutes.' );
-                } else if( xhr.responseJSON ){
-                    content += '<br /><pre>' + JSON.stringify( xhr.responseJSON ) + '</pre>';
-                } else {
-                    content += ': ' + message;
-                }
-            }
-            creator._showAlert( content, 'alert-danger' );
+            creator._ajaxErrHandler( xhr, status, message );
         })
         .done( function( response, message, xhr ){
             //console.info( 'ok', response, message, xhr );
@@ -538,6 +529,23 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 creator.oncreate.call( this, response, message, xhr );
             }
         });
+    },
+
+    /** handle ajax errors with feedback and details to the user (if available) */
+    _ajaxErrHandler : function( xhr, status, message ){
+        console.error( xhr, status, message );
+        var content = _l( 'An error occurred while creating this collection' );
+        if( xhr ){
+            if( xhr.readyState === 0 && xhr.status === 0 ){
+                content += ': ' + _l( 'Galaxy could not be reached and may be updating.' )
+                    + _l( ' Try again in a few minutes.' );
+            } else if( xhr.responseJSON ){
+                content += '<br /><pre>' + JSON.stringify( xhr.responseJSON ) + '</pre>';
+            } else {
+                content += ': ' + message;
+            }
+        }
+        creator._showAlert( content, 'alert-danger' );
     },
 
     // ------------------------------------------------------------------------ rendering
@@ -1386,6 +1394,12 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
                 '</li>',
                 '<li>Choosing from a list of preset filters by clicking the ',
                     '<i data-target=".choose-filters-link">"Choose filters" link</i>.',
+                '</li>',
+                '<li>Entering regular expressions to match dataset names. See: ',
+                    '<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions">',
+                        'MDN\'s JavaScript Regular Expression Tutorial',
+                    '</a>. ',
+                    'Note: forward slashes (\\) are not needed.',
                 '</li>',
                 '<li>Clearing the filters by clicking the ',
                     '<i data-target=".clear-filters-link">"Clear filters" link</i>.',
