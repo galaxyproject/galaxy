@@ -10,7 +10,7 @@ import galaxy.webapps.galaxy.controllers.workflow
 from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.render import WorkflowCanvas
-from galaxy.workflow.modules import InputDataModule
+from galaxy.workflow.modules import module_types
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
 
@@ -21,27 +21,6 @@ from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
-
-
-class RepoInputDataModule( InputDataModule ):
-
-    type = "data_input"
-    name = "Input dataset"
-
-    @classmethod
-    def from_dict( Class, trans, step_dict, repository_id, changeset_revision, tools_metadata=None, secure=True ):
-        module = Class( trans )
-        state = json.from_json_string( step_dict[ "tool_state" ] )
-        module.state = dict( name=state.get( "name", "Input Dataset" ) )
-        return module
-
-    @classmethod
-    def from_workflow_step( Class, trans, step, repository_id, changeset_revision, tools_metadata ):
-        module = Class( trans )
-        module.state = dict( name="Input Dataset" )
-        if step.tool_inputs and "name" in step.tool_inputs:
-            module.state[ 'name' ] = step.tool_inputs[ 'name' ]
-        return module
 
 
 class RepoToolModule( ToolModule ):
@@ -144,18 +123,30 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
     def __init__( self, module_types ):
         self.module_types = module_types
 
-    def from_dict( self, trans, repository_id, changeset_revision, step_dict, **kwd ):
+    def from_dict( self, trans, repository_id, changeset_revision, step_dict, tools_metadata, **kwd ):
         """Return module initialized from the data in dictionary `step_dict`."""
         type = step_dict[ 'type' ]
         assert type in self.module_types
-        return self.module_types[ type ].from_dict( trans, step_dict, repository_id=repository_id, changeset_revision=changeset_revision, **kwd )
+        module_method_kwds = dict( **kwd )
+        if type == "tool":
+            module_method_kwds[ 'repository_id' ] = repository_id
+            module_method_kwds[ 'changeset_revision' ] = changeset_revision
+            module_method_kwds[ 'tools_metadata' ] = tools_metadata
+        return self.module_types[ type ].from_dict( trans, step_dict, **module_method_kwds )
 
     def from_workflow_step( self, trans, repository_id, changeset_revision, tools_metadata, step ):
         """Return module initialized from the WorkflowStep object `step`."""
         type = step.type
-        return self.module_types[ type ].from_workflow_step( trans, step, repository_id=repository_id, changeset_revision=changeset_revision, tools_metadata=tools_metadata )
+        module_method_kwds = dict( )
+        if type == "tool":
+            module_method_kwds[ 'repository_id' ] = repository_id
+            module_method_kwds[ 'changeset_revision' ] = changeset_revision
+            module_method_kwds[ 'tools_metadata' ] = tools_metadata
+        return self.module_types[ type ].from_workflow_step( trans, step, **module_method_kwds )
 
-module_factory = RepoWorkflowModuleFactory( dict( data_input=RepoInputDataModule, tool=RepoToolModule ) )
+tool_shed_module_types = module_types.copy()
+tool_shed_module_types[ 'tool' ] = RepoToolModule
+module_factory = RepoWorkflowModuleFactory( tool_shed_module_types )
 
 
 def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, repository_id=None ):
