@@ -125,7 +125,7 @@ class WorkflowCanvas( object ):
     def add_steps( self, highlight_errors=False ):
         # Only highlight missing tools if displaying in the tool shed.
         for step_dict in self.data:
-            tool_unavailable = step_dict[ 'tool_errors' ]
+            tool_unavailable = step_dict.get( 'tool_errors', False )
             if highlight_errors and tool_unavailable:
                 fill = "#EBBCB2"
             else:
