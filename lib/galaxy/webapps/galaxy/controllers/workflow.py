@@ -39,6 +39,7 @@ from galaxy.workflow.steps import (
     edgelist_for_workflow_steps,
     order_workflow_steps_with_levels,
 )
+from galaxy.worklfow.render import WorkflowCanvas
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -1554,11 +1555,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     def _workflow_to_svg_canvas( self, trans, stored ):
         workflow = stored.latest_workflow
         data = []
-        canvas = svgfig.canvas(style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left")
-        text = svgfig.SVG("g")
-        connectors = svgfig.SVG("g")
-        boxes = svgfig.SVG("g")
-        svgfig.Text.defaults["font-size"] = "10px"
+        workflow_canvas = WorkflowCanvas()
+        canvas = workflow_canvas.canvas
+        text = workflow_canvas.text
+        connectors = workflow_canvas.connectors
+        boxes = workflow_canvas.boxes
         in_pos = {}
         out_pos = {}
         margin = 5
@@ -1641,14 +1642,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 text.append( svgfig.SVG("circle", cx=out_conn_pos[0] + widths[output_dict['id']] - margin, cy=out_conn_pos[1] - margin, r=5, fill="#ffffff" ) )
                 connectors.append( svgfig.Line(adjusted[0], adjusted[1] - margin, in_coords[0] - 10, in_coords[1], arrow_end="true" ).SVG() )
 
-        canvas.append(connectors)
-        canvas.append(boxes)
-        canvas.append(text)
-        width, height = (max_x + max_width + 50), max_y + 300
-        canvas['width'] = "%spx" % width
-        canvas['height'] = "%spx" % height
-        canvas['viewBox'] = "0 0 %s %s" % (width, height)
-
+        workflow_canvas.finish( max_x, max_width, max_y )
         return canvas
 
 

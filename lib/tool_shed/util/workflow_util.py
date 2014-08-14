@@ -7,6 +7,7 @@ import galaxy.webapps.galaxy.controllers.workflow
 from galaxy import eggs
 from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.worklfow.render import WorkflowCanvas
 from galaxy.workflow.modules import InputDataModule
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
@@ -207,11 +208,12 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
                                                           repository_id=repository_id,
                                                           changeset_revision=changeset_revision )
     data = []
-    canvas = svgfig.canvas( style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left" )
-    text = svgfig.SVG( "g" )
-    connectors = svgfig.SVG( "g" )
-    boxes = svgfig.SVG( "g" )
-    svgfig.Text.defaults[ "font-size" ] = "10px"
+    workflow_canvas = WorkflowCanvas()
+    canvas = workflow_canvas.canvas
+    text = workflow_canvas.text
+    connectors = workflow_canvas.connectors
+    boxes = workflow_canvas.boxes
+
     in_pos = {}
     out_pos = {}
     margin = 5
@@ -311,13 +313,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
                                             in_coords[ 0 ] - 10,
                                             in_coords[ 1 ],
                                             arrow_end = "true" ).SVG() )
-    canvas.append( connectors )
-    canvas.append( boxes )
-    canvas.append( text )
-    width, height = ( max_x + max_width + 50 ), max_y + 300
-    canvas[ 'width' ] = "%s px" % width
-    canvas[ 'height' ] = "%s px" % height
-    canvas[ 'viewBox' ] = "0 0 %s %s" % ( width, height )
+    workflow_canvas.finish( max_x, max_width, max_y )
     trans.response.set_content_type( "image/svg+xml" )
     return canvas.standalone_xml()
 
