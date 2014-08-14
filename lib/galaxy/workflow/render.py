@@ -26,7 +26,9 @@ class WorkflowCanvas( object ):
 
         self.data = []
 
-    def finish( self, max_x, max_width, max_y ):
+    def finish( self ):
+        max_x, max_y, max_width = self.max_x, self.max_y, self.max_width
+
         canvas = self.canvas
         canvas.append( self.connectors )
         canvas.append( self.boxes )

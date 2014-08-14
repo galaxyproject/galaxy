@@ -1,12 +1,8 @@
-import pkg_resources
-pkg_resources.require( "SVGFig" )
-
 import base64
 import httplib
 import json
 import os
 import sgmllib
-import svgfig
 import urllib2
 
 from sqlalchemy import and_
@@ -1556,9 +1552,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         workflow = stored.latest_workflow
         workflow_canvas = WorkflowCanvas()
         canvas = workflow_canvas.canvas
-        text = workflow_canvas.text
-        connectors = workflow_canvas.connectors
-        margin = MARGIN
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
@@ -1573,7 +1566,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             )
 
         workflow_canvas.add_steps( )
-        workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
+        workflow_canvas.finish(  )
         return canvas
 
 

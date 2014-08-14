@@ -4,7 +4,6 @@ import os
 import galaxy.tools
 import galaxy.tools.parameters
 import galaxy.webapps.galaxy.controllers.workflow
-from galaxy import eggs
 from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.render import WorkflowCanvas, MARGIN, LINE_SPACING
@@ -17,9 +16,6 @@ from tool_shed.tools import tool_validator
 from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
-
-eggs.require( "SVGFig" )
-import svgfig
 
 log = logging.getLogger( __name__ )
 
@@ -209,10 +205,6 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
                                                           changeset_revision=changeset_revision )
     workflow_canvas = WorkflowCanvas()
     canvas = workflow_canvas.canvas
-    text = workflow_canvas.text
-    connectors = workflow_canvas.connectors
-
-    margin = MARGIN
     # Store px width for boxes of each step.
     for step in workflow.steps:
         step.upgrade_messages = {}
@@ -229,7 +221,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
             tool_errors=tool_errors
         )
     workflow_canvas.add_steps( highlight_errors=True )
-    workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
+    workflow_canvas.finish( )
     trans.response.set_content_type( "image/svg+xml" )
     return canvas.standalone_xml()
 
