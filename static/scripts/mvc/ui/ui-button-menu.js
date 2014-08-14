@@ -10,7 +10,7 @@ return Backbone.View.extend({
         // same as Ui.ButtonIcon
         id              : '',
         title           : '',
-        float           : 'right',
+        floating        : 'right',
         icon            : null,
         onclick         : null,
         cls             : 'icon-btn',
@@ -150,7 +150,7 @@ return Backbone.View.extend({
         }
         
         // string
-        var str =   '<div id="' + options.id + '" style="float: ' + options.float + '; ' + width + '" class="ui-button-icon dropdown ' + options.cls + '">';
+        var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="ui-button-icon dropdown ' + options.cls + '">';
     
         // title
         if (options.title) {

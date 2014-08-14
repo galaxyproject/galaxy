@@ -66,7 +66,7 @@ var Label = Backbone.View.extend({
 var Icon = Backbone.View.extend({
     // options
     optionsDefault: {
-        float       : 'right',
+        floating    : 'right',
         icon        : '',
         tooltip     : '',
         placement   : 'bottom',
@@ -99,11 +99,11 @@ var Icon = Backbone.View.extend({
 var Button = Backbone.View.extend({
     // options
     optionsDefault: {
-        id    : null,
-        title : '',
-        float : 'right',
-        cls   : 'btn btn-default',
-        icon  : ''
+        id          : null,
+        title       : '',
+        floating    : 'right',
+        cls         : 'btn btn-default',
+        icon        : ''
     },
     
     // initialize
@@ -123,7 +123,7 @@ var Button = Backbone.View.extend({
     
     // element
     _template: function(options) {
-        var str =   '<button id="' + options.id + '" type="submit" style="float: ' + options.float + ';" type="button" class="ui-button ' + options.cls + '">';
+        var str =   '<button id="' + options.id + '" type="submit" style="float: ' + options.floating + ';" type="button" class="ui-button ' + options.cls + '">';
         if (options.icon) {
             str +=      '<i class="icon fa ' + options.icon + '"></i>&nbsp;' ;
         }
@@ -137,13 +137,13 @@ var Button = Backbone.View.extend({
 var ButtonIcon = Backbone.View.extend({
     // options
     optionsDefault: {
-        id      : null,
-        title   : '',
-        float   : 'right',
-        cls     : 'icon-btn',
-        icon    : '',
-        tooltip : '',
-        onclick : null
+        id          : null,
+        title       : '',
+        floating    : 'right',
+        cls         : 'icon-btn',
+        icon        : '',
+        tooltip     : '',
+        onclick     : null
     },
     
     // initialize
@@ -170,7 +170,7 @@ var ButtonIcon = Backbone.View.extend({
         }
         
         // string
-        var str =   '<div id="' + options.id + '" style="float: ' + options.float + '; ' + width + '" class="ui-button-icon ' + options.cls + '">';
+        var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="ui-button-icon ' + options.cls + '">';
     
         // title
         if (options.title) {

@@ -10,7 +10,7 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
     // create form view
     var View = Backbone.View.extend({
         // base element
-        body: 'body',
+        main_el: 'body',
         
         // initialize
         initialize: function(options) {
@@ -31,13 +31,13 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
                         title: '<b>' + self.model.get('name') + '</b> ' + self.model.get('description'),
                         buttons: {
                             execute: new Ui.ButtonIcon({
-                                icon    : 'fa-check',
-                                tooltip : 'Execute the tool',
-                                title   : 'Execute',
-                                float   :'clear',
-                                onclick : function() {
+                                icon     : 'fa-check',
+                                tooltip  : 'Execute the tool',
+                                title    : 'Execute',
+                                floating : 'clear',
+                                onclick  : function() {
                                 }
-                            }),
+                            })
                         }
                     });
                     
@@ -49,7 +49,7 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
                     self.portlet.append(self.message.$el);
                     
                     // append portlet
-                    $(self.body).append(self.portlet.$el);
+                    $(self.main_el).append(self.portlet.$el);
                     self.setElement(self.portlet.content());
                     self.portlet.append(self.table.$el);
                     self.render();
