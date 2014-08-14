@@ -35,14 +35,14 @@ class RepoInputDataModule( InputDataModule ):
         return module
 
     @classmethod
-    def from_dict( Class, trans, repository_id, changeset_revision, step_dict, tools_metadata=None, secure=True ):
+    def from_dict( Class, trans, step_dict, repository_id, changeset_revision, tools_metadata=None, secure=True ):
         module = Class( trans )
         state = json.from_json_string( step_dict[ "tool_state" ] )
         module.state = dict( name=state.get( "name", "Input Dataset" ) )
         return module
 
     @classmethod
-    def from_workflow_step( Class, trans, repository_id, changeset_revision, tools_metadata, step ):
+    def from_workflow_step( Class, trans, step, repository_id, changeset_revision, tools_metadata ):
         module = Class( trans )
         module.state = dict( name="Input Dataset" )
         if step.tool_inputs and "name" in step.tool_inputs:
@@ -87,7 +87,7 @@ class RepoToolModule( ToolModule ):
         return module
 
     @classmethod
-    def from_dict( Class, trans, repository_id, changeset_revision, step_dict, tools_metadata, secure=True ):
+    def from_dict( Class, trans, step_dict, repository_id, changeset_revision, tools_metadata, secure=True ):
         tool_id = step_dict[ 'tool_id' ]
         module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
         module.state = galaxy.tools.DefaultToolState()
@@ -97,7 +97,7 @@ class RepoToolModule( ToolModule ):
         return module
 
     @classmethod
-    def from_workflow_step( Class, trans, repository_id, changeset_revision, tools_metadata, step ):
+    def from_workflow_step( Class, trans, step, repository_id, changeset_revision, tools_metadata ):
         module = Class( trans, repository_id, changeset_revision, tools_metadata, step.tool_id )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool:
@@ -160,12 +160,12 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
         """Return module initialized from the data in dictionary `step_dict`."""
         type = step_dict[ 'type' ]
         assert type in self.module_types
-        return self.module_types[ type ].from_dict( trans, repository_id, changeset_revision, step_dict, **kwd )
+        return self.module_types[ type ].from_dict( trans, step_dict, repository_id=repository_id, changeset_revision=changeset_revision, **kwd )
 
     def from_workflow_step( self, trans, repository_id, changeset_revision, tools_metadata, step ):
         """Return module initialized from the WorkflowStep object `step`."""
         type = step.type
-        return self.module_types[ type ].from_workflow_step( trans, repository_id, changeset_revision, tools_metadata, step )
+        return self.module_types[ type ].from_workflow_step( trans, step, repository_id=repository_id, changeset_revision=changeset_revision, tools_metadata=tools_metadata )
 
 module_factory = RepoWorkflowModuleFactory( dict( data_input=RepoInputDataModule, tool=RepoToolModule ) )
 
