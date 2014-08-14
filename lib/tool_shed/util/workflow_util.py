@@ -156,11 +156,6 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
     def __init__( self, module_types ):
         self.module_types = module_types
 
-    def new( self, trans, type, tools_metadata=None, tool_id=None ):
-        """Return module for type and (optional) tool_id initialized with new / default state."""
-        assert type in self.module_types
-        return self.module_types[ type ].new( trans, tool_id )
-
     def from_dict( self, trans, repository_id, changeset_revision, step_dict, **kwd ):
         """Return module initialized from the data in dictionary `step_dict`."""
         type = step_dict[ 'type' ]
