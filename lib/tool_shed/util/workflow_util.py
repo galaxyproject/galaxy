@@ -207,7 +207,6 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
                                                           tools_metadata=tools_metadata,
                                                           repository_id=repository_id,
                                                           changeset_revision=changeset_revision )
-    data = []
     workflow_canvas = WorkflowCanvas()
     canvas = workflow_canvas.canvas
     text = workflow_canvas.text
@@ -221,19 +220,15 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         tool_errors = module.type == 'tool' and not module.tool
         module_data_inputs = get_workflow_data_inputs( step, module )
         module_data_outputs = get_workflow_data_outputs( step, module, workflow.steps )
-        step_dict = { 'id' : step.order_index,
-                      'data_inputs' : module_data_inputs,
-                      'data_outputs' : module_data_outputs,
-                      'position' : step.position,
-                      'tool_errors' : tool_errors }
-        input_conn_dict = {}
-        for conn in step.input_connections:
-            input_conn_dict[ conn.input_name ] = dict( id=conn.output_step.order_index, output_name=conn.output_name )
-        step_dict[ 'input_connections' ] = input_conn_dict
-        data.append( step_dict )
         module_name = get_workflow_module_name( module, missing_tool_tups )
-        workflow_canvas.add_text( module_data_inputs, module_data_outputs, step, module_name )
-    workflow_canvas.add_steps( data, highlight_errors=True )
+        workflow_canvas.populate_data_for_step(
+            step,
+            module_name,
+            module_data_inputs,
+            module_data_outputs,
+            tool_errors=tool_errors
+        )
+    workflow_canvas.add_steps( highlight_errors=True )
     workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
     trans.response.set_content_type( "image/svg+xml" )
     return canvas.standalone_xml()

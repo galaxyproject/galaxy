@@ -24,6 +24,8 @@ class WorkflowCanvas( object ):
         self.max_y = 0
         self.max_width = 0
 
+        self.data = []
+
     def finish( self, max_x, max_width, max_y ):
         canvas = self.canvas
         canvas.append( self.connectors )
@@ -118,9 +120,9 @@ class WorkflowCanvas( object ):
                                              in_coords[ 1 ],
                                              arrow_end="true" ).SVG() )
 
-    def add_steps( self, data, highlight_errors=False ):
+    def add_steps( self, highlight_errors=False ):
         # Only highlight missing tools if displaying in the tool shed.
-        for step_dict in data:
+        for step_dict in self.data:
             tool_unavailable = step_dict[ 'tool_errors' ]
             if highlight_errors and tool_unavailable:
                 fill = "#EBBCB2"
@@ -131,3 +133,22 @@ class WorkflowCanvas( object ):
             self.add_boxes( step_dict, width, fill )
             for conn, output_dict in step_dict[ 'input_connections' ].iteritems():
                 self.add_connection( step_dict, conn, output_dict )
+
+    def populate_data_for_step( self, step, module_name, module_data_inputs, module_data_outputs, tool_errors=None ):
+        step_dict = {
+            'id': step.order_index,
+            'data_inputs': module_data_inputs,
+            'data_outputs': module_data_outputs,
+            'position': step.position
+        }
+        if tool_errors:
+            step_dict[ 'tool_errors' ] = tool_errors
+
+        input_conn_dict = {}
+        for conn in step.input_connections:
+            input_conn_dict[ conn.input_name ] = \
+                dict( id=conn.output_step.order_index, output_name=conn.output_name )
+        step_dict['input_connections'] = input_conn_dict
+
+        self.data.append(step_dict)
+        self.add_text( module_data_inputs, module_data_outputs, step, module_name )

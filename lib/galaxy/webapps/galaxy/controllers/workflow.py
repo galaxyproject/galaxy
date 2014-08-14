@@ -1554,7 +1554,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     def _workflow_to_svg_canvas( self, trans, stored ):
         workflow = stored.latest_workflow
-        data = []
         workflow_canvas = WorkflowCanvas()
         canvas = workflow_canvas.canvas
         text = workflow_canvas.text
@@ -1563,29 +1562,17 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
-
-            # Pack attributes into plain dictionary
-            step_dict = {
-                'id': step.order_index,
-                'data_inputs': module.get_data_inputs(),
-                'data_outputs': module.get_data_outputs(),
-                'position': step.position
-            }
-
-            input_conn_dict = {}
-            for conn in step.input_connections:
-                input_conn_dict[ conn.input_name ] = \
-                    dict( id=conn.output_step.order_index, output_name=conn.output_name )
-            step_dict['input_connections'] = input_conn_dict
-
-            data.append(step_dict)
-
             module_name = module.get_name()
             module_data_inputs = module.get_data_inputs()
             module_data_outputs = module.get_data_outputs()
-            workflow_canvas.add_text( module_data_inputs, module_data_outputs, step, module_name )
+            workflow_canvas.populate_data_for_step(
+                step,
+                module_name,
+                module_data_inputs,
+                module_data_outputs,
+            )
 
-        workflow_canvas.add_steps( data )
+        workflow_canvas.add_steps( )
         workflow_canvas.finish( workflow_canvas.max_x, workflow_canvas.max_width, workflow_canvas.max_y )
         return canvas
 
