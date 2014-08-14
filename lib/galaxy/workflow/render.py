@@ -49,8 +49,13 @@ class WorkflowCanvas( object ):
         # Define an input/output box.
         self.boxes.append( svgfig.Rect( x - margin, y + 30, x + width - margin, y + 30 + box_height, fill="#ffffff" ).SVG() )
 
-    def add_text( self, module_data_inputs, module_data_outputs, order_index, left, top, max_len ):
+    def add_text( self, module_data_inputs, module_data_outputs, step, module_name ):
+        left, top = step.position[ 'left' ], step.position[ 'top' ]
         x, y = left, top
+        order_index = step.order_index
+        max_len = len( module_name ) * 1.5
+        self.text.append( svgfig.Text( x, y + 20, module_name, **{ "font-size": "14px" } ).SVG() )
+
         y += 45
 
         count = 0

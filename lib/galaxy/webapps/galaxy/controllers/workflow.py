@@ -1580,15 +1580,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
             data.append(step_dict)
 
-            x, y = step.position['left'], step.position['top']
-
-            max_len = len(module.get_name()) * 1.5
-            text.append( svgfig.Text(x, y + 20, module.get_name(), **{"font-size": "14px"} ).SVG() )
-
+            module_name = module.get_name()
             module_data_inputs = module.get_data_inputs()
             module_data_outputs = module.get_data_outputs()
-            order_index = step.order_index
-            workflow_canvas.add_text( module_data_inputs, module_data_outputs, order_index, x, y, max_len )
+            workflow_canvas.add_text( module_data_inputs, module_data_outputs, step, module_name )
 
         for step_dict in data:
             fill = "#EBD9B2"

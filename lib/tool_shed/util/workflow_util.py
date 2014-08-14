@@ -231,12 +231,8 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
             input_conn_dict[ conn.input_name ] = dict( id=conn.output_step.order_index, output_name=conn.output_name )
         step_dict[ 'input_connections' ] = input_conn_dict
         data.append( step_dict )
-        x, y = step.position[ 'left' ], step.position[ 'top' ]
         module_name = get_workflow_module_name( module, missing_tool_tups )
-        max_len = len( module_name ) * 1.5
-        text.append( svgfig.Text( x, y + 20, module_name, **{ "font-size": "14px" } ).SVG() )
-        order_index = step.order_index
-        workflow_canvas.add_text( module_data_inputs, module_data_outputs, order_index, x, y, max_len )
+        workflow_canvas.add_text( module_data_inputs, module_data_outputs, step, module_name )
     for step_dict in data:
         # Only highlight missing tools if displaying in the tool shed.
         tool_unavailable = step_dict[ 'tool_errors' ]
