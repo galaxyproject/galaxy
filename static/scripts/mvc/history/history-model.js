@@ -187,6 +187,36 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         return xhr;
     },
 
+    /** Make a copy of this history on the server
+     *  @param {Boolean} current    if true, set the copy as the new current history (default: true)
+     *  @param {String} name        name of new history (default: none - server sets to: Copy of <current name>)
+     *  @fires copied               passed this history and the response JSON from the copy
+     *  @returns {xhr}
+     */
+    copy : function( current, name ){
+        current = ( current !== undefined )?( current ):( true );
+        if( !this.id ){
+            throw new Error( 'You must set the history ID before copying it.' );
+        }
+
+        var postData = { history_id  : this.id };
+        if( current ){
+            postData.current = true;
+        }
+        if( name ){
+            postData.name = name;
+        }
+
+        //TODO:?? all datasets?
+
+        var history = this,
+            xhr = jQuery.post( this.urlRoot, postData );
+        xhr.done( function( newData ){
+            history.trigger( 'copied', history, newData );
+        });
+        return xhr;
+    },
+
     // ........................................................................ misc
     toString : function(){
         return 'History(' + this.get( 'id' ) + ',' + this.get( 'name' ) + ')';
@@ -280,10 +310,55 @@ History.getHistoryData = function getHistoryData( historyId, options ){
 var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends HistoryCollection.prototype */{
     model   : History,
-    urlRoot : galaxy_config.root + 'api/histories'
     
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
+
+    urlRoot : ( window.galaxy_config? galaxy_config.root : '/' ) + 'api/histories',
+    //url     : function(){ return this.urlRoot; },
+
+    initialize : function( models, options ){
+        options = options || {};
+        this.log( 'HistoryCollection.initialize', arguments );
+        this.includeDeleted = options.includeDeleted || false;
+
+        //this.on( 'all', function(){
+        //    console.info( 'event:', arguments );
+        //});
+
+        this.setUpListeners();
+    },
+
+    setUpListeners : function setUpListeners(){
+        var collection = this;
+
+        // when a history is deleted, remove it from the collection (if optionally set to do so)
+        this.on( 'change:deleted', function( history ){
+            this.debug( 'change:deleted', collection.includeDeleted, history.get( 'deleted' ) );
+            if( !collection.includeDeleted && history.get( 'deleted' ) ){
+                collection.remove( history );
+            }
+        });
+
+        // listen for a history copy, adding it to the beginning of the collection
+        this.on( 'copied', function( original, newData ){
+            this.unshift( new History( newData, [] ) );
+        });
+    },
+
+    create : function create( data, hdas, historyOptions, xhrOptions ){
+        var collection = this,
+            history = new History( data || {}, hdas || [], historyOptions || {} );
+        return history.save( xhrOptions ).done( function( newData ){
+            // new histories go in the front
+//TODO:  (implicit ordering by update time...)
+            collection.unshift( history );
+        });
+    },
+
+    toString: function toString(){
+        return 'HistoryCollection(' + this.length + ')';
+    }
 });
 
 //==============================================================================
