@@ -240,6 +240,7 @@ Credentials section of the AWS Console</a>.  </div>
                             <select name="instance_type" id="id_instance_type">
                                 <option value="m1.large">Large</option>
                                 <option value="m1.xlarge">Extra Large</option>
+                                <option value="c3.2xlarge">Compute Optimized Double Extra Large</option>
                                 <option value="m2.4xlarge">High-Memory Quadruple Extra Large</option>
                             </select>
                         </div>
