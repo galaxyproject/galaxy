@@ -102,6 +102,27 @@ class RuleHelper( object ):
 
         return query
 
+    def should_burst( self, destination_ids, num_jobs, job_states=None ):
+        """ Check if the specified destinations ``destination_ids`` have at
+        least ``num_jobs`` assigned to it - send in ``job_state`` as ``queued``
+        to limit this check to number of jobs queued.
+
+        See stock_rules for an simple example of using this function - but to
+        get the most out of it - it should probably be used with custom job
+        rules that can respond to the bursting by allocatin resources,
+        launching cloud nodes, etc....
+        """
+        if job_states is None:
+            job_states = "queued,running"
+        from_destination_job_count = self.job_count(
+            for_destinations=destination_ids,
+            for_job_states=util.listify( job_states )
+        )
+        # Would this job push us over maximum job count before requiring
+        # bursting (roughly... very roughly given many handler threads may be
+        # scheduling jobs).
+        return ( from_destination_job_count + 1 ) > int( num_jobs )
+
     def choose_one( self, lst, hash_value=None ):
         """ Choose a random value from supplied list. If hash_value is passed
         in then every request with that same hash_value would produce the same

@@ -131,6 +131,17 @@ def test_job_hash_fallback():
     __assert_same_hash( rule_helper, job1, job2, hash_by="workflow_invocation,history" )
 
 
+def test_should_burst( ):
+    rule_helper = __rule_helper()
+    __setup_fixtures( rule_helper.app )
+    # cluster1 fixture has 4 queued jobs, 3 running
+    assert rule_helper.should_burst( [ "cluster1" ], "7" )
+    assert not rule_helper.should_burst( [ "cluster1" ], "10" )
+
+    assert rule_helper.should_burst( [ "cluster1" ], "2", job_states="queued" )
+    assert not rule_helper.should_burst( [ "cluster1" ], "6", job_states="queued" )
+
+
 def __assert_same_hash( rule_helper, job1, job2, hash_by ):
     job1_hash = rule_helper.job_hash( job1, hash_by=hash_by )
     job2_hash = rule_helper.job_hash( job2, hash_by=hash_by )
