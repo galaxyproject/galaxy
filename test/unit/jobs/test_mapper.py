@@ -46,6 +46,12 @@ def test_dynamic_mapping_defaults_to_tool_id_as_rule():
     assert mapper.job_config.rule_response == "tool1_dest_id"
 
 
+def test_dynamic_mapping_job_conf_params():
+    mapper = __mapper( __dynamic_destination( dict( function="check_job_conf_params", param1="7" ) ) )
+    assert mapper.get_job_destination( {} ) is DYNAMICALLY_GENERATED_DESTINATION
+    assert mapper.job_config.rule_response == "sent_7_dest_id"
+
+
 def test_dynamic_mapping_function_parameters():
     mapper = __mapper( __dynamic_destination( dict( function="check_rule_params" ) ) )
     assert mapper.get_job_destination( {} ) is DYNAMICALLY_GENERATED_DESTINATION

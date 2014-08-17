@@ -40,6 +40,11 @@ def check_rule_params(
     return "all_passed"
 
 
+def check_job_conf_params( param1 ):
+    assert param1 == "7"
+    return "sent_7_dest_id"
+
+
 def check_resource_params( resource_params ):
     assert resource_params["memory"] == "8gb"
     return "have_resource_params"

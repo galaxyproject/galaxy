@@ -69,7 +69,7 @@ class JobRunnerMapper( object ):
                 names.append( rule_module_name )
         return names
 
-    def __invoke_expand_function( self, expand_function ):
+    def __invoke_expand_function( self, expand_function, destination_params ):
         function_arg_names = inspect.getargspec( expand_function ).args
         app = self.job_wrapper.app
         possible_args = {
@@ -82,6 +82,11 @@ class JobRunnerMapper( object ):
         }
 
         actual_args = {}
+
+        # Send through any job_conf.xml defined args to function
+        for destination_param in destination_params.keys():
+            if destination_param in function_arg_names:
+                actual_args[ destination_param ] = destination_params[ destination_param ]
 
         # Populate needed args
         for possible_arg_name in possible_args:
@@ -179,12 +184,12 @@ class JobRunnerMapper( object ):
                 raise Exception( message )
 
             expand_function = self.__get_expand_function( expand_function_name )
-            return self.__handle_rule( expand_function )
+            return self.__handle_rule( expand_function, destination )
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 
-    def __handle_rule( self, rule_function ):
-        job_destination = self.__invoke_expand_function( rule_function )
+    def __handle_rule( self, rule_function, destination ):
+        job_destination = self.__invoke_expand_function( rule_function, destination.params )
         if not isinstance(job_destination, galaxy.jobs.JobDestination):
             job_destination_rep = str(job_destination)  # Should be either id or url
             if '://' in job_destination_rep:
