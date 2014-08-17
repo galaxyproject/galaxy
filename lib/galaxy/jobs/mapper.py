@@ -10,6 +10,7 @@ from .rule_helper import RuleHelper
 DYNAMIC_RUNNER_NAME = "dynamic"
 DYNAMIC_DESTINATION_ID = "dynamic_legacy_from_url"
 
+
 class JobMappingException( Exception ):
 
     def __init__( self, failure_message ):
@@ -65,12 +66,14 @@ class JobRunnerMapper( object ):
     def __invoke_expand_function( self, expand_function ):
         function_arg_names = inspect.getargspec( expand_function ).args
         app = self.job_wrapper.app
-        possible_args = { "job_id" : self.job_wrapper.job_id,
-                          "tool" : self.job_wrapper.tool,
-                          "tool_id" : self.job_wrapper.tool.id,
-                          "job_wrapper" : self.job_wrapper,
-                          "rule_helper": RuleHelper( app ),
-                          "app" : app }
+        possible_args = {
+            "job_id": self.job_wrapper.job_id,
+            "tool": self.job_wrapper.tool,
+            "tool_id": self.job_wrapper.tool.id,
+            "job_wrapper": self.job_wrapper,
+            "rule_helper": RuleHelper( app ),
+            "app": app
+        }
 
         actual_args = {}
 
@@ -82,7 +85,6 @@ class JobRunnerMapper( object ):
         # Don't hit the DB to load the job object if not needed
         if "job" in function_arg_names or "user" in function_arg_names or "user_email" in function_arg_names or "resource_params" in function_arg_names:
             job = self.job_wrapper.get_job()
-            history = job.history
             user = job.user
             user_email = user and str(user.email)
 
