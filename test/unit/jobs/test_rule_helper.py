@@ -24,9 +24,12 @@ def test_job_count():
     __assert_job_count_is( 2, rule_helper, for_destination="local" )
     __assert_job_count_is( 7, rule_helper, for_destination="cluster1" )
 
+    __assert_job_count_is( 9, rule_helper, for_destinations=["cluster1", "local"] )
+
     # Test per user destination counts
     __assert_job_count_is( 5, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_1 )
     __assert_job_count_is( 2, rule_helper, for_destination="local", for_user_email=USER_EMAIL_1 )
+    __assert_job_count_is( 7, rule_helper, for_destinations=["cluster1", "local"], for_user_email=USER_EMAIL_1 )
 
     __assert_job_count_is( 2, rule_helper, for_destination="cluster1", for_user_email=USER_EMAIL_2 )
     __assert_job_count_is( 0, rule_helper, for_destination="local", for_user_email=USER_EMAIL_2 )

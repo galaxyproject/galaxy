@@ -58,16 +58,23 @@ class RuleHelper( object ):
         query,
         for_user_email=None,
         for_destination=None,
+        for_destinations=None,
         for_job_states=None,
         created_in_last=None,
         updated_in_last=None,
     ):
+        if for_destination is not None:
+            for_destinations = [ for_destination ]
+
         query = query.join( model.User )
         if for_user_email is not None:
             query = query.filter( model.User.table.c.email == for_user_email )
 
-        if for_destination is not None:
-            query = query.filter( model.Job.table.c.destination_id == for_destination )
+        if for_destinations is not None:
+            if len( for_destinations ) == 1:
+                query = query.filter( model.Job.table.c.destination_id == for_destinations[ 0 ] )
+            else:
+                query = query.filter( model.Job.table.c.destination_id.in_( for_destinations ) )
 
         if created_in_last is not None:
             end_date = datetime.now()
