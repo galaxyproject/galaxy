@@ -82,6 +82,10 @@ class RuleHelper( object ):
             query = query.filter( model.Job.table.c.update_time >= start_date )
 
         if for_job_states is not None:
-            query = query.filter( model.Job.table.c.state.in_( for_job_states ) )
+            # Optimize the singleton case - can be much more performant in my experience.
+            if len( for_job_states ) == 1:
+                query = query.filter( model.Job.table.c.state == for_job_states[ 0 ] )
+            else:
+                query = query.filter( model.Job.table.c.state.in_( for_job_states ) )
 
         return query
