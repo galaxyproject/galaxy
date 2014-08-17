@@ -35,6 +35,8 @@ class JobRunnerMapper( object ):
         self.url_to_destination = url_to_destination
         self.job_config = job_config
 
+        self.rules_module = galaxy.jobs.rules
+
     def __get_rule_modules( self ):
         unsorted_module_names = self.__get_rule_module_names( )
         ## Load modules in reverse order to allow hierarchical overrides
@@ -55,11 +57,12 @@ class JobRunnerMapper( object ):
         return modules
 
     def __get_rule_module_names( self ):
-        rules_dir = galaxy.jobs.rules.__path__[0]
+        rules_dir = self.rules_module.__path__[0]
         names = []
         for fname in os.listdir( rules_dir ):
             if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
-                rule_module_name = "galaxy.jobs.rules.%s" % fname[:-len(".py")]
+                base_name = self.rules_module.__name__
+                rule_module_name = "%s.%s" % (base_name, fname[:-len(".py")])
                 names.append( rule_module_name )
         return names
 
