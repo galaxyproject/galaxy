@@ -19,3 +19,7 @@ def burst( rule_helper, job, from_destination_ids, to_destination_id, num_jobs, 
         return to_destination_id
     else:
         return from_destination_ids[ 0 ]
+
+
+def docker_dispatch( rule_helper, tool, docker_destination_id, default_destination_id ):
+    return docker_destination_id if rule_helper.supports_docker( tool ) else default_destination_id

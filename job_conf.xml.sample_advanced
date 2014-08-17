@@ -266,6 +266,17 @@
             <param id="num_jobs">50</param>
             <!-- <param id="job_states">queued</param> -->
         </destination>
+        <destination id="docker_dispatch" runner="dynamic">
+            <!-- Follow dynamic destination type will send all tool's that
+            support docker to static destination defined by
+            docker_destination_id (docker_cluster in this example) and all
+            other tools to default_destination_id (normal_cluster in this
+            example).
+            -->
+            <param id="type">docker_dispatch</param>
+            <param id="docker_destination_id">docker_cluster</param>
+            <param id="default_destination_id">normal_cluster</param>
+        </destination>
         <destination id="secure_pulsar_rest_dest" runner="pulsar_rest">
             <param id="url">https://examle.com:8913/</param>
             <!-- If set, private_token must match token in remote Pulsar's

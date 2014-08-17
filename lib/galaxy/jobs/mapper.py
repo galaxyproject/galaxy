@@ -31,7 +31,8 @@ class JobNotReadyException( Exception ):
 
 STOCK_RULES = dict(
     choose_one=stock_rules.choose_one,
-    burst=stock_rules.burst
+    burst=stock_rules.burst,
+    docker_dispatch=stock_rules.docker_dispatch,
 )
 
 

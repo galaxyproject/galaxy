@@ -27,6 +27,24 @@ class RuleHelper( object ):
     def __init__( self, app ):
         self.app = app
 
+    def supports_docker( self, job_or_tool ):
+        """ Job rules can pass this function a job, job_wrapper, or tool and
+        determine if the underlying tool believes it can be containered.
+        """
+        # Not a ton of logic in this method - but the idea is to shield rule
+        # developers from the details and they shouldn't have to know how to
+        # interrogate tool or job to figure out if it can be run in a
+        # container.
+        if hasattr( job_or_tool, 'containers' ):
+            tool = job_or_tool
+        elif hasattr( job_or_tool, 'tool' ):
+            # Have a JobWrapper-like
+            tool = job_or_tool.tool
+        else:
+            # Have a Job object.
+            tool = self.app.toolbox.get_tool( job_or_tool.tool_id )
+        return any( [ c.type == "docker" for c in tool.containers ] )
+
     def job_count(
         self,
         **kwds
