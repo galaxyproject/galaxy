@@ -89,7 +89,12 @@ class JobRunnerMapper( object ):
                 actual_args[ possible_arg_name ] = possible_args[ possible_arg_name ]
 
         # Don't hit the DB to load the job object if not needed
-        if "job" in function_arg_names or "user" in function_arg_names or "user_email" in function_arg_names or "resource_params" in function_arg_names:
+        require_db = False
+        for param in ["job", "user", "user_email", "resource_params"]:
+            if param in function_arg_names:
+                require_db = True
+                break
+        if require_db:
             job = self.job_wrapper.get_job()
             user = job.user
             user_email = user and str(user.email)
@@ -106,22 +111,23 @@ class JobRunnerMapper( object ):
             if "resource_params" in function_arg_names:
                 # Find the dymically inserted resource parameters and give them
                 # to rule.
-                app = self.job_wrapper.app
-                param_values = job.get_param_values( app, ignore_errors=True )
+                param_values = self.__job_params( job )
                 resource_params = {}
                 try:
                     resource_params_raw = param_values[ "__job_resource" ]
                     if resource_params_raw[ "__job_resource__select" ].lower() in [ "1", "yes", "true" ]:
                         for key, value in resource_params_raw.iteritems():
-                            #if key.startswith( "__job_resource_param__" ):
-                            #    resource_key = key[ len( "__job_resource_param__" ): ]
-                            #    resource_params[ resource_key ] = value
                             resource_params[ key ] = value
                 except KeyError:
                     pass
                 actual_args[ "resource_params" ] = resource_params
 
         return expand_function( **actual_args )
+
+    def __job_params( self, job ):
+        app = self.job_wrapper.app
+        param_values = job.get_param_values( app, ignore_errors=True )
+        return param_values
 
     def __convert_url_to_destination( self, url ):
         """
@@ -173,28 +179,28 @@ class JobRunnerMapper( object ):
                 raise Exception( message )
 
             expand_function = self.__get_expand_function( expand_function_name )
-            job_destination = self.__invoke_expand_function( expand_function )
-            if not isinstance(job_destination, galaxy.jobs.JobDestination):
-                job_destination_rep = str(job_destination)  # Should be either id or url
-                if '://' in job_destination_rep:
-                    job_destination = self.__convert_url_to_destination(job_destination_rep)
-                else:
-                    job_destination = self.job_config.get_destination(job_destination_rep)
-            return job_destination
+            return self.__handle_rule( expand_function )
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
+
+    def __handle_rule( self, rule_function ):
+        job_destination = self.__invoke_expand_function( rule_function )
+        if not isinstance(job_destination, galaxy.jobs.JobDestination):
+            job_destination_rep = str(job_destination)  # Should be either id or url
+            if '://' in job_destination_rep:
+                job_destination = self.__convert_url_to_destination(job_destination_rep)
+            else:
+                job_destination = self.job_config.get_destination(job_destination_rep)
+        return job_destination
 
     def __cache_job_destination( self, params, raw_job_destination=None ):
         if raw_job_destination is None:
             raw_job_destination = self.job_wrapper.tool.get_job_destination( params )
-        #raw_job_destination_id_or_tag = self.job_wrapper.tool.get_job_destination_id_or_tag( params )
         if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
             job_destination = self.__handle_dynamic_job_destination( raw_job_destination )
         else:
             job_destination = raw_job_destination
-            #job_destination_id_or_tag = raw_job_destination_id_or_tag
         self.cached_job_destination = job_destination
-        #self.cached_job_destination_id_or_tag = job_destination_id_or_tag
 
     def get_job_destination( self, params ):
         """
