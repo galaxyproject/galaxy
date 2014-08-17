@@ -10,6 +10,9 @@ from .rule_helper import RuleHelper
 DYNAMIC_RUNNER_NAME = "dynamic"
 DYNAMIC_DESTINATION_ID = "dynamic_legacy_from_url"
 
+ERROR_MESSAGE_NO_RULE_FUNCTION = "Galaxy misconfigured - cannot find dynamic rule function name for destination %s."
+ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND = "Galaxy misconfigured - no rule function named %s found in dynamic rule modules."
+
 
 class JobMappingException( Exception ):
 
@@ -150,7 +153,8 @@ class JobRunnerMapper( object ):
             expand_function = getattr( matching_rule_module, expand_function_name )
             return expand_function
         else:
-            raise Exception( "Dynamic job runner cannot find function to expand job runner type - %s" % expand_function_name )
+            message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % ( expand_function_name )
+            raise Exception( message )
 
     def __last_rule_module_with_function( self, function_name ):
         # self.rule_modules is sorted in reverse order, so find first
@@ -164,6 +168,10 @@ class JobRunnerMapper( object ):
         expand_type = destination.params.get('type', "python")
         if expand_type == "python":
             expand_function_name = self.__determine_expand_function_name( destination )
+            if not expand_function_name:
+                message = ERROR_MESSAGE_NO_RULE_FUNCTION % destination
+                raise Exception( message )
+
             expand_function = self.__get_expand_function( expand_function_name )
             job_destination = self.__invoke_expand_function( expand_function )
             if not isinstance(job_destination, galaxy.jobs.JobDestination):

@@ -1,6 +1,10 @@
 import jobs.test_rules
 
-from galaxy.jobs.mapper import JobRunnerMapper
+from galaxy.jobs.mapper import (
+    JobRunnerMapper,
+    ERROR_MESSAGE_NO_RULE_FUNCTION,
+    ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND,
+)
 from galaxy.jobs import JobDestination
 
 from galaxy.util import bunch
@@ -52,6 +56,32 @@ def test_dynamic_mapping_resource_parameters():
     mapper = __mapper( __dynamic_destination( dict( function="check_resource_params" ) ) )
     assert mapper.get_job_destination( {} ) is DYNAMICALLY_GENERATED_DESTINATION
     assert mapper.job_config.rule_response == "have_resource_params"
+
+
+def test_dynamic_mapping_no_function():
+    dest = __dynamic_destination( dict( ) )
+    mapper = __mapper( dest )
+    mapper.job_wrapper.tool.all_ids = [ "no_such_function" ]
+    error_message = ERROR_MESSAGE_NO_RULE_FUNCTION % dest
+    __assert_mapper_errors_with_message( mapper, error_message )
+
+
+def test_dynamic_mapping_missing_function():
+    dest = __dynamic_destination( dict( function="missing_func" ) )
+    mapper = __mapper( dest )
+    mapper.job_wrapper.tool.all_ids = [ "no_such_function" ]
+    error_message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % ( "missing_func" )
+    __assert_mapper_errors_with_message( mapper, error_message )
+
+
+def __assert_mapper_errors_with_message( mapper, message ):
+    exception = None
+    try:
+        mapper.get_job_destination( {} )
+    except Exception as e:
+        exception = e
+    assert exception
+    assert str( exception ) == message, "%s != %s" % ( str( exception ), message )
 
 
 def __mapper( tool_job_destination=TOOL_JOB_DESTINATION ):
