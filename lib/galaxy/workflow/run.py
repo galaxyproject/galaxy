@@ -1,3 +1,5 @@
+import uuid
+
 from galaxy import model
 from galaxy import exceptions
 from galaxy import util
@@ -41,6 +43,8 @@ class WorkflowInvoker( object ):
         self.param_map = workflow_run_config.param_map
 
         self.outputs = odict()
+        # TODO: Attach to actual model object and persist someday...
+        self.invocation_uuid = uuid.uuid1().hex
 
     def invoke( self ):
         workflow_invocation = model.WorkflowInvocation()
@@ -132,6 +136,7 @@ class WorkflowInvoker( object ):
             param_combinations=param_combinations,
             history=self.target_history,
             collection_info=collection_info,
+            workflow_invocation_uuid=self.invocation_uuid
         )
         if collection_info:
             outputs[ step.id ] = dict( execution_tracker.created_collections )

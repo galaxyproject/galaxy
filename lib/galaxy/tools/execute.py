@@ -10,13 +10,19 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None ):
+def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None ):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
     execution_tracker = ToolExecutionTracker( tool, param_combinations, collection_info )
     for params in execution_tracker.param_combinations:
+        if workflow_invocation_uuid:
+            params[ '__workflow_invocation_uuid__' ] = workflow_invocation_uuid
+        elif '__workflow_invocation_uuid__' in params:
+            # Only workflow invocation code gets to set this, ignore user supplied
+            # values or rerun parameters.
+            del params[ '__workflow_invocation_uuid__' ]
         job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history )
         if job:
             execution_tracker.record_success( job, result )

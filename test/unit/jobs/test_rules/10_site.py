@@ -48,3 +48,7 @@ def check_job_conf_params( param1 ):
 def check_resource_params( resource_params ):
     assert resource_params["memory"] == "8gb"
     return "have_resource_params"
+
+
+def check_workflow_invocation_uuid( workflow_invocation_uuid ):
+    return workflow_invocation_uuid
