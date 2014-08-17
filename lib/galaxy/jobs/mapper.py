@@ -5,6 +5,8 @@ import os
 log = logging.getLogger( __name__ )
 
 import galaxy.jobs.rules
+from galaxy.jobs import stock_rules
+
 from .rule_helper import RuleHelper
 
 DYNAMIC_RUNNER_NAME = "dynamic"
@@ -25,6 +27,11 @@ class JobNotReadyException( Exception ):
     def __init__( self, job_state=None, message=None ):
         self.job_state = job_state
         self.message = message
+
+
+STOCK_RULES = dict(
+    choose_one=stock_rules.choose_one
+)
 
 
 class JobRunnerMapper( object ):
@@ -182,6 +189,7 @@ class JobRunnerMapper( object ):
 
     def __handle_dynamic_job_destination( self, destination ):
         expand_type = destination.params.get('type', "python")
+        expand_function = None
         if expand_type == "python":
             expand_function_name = self.__determine_expand_function_name( destination )
             if not expand_function_name:
@@ -189,9 +197,12 @@ class JobRunnerMapper( object ):
                 raise Exception( message )
 
             expand_function = self.__get_expand_function( expand_function_name )
-            return self.__handle_rule( expand_function, destination )
+        elif expand_type in STOCK_RULES:
+            expand_function = STOCK_RULES[ expand_type ]
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
+
+        return self.__handle_rule( expand_function, destination )
 
     def __handle_rule( self, rule_function, destination ):
         job_destination = self.__invoke_expand_function( rule_function, destination.params )

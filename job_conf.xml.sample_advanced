@@ -235,6 +235,21 @@
             <!-- A destination that represents a method in the dynamic runner. -->
             <param id="function">foo</param>
         </destination>
+        <destination id="load_balance" runner="dynamic">
+            <param id="type">choose_one</param>
+            <!-- Randomly assign jobs to various static destinatin ids -->
+            <param id="destination_ids">cluster1,cluster2,cluster3</param>
+        </destination>
+        <destination id="load_balance_with_data_locality" runner="dynamic">
+            <!-- Randomly assign jobs to various static destinatin ids,
+                 but keep jobs in the same workflow invocation together and
+                 for those jobs ran outside of workflows keep jobs in same
+                 history together.
+            -->
+            <param id="type">choose_one</param>
+            <param id="destination_ids">cluster1,cluster2,cluster3</param>
+            <param id="hash_by">workflow_invocation,history</param>
+        </destination>
         <destination id="secure_pulsar_rest_dest" runner="pulsar_rest">
             <param id="url">https://examle.com:8913/</param>
             <!-- If set, private_token must match token in remote Pulsar's
