@@ -124,6 +124,9 @@ def main():
     userid, json_filename, assign_all_groups = validate_paramters()
     set_user(userid, assign_all_groups)
     json_file_exists(json_filename)
+    # Added to disable LSF generated messages that would interfer with this
+    # script. Fix thank to Chong Chen at IBM.
+    os.environ['BSUB_QUIET'] = 'Y'
     s = drmaa.Session()
     s.initialize()
     jt = s.createJobTemplate()
