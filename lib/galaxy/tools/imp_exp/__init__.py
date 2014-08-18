@@ -158,11 +158,15 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                                            designation=dataset_attrs['designation'],
                                                            visible=dataset_attrs['visible'],
                                                            dbkey=metadata['dbkey'],
+                                                           uuid=dataset_attrs.get("uuid", None),
                                                            metadata=metadata,
                                                            history=new_history,
                                                            create_dataset=True,
                                                            sa_session=self.sa_session )
-                    hda.state = hda.states.OK
+                    if dataset_attrs.get('exported', True) == False:
+                        hda.state = hda.states.DISCARDED
+                    else:
+                        hda.state = hda.states.OK
                     self.sa_session.add( hda )
                     self.sa_session.flush()
                     new_history.add_dataset( hda, genome_build=None )
@@ -171,17 +175,17 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     #permissions = trans.app.security_agent.history_get_default_permissions( new_history )
                     #trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
                     self.sa_session.flush()
-
-                    # Do security check and move/copy dataset data.
-                    temp_dataset_file_name = \
-                        os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
-                    if not file_in_dir( temp_dataset_file_name, os.path.join( archive_dir, "datasets" ) ):
-                        raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
-                    if datasets_usage_counts[ temp_dataset_file_name ] == 1:
-                        shutil.move( temp_dataset_file_name, hda.file_name )
-                    else:
-                        datasets_usage_counts[ temp_dataset_file_name ] -= 1
-                        shutil.copyfile( temp_dataset_file_name, hda.file_name )
+                    if dataset_attrs.get('exported', True) == True:
+                        # Do security check and move/copy dataset data.
+                        temp_dataset_file_name = \
+                            os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
+                        if not file_in_dir( temp_dataset_file_name, os.path.join( archive_dir, "datasets" ) ):
+                            raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
+                        if datasets_usage_counts[ temp_dataset_file_name ] == 1:
+                            shutil.move( temp_dataset_file_name, hda.file_name )
+                        else:
+                            datasets_usage_counts[ temp_dataset_file_name ] -= 1
+                            shutil.copyfile( temp_dataset_file_name, hda.file_name )
 
                     # Set tags, annotations.
                     if user:
@@ -323,7 +327,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             def default( self, obj ):
                 """ Encode an HDA, default encoding for everything else. """
                 if isinstance( obj, trans.app.model.HistoryDatasetAssociation ):
-                    return {
+                    rval = {
                         "__HistoryDatasetAssociation__": True,
                         "create_time": obj.create_time.__str__(),
                         "update_time": obj.update_time.__str__(),
@@ -339,9 +343,17 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                         "deleted": obj.deleted,
                         "visible": obj.visible,
                         "file_name": obj.file_name,
+                        "uuid" :  ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
                         "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags": get_item_tag_dict( obj ),
                     }
+                    if not obj.visible and not include_hidden:
+                        rval['exported'] = False
+                    elif obj.deleted and not include_deleted:
+                        rval['exported'] = False
+                    else:
+                        rval['exported'] = True
+                    return rval
                 if isinstance( obj, UnvalidatedValue ):
                     return obj.__str__()
                 return json.JSONEncoder.default( self, obj )
@@ -375,10 +387,10 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         included_datasets = []
         datasets_attrs = []
         for dataset in datasets:
-            if not dataset.visible and not include_hidden:
-                continue
-            if dataset.deleted and not include_deleted:
-                continue
+            #if not dataset.visible and not include_hidden:
+            #    continue
+            #if dataset.deleted and not include_deleted:
+            #    continue
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
             datasets_attrs.append( dataset )
             included_datasets.append( dataset )

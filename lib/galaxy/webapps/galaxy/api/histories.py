@@ -349,6 +349,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             check_ownership=False, check_accessible=True )
         jeha = history.latest_export
         up_to_date = jeha and jeha.up_to_date
+        if 'force' in kwds:
+            up_to_date = False #Temp hack to force rebuild everytime during dev
         if not up_to_date:
             # Need to create new JEHA + job.
             gzip = kwds.get( "gzip", True )
