@@ -1096,7 +1096,6 @@ class Admin( object ):
                 finished[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
             else:
                 finished[job.id] = '%s minutes' % int( delta.seconds / 60 )
-        
         return trans.fill_template( '/admin/jobs.mako',
                                     jobs = jobs,
                                     recent_jobs = recent_jobs,
@@ -1105,6 +1104,18 @@ class Admin( object ):
                                     cutoff = cutoff,
                                     msg = msg,
                                     status = status )
+    
+    @web.expose
+    @web.require_admin
+    def job_info( self, trans, jobid=None ):        
+        job = None
+        if jobid is not None:
+            job = trans.sa_session.query( trans.app.model.Job ).get(jobid)            
+        return trans.fill_template( '/webapps/reports/job_info.mako',
+                                        job=job,
+                                        message="<a href='jobs'>Back</a>" )
+                                        
+
 
 ## ---- Utility methods -------------------------------------------------------
 

@@ -29,7 +29,7 @@
 <p>
     If any jobs are displayed, you may choose to stop them.  Your stop message
     will be displayed to the user as: "This job was stopped by an
-    administrator: <b><YOUR MESSAGE></b>  For more information or help,
+    administrator: <b>&lt;YOUR MESSAGE&gt;</b>  For more information or help,
     report this error".
 </p>
 
@@ -54,7 +54,7 @@
         %for job in jobs:
                 <td>
                     %if job.state == 'upload':
-                         
+                        &nbsp;
                     %else:
                         <input type="checkbox" name="stop" value="${job.id}"/>
                     %endif
@@ -70,7 +70,7 @@
                 <td>${job.state}</td>
                 <%
                     try:
-                        inputs = ", ".join( [ '%s %s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
+                        inputs = ", ".join( [ '%s&nbsp;%s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
                     except:
                         inputs = 'Unable to determine inputs'
                 %>
@@ -135,12 +135,10 @@
 </form>
 
 <p/>
-
+%if recent_jobs:
 <p>
     Recent Jobs: These jobs have completed
 </p>
-
-%if recent_jobs:
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <td>Job ID</td>
@@ -154,7 +152,7 @@
             <td>PID/Cluster ID</td>
         </tr>
         %for job in recent_jobs:
-                <td>${job.id}</td>
+                <td><a href="${h.url_for( controller="admin", action="job_info" )}?jobid=${job.id}">${job.id}</a></td>
                 %if job.history and job.history.user:
                     <td>${job.history.user.email}</td>
                 %else:
@@ -165,7 +163,7 @@
                 <td>${job.state}</td>
                 <%
                     try:
-                        inputs = ", ".join( [ '%s %s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
+                        inputs = ", ".join( [ '%s&nbsp;%s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
                     except:
                         inputs = 'Unable to determine inputs'
                 %>
