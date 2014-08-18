@@ -158,11 +158,12 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                                            designation=dataset_attrs['designation'],
                                                            visible=dataset_attrs['visible'],
                                                            dbkey=metadata['dbkey'],
-                                                           uuid=dataset_attrs.get("uuid", None),
                                                            metadata=metadata,
                                                            history=new_history,
                                                            create_dataset=True,
                                                            sa_session=self.sa_session )
+                    if 'uuid' in dataset_attrs:
+                        hda.dataset.uuid = dataset_attrs["uuid"]
                     if dataset_attrs.get('exported', True) == False:
                         hda.state = hda.states.DISCARDED
                     else:
