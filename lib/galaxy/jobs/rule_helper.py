@@ -17,7 +17,7 @@ VALID_JOB_HASH_STRATEGIES = ["job", "user", "history", "workflow_invocation"]
 
 
 class RuleHelper( object ):
-    """ Utillity to allow job rules to interface cleanly with the rest of
+    """ Utility to allow job rules to interface cleanly with the rest of
     Galaxy and shield them from low-level details of models, metrics, etc....
 
     Currently focus is on figuring out job statistics for a given user, but
@@ -127,7 +127,7 @@ class RuleHelper( object ):
 
         See stock_rules for an simple example of using this function - but to
         get the most out of it - it should probably be used with custom job
-        rules that can respond to the bursting by allocatin resources,
+        rules that can respond to the bursting by allocating resources,
         launching cloud nodes, etc....
         """
         if job_states is None:
@@ -160,9 +160,9 @@ class RuleHelper( object ):
     def job_hash( self, job, hash_by=None ):
         """ Produce a reproducible hash for the given job on various
         criteria - for instance if hash_by is "workflow_invocation,history" -
-        all jobs within the same workflow invocation will recieve the same
+        all jobs within the same workflow invocation will receive the same
         hash - for jobs outside of workflows all jobs within the same history
-        will recieve the same hash, other jobs will be hashed on job's id
+        will receive the same hash, other jobs will be hashed on job's id
         randomly.
 
         Primarily intended for use with ``choose_one`` above - to consistent
@@ -176,7 +176,7 @@ class RuleHelper( object ):
             if job_hash:
                 return job_hash
 
-        # Fallback to just hashing by job id, should always return a value.
+        # Fall back to just hashing by job id, should always return a value.
         return self._try_hash_for_job( job, "job" )
 
     def _try_hash_for_job( self, job, hash_by ):
