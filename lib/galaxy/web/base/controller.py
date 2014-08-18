@@ -800,6 +800,12 @@ class UsesHistoryDatasetAssociationMixin:
             history_id = trans.security.encode_id( hda.history.id ),
             history_content_id = trans.security.encode_id( hda.id ) )
 
+        # resubmitted is not a real state
+        hda_dict[ 'resubmitted' ] = False
+        if hda.state == trans.app.model.Dataset.states.RESUBMITTED:
+            hda_dict[ 'state' ] = hda.dataset.state
+            hda_dict[ 'resubmitted' ] = True
+
         # indeces, assoc. metadata files, etc.
         meta_files = []
         for meta_type in hda.metadata.spec.keys():
