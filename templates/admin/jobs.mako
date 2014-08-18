@@ -29,7 +29,7 @@
 <p>
     If any jobs are displayed, you may choose to stop them.  Your stop message
     will be displayed to the user as: "This job was stopped by an
-    administrator: <b>&lt;YOUR MESSAGE&gt;</b>  For more information or help,
+    administrator: <b><YOUR MESSAGE></b>  For more information or help,
     report this error".
 </p>
 
@@ -54,7 +54,7 @@
         %for job in jobs:
                 <td>
                     %if job.state == 'upload':
-                        &nbsp;
+                         
                     %else:
                         <input type="checkbox" name="stop" value="${job.id}"/>
                     %endif
@@ -70,7 +70,7 @@
                 <td>${job.state}</td>
                 <%
                     try:
-                        inputs = ", ".join( [ '%s&nbsp;%s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
+                        inputs = ", ".join( [ '%s %s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
                     except:
                         inputs = 'Unable to determine inputs'
                 %>
@@ -137,7 +137,7 @@
 <p/>
 
 <p>
-    Recent Jobs: These jobs have complete
+    Recent Jobs: These jobs have completed
 </p>
 
 %if recent_jobs:
@@ -165,7 +165,7 @@
                 <td>${job.state}</td>
                 <%
                     try:
-                        inputs = ", ".join( [ '%s&nbsp;%s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
+                        inputs = ", ".join( [ '%s %s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
                     except:
                         inputs = 'Unable to determine inputs'
                 %>
