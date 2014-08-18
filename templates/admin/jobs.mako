@@ -133,3 +133,48 @@
         </div>
     </div>
 </form>
+
+<p/>
+
+<p>
+    Recent Jobs: These jobs have complete
+</p>
+
+%if recent_jobs:
+    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+        <tr class="header">
+            <td>Job ID</td>
+            <td>User</td>
+            <td>Finished</td>
+            <td>Tool</td>
+            <td>State</td>
+            <td>Inputs</td>
+            <td>Command Line</td>
+            <td>Job Runner</td>
+            <td>PID/Cluster ID</td>
+        </tr>
+        %for job in recent_jobs:
+                <td>${job.id}</td>
+                %if job.history and job.history.user:
+                    <td>${job.history.user.email}</td>
+                %else:
+                    <td>anonymous</td>
+                %endif
+                <td>${finished[job.id]} ago</td>
+                <td>${job.tool_id}</td>
+                <td>${job.state}</td>
+                <%
+                    try:
+                        inputs = ", ".join( [ '%s&nbsp;%s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
+                    except:
+                        inputs = 'Unable to determine inputs'
+                %>
+                <td>${inputs}</td>
+                <td>${job.command_line}</td>
+                <td>${job.job_runner_name}</td>
+                <td>${job.job_runner_external_id}</td>
+            </tr>
+        %endfor
+    </table>
+    <p/>
+%endif

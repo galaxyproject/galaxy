@@ -1077,6 +1077,11 @@ class Admin( object ):
                                                    trans.app.model.Job.state == trans.app.model.Job.states.RUNNING,
                                                    trans.app.model.Job.state == trans.app.model.Job.states.UPLOAD ) ) ) \
                                .order_by( trans.app.model.Job.table.c.update_time.desc() )
+        recent_jobs = trans.sa_session.query( trans.app.model.Job ) \
+                               .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
+                                              or_( trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
+                                                   trans.app.model.Job.state == trans.app.model.Job.states.OK) ) ) \
+                               .order_by( trans.app.model.Job.table.c.update_time.desc() )
         last_updated = {}
         for job in jobs:
             delta = datetime.utcnow() - job.update_time
@@ -1084,9 +1089,19 @@ class Admin( object ):
                 last_updated[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
             else:
                 last_updated[job.id] = '%s minutes' % int( delta.seconds / 60 )
+        finished = {}
+        for job in recent_jobs:
+            delta = datetime.utcnow() - job.update_time
+            if delta > timedelta( minutes=60 ):
+                finished[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
+            else:
+                finished[job.id] = '%s minutes' % int( delta.seconds / 60 )
+        
         return trans.fill_template( '/admin/jobs.mako',
                                     jobs = jobs,
+                                    recent_jobs = recent_jobs,
                                     last_updated = last_updated,
+                                    finished = finished,
                                     cutoff = cutoff,
                                     msg = msg,
                                     status = status )
