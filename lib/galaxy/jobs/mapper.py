@@ -5,6 +5,8 @@ import os
 log = logging.getLogger( __name__ )
 
 import galaxy.jobs.rules
+from galaxy.jobs import stock_rules
+
 from .rule_helper import RuleHelper
 
 DYNAMIC_RUNNER_NAME = "dynamic"
@@ -25,6 +27,13 @@ class JobNotReadyException( Exception ):
     def __init__( self, job_state=None, message=None ):
         self.job_state = job_state
         self.message = message
+
+
+STOCK_RULES = dict(
+    choose_one=stock_rules.choose_one,
+    burst=stock_rules.burst,
+    docker_dispatch=stock_rules.docker_dispatch,
+)
 
 
 class JobRunnerMapper( object ):
@@ -69,7 +78,7 @@ class JobRunnerMapper( object ):
                 names.append( rule_module_name )
         return names
 
-    def __invoke_expand_function( self, expand_function ):
+    def __invoke_expand_function( self, expand_function, destination_params ):
         function_arg_names = inspect.getargspec( expand_function ).args
         app = self.job_wrapper.app
         possible_args = {
@@ -83,6 +92,11 @@ class JobRunnerMapper( object ):
 
         actual_args = {}
 
+        # Send through any job_conf.xml defined args to function
+        for destination_param in destination_params.keys():
+            if destination_param in function_arg_names:
+                actual_args[ destination_param ] = destination_params[ destination_param ]
+
         # Populate needed args
         for possible_arg_name in possible_args:
             if possible_arg_name in function_arg_names:
@@ -90,7 +104,7 @@ class JobRunnerMapper( object ):
 
         # Don't hit the DB to load the job object if not needed
         require_db = False
-        for param in ["job", "user", "user_email", "resource_params"]:
+        for param in ["job", "user", "user_email", "resource_params", "workflow_invocation_uuid"]:
             if param in function_arg_names:
                 require_db = True
                 break
@@ -121,6 +135,11 @@ class JobRunnerMapper( object ):
                 except KeyError:
                     pass
                 actual_args[ "resource_params" ] = resource_params
+
+            if "workflow_invocation_uuid" in function_arg_names:
+                param_values = job.raw_param_dict( )
+                workflow_invocation_uuid = param_values.get( "__workflow_invocation_uuid__", None )
+                actual_args[ "workflow_invocation_uuid" ] = workflow_invocation_uuid
 
         return expand_function( **actual_args )
 
@@ -172,6 +191,7 @@ class JobRunnerMapper( object ):
 
     def __handle_dynamic_job_destination( self, destination ):
         expand_type = destination.params.get('type', "python")
+        expand_function = None
         if expand_type == "python":
             expand_function_name = self.__determine_expand_function_name( destination )
             if not expand_function_name:
@@ -179,12 +199,15 @@ class JobRunnerMapper( object ):
                 raise Exception( message )
 
             expand_function = self.__get_expand_function( expand_function_name )
-            return self.__handle_rule( expand_function )
+        elif expand_type in STOCK_RULES:
+            expand_function = STOCK_RULES[ expand_type ]
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 
-    def __handle_rule( self, rule_function ):
-        job_destination = self.__invoke_expand_function( rule_function )
+        return self.__handle_rule( expand_function, destination )
+
+    def __handle_rule( self, rule_function, destination ):
+        job_destination = self.__invoke_expand_function( rule_function, destination.params )
         if not isinstance(job_destination, galaxy.jobs.JobDestination):
             job_destination_rep = str(job_destination)  # Should be either id or url
             if '://' in job_destination_rep:

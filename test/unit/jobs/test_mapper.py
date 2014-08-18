@@ -1,3 +1,5 @@
+import uuid
+
 import jobs.test_rules
 
 from galaxy.jobs.mapper import (
@@ -9,7 +11,7 @@ from galaxy.jobs import JobDestination
 
 from galaxy.util import bunch
 
-
+WORKFLOW_UUID = uuid.uuid1().hex
 TOOL_JOB_DESTINATION = JobDestination()
 DYNAMICALLY_GENERATED_DESTINATION = JobDestination()
 
@@ -46,6 +48,12 @@ def test_dynamic_mapping_defaults_to_tool_id_as_rule():
     assert mapper.job_config.rule_response == "tool1_dest_id"
 
 
+def test_dynamic_mapping_job_conf_params():
+    mapper = __mapper( __dynamic_destination( dict( function="check_job_conf_params", param1="7" ) ) )
+    assert mapper.get_job_destination( {} ) is DYNAMICALLY_GENERATED_DESTINATION
+    assert mapper.job_config.rule_response == "sent_7_dest_id"
+
+
 def test_dynamic_mapping_function_parameters():
     mapper = __mapper( __dynamic_destination( dict( function="check_rule_params" ) ) )
     assert mapper.get_job_destination( {} ) is DYNAMICALLY_GENERATED_DESTINATION
@@ -56,6 +64,12 @@ def test_dynamic_mapping_resource_parameters():
     mapper = __mapper( __dynamic_destination( dict( function="check_resource_params" ) ) )
     assert mapper.get_job_destination( {} ) is DYNAMICALLY_GENERATED_DESTINATION
     assert mapper.job_config.rule_response == "have_resource_params"
+
+
+def test_dynamic_mapping_workflow_invocation_parameter():
+    mapper = __mapper( __dynamic_destination( dict( function="check_workflow_invocation_uuid" ) ) )
+    assert mapper.get_job_destination( {} ) is DYNAMICALLY_GENERATED_DESTINATION
+    assert mapper.job_config.rule_response == WORKFLOW_UUID
 
 
 def test_dynamic_mapping_no_function():
@@ -124,21 +138,26 @@ class MockJobWrapper( object ):
         return True
 
     def get_job(self):
+        raw_params = {
+            "threshold": 8,
+            "__workflow_invocation_uuid__": WORKFLOW_UUID,
+        }
+
         def get_param_values( app, ignore_errors ):
             assert app == self.app
-            return {
-                "threshold": 8,
-                "__job_resource": {
-                    "__job_resource__select": "True",
-                    "memory": "8gb"
-                }
+            params = raw_params.copy()
+            params[ "__job_resource" ] = {
+                "__job_resource__select": "True",
+                "memory": "8gb"
             }
+            return params
 
         return bunch.Bunch(
             user=bunch.Bunch(
                 id=6789,
                 email="test@example.com"
             ),
+            raw_param_dict=lambda: raw_params,
             get_param_values=get_param_values
         )
 
