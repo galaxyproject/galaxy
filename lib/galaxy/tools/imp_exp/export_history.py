@@ -44,7 +44,6 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
         # Add datasets to archive and update dataset attributes.
         # TODO: security check to ensure that files added are in Galaxy dataset directory?
         for dataset_attrs in datasets_attrs:
-            print "export", dataset_attrs
             if dataset_attrs['exported']:
                 dataset_file_name = dataset_attrs[ 'file_name' ] # Full file name.
                 dataset_archive_name = os.path.join( 'datasets',
