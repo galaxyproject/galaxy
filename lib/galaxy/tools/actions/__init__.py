@@ -133,7 +133,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
-    def collect_input_dataset_collections( self, tool, param_values, trans ):
+    def collect_input_dataset_collections( self, tool, param_values ):
         input_dataset_collections = dict()
 
         def visitor( prefix, input, value, parent=None ):
@@ -167,7 +167,7 @@ class DefaultToolAction( object ):
         out_data = odict()
         # Track input dataset collections - but replace with simply lists so collect
         # input datasets can process these normally.
-        inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming, trans )
+        inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming )
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
 
@@ -331,10 +331,12 @@ class DefaultToolAction( object ):
         trans.sa_session.flush()
         # Create the job object
         job = trans.app.model.Job()
-        galaxy_session = trans.get_galaxy_session()
-        # If we're submitting from the API, there won't be a session.
-        if type( galaxy_session ) == trans.model.GalaxySession:
-            job.session_id = galaxy_session.id
+
+        if hasattr( trans, "get_galaxy_session" ):
+            galaxy_session = trans.get_galaxy_session()
+            # If we're submitting from the API, there won't be a session.
+            if type( galaxy_session ) == trans.model.GalaxySession:
+                job.session_id = galaxy_session.id
         if trans.user is not None:
             job.user_id = trans.user.id
         job.history_id = history.id

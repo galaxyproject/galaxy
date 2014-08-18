@@ -1610,7 +1610,7 @@ class DatasetInstance( object ):
         except KeyError:
             depends_list = []
         # See if converted dataset already exists, either in metadata in conversions.
-        converted_dataset = self.get_metadata_dataset( trans, target_ext )
+        converted_dataset = self.get_metadata_dataset( target_ext )
         if converted_dataset:
             return converted_dataset
         converted_dataset = self.get_converted_files_by_type( target_ext )
@@ -1641,7 +1641,7 @@ class DatasetInstance( object ):
         session.add( assoc )
         session.flush()
         return None
-    def get_metadata_dataset( self, trans, dataset_ext ):
+    def get_metadata_dataset( self, dataset_ext ):
         """
         Returns an HDA that points to a metadata file which contains a
         converted data with the requested extension.

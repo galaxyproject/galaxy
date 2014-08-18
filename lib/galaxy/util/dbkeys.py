@@ -36,7 +36,7 @@ class GenomeBuilds( object ):
                                           .filter_by( deleted=False, history_id=trans.history.id, extension="len" )
                 for dataset in datasets:
                     rval.append( ( dataset.dbkey, "%s (%s) [History]" % ( dataset.name, dataset.dbkey ) ) )
-            user = trans.get_user()
+            user = trans.user
             if user and 'dbkeys' in user.preferences:
                 user_keys = from_json_string( user.preferences['dbkeys'] )
                 for key, chrom_dict in user_keys.iteritems():
