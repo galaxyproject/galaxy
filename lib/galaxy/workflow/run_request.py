@@ -188,6 +188,15 @@ def build_workflow_run_config( trans, workflow, payload ):
                 content = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(
                     trans.security.decode_id(input_id))
                 assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), content.dataset )
+            elif input_source == 'uuid':
+                dataset = trans.sa_session.query(app.model.Dataset).filter(app.model.Dataset.uuid==input_id).first()
+                if dataset is None:
+                    #this will need to be changed later. If federation code is avalible, then a missing UUID
+                    #could be found amoung fereration partners
+                    message = "Input cannot find UUID: %s." % input_id
+                    raise exceptions.RequestParameterInvalidException( message )
+                assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset )
+                content = history.add_dataset(dataset)
             elif input_source == 'hdca':
                 content = app.dataset_collections_service.get_dataset_collection_instance(
                     trans,

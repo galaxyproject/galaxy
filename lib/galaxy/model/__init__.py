@@ -482,9 +482,12 @@ class Job( object, HasJobMetrics, Dictifiable ):
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
+        param_dict = self.raw_param_dict()
         tool = app.toolbox.get_tool( self.tool_id )
         param_dict = tool.params_from_strings( param_dict, app, ignore_errors=ignore_errors )
+        return param_dict
+    def raw_param_dict( self ):
+        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
         return param_dict
     def check_if_output_datasets_deleted( self ):
         """

@@ -235,6 +235,48 @@
             <!-- A destination that represents a method in the dynamic runner. -->
             <param id="function">foo</param>
         </destination>
+        <destination id="load_balance" runner="dynamic">
+            <param id="type">choose_one</param>
+            <!-- Randomly assign jobs to various static destination ids -->
+            <param id="destination_ids">cluster1,cluster2,cluster3</param>
+        </destination>
+        <destination id="load_balance_with_data_locality" runner="dynamic">
+            <!-- Randomly assign jobs to various static destination ids,
+                 but keep jobs in the same workflow invocation together and
+                 for those jobs ran outside of workflows keep jobs in same
+                 history together.
+            -->
+            <param id="type">choose_one</param>
+            <param id="destination_ids">cluster1,cluster2,cluster3</param>
+            <param id="hash_by">workflow_invocation,history</param>
+        </destination>
+        <destination id="burst_out" runner="dynamic">
+            <!-- Burst out from static destination local_cluster_8_core to
+            static destination shared_cluster_8_core when there are about
+            50 Galaxy jobs assigned to any of the local_cluster_XXX
+            destinations (either running or queued). If there are fewer 
+            than 50 jobs, just use local_cluster_8_core destination.
+
+            Uncomment job_state parameter to make this bursting happen when
+            roughly 50 jobs are queued instead.
+            -->
+            <param id="type">burst</param>
+            <param id="from_destination_ids">local_cluster_8_core,local_cluster_1_core,local_cluster_16_core</param>
+            <param id="to_destination_id">shared_cluster_8_core</param>
+            <param id="num_jobs">50</param>
+            <!-- <param id="job_states">queued</param> -->
+        </destination>
+        <destination id="docker_dispatch" runner="dynamic">
+            <!-- Follow dynamic destination type will send all tool's that
+            support docker to static destination defined by
+            docker_destination_id (docker_cluster in this example) and all
+            other tools to default_destination_id (normal_cluster in this
+            example).
+            -->
+            <param id="type">docker_dispatch</param>
+            <param id="docker_destination_id">docker_cluster</param>
+            <param id="default_destination_id">normal_cluster</param>
+        </destination>
         <destination id="secure_pulsar_rest_dest" runner="pulsar_rest">
             <param id="url">https://examle.com:8913/</param>
             <!-- If set, private_token must match token in remote Pulsar's

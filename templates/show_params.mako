@@ -23,7 +23,7 @@
                     ${ inputs_recursive(input.inputs, param_values[input.name][i], depth=depth+1) }
                 %endfor
             %elif input.type == "conditional":
-                <% 
+                <%
                 try:
                     current_case = param_values[input.name]['__current_case__']
                     is_valid = True
@@ -53,7 +53,7 @@
                         <td></td>
                     </tr>
             %elif input.visible:
-                <% 
+                <%
                 if  hasattr( input, "label" ) and input.label:
                     label = input.label
                 else:
@@ -70,7 +70,7 @@
             ## Parameter does not have a stored value.
             <tr>
                 <%
-                    # Get parameter label.  
+                    # Get parameter label.
                     if input.type == "conditional":
                         label = input.test_param.label
                     elif input.type == "repeat":
@@ -83,7 +83,7 @@
                 <td></td>
             </tr>
         %endif
-        
+
     %endfor
 </%def>
 
@@ -91,7 +91,7 @@
 <%def name="inputs_recursive_indent( text, depth )">
     <td style="padding-left: ${ ( depth - 1 ) * 10 }px">
         ${text | h}
-    </td> 
+    </td>
 </%def>
 
 <table class="tabletip">
@@ -120,6 +120,9 @@
         <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr', dataset_id=encoded_hda_id )}">stderr</a></td></tr>
         <tr><td>Tool Exit Code:</td><td>${job.exit_code | h}</td></tr>
         <tr><td>API ID:</td><td>${encoded_hda_id}</td></tr>
+        %if hda.dataset.uuid:
+        <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
+        %endif
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
             <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
         %endif
@@ -168,4 +171,3 @@
             '${dep[0].name | h}' in ${dep[1]}<br/>
         </div>
     % endfor
-
