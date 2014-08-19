@@ -84,7 +84,11 @@ define([], function() {
 // FOLDER RELATED MODELS
 
     var Item = Backbone.Model.extend({
-        urlRoot : '/api/libraries/datasets/'
+      urlRoot : '/api/libraries/datasets/'
+    });
+
+    var Ldda = Backbone.Model.extend({
+      urlRoot : '/api/libraries/datasets/'
     });
 
     var FolderAsModel = Backbone.Model.extend({
@@ -193,6 +197,7 @@ return {
     FolderAsModel : FolderAsModel,
     Libraries : Libraries,
     Item : Item,
+    Ldda : Ldda,
     Folder : Folder,
     FolderContainer : FolderContainer,
     HistoryItem : HistoryItem,

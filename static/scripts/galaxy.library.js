@@ -12,7 +12,9 @@ define([
     "mvc/library/library-librarylist-view",
     "mvc/library/library-librarytoolbar-view",
     "mvc/library/library-foldertoolbar-view",
-    "mvc/library/library-dataset-view"
+    "mvc/library/library-dataset-view",
+    "mvc/library/library-library-view",
+    "mvc/library/library-folder-view"
     ],
 function(mod_masthead,
          mod_utils,
@@ -23,7 +25,9 @@ function(mod_masthead,
          mod_librarylist_view,
          mod_librarytoolbar_view,
          mod_foldertoolbar_view,
-         mod_library_dataset_view
+         mod_library_dataset_view,
+         mod_library_library_view,
+         mod_library_folder_view
          ) {
 
 // ============================================================================
@@ -36,11 +40,14 @@ var LibraryRouter = Backbone.Router.extend({
   },
 
   routes: {
-    ""                                                     : "libraries",
-    "folders/:id"                                          : "folder_content",
-    "folders/:folder_id/datasets/:dataset_id"              : "dataset_detail",
-    "folders/:folder_id/datasets/:dataset_id/permissions"  : "dataset_permissions",
-    "folders/:folder_id/download/:format"                  : "download"
+    ""                                                              : "libraries",
+    "library/:library_id/permissions"                               : "library_permissions",
+    "folders/:folder_id/permissions"                                : "folder_permissions",
+    "folders/:id"                                                   : "folder_content",
+    "folders/:folder_id/datasets/:dataset_id"                       : "dataset_detail",
+    "folders/:folder_id/datasets/:dataset_id/permissions"           : "dataset_permissions",
+    "folders/:folder_id/datasets/:dataset_id/versions/:ldda_id"     : "dataset_version",
+    "folders/:folder_id/download/:format"                           : "download"
   },
 
   back: function() {
@@ -72,6 +79,7 @@ var GalaxyLibrary = Backbone.View.extend({
     libraryToolbarView: null,
     libraryListView: null,
     library_router: null,
+    libraryView: null,
     folderToolbarView: null,
     folderListView: null,
     datasetView: null,
@@ -112,12 +120,32 @@ var GalaxyLibrary = Backbone.View.extend({
           }
           Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id});
        });
+       this.library_router.on('route:dataset_version', function(folder_id, dataset_id, ldda_id){
+          if (Galaxy.libraries.datasetView){
+            Galaxy.libraries.datasetView.$el.unbind('click');
+          }
+          Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id, ldda_id: ldda_id, show_version: true});
+       });
 
        this.library_router.on('route:dataset_permissions', function(folder_id, dataset_id){
           if (Galaxy.libraries.datasetView){
             Galaxy.libraries.datasetView.$el.unbind('click');
           }
           Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({id: dataset_id, show_permissions: true});
+       });
+
+       this.library_router.on('route:library_permissions', function(library_id){
+          if (Galaxy.libraries.libraryView){
+            Galaxy.libraries.libraryView.$el.unbind('click');
+          }
+          Galaxy.libraries.libraryView = new mod_library_library_view.LibraryView({id: library_id, show_permissions: true});
+       });
+
+       this.library_router.on('route:folder_permissions', function(folder_id){
+          if (Galaxy.libraries.folderView){
+            Galaxy.libraries.folderView.$el.unbind('click');
+          }
+          Galaxy.libraries.folderView = new mod_library_folder_view.FolderView({id: folder_id, show_permissions: true});
        });
 
     Backbone.history.start({pushState: false});

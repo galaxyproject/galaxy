@@ -11,6 +11,7 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
+
 class PermissionsController( BaseAPIController ):
 
     # Method not ideally named
@@ -49,4 +50,3 @@ class PermissionsController( BaseAPIController ):
 
         item = library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
         return item
-
