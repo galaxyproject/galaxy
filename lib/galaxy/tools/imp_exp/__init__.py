@@ -135,6 +135,11 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 datasets_attrs_file_name = os.path.join( archive_dir, 'datasets_attrs.txt')
                 datasets_attr_str = read_file_contents( datasets_attrs_file_name )
                 datasets_attrs = from_json_string( datasets_attr_str )
+                
+                if os.path.exists( datasets_attrs_file_name + ".provenance" ):
+                    provenance_attr_str = read_file_contents( datasets_attrs_file_name + ".provenance" )
+                    provenance_attrs = from_json_string( provenance_attr_str )
+                    datasets_attrs += provenance_attrs                    
 
                 # Get counts of how often each dataset file is used; a file can
                 # be linked to multiple dataset objects (HDAs).
@@ -190,6 +195,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                         else:
                             datasets_usage_counts[ temp_dataset_file_name ] -= 1
                             shutil.copyfile( temp_dataset_file_name, hda.file_name )
+                        hda.dataset.set_total_size() #update the filesize record in the database
 
                     # Set tags, annotations.
                     if user:
@@ -411,19 +417,23 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         datasets = self.get_history_datasets( trans, history )
         included_datasets = []
         datasets_attrs = []
+        provenance_attrs = []
         for dataset in datasets:
-            #if not dataset.visible and not include_hidden:
-            #    continue
-            #if dataset.deleted and not include_deleted:
-            #    continue
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
-            datasets_attrs.append( dataset )
-            included_datasets.append( dataset )
+            if (not dataset.visible and not include_hidden) or (dataset.deleted and not include_deleted):
+                provenance_attrs.append( dataset )
+            else:
+                datasets_attrs.append( dataset )
+                included_datasets.append( dataset )
         datasets_attrs_filename = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
         datasets_attrs_out = open( datasets_attrs_filename, 'w' )
         datasets_attrs_out.write( to_json_string( datasets_attrs, cls=HistoryDatasetAssociationEncoder ) )
         datasets_attrs_out.close()
         jeha.datasets_attrs_filename = datasets_attrs_filename
+        
+        provenance_attrs_out = open( datasets_attrs_filename + ".provenance", 'w' )
+        provenance_attrs_out.write( to_json_string( provenance_attrs, cls=HistoryDatasetAssociationEncoder ) )
+        provenance_attrs_out.close()
 
         #
         # Write jobs attributes file.

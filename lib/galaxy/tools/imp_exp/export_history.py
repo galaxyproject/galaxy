@@ -60,6 +60,8 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
         # Finish archive.
         history_archive.add( history_attrs_file, arcname="history_attrs.txt" )
         history_archive.add( datasets_attrs_file, arcname="datasets_attrs.txt" )
+        if os.path.exists( datasets_attrs_file + ".provenance" ):
+            history_archive.add( datasets_attrs_file + ".provenance", arcname="datasets_attrs.txt.provenance" )            
         history_archive.add( jobs_attrs_file, arcname="jobs_attrs.txt" )
         history_archive.close()
 
