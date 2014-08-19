@@ -758,9 +758,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     # No user, associate
                     galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
                     galaxy_session_requires_flush = True
-                elif (galaxy_session.user.email != remote_user_email and
-                      self.app.config.allow_user_impersonation and
-                      remote_user_email not in self.app.config.admin_users_list):
+                elif ((galaxy_session.user.email != remote_user_email) and
+                      ((not self.app.config.allow_user_impersonation) or
+                      (remote_user_email not in self.app.config.admin_users_list))):
                     # Session exists but is not associated with the correct
                     # remote user, and the currently set remote_user is not a
                     # potentially impersonating admin.
