@@ -35,7 +35,7 @@ return Backbone.View.extend({
         $el.append(Utils.wrap((new Ui.Label({ title : 'How many data points would you like to analyze?'})).$el));
         
         // construct chart type subset selection buttons
-        this.library = new Ui.RadioButton({
+        this.library = new Ui.RadioButton.View({
             data    : [ { label: 'Few (<500)', value: 'small' },
                         { label: 'Some (<10k)', value: 'medium' },
                         { label: 'Many (>10k)', value: 'large' }],

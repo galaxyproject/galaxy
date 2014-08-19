@@ -1,4 +1,8 @@
-define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], function(Tools, Portlet, Table, Ui) {
+define(['mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc',
+        'mvc/citation/citation-model', 'mvc/citation/citation-view',
+        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets'],
+    function(Portlet, Table, Ui, CitationModel, CitationView,
+             Tools, ToolTemplate, ToolDatasets) {
 
     // create tool model
     var Model = Backbone.Model.extend({
@@ -17,14 +21,31 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
             // link this
             var self = this;
             
+            // link options
+            this.options = options;
+            
             // load tool model
             this.model = new Model({
                 id : options.id
             });
             
+            // initialize datasets
+            this.datasets = new ToolDatasets({
+                success: function() {
+                    self._initializeToolForm();
+                }
+            });
+        },
+        
+        // initialize tool form
+        _initializeToolForm: function() {
             // fetch model and render form
+            var self = this;
             this.model.fetch({
                 success: function() {
+                    // inputs
+                    self.inputs = self.model.get('inputs');
+            
                     // create portlet
                     self.portlet = new Portlet.View({
                         icon : 'fa-wrench',
@@ -41,15 +62,35 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
                         }
                     });
                     
-                    // table
+                    // create table
                     self.table = new Table.View();
                     
-                    // add message
+                    // create message
                     self.message = new Ui.Message();
                     self.portlet.append(self.message.$el);
                     
-                    // append portlet
+                    // append form
                     $(self.main_el).append(self.portlet.$el);
+                    
+                    // append help
+                    if (self.options.help != '') {
+                        $(self.main_el).append(ToolTemplate.help(self.options.help));
+                    }
+                    
+                    // append citations
+                    if (self.options.citations) {
+                        // append html
+                        $(self.main_el).append(ToolTemplate.citations());
+            
+                        // fetch citations
+                        var citations = new CitationModel.ToolCitationCollection();
+                        citations.tool_id = self.options.id;
+                        var citation_list_view = new CitationView.CitationListView({ collection: citations } );
+                        citation_list_view.render();
+                        citations.fetch();
+                    }
+                    
+                    // configure portlet and form table
                     self.setElement(self.portlet.content());
                     self.portlet.append(self.table.$el);
                     self.render();
@@ -59,9 +100,6 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
         
         // update
         render: function() {
-            // inputs
-            var settings = this.model.get('inputs');
-        
             // reset table
             this.table.delAll();
             
@@ -72,8 +110,8 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
             var data = new Backbone.Model();
             
             // load settings elements into table
-            for (var id in settings) {
-                this._add(settings[id], data);
+            for (var id in this.inputs) {
+                this._add(this.inputs[id], data);
             }
             
             // trigger change
@@ -83,53 +121,55 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
         },
         
         // add table row
-        _add: function(settings_def, data) {
+        _add: function(inputs_def, data) {
             // link this
             var self = this;
             
             // get id
-            var id = settings_def.name;
-            
-            // log
-            console.debug(settings_def);
+            var id = inputs_def.name;
             
             // field wrapper
             var field = null;
-            
+            console.log(inputs_def);
             // create select field
-            var type = settings_def.type;
+            var type = inputs_def.type;
             switch(type) {
                 // text input field
                 case 'text' :
-                    field = this.field_text(settings_def, data);
+                    field = this.field_text(inputs_def, data);
                     break;
                     
                 // select field
                 case 'select' :
-                    field = this.field_select(settings_def, data);
+                    field = this.field_select(inputs_def, data);
                     break;
                     
                 // radiobox field
                 case 'radiobutton' :
-                    field = this.field_radio(settings_def, data);
+                    field = this.field_radio(inputs_def, data);
                     break;
                 
                 // dataset
                 case 'data':
-                    field = this.field_select(settings_def, data);
+                    field = this.field_data(inputs_def, data);
                     break;
                 
-                // slider input field
+                // dataset column
+                case 'data_column':
+                    field = this.field_column(inputs_def, data);
+                    break;
+                
+                // text area field
                 case 'textarea' :
-                    field = this.field_textarea(settings_def, data);
+                    field = this.field_textarea(inputs_def, data);
                     break;
 
                 // default
                 default:
                     field = new Ui.Input({
                         id          : 'field-' + id,
-                        placeholder : settings_def.placeholder,
-                        type        : settings_def.type,
+                        placeholder : inputs_def.placeholder,
+                        type        : inputs_def.type,
                         onchange    : function() {
                             data.set(id, field.value());
                         }
@@ -138,7 +178,7 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
             
             // set value
             if (!data.get(id)) {
-                data.set(id, settings_def.value);
+                data.set(id, inputs_def.value);
             }
             field.value(data.get(id));
             
@@ -148,31 +188,26 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
             // combine field and info
             var $input = $('<div/>');
             $input.append(field.$el);
-            if (settings_def.info) {
-                $input.append('<div class="ui-table-form-info">' + settings_def.info + '</div>');
+            if (inputs_def.info) {
+                $input.append('<div class="ui-table-form-info">' + inputs_def.info + '</div>');
             }
             
             // add row to table
-            if (this.options.style == 'bold') {
-                this.table.add(new Ui.Label({title: settings_def.title, cls: 'form-label'}).$el);
-                this.table.add($input);
-            } else {
-                this.table.add('<span class="ui-table-form-title">' + settings_def.label + '</span>', '25%');
-                this.table.add($input);
-            }
-        
+            this.table.add('<span class="ui-table-form-title">' + inputs_def.label + '</span>', '25%');
+            this.table.add($input);
+            
             // add to table
             this.table.append(id);
             
             // show/hide
-            if (settings_def.hide) {
+            if (inputs_def.hide) {
                 this.table.get(id).hide();
             }
         },
         
         // text input field
-        field_text : function(settings_def, data) {
-            var id = settings_def.name;
+        field_text : function(inputs_def, data) {
+            var id = inputs_def.name;
             return new Ui.Input({
                 id          : 'field-' + id,
                 value       : data.get(id),
@@ -183,8 +218,8 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
         },
         
         // text area
-        field_textarea : function(settings_def, data) {
-            var id = settings_def.name;
+        field_textarea : function(inputs_def, data) {
+            var id = inputs_def.name;
             return new Ui.Textarea({
                 id          : 'field-' + id,
                 onchange    : function() {
@@ -193,12 +228,89 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
             });
         },
         
-        // select field
-        field_select : function (settings_def, data) {
+        // data input field
+        field_data : function(inputs_def, data) {
+            // link this
+            var self = this;
+            
+            // get element id
+            var id = inputs_def.name;
+            
+            // get datasets
+            var datasets = this.datasets.filterType();
+            
             // configure options fields
             var options = [];
-            for (var i in settings_def.options) {
-                var option = settings_def.options[i];
+            for (var i in datasets) {
+                options.push({
+                    label: datasets[i].get('name'),
+                    value: datasets[i].get('id')
+                });
+            }
+            
+            // find referenced columns
+            var column_list = _.where(this.inputs, {
+                data_ref    : id,
+                type        : 'data_column'
+            });
+            
+            // select field
+            return new Ui.Select.View({
+                id          : 'field-' + id,
+                data        : options,
+                value       : options[0].value,
+                onchange    : function(value) {
+                    // update value
+                    data.set(id, value);
+                    
+                    // find selected dataset
+                    var dataset = self.datasets.filter(value);
+        
+                    // check dataset
+                    if (dataset && column_list.length > 0) {
+                        // log selection
+                        console.debug('tool-form::field_data() - Selected dataset ' + value + '.');
+                    
+                        // get meta data
+                        var meta = dataset.get('metadata_column_types');
+                    
+                        // check meta data
+                        if (!meta) {
+                            console.debug('tool-form::field_data() - FAILED: Could not find metadata for dataset ' + value + '.');
+                        }
+                        
+                        // load column options
+                        var columns = [];
+                        for (var key in meta) {
+                            // add to selection
+                            columns.push({
+                                'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
+                                'value' : key
+                            });
+                        }
+                
+                        // update referenced columns
+                        for (var i in column_list) {
+                            var column_field = self.list[column_list[i].name]
+                            if (column_field) {
+                                column_field.update(columns);
+                                column_field.value(column_field.first());
+                            }
+                        }
+                    } else {
+                        // log failure
+                        console.debug('tool-form::field_data() - FAILED: Could not find dataset ' + value + '.');
+                    }
+                }
+            });
+        },
+        
+        // select field
+        field_column : function (inputs_def, data) {
+            // configure options fields
+            var options = [];
+            for (var i in inputs_def.options) {
+                var option = inputs_def.options[i];
                 options.push({
                     label: option[0],
                     value: option[1]
@@ -206,56 +318,56 @@ define(['mvc/tools', 'mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc'], 
             }
             
             // select field
-            var id = settings_def.name;
+            var id = inputs_def.name;
             return new Ui.Select.View({
                 id          : 'field-' + id,
                 data        : options,
                 value       : data.get(id),
                 onchange    : function(value) {
-                    // set new value
                     data.set(id, value);
-                    
-                    // find selected dictionary
-                    var dict = _.findWhere(options, {value: value});
-                    if (dict && dict.operations) {
-                        var operations = dict.operations;
-                        for (var i in operations.show) {
-                            var target = operations.show[i];
-                            self.table.get(target).show();
-                        }
-                        for (var i in operations.hide) {
-                            var target = operations.hide[i];
-                            self.table.get(target).hide();
-                        }
-                    }
+                }
+            });
+        },
+
+        // select field
+        field_select : function (inputs_def, data) {
+            // configure options fields
+            var options = [];
+            for (var i in inputs_def.options) {
+                var option = inputs_def.options[i];
+                options.push({
+                    label: option[0],
+                    value: option[1]
+                });
+            }
+            
+            // identify display type
+            var SelectClass = Ui.Select;
+            if (inputs_def.display == 'checkboxes') {
+                SelectClass = Ui.Checkbox;
+            }
+            
+            // select field
+            var id = inputs_def.name;
+            return new SelectClass.View({
+                id          : 'field-' + id,
+                data        : options,
+                value       : data.get(id),
+                onchange    : function(value) {
+                    data.set(id, value);
                 }
             });
         },
         
         // radio field
-        field_radio : function(settings_def, data) {
-            var id = settings_def.name;
+        field_radio : function(inputs_def, data) {
+            var id = inputs_def.name;
             return new Ui.RadioButton({
                 id          : 'field-' + id,
-                data        : settings_def.data,
+                data        : inputs_def.data,
                 value       : data.get(id),
                 onchange    : function(value) {
-                    // set new value
                     data.set(id, value);
-                    
-                    // find selected dictionary
-                    var dict = _.findWhere(settings_def.data, {value: value});
-                    if (dict && dict.operations) {
-                        var operations = dict.operations;
-                        for (var i in operations.show) {
-                            var target = operations.show[i];
-                            self.table.get(target).show();
-                        }
-                        for (var i in operations.hide) {
-                            var target = operations.hide[i];
-                            self.table.get(target).hide();
-                        }
-                    }
                 }
             });
         }
