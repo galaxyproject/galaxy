@@ -167,6 +167,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     if dataset_attrs.get('exported', True) == False:
                         hda.state = hda.states.DISCARDED
                         hda.deleted = True
+                        hda.purged = True
                     else:
                         hda.state = hda.states.OK
                     self.sa_session.add( hda )
