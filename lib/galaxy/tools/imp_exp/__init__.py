@@ -166,6 +166,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                         hda.dataset.uuid = dataset_attrs["uuid"]
                     if dataset_attrs.get('exported', True) == False:
                         hda.state = hda.states.DISCARDED
+                        hda.deleted = True
                     else:
                         hda.state = hda.states.OK
                     self.sa_session.add( hda )
@@ -234,6 +235,9 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     imported_job.tool_version = job_attrs[ 'tool_version' ]
                     imported_job.set_state( job_attrs[ 'state' ] )
                     imported_job.imported = True
+                    imported_job.stdout = job_attrs.get('stdout', None)
+                    imported_job.stderr = job_attrs.get('stderr', None)
+                    imported_job.command_line = job_attrs.get('command_line', None)
                     self.sa_session.add( imported_job )
                     self.sa_session.flush()
 
@@ -270,6 +274,15 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                         .filter_by( history=new_history, hid=output_hid ).first()
                         if output_hda:
                             imported_job.add_output_dataset( output_hda.name, output_hda )
+
+                    # Connect jobs to input datasets.
+                    if 'input_mapping' in job_attrs: 
+                        for input_name, input_hid in job_attrs[ 'input_mapping' ].items():
+                            #print "%s job has input dataset %i" % (imported_job.id, input_hid)
+                            input_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
+                                            .filter_by( history=new_history, hid=input_hid ).first()
+                            if input_hda:
+                                imported_job.add_input_dataset( input_name, input_hda )
 
                     self.sa_session.flush()
 
@@ -435,6 +448,9 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             job_attrs[ 'tool_id' ] = job.tool_id
             job_attrs[ 'tool_version' ] = job.tool_version
             job_attrs[ 'state' ] = job.state
+            job_attrs[ 'command_line' ] = job.command_line
+            job_attrs[ 'stderr' ] = job.stderr
+            job_attrs[ 'stdout' ] = job.stdout
 
             # Get the job's parameters
             try:
@@ -451,11 +467,14 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             # -- Get input, output datasets. --
 
             input_datasets = []
+            input_mapping = {}
             for assoc in job.input_datasets:
                 # Optional data inputs will not have a dataset.
                 if assoc.dataset:
                     input_datasets.append( assoc.dataset.hid )
+                    input_mapping[assoc.name] = assoc.dataset.hid
             job_attrs[ 'input_datasets' ] = input_datasets
+            job_attrs[ 'input_mapping'] = input_mapping
             output_datasets = [ assoc.dataset.hid for assoc in job.output_datasets ]
             job_attrs[ 'output_datasets' ] = output_datasets
 
