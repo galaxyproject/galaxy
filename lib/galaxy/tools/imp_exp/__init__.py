@@ -3,6 +3,7 @@ import shutil
 import logging
 import tempfile
 import json
+import datetime
 from galaxy import model
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
@@ -232,13 +233,21 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     # TODO: set session?
                     # imported_job.session = trans.get_galaxy_session().id
                     imported_job.history = new_history
+                    imported_job.imported = True
                     imported_job.tool_id = job_attrs[ 'tool_id' ]
                     imported_job.tool_version = job_attrs[ 'tool_version' ]
                     imported_job.set_state( job_attrs[ 'state' ] )
-                    imported_job.imported = True
+                    imported_job.info = job_attrs.get('info', None)
+                    imported_job.exit_code = job_attrs.get('exit_code', None)
+                    imported_job.traceback = job_attrs.get('traceback', None)
                     imported_job.stdout = job_attrs.get('stdout', None)
                     imported_job.stderr = job_attrs.get('stderr', None)
                     imported_job.command_line = job_attrs.get('command_line', None)
+                    try:
+                        imported_job.create_time = datetime.datetime.strptime(job_attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
+                        imported_job.update_time = datetime.datetime.strptime(job_attrs["update_time"], "%Y-%m-%dT%H:%M:%S.%f")
+                    except:
+                        pass
                     self.sa_session.add( imported_job )
                     self.sa_session.flush()
 
@@ -284,6 +293,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                             .filter_by( history=new_history, hid=input_hid ).first()
                             if input_hda:
                                 imported_job.add_input_dataset( input_name, input_hda )
+                            
 
                     self.sa_session.flush()
 
@@ -449,9 +459,15 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             job_attrs[ 'tool_id' ] = job.tool_id
             job_attrs[ 'tool_version' ] = job.tool_version
             job_attrs[ 'state' ] = job.state
+            job_attrs[ 'info' ] = job.info
+            job_attrs[ 'traceback' ] = job.traceback
             job_attrs[ 'command_line' ] = job.command_line
             job_attrs[ 'stderr' ] = job.stderr
             job_attrs[ 'stdout' ] = job.stdout
+            job_attrs[ 'exit_code' ] = job.exit_code
+            job_attrs[ 'create_time' ] = job.create_time.isoformat()
+            job_attrs[ 'update_time' ] = job.update_time.isoformat()
+            
 
             # Get the job's parameters
             try:
