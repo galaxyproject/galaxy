@@ -1268,6 +1268,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             except:
                 error("That history does not exist.")
         try:  # use a try/finally block to restore the user's current history
+            default_target_history = trans.get_history()
             if kwargs:
                 # If kwargs were provided, the states for each step should have
                 # been POSTed
@@ -1329,7 +1330,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             trans.sa_session.add( new_history )
                             target_history = new_history
                         else:
-                            target_history = trans.get_history()
+                            target_history = default_target_history
 
                         # Build replacement dict for this workflow execution.
                         replacement_dict = {}
