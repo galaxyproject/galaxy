@@ -194,14 +194,17 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             max_vals = data_provider.get_default_max_vals()
 
         # Get reference sequence and mean depth for region; these is used by providers for aligned reads.
-        ref_seq = None
+        region = None
         mean_depth = None
         if isinstance( data_provider, (SamDataProvider, BamDataProvider ) ):
             # Get reference sequence.
             if dataset.dbkey:
-                data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
-                if data_dict:
-                    ref_seq = data_dict[ 'data' ]
+                # FIXME: increase region 1M each way to provide sequence for
+                # spliced/gapped reads. Probably should provide refseq object
+                # directly to data provider.
+                region = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, 
+                                                     low=( max( 0, int( low  ) - 1000000 ) ), 
+                                                     high=( int( high ) + 1000000 ) )
 
             # Get mean depth.
             if not indexer:
@@ -209,10 +212,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             stats = indexer.get_data( chrom, low, high, stats=True )
             mean_depth = stats[ 'data' ][ 'mean' ]
 
-
         # Get and return data from data_provider.
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ),
-                                         ref_seq=ref_seq, mean_depth=mean_depth, **kwargs )
+                                         ref_seq=region, mean_depth=mean_depth, **kwargs )
         result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
         return result
 

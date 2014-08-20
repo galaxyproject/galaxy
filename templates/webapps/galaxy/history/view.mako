@@ -167,8 +167,9 @@ ${parent.javascripts()}
         historyJSON  = ${h.to_json_string( history )},
         hdaJSON      = ${h.to_json_string( hdas )};
         panelToUse   = ( userIsOwner )?
-            ({ location: 'mvc/history/history-panel',           className: 'HistoryPanel' }):
-            ({ location: 'mvc/history/readonly-history-panel',  className: 'ReadOnlyHistoryPanel' });
+//TODO: change class names
+            ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanel' }):
+            ({ location: 'mvc/history/history-panel',       className: 'ReadOnlyHistoryPanel' });
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
@@ -179,7 +180,6 @@ ${parent.javascripts()}
             var panelClass = panelMod[ panelToUse.className ],
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
                 historyModel = require( 'mvc/history/history-model' ),
-                hdaBaseView  = require( 'mvc/dataset/hda-base' ),
                 history = new historyModel.History( historyJSON, hdaJSON );
 
             window.historyPanel = new panelClass({

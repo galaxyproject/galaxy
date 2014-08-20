@@ -123,4 +123,8 @@ A varying threshold method for ChIP peak calling using multiple sources of infor
 Submitted.
 
   </help>
+  <citations>
+    <citation type="doi">10.1093/bioinformatics/btn549</citation>
+    <citation type="doi">10.1093/bioinformatics/btq379</citation>
+  </citations>
 </tool>

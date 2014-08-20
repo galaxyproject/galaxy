@@ -1,5 +1,8 @@
 <tool id="MAF_Limit_To_Species1" name="Filter MAF blocks">
   <description>by Species</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
   <command interpreter="python">maf_limit_to_species.py $species $input1 $out_file1 $allow_partial $min_species</command>
   <inputs>
     <param name="input1" type="data" format="maf" label="MAF file"/>
@@ -39,13 +42,8 @@ This tool allows the user to remove any undesired species from a MAF file. Colum
 
  * **Exclude blocks with have only one species** - if this option is set to **YES** all single sequence alignment blocks WILL NOT be returned.
 
-------
-
-**Citation**
-
-If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
-
-
-  </help>
+@HELP_CITATIONS@
+    </help>
+    <expand macro="citations" />
 </tool>
 

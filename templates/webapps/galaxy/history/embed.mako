@@ -50,7 +50,7 @@
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
     });
-    require([ 'mvc/history/annotated-history-panel' ], function( panelMod ){
+    require([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
 
         function toggleExpanded( ev ){
             var $embeddedHistory = $( thisScript ).prev();

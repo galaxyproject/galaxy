@@ -124,7 +124,7 @@ class EnvManager( object ):
         Parse an XML tag set to discover all child repository dependency tags and define the path to an env.sh file associated
         with the repository (this requires the repository dependency to be in an installed state).  The received action_dict
         will be updated with these discovered paths and returned to the caller.  This method handles tool dependency definition
-        tag sets <setup_r_environment>, <setup_ruby_environment> and <setup_perl_environment>.
+        tag sets <setup_r_environment>, <setup_ruby_environment>, <setup_python_environment> and <setup_perl_environment>.
         """
         # An example elem is:
         # <action type="setup_perl_environment">

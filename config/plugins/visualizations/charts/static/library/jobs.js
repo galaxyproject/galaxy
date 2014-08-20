@@ -1,9 +1,10 @@
 // dependencies
 define(['utils/utils'], function(Utils) {
 
-// widget
-return Backbone.Model.extend(
-{
+/**
+ *  This class handles job submissions to the charts tool.
+ */
+return Backbone.Model.extend({
     // initialize
     initialize: function(app, options) {
         // link app

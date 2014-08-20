@@ -1,5 +1,8 @@
 <tool id="Interval2Maf_pairwise1" name="Extract Pairwise MAF blocks" version="1.0.1">
   <description>given a set of genomic intervals</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
   <command interpreter="python">interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$mafType --interval_file=$input1 --output_file=$out_file1 --indexLocation=${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc</command>
   <inputs>
     <param name="input1" type="data" format="interval" label="Interval File">
@@ -39,12 +42,7 @@ Here a single interval is superimposed on three MAF blocks. Blocks 1 and 3 are t
 
 .. image:: ${static_path}/images/maf_icons/interval2maf.png
 
-------
-
-**Citation**
-
-If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
-
-
-  </help>
+@HELP_CITATIONS@
+    </help>
+    <expand macro="citations" />
 </tool>

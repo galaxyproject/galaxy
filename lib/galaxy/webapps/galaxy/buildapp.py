@@ -174,6 +174,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'ftp_file', 'ftp_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/citations', action='citations', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
@@ -181,6 +182,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
+    webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     webapp.mapper.resource( 'datatype',
                             'datatypes',
@@ -211,13 +213,13 @@ def populate_api_routes( webapp, app ):
     webapp.add_route( '/visualization/show/:visualization_name',
         controller='visualization', action='render', visualization_name=None )
 
-    # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
-    # Defines a named route "import_workflow".
-    webapp.mapper.connect( 'import_workflow', '/api/workflows/upload', controller='workflows', action='import_new_workflow', conditions=dict( method=['POST'] ) )
+    # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
+    webapp.mapper.connect( 'import_workflow_deprecated', '/api/workflows/upload', controller='workflows', action='import_new_workflow_deprecated', conditions=dict( method=['POST'] ) )
     webapp.mapper.connect( 'workflow_dict', '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict( method=['GET'] ) )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.mapper.connect( 'workflow_dict', '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict( method=['GET'] ) )
-    webapp.mapper.connect( 'import_shared_workflow', '/api/workflows/import', controller='workflows', action='import_shared_workflow', conditions=dict( method=['POST'] ) )
+    # Deprecated in favor of POST /api/workflows with shared_workflow_id in payload.
+    webapp.mapper.connect( 'import_shared_workflow_deprecated', '/api/workflows/import', controller='workflows', action='import_shared_workflow_deprecated', conditions=dict( method=['POST'] ) )
     webapp.mapper.connect( 'workflow_usage', '/api/workflows/{workflow_id}/usage', controller='workflows', action='workflow_usage', conditions=dict(method=['GET']))
     webapp.mapper.connect( 'workflow_usage_contents', '/api/workflows/{workflow_id}/usage/{usage_id}', controller='workflows', action='workflow_usage_contents', conditions=dict(method=['GET']))
 
@@ -239,12 +241,30 @@ def populate_api_routes( webapp, app ):
                            '/api/libraries/:id',
                            controller='libraries',
                            action='update',
-                           conditions=dict( method=[ "PATCH", 'PUT' ] ) )
+                           conditions=dict( method=[ "PATCH", "PUT" ] ) )
 
-    webapp.mapper.connect( 'show_lda_item',
+    webapp.mapper.connect( 'show_library_permissions',
+                           '/api/libraries/:encoded_library_id/permissions',
+                           controller='libraries',
+                           action='get_permissions',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'set_library_permissions',
+                           '/api/libraries/:encoded_library_id/permissions',
+                           controller='libraries',
+                           action='set_permissions',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.connect( 'show_ld_item',
                            '/api/libraries/datasets/:id',
                            controller='lda_datasets',
                            action='show',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'show_version_of_ld_item',
+                           '/api/libraries/datasets/:encoded_dataset_id/versions/:encoded_ldda_id',
+                           controller='lda_datasets',
+                           action='show_version',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'show_legitimate_lda_roles',
@@ -253,11 +273,11 @@ def populate_api_routes( webapp, app ):
                            action='show_roles',
                            conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( 'show_legitimate_lda_roles',
-                           '/api/libraries/datasets/:encoded_dataset_id/permissions/current',
+    webapp.mapper.connect( 'update_lda_permissions',
+                           '/api/libraries/datasets/:encoded_dataset_id/permissions',
                            controller='lda_datasets',
-                           action='get_roles',
-                           conditions=dict( method=[ "GET" ] ) )
+                           action='update_permissions',
+                           conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.connect( 'delete_lda_item',
                            '/api/libraries/datasets/:encoded_dataset_id',
@@ -310,6 +330,18 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'folder',
                             'folders',
                             path_prefix='/api' )
+
+    webapp.mapper.connect( 'show_folder_permissions',
+                           '/api/folders/:encoded_folder_id/permissions',
+                           controller='folders',
+                           action='get_permissions',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'set_folder_permissions',
+                           '/api/folders/:encoded_folder_id/permissions',
+                           controller='folders',
+                           action='set_permissions',
+                           conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.resource( 'content',
                             'contents',

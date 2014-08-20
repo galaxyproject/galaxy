@@ -79,6 +79,9 @@ class ToolShedRepository( object ):
     def get_sharable_url( self, app ):
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, self.tool_shed )
         if tool_shed_url:
+            # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
+            # the last part of a URL if it does not end with a forward slash.
+            tool_shed_url = '%s/' % tool_shed_url
             return urljoin( tool_shed_url, 'view/%s/%s' % ( self.owner, self.name ) )
         return tool_shed_url
 

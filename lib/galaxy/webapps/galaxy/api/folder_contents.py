@@ -44,6 +44,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
              InternalServerError
         """
+        is_admin = trans.user_is_admin()
         deleted = kwd.get( 'include_deleted', 'missing' )
         try:
             deleted = util.asbool( deleted )
@@ -105,7 +106,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         folder_contents = []
         update_time = ''
         create_time = ''
-        # Go through every accessible item (folders, datasets) in the folder and include its meta-data.
+        #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
         for content_item in self._load_folder_contents( trans, folder, deleted ):
             return_item = {}
             encoded_id = trans.security.encode_id( content_item.id )
@@ -114,36 +115,27 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
             if content_item.api_type == 'folder':
                 encoded_id = 'F' + encoded_id
-                # Check whether user can modify current folder
-                can_modify = False
-                if trans.user_is_admin():
-                    can_modify = True
-                elif trans.user:
-                    can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
-                return_item.update( dict( can_modify=can_modify ) )
+                can_modify = is_admin or ( trans.user and trans.app.security_agent.can_modify_library_item( current_user_roles, folder ) )
+                can_manage = is_admin or ( trans.user and trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) )
+                return_item.update( dict( can_modify=can_modify, can_manage=can_manage ) )
 
             if content_item.api_type == 'file':
-                # Is the dataset public or private?
-                # When both are False the dataset is 'restricted'
-                is_private = False
-                is_unrestricted = False
-                if trans.app.security_agent.dataset_is_public( content_item.library_dataset_dataset_association.dataset ):
-                    is_unrestricted = True
+                #  Is the dataset public or private?
+                #  When both are False the dataset is 'restricted'
+                #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
+                is_unrestricted = trans.app.security_agent.dataset_is_public( content_item.library_dataset_dataset_association.dataset )
+                if trans.user and trans.app.security_agent.dataset_is_private_to_user( trans, content_item ):
+                    is_private = True
                 else:
-                    is_unrestricted = False
-                    if trans.user:
-                        is_private = trans.app.security_agent.dataset_is_private_to_user( trans, content_item )
+                    is_private = False
 
                 # Can user manage the permissions on the dataset?
-                can_manage = False
-                if trans.user_is_admin():
-                    can_manage = True
-                elif trans.user:
-                    can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, content_item.library_dataset_dataset_association.dataset )
+                can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset( current_user_roles, content_item.library_dataset_dataset_association.dataset ) )
 
                 nice_size = util.nice_size( int( content_item.library_dataset_dataset_association.get_size() ) )
 
                 library_dataset_dict = content_item.to_dict()
+
                 return_item.update( dict( data_type=library_dataset_dict[ 'data_type' ],
                                           date_uploaded=library_dataset_dict[ 'date_uploaded' ],
                                           is_unrestricted=is_unrestricted,
@@ -151,7 +143,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                                           can_manage=can_manage,
                                           file_size=nice_size ) )
 
-            # For every item include the default meta-data
+            # For every item include the default metadata
             return_item.update( dict( id=encoded_id,
                                       type=content_item.api_type,
                                       name=content_item.name,
@@ -165,14 +157,17 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         full_path = self.build_path( trans, folder )[ ::-1 ]
 
         # Check whether user can add items to the current folder
-        can_add_library_item = trans.user_is_admin() or trans.app.security_agent.can_add_library_item( current_user_roles, folder )
+        can_add_library_item = is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, folder )
 
-        # Check whether user can modify current folder
-        can_modify_folder = trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
-
+        # Check whether user can modify the current folder
+        can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
+        parent_library_id = None
+        if folder.parent_library is not None:
+            parent_library_id = trans.security.encode_id( folder.parent_library.id )
         metadata = dict( full_path=full_path,
                          can_add_library_item=can_add_library_item,
-                         can_modify_folder=can_modify_folder )
+                         can_modify_folder=can_modify_folder,
+                         parent_library_id=parent_library_id )
         folder_container = dict( metadata=metadata, folder_contents=folder_contents )
         return folder_container
 

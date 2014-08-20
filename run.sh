@@ -11,6 +11,13 @@ if [ -n "$GALAXY_UNIVERSE_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_UNIVERSE_CONFIG_DIR"
 fi
 
+# If there is a .venv/ directory, assume it contains a virtualenv that we
+# should run this instance in.
+if [ -d .venv ];
+then
+    . .venv/bin/activate
+fi
+
 if [ -n "$GALAXY_RUN_ALL" ]; then
     servers=`sed -n 's/^\[server:\(.*\)\]/\1/  p' universe_wsgi.ini | xargs echo`
     daemon=`echo "$@" | grep -q daemon`

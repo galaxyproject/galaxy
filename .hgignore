@@ -11,8 +11,12 @@ scripts/scramble/build
 scripts/scramble/lib
 scripts/scramble/archives
 
+# Python virtualenv
+.venv
+
 # Database stuff
 database/beaker_sessions
+database/citations
 database/community_files
 database/compiled_templates
 database/files

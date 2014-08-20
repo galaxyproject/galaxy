@@ -5,6 +5,14 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
         $("input[name='" + name + "'][type='checkbox']").attr('checked', !!check);
     }
 
+    $(".tool-share-link").each( function() {
+        var href = $(this).attr("href");
+        var href = $(this).attr("data-link");
+        $(this).click(function() {
+            window.prompt("Copy to clipboard: Ctrl+C, Enter", href);
+        });
+    });
+
     // Inserts the Select All / Unselect All buttons for checkboxes
     $("div.checkUncheckAllPlaceholder").each( function() {
         var check_name = $(this).attr("checkbox_name");
@@ -86,7 +94,7 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
                     }).attr(
                         'title',
                         selectionType['select_by']
-                    );
+                    ).data( "index", iIndex );
                     view.formRow().find( "label" ).append( button );
                 }
             });
@@ -114,11 +122,13 @@ define([ "libs/underscore", "mvc/tools" ], function( _, Tools ) {
             } else {
                 $("div#remap-row").css("display", "none");
             }
-            this.formRow().find( "i" ).each(function(index, iElement) {
+            this.formRow().find( "i" ).each(function(_, iElement) {
+                var $iElement = $(iElement);
+                var index = $iElement.data("index");
                 if(index == enableIndex) {
-                    $(iElement).css('color', 'black');
+                    $iElement.css('color', 'black');
                 } else {
-                    $(iElement).css('color', 'Gray');
+                    $iElement.css('color', 'Gray');
                 }
             });
             var $select = this.$( "select" );

@@ -2,6 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/base_panels.mako" import="overlay" />
 
+<% import galaxy.util %>
+
 <%def name="stylesheets()">
     ${h.css( "autocomplete_tagging", "base", "library" )}
     <style type="text/css">
@@ -14,6 +16,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "galaxy.panels", "libs/jquery/jstorage" )}
+    ${h.js( "libs/bibtex" )}
     <script type="text/javascript">
         require( [ "galaxy.tools" ] );
         window.enhanced_galaxy_tools = true;
@@ -322,9 +325,9 @@
             <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}
         %endif
 
+        <span class="pull-right">
         %if trans.app.config.biostar_url:
-            ## BioStar links
-            <span class="pull-right">
+                ## BioStar links
                 Help from Biostar
                 <div class="icon-btn-group">
                     <a href="${h.url_for( controller='biostar', action='biostar_tool_tag_redirect', tool_id=tool.id )}"
@@ -332,8 +335,12 @@
                     <a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}"
                         target="_blank" class="icon-btn" title="Ask a question about this tool" data-toggle="tooltip" data-placement="bottom"><span class="fa fa-question-circle"></a>
                 </div>
-            </span>
         %endif
+            <div class="icon-btn-group">
+                <a href="#" data-link="${h.url_for( controller='root', action='index', tool_id=tool.id )}"
+                    class="icon-btn tool-share-link" title="Share this tool" data-toggle="tooltip" data-placement="bottom"><span class="fa fa-share"></span></a>
+            </div>
+        </span>
         </div>
         <div class="toolFormBody">
             <input type="hidden" name="refresh" value="refresh">
@@ -386,3 +393,20 @@
         ${ render_msg( 'This tool was installed from a ToolShed, you may be able to find additional information by following this link: <a href="%s" target="_blank">%s</a>' % ( tool_url, tool_url ), 'info' ) }
     %endif
 %endif
+%if tool.citations:
+    <script>
+    require(["mvc/citation/citation-model", "mvc/citation/citation-view"
+    ], function( citationModel, citationView ){
+        $(function() {
+            var citations = new citationModel.ToolCitationCollection();
+            citations.tool_id = "${tool.id}";
+            var citation_list_view = new citationView.CitationListView({ collection: citations } );
+            citation_list_view.render();
+            citations.fetch();
+        } );
+    } );
+    </script>
+    <div id="citations">
+    </div>
+%endif
+

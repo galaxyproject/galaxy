@@ -105,9 +105,8 @@ class ToolsTestCase( api.ApiTestCase ):
         )
         outputs = self._cat1_outputs( history_id, inputs=inputs )
         self.assertEquals( len( outputs ), 1 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test" )
 
     @skip_without_tool( "cat1" )
@@ -122,9 +121,8 @@ class ToolsTestCase( api.ApiTestCase ):
         }
         outputs = self._cat1_outputs( history_id, inputs=inputs )
         self.assertEquals( len( outputs ), 1 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test\nCat2Test" )
 
     @skip_without_tool( "cat1" )
@@ -140,11 +138,10 @@ class ToolsTestCase( api.ApiTestCase ):
         }
         outputs = self._cat1_outputs( history_id, inputs=inputs )
         self.assertEquals( len( outputs ), 2 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
-        output2_content = self._get_content( history_id, dataset=output2 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         self.assertEquals( output1_content.strip(), "123" )
         self.assertEquals( output2_content.strip(), "456" )
 
@@ -163,11 +160,10 @@ class ToolsTestCase( api.ApiTestCase ):
         }
         outputs = self._cat1_outputs( history_id, inputs=inputs )
         self.assertEquals( len( outputs ), 2 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True, timeout=10 )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
-        output2_content = self._get_content( history_id, dataset=output2 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         self.assertEquals( output1_content.strip(), "Common\n123" )
         self.assertEquals( output2_content.strip(), "Common\n456" )
 
@@ -189,13 +185,15 @@ class ToolsTestCase( api.ApiTestCase ):
             ],
         }
         outputs = self._cat1_outputs( history_id, inputs=inputs )
-        self.assertEquals( len( outputs ), 4 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        outputs_contents = [ self._get_content( history_id, dataset=o ).strip() for o in outputs ]
+        self.assertEquals( len( outputs ), 2 )
+        outputs_contents = [ self.dataset_populator.get_history_dataset_content( history_id, dataset=o ).strip() for o in outputs ]
         assert "123\n789" in outputs_contents
-        assert "456\n789" in outputs_contents
-        assert "123\n0ab" in outputs_contents
         assert "456\n0ab" in outputs_contents
+        # TODO: Once cross production (instead of linking inputs) is an option
+        # again redo test with these checks...
+        # self.assertEquals( len( outputs ), 4 )
+        # assert "123\n0ab" in outputs_contents
+        # assert "456\n789" in outputs_contents
 
     @skip_without_tool( "cat1" )
     def test_map_over_collection( self ):
@@ -214,11 +212,10 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( jobs ), 2 )
         self.assertEquals( len( outputs ), 2 )
         self.assertEquals( len( implicit_collections ), 1 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
-        output2_content = self._get_content( history_id, dataset=output2 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         self.assertEquals( output1_content.strip(), "123" )
         self.assertEquals( output2_content.strip(), "456" )
 
@@ -261,11 +258,10 @@ class ToolsTestCase( api.ApiTestCase ):
         }
         outputs = self._cat1_outputs( history_id, inputs=inputs )
         self.assertEquals( len( outputs ), 2 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
-        output2_content = self._get_content( history_id, dataset=output2 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         self.assertEquals( output1_content.strip(), "123\n789" )
         self.assertEquals( output2_content.strip(), "456\n0ab" )
 
@@ -297,11 +293,10 @@ class ToolsTestCase( api.ApiTestCase ):
         jobs = create[ 'jobs' ]
         assert len( jobs ) == 1
         assert len( outputs ) == 2
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
-        output2_content = self._get_content( history_id, dataset=output2 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         assert output1_content.strip() == "123\n456"
         assert len( output2_content.strip().split("\n") ) == 3, output2_content
 
@@ -317,11 +312,10 @@ class ToolsTestCase( api.ApiTestCase ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         outputs = self._run_and_get_outputs( "collection_paired_test", history_id, inputs )
         assert len( outputs ), 2
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
-        output2_content = self._get_content( history_id, dataset=output2 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         assert output1_content.strip() == "123\n456", output1_content
         assert output2_content.strip() == "789\n0ab", output2_content
 
@@ -338,11 +332,10 @@ class ToolsTestCase( api.ApiTestCase ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         outputs = self._run_and_get_outputs( "collection_mixed_param", history_id, inputs )
         assert len( outputs ), 2
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
-        output1_content = self._get_content( history_id, dataset=output1 )
-        output2_content = self._get_content( history_id, dataset=output2 )
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         assert output1_content.strip() == "123\n456\nxxx", output1_content
         assert output2_content.strip() == "789\n0ab\nyyy", output2_content
 
@@ -378,16 +371,7 @@ class ToolsTestCase( api.ApiTestCase ):
         history_id = self.dataset_populator.new_history()
         new_dataset = self.dataset_populator.new_dataset( history_id, content=content, **upload_kwds )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        return self._get_content( history_id, dataset=new_dataset )
-
-    def _get_content( self, history_id, **kwds ):
-        if "dataset_id" in kwds:
-            dataset_id = kwds[ "dataset_id" ]
-        else:
-            dataset_id = kwds[ "dataset" ][ "id" ]
-        display_response = self._get( "histories/%s/contents/%s/display" % ( history_id, dataset_id ) )
-        self._assert_status_code_is( display_response, 200 )
-        return display_response.content
+        return self.dataset_populator.get_history_dataset_content( history_id, dataset=new_dataset )
 
     def __tool_ids( self ):
         index = self._get( "tools" )

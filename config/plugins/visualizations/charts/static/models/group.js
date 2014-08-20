@@ -2,8 +2,7 @@
 define([], function() {
 
 // model
-return Backbone.Model.extend(
-{
+return Backbone.Model.extend({
     // options
     defaults : {
         key     : 'Data label',
@@ -11,8 +10,7 @@ return Backbone.Model.extend(
     },
     
     // reset
-    reset: function()
-    {
+    reset: function(){
         this.clear({silent: true}).set(this.defaults);
         this.trigger('reset', this);
     }

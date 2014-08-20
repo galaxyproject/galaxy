@@ -16,6 +16,7 @@ var FolderToolbarView = Backbone.View.extend({
     'click #toolbtn_bulk_import'          : 'modalBulkImport',
     'click .toolbtn_add_files'            : 'addFilesToFolderModal',
     'click #include_deleted_datasets_chk' : 'checkIncludeDeleted',
+    'click #toolbtn_show_libinfo'         : 'showLibInfo',
     'click #toolbtn_bulk_delete'          : 'deleteSelectedDatasets'
   },
 
@@ -313,9 +314,10 @@ var FolderToolbarView = Backbone.View.extend({
     this.refreshUserHistoriesList(function(self){
       self.modal = Galaxy.modal;
       var template_modal = self.templateAddFilesInModal();
+      var folder_name = self.options.full_path[self.options.full_path.length - 1][1]
       self.modal.show({
           closing_events  : true,
-          title           : 'Add datasets from history to ' + self.options.folder_name,
+          title           : 'Add datasets from history to ' + folder_name,
           body            : template_modal({histories: self.histories.models}),
           buttons         : {
               'Add'       : function() {self.addAllDatasetsFromHistory();},
@@ -344,8 +346,12 @@ var FolderToolbarView = Backbone.View.extend({
         self.histories.get(history_id).set({'contents' : history_contents});
         self.modal.$el.find('#selected_history_content').html(history_contents_template({history_contents: history_contents.models.reverse()}));
       },
-      error: function(){
-        mod_toastr.error('An error ocurred :(');
+      error: function(model, response){
+        if (typeof response.responseJSON !== "undefined"){
+          mod_toastr.error(response.responseJSON.err_msg);
+        } else {
+          mod_toastr.error('An error ocurred :(');
+        }
       }
     });
   },
@@ -513,34 +519,88 @@ var FolderToolbarView = Backbone.View.extend({
           });
   },
 
+  showLibInfo: function(){
+    var library_id = Galaxy.libraries.folderListView.folderContainer.attributes.metadata.parent_library_id;
+    var library = null;
+    var that = this;
+    if (Galaxy.libraries.libraryListView !== null){
+      library = Galaxy.libraries.libraryListView.collection.get(library_id);
+    } else {
+      library = new mod_library_model.Library({id: library_id});
+      library.fetch({
+        success: function(){
+          var template = that.templateLibInfoInModal();
+          that.modal = Galaxy.modal;
+          that.modal.show({
+              closing_events  : true,
+              title           : 'Library Information',
+              body            : template({library:library}),
+              buttons         : {
+                  'Close'     : function() {Galaxy.modal.hide();}
+              }
+          });
+        },
+        error: function(model, response){
+          if (typeof response.responseJSON !== "undefined"){
+            mod_toastr.error(response.responseJSON.err_msg);
+          } else {
+            mod_toastr.error('An error ocurred :(');
+          }
+        }
+      })
+    }
+
+  },
+
   templateToolBar: function(){
     tmpl_array = [];
 
-    // CONTAINER
+    // CONTAINER START
     tmpl_array.push('<div class="library_style_container">');
-    // TOOLBAR
-    tmpl_array.push('<div id="library_toolbar">');
-    tmpl_array.push('<span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"><input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> include deleted</input></span>');
-    tmpl_array.push('<div class="btn-group add-library-items" style="display:none;">');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
-    tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="btn btn-default toolbtn_add_files primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');
-    tmpl_array.push('</div>');
+    // TOOLBAR START
+    tmpl_array.push(' <div id="library_toolbar">');
+    tmpl_array.push('       <span><strong>DATA LIBRARIES</strong></span>');
+    tmpl_array.push('   <span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"> | <input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> include deleted | </input></span>');
+    tmpl_array.push('   <div class="btn-group add-library-items" style="display:none;">');
+    tmpl_array.push('     <button data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
+    tmpl_array.push('     <button data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="btn btn-default toolbtn_add_files primary-button" type="button"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');
+    tmpl_array.push('   </div>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Import selected datasets into history" id="toolbtn_bulk_import" class="primary-button dataset-manipulation" style="margin-left: 0.5em; display:none;" type="button"><span class="fa fa-book"></span> to History</button>');
     tmpl_array.push('   <div id="toolbtn_dl" class="btn-group dataset-manipulation" style="margin-left: 0.5em; display:none; ">');
-    tmpl_array.push('       <button title="Download selected datasets as archive" id="drop_toggle" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">');
-    tmpl_array.push('       <span class="fa fa-download"></span> Download <span class="caret"></span>');
-    tmpl_array.push('       </button>');
-    tmpl_array.push('       <ul class="dropdown-menu" role="menu">');
-    tmpl_array.push('          <li id="download_archive"><a href="#/folders/<%= id %>/download/tgz">.tar.gz</a></li>');
-    tmpl_array.push('          <li id="download_archive"><a href="#/folders/<%= id %>/download/tbz">.tar.bz</a></li>');
-    tmpl_array.push('          <li id="download_archive"><a href="#/folders/<%= id %>/download/zip">.zip</a></li>');
-    tmpl_array.push('       </ul>');
+    tmpl_array.push('     <button title="Download selected datasets as archive" id="drop_toggle" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">');
+    tmpl_array.push('     <span class="fa fa-download"></span> Download <span class="caret"></span>');
+    tmpl_array.push('     </button>');
+    tmpl_array.push('     <ul class="dropdown-menu" role="menu">');
+    tmpl_array.push('        <li id="download_archive"><a href="#/folders/<%= id %>/download/tgz">.tar.gz</a></li>');
+    tmpl_array.push('        <li id="download_archive"><a href="#/folders/<%= id %>/download/tbz">.tar.bz</a></li>');
+    tmpl_array.push('        <li id="download_archive"><a href="#/folders/<%= id %>/download/zip">.zip</a></li>');
+    tmpl_array.push('     </ul>');
     tmpl_array.push('   </div>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
-    tmpl_array.push('   </div>');
-    tmpl_array.push('   <div id="folder_items_element">');
-    // library items will append here
-    tmpl_array.push('   </div>');
+    tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
+    tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button btn-xs" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
+
+    tmpl_array.push(' </div>');
+    // TOOLBAR END
+    tmpl_array.push(' <div id="folder_items_element">');
+    tmpl_array.push(' </div>');
+    tmpl_array.push('</div>');
+    // CONTAINER END
+
+    return _.template(tmpl_array.join(''));
+  },
+
+  templateLibInfoInModal: function(){
+    tmpl_array = [];
+
+    tmpl_array.push('<div id="lif_info_modal">');
+    tmpl_array.push('<h2>Library name:</h2>');
+    tmpl_array.push('<p><%- library.get("name") %></p>');
+    tmpl_array.push('<h3>Library description:</h3>');
+    tmpl_array.push('<p><%- library.get("description") %></p>');
+    tmpl_array.push('<h3>Library synopsis:</h3>');
+    tmpl_array.push('<p><%- library.get("synopsis") %></p>');
+
     tmpl_array.push('</div>');
 
     return _.template(tmpl_array.join(''));

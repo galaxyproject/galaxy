@@ -34,7 +34,7 @@
 
         can_browse_contents = not is_new
 
-        if can_browse_repository_reviews( trans, repository ):
+        if can_browse_repository_reviews( trans.app, trans.user, repository ):
             can_browse_reviews = True
         else:
             can_browse_reviews = False
@@ -79,7 +79,7 @@
                 can_review_repository = True
             else:
                 can_review_repository = False
-            if changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision ):
+            if changeset_revision_reviewed_by_user( trans.user, repository, changeset_revision ):
                 reviewed_by_user = True
             else:
                 reviewed_by_user = False
@@ -88,7 +88,7 @@
             reviewed_by_user = False
 
         if reviewed_by_user:
-            review = get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+            review = get_review_by_repository_id_changeset_revision_user_id( app=trans.app,
                                                                              repository_id=trans.security.encode_id( repository.id ),
                                                                              changeset_revision=changeset_revision,
                                                                              user_id=trans.security.encode_id( trans.user.id ) )

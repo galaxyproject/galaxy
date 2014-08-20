@@ -70,10 +70,18 @@ class CloudController(BaseUIController):
         cfg = cloudman.CloudManConfig(key_id, secret, cluster_name, ami,
                                       instance_type, password, placement=zone)
         cml = cloudman.launch.CloudManLauncher(key_id, secret)
-        result = cml.launch(cluster_name, ami, instance_type, password,
-                            cfg.kernel_id, cfg.ramdisk_id, cfg.key_name,
-                            cfg.security_groups, cfg.placement,
-                            bucket_default=bucket_default)
+        # This should probably be handled better on the bioblend side, but until
+        # an egg update can be made, this needs to conditionally include the
+        # parameter or not, even if the value is None.
+        if bucket_default:
+            result = cml.launch(cluster_name, ami, instance_type, password,
+                                cfg.kernel_id, cfg.ramdisk_id, cfg.key_name,
+                                cfg.security_groups, cfg.placement,
+                                bucket_default=bucket_default)
+        else:
+            result = cml.launch(cluster_name, ami, instance_type, password,
+                                cfg.kernel_id, cfg.ramdisk_id, cfg.key_name,
+                                cfg.security_groups, cfg.placement)
         # result is a dict with sg_names, kp_name, kp_material, rs, and instance_id
         if not result['rs']:
             trans.response.status = 400

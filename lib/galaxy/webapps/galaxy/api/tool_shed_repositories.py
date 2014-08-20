@@ -11,7 +11,9 @@ from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
 
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
+
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -237,8 +239,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         self.__ensure_can_install_repos( trans )
         install_repository_manager = InstallRepositoryManager( trans.app )
-        installed_tool_shed_repositories = install_repository_manager.install( trans.app,
-                                                                               tool_shed_url,
+        installed_tool_shed_repositories = install_repository_manager.install( tool_shed_url,
                                                                                name,
                                                                                owner,
                                                                                changeset_revision,
@@ -412,12 +413,13 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise HTTPForbidden( detail='You are not authorized to reset metadata on repositories installed into this Galaxy instance.' )
-        query = suc.get_query_for_setting_metadata_on_repositories( trans, my_writable=False, order=False )
+        irmm = InstalledRepositoryMetadataManager( trans.app )
+        query = irmm.get_query_for_setting_metadata_on_repositories( order=False )
         # Now reset metadata on all remaining repositories.
         for repository in query:
             repository_id = trans.security.encode_id( repository.id )
             try:
-                invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_installed_repository( trans.app, repository_id )
+                invalid_file_tups, metadata_dict = irmm.reset_all_metadata_on_installed_repository( repository_id )
                 if invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
                                                                             invalid_file_tups,

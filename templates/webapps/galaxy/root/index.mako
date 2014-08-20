@@ -100,6 +100,9 @@
             },
             "${_("Show Structure")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
+            },            
+            "${_("Export Citations")}": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='citations' )}";
             },
             "${_("Export to File")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
@@ -205,7 +208,7 @@
         <div id="current-history-panel" class="history-panel"></div>
         ## Don't bootstrap data here - confuses the browser history: load via API
         <script type="text/javascript">
-        require([ "mvc/history/current-history-panel" ], function( historyPanel ){
+        require([ "mvc/history/history-panel-edit-current" ], function( historyPanel ){
             $(function(){
                 var currPanel = new historyPanel.CurrentHistoryPanel({
                     el              : $( "#current-history-panel" ),

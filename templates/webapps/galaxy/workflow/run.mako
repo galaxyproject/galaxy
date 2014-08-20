@@ -154,18 +154,27 @@
 
          $(".workflow-edit-button").on("click",function(){
                 var state = $(this).attr("name");
-                var stepToolBox = $(this).parent().find('input:not([class]), select:not([class])');
-                var split_name=stepToolBox.attr("name").split("|");
+                var stepToolBox = $(this).parent().find('input:not([class]):not([type="hidden"]), select:not([class])');
+                var labels = $(this).parent().find('label');
+                var split_name = stepToolBox.attr("name").split("|");
                 var step_id = split_name[0];
-                var step_name = split_name[split_name.length-1];
-                hidden_html = "<input type='hidden' name='"+step_id+"|__runtime__"+step_name+"' value='true' />";
+                var step_name = split_name.slice(1, split_name.length).join("|");
+                var hidden_html = "<input type='hidden' name='"+step_id+"|__runtime__"+step_name+"' value='true' />";
+                var html = "";
                 if (state === "edit"){
                     stepToolBoxClone = stepToolBox.clone();
-                    stepToolBoxClone.attr({"name":step_id+"|"+step_name});
-                    stepToolBoxClone.show()
+                    stepToolBoxClone.each(function(index){$(stepToolBoxClone[index]).attr({"name":step_id+"|"+step_name})});
+                    stepToolBoxClone.show();
+                    if (labels.length > 0){
+                        stepToolBoxClone.each(function(index){
+                        html += stepToolBoxClone[index].outerHTML + labels[index].outerHTML + "<br/>"});
+                    }
+                    else{
+                        html = stepToolBoxClone.outerHTML();
+                    }
                     $(this).parent().find(".editable").show();
                     $(this).parent().parent().find(".uneditable_field").hide();
-                    $(this).parent().find(".editable").html(stepToolBoxClone.outerHTML()+hidden_html);
+                    $(this).parent().find(".editable").html(html+hidden_html);
                     editingParameter($(this));
                 }
                 else{
@@ -439,7 +448,7 @@ if wf_parms:
                     </span>
                     <span class="editable_field">
                         <span class="editable">
-                            ${param.get_html_field( t, value, other_values).get_html( str(step.id) + "|" + "editable" + "|"+ prefix )}
+                            ${param.get_html_field( t, value, other_values).get_html( str(step.id) + "|"+ prefix )}
                         </span>
 
                         <i class="fa workflow-edit-button"></i>

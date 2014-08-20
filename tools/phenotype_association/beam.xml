@@ -134,4 +134,8 @@ Block-based bayesian epistasis association mapping with application to WTCCC typ
 Submitted.
 
   </help>
+  <citations>
+    <citation type="doi">10.1038/ng2110</citation>
+    <citation type="doi">10.1214/11-AOAS469</citation>
+  </citations>
 </tool>

@@ -194,12 +194,17 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         else:
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
+        self.datatypes_registry = datatypes_registry
         self.false_path = getattr( dataset_path, "false_path", None )
         self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
 
     @property
     def is_collection( self ):
         return False
+
+    def is_of_type( self, *exts ):
+        datatypes = [ self.datatypes_registry.get_datatype_by_extension( e ) for e in exts ]
+        return self.dataset.datatype.matches_any( datatypes )
 
     def __str__( self ):
         if self.false_path is not None:
@@ -269,6 +274,12 @@ class DatasetCollectionWrapper( object, HasDatasets ):
     def __init__( self, has_collection, dataset_paths=[], **kwargs ):
         super(DatasetCollectionWrapper, self).__init__()
 
+        if has_collection is None:
+            self.__input_supplied = False
+            return
+        else:
+            self.__input_supplied = True
+
         if hasattr( has_collection, "name" ):
             # It is a HistoryDatasetCollectionAssociation
             collection = has_collection.collection
@@ -294,24 +305,41 @@ class DatasetCollectionWrapper( object, HasDatasets ):
             element_instances[element_identifier] = element_wrapper
             element_instance_list.append( element_wrapper )
 
-        self.element_instances = element_instances
-        self.element_instance_list = element_instance_list
+        self.__element_instances = element_instances
+        self.__element_instance_list = element_instance_list
 
     def keys( self ):
-        return self.element_instances.keys()
+        if not self.__input_supplied:
+            return []
+        return self.__element_instances.keys()
 
     @property
     def is_collection( self ):
         return True
 
+    @property
+    def is_input_supplied( self ):
+        return self.__input_supplied
+
     def __getitem__( self, key ):
+        if not self.__input_supplied:
+            return None
         if isinstance( key, int ):
-            return self.element_instance_list[ key ]
+            return self.__element_instance_list[ key ]
         else:
-            return self.element_instances[ key ]
+            return self.__element_instances[ key ]
 
     def __getattr__( self, key ):
-        return self.element_instances[ key ]
+        if not self.__input_supplied:
+            return None
+        return self.__element_instances[ key ]
 
     def __iter__( self ):
-        return self.element_instance_list.__iter__()
+        if not self.__input_supplied:
+            return [].__iter__()
+        return self.__element_instance_list.__iter__()
+
+    def __nonzero__( self ):
+        # Fail `#if $param` checks in cheetah is optional input
+        # not specified or if resulting collection is empty.
+        return self.__input_supplied and bool( self.__element_instance_list )

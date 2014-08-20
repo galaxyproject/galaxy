@@ -831,7 +831,8 @@ class TestHistory( TwillTestCase ):
         deleted_history_ids = [ self.security.encode_id( history1.id ), self.security.encode_id( history2.id ) ]
         # Test copying to the current history
         target_history_id = self.security.encode_id( history6.id )
-        self.copy_history_item( source_dataset_id=source_dataset_ids,
+        self.copy_history_item( source_history_id=self.security.encode_id( history6.id ),
+                                source_dataset_id=source_dataset_ids,
                                 target_history_id=target_history_id,
                                 all_target_history_ids=all_target_history_ids,
                                 deleted_history_ids=deleted_history_ids )
@@ -852,7 +853,8 @@ class TestHistory( TwillTestCase ):
         all_target_history_ids = [ self.security.encode_id( hda.id ) for hda in admin_user.active_histories ]
         # Test copying to the a history that is not the current history
         self.security.encode_id( history7.id )
-        self.copy_history_item( source_dataset_id=source_dataset_ids,
+        self.copy_history_item( source_history_id=self.security.encode_id( history6.id ),
+                                source_dataset_id=source_dataset_ids,
                                 target_history_id=target_history_id,
                                 all_target_history_ids=all_target_history_ids,
                                 deleted_history_ids=deleted_history_ids )

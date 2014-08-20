@@ -1,4 +1,6 @@
-// dependencies
+/**
+ *  This class enables users to export/download a chart as PNG, SVG or PDF.
+ */
 define(["libs/underscore"], function(_) {
     //
     // PNG export

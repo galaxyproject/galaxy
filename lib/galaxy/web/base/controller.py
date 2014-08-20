@@ -37,6 +37,7 @@ from galaxy.datatypes.data import Text
 
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
+from galaxy.managers import api_keys
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
@@ -286,16 +287,12 @@ class CreatesUsersMixin:
 class CreatesApiKeysMixin:
     """
     Mixing centralizing logic for creating API keys for user objects.
+
+    Deprecated - please use api_keys.ApiKeyManager for new development.
     """
 
     def create_api_key( self, trans, user ):
-        guid = trans.app.security.get_new_guid()
-        new_key = trans.app.model.APIKeys()
-        new_key.user_id = user.id
-        new_key.key = guid
-        trans.sa_session.add( new_key )
-        trans.sa_session.flush()
-        return guid
+        return api_keys.ApiKeyManager( trans.app ).create_api_key( user )
 
 
 class SharableItemSecurityMixin:
@@ -802,6 +799,12 @@ class UsesHistoryDatasetAssociationMixin:
         hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
             history_id = trans.security.encode_id( hda.history.id ),
             history_content_id = trans.security.encode_id( hda.id ) )
+
+        # resubmitted is not a real state
+        hda_dict[ 'resubmitted' ] = False
+        if hda.state == trans.app.model.Dataset.states.RESUBMITTED:
+            hda_dict[ 'state' ] = hda.dataset.state
+            hda_dict[ 'resubmitted' ] = True
 
         # indeces, assoc. metadata files, etc.
         meta_files = []
@@ -1667,7 +1670,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict( self, trans, data, source=None, add_to_menu=False ):
+    def _workflow_from_dict( self, trans, data, source=None, add_to_menu=False, publish=False ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
@@ -1693,8 +1696,18 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
+        supplied_steps = data[ 'steps' ]
+        # Try to iterate through imported workflow in such a way as to
+        # preserve step order.
+        step_indices = supplied_steps.keys()
+        try:
+            step_indices = sorted( step_indices, key=int )
+        except ValueError:
+            # to defensive, were these ever or will they ever not be integers?
+            pass
         # First pass to build step objects and populate basic values
-        for step_dict in data[ 'steps' ].itervalues():
+        for step_index in step_indices:
+            step_dict = supplied_steps[ step_index ]
             # Create the model class for the step
             step = model.WorkflowStep()
             steps.append( step )
@@ -1745,6 +1758,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         workflow.stored_workflow = stored
         stored.latest_workflow = workflow
         stored.user = trans.user
+        stored.published = publish
         if data[ 'annotation' ]:
             self.add_item_annotation( trans.sa_session, stored.user, stored, data[ 'annotation' ] )
 

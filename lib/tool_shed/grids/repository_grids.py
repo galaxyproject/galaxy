@@ -329,6 +329,26 @@ class RepositoryGrid( grids.Grid ):
                                    .outerjoin( model.Category.table )
 
 
+class DockerImageGrid( RepositoryGrid ):
+    columns = [
+        RepositoryGrid.NameColumn( "Name",
+                                   key="name",
+                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                   attach_popup=False ),
+        RepositoryGrid.DescriptionColumn( "Synopsis",
+                                          key="description",
+                                          attach_popup=False ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   model_class=model.User,
+                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
+                                   attach_popup=False,
+                                   key="User.username" ),
+        RepositoryGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
+    ]
+    operations = [ grids.GridOperation( "Include in Docker image", allow_multiple=True  ) ]
+    show_item_checkboxes = True
+
+
 class EmailAlertsRepositoryGrid( RepositoryGrid ):
     columns = [
         RepositoryGrid.NameColumn( "Name",
@@ -1326,7 +1346,7 @@ class RepositoryMetadataGrid( grids.Grid ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
             changeset_revision = repository_metadata.changeset_revision
-            changeset_revision_label = hg_util.get_revision_label( trans, repository, changeset_revision, include_date=True )
+            changeset_revision_label = hg_util.get_revision_label( trans.app, repository, changeset_revision, include_date=True )
             return changeset_revision_label
 
 

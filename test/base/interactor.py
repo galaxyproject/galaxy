@@ -1,4 +1,5 @@
 import os
+import re
 from StringIO import StringIO
 from galaxy.tools.parameters import grouping
 from galaxy.tools import test
@@ -324,16 +325,18 @@ class GalaxyInteractorApi( object ):
         )
         return self._post( "tools", files=files, data=data )
 
-    def ensure_user_with_email( self, email ):
+    def ensure_user_with_email( self, email, password=None ):
         admin_key = self.master_api_key
         all_users = self._get( 'users', key=admin_key ).json()
         try:
             test_user = [ user for user in all_users if user["email"] == email ][0]
         except IndexError:
+            username = re.sub('[^a-z-]', '--', email.lower())
+            password = password or 'testpass'
             data = dict(
                 email=email,
-                password='testuser',
-                username='admin-user',
+                password=password,
+                username=username,
             )
             test_user = self._post( 'users', data, key=admin_key ).json()
         return test_user
@@ -386,7 +389,8 @@ class GalaxyInteractorTwill( object ):
         self.twill_test_case.verify_dataset_correctness( outfile, hid=hid, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
 
     def get_job_stream( self, history_id, output_data, stream ):
-        return self.twill_test_case._get_job_stream_output( output_data.get( 'id' ), stream=stream, format=False )
+        data_id = self.twill_test_case.security.encode_id( output_data.get( 'id' ) )
+        return self.twill_test_case._get_job_stream_output( data_id, stream=stream, format=False )
 
     def stage_data_async( self, test_data, history, shed_tool_id, async=True ):
             name = test_data.get( 'name', None )

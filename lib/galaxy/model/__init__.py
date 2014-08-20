@@ -34,6 +34,7 @@ from galaxy.util import ready_name_for_url
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.directory_hash import directory_hash_id
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
         PasswordField, SelectField, TextArea, TextField, WorkflowField,
@@ -481,9 +482,12 @@ class Job( object, HasJobMetrics, Dictifiable ):
         Read encoded parameter values from the database and turn back into a
         dict of tool parameter values.
         """
-        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
+        param_dict = self.raw_param_dict()
         tool = app.toolbox.get_tool( self.tool_id )
         param_dict = tool.params_from_strings( param_dict, app, ignore_errors=ignore_errors )
+        return param_dict
+    def raw_param_dict( self ):
+        param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
         return param_dict
     def check_if_output_datasets_deleted( self ):
         """
@@ -873,7 +877,7 @@ class UserGroupAssociation( object ):
 class History( object, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
-    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged', 'importable', 'slug' )
+    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged', 'importable', 'slug', 'empty' )
     default_name = 'Unnamed history'
 
     def __init__( self, id=None, name=None, user=None ):
@@ -889,6 +893,10 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         self.datasets = []
         self.galaxy_sessions = []
         self.tags = []
+
+    @property
+    def empty( self ):
+        return self.hid_counter == 1
 
     def _next_hid( self ):
         # this is overriden in mapping.py db_next_hid() method
@@ -1605,7 +1613,7 @@ class DatasetInstance( object ):
         except KeyError:
             depends_list = []
         # See if converted dataset already exists, either in metadata in conversions.
-        converted_dataset = self.get_metadata_dataset( trans, target_ext )
+        converted_dataset = self.get_metadata_dataset( target_ext )
         if converted_dataset:
             return converted_dataset
         converted_dataset = self.get_converted_files_by_type( target_ext )
@@ -1636,7 +1644,7 @@ class DatasetInstance( object ):
         session.add( assoc )
         session.flush()
         return None
-    def get_metadata_dataset( self, trans, dataset_ext ):
+    def get_metadata_dataset( self, dataset_ext ):
         """
         Returns an HDA that points to a metadata file which contains a
         converted data with the requested extension.
@@ -2589,8 +2597,8 @@ DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     """
     """
-    dict_collection_visible_keys = ( 'id', 'name', 'collection_type' )
-    dict_element_visible_keys = ( 'id', 'name', 'collection_type' )
+    dict_collection_visible_keys = ( 'id', 'collection_type' )
+    dict_element_visible_keys = ( 'id', 'collection_type' )
 
     def __init__(
         self,
@@ -3703,23 +3711,27 @@ class UserAddress( object ):
         self.country = country
         self.phone = phone
     def get_html(self):
+        # This should probably be deprecated eventually.  It should currently
+        # sanitize.
+        # TODO Find out where else uses this and replace with
+        # templates
         html = ''
         if self.name:
-            html = html + self.name
+            html = html + sanitize_html(self.name)
         if self.institution:
-            html = html + '<br/>' + self.institution
+            html = html + '<br/>' + sanitize_html(self.institution)
         if self.address:
-            html = html + '<br/>' + self.address
+            html = html + '<br/>' + sanitize_html(self.address)
         if self.city:
-            html = html + '<br/>' + self.city
+            html = html + '<br/>' + sanitize_html(self.city)
         if self.state:
-            html = html + ' ' + self.state
+            html = html + ' ' + sanitize_html(self.state)
         if self.postal_code:
-            html = html + ' ' + self.postal_code
+            html = html + ' ' + sanitize_html(self.postal_code)
         if self.country:
-            html = html + '<br/>' + self.country
+            html = html + '<br/>' + sanitize_html(self.country)
         if self.phone:
-            html = html + '<br/>' + 'Phone: ' + self.phone
+            html = html + '<br/>' + 'phone: ' + sanitize_html(self.phone)
         return html
 
 class UserOpenID( object ):

@@ -99,6 +99,7 @@ class MockApp( object ):
             root=os.path.join(test_directory, "galaxy"),
             admin_users="mary@example.com",
             len_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' ),
+            builds_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' ),
         )
 
         # Setup some attributes for downstream extension by specific tests.

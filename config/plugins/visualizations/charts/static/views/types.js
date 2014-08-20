@@ -1,7 +1,10 @@
-define(['utils/utils', 'plugin/library/ui'], function(Utils, Ui) {
+// dependencies
+define(['utils/utils', 'mvc/ui/ui-misc'], function(Utils, Ui) {
 
-return Backbone.View.extend(
-{
+/**
+ *  This class renders the chart type selection grid.
+ */
+return Backbone.View.extend({
     // defaults options
     optionsDefault: {
         onchange    : null,
@@ -16,7 +19,6 @@ return Backbone.View.extend(
     
     // initialize
     initialize : function(app, options) {
-        
         // link this
         var self = this;
         
@@ -33,7 +35,7 @@ return Backbone.View.extend(
         $el.append(Utils.wrap((new Ui.Label({ title : 'How many data points would you like to analyze?'})).$el));
         
         // construct chart type subset selection buttons
-        this.library = new Ui.RadioButton({
+        this.library = new Ui.RadioButton.View({
             data    : [ { label: 'Few (<500)', value: 'small' },
                         { label: 'Some (<10k)', value: 'medium' },
                         { label: 'Many (>10k)', value: 'large' }],

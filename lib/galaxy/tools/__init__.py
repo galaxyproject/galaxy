@@ -69,7 +69,7 @@ from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
-from .loader import load_tool, template_macro_params
+from .loader import load_tool, template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 from .wrappers import (
     ToolParameterValueWrapper,
@@ -132,7 +132,7 @@ class ToolBox( object, Dictifiable ):
         # File that contains the XML section and tool tags from all tool panel config files integrated into a
         # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
         # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
-        self.integrated_tool_panel_config = os.path.join( app.config.root, 'integrated_tool_panel.xml' )
+        self.integrated_tool_panel_config = app.config.integrated_tool_panel_config
         # In-memory dictionary that defines the layout of the tool_panel.xml file on disk.
         self.integrated_tool_panel = odict()
         self.integrated_tool_panel_config_has_contents = os.path.exists( self.integrated_tool_panel_config ) and os.stat( self.integrated_tool_panel_config ).st_size > 0
@@ -1061,6 +1061,7 @@ class Tool( object, Dictifiable ):
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
+    default_template = 'tool_form.mako'
 
     def __init__( self, config_file, root, app, guid=None, repository_id=None ):
         """Load a tool from the config named by `config_file`"""
@@ -1360,6 +1361,9 @@ class Tool( object, Dictifiable ):
         requirements, containers = parse_requirements_from_xml( root )
         self.requirements = requirements
         self.containers = containers
+
+        self.citations = self._parse_citations( root )
+
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(root)
         # Trackster configuration.
@@ -1391,7 +1395,7 @@ class Tool( object, Dictifiable ):
         # Load parameters (optional)
         input_elem = root.find("inputs")
         enctypes = set()
-        if input_elem:
+        if input_elem is not None:
             # Handle properties of the input form
             self.check_values = string_as_bool( input_elem.get("check_values", self.check_values ) )
             self.nginx_upload = string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
@@ -1479,10 +1483,10 @@ class Tool( object, Dictifiable ):
                     help_footer = help_footer + help_page.tail
         # Each page has to rendered all-together because of backreferences allowed by rst
         try:
-            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer,
+            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer ),
                                             input_encoding='utf-8', output_encoding='utf-8',
                                             default_filters=[ 'decode.utf8' ],
-                                            encoding_errors='replace' ) )
+                                            encoding_errors='replace' )
                                   for x in self.help_by_page ]
         except:
             log.exception( "error in multi-page help for tool %s" % self.name )
@@ -1685,6 +1689,20 @@ class Tool( object, Dictifiable ):
             if ( None != trace ):
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
+
+    def _parse_citations( self, root ):
+        citations = []
+        citations_elem = root.find("citations")
+        if not citations_elem:
+            return citations
+
+        for citation_elem in citations_elem:
+            if citation_elem.tag != "citation":
+                pass
+            citation = self.app.citations_manager.parse_citation( citation_elem, self.tool_dir )
+            if citation:
+                citations.append( citation )
+        return citations
 
     # TODO: This method doesn't have to be part of the Tool class.
     def parse_error_level( self, err_level ):
@@ -1994,7 +2012,7 @@ class Tool( object, Dictifiable ):
                     return self.__no_display_interface_response()
                 if len(incoming):
                     self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
-                return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
+                return self.default_template, dict( errors={}, tool_state=state, param_values={}, incoming={} )
 
         all_errors = []
         all_params = []
@@ -2012,7 +2030,7 @@ class Tool( object, Dictifiable ):
             # error messages
             if any( all_errors ):
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
-                template = "tool_form.mako"
+                template = self.default_template
                 template_vars = dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif all_pages or state.page == self.last_page:
@@ -2074,7 +2092,7 @@ class Tool( object, Dictifiable ):
             # Just a refresh, render the form with updated state and errors.
             if not self.display_interface:
                 return self.__no_display_interface_response()
-            return 'tool_form.mako', dict( errors=errors, tool_state=state )
+            return self.default_template, dict( errors=errors, tool_state=state )
 
     def __handle_page_advance( self, trans, state, errors ):
         state.page += 1
@@ -2082,7 +2100,7 @@ class Tool( object, Dictifiable ):
         self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
         if not self.display_interface:
             return self.__no_display_interface_response()
-        return 'tool_form.mako', dict( errors=errors, tool_state=state )
+        return self.default_template, dict( errors=errors, tool_state=state )
 
     def __no_display_interface_response( self ):
         return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
@@ -2507,13 +2525,16 @@ class Tool( object, Dictifiable ):
                     incoming_value = get_incoming_value( incoming, key, None )
                     value, error = check_param( trans, input, incoming_value, context, source=source )
                     # If a callback was provided, allow it to process the value
+                    input_name = input.name
                     if item_callback:
-                        old_value = state.get( input.name, None )
+                        old_value = state.get( input_name, None )
                         value, error = item_callback( trans, key, input, value, error, old_value, context )
                     if error:
-                        errors[ input.name ] = error
-                    state[ input.name ] = value
-                    state.update( self.__meta_properties_for_state( key, incoming, incoming_value, value )  )
+                        errors[ input_name ] = error
+
+                    state[ input_name ] = value
+                    meta_properties = self.__meta_properties_for_state( key, incoming, incoming_value, value, input_name )
+                    state.update( meta_properties )
         return errors
 
     def __remove_meta_properties( self, incoming ):
@@ -2527,12 +2548,17 @@ class Tool( object, Dictifiable ):
                 del result[ key ]
         return result
 
-    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val ):
+    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val, input_name ):
         meta_properties = {}
-        multirun_key = "%s|__multirun__" % key
-        if multirun_key in incoming:
-            multi_value = incoming[ multirun_key ]
-            meta_properties[ multirun_key ] = multi_value
+        meta_property_suffixes = [
+            "__multirun__",
+            "__collection_multirun__",
+        ]
+        for meta_property_suffix in meta_property_suffixes:
+            multirun_key = "%s|%s" % ( key, meta_property_suffix )
+            if multirun_key in incoming:
+                multi_value = incoming[ multirun_key ]
+                meta_properties[ "%s|%s" % ( input_name, meta_property_suffix ) ] = multi_value
         return meta_properties
 
     @property
@@ -2926,12 +2952,12 @@ class Tool( object, Dictifiable ):
                     self.sa_session.flush()
         return children
 
-    def collect_primary_datasets( self, output, job_working_directory ):
+    def collect_primary_datasets( self, output, job_working_directory, input_ext ):
         """
         Find any additional datasets generated by a tool and attach (for
         cases where number of outputs is not known in advance).
         """
-        return output_collect.collect_primary_datatasets( self, output, job_working_directory )
+        return output_collect.collect_primary_datasets( self, output, job_working_directory, input_ext )
 
     def to_dict( self, trans, link_details=False, io_details=False ):
         """ Returns dict of tool. """
@@ -2963,6 +2989,23 @@ class Tool( object, Dictifiable ):
 
     def get_default_history_by_trans( self, trans, create=False ):
         return trans.get_history( create=create )
+
+    @classmethod
+    def get_externally_referenced_paths( self, path ):
+        """ Return relative paths to externally referenced files by the tool
+        described by file at `path`. External components should not assume things
+        about the structure of tool xml files (this is the tool's responsibility).
+        """
+        tree = raw_tool_xml_tree(path)
+        root = tree.getroot()
+        external_paths = []
+        for code_elem in root.findall( 'code' ):
+            external_path = code_elem.get( 'file' )
+            if external_path:
+                external_paths.append( external_path )
+        external_paths.extend( imported_macro_paths( root ) )
+        # May also need to load external citation files as well at some point.
+        return external_paths
 
 
 class OutputParameterJSONTool( Tool ):
@@ -3205,7 +3248,9 @@ class DataManagerTool( OutputParameterJSONTool ):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool, DataManagerTool ]:
+for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
+                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
+                    DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 

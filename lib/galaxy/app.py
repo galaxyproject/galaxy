@@ -12,7 +12,6 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.registry import VisualizationsRegistry
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
-from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
@@ -65,6 +64,9 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load dbkey / genome build manager
         self._configure_genome_builds( data_table_name="__dbkeys__", load_old_style=True )
 
+        # Load build sites (old-style)
+        self._configure_build_sites()
+
         # Genomes
         self.genomes = Genomes( self )
         # Data providers registry.
@@ -93,8 +95,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.datatypes_registry.load_external_metadata_tool( self.toolbox )
         # Load history import/export tools.
         load_history_imp_exp_tools( self.toolbox )
-        # Load genome indexer tool.
-        load_genome_index_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = None
         if self.config.visualization_plugins_directory:

@@ -15,12 +15,12 @@ from datetime import timedelta
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.util import string_as_bool
 from galaxy.util import listify
-from galaxy.util import parse_xml
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.build_sites import BuildSites
 from galaxy import eggs
-import pkg_resources
 
 log = logging.getLogger( __name__ )
+
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
@@ -40,9 +40,9 @@ class Configuration( object ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
         # Collect the umask and primary gid from the environment
-        self.umask = os.umask( 077 ) # get the current umask
-        os.umask( self.umask ) # can't get w/o set, so set it back
-        self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
+        self.umask = os.umask( 077 )  # get the current umask
+        os.umask( self.umask )  # can't get w/o set, so set it back
+        self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
@@ -65,8 +65,6 @@ class Configuration( object ):
         tempfile.tempdir = self.new_file_path
         self.openid_consumer_cache_path = resolve_path( kwargs.get( "openid_consumer_cache_path", "database/openid_consumer_cache" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
-        self.genome_data_path = kwargs.get( "genome_data_path", "tool-data/genome" )
-        self.rsync_url = kwargs.get( "rsync_url", "rsync://datacache.galaxyproject.org/indexes" )
         # Galaxy OpenID settings
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
         self.openid_config = kwargs.get( 'openid_config_file', 'openid_conf.xml' )
@@ -75,7 +73,8 @@ class Configuration( object ):
         self.enable_unique_workflow_defaults = string_as_bool( kwargs.get( 'enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
-        self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared','ucsc','chrom') ), self.root )
+        self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
+        self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
@@ -86,6 +85,7 @@ class Configuration( object ):
             tcf = kwargs[ 'tool_config_files' ]
         else:
             tcf = 'tool_conf.xml,shed_tool_conf.xml'
+        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
@@ -169,7 +169,7 @@ class Configuration( object ):
         self.admin_users = kwargs.get( "admin_users", "" )
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.reset_password_length = int( kwargs.get('reset_password_length', '15') )
-        self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
+        self.mailing_join_addr = kwargs.get('mailing_join_addr', 'galaxy-announce-join@bx.psu.edu')
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.activation_email = kwargs.get( 'activation_email', None )
         self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
@@ -224,7 +224,9 @@ class Configuration( object ):
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
+        self.ucsc_build_sites = resolve_path( kwargs.get( 'ucsc_build_sites', os.path.join( self.tool_data_path, 'shared', 'ucsc', 'ucsc_build_sites.txt') ), self.root )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
+        self.gbrowse_build_sites = resolve_path( kwargs.get( 'gbrowse_build_sites', os.path.join( self.tool_data_path, 'shared', 'gbrowse', 'gbrowse_build_sites.txt') ), self.root )
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
@@ -271,9 +273,9 @@ class Configuration( object ):
         self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
-            self.os_access_key= kwargs.get( 'aws_access_key', None )
-            self.os_secret_key= kwargs.get( 'aws_secret_key', None )
-            self.os_bucket_name= kwargs.get( 's3_bucket', None )
+            self.os_access_key = kwargs.get( 'aws_access_key', None )
+            self.os_secret_key = kwargs.get( 'aws_secret_key', None )
+            self.os_bucket_name = kwargs.get( 's3_bucket', None )
             self.os_use_reduced_redundancy = kwargs.get( 'use_reduced_redundancy', False )
         else:
             self.os_access_key = kwargs.get( 'os_access_key', None )
@@ -376,6 +378,12 @@ class Configuration( object ):
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
         # visualization plugin framework
         self.visualization_plugins_directory = kwargs.get( 'visualization_plugins_directory', None )
+        # Default chunk size for chunkable datatypes -- 64k
+        self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
+
+        self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
+        self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
+        self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
 
     @property
     def sentry_dsn_public( self ):
@@ -452,19 +460,13 @@ class Configuration( object ):
                 except Exception, e:
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create
-        for path in self.file_path, \
-                    self.new_file_path, \
-                    self.job_working_directory, \
-                    self.cluster_files_directory, \
-                    self.template_cache, \
-                    self.ftp_upload_dir, \
-                    self.library_import_dir, \
-                    self.user_library_import_dir, \
-                    self.nginx_upload_store, \
-                    './static/genetrack/plots', \
-                    self.whoosh_index_dir, \
-                    self.object_store_cache_path, \
-                    os.path.join( self.tool_data_path, 'shared', 'jars' ):
+        if self.object_store_config_file is None:
+            for path in (self.file_path, self.job_working_directory):
+                self._ensure_directory( path )
+        for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
+                     self.library_import_dir, self.user_library_import_dir,
+                     self.nginx_upload_store, self.whoosh_index_dir,
+                     self.object_store_cache_path):
             self._ensure_directory( path )
         # Check that required files exist
         tool_configs = self.tool_configs
@@ -480,7 +482,7 @@ class Configuration( object ):
             if key in self.deprecated_options:
                 log.warning( "Config option '%s' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file." % key )
 
-    def is_admin_user( self,user ):
+    def is_admin_user( self, user ):
         """
         Determine if the provided user is listed in `admin_users`.
 
@@ -495,12 +497,13 @@ class Configuration( object ):
         """
         return resolve_path( path, self.root )
 
+
 def get_database_engine_options( kwargs, model_prefix='' ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
     """
-    conversions =  {
+    conversions = {
         'convert_unicode': string_as_bool,
         'pool_timeout': int,
         'echo': string_as_bool,
@@ -521,6 +524,7 @@ def get_database_engine_options( kwargs, model_prefix='' ):
                 value = conversions[key](value)
             rval[ key  ] = value
     return rval
+
 
 def configure_logging( config ):
     """
@@ -556,7 +560,7 @@ def configure_logging( config ):
         root.addHandler( handler )
     # If sentry is configured, also log to it
     if config.sentry_dsn:
-        pkg_resources.require( "raven" )
+        eggs.require( "raven" )
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
@@ -570,11 +574,18 @@ class ConfiguresGalaxyMixin:
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
 
+    def _configure_build_sites( self ):
+        self.build_sites = BuildSites( self )
+
     def _configure_toolbox( self ):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
         if self.config.migrated_tools_config not in tool_configs:
             tool_configs.append( self.config.migrated_tools_config )
+
+        from galaxy.managers.citations import CitationsManager
+        self.citations_manager = CitationsManager( self )
+
         from galaxy import tools
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         # Search support for tools

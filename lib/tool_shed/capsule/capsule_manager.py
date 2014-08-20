@@ -7,23 +7,27 @@ import threading
 import urllib
 from time import gmtime
 from time import strftime
-import tool_shed.repository_types.util as rt_util
+
 from galaxy import web
+from galaxy.model.orm import and_
 from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE
 from galaxy.util.odict import odict
-from tool_shed.dependencies import dependency_manager
+
+from tool_shed.dependencies.repository.relation_builder import RelationBuilder
+from tool_shed.dependencies import attribute_handlers
+from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
+from tool_shed.metadata import repository_metadata_manager
+import tool_shed.repository_types.util as rt_util
+
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_dependency_util
-from tool_shed.util import repository_maintenance_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import xml_util
-from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyManager
 
 log = logging.getLogger( __name__ )
 
@@ -32,6 +36,7 @@ class ExportedRepositoryRegistry( object ):
 
     def __init__( self ):
         self.exported_repository_elems = []
+
 
 class ExportRepositoryManager( object ):
 
@@ -129,8 +134,8 @@ class ExportRepositoryManager( object ):
         return sub_elements
 
     def generate_repository_archive( self, repository, changeset_revision, work_dir ):
-        rdah = dependency_manager.RepositoryDependencyAttributeHandler( self.app, unpopulate=True )
-        tdah = dependency_manager.ToolDependencyAttributeHandler( self.app, unpopulate=True )
+        rdah = attribute_handlers.RepositoryDependencyAttributeHandler( self.app, unpopulate=True )
+        tdah = attribute_handlers.ToolDependencyAttributeHandler( self.app, unpopulate=True )
         file_type_str = basic_util.get_file_type_str( changeset_revision, self.file_type )
         file_name = '%s-%s' % ( repository.name, file_type_str )
         return_code, error_message = hg_util.archive_repository_revision( self.app,
@@ -235,21 +240,19 @@ class ExportRepositoryManager( object ):
         Return a list of dictionaries defining repositories that are required by the repository
         associated with self.repository_id.
         """
-        rdm = RepositoryDependencyManager( self.app )
+        rdim = RepositoryDependencyInstallManager( self.app )
         repository = suc.get_repository_in_tool_shed( self.app, self.repository_id )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( self.app,
                                                                                  self.repository_id,
                                                                                  self.changeset_revision )
-        # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+        # Get a dictionary of all repositories upon which the contents of the current
+        # repository_metadata record depend.
         toolshed_base_url = str( web.url_for( '/', qualified=True ) ).rstrip( '/' )
-        repository_dependencies = \
-            repository_dependency_util.get_repository_dependencies_for_changeset_revision( app=self.app,
-                                                                                           repository=self.repository,
-                                                                                           repository_metadata=repository_metadata,
-                                                                                           toolshed_base_url=toolshed_base_url,
-                                                                                           key_rd_dicts_to_be_processed=None,
-                                                                                           all_repository_dependencies=None,
-                                                                                           handled_key_rd_dicts=None )
+        rb = RelationBuilder( self.app, repository, repository_metadata, toolshed_base_url )
+        # Work-around to ensure repositories that contain packages needed only for compiling
+        # a dependent package are included in the capsule.
+        rb.set_filter_dependencies_needed_for_compiling( False )
+        repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
         repo = hg_util.get_repo_for_repository( self.app,
                                                 repository=self.repository,
                                                 repo_path=None,
@@ -265,7 +268,7 @@ class ExportRepositoryManager( object ):
                                                      str( self.repository.user.username ),
                                                      repository_dependencies,
                                                      None )
-        all_required_repo_info_dict = rdm.get_required_repo_info_dicts( self.tool_shed_url, [ repo_info_dict ] )
+        all_required_repo_info_dict = rdim.get_required_repo_info_dicts( self.tool_shed_url, [ repo_info_dict ] )
         all_repo_info_dicts = all_required_repo_info_dict.get( 'all_repo_info_dicts', [] )
         return all_repo_info_dicts
 
@@ -410,7 +413,7 @@ class ImportRepositoryManager( object ):
                                 flush = True
                         # Do not allow dependent repository revisions to be automatically installed if population
                         # resulted in errors.
-                        dependent_downloadable_revisions = suc.get_dependent_downloadable_revisions( self.app, repository_metadata )
+                        dependent_downloadable_revisions = self.get_dependent_downloadable_revisions( repository_metadata )
                         for dependent_downloadable_revision in dependent_downloadable_revisions:
                             if dependent_downloadable_revision.downloadable:
                                 dependent_downloadable_revision.downloadable = False
@@ -464,13 +467,13 @@ class ImportRepositoryManager( object ):
                         else:
                             category_ids.append( self.app.security.encode_id( category.id ) )
                     # Create the repository record in the database.
-                    repository, create_message = repository_maintenance_util.create_repository( self.app,
-                                                                                                name,
-                                                                                                type,
-                                                                                                description,
-                                                                                                long_description,
-                                                                                                user_id=user_id,
-                                                                                                category_ids=category_ids )
+                    repository, create_message = repository_util.create_repository( self.app,
+                                                                                    name,
+                                                                                    type,
+                                                                                    description,
+                                                                                    long_description,
+                                                                                    user_id=user_id,
+                                                                                    category_ids=category_ids )
                     if create_message:
                         results_message += create_message
                     # Populate the new repository with the contents of exported repository archive.
@@ -542,6 +545,66 @@ class ImportRepositoryManager( object ):
                 return [], error_message
             archives.append( archive_file_name )
         return archives, error_message
+
+    def get_dependent_downloadable_revisions( self, repository_metadata ):
+        """
+        Return all repository_metadata records that are downloadable and that depend upon the received
+        repository_metadata record.
+        """
+        # This method is called only from the tool shed.
+        sa_session = self.app.model.context.current
+        rm_changeset_revision = repository_metadata.changeset_revision
+        rm_repository = repository_metadata.repository
+        rm_repository_name = str( rm_repository.name )
+        rm_repository_owner = str( rm_repository.user.username )
+        dependent_downloadable_revisions = []
+        for repository in sa_session.query( self.app.model.Repository ) \
+                                    .filter( and_( self.app.model.Repository.table.c.id != rm_repository.id,
+                                                   self.app.model.Repository.table.c.deleted == False,
+                                                   self.app.model.Repository.table.c.deprecated == False ) ):
+            downloadable_revisions = repository.downloadable_revisions
+            if downloadable_revisions:
+                for downloadable_revision in downloadable_revisions:
+                    if downloadable_revision.has_repository_dependencies:
+                        metadata = downloadable_revision.metadata
+                        if metadata:
+                            repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
+                            repository_dependencies_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
+                            for repository_dependencies_tup in repository_dependencies_tups:
+                                tool_shed, \
+                                name, \
+                                owner, \
+                                changeset_revision, \
+                                prior_installation_required, \
+                                only_if_compiling_contained_td = \
+                                    common_util.parse_repository_dependency_tuple( repository_dependencies_tup )
+                                if name == rm_repository_name and owner == rm_repository_owner:
+                                    # We've discovered a repository revision that depends upon the repository associated
+                                    # with the received repository_metadata record, but we need to make sure it depends
+                                    # upon the revision.
+                                    if changeset_revision == rm_changeset_revision:
+                                        dependent_downloadable_revisions.append( downloadable_revision )
+                                    else:
+                                        # Make sure the defined changeset_revision is current.
+                                        defined_repository_metadata = \
+                                            sa_session.query( self.app.model.RepositoryMetadata ) \
+                                                      .filter( self.app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) \
+                                                      .first()
+                                        if defined_repository_metadata is None:
+                                            # The defined changeset_revision is not associated with a repository_metadata
+                                            # record, so updates must be necessary.
+                                            defined_repository = suc.get_repository_by_name_and_owner( self.app, name, owner )
+                                            defined_repo = hg_util.get_repo_for_repository( self.app,
+                                                                                            repository=defined_repository,
+                                                                                            repo_path=None,
+                                                                                            create=False )
+                                            updated_changeset_revision = \
+                                                suc.get_next_downloadable_changeset_revision( defined_repository,
+                                                                                              defined_repo,
+                                                                                              changeset_revision )
+                                            if updated_changeset_revision == rm_changeset_revision:
+                                                dependent_downloadable_revisions.append( downloadable_revision )
+        return dependent_downloadable_revisions
 
     def get_export_info_dict( self, export_info_file_path ):
         """
@@ -651,8 +714,8 @@ class ImportRepositoryManager( object ):
 
     def import_repository_archive( self, repository, repository_archive_dict ):
         """Import a repository archive contained within a repository capsule."""
-        rdah = dependency_manager.RepositoryDependencyAttributeHandler( self.app, unpopulate=False )
-        tdah = dependency_manager.ToolDependencyAttributeHandler( self.app, unpopulate=False )
+        rdah = attribute_handlers.RepositoryDependencyAttributeHandler( self.app, unpopulate=False )
+        tdah = attribute_handlers.ToolDependencyAttributeHandler( self.app, unpopulate=False )
         archive_file_name = repository_archive_dict.get( 'archive_file_name', None )
         capsule_file_name = repository_archive_dict[ 'capsule_file_name' ]
         encoded_file_path = repository_archive_dict[ 'encoded_file_path' ]
@@ -729,11 +792,10 @@ class ImportRepositoryManager( object ):
                 results_dict[ 'ok' ] = False
                 results_dict[ 'error_message' ] += error_message
             try:
-                status, error_message = metadata_util.set_repository_metadata_due_to_new_tip( self.app,
-                                                                                              self.host,
-                                                                                              self.user,
-                                                                                              repository,
-                                                                                              content_alert_str=content_alert_str )
+                rmm = repository_metadata_manager.RepositoryMetadataManager( self.app, self.user )
+                status, error_message = rmm.set_repository_metadata_due_to_new_tip( self.host,
+                                                                                    repository,
+                                                                                    content_alert_str=content_alert_str )
                 if error_message:
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message

@@ -12,20 +12,24 @@ Returns:
 """
 
 from base64 import b64decode
-from paste.httpexceptions import HTTPBadRequest
 from urllib import unquote
 
-from galaxy import web
-from galaxy.exceptions import ObjectNotFound
-from galaxy.web.base.controller import BaseAPIController, CreatesApiKeysMixin
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.managers import api_keys
+from galaxy import exceptions
+from galaxy.web.base.controller import BaseAPIController
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class AuthenticationController( BaseAPIController, CreatesApiKeysMixin ):
+class AuthenticationController( BaseAPIController ):
 
-    @web.expose_api_anonymous
+    def __init__( self, app ):
+        super( AuthenticationController, self ).__init__( app )
+        self.api_keys_manager = api_keys.ApiKeyManager( app )
+
+    @expose_api_anonymous
     def get_api_key( self, trans, **kwd ):
         """
         def get_api_key( self, trans, **kwd )
@@ -43,19 +47,15 @@ class AuthenticationController( BaseAPIController, CreatesApiKeysMixin ):
 
         if ( len( user ) is not 1 ):
             # DB is inconsistent and we have more users with same email
-            raise ObjectNotFound
+            raise exceptions.ObjectNotFound()
         else:
             user = user[0]
             is_valid_user = user.check_password( password )
         if ( is_valid_user ):
-            if user.api_keys:
-                key = user.api_keys[0].key
-            else:
-                key = self.create_api_key( trans, user )
+            key = self.api_keys_manager.get_or_create_api_key( user )
             return dict( api_key=key )
         else:
-            trans.response.status = 500
-            return "invalid password"
+            raise exceptions.AuthenticationFailed()
 
     def _decode_baseauth( self, encoded_str ):
         """
@@ -81,7 +81,7 @@ class AuthenticationController( BaseAPIController, CreatesApiKeysMixin ):
             try:
                 email, password = b64decode( split[ 0 ] ).split( ':' )
             except:
-                raise HTTPBadRequest
+                raise exceptions.ActionInputError()
 
         # If there are only two elements, check the first and ensure it says
         # 'basic' so that we know we're about to decode the right thing. If not,
@@ -91,13 +91,13 @@ class AuthenticationController( BaseAPIController, CreatesApiKeysMixin ):
                 try:
                     email, password = b64decode( split[ 1 ] ).split( ':' )
                 except:
-                    raise HTTPBadRequest
+                    raise exceptions.ActionInputError()
             else:
-                raise HTTPBadRequest
+                raise exceptions.ActionInputError()
 
         # If there are more than 2 elements, something crazy must be happening.
         # Bail.
         else:
-            raise HTTPBadRequest
+            raise exceptions.ActionInputError()
 
         return unquote( email ), unquote( password )

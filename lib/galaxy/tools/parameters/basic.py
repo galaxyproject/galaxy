@@ -991,6 +991,8 @@ class SelectToolParameter( ToolParameter ):
                     # Found selected option.
                     value = option[1]
             d[ 'value' ] = value
+            
+        d[ 'display' ] = self.display
 
         return d
 
@@ -1002,7 +1004,7 @@ class GenomeBuildParameter( SelectToolParameter ):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.dbnames )
+    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
 
     >>> p = GenomeBuildParameter( None, XML(
     ... '''
@@ -1071,7 +1073,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     def _get_dbkey_names( self, trans=None ):
         if not self.tool:
             # Hack for unit tests, since we have no tool
-            return util.dbnames
+            return util.read_dbnames( None )
         return self.tool.app.genome_builds.get_genome_build_names( trans=trans )
 
 
@@ -1230,6 +1232,8 @@ class ColumnListParameter( SelectToolParameter ):
     def need_late_validation( self, trans, context ):
         if super( ColumnListParameter, self ).need_late_validation( trans, context ):
             return True
+        if self.data_ref not in context:
+            return False
         # Get the selected dataset if selected
         dataset = context[ self.data_ref ]
         if dataset:
@@ -1241,6 +1245,16 @@ class ColumnListParameter( SelectToolParameter ):
                     return True
         # No late validation
         return False
+
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        # call parent to_dict
+        d = super( ColumnListParameter, self ).to_dict( trans )
+
+        # add data reference
+        d[ 'data_ref' ] = self.data_ref
+        
+        # return
+        return d
 
 
 class DrillDownSelectToolParameter( SelectToolParameter ):
@@ -1712,10 +1726,15 @@ class DataToolParameter( BaseDataToolParameter ):
             if self.__display_multirun_option():
                 # Select multiple datasets, run multiple jobs.
                 multirun_key = "%s|__multirun__" % self.name
+                collection_multirun_key = "%s|__collection_multirun__" % self.name
                 if multirun_key in (other_values or {}):
                     multirun_value = listify( other_values[ multirun_key ] )
                     if multirun_value and len( multirun_value ) > 1:
                         default_field = "select_multiple"
+                elif collection_multirun_key in (other_values or {}):
+                    multirun_value = listify( other_values[ collection_multirun_key ] )
+                    if multirun_value:
+                        default_field = "select_collection"
                 else:
                     multirun_value = value
                 multi_dataset_matcher = DatasetMatcher( trans, self, multirun_value, other_values )
@@ -2014,9 +2033,17 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         default_field = "select_single_collection"
         fields = odict()
 
+        collection_multirun_key = "%s|__collection_multirun__" % self.name
+        if collection_multirun_key in (other_values or {}):
+            multirun_value = other_values[ collection_multirun_key ]
+            if multirun_value:
+                default_field = "select_map_over_collections"
+        else:
+            multirun_value = value
+
         history = self._get_history( trans )
         fields[ "select_single_collection" ] = self._get_single_collection_field( trans=trans, history=history, value=value, other_values=other_values )
-        fields[ "select_map_over_collections" ] = self._get_select_dataset_collection_field( trans=trans, history=history, value=value, other_values=other_values )
+        fields[ "select_map_over_collections" ] = self._get_select_dataset_collection_field( trans=trans, history=history, value=multirun_value, other_values=other_values )
 
         return self._switch_fields( fields, default_field=default_field )
 
@@ -2065,7 +2092,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def from_html( self, value, trans, other_values={} ):
         if not value and not self.optional:
-            raise ValueError( "History does not include a dataset of the required format / build" )
+            raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
         if value in [None, "None"]:
             return None
         if isinstance( value, str ) and value.find( "," ) > 0:

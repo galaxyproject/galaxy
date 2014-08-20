@@ -1,13 +1,16 @@
 import urllib
 
+from galaxy import exceptions
 from galaxy import web, util
+from galaxy.web import _future_expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string
 from galaxy.visualization.data_providers.genome import *
-from galaxy.dataset_collections.util import dictify_dataset_collection_instance
+
+from galaxy.managers.collections_util import dictify_dataset_collection_instance
 
 import logging
 log = logging.getLogger( __name__ )
@@ -44,7 +47,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             trans.response.status = 500
             return { 'error': str( exc ) }
 
-    @web.expose_api
+    @_future_expose_api_anonymous
     def show( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}
@@ -52,18 +55,16 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         """
         io_details = util.string_as_bool( kwd.get( 'io_details', False ) )
         link_details = util.string_as_bool( kwd.get( 'link_details', False ) )
-        try:
-            id = urllib.unquote_plus( id )
-            tool = self.app.toolbox.get_tool( id )
-            if not tool:
-                trans.response.status = 404
-                return { 'error': 'tool not found', 'id': id }
-            return tool.to_dict( trans, io_details=io_details, link_details=link_details )
+        tool = self._get_tool( id )
+        return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
-        except Exception, exc:
-            log.error( 'could not convert tool (%s) to dictionary: %s', id, str( exc ), exc_info=True )
-            trans.response.status = 500
-            return { 'error': str( exc ) }
+    @_future_expose_api_anonymous
+    def citations( self, trans, id, **kwds ):
+        tool = self._get_tool( id )
+        rval = []
+        for citation in tool.citations:
+            rval.append( citation.to_dict( 'bibtex' ) )
+        return rval
 
     @web.expose_api_anonymous
     def create( self, trans, payload, **kwd ):
@@ -170,6 +171,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
     #
     # -- Helper methods --
     #
+    def _get_tool( self, id ):
+        id = urllib.unquote_plus( id )
+        tool = self.app.toolbox.get_tool( id )
+        if not tool:
+            raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
+        return tool
 
     def _rerun_tool( self, trans, payload, **kwargs ):
         """

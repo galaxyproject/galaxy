@@ -53,6 +53,8 @@ class Configuration( object ):
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
+        self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
+        self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared','ucsc','chrom') ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Install and test framework for testing tools contained in repositories.
@@ -65,6 +67,8 @@ class Configuration( object ):
             self.tool_dependency_dir = None
             self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
+        # Galaxy flavor Docker Image
+        self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.user_activation_on = kwargs.get( 'user_activation_on', None )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
@@ -128,6 +132,9 @@ class Configuration( object ):
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
+        self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
+        self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "database/tool_shed_citations/data" ), self.root )
+        self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )
 
     def get( self, key, default ):
         return self.config_dict.get( key, default )
