@@ -40,6 +40,7 @@ DEFAULT_INSTANCE_TYPES = [
     ("r3.8xlarge", "Memory optimized 8xLarge (32 vCPU/244GB RAM)"),
 ]
 
+
 class CloudController(BaseUIController):
     """Galaxy Cloud Functions"""
 
@@ -56,7 +57,7 @@ class CloudController(BaseUIController):
                                    share_string=share_string,
                                    ami=ami,
                                    bucket_default=bucket_default,
-                                   instance_types = DEFAULT_INSTANCE_TYPES)
+                                   instance_types=DEFAULT_INSTANCE_TYPES)
 
     @web.expose
     def get_account_info(self, trans, key_id, secret):
