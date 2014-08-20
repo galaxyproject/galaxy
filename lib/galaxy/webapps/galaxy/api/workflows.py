@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import uuid
 import logging
-from sqlalchemy import desc, or_
+from sqlalchemy import desc, or_, and_
 from galaxy import exceptions, util
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.managers import histories
@@ -433,8 +433,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return stored_workflow
 
     def __get_stored_workflow( self, trans, workflow_id ):
-        workflow_id = self.__decode_id( trans, workflow_id )
         try:
+            workflow_id = self.__decode_id( trans, workflow_id )
             query = trans.sa_session.query( trans.app.model.StoredWorkflow )
             stored_workflow = query.get( workflow_id )
         except Exception:
@@ -447,6 +447,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
                 )).first()            
                 if stored_workflow is None:
                     raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
+                return stored_workflow
             except:
                 pass #let the outer raise exception happen
             raise exceptions.ObjectNotFound( "No such workflow found - invalid workflow identifier." )
