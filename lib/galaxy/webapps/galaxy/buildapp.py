@@ -561,12 +561,12 @@ def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
     # Send to dynamic app by default
     urlmap["/"] = app
     # Define static mappings from config
-    urlmap["/static"] = Static( conf.get( "static_dir" ), cache_time )
-    urlmap["/images"] = Static( conf.get( "static_images_dir" ), cache_time )
-    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir" ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
-    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
-    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", 'static/robots.txt'), cache_time )
+    urlmap["/static"] = Static( conf.get( "static_dir", "./static/" ), cache_time )
+    urlmap["/images"] = Static( conf.get( "static_images_dir", "./static/images" ), cache_time )
+    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", "./static/scripts/" ), cache_time )
+    urlmap["/static/style"] = Static( conf.get( "static_style_dir", "./static/style/blue" ), cache_time )
+    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", "./static/favicon.ico" ), cache_time )
+    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", "./static/robots.txt" ), cache_time )
 
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []
