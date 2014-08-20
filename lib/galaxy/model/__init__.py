@@ -2974,6 +2974,7 @@ class StoredWorkflow( object, Dictifiable):
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
         rval['tags'] = tags_str_list
+        rval['latest_workflow_uuid'] = ( lambda uuid: str( uuid ) if self.latest_workflow.uuid else None )( self.latest_workflow.uuid )
         return rval
 
 
@@ -2982,12 +2983,16 @@ class Workflow( object, Dictifiable ):
     dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
     dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
 
-    def __init__( self ):
+    def __init__( self, uuid=None ):
         self.user = None
         self.name = None
         self.has_cycles = None
         self.has_errors = None
         self.steps = []
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
 
     def has_outputs_defined(self):
         """
@@ -2997,6 +3002,11 @@ class Workflow( object, Dictifiable ):
             if step.workflow_outputs:
                 return True
         return False
+
+    def to_dict( self, view='collection', value_mapper=None):
+        rval = super( Workflow, self ).to_dict( view=view, value_mapper = value_mapper )
+        rval['uuid'] = ( lambda uuid: str( uuid ) if uuid else None )( self.uuid )  
+        return rval
 
 
 
