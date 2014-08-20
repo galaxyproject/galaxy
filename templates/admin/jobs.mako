@@ -133,3 +133,33 @@
         </div>
     </div>
 </form>
+
+<form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">
+            Administrative Job Lock
+        </div>
+        <div class="toolFormBody">
+            <div class="form-row">
+                <input type="hidden" name="ajl_submit" value="True"/>
+    %if job_lock==True:
+                <p>Job dispatching is currently <strong>locked</strong>.</p>
+                <label>
+                    <input type='checkbox' name='job_lock' checked='checked' />
+                    Prevent jobs from dispatching.
+                </label>
+    %else:
+                <p>Job dispatching is currently <strong>unlocked</strong>.</p>
+                <label>
+                    <input type='checkbox' name='job_lock' />
+                    Prevent jobs from dispatching.
+                </label>
+    %endif
+            </div>
+            <div class="form-row">
+                <input type="submit" class="primary-button" name="submit" value="Update">
+            </div>
+        </div>
+    </div>
+</form>

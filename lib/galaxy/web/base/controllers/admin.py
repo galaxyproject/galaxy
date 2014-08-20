@@ -1037,6 +1037,7 @@ class Admin( object ):
             heap = heap.theone
         return trans.fill_template( '/admin/memdump.mako', heap = heap, ids = ids, sorts = sorts, breadcrumb = breadcrumb, msg = msg )
 
+
     @web.expose
     @web.require_admin
     def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, job_lock = None, ajl_submit = None, **kwd ):
@@ -1069,6 +1070,17 @@ class Admin( object ):
             msg += ', '.join( deleted )
             status = 'done'
             trans.sa_session.flush()
+        if ajl_submit:
+            if job_lock == 'on':
+                galaxy.queue_worker.send_control_task(trans, 'admin_job_lock',
+                                                      kwargs={'job_lock': True } )
+                job_lock = True
+            else:
+                galaxy.queue_worker.send_control_task(trans, 'admin_job_lock',
+                                                      kwargs={'job_lock': False } )
+                job_lock = False
+        else:
+            job_lock = trans.app.job_manager.job_handler.job_queue.job_lock
         cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
         jobs = trans.sa_session.query( trans.app.model.Job ) \
                                .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1089,7 +1101,8 @@ class Admin( object ):
                                     last_updated = last_updated,
                                     cutoff = cutoff,
                                     msg = msg,
-                                    status = status )
+                                    status = status,
+                                    job_lock = job_lock)
 
 ## ---- Utility methods -------------------------------------------------------
 
