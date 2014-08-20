@@ -289,34 +289,24 @@ var GalaxyMenu = Backbone.Model.extend(
                 title       : "Logged in as " + this.options.user.email
             });
 
-            // remote user
-            if (this.options.use_remote_user && this.options.remote_user_logout_href)
-            {
-                tab_user.add({
-                    title   : "Logout",
-                    content : this.options.remote_user_logout_href,
-                    target  : "_top"
-                });
-            } else {
-                tab_user.add({
-                    title   : "Preferences",
-                    content : "user?cntrller=user",
-                    target  : "galaxy_main"
-                });
+            tab_user.add({
+                title   : "Preferences",
+                content : "user?cntrller=user",
+                target  : "galaxy_main"
+            });
 
-                tab_user.add({
-                    title   : "Custom Builds",
-                    content : "user/dbkeys",
-                    target  : "galaxy_main"
-                });
-            
-                tab_user.add({
-                    title   : "Logout",
-                    content : "user/logout",
-                    target  : "_top",
-                    divider : true
-                });
-            }
+            tab_user.add({
+                title   : "Custom Builds",
+                content : "user/dbkeys",
+                target  : "galaxy_main"
+            });
+        
+            tab_user.add({
+                title   : "Logout",
+                content : "user/logout",
+                target  : "_top",
+                divider : true
+            });
         
             // default tabs
             tab_user.add({
