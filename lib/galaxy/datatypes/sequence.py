@@ -460,6 +460,7 @@ class Fastq ( Sequence ):
         """
         Set the number of sequences and the number of data lines
         in dataset.
+        FIXME: This does not properly handle line wrapping
         """
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
@@ -470,22 +471,17 @@ class Fastq ( Sequence ):
         seq_counter = 0     # blocks should be 4 lines long
         for line in file( dataset.file_name ):
             line = line.strip()
-            if line and line.startswith( '#' ) and not sequences:
+            if line and line.startswith( '#' ) and not data_lines:
                 # We don't count comment lines for sequence data types
                 continue
+            seq_counter += 1
+            data_lines += 1
             if line and line.startswith( '@' ):
                 if seq_counter >= 4:
                     # count previous block
                     # blocks should be 4 lines long
                     sequences += 1
                     seq_counter = 1
-                else:
-                    # in case quality line starts with @
-                    seq_counter += 1
-                data_lines += 1
-            else:
-                data_lines += 1
-                seq_counter += 1
         if seq_counter >= 4:
             # count final block
             sequences += 1
