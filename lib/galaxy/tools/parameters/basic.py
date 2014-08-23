@@ -991,6 +991,8 @@ class SelectToolParameter( ToolParameter ):
                     # Found selected option.
                     value = option[1]
             d[ 'value' ] = value
+            
+        d[ 'display' ] = self.display
 
         return d
 
@@ -1230,6 +1232,8 @@ class ColumnListParameter( SelectToolParameter ):
     def need_late_validation( self, trans, context ):
         if super( ColumnListParameter, self ).need_late_validation( trans, context ):
             return True
+        if self.data_ref not in context:
+            return False
         # Get the selected dataset if selected
         dataset = context[ self.data_ref ]
         if dataset:
@@ -1241,6 +1245,16 @@ class ColumnListParameter( SelectToolParameter ):
                     return True
         # No late validation
         return False
+
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        # call parent to_dict
+        d = super( ColumnListParameter, self ).to_dict( trans )
+
+        # add data reference
+        d[ 'data_ref' ] = self.data_ref
+        
+        # return
+        return d
 
 
 class DrillDownSelectToolParameter( SelectToolParameter ):

@@ -31,6 +31,15 @@ PKEY_PREFIX = 'gxy_pkey'
 DEFAULT_KEYPAIR = 'cloudman_keypair'
 CLOUDMAN_TAG_KEY = 'galaxy:cloudman'
 
+DEFAULT_INSTANCE_TYPES = [
+    ("c3.large", "Compute optimized Large (2 vCPU/4GB RAM)"),
+    ("c3.2xlarge", "Compute optimized 2xLarge (8 vCPU/15GB RAM)"),
+    ("c3.8xlarge", "Compute optimized 8xLarge (32 vCPU/60GB RAM)"),
+    ("r3.large", "Memory optimized Large (2 vCPU/15GB RAM)"),
+    ("r3.2xlarge", "Memory optimized 2xLarge (8 vCPU/61GB RAM)"),
+    ("r3.8xlarge", "Memory optimized 8xLarge (32 vCPU/244GB RAM)"),
+]
+
 
 class CloudController(BaseUIController):
     """Galaxy Cloud Functions"""
@@ -47,7 +56,8 @@ class CloudController(BaseUIController):
                                    default_keypair=DEFAULT_KEYPAIR,
                                    share_string=share_string,
                                    ami=ami,
-                                   bucket_default=bucket_default)
+                                   bucket_default=bucket_default,
+                                   instance_types=DEFAULT_INSTANCE_TYPES)
 
     @web.expose
     def get_account_info(self, trans, key_id, secret):

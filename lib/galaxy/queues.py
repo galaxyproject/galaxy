@@ -27,7 +27,8 @@ def all_control_queues_for_declare(config):
 
     Refactor later to actually persist this somewhere instead of building it repeatedly.
     """
-    return [Queue('control.%s' % q, galaxy_exchange, routing_key='control') for q in config.server_names]
+    return [Queue('control.%s' % q, galaxy_exchange, routing_key='control') for
+            q in config.server_names]
 
 
 def control_queue_from_config(config):

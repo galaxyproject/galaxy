@@ -1329,6 +1329,7 @@ ul{list-style:none}
 .libraryTitle th{text-align:left}
 pre.peek{background:white;color:black;overflow:auto}
 pre.peek th{color:white;background:#ebd9b2}
+.help-button{float:right}
 span.expandLink{padding-left:12px;display:inline-block;vertical-align:middle;background:url(../images/silk/resultset_next.png) no-repeat}
 .folderRow.expanded span.expandLink{background:url(../images/silk/resultset_bottom.png) no-repeat}
 .folderRow span.rowIcon{float:left;margin-right:5px;width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/folder.png)}

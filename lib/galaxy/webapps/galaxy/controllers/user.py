@@ -616,11 +616,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if biostar_url:
                 # TODO: It would be better if we automatically logged this user out of biostar
                 message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % ( biostar_url )
-        return trans.fill_template( '/user/logout.mako',
-                                    refresh_frames=refresh_frames,
-                                    message=message,
-                                    status='done',
-                                    active_view="user" )
+        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
+            trans.response.send_redirect(trans.app.config.remote_user_logout_href)
+        else:
+            return trans.fill_template('/user/logout.mako',
+                                       refresh_frames=refresh_frames,
+                                       message=message,
+                                       status='done',
+                                       active_view="user" )
 
     @web.expose
     def create( self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd ):

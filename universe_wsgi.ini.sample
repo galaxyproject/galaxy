@@ -229,9 +229,9 @@ visualization_plugins_directory = config/plugins/visualizations
 # Citation related caching. Tool citations information maybe fetched from
 # external sources such as http://dx.doi.org/ by Galaxy - the following parameters
 # can be used to control the caching used to store this information.
-#citation_cache_type=file
-#citation_cache_data_dir=database/citations/data
-#citation_cache_lock_dir=database/citations/lock
+#citation_cache_type = file
+#citation_cache_data_dir = database/citations/data
+#citation_cache_lock_dir = database/citations/lock
 
 # External service types config file, defines what types of external_services configurations 
 # are available in Galaxy.
@@ -309,7 +309,7 @@ visualization_plugins_directory = config/plugins/visualizations
 #smtp_password = None
 
 # If your SMTP server requires SSL from the beginning of the connection
-# smtp_ssl= False
+# smtp_ssl = False
 
 # On the user registration form, users may choose to join the mailing list.
 # This is the address of the list they'll be subscribed to.
@@ -450,7 +450,7 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Galaxy Q&A" link in the "Help" menu
 # The Galaxy Q&A site is under development; when the site is done, this URL
 # will be set and uncommented.
-# qa_url = 
+#qa_url = 
 
 # Serve static content, which must be enabled if you're not serving it via a
 # proxy server.  These options should be self explanatory and so are not
@@ -620,7 +620,7 @@ use_interactive = True
 #enable_lucene_library_search = False
 # maxiumum file size to index for searching, in MB
 #fulltext_max_size = 500
-#fulltext_noindex_filetypes=bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
+#fulltext_noindex_filetypes = bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
 # base URL of server providing search functionality using lucene
 #fulltext_url = http://localhost:8081
 
@@ -709,7 +709,7 @@ use_interactive = True
 # Master key that allows many API admin actions to be used without actually
 # having a defined admin user in the database/config. Only set this if you need
 # to bootstrap Galaxy, you probably do not want to set this on public servers.
-#master_api_key=changethis
+#master_api_key = changethis
 
 # Enable tool tags (associating tools with tags).  This has its own option
 # since its implementation has a few performance implications on startup for

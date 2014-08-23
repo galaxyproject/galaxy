@@ -1037,6 +1037,7 @@ class Admin( object ):
             heap = heap.theone
         return trans.fill_template( '/admin/memdump.mako', heap = heap, ids = ids, sorts = sorts, breadcrumb = breadcrumb, msg = msg )
 
+
     @web.expose
     @web.require_admin
     def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, job_lock = None, ajl_submit = None, **kwd ):
@@ -1069,6 +1070,17 @@ class Admin( object ):
             msg += ', '.join( deleted )
             status = 'done'
             trans.sa_session.flush()
+        if ajl_submit:
+            if job_lock == 'on':
+                galaxy.queue_worker.send_control_task(trans, 'admin_job_lock',
+                                                      kwargs={'job_lock': True } )
+                job_lock = True
+            else:
+                galaxy.queue_worker.send_control_task(trans, 'admin_job_lock',
+                                                      kwargs={'job_lock': False } )
+                job_lock = False
+        else:
+            job_lock = trans.app.job_manager.job_handler.job_queue.job_lock
         cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
         jobs = trans.sa_session.query( trans.app.model.Job ) \
                                .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1077,11 +1089,6 @@ class Admin( object ):
                                                    trans.app.model.Job.state == trans.app.model.Job.states.RUNNING,
                                                    trans.app.model.Job.state == trans.app.model.Job.states.UPLOAD ) ) ) \
                                .order_by( trans.app.model.Job.table.c.update_time.desc() )
-        recent_jobs = trans.sa_session.query( trans.app.model.Job ) \
-                               .filter( and_( trans.app.model.Job.table.c.update_time > cutoff_time,
-                                              or_( trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
-                                                   trans.app.model.Job.state == trans.app.model.Job.states.OK) ) ) \
-                               .order_by( trans.app.model.Job.table.c.update_time.desc() )
         last_updated = {}
         for job in jobs:
             delta = datetime.utcnow() - job.update_time
@@ -1089,33 +1096,13 @@ class Admin( object ):
                 last_updated[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
             else:
                 last_updated[job.id] = '%s minutes' % int( delta.seconds / 60 )
-        finished = {}
-        for job in recent_jobs:
-            delta = datetime.utcnow() - job.update_time
-            if delta > timedelta( minutes=60 ):
-                finished[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
-            else:
-                finished[job.id] = '%s minutes' % int( delta.seconds / 60 )
         return trans.fill_template( '/admin/jobs.mako',
                                     jobs = jobs,
-                                    recent_jobs = recent_jobs,
                                     last_updated = last_updated,
-                                    finished = finished,
                                     cutoff = cutoff,
                                     msg = msg,
-                                    status = status )
-    
-    @web.expose
-    @web.require_admin
-    def job_info( self, trans, jobid=None ):        
-        job = None
-        if jobid is not None:
-            job = trans.sa_session.query( trans.app.model.Job ).get(jobid)            
-        return trans.fill_template( '/webapps/reports/job_info.mako',
-                                        job=job,
-                                        message="<a href='jobs'>Back</a>" )
-                                        
-
+                                    status = status,
+                                    job_lock = job_lock)
 
 ## ---- Utility methods -------------------------------------------------------
 

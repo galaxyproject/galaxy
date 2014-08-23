@@ -134,45 +134,32 @@
     </div>
 </form>
 
-<p/>
-%if recent_jobs:
-<p>
-    Recent Jobs: These jobs have completed
-</p>
-    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-        <tr class="header">
-            <td>Job ID</td>
-            <td>User</td>
-            <td>Finished</td>
-            <td>Tool</td>
-            <td>State</td>
-            <td>Inputs</td>
-            <td>Command Line</td>
-            <td>Job Runner</td>
-            <td>PID/Cluster ID</td>
-        </tr>
-        %for job in recent_jobs:
-                <td><a href="${h.url_for( controller="admin", action="job_info" )}?jobid=${job.id}">${job.id}</a></td>
-                %if job.history and job.history.user:
-                    <td>${job.history.user.email}</td>
-                %else:
-                    <td>anonymous</td>
-                %endif
-                <td>${finished[job.id]} ago</td>
-                <td>${job.tool_id}</td>
-                <td>${job.state}</td>
-                <%
-                    try:
-                        inputs = ", ".join( [ '%s&nbsp;%s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
-                    except:
-                        inputs = 'Unable to determine inputs'
-                %>
-                <td>${inputs}</td>
-                <td>${job.command_line}</td>
-                <td>${job.job_runner_name}</td>
-                <td>${job.job_runner_external_id}</td>
-            </tr>
-        %endfor
-    </table>
+<form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
     <p/>
-%endif
+    <div class="toolForm">
+        <div class="toolFormTitle">
+            Administrative Job Lock
+        </div>
+        <div class="toolFormBody">
+            <div class="form-row">
+                <input type="hidden" name="ajl_submit" value="True"/>
+    %if job_lock==True:
+                <p>Job dispatching is currently <strong>locked</strong>.</p>
+                <label>
+                    <input type='checkbox' name='job_lock' checked='checked' />
+                    Prevent jobs from dispatching.
+                </label>
+    %else:
+                <p>Job dispatching is currently <strong>unlocked</strong>.</p>
+                <label>
+                    <input type='checkbox' name='job_lock' />
+                    Prevent jobs from dispatching.
+                </label>
+    %endif
+            </div>
+            <div class="form-row">
+                <input type="submit" class="primary-button" name="submit" value="Update">
+            </div>
+        </div>
+    </div>
+</form>

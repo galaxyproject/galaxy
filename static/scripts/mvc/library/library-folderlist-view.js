@@ -34,7 +34,7 @@ var FolderListView = Backbone.View.extend({
   events: {
     'click #select-all-checkboxes'  : 'selectAll',
     'click .dataset_row'            : 'selectClickedRow',
-    'click .sort-folder-link'       : 'sort_clicked'
+    'click .sort-folder-link'       : 'sortColumnClicked'
   },
 
   // cache of rendered views
@@ -88,6 +88,7 @@ var FolderListView = Backbone.View.extend({
   render: function (options) {
     this.options = _.defaults(this.options, options);
     var template = this.templateFolder();
+    $(".tooltip").hide();
 
     // TODO move to server
     // find the upper id in the full path
@@ -99,7 +100,7 @@ var FolderListView = Backbone.View.extend({
       upper_folder_id = path[path.length-2][0];
     }
 
-    this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, id: this.options.id, upper_folder_id: upper_folder_id, order: this.sort}));
+    this.$el.html(template({ path: this.folderContainer.attributes.metadata.full_path, parent_library_id: this.folderContainer.attributes.metadata.parent_library_id, id: this.options.id, upper_folder_id: upper_folder_id, order: this.sort}));
 
     // initialize the library tooltips
     $("#center [data-toggle]").tooltip();
@@ -116,7 +117,7 @@ var FolderListView = Backbone.View.extend({
     var fetched_metadata = this.folderContainer.attributes.metadata;
     fetched_metadata.contains_file = typeof this.collection.findWhere({type: 'file'}) !== 'undefined';
     Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
-    $('.dataset').hover(function() {
+    $('.library-row').hover(function() {
       $(this).find('.show_on_hover').show();
     }, function () {
       $(this).find('.show_on_hover').hide();
@@ -156,7 +157,7 @@ var FolderListView = Backbone.View.extend({
    * @param {Item or FolderAsModel} model of the view that will be rendered
    */
   renderOne: function(model){
-    if (model.get('data_type') !== 'folder'){
+    if (model.get('type') !== 'folder'){
         this.options.contains_file = true;
         // model.set('readable_size', this.size_to_string(model.get('file_size')));
       }
@@ -168,7 +169,7 @@ var FolderListView = Backbone.View.extend({
 
     this.$el.find('#first_folder_item').after(rowView.el);
 
-    $('.dataset').hover(function() {
+    $('.library-row').hover(function() {
       $(this).find('.show_on_hover').show();
     }, function () {
       $(this).find('.show_on_hover').hide();
@@ -193,7 +194,7 @@ var FolderListView = Backbone.View.extend({
   },
 
   /** User clicked the table heading = he wants to sort stuff */
-  sort_clicked : function(event){
+  sortColumnClicked : function(event){
     event.preventDefault();
     if (this.sort === 'asc'){
         this.sortFolder('name','desc');
@@ -204,6 +205,7 @@ var FolderListView = Backbone.View.extend({
     }
     this.render();
     this.renderAll();
+    this.checkEmptiness();
   },
 
   /**
@@ -286,10 +288,6 @@ var FolderListView = Backbone.View.extend({
     $row.find('.fa-file').removeClass('fa-file').addClass('fa-file-o');
   },
 
-// MMMMMMMMMMMMMMMMMM
-// === TEMPLATES ====
-// MMMMMMMMMMMMMMMMMM
-
   templateFolder : function (){
       var tmpl_array = [];
 
@@ -306,7 +304,7 @@ var FolderListView = Backbone.View.extend({
       tmpl_array.push('</ol>');
 
       // FOLDER CONTENT
-      tmpl_array.push('<table id="folder_table" class="grid table table-condensed">');
+      tmpl_array.push('<table data-library-id="<%- parent_library_id  %>" id="folder_table" class="grid table table-condensed">');
       tmpl_array.push('   <thead>');
       tmpl_array.push('       <th class="button_heading"></th>');
       tmpl_array.push('       <th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
@@ -329,7 +327,7 @@ var FolderListView = Backbone.View.extend({
 
       tmpl_array.push('   </tbody>');
       tmpl_array.push('</table>');
-      tmpl_array.push('<div class="empty-folder-message" style="display:none;">This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity">library security wikipage</a> or visit the <a href="https://biostar.usegalaxy.org/">Galaxy support site</a>.</div>');
+      tmpl_array.push('<div class="empty-folder-message" style="display:none;">This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">library security wikipage</a> or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.</div>');
 
       return _.template(tmpl_array.join(''));
   }

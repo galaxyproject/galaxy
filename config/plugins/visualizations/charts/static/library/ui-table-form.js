@@ -88,7 +88,7 @@ var View = Backbone.View.extend({
                 break;
             // radiobox field
             case 'radiobutton' :
-                field = new Ui.RadioButton({
+                field = new Ui.RadioButton.View({
                     id          : 'field-' + id,
                     data        : settings_def.data,
                     value       : model.get(id),
