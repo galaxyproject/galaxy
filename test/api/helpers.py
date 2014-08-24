@@ -343,17 +343,27 @@ class DatasetCollectionPopulator( object ):
 
 
 def wait_on_state( state_func, assert_ok=False, timeout=5 ):
-    delta = .25
-    iteration = 0
-    while True:
-        if (delta * iteration) > timeout:
-            assert False, "Timed out waiting on state."
-        iteration += 1
+    def get_state( ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
         state = response.json()[ "state" ]
         if state not in [ "running", "queued", "new" ]:
-            break
+            if assert_ok:
+                assert state == "ok", "Final state - %s - not okay." % state
+            return state
+        else:
+            return None
+    wait_on( get_state, desc="state", timeout=timeout)
+
+
+def wait_on( function, desc, timeout=5 ):
+    delta = .25
+    iteration = 0
+    while True:
+        if (delta * iteration) > timeout:
+            assert False, "Timed out waiting on %s." % desc
+        iteration += 1
+        value = function()
+        if value is not None:
+            return value
         time.sleep( delta )
-    if assert_ok:
-        assert state == "ok", "Final state - %s - not okay." % state
