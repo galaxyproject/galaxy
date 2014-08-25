@@ -243,6 +243,7 @@ def get_uploaded_datasets( trans, cntrller, params, precreated_datasets, dataset
         else:
             data.extension = uploaded_dataset.file_type
             data.dbkey = uploaded_dataset.dbkey
+            data.uuid = uploaded_dataset.uuid
             trans.sa_session.add( data )
             trans.sa_session.flush()
             if library_bunch:
