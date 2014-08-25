@@ -27,7 +27,7 @@ from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
 from galaxy.workflow.modules import module_factory
-from galaxy.model.orm import eagerload, eagerload_all, desc
+from galaxy.model.orm import eagerload, eagerload_all, desc, not_
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
@@ -2694,7 +2694,7 @@ class SharableMixin:
         item = self.get_item( trans, id )
         if item:
             # Only update slug if slug is not already in use.
-            if trans.sa_session.query( item.__class__ ).filter_by( user=item.user, slug=new_slug, importable=True ).count() == 0:
+            if trans.sa_session.query( item.__class__ ).filter_by( user=item.user, slug=new_slug ).count() == 0:
                 item.slug = new_slug
                 trans.sa_session.flush()
 
@@ -2729,7 +2729,9 @@ class SharableMixin:
         # add integer to end.
         new_slug = slug_base
         count = 1
-        while sa_session.query( item.__class__ ).filter_by( user=item.user, slug=new_slug, importable=True ).count() != 0:
+        # Ensure unique across model class and user and don't include this item
+        # in the check in case it has previously been assigned a valid slug.
+        while sa_session.query( item.__class__ ).filter( item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
             new_slug = '%s-%i' % ( slug_base, count )
