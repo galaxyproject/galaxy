@@ -11,8 +11,22 @@
     tbody td {
         &:extend(.grid tbody td);
     }
-    .current {
-        &:extend(.grid .current);
+    
+    tbody {
+        cursor: pointer;
+    }
+}
+
+.ui-table-plain {
+    &:extend(.grid);
+
+    tbody td {
+        padding: 5px 0px 5px 5px !important;
+        border: none !important;
+    }
+    
+    tbody {
+        cursor: auto !important;
     }
 }
 

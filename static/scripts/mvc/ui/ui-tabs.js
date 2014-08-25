@@ -2,8 +2,7 @@
 define(['utils/utils'], function(Utils) {
 
 // return
-var View = Backbone.View.extend(
-{
+var View = Backbone.View.extend({
     // defaults options
     optionsDefault: {
         title_new       : '',
@@ -63,6 +62,11 @@ var View = Backbone.View.extend(
                 self.options.onnew();
             });
         }
+    },
+    
+    // size
+    size: function() {
+        return _.size(this.list);
     },
     
     // append

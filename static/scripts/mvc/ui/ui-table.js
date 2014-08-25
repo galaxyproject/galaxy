@@ -17,7 +17,7 @@ var View = Backbone.View.extend({
         onchange    : null,
         ondblclick  : null,
         onconfirm   : null,
-        cls         : ''
+        cls         : 'ui-table'
     },
     
     // events
@@ -198,12 +198,11 @@ var View = Backbone.View.extend({
     },
         
     // load html template
-    _template: function(options)
-    {
+    _template: function(options) {
         return  '<div>' +
-                    '<table class="ui-table ' + options.cls + '">' +
+                    '<table class="' + options.cls + '">' +
                         '<thead></thead>' +
-                        '<tbody style="cursor: pointer;"></tbody>' +
+                        '<tbody></tbody>' +
                     '</table>' +
                     '<tmessage>' + options.content + '</tmessage>' +
                 '<div>';

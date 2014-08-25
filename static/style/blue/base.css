@@ -1279,6 +1279,9 @@ label{font-weight:normal}
 .upload-ftp .upload-ftp-warning{text-align:center;margin-top:20px}
 .upload-settings .upload-settings-cover{position:absolute;width:100%;height:100%;top:0px;left:0px;background:#fff;opacity:0.4;cursor:no-drop}
 .ui-radiobutton label{height:23px;line-height:1em}
+.ui-table tbody{cursor:pointer}
+.ui-table-plain tbody td{padding:5px 0px 5px 5px !important;border:none !important}
+.ui-table-plain tbody{cursor:auto !important}
 .ui-table-form-separator{font-weight:bold;font-size:0.9em}
 .ui-label{font-weight:bold}
 .ui-message{padding:2px 2px 2px 10px}
@@ -1528,13 +1531,13 @@ div.debug{margin:10px;padding:5px;background:#FFFF99;border:solid #FFFF33 1px;co
 .grid-header{padding-bottom:1em}
 .grid-header h2{margin:0;margin-bottom:0.5em}
 .grid-header .title{font-weight:bold}
-.grid,.ui-table{padding-top:1em;border-collapse:collapse;width:100%}
+.grid,.ui-table,.ui-table-plain{padding-top:1em;border-collapse:collapse;width:100%}
 .grid tbody td,.ui-table tbody td{line-height:1.428571429;border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:5px}
 .grid tbody td:empty{padding:0}
 .grid thead tr{height:2em}
 .grid thead th{line-height:1.428571429;background:#ebd9b2;color:#000;border-top:solid #d6b161 1px;border-bottom:solid #d6b161 1px;padding:5px;text-align:left;white-space:nowrap}
 .grid tfoot td{background-color:#F8F8F8;border-top:solid #DDDDDD 1px;border-bottom:solid #DDDDDD 1px;padding:5px}
-.grid .current,.ui-table .current{background-color:#EEEEFF}
+.grid .current{background-color:#EEEEFF}
 .count-box{min-width:1.1em;padding:5px;border-width:1px;border-style:solid;text-align:center;display:inline-block}
 .text-filter-val{border:solid 1px #AAAAAA;padding:1px 2px 1px 3px;margin-right:5px;-moz-border-radius:.5em;-webkit-border-radius:.5em;font-style:italic}
 .page-link a,.inactive-link{padding:0px 7px 0px 7px;color:#555}
