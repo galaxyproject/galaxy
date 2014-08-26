@@ -548,5 +548,14 @@ class WorkflowModuleFactory( object ):
         type = step.type
         return self.module_types[type].from_workflow_step( trans, step )
 
-module_types = dict( data_input=InputDataModule, data_collection_input=InputDataCollectionModule, tool=ToolModule )
+
+def is_tool_module_type( module_type ):
+    return not module_type or module_type == "tool"
+
+
+module_types = dict(
+    data_input=InputDataModule,
+    data_collection_input=InputDataCollectionModule,
+    tool=ToolModule,
+)
 module_factory = WorkflowModuleFactory( module_types )

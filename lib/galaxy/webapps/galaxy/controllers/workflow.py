@@ -24,7 +24,7 @@ from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStor
 from galaxy.web.framework import form
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
-from galaxy.workflow.modules import module_factory
+from galaxy.workflow.modules import module_factory, is_tool_module_type
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
 from galaxy.workflow.extract import summarize
@@ -836,8 +836,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         steps_by_external_id = {}
         errors = []
         for key, step_dict in data['steps'].iteritems():
-            is_input = step_dict[ 'type' ] in [ 'data_input', 'data_collection_input' ]
-            if not is_input and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
+            is_tool = is_tool_module_type( step_dict[ 'type' ] )
+            if is_tool and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
                 errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
         if errors:
             return dict( name=workflow.name,
