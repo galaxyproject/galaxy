@@ -71,7 +71,7 @@ class WorkflowInvoker( object ):
         self.trans.sa_session.add( workflow_invocation )
 
         # Not flushing in here, because web controller may create multiple
-        # invokations.
+        # invocations.
         return self.outputs
 
     def _invoke_step( self, step ):
