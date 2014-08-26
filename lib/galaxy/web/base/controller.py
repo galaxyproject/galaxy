@@ -1791,6 +1791,8 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         data['format-version'] = "0.1"
         data['name'] = workflow.name
         data['annotation'] = annotation_str
+        if workflow.uuid is not None:
+            data['uuid'] = str(workflow.uuid)  
         data['steps'] = {}
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
