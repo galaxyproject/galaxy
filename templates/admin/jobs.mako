@@ -33,9 +33,6 @@
     report this error".
 </p>
 
-
-<p/>
-
 %if jobs:
 <form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
