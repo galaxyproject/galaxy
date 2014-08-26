@@ -22,9 +22,11 @@
 %endif
 
 <p>
-    All unfinished jobs are displayed here.  To display only jobs that have not
-    had their job state updated recently, set a cutoff value in the 'cutoff'
-    box below.
+    Unfinished and recently finished jobs are displayed on this page.  The
+    'cutoff' input box will do two things -- it will limit the display of
+    unfinished jobs to only those jobs that have not had their job state
+    updated recently, and it will limit the recently finished jobs list to only
+    displaying jobs that have finished since the cutoff.
 </p>
 <p>
     If any jobs are displayed, you may choose to stop them.  Your stop message
@@ -35,6 +37,9 @@
 
 %if jobs:
 <form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
+    <h4>
+        Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous ${cutoff} seconds.
+    </h4>
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <td><input type="checkbox" onClick="toggle_all(this)"/></td>
@@ -108,9 +113,9 @@
 %endif
 
 %if recent_jobs:
-    <p>
-        Recent Jobs: These jobs have completed
-    </p>
+    <h4>
+        Recent Jobs: These jobs have completed in the previous ${cutoff} seconds.
+    </h4>
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <td>Job ID</td>
