@@ -610,6 +610,7 @@ function LoadingIndicator( $where, options ){
      *      of characters, a callback is called. Pressing ESC when the input
      *      is focused will clear the input and call a separate callback.
      */
+    var _l = window._l || function( s ){ return s; }
 
     // contructor
     function searchInput( parentNode, options ){
@@ -670,6 +671,11 @@ function LoadingIndicator( $where, options ){
                 })
                 // attach behaviors to esc, return if desired, search on some min len string
                 .keyup( function( event ){
+                    event.preventDefault();
+                    event.stopPropagation();
+//TODO: doesn't work
+                    if( !$( this ).val() ){ $( this ).blur(); }
+
                     // esc key will clear if desired
                     if( event.which === KEYCODE_ESC && options.escWillClear ){
                         clearSearchInput.call( this, event );

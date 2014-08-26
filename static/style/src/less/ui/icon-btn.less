@@ -1,0 +1,84 @@
+// trello-ish style
+//@icon-btn-size:     18px;
+//@icon-btn-margin:   2px;
+//@icon-btn-color:    #AAA;
+//@icon-btn-bg:       @btn-default-bg;
+//@icon-btn-border:   lightgrey;
+
+// no bg
+//@icon-btn-size:     16px;
+//@icon-btn-margin:   0px;
+//@icon-btn-color:    #444;
+//@icon-btn-bg:       transparent;
+//@icon-btn-border:   transparent;
+
+// dark bg
+//@icon-btn-size:     16px;
+//@icon-btn-margin:   1px;
+//@icon-btn-color:    @link-color;
+//@icon-btn-bg:       rgba( 0, 0, 0, 0.1 );
+//@icon-btn-border:   transparent;
+
+// big & dark style
+@icon-btn-size:     22px;
+@icon-btn-margin:   2px;
+@icon-btn-color:    @btn-default-color;
+//@icon-btn-bg:       transparent;
+@icon-btn-bg:       @btn-default-bg;
+@icon-btn-border:   @btn-default-border;
+
+.icon-btn {
+    display : inline-block;
+    height  : @icon-btn-size;
+    width   : @icon-btn-size;
+    // center the icon
+    text-align: center;
+    line-height: @icon-btn-size - 3;
+    font-size: 1.2em;
+
+    // colors and borders
+    border-radius: 3px;
+    border: 1px solid @icon-btn-border;
+    background-color: @icon-btn-bg;
+    color           : @icon-btn-color;
+
+    cursor: pointer;
+
+    // tweaks
+    //TODO: not working - span
+    //.fa-comment {
+    //    display: inline-block;
+    //    margin-bottom: 4px;
+    //}
+}
+.icon-btn:hover {
+    background-color: white;
+    color: maroon;
+}
+.icon-btn.disabled {
+    background-color: transparent;
+    color: #BBB;
+    border-color: #BBB;
+    //color: @icon-btn-border;
+}
+.icon-btn-group {
+    display: inline-block;
+    .icon-btn:not(:last-child) {
+        margin: 0px;
+        border-radius: 0px;
+        border-right: none;
+    }
+    .icon-btn:first-child {
+        margin-right: 0px;
+        border-top-left-radius: 3px;
+        border-bottom-left-radius: 3px;
+    }
+    .icon-btn:last-child {
+        margin-left: 0px;
+        border-radius: 0px 3px 3px 0px;
+    }
+    .icon-btn:only-child {
+        margin: 0px;
+        border-radius: 3px;
+    }
+}

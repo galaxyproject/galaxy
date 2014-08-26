@@ -1,6 +1,7 @@
 define([
-    'utils/add-logging'
-], function( addLogging ){
+    'utils/add-logging',
+    'utils/localization'
+], function( addLogging, _l ){
 //ASSUMES: backbone
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
@@ -390,6 +391,7 @@ var ExpandableView = Backbone.View.extend( LoggableMixin ).extend({
         /** are the details of this view expanded/shown or not? */
         this.expanded   = attributes.expanded || false;
         //this.log( '\t expanded:', this.expanded );
+        this.fxSpeed = attributes.fxSpeed || this.fxSpeed;
     },
 
     // ........................................................................ render main
@@ -451,7 +453,7 @@ var ExpandableView = Backbone.View.extend( LoggableMixin ).extend({
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
-        make_popup_menus( $where );
+        //make_popup_menus( $where );
         $where.find( '[title]' ).tooltip({ placement : 'bottom' });
     },
 

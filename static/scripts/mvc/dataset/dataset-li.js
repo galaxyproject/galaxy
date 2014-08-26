@@ -42,14 +42,14 @@ var DatasetListItemView = _super.extend(
     /** event listeners */
     _setUpListeners : function(){
 //TODO:?? may want to move this to ListItemView (although this is only needed in the *narrow* panel views (current))
-        // hide the primary actions in the title bar when selectable
+        // hide the primary actions in the title bar when selectable and narrow
         this.on( 'selectable', function( isSelectable ){
             if( isSelectable ){
                 this.$( '.primary-actions' ).hide();
             } else {
                 this.$( '.primary-actions' ).show();
             }
-        });
+        }, this );
 
         // re-rendering on any model changes
         this.model.on( 'change', function( model, options ){

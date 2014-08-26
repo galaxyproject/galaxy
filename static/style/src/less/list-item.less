@@ -98,3 +98,69 @@
     }
 }
 
+// ---------------------------------------------------------------------------- generic panel list (of list-items)
+.list-panel {
+
+    .controls {
+        & > *:not(:empty) {
+            margin-bottom: 8px;
+        }
+        .title {
+        }
+        .name {
+            word-wrap: break-word;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            color: grey;
+            &:not(:empty) {
+                margin-top: -8px;
+            }
+        }
+
+        .actions {
+            .icon-btn-group();
+            float: right;
+            .icon-btn {
+                margin-left: @icon-btn-margin;
+            }
+        }
+
+        .messages {
+            [class$=message] {
+                margin: 0px;
+                &:not(:last-child) {
+                    margin-bottom: 8px;
+                }
+            }
+        }
+
+        .search {
+        }
+
+        .list-actions {
+            display: none;
+            .clear;
+            .btn {
+                padding-top: 2px;
+                padding-bottom: 2px;
+                font-size: 90%;
+            }
+        }
+    }
+
+    // display only a top border on all
+    .list-items {
+        .list-item {
+            &:not(:last-child) {
+                border-bottom-width: 0px;
+            }
+        }
+    }
+
+    .empty-message {
+        display: none;
+        margin: 0px;
+    }
+}
