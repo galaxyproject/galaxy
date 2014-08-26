@@ -71,9 +71,18 @@ class WorkflowModule( object ):
     ## ---- Configuration time -----------------------------------------------
 
     def get_state( self ):
+        """ Return a serializable representation of the persistable state of
+        the step - for tools it DefaultToolState.encode returns a string and
+        for inputs a json description is dumped out.
+        """
         return None
 
     def get_errors( self ):
+        """ It seems like this is effectively just used as boolean - some places
+        in the tool shed self.errors is set to boolean, other places 'unavailable',
+        likewise in Galaxy it stores a list containing a string with an unrecognized
+        tool id error message.
+        """
         return None
 
     def get_data_inputs( self ):
@@ -292,6 +301,9 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def new( Class, trans, tool_id=None ):
         module = Class( trans, tool_id )
+        if module.tool is None:
+            error_message = "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % tool_id
+            raise Exception( error_message )
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
 
