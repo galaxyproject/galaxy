@@ -71,7 +71,7 @@ class WorkflowInvoker( object ):
         self.trans.sa_session.add( workflow_invocation )
 
         # Not flushing in here, because web controller may create multiple
-        # invokations.
+        # invocations.
         return self.outputs
 
     def _invoke_step( self, step ):
@@ -211,10 +211,9 @@ class WorkflowInvoker( object ):
         """
         replacement = None
         if prefixed_name in step.input_connections_by_name:
-            outputs = self.outputs
             connection = step.input_connections_by_name[ prefixed_name ]
             if input.multiple:
-                replacement = [ outputs[ c.output_step.id ][ c.output_name ] for c in connection ]
+                replacement = [ self._replacement_for_connection( c ) for c in connection ]
                 # If replacement is just one dataset collection, replace tool
                 # input with dataset collection - tool framework will extract
                 # datasets properly.
@@ -222,8 +221,11 @@ class WorkflowInvoker( object ):
                     if isinstance( replacement[ 0 ], model.HistoryDatasetCollectionAssociation ):
                         replacement = replacement[ 0 ]
             else:
-                replacement = outputs[ connection[ 0 ].output_step.id ][ connection[ 0 ].output_name ]
+                replacement = self._replacement_for_connection( connection[ 0 ] )
         return replacement
+
+    def _replacement_for_connection( self, connection ):
+        return self.outputs[ connection.output_step.id ][ connection.output_name ]
 
     def _populate_state( self ):
         # Build the state for each step

@@ -396,7 +396,7 @@ _.extend(FeaturePainter.prototype, {
                 feature_end = feature[2],
                 // Slot valid only if features are slotted and this feature is slotted; 
                 // feature may not be due to lack of space.
-                slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid] : null);
+                slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid].slot : null);
                 
             // Draw feature if (a) mode is dense or feature is slotted (as it must be for all non-dense modes) and 
             // (b) there's overlap between the feature and drawing region.
