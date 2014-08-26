@@ -187,7 +187,7 @@ var HistoryPanel = _super.extend(
         }
 
         // set up the pupup for actions available when multi selecting
-        this._setUpDatasetActionsPopup( $where );
+        this.actionsPopup = this._setUpDatasetActionsPopup( $where );
 
         // anon users shouldn't have access to any of the following
         if( ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )

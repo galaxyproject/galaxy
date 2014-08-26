@@ -221,8 +221,6 @@
 
         border: 1px solid lightgrey;
         border-width: 1px 0 1px 0;
-        //overflow-y: auto;
-        padding: 4px;
     }
     // ------------------------------------------------------------------------ unpaired
     .paired-columns {
@@ -243,7 +241,7 @@
             padding: 0 8px 0 8px;
             line-height: 28px;
             cursor: pointer;
-            overflow: hidden;
+            //overflow: hidden;
             &:last-child {
                 margin-bottom: 4px;
             }
@@ -253,6 +251,7 @@
     // ---- unpaired
     .unpaired-columns {
         .dataset.unpaired {
+            margin-top: 2px;
             border-color: grey;
             &:hover {
                 border-color: black;
@@ -292,8 +291,15 @@
             width: 100%;
             height: 8px;
             cursor: ns-resize;
+            &:before {
+                content: '...';
+            }
+            line-height: 2px;
+            text-align: center;
+            color: lightgrey;
             &:hover {
                 background: lightgrey;
+                color: black;
             }
         }
         .column-header {
@@ -313,65 +319,76 @@
 
     // ---- paired datasets
     .paired-columns {
-        .dataset.paired {
-            background: #AFF1AF;
-            border-color: grey;
-            border-width: 2px;
-            &:hover,
-            &.emphasized {
-                border-color: black;
+        .column-datasets {
+            width: 100%;
+            overflow: auto;
+
+            .dataset.paired {
+                &:first-child {
+                    margin-top: 2px;
+                }
+                margin: 0px 34px 2px 34px;
+
+                border-radius: 3px;
+                border: 2px solid grey;
+
+                background: #AFF1AF;
+
+                &:hover,
+                &.emphasized {
+                    border-color: black;
+                }
+
+                span {
+                    display: inline-block;
+                    overflow: hidden;
+                }
+                .forward-dataset-name {
+                    text-align: right;
+                    border-right: 1px solid grey;
+                    padding-right: 8px;
+                    &:after {
+                        margin-left: 8px;
+                        font-family: FontAwesome;
+                        content: '\f061';
+                    }
+                }
+                .pair-name {
+                    display: inline-block;
+                    text-align: center;
+                    &:hover {
+                        text-decoration: underline;
+                    }
+                }
+                .reverse-dataset-name {
+                    display: inline-block;
+                    border-left: 1px solid grey;
+                    padding-left: 8px;
+                    &:before {
+                        margin-right: 8px;
+                        font-family: FontAwesome;
+                        content: '\f060';
+                    }
+                }
             }
         }
-        .forward-column {
-            .dataset.paired {
-                margin-left: 32px;
-                border-radius: 3px 0 0 3px;
-                border-right-color: grey;
-                border-right-width: 1px;
-                text-align: right;
-                &:after {
-                    margin-left: 8px;
-                    font-family: FontAwesome;
-                    content: '\f061';
-                }
+        .unpair-btn {
+            float: right;
+            margin-top: -34px;
+            width: 31px;
+            height: 32px;
+            //z-index: 1;
+            border-color: transparent;
+            //border-color: #BFBFBF;
+            background: transparent;
+            font-size: 120%;
+            &:hover {
+                border-color: #BFBFBF;
+                background: #DEDEDE;
             }
         }
-        .paired-column {
-            .dataset.paired {
-                border-radius: 0;
-                border-width: 2px 0 2px 0;
-                .dataset-name:hover {
-                    text-decoration: underline;
-                }
-            }
-        }
-        .reverse-column {
-            .dataset.paired {
-                margin-right: 32px;
-                border-radius: 0 3px 3px 0;
-                border-left-color: grey;
-                border-left-width: 1px;
-                &:before {
-                    margin-right: 8px;
-                    font-family: FontAwesome;
-                    content: '\f060';
-                }
-            }
-            .unpair-btn {
-                float: right;
-                margin-top: -34px;
-                width: 31px;
-                height: 32px;
-                //z-index: 1;
-                border-color: transparent;
-                //border-color: #BFBFBF;
-                background: transparent;
-                font-size: 120%;
-                &:hover {
-                    border-color: #BFBFBF;
-                    background: #DEDEDE;
-                }
-            }
+        .empty-message {
+            text-align: center;
         }
     }
 

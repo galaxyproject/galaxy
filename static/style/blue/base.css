@@ -1851,23 +1851,27 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator .header .column-headers .column-header .unpaired-filter{width:100%}.collection-creator .header .column-headers .column-header .unpaired-filter .search-query{width:100%;height:22px}
 .collection-creator .header .paired-column a:not(:last-child){margin-right:8px}
 .collection-creator .header .reverse-column .column-title{text-align:right}
-.collection-creator .unpaired-columns,.collection-creator .paired-columns{height:0;border:1px solid lightgrey;border-width:1px 0 1px 0;padding:4px}
+.collection-creator .unpaired-columns,.collection-creator .paired-columns{height:0;border:1px solid lightgrey;border-width:1px 0 1px 0}
 .collection-creator .paired-columns{margin-bottom:8px}
-.collection-creator .column-datasets{list-style:none;overflow:hidden}.collection-creator .column-datasets .dataset{height:32px;margin-bottom:2px;border:1px solid lightgrey;border-radius:3px;padding:0 8px 0 8px;line-height:28px;cursor:pointer;overflow:hidden}.collection-creator .column-datasets .dataset:last-child{margin-bottom:4px}
-.collection-creator .unpaired-columns .dataset.unpaired{border-color:grey}.collection-creator .unpaired-columns .dataset.unpaired:hover{border-color:black}
+.collection-creator .column-datasets{list-style:none;overflow:hidden}.collection-creator .column-datasets .dataset{height:32px;margin-bottom:2px;border:1px solid lightgrey;border-radius:3px;padding:0 8px 0 8px;line-height:28px;cursor:pointer}.collection-creator .column-datasets .dataset:last-child{margin-bottom:4px}
+.collection-creator .unpaired-columns .dataset.unpaired{margin-top:2px;border-color:grey}.collection-creator .unpaired-columns .dataset.unpaired:hover{border-color:black}
 .collection-creator .unpaired-columns .dataset.unpaired.selected{border-color:black;background:black;color:white}
 .collection-creator .unpaired-columns .forward-column .dataset.unpaired{margin-right:32px}
 .collection-creator .unpaired-columns .paired-column .dataset.unpaired{border-color:lightgrey;color:lightgrey}.collection-creator .unpaired-columns .paired-column .dataset.unpaired:hover{border-color:black;color:black}
 .collection-creator .unpaired-columns .reverse-column .dataset.unpaired{text-align:right;margin-left:32px}
-.collection-creator .flexible-partition .flexible-partition-drag{width:100%;height:8px;cursor:ns-resize}.collection-creator .flexible-partition .flexible-partition-drag:hover{background:lightgrey}
+.collection-creator .flexible-partition .flexible-partition-drag{width:100%;height:8px;cursor:ns-resize;line-height:2px;text-align:center;color:lightgrey}.collection-creator .flexible-partition .flexible-partition-drag:before{content:'...'}
+.collection-creator .flexible-partition .flexible-partition-drag:hover{background:lightgrey;color:black}
 .collection-creator .flexible-partition .column-header{width:100%;text-align:center}.collection-creator .flexible-partition .column-header .column-title{display:inline}
 .collection-creator .flexible-partition .column-header>*:not(:last-child){margin-right:8px}
 .collection-creator .flexible-partition .column-header .remove-extensions-link{display:none}
-.collection-creator .paired-columns .dataset.paired{background:#AFF1AF;border-color:grey;border-width:2px}.collection-creator .paired-columns .dataset.paired:hover,.collection-creator .paired-columns .dataset.paired.emphasized{border-color:black}
-.collection-creator .paired-columns .forward-column .dataset.paired{margin-left:32px;border-radius:3px 0 0 3px;border-right-color:grey;border-right-width:1px;text-align:right}.collection-creator .paired-columns .forward-column .dataset.paired:after{margin-left:8px;font-family:FontAwesome;content:'\f061'}
-.collection-creator .paired-columns .paired-column .dataset.paired{border-radius:0;border-width:2px 0 2px 0}.collection-creator .paired-columns .paired-column .dataset.paired .dataset-name:hover{text-decoration:underline}
-.collection-creator .paired-columns .reverse-column .dataset.paired{margin-right:32px;border-radius:0 3px 3px 0;border-left-color:grey;border-left-width:1px}.collection-creator .paired-columns .reverse-column .dataset.paired:before{margin-right:8px;font-family:FontAwesome;content:'\f060'}
-.collection-creator .paired-columns .reverse-column .unpair-btn{float:right;margin-top:-34px;width:31px;height:32px;border-color:transparent;background:transparent;font-size:120%}.collection-creator .paired-columns .reverse-column .unpair-btn:hover{border-color:#BFBFBF;background:#DEDEDE}
+.collection-creator .paired-columns .column-datasets{width:100%;overflow:auto}.collection-creator .paired-columns .column-datasets .dataset.paired{margin:0px 34px 2px 34px;border-radius:3px;border:2px solid grey;background:#AFF1AF}.collection-creator .paired-columns .column-datasets .dataset.paired:first-child{margin-top:2px}
+.collection-creator .paired-columns .column-datasets .dataset.paired:hover,.collection-creator .paired-columns .column-datasets .dataset.paired.emphasized{border-color:black}
+.collection-creator .paired-columns .column-datasets .dataset.paired span{display:inline-block;overflow:hidden}
+.collection-creator .paired-columns .column-datasets .dataset.paired .forward-dataset-name{text-align:right;border-right:1px solid grey;padding-right:8px}.collection-creator .paired-columns .column-datasets .dataset.paired .forward-dataset-name:after{margin-left:8px;font-family:FontAwesome;content:'\f061'}
+.collection-creator .paired-columns .column-datasets .dataset.paired .pair-name{display:inline-block;text-align:center}.collection-creator .paired-columns .column-datasets .dataset.paired .pair-name:hover{text-decoration:underline}
+.collection-creator .paired-columns .column-datasets .dataset.paired .reverse-dataset-name{display:inline-block;border-left:1px solid grey;padding-left:8px}.collection-creator .paired-columns .column-datasets .dataset.paired .reverse-dataset-name:before{margin-right:8px;font-family:FontAwesome;content:'\f060'}
+.collection-creator .paired-columns .unpair-btn{float:right;margin-top:-34px;width:31px;height:32px;border-color:transparent;background:transparent;font-size:120%}.collection-creator .paired-columns .unpair-btn:hover{border-color:#BFBFBF;background:#DEDEDE}
+.collection-creator .paired-columns .empty-message{text-align:center}
 .collection-creator .footer{padding-bottom:8px}.collection-creator .footer .attributes .remove-extensions-prompt{line-height:32px}.collection-creator .footer .attributes .remove-extensions-prompt .remove-extensions{display:inline-block;width:24px;height:24px}
 .collection-creator .footer .attributes .collection-name-prompt{margin:5px 4px 0 0}
 .collection-creator .footer .attributes .collection-name-prompt.validation-warning:before{content:'(required)';margin-right:4px;color:red}
