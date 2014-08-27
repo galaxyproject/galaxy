@@ -26,7 +26,7 @@ from galaxy import objectstore
 from galaxy.web import error, url_for
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
-from galaxy.workflow.modules import module_factory
+from galaxy.workflow.modules import module_factory, WorkflowModuleInjector, MissingToolException
 from galaxy.model.orm import eagerload, eagerload_all, desc
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.sanitize_html import sanitize_html
@@ -1625,30 +1625,13 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
 
     def get_stored_workflow_steps( self, trans, stored_workflow ):
         """ Restores states for a stored workflow's steps. """
+        module_injector = WorkflowModuleInjector( trans )
         for step in stored_workflow.latest_workflow.steps:
-            step.upgrade_messages = {}
-            if step.type == 'tool' or step.type is None:
-                # Restore the tool state for the step
-                module = module_factory.from_workflow_step( trans, step )
-                if module:
-                    #Check if tool was upgraded
-                    step.upgrade_messages = module.check_and_update_state()
-                    # Any connected input needs to have value DummyDataset (these
-                    # are not persisted so we need to do it every time)
-                    module.add_dummy_datasets( connections=step.input_connections )
-                    # Store state with the step
-                    step.module = module
-                    step.state = module.state
-                else:
-                    step.upgrade_messages = "Unknown Tool ID"
-                    step.module = None
-                    step.state = None
-            else:
-                ## Non-tool specific stuff?
-                step.module = module_factory.from_workflow_step( trans, step )
-                step.state = step.module.get_runtime_state()
-            # Connections by input name
-            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
+            try:
+                module_injector.inject( step )
+            except MissingToolException:
+                # Now upgrade_messages is a string instead of a dict, why?
+                step.upgrade_messages = "Unknown Tool ID"
 
     def _import_shared_workflow( self, trans, stored):
         """ """

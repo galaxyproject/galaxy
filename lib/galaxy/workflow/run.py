@@ -229,24 +229,10 @@ class WorkflowInvoker( object ):
 
     def _populate_state( self ):
         # Build the state for each step
+        module_injector = modules.WorkflowModuleInjector( self.trans )
         for step in self.workflow.steps:
-            step_errors = None
-            input_connections_by_name = {}
-            for conn in step.input_connections:
-                input_name = conn.input_name
-                if not input_name in input_connections_by_name:
-                    input_connections_by_name[input_name] = []
-                input_connections_by_name[input_name].append(conn)
-            step.input_connections_by_name = input_connections_by_name
-
+            step_errors = module_injector.inject( step )
             if step.type == 'tool' or step.type is None:
-                step.module = modules.module_factory.from_workflow_step( self.trans, step )
-                # Check for missing parameters
-                step.upgrade_messages = step.module.check_and_update_state()
-                # Any connected input needs to have value DummyDataset (these
-                # are not persisted so we need to do it every time)
-                step.module.add_dummy_datasets( connections=step.input_connections )
-                step.state = step.module.state
                 _update_step_parameters( step, self.param_map )
                 if step.tool_errors:
                     message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
@@ -254,9 +240,6 @@ class WorkflowInvoker( object ):
                 if step.upgrade_messages:
                     message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
                     raise exceptions.MessageException( message )
-            else:
-                step.module = modules.module_factory.from_workflow_step( self.trans, step )
-                step.state = step.module.get_runtime_state()
 
 
 def _update_step_parameters(step, normalized_param_map):

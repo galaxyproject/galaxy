@@ -559,3 +559,81 @@ module_types = dict(
     tool=ToolModule,
 )
 module_factory = WorkflowModuleFactory( module_types )
+
+
+class MissingToolException( Exception ):
+    """ WorkflowModuleInjector will raise this if the tool corresponding to the
+    module is missing. """
+
+
+class WorkflowModuleInjector(object):
+    """ Injects workflow step objects from the ORM with appropriate module and
+    module generated/influenced state. """
+
+    def __init__( self, trans ):
+        self.trans = trans
+
+    def inject( self, step, step_args=None ):
+        """ Pre-condition: `step` is an ORM object coming from the database, if
+        supplied `step_args` is the representation of the inputs for that step
+        supplied via web form.
+
+        Post-condition: The supplied `step` has new non-persistent attributes
+        useful during workflow invocation. These include 'upgrade_messages',
+        'state', 'input_connections_by_name', and 'module'.
+
+        If step_args is provided from a web form this is applied to generate
+        'state' else it is just obtained from the database.
+        """
+        trans = self.trans
+
+        step_errors = None
+
+        step.upgrade_messages = {}
+
+        # Make connection information available on each step by input name.
+        input_connections_by_name = {}
+        for conn in step.input_connections:
+            input_name = conn.input_name
+            if not input_name in input_connections_by_name:
+                input_connections_by_name[input_name] = []
+            input_connections_by_name[input_name].append(conn)
+        step.input_connections_by_name = input_connections_by_name
+
+        # Populate module.
+        module = step.module = module_factory.from_workflow_step( trans, step )
+
+        # Calculating step errors and state depends on whether step is a tool step or not.
+        if step.type == 'tool' or step.type is None:
+            if not module:
+                step.module = None
+                step.state = None
+                raise MissingToolException()
+
+            # Fix any missing parameters
+            step.upgrade_messages = module.check_and_update_state()
+
+            # Any connected input needs to have value DummyDataset (these
+            # are not persisted so we need to do it every time)
+            module.add_dummy_datasets( connections=step.input_connections )
+
+            state = module.state
+            step.state = state
+            if step_args is not None:
+                # Get the tool
+                tool = module.tool
+                # Get old errors
+                old_errors = state.inputs.pop( "__errors__", {} )
+                # Update the state
+                step_errors = tool.update_state( trans, tool.inputs, step.state.inputs, step_args,
+                                                 update_only=True, old_errors=old_errors )
+
+        else:
+            if step_args:
+                # Fix this for multiple inputs
+                state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
+                step_errors = module.update_runtime_state( trans, state, step_args )
+            else:
+                step.state = step.module.get_runtime_state()
+
+        return step_errors
