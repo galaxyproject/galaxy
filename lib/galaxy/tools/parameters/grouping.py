@@ -278,7 +278,7 @@ class UploadDataset( Group ):
             ftp_files = context['ftp_files']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
-            uuid = context.get( 'uuid', None )
+            uuid = context.get( 'uuid', None ) or None  # Turn '' to None
             warnings = []
             to_posix_lines = False
             if context.get( 'to_posix_lines', None ) not in [ "None", None, False ]:
@@ -324,7 +324,7 @@ class UploadDataset( Group ):
             data_file = context['file_data']
             url_paste = context['url_paste']
             ftp_files = context['ftp_files']
-            uuid = context.get( 'uuid', None )
+            uuid = context.get( 'uuid', None ) or None  # Turn '' to None
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             to_posix_lines = False
