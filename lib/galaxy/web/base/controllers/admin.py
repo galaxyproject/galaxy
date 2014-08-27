@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timedelta
 from galaxy import util, web
 from galaxy.model.orm import and_, func, or_
@@ -55,6 +56,34 @@ class Admin( object ):
             return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
                                         message=message,
                                         status=status )
+
+    @web.expose
+    @web.require_admin
+    def package_tool( self, trans, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        toolbox = self.app.toolbox
+        tool_id = None
+        if params.get( 'package_tool_button', False ):
+            tool_id = params.get('tool_id', None)
+            galaxy.queue_worker.send_control_task(trans, 'package_tool', noop_self=True, kwargs={'tool_id': tool_id} )
+            tool_tarball, success, message = trans.app.toolbox.package_tool( trans, tool_id )
+            if success:
+                trans.response.set_content_type( 'application/x-gzip' )
+                download_file = open( tool_tarball )
+                os.unlink( tool_tarball )
+                tarball_path, filename = os.path.split( tool_tarball )
+                trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( tool_id )
+                os.removedirs( tarball_path )
+                return download_file
+            else:
+                status = 'error'
+        return trans.fill_template( '/admin/package_tool.mako',
+                                    tool_id=tool_id,
+                                    toolbox=toolbox,
+                                    message=message,
+                                    status=status )
 
     @web.expose
     @web.require_admin

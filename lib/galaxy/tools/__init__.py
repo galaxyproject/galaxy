@@ -12,6 +12,7 @@ import re
 import shutil
 import sys
 import string
+import tarfile
 import tempfile
 import threading
 import traceback
@@ -721,6 +722,78 @@ class ToolBox( object, Dictifiable ):
 
             ToolClass = Tool
         return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
+
+    def package_tool( self, trans, tool_id ):
+        """
+        Create a tarball with the tool's xml, help images, and test data.
+        :param trans: the web transaction
+        :param tool_id: the tool ID from app.toolbox
+        :returns: tuple of tarball filename, success True/False, message/None
+        """
+        message = ''
+        success = True
+        # Make sure the tool is actually loaded.
+        if tool_id not in self.tools_by_id:
+            return None, False, "No tool with id %s" % tool_id
+        else:
+            tool = self.tools_by_id[ tool_id ]
+            tarball_files = []
+            tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
+            tarball_files.append( tool_tup )
+            tool_command = tool.command.split( ' ' )[0]
+            tool_path = os.path.dirname( tool_tup[0] )
+            # Add the tool XML to the tuple that will be used to populate the tarball.
+            if os.path.exists( os.path.join( tool_path, tool_command ) ):
+                tarball_files.append( ( os.path.join( tool_path, tool_command ), tool_command ) )
+            tests = tool.tests
+            # Find tests, and check them for test data.
+            if tests is not None:
+                for test in tests:
+                    # Add input file tuples to the list.
+                    for input in test.inputs:
+                        for input_value in test.inputs[ input ]:
+                            input_path = os.path.abspath( os.path.join( 'test-data', input_value ) )
+                            if os.path.exists( input_path ):
+                                td_tup = ( input_path, os.path.join( 'test-data', input_value ) )
+                                tarball_files.append( td_tup )
+                    # And add output file tuples to the list.
+                    for label, filename, _ in test.outputs:
+                        output_filepath = os.path.abspath( os.path.join( 'test-data', filename ) )
+                        if os.path.exists( output_filepath ):
+                            td_tup = ( output_filepath, os.path.join( 'test-data', filename ) )
+                            tarball_files.append( td_tup )
+            for param in tool.input_params:
+                # Check for tool data table definitions.
+                if hasattr( param, 'options' ):
+                    if hasattr( param.options, 'tool_data_table' ):
+                        for fnam in param.options.tool_data_table.filenames:
+                            if not param.options.tool_data_table.filenames[ fnam ][ 'from_shed_config' ]:
+                                tar_file = param.options.tool_data_table.filenames[ fnam ][ 'filename' ] + '.sample'
+                                sample_file = os.path.join( param.options.tool_data_table.filenames[ fnam ][ 'tool_data_path' ],
+                                                            tar_file )
+                                # Use the .sample file, if one exists. If not, skip this data table.
+                                if os.path.exists( sample_file ):
+                                    tarfile_path, tarfile_name = os.path.split( tar_file )
+                                    tarfile_path = os.path.join( 'tool-data', tarfile_name )
+                                    sample_name = tarfile_path + '.sample'
+                                    tarball_files.append( ( sample_file, tarfile_path ) )
+                        # Put the data table definition XML in a temporary file.
+                        table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
+                        table_definition = table_definition % param.options.tool_data_table.xml_string
+                        fd, table_conf = tempfile.mkstemp()
+                        os.close( fd )
+                        file( table_conf, 'w' ).write( table_definition )
+                        tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
+            # Create the tarball.
+            fd, tarball_archive = tempfile.mkstemp( suffix='.tgz' )
+            os.close( fd )
+            tarball = tarfile.open( name=tarball_archive, mode='w:gz' )
+            # Add the files from the previously generated list.
+            for fspath, tarpath in tarball_files:
+                tarball.add( fspath, arcname=tarpath )
+            tarball.close()
+            return tarball_archive, True, None
+        return None, False, "An unknown error occurred."
 
     def reload_tool_by_id( self, tool_id ):
         """

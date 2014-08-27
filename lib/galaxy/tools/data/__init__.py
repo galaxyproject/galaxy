@@ -240,6 +240,7 @@ class TabularToolDataTable( ToolDataTable ):
 
     def __init__( self, config_element, tool_data_path, from_shed_config = False):
         super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config)
+        self.config_element = config_element
         self.data = []
         self.configure_and_load( config_element, tool_data_path, from_shed_config)
 
@@ -513,6 +514,10 @@ class TabularToolDataTable( ToolDataTable ):
                 else:
                     replace = " "
         return map( lambda x: x.replace( separator, replace ), fields )
+    
+    @property
+    def xml_string( self ):
+        return util.xml_to_string( self.config_element )
 
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )
