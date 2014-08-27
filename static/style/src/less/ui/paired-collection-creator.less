@@ -211,10 +211,9 @@
     }
 
     // ------------------------------------------------------------------------ middle
-    .middle {
-    }
-    .unpaired-columns,
-    .paired-columns {
+    // ---- all
+    // macro
+    .flex-bordered-vertically {
         // huh! - giving these any static height will pull them in
         height: 0;
         // NOT setting the above will give a full-height page
@@ -222,46 +221,80 @@
         border: 1px solid lightgrey;
         border-width: 1px 0 1px 0;
     }
-    // ------------------------------------------------------------------------ unpaired
-    .paired-columns {
-        margin-bottom: 8px;
-    }
 
-    // ------------------------------------------------------------------------ middle
-    // ---- all
     .column-datasets {
         list-style: none;
         overflow: hidden;
 
         .dataset {
             height: 32px;
-            margin-bottom: 2px;
+            margin-top: 2px;
+            &:last-of-type {
+                margin-bottom: 2px;
+            }
             border: 1px solid lightgrey;
             border-radius: 3px;
             padding: 0 8px 0 8px;
             line-height: 28px;
             cursor: pointer;
-            //overflow: hidden;
-            &:last-child {
-                margin-bottom: 4px;
-            }
-        }
-    }
 
-    // ---- unpaired
-    .unpaired-columns {
-        .dataset.unpaired {
-            margin-top: 2px;
-            border-color: grey;
+            &.unpaired {
+                border-color: grey;
+            }
+
+            &.paired {
+                margin-left: 34px;
+                margin-right: 34px;
+                border: 2px solid grey;
+                background: #AFF1AF;
+
+                span {
+                    display: inline-block;
+                    overflow: hidden;
+                }
+                .forward-dataset-name {
+                    text-align: right;
+                    border-right: 1px solid grey;
+                    padding-right: 8px;
+                    &:after {
+                        margin-left: 8px;
+                        font-family: FontAwesome;
+                        content: '\f061';
+                    }
+                }
+                .pair-name-column {
+                    text-align: center;
+                    .pair-name:hover {
+                        text-decoration: underline;
+                    }
+                }
+                .reverse-dataset-name {
+                    border-left: 1px solid grey;
+                    padding-left: 8px;
+                    &:before {
+                        margin-right: 8px;
+                        font-family: FontAwesome;
+                        content: '\f060';
+                    }
+                }
+            }
+
             &:hover {
                 border-color: black;
             }
+
             &.selected {
                 border-color: black;
                 background: black;
                 color: white;
             }
         }
+    }
+
+    // ---- unpaired
+    .unpaired-columns {
+        .flex-bordered-vertically;
+
         .forward-column {
             .dataset.unpaired {
                 margin-right: 32px;
@@ -319,62 +352,16 @@
 
     // ---- paired datasets
     .paired-columns {
+        .flex-bordered-vertically;
+        margin-bottom: 8px;
+
         .column-datasets {
             width: 100%;
             overflow: auto;
-
-            .dataset.paired {
-                &:first-child {
-                    margin-top: 2px;
-                }
-                margin: 0px 34px 2px 34px;
-
-                border-radius: 3px;
-                border: 2px solid grey;
-
-                background: #AFF1AF;
-
-                &:hover,
-                &.emphasized {
-                    border-color: black;
-                }
-
-                span {
-                    display: inline-block;
-                    overflow: hidden;
-                }
-                .forward-dataset-name {
-                    text-align: right;
-                    border-right: 1px solid grey;
-                    padding-right: 8px;
-                    &:after {
-                        margin-left: 8px;
-                        font-family: FontAwesome;
-                        content: '\f061';
-                    }
-                }
-                .pair-name {
-                    display: inline-block;
-                    text-align: center;
-                    &:hover {
-                        text-decoration: underline;
-                    }
-                }
-                .reverse-dataset-name {
-                    display: inline-block;
-                    border-left: 1px solid grey;
-                    padding-left: 8px;
-                    &:before {
-                        margin-right: 8px;
-                        font-family: FontAwesome;
-                        content: '\f060';
-                    }
-                }
-            }
         }
         .unpair-btn {
             float: right;
-            margin-top: -34px;
+            margin-top: -32px;
             width: 31px;
             height: 32px;
             //z-index: 1;

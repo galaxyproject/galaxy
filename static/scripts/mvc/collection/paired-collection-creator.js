@@ -5,10 +5,18 @@ define([
 ], function( levelshteinDistance, baseMVC, _l ){
 /* ============================================================================
 TODO:
+    _adjPairedOnScrollBar
+    parition drag now doesn't stop when dragging down
+        can push footer out of modal
+        only *after* partition is all the way down once?
 
 
 PROGRAMMATICALLY:
-h = Galaxy.currHistoryPanel; h.showSelectors(); h.selectAllDatasets(); _.last( h.actionsPopup.options ).func()
+currPanel.once( 'rendered', function(){
+    currPanel.showSelectors();
+    currPanel.selectAllDatasets();
+    _.last( currPanel.actionsPopup.options ).func();
+});
 
 ============================================================================ */
 /** A view for paired datasets in the collections creator.
@@ -26,7 +34,9 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         this.$el.attr( 'draggable', true )
             .html( _.template([
                 '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
-                '<span class="pair-name flex-column"><%= pair.name %></span>',
+                '<span class="pair-name-column flex-column">',
+                    '<span class="pair-name"><%= pair.name %></span>',
+                '</span>',
                 '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
             ].join(''), { pair: this.pair }))
             .addClass( 'flex-column-container' );
@@ -661,8 +671,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             return;
         }
 
-        //this.$( '.unpaired-columns .forward-column' ).lassoable({});
-
         // create the dataset dom arrays
         $rev = split[1].map( function( dataset, i ){
             // if there'll be a fwd dataset across the way, add a button to pair the row
@@ -685,6 +693,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         this.$( '.unpaired-columns .forward-column .column-datasets' ).append( $fwd )
             .add( this.$( '.unpaired-columns .paired-column .column-datasets' ).append( $prd ) )
             .add( this.$( '.unpaired-columns .reverse-column .column-datasets' ).append( $rev ) );
+        this._adjUnpairedOnScrollbar();
     },
     /** return a string to display the count of filtered out datasets */
     _renderUnpairedDisplayStr : function( numFiltered ){
@@ -723,6 +732,18 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             .text( '(' + _l( 'no datasets were found matching the current filters' ) + ')' );
         this.$( '.unpaired-columns .paired-column .column-datasets' ).empty().prepend( $msg );
         return $msg;
+    },
+    /** try to detect if the unpaired section has a scrollbar and adjust left column for better centering of all */
+    _adjUnpairedOnScrollbar : function(){
+        var $unpairedColumns = this.$( '.unpaired-columns' ).last(),
+            $firstDataset = this.$( '.unpaired-columns .reverse-column .dataset' ).first();
+        if( !$firstDataset.size() ){ return; }
+        var ucRight = $unpairedColumns.offset().left + $unpairedColumns.outerWidth(),
+            dsRight = $firstDataset.offset().left + $firstDataset.outerWidth(),
+            rightDiff = Math.floor( ucRight ) - Math.floor( dsRight );
+        //this.debug( 'rightDiff:', ucRight, '-', dsRight, '=', rightDiff );
+        this.$( '.unpaired-columns .forward-column' )
+            .css( 'margin-left', ( rightDiff > 0 )? rightDiff: 0 );
     },
 
     /** render the paired section and update counts of paired datasets */
@@ -907,6 +928,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         'click .paired-column-title'                : '_clickShowOnlyPaired',
         'mousedown .flexible-partition-drag'        : '_startPartitionDrag',
         // paired
+        'click .paired-columns .dataset.paired'     : 'selectPair',
         'click .paired-columns .pair-name'          : '_clickPairName',
         'click .unpair-btn'                         : '_clickUnpair',
 
@@ -965,28 +987,23 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             this.splitView();
         }
     },
+
     /** hide unpaired, show paired */
     hideUnpaired : function( speed, callback ){
-        speed = speed || 0;
-        this.$( '.unpaired-columns' ).hide( speed, callback );
-        //this.$( '.unpaired-filter' ).hide( speed );
-        this.$( '.paired-columns' ).show( speed ).css( 'flex', '1 0 auto' );
         this.unpairedPanelHidden = true;
+        this.pairedPanelHidden = false;
+        this._renderMiddle( speed, callback );
     },
     /** hide paired, show unpaired */
     hidePaired : function( speed, callback ){
-        speed = speed || 0;
-        this.$( '.unpaired-columns' ).show( speed ).css( 'flex', '1 0 auto' );
-        //this.$( '.unpaired-filter' ).show( speed );
-        this.$( '.paired-columns' ).hide( speed, callback );
+        this.unpairedPanelHidden = false;
         this.pairedPanelHidden = true;
+        this._renderMiddle( speed, callback );
     },
     /** show both paired and unpaired (splitting evenly) */
     splitView : function( speed, callback ){
-        speed = speed || 0;
         this.unpairedPanelHidden = this.pairedPanelHidden = false;
-        //this.$( '.unpaired-filter' ).show( speed );
-        this._renderMiddle( speed );
+        this._renderMiddle( speed, callback );
         return this;
     },
 
@@ -1148,6 +1165,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 //creator.debug( 'mouseup triggered' );
                 $( 'body' ).trigger( 'mouseup' );
             }
+            creator._adjUnpairedOnScrollbar();
             startingY += offset;
         }
         $( 'body' ).mousemove( trackMouse );
@@ -1165,29 +1183,37 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         unpairedHi = Math.max( 10, unpairedHi + adj );
         pairedHi = pairedHi - adj;
 
-        //TODO: seems like shouldn't need this (it should be part of the hide/show/splitView)
-        if( unpairedHi <= 10 ){
-            if( !this.unpairedPanelHidden ){
+//TODO: seems like shouldn't need this (it should be part of the hide/show/splitView)
+        var movingUpwards = adj < 0;
+        // when the divider gets close to the top - lock into hiding the unpaired section
+        if( movingUpwards ){
+            if( this.unpairedPanelHidden ){
+                return false;
+            } else if( unpairedHi <= 10 ){
                 this.hideUnpaired();
                 return false;
             }
-
-        } else if( this.unpairedPanelHidden ){
-            $unpaired.show();
-            this.unpairedPanelHidden = false;
+        } else {
+            if( this.unpairedPanelHidden ){
+                $unpaired.show();
+                this.unpairedPanelHidden = false;
+            }
         }
 
         // when the divider gets close to the bottom - lock into hiding the paired section
-        if( pairedHi <= 15 ){
-            if( !this.pairedPanelHidden ){
+        if( !movingUpwards ){
+            if( this.pairedPanelHidden ){
+                return false;
+            } else if( pairedHi <= 15 ){
                 this.hidePaired();
-                if( pairedHi < 5 ){ return false; }
+                return false;
             }
 
-        // when the divider gets close to the bottom and the paired section is hidden
-        } else if( this.pairedPanelHidden ){
-            $paired.show();
-            this.pairedPanelHidden = false;
+        } else {
+            if( this.pairedPanelHidden ){
+                $paired.show();
+                this.pairedPanelHidden = false;
+            }
         }
 
         $unpaired.css({
@@ -1198,8 +1224,14 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     },
 
     // ........................................................................ paired
+    /** select a pair when clicked */
+    selectPair : function( ev ){
+        $( ev.currentTarget ).toggleClass( 'selected' );
+    },
+
     /** rename a pair when the pair name is clicked */
     _clickPairName : function( ev ){
+        ev.stopPropagation();
         var $control = $( ev.currentTarget ),
             pair = this.paired[ $control.parent().index() ],
             response = prompt( 'Enter a new name for the pair:', pair.name );
