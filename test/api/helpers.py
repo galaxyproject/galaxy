@@ -11,7 +11,6 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
-workflow_two_paired_str = resource_string( __name__, "test_workflow_two_paired.ga" )
 
 
 DEFAULT_HISTORY_TIMEOUT = 10  # Secs to wait on history to turn ok
@@ -160,9 +159,6 @@ class WorkflowPopulator( object ):
 
     def load_random_x2_workflow( self, name ):
         return self.load_workflow( name, content=workflow_random_x2_str )
-
-    def load_two_paired_workflow( self, name ):
-        return self.load_workflow( name, content=workflow_two_paired_str )
 
     def simple_workflow( self, name, **create_kwds ):
         workflow = self.load_workflow( name )
