@@ -1,16 +1,10 @@
 """
 API operations on library folders
 """
-# import os
-# import shutil
-# import urllib
-# import re
-# import socket
-# import traceback
-# import string
 from galaxy import util
 from galaxy import web
 from galaxy import exceptions
+from galaxy.managers import folders
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 from sqlalchemy.orm.exc import MultipleResultsFound
@@ -22,10 +16,14 @@ log = logging.getLogger( __name__ )
 
 class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
 
+    def __init__( self, app ):
+        super( FoldersController, self ).__init__( app )
+        self.folder_manager = folders.FolderManager()
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """
-        GET /api/folders/
+        *GET /api/folders/
         This would normally display a list of folders. However, that would
         be across multiple libraries, so it's not implemented.
         """
@@ -45,12 +43,8 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         :returns:   dictionary including details of the folder
         :rtype:     dict
         """
-        folder_id_without_prefix = self.__cut_the_prefix( id )
-        content = self.get_library_folder( trans, folder_id_without_prefix, check_ownership=False, check_accessible=True )
-        return_dict = self.encode_all_ids( trans, content.to_dict( view='element' ) )
-        return_dict[ 'id' ] = 'F' + return_dict[ 'id' ]
-        if return_dict[ 'parent_id' ] is not None:
-            return_dict[ 'parent_id' ] = 'F' + return_dict[ 'parent_id' ]
+        folder = self.folder_manager.get( trans, self.__cut_and_decode( trans, id ), check_ownership=False, check_accessible=True )
+        return_dict = self.folder_manager.get_folder_dict( trans, folder )
         return return_dict
 
     @expose_api
@@ -74,47 +68,20 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         :returns:   information about newly created folder, notably including ID
         :rtype:     dictionary
 
-        :raises: RequestParameterMissingException, MalformedId, InternalServerError
+        :raises: RequestParameterMissingException
         """
-
         payload = kwd.get( 'payload', None )
         if payload is None:
-            raise exceptions.RequestParameterMissingException( "Missing required parameters 'encoded_parent_folder_id' and 'name'." )
-        name = payload.get( 'name', None )
-        description = payload.get( 'description', '' )
-        if encoded_parent_folder_id is None:
-            raise exceptions.RequestParameterMissingException( "Missing required parameter 'encoded_parent_folder_id'." )
-        elif name is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
-
-        encoded_parent_folder_id = self.__cut_the_prefix( encoded_parent_folder_id )
-        decoded_parent_folder_id = self.__decode_folder_id( trans, encoded_parent_folder_id )
-        parent_folder = self.__load_folder( trans, decoded_parent_folder_id )
+        name = payload.get( 'name', None )
+        if name is None:
+            raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
+        description = payload.get( 'description', '' )
+        decoded_parent_folder_id = self.__cut_and_decode( trans, encoded_parent_folder_id )
+        parent_folder = self.folder_manager.get( trans, decoded_parent_folder_id )
+        new_folder = self.folder_manager.create( trans, parent_folder.id, name, description )
+        return self.folder_manager.get_folder_dict( trans, new_folder )
         
-        library = parent_folder.parent_library
-        if library.deleted:
-            raise exceptions.ObjectAttributeInvalidException( 'You cannot create folder within a deleted library. Undelete it first.' )
-
-        # TODO: refactor the functionality for use in manager instead of calling another controller
-        params = dict( [ ( "name", name ), ( "description", description ) ] )
-        status, output = trans.webapp.controllers['library_common'].create_folder( trans, 'api', encoded_parent_folder_id, '', **params )
-
-        if 200 == status and len( output.items() ) == 1:
-            for k, v in output.items():
-                try:
-                    folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( v.id )
-                except Exception, e:
-                    raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ))
-                if folder:
-                    update_time = folder.update_time.strftime( "%Y-%m-%d %I:%M %p" )
-                    return_dict = self.encode_all_ids( trans, folder.to_dict( view='element' ) )
-                    return_dict[ 'update_time' ] = update_time
-                    return_dict[ 'parent_id' ] = 'F' + return_dict[ 'parent_id' ]
-                    return_dict[ 'id' ] = 'F' + return_dict[ 'id' ]
-                    return return_dict
-        else:
-            raise exceptions.InternalServerError( 'Error while creating a folder.' + str( e ) )
-
     @expose_api
     def get_permissions( self, trans, encoded_folder_id, **kwd ):
         """
@@ -135,19 +102,16 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin()
-
         encoded_folder_id = self.__cut_the_prefix( encoded_folder_id )
         decoded_folder_id = self.__decode_folder_id( trans, encoded_folder_id )
-        folder = self.__load_folder( trans, decoded_folder_id )
+        folder = self.folder_manager.get( trans, decoded_folder_id )
 
-        if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, library ) ):
+        if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) ):
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to access permissions of this folder.' )
 
         scope = kwd.get( 'scope', None )
-
         if scope == 'current' or scope is None:
-            return self._get_current_roles( trans, folder )
-
+            return self.folder_manager.get_current_roles( trans, folder )
         #  Return roles that are available to select.
         elif scope == 'available':
             page = kwd.get( 'page', None )
@@ -155,17 +119,13 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
                 page = int( page )
             else:
                 page = 1
-
             page_limit = kwd.get( 'page_limit', None )
             if page_limit is not None:
                 page_limit = int( page_limit )
             else:
                 page_limit = 10
-
             query = kwd.get( 'q', None )
-
             roles, total_roles = trans.app.security_agent.get_valid_roles( trans, folder, query, page, page_limit )
-
             return_roles = []
             for role in roles:
                 return_roles.append( dict( id=role.name, name=role.name, type=role.type ) )
@@ -203,7 +163,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         current_user_roles = trans.get_current_user_roles()
 
         decoded_folder_id = self.__decode_folder_id( trans, self.__cut_the_prefix( encoded_folder_id ) )
-        folder = self.__load_folder( trans, decoded_folder_id )
+        folder = self.folder_manager.get( trans, decoded_folder_id )
         if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) ):
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to modify permissions of this folder.' )
 
@@ -266,8 +226,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         else:
             raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
                                 'Allowed values are: "set_permissions"' )
-
-        return self._get_current_roles( trans, folder )
+        return self.folder_manager.get_current_roles( trans, folder )
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
@@ -297,42 +256,11 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             raise exceptions.MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( encoded_id ) ) )
         return decoded_id
 
-    def __load_folder( self, trans, folder_id ):
+    def __cut_and_decode( self, trans, encoded_folder_id ):
         """
-        Load the folder from the DB.
+        Cuts the prefix (the prepended 'F') and returns the decoded id.
         """
-        try:
-            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).filter( trans.app.model.LibraryFolder.table.c.id == folder_id ).one()
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase( 'Multiple folders found with the same id.' )
-        except NoResultFound:
-            raise exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
-        except Exception, e:
-            raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
-        return folder
-
-
-    def _get_current_roles( self, trans, folder ):
-        """
-        Find all roles currently connected to relevant permissions 
-        on the folder.
-
-        :param  folder:      the model object
-        :type   folder:      LibraryFolder
-
-        :rtype:     dictionary
-        :returns:   dict of current roles for all available permission types
-        """
-        # Omit duplicated roles by converting to set 
-        modify_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY ) )
-        manage_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE ) )
-        add_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_ADD ) )
-
-        modify_folder_role_list = [ modify_role.name for modify_role in modify_roles ]
-        manage_folder_role_list = [ manage_role.name for manage_role in manage_roles ]
-        add_library_item_role_list = [ add_role.name for add_role in add_roles ]
-
-        return dict( modify_folder_role_list=modify_folder_role_list, manage_folder_role_list=manage_folder_role_list, add_library_item_role_list=add_library_item_role_list )
+        return self.__decode_folder_id( trans, self.__cut_the_prefix( encoded_folder_id ) )
 
     def _load_role( self, trans, role_name ):
         """
