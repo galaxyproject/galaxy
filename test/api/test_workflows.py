@@ -149,6 +149,26 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 403 )
 
+    @skip_without_tool( "cat" )
+    @skip_without_tool( "cat_list" )
+    def test_workflow_run_with_matching_lists( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_matching_lists" )
+        workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        hdca1 = self.dataset_collection_populator.create_list_in_history( history_id, contents=[("sample1-1", "1 2 3"), ("sample2-1", "7 8 9")] ).json()
+        hdca2 = self.dataset_collection_populator.create_list_in_history( history_id, contents=[("sample1-2", "4 5 6"), ("sample2-2", "0 a b")] ).json()
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        label_map = { "list1": self._ds_entry( hdca1 ), "list2": self._ds_entry( hdca2 ) }
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+            workflow_id=workflow_id,
+            ds_map=self._build_ds_map( workflow_id, label_map ),
+        )
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.assertEquals("1 2 3\n4 5 6\n7 8 9\n0 a b\n", self.dataset_populator.get_history_dataset_content( history_id ) )
+
     def test_workflow_stability( self ):
         # Run this index stability test with following command:
         #   ./run_tests.sh test/api/test_workflows.py:WorkflowsApiTestCase.test_workflow_stability
