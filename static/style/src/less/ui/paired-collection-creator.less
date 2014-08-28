@@ -374,6 +374,22 @@
                 background: #DEDEDE;
             }
         }
+        .paired-drop-placeholder {
+            width   : 60px;
+            height  : 3px;
+            margin : 2px 0px 0px 14px;
+            background : black;
+            &:before {
+                float: left;
+                font-size: 120%;
+                margin: -9px 0px 0px -8px;
+                font-family: FontAwesome;
+                content: '\f0da';
+            }
+            &:last-child {
+                margin-bottom: 8px;
+            }
+        }
         .empty-message {
             text-align: center;
         }

@@ -11,7 +11,6 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
-workflow_two_paired_str = resource_string( __name__, "test_workflow_two_paired.ga" )
 
 
 DEFAULT_HISTORY_TIMEOUT = 10  # Secs to wait on history to turn ok
@@ -161,8 +160,11 @@ class WorkflowPopulator( object ):
     def load_random_x2_workflow( self, name ):
         return self.load_workflow( name, content=workflow_random_x2_str )
 
-    def load_two_paired_workflow( self, name ):
-        return self.load_workflow( name, content=workflow_two_paired_str )
+    def load_workflow_from_resource( self, name, filename=None ):
+        if filename is None:
+            filename = "%s.ga" % name
+        content = resource_string( __name__, filename )
+        return self.load_workflow( name, content=content )
 
     def simple_workflow( self, name, **create_kwds ):
         workflow = self.load_workflow( name )
@@ -323,8 +325,14 @@ class DatasetCollectionPopulator( object ):
 
     def list_identifiers( self, history_id, contents=None ):
         count = 3 if not contents else len( contents )
-        hdas = self.__datasets( history_id, count=count, contents=contents )
-        hda_to_identifier = lambda ( i, hda ): dict( name="data%d" % ( i + 1 ), src="hda", id=hda[ "id" ] )
+        # Contents can be a list of strings (with name auto-assigned here) or a list of
+        # 2-tuples of form (name, dataset_content).
+        if contents and isinstance(contents[0], tuple):
+            hdas = self.__datasets( history_id, count=count, contents=[c[1] for c in contents] )
+            hda_to_identifier = lambda ( i, hda ): dict( name=contents[i][0], src="hda", id=hda[ "id" ] )
+        else:
+            hdas = self.__datasets( history_id, count=count, contents=contents )
+            hda_to_identifier = lambda ( i, hda ): dict( name="data%d" % ( i + 1 ), src="hda", id=hda[ "id" ] )
         element_identifiers = map( hda_to_identifier, enumerate( hdas ) )
         return element_identifiers
 

@@ -149,16 +149,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 403 )
 
-    @skip_without_tool( "cat1" )
-    @skip_without_tool( "collection_two_paired" )
-    def test_run_workflow_collection_params( self ):
-        workflow = self.workflow_populator.load_two_paired_workflow( name="test_for_run_two_paired" )
+    @skip_without_tool( "cat" )
+    @skip_without_tool( "cat_list" )
+    def test_workflow_run_with_matching_lists( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_matching_lists" )
         workflow_id = self.workflow_populator.create_workflow( workflow )
         history_id = self.dataset_populator.new_history()
-        hdca1 = self.dataset_collection_populator.create_pair_in_history( history_id, contents=["1 2 3", "4 5 6"] ).json()
-        hdca2 = self.dataset_collection_populator.create_pair_in_history( history_id, contents=["7 8 9", "0 a b"] ).json()
+        hdca1 = self.dataset_collection_populator.create_list_in_history( history_id, contents=[("sample1-1", "1 2 3"), ("sample2-1", "7 8 9")] ).json()
+        hdca2 = self.dataset_collection_populator.create_list_in_history( history_id, contents=[("sample1-2", "4 5 6"), ("sample2-2", "0 a b")] ).json()
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        label_map = { "f1": self._ds_entry( hdca1 ), "f2": self._ds_entry( hdca2 ) }
+        label_map = { "list1": self._ds_entry( hdca1 ), "list2": self._ds_entry( hdca2 ) }
         workflow_request = dict(
             history="hist_id=%s" % history_id,
             workflow_id=workflow_id,

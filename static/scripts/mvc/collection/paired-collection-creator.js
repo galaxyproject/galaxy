@@ -27,11 +27,14 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     className   : 'dataset paired',
 
     initialize : function( attributes ){
+        //console.debug( 'PairView.initialize:', attributes );
         this.pair = attributes.pair || {};
     },
 
     render : function(){
-        this.$el.attr( 'draggable', true )
+        this.$el
+            .attr( 'draggable', true )
+            .data( 'pair', this.pair )
             .html( _.template([
                 '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
                 '<span class="pair-name-column flex-column">',
@@ -40,7 +43,51 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
             ].join(''), { pair: this.pair }))
             .addClass( 'flex-column-container' );
+
+//TODO: would be good to get the unpair-btn into this view - but haven't found a way with css
+
         return this;
+    },
+
+    events : {
+        'dragstart'         : '_dragstart',
+        'dragend'           : '_dragend',
+        'dragover'          : '_sendToParent',
+        'drop'              : '_sendToParent'
+    },
+
+    /** dragging pairs for re-ordering */
+    _dragstart : function( ev ){
+        //console.debug( this, '_dragstartPair', ev );
+        ev.currentTarget.style.opacity = '0.4';
+        if( ev.originalEvent ){ ev = ev.originalEvent; }
+
+        ev.dataTransfer.effectAllowed = 'move';
+        ev.dataTransfer.setData( 'text/plain', JSON.stringify( this.pair ) );
+
+        //ev.dataTransfer.setDragImage( null, 0, 0 );
+
+        // the canvas can be used to create the image
+        //ev.dataTransfer.setDragImage( canvasCrossHairs(), 25, 25 );
+
+        //console.debug( 'ev.dataTransfer:', ev.dataTransfer );
+        this.$el.parent().trigger( 'pair.dragstart', [ this ] );
+    },
+    /** dragging pairs for re-ordering */
+    _dragend : function( ev ){
+        //console.debug( this, '_dragendPair', ev );
+        ev.currentTarget.style.opacity = '1.0';
+        this.$el.parent().trigger( 'pair.dragend', [ this ] );
+    },
+
+    /** manually bubble up an event to the parent/container */
+    _sendToParent : function( ev ){
+        this.$el.parent().trigger( ev );
+    },
+
+    /** string rep */
+    toString : function(){
+        return 'PairView(' + this.pair.name + ')';
     }
 
 });
@@ -105,6 +152,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         this.unpairedPanelHidden = false;
         /** is the paired panel shown? */
         this.pairedPanelHidden = false;
+
+        /** DOM elements currently being dragged */
+        this.$dragging = null;
 
         this._dataSetUp();
 
@@ -929,8 +979,17 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         'mousedown .flexible-partition-drag'        : '_startPartitionDrag',
         // paired
         'click .paired-columns .dataset.paired'     : 'selectPair',
+        'click .paired-columns'                     : 'clearSelectedPaired',
         'click .paired-columns .pair-name'          : '_clickPairName',
         'click .unpair-btn'                         : '_clickUnpair',
+        // paired - drop target
+        //'dragenter .paired-columns'                 : '_dragenterPairedColumns',
+        //'dragleave .paired-columns .column-datasets': '_dragleavePairedColumns',
+        'dragover .paired-columns .column-datasets' : '_dragoverPairedColumns',
+        'drop .paired-columns .column-datasets'     : '_dropPairedColumns',
+
+        'pair.dragstart .paired-columns .column-datasets' : '_pairDragstart',
+        'pair.dragend   .paired-columns .column-datasets' : '_pairDragend',
 
         // footer
         'change .remove-extensions'                 : function( ev ){ this.toggleExtensions(); },
@@ -1226,7 +1285,13 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     // ........................................................................ paired
     /** select a pair when clicked */
     selectPair : function( ev ){
+        ev.stopPropagation();
         $( ev.currentTarget ).toggleClass( 'selected' );
+    },
+
+    /** deselect all pairs */
+    clearSelectedPaired : function( ev ){
+        this.$( '.paired-columns .dataset.selected' ).removeClass( 'selected' );
     },
 
     /** rename a pair when the pair name is clicked */
@@ -1253,6 +1318,94 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         //this.debug( 'pair:', pairIndex );
         //TODO: animate
         this._unpair( this.paired[ pairIndex ] );
+    },
+
+    // ........................................................................ paired - drag and drop re-ordering
+    //_dragenterPairedColumns : function( ev ){
+    //    console.debug( '_dragenterPairedColumns:', ev );
+    //},
+    //_dragleavePairedColumns : function( ev ){
+    //    //console.debug( '_dragleavePairedColumns:', ev );
+    //},
+    /** track the mouse drag over the paired list adding a placeholder to show where the drop would occur */
+    _dragoverPairedColumns : function( ev ){
+        //console.debug( '_dragoverPairedColumns:', ev );
+        ev.preventDefault();
+
+        var $list = this.$( '.paired-columns .column-datasets' ),
+            offset = $list.offset();
+        //console.debug( ev.originalEvent.clientX, ev.originalEvent.clientY );
+        var $nearest = this._getNearestPairedDatasetLi( ev.originalEvent.clientY );
+        //console.debug( ev.originalEvent.clientX - offset.left, ev.originalEvent.clientY - offset.top );
+
+        $( '.paired-drop-placeholder' ).remove();
+        var $placeholder = $( '<div class="paired-drop-placeholder"></div>')
+        if( !$nearest.size() ){
+            $list.append( $placeholder );
+        } else {
+            $nearest.before( $placeholder );
+        }
+    },
+    /** get the nearest *previous* paired dataset PairView based on the mouse's Y coordinate.
+     *      If the y is at the end of the list, return an empty jQuery object.
+     */
+    _getNearestPairedDatasetLi : function( y ){
+        var WIGGLE = 4,
+            lis = this.$( '.paired-columns .column-datasets li' ).toArray();
+//TODO: better way?
+        for( var i=0; i<lis.length; i++ ){
+            var $li = $( lis[i] ),
+                top = $li.offset().top,
+                halfHeight = Math.floor( $li.outerHeight() / 2 ) + WIGGLE;
+            if( top + halfHeight > y && top - halfHeight < y ){
+                //console.debug( y, top + halfHeight, top - halfHeight )
+                return $li;
+            }
+        }
+        return $();
+    },
+    /** drop (dragged/selected PairViews) onto the list, re-ordering both the DOM and the internal array of pairs */
+    _dropPairedColumns : function( ev ){
+        // both required for firefox
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = 'move';
+
+        var $nearest = this._getNearestPairedDatasetLi( ev.originalEvent.clientY );
+        if( $nearest.size() ){
+            this.$dragging.insertBefore( $nearest );
+
+        } else {
+            // no nearest before - insert after last element (unpair button)
+            this.$dragging.insertAfter( this.$( '.paired-columns .unpair-btn' ).last() );
+        }
+        // resync the creator's list of paired based on the new DOM order
+        this._syncPairsToDom();
+        return false;
+    },
+    /** resync the creator's list of paired based on the DOM order of pairs */
+    _syncPairsToDom : function(){
+        var newPaired = [];
+//TODO: ugh
+        this.$( '.paired-columns .dataset.paired' ).each( function(){
+            newPaired.push( $( this ).data( 'pair' ) );
+        });
+        //console.debug( newPaired );
+        this.paired = newPaired;
+        this._renderPaired();
+    },
+    /** drag communication with pair sub-views: dragstart */
+    _pairDragstart : function( ev, pair ){
+        //console.debug( '_pairDragstart', ev, pair )
+        // auto select the pair causing the event and move all selected
+        pair.$el.addClass( 'selected' );
+        var $selected = this.$( '.paired-columns .dataset.selected' );
+        this.$dragging = $selected;
+    },
+    /** drag communication with pair sub-views: dragend - remove the placeholder */
+    _pairDragend : function( ev, pair ){
+        //console.debug( '_pairDragend', ev, pair )
+        $( '.paired-drop-placeholder' ).remove();
+        this.$dragging = null;
     },
 
     // ........................................................................ footer
