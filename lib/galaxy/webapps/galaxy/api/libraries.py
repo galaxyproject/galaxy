@@ -342,6 +342,7 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.InternalServerError( 'Error loading from the database.' + str(e))
         return role
 
+
     @expose_api
     def set_permissions( self, trans, encoded_library_id, **kwd ):
         """
@@ -485,7 +486,7 @@ class LibrariesController( BaseAPIController ):
 
         return dict( access_library_role_list=access_library_role_list, modify_library_role_list=modify_library_role_list, manage_library_role_list=manage_library_role_list, add_library_item_role_list=add_library_item_role_list )
 
-    @expose_api
+
     def set_permissions_old( self, trans, library, payload, **kwd ):
         """
         *** old implementation for backward compatibility ***
