@@ -386,8 +386,11 @@ class LibrariesController( BaseAPIController ):
 
         action = kwd.get( 'action', None )
         if action is None:
-            return self.set_permissions_old( trans, library )
-            # raise exceptions.RequestParameterMissingException( 'The mandatory parameter "action" is missing.' )
+            payload = kwd.get( 'payload', None )
+            if payload is not None:
+                return self.set_permissions_old( trans, library, payload, **kwd )
+            else:
+                raise exceptions.RequestParameterMissingException( 'The mandatory parameter "action" is missing.' )
         elif action == 'remove_restrictions':
             trans.app.security_agent.make_library_public( library )
             if not trans.app.security_agent.library_is_public( library ):
