@@ -11,10 +11,7 @@ import shutil
 import struct
 import subprocess
 import tempfile
-import zipfile
-import sqlite3
 
-from urllib import urlencode, quote_plus
 from galaxy import eggs
 eggs.require( "bx-python" )
 
@@ -22,7 +19,6 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
-from galaxy.datatypes.sniff import *
 import dataproviders
 
 log = logging.getLogger(__name__)
@@ -552,14 +548,12 @@ Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 class SQlite ( Binary ):
     file_ext = "sqlite"
 
-    # Connects and runs a query that should work on any real database 
-    # If the file is not sqlite, an exception will be thrown and the sniffer will return false
     def sniff( self, filename ):
+        # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
+        # about the format, see http://www.sqlite.org/fileformat.html
         try:
-            conn = sqlite3.connect(filename)
-            schema_version=conn.cursor().execute("pragma schema_version").fetchone()
-            conn.close()
-            if schema_version is not None:
+            header = open(filename).read(16)
+            if binascii.b2a_hex(header) == binascii.hexlify('SQLite format 3\0'):
                 return True
             return False
         except:
@@ -586,5 +580,5 @@ class SQlite ( Binary ):
         return dataproviders.dataset.SQliteDataProvider( dataset_source, **settings )
 
 
-Binary.register_sniffable_binary_format("sqlite","sqlite",SQlite)
+Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
 
