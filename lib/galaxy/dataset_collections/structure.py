@@ -35,9 +35,9 @@ class Tree( object ):
         return self._walk_collections( dict_map( lambda hdca: hdca.collection, hdca_dict ) )
 
     def _walk_collections( self, collection_dict ):
-        for ( identifier, substructure ) in self.children:
+        for index, ( identifier, substructure ) in enumerate( self.children ):
             def element( collection ):
-                return collection[ identifier ]
+                return collection[ index ]
 
             if substructure.is_leaf:
                 yield dict_map( element, collection_dict )
