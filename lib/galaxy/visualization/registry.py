@@ -229,14 +229,14 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         Run a visualization's data_source tests to find out if
         it can be applied to the target_object.
         """
-        log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
+        #log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
         for test in data_source_tests:
             test_type   = test[ 'type' ]
             result_type = test[ 'result_type' ]
             test_result = test[ 'result' ]
             test_fn     = test[ 'fn' ]
-            log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
-                       test_type, result_type, test_result, test_fn )
+            #log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
+            #           test_type, result_type, test_result, test_fn )
 
             if test_type == 'isinstance':
                 # parse test_result based on result_type (curr: only datatype has to do this)
@@ -254,7 +254,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
             #NOTE: tests are OR'd, if any test passes - the visualization can be applied
             if test_fn( target_object, test_result ):
-                log.debug( '\t test passed' )
+                #log.debug( '\t test passed' )
                 return True
 
         return False
