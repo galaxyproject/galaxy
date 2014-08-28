@@ -106,7 +106,6 @@
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
     ${h.js(
-        'libs/jquery/jquery.event.drag',
         'libs/jquery/jquery.event.hover',
         'libs/jquery/jquery.form',
         'libs/jquery/jquery.rating',
