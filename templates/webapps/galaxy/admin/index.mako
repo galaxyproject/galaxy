@@ -66,9 +66,6 @@
                             <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas' )}" target="galaxy_main">Manage quotas</a></div>
                         %endif
                         <div class="toolTitle"><a href="${h.url_for( controller='library_admin', action='browse_libraries' )}" target="galaxy_main">Manage data libraries</a></div>
-                        %if trans.app.config.enable_beta_job_managers:
-                            <div class="toolTitle"><a href="${h.url_for( controller='data_admin', action='manage_data' )}" target="galaxy_main">Manage local data</a></div>
-                        %endif
                         <div class="toolTitle"><a href="${h.url_for( controller='data_manager' )}" target="galaxy_main">Manage local data (beta)</a></div>
                     </div>
                 </div>
