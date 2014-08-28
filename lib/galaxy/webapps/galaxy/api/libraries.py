@@ -342,6 +342,7 @@ class LibrariesController( BaseAPIController ):
             raise exceptions.InternalServerError( 'Error loading from the database.' + str(e))
         return role
 
+
     @expose_api
     def set_permissions( self, trans, encoded_library_id, **kwd ):
         """
@@ -385,7 +386,11 @@ class LibrariesController( BaseAPIController ):
 
         action = kwd.get( 'action', None )
         if action is None:
-            raise exceptions.RequestParameterMissingException( 'The mandatory parameter "action" is missing.' )
+            payload = kwd.get( 'payload', None )
+            if payload is not None:
+                return self.set_permissions_old( trans, library, payload, **kwd )
+            else:
+                raise exceptions.RequestParameterMissingException( 'The mandatory parameter "action" is missing.' )
         elif action == 'remove_restrictions':
             trans.app.security_agent.make_library_public( library )
             if not trans.app.security_agent.library_is_public( library ):
@@ -397,7 +402,6 @@ class LibrariesController( BaseAPIController ):
             invalid_access_roles_names = []
             for role_id in new_access_roles_ids:
                 role = self._load_role( trans, role_id )
-                #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, library, is_library_access=True )
                 if role in valid_roles:
                     valid_access_roles.append( role )
@@ -411,7 +415,6 @@ class LibrariesController( BaseAPIController ):
             invalid_add_roles_names = []
             for role_id in new_add_roles_ids:
                 role = self._load_role( trans, role_id )
-                #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, library )
                 if role in valid_roles:
                     valid_add_roles.append( role )
@@ -425,7 +428,6 @@ class LibrariesController( BaseAPIController ):
             invalid_manage_roles_names = []
             for role_id in new_manage_roles_ids:
                 role = self._load_role( trans, role_id )
-                #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, library )
                 if role in valid_roles:
                     valid_manage_roles.append( role )
@@ -439,7 +441,6 @@ class LibrariesController( BaseAPIController ):
             invalid_modify_roles_names = []
             for role_id in new_modify_roles_ids:
                 role = self._load_role( trans, role_id )
-                #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, library )
                 if role in valid_roles:
                     valid_modify_roles.append( role )
@@ -454,6 +455,9 @@ class LibrariesController( BaseAPIController ):
             permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY : valid_modify_roles } )
 
             trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
+            trans.sa_session.refresh( library )
+            # Copy the permissions to the root folder
+            trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
         else:
             raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
                                 'Allowed values are: "remove_restrictions", set_permissions"' )
@@ -485,4 +489,26 @@ class LibrariesController( BaseAPIController ):
 
         return dict( access_library_role_list=access_library_role_list, modify_library_role_list=modify_library_role_list, manage_library_role_list=manage_library_role_list, add_library_item_role_list=add_library_item_role_list )
 
+
+    def set_permissions_old( self, trans, library, payload, **kwd ):
+        """
+        *** old implementation for backward compatibility ***
+
+        POST /api/libraries/{encoded_library_id}/permissions
+        Updates the library permissions.
+        """
+        params = galaxy.util.Params( payload )
+        permissions = {}
+        for k, v in trans.app.model.Library.permitted_actions.items():
+            role_params = params.get( k + '_in', [] )
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in galaxy.util.listify( role_params ) ]
+            permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
+        trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
+        trans.sa_session.refresh( library )
+        # Copy the permissions to the root folder
+        trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
+        message = "Permissions updated for library '%s'." % library.name
+
+        item = library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+        return item
 

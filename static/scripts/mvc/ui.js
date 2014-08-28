@@ -574,6 +574,8 @@ function LoadingIndicator( $where, options ){
     self.show = function( msg, speed, callback ){
         msg = msg || 'loading...';
         speed = speed || 'fast';
+        // remove previous
+        $where.parent().find( '.loading-indicator' ).remove();
         // since position is fixed - we insert as sibling
         self.$indicator = render().insertBefore( $where );
         self.message( msg );
