@@ -75,7 +75,6 @@ class Admin( object ):
                 os.unlink( tool_tarball )
                 tarball_path, filename = os.path.split( tool_tarball )
                 trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( tool_id )
-                os.removedirs( tarball_path )
                 return download_file
             else:
                 status = 'error'

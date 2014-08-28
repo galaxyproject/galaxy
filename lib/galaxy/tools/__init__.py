@@ -740,12 +740,17 @@ class ToolBox( object, Dictifiable ):
             tarball_files = []
             tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
             tarball_files.append( tool_tup )
+            # TODO: This feels hacky.
             tool_command = tool.command.split( ' ' )[0]
             tool_path = os.path.dirname( tool_tup[0] )
             # Add the tool XML to the tuple that will be used to populate the tarball.
             if os.path.exists( os.path.join( tool_path, tool_command ) ):
                 tarball_files.append( ( os.path.join( tool_path, tool_command ), tool_command ) )
             tests = tool.tests
+            # Find and add macros and code files.
+            for external_file in tool.get_externally_referenced_paths( os.path.abspath( tool.config_file ) ):
+                external_file_abspath = os.path.abspath( os.path.join( tool_path, external_file ) )
+                tarball_files.append( ( external_file_abspath, external_file ) )
             # Find tests, and check them for test data.
             if tests is not None:
                 for test in tests:
@@ -766,24 +771,31 @@ class ToolBox( object, Dictifiable ):
                 # Check for tool data table definitions.
                 if hasattr( param, 'options' ):
                     if hasattr( param.options, 'tool_data_table' ):
-                        for fnam in param.options.tool_data_table.filenames:
-                            if not param.options.tool_data_table.filenames[ fnam ][ 'from_shed_config' ]:
-                                tar_file = param.options.tool_data_table.filenames[ fnam ][ 'filename' ] + '.sample'
-                                sample_file = os.path.join( param.options.tool_data_table.filenames[ fnam ][ 'tool_data_path' ],
-                                                            tar_file )
-                                # Use the .sample file, if one exists. If not, skip this data table.
-                                if os.path.exists( sample_file ):
-                                    tarfile_path, tarfile_name = os.path.split( tar_file )
-                                    tarfile_path = os.path.join( 'tool-data', tarfile_name )
-                                    sample_name = tarfile_path + '.sample'
-                                    tarball_files.append( ( sample_file, tarfile_path ) )
-                        # Put the data table definition XML in a temporary file.
-                        table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
-                        table_definition = table_definition % param.options.tool_data_table.xml_string
-                        fd, table_conf = tempfile.mkstemp()
-                        os.close( fd )
-                        file( table_conf, 'w' ).write( table_definition )
-                        tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
+                        data_table = param.options.tool_data_table
+                        if hasattr( data_table, 'filenames' ):
+                            data_table_definitions = []
+                            for data_table_filename in data_table.filenames:
+                                # FIXME: from_shed_config seems to always be False.
+                                if not data_table.filenames[ data_table_filename ][ 'from_shed_config' ]:
+                                    tar_file = data_table.filenames[ data_table_filename ][ 'filename' ] + '.sample'
+                                    sample_file = os.path.join( data_table.filenames[ data_table_filename ][ 'tool_data_path' ],
+                                                                tar_file )
+                                    # Use the .sample file, if one exists. If not, skip this data table.
+                                    if os.path.exists( sample_file ):
+                                        tarfile_path, tarfile_name = os.path.split( tar_file )
+                                        tarfile_path = os.path.join( 'tool-data', tarfile_name )
+                                        sample_name = tarfile_path + '.sample'
+                                        tarball_files.append( ( sample_file, tarfile_path ) )
+                                    data_table_definitions.append( data_table.xml_string )
+                            if len( data_table_definitions ) > 0:
+                                # Put the data table definition XML in a temporary file.
+                                table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
+                                table_xml = [ data_table.xml_string for data_table in data_table_definitions ]
+                                table_definition = table_definition % '\n'.join( table_xml ) 
+                                fd, table_conf = tempfile.mkstemp()
+                                os.close( fd )
+                                file( table_conf, 'w' ).write( table_definition )
+                                tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
             # Create the tarball.
             fd, tarball_archive = tempfile.mkstemp( suffix='.tgz' )
             os.close( fd )
