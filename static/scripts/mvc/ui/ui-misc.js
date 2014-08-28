@@ -409,6 +409,35 @@ var Textarea = Backbone.View.extend({
     }
 });
 
+// plugin
+var Hidden = Backbone.View.extend({
+    // options
+    optionsDefault: {
+        value           : ''
+    },
+    
+    // initialize
+    initialize : function(options) {
+        // configure options
+        this.options = Utils.merge(options, this.optionsDefault);
+            
+        // create new element
+        this.setElement(this._template(this.options));
+    },
+    
+    // value
+    value : function (new_val) {
+        if (new_val !== undefined) {
+            this.$el.val(new_val);
+        }
+        return this.$el.val();
+    },
+    
+    // element
+    _template: function(options) {
+        return '<hidden id="' + options.id + '" value="' + options.value + '"/>';
+    }
+});
 
 // return
 return {
@@ -426,6 +455,7 @@ return {
     Checkbox    : Checkbox,
     Searchbox   : Searchbox,
     Select      : Select,
-    Textarea    : Textarea
+    Textarea    : Textarea,
+    Hidden      : Hidden
 }
 });

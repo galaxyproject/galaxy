@@ -1,8 +1,8 @@
 define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         'mvc/citation/citation-model', 'mvc/citation/citation-view',
-        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets', 'mvc/tools/tools-section'],
+        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets', 'mvc/tools/tools-section', 'mvc/tools/tools-tree'],
     function(Portlet, Ui, CitationModel, CitationView,
-             Tools, ToolTemplate, ToolDatasets, ToolSection) {
+             Tools, ToolTemplate, ToolDatasets, ToolSection, ToolTree) {
 
     // create tool model
     var Model = Backbone.Model.extend({
@@ -29,6 +29,18 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 id : options.id
             });
             
+            // creates a tree/json structure from the input form
+            this.tree = new ToolTree(this);
+            
+            // reset field list
+            this.field_list = {};
+            
+            // reset sequential input definition list
+            this.inputs_sequential = {};
+            
+            // create data model
+            this.data = new Backbone.Model();
+            
             // initialize datasets
             this.datasets = new ToolDatasets({
                 success: function() {
@@ -39,13 +51,6 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         
         // initialize tool form
         _initializeToolForm: function() {
-        
-            // reset field list
-            this.field_list = {};
-            
-            // reset sequential input definition list
-            this.inputs_sequential = {};
-            
             // fetch model and render form
             var self = this;
             this.model.fetch({
@@ -67,6 +72,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                                 title    : 'Execute',
                                 floating : 'clear',
                                 onclick  : function() {
+                                    console.log(self.tree.create(self));
                                 }
                             })
                         }
@@ -107,8 +113,25 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     
                     // append tool section
                     self.portlet.append(self.section.$el);
+                    
+                    // trigger refresh
+                    self.refresh();
                 }
             });
+        },
+        
+        // refresh
+        refresh: function() {
+            // recreate tree structure
+            this.tree.refresh();
+            
+            // trigger change
+            for (var id in this.field_list) {
+                this.field_list[id].trigger('change');
+            }
+            
+            // log
+            console.debug('tools-form::refresh() - Recreated tree structure. Refresh.');
         }
     });
 

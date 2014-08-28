@@ -132,7 +132,7 @@ var View = Backbone.View.extend({
     del: function(id) {
         // delete tab from dom
         this.$el.find('#tab-' + id).remove();
-        this.$el.find('#tab-content-' + id).remove();
+        this.$el.find('#' + id).remove();
         
         // check if first tab has been deleted
         if (this.first_tab == id) {
@@ -143,14 +143,17 @@ var View = Backbone.View.extend({
         if (this.first_tab != null) {
             this.show(this.first_tab);
         }
+        
+        // delete from list
+        if (this.list[id]) {
+            delete this.list[id];
+        }
     },
     
     // delete tab
     delRemovable: function() {
         for (var id in this.list) {
-            if (this.list[id]) {
-                this.del(id);
-            }
+            this.del(id);
         }
     },
     
@@ -165,7 +168,7 @@ var View = Backbone.View.extend({
             this.$el.find('.tab-element').removeClass('active');
             this.$el.find('.tab-pane').removeClass('active');
             this.$el.find('#tab-' + id).addClass('active');
-            this.$el.find('#tab-content-' + id).addClass('active');
+            this.$el.find('#' + id).addClass('active');
         }
     },
     
@@ -201,6 +204,14 @@ var View = Backbone.View.extend({
         return $el.html();
     },
     
+    // retitle
+    retitle: function(new_title) {
+        var index = 0;
+        for (var id in this.list) {
+            this.title(id, ++index + ': ' + new_title);
+        }
+    },
+    
     // fill template
     _template: function(options) {
         return  '<div class="ui-tabs tabbable tabs-left">' +
@@ -224,8 +235,8 @@ var View = Backbone.View.extend({
     // fill template tab
     _template_tab: function(options) {
         var tmpl =  '<li id="tab-' + options.id + '" class="tab-element">' +
-                        '<a id="tab-title-link-' + options.id + '" title="" href="#tab-content-' + options.id + '" data-original-title="">' +
-                            '<span id="tab-title-text-' + options.id + '">' + options.title + '</span>';
+                        '<a id="tab-title-link-' + options.id + '" title="" href="#' + options.id + '" data-original-title="">' +
+                            '<span id="tab-title-text-' + options.id + '" class="tab-title-text">' + options.title + '</span>';
         
         if (options.ondel) {
             tmpl +=         '<i id="delete" class="ui-tabs-delete fa fa-minus-circle"/>';
@@ -239,7 +250,7 @@ var View = Backbone.View.extend({
     
     // fill template tab content
     _template_tab_content: function(options) {
-        return  '<div id="tab-content-' + options.id + '" class="tab-pane"/>';
+        return  '<div id="' + options.id + '" class="tab-pane"/>';
     }
 });
 
