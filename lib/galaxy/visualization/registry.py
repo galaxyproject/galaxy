@@ -203,6 +203,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             #log.debug( '\t passed model_class' )
 
             # tests are optional - default is the above class test
+#TODO: not true: must have test currently
             tests = data_source[ 'tests' ]
             if tests and not self.is_object_applicable( trans, target_object, tests ):
                 continue
@@ -228,14 +229,14 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         Run a visualization's data_source tests to find out if
         it can be applied to the target_object.
         """
-        #log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
+        log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
         for test in data_source_tests:
             test_type   = test[ 'type' ]
             result_type = test[ 'result_type' ]
             test_result = test[ 'result' ]
             test_fn     = test[ 'fn' ]
-            #log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
-            #           test_type, result_type, test_result, test_fn )
+            log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
+                       test_type, result_type, test_result, test_fn )
 
             if test_type == 'isinstance':
                 # parse test_result based on result_type (curr: only datatype has to do this)
@@ -253,7 +254,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
             #NOTE: tests are OR'd, if any test passes - the visualization can be applied
             if test_fn( target_object, test_result ):
-                #log.debug( '\t test passed' )
+                log.debug( '\t test passed' )
                 return True
 
         return False
@@ -407,6 +408,7 @@ class VisualizationsConfigParser( object ):
 
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
+#TODO: differentiate between disabled and failed to parse, log.warn only on failure, log.info otherwise
             return None
 
         # a text display name for end user links
@@ -626,6 +628,13 @@ class DataSourceParser( object ):
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
                                               and getter( o ).has_dataprovider( result ) )
+
+            elif test_type == 'has_attribute':
+                # does the object itself have attr in 'result' (no equivalence checking)
+                test_fn = lambda o, result: hasattr( getter( o ), result )
+
+            elif test_type == 'not_eq':
+                test_fn = lambda o, result: str( getter( o ) ) != result
 
             else:
                 # default to simple (string) equilavance (coercing the test_attr to a string)
