@@ -7,7 +7,9 @@ var View = Backbone.View.extend({
     optionsDefault: {
         title_new       : '',
         operations      : null,
-        onnew           : null
+        onnew           : null,
+        min             : null,
+        max             : null
     },
     
     // initialize
@@ -96,10 +98,15 @@ var View = Backbone.View.extend({
         this.$content.append($tab_content);
         
         // activate this tab if this is the first tab
-        if (_.size(this.list) == 1) {
+        if (this.size() == 1) {
             $tab_title.addClass('active');
             $tab_content.addClass('active');
             this.first_tab = id;
+        }
+        
+        // hide add tab
+        if (this.options.max && this.size() >= this.options.max) {
+            this.$el.find('#new-tab').hide();
         }
         
         // add click event to remove tab
@@ -147,6 +154,11 @@ var View = Backbone.View.extend({
         // delete from list
         if (this.list[id]) {
             delete this.list[id];
+        }
+        
+        // show add tab
+        if (this.size() < this.options.max) {
+            this.$el.find('#new-tab').show();
         }
     },
     

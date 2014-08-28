@@ -44,7 +44,7 @@ return Backbone.Model.extend({
                 dict[id] = {};
                 
                 // add input element if it exists
-                var input = self.app.inputs_sequential[id];
+                var input = self.app.input_list[id];
                 if (input) {
                     dict[id] = {
                         input : input
@@ -78,10 +78,13 @@ return Backbone.Model.extend({
             // get child nodes
             var children = $(parent).children();
             
-            // create sublist
+            // create list of referenced elements
             var list = [];
             
-            // verify that hierachy level is referenced to identifier
+            // a node level is skipped if a reference of higher priority was found
+            var skip = false;
+            
+            // verify that hierarchy level is referenced by target identifier
             children.each(function() {
                 // get child element
                 var child = this;
@@ -89,15 +92,16 @@ return Backbone.Model.extend({
                 // get id
                 var id = $(child).attr('id');
             
-                // skip
+                // skip target element
                 if (id !== identifier) {
                     // get input element
-                    var input = self.app.inputs_sequential[id];
+                    var input = self.app.input_list[id];
                     if (input) {
-                        // check for new reference definition
+                        // check for new reference definition with higher priority
                         if (input.name == name) {
-                            // stop iteration
-                            return;
+                            // skip iteration for this branch
+                            skip = true;
+                            return false;
                         }
                         
                         // check for referenced element
@@ -108,20 +112,23 @@ return Backbone.Model.extend({
                 }
             });
             
-            // merge temporary list with result
-            referenced = referenced.concat(list);
-            
-            // continue iteration
-            children.each(function() {
-                search(identifier, this);
-            });
+            // skip iteration
+            if (!skip) {
+                // merge temporary list with result
+                referenced = referenced.concat(list);
+                
+                // continue iteration
+                children.each(function() {
+                    search(name, this);
+                });
+            }
         }
         
         // get initial node
         var node = this.xml.find('#' + identifier);
         if (node.length > 0) {
             // get parent input element
-            var input = self.app.inputs_sequential[identifier];
+            var input = this.app.input_list[identifier];
             if (input) {
                 search(input.name, node.parent());
             }

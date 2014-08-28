@@ -36,7 +36,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.field_list = {};
             
             // reset sequential input definition list
-            this.inputs_sequential = {};
+            this.input_list = {};
             
             // create data model
             this.data = new Backbone.Model();

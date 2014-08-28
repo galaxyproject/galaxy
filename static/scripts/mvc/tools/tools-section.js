@@ -54,91 +54,131 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             input_def.id = Utils.uuid();
     
             // add to sequential list of inputs
-            this.app.inputs_sequential[input_def.id] = input_def;
+            this.app.input_list[input_def.id] = input_def;
             
             // identify field type
             var type = input_def.type;
             switch(type) {
                 // conditional field
                 case 'conditional':
-                    // add label to input definition root
-                    input_def.label = input_def.test_param.label;
-                
-                    // add value to input definition root
-                    input_def.value = input_def.test_param.value;
-                
-                    // build options field
-                    this._addRow('conditional', input_def, data);
-                    
-                    // add fields
-                    for (var i in input_def.cases) {
-                        // create id tag
-                        var sub_section_id = input_def.id + '-section-' + i;
-                        
-                        // create sub section
-                        var sub_section = new View(this.app, {
-                            inputs  : input_def.cases[i].inputs,
-                            cls     : 'ui-table-plain'
-                        });
-                        
-                        // append sub section
-                        this.table.add('');
-                        this.table.add(sub_section.$el);
-                        this.table.append(sub_section_id);
-                    }
+                    this._addConditional(input_def, data);
                     break;
                 // repeat block
                 case 'repeat':
-                    // create tab field
-                    var tabs = new Tabs.View({
-                        title_new       : 'Add ' + input_def.title,
-                        onnew           : function() {
-                            // create id tag
-                            var sub_section_id = input_def.id + '-section-' + Utils.uuid();
-                        
-                            // create sub section
-                            var sub_section = new View(self.app, {
-                                inputs  : input_def.inputs,
-                                cls     : 'ui-table-plain'
-                            });
-                            
-                            // add new tab
-                            tabs.add({
-                                id              : sub_section_id,
-                                title           : input_def.title,
-                                $el             : sub_section.$el,
-                                ondel           : function() {
-                                    // delete tab
-                                    tabs.del(sub_section_id);
-                                    
-                                    // retitle tabs
-                                    tabs.retitle(input_def.title);
-                                    
-                                    // trigger refresh
-                                    self.app.refresh();
-                                }
-                            });
-                            
-                            // retitle tabs
-                            tabs.retitle(input_def.title);
-                                    
-                            // show tab
-                            tabs.show(sub_section_id);
-                    
-                            // trigger refresh
-                            self.app.refresh();
-                        }
-                    });
-                    
-                    // append sub section
-                    this.table.add('');
-                    this.table.add(tabs.$el);
-                    this.table.append(input_def.id);
+                    this._addRepeat(input_def);
                     break;
                 // default single element row
                 default:
                     this._addRow(type, input_def, data);
             }
+        },
+        
+        // add conditional block
+        _addConditional: function(input_def, data) {
+            // add label to input definition root
+            input_def.label = input_def.test_param.label;
+        
+            // add value to input definition root
+            input_def.value = input_def.test_param.value;
+        
+            // build options field
+            this._addRow('conditional', input_def, data);
+            
+            // add fields
+            for (var i in input_def.cases) {
+                // create id tag
+                var sub_section_id = input_def.id + '-section-' + i;
+                
+                // create sub section
+                var sub_section = new View(this.app, {
+                    inputs  : input_def.cases[i].inputs,
+                    cls     : 'ui-table-plain'
+                });
+                
+                // append sub section
+                this.table.add('');
+                this.table.add(sub_section.$el);
+                this.table.append(sub_section_id);
+            }
+        },
+        
+        // add repeat block
+        _addRepeat: function(input_def) {
+            // link this
+            var self = this;
+            
+            //
+            // create tab field
+            //
+            var tabs = new Tabs.View({
+                title_new       : 'Add ' + input_def.title,
+                max             : input_def.max,
+                onnew           : function() {
+                    // create id tag
+                    var sub_section_id = input_def.id + '-section-' + Utils.uuid();
+                
+                    // create sub section
+                    var sub_section = new View(self.app, {
+                        inputs  : input_def.inputs,
+                        cls     : 'ui-table-plain'
+                    });
+                    
+                    // add new tab
+                    tabs.add({
+                        id              : sub_section_id,
+                        title           : input_def.title,
+                        $el             : sub_section.$el,
+                        ondel           : function() {
+                            // delete tab
+                            tabs.del(sub_section_id);
+                            
+                            // retitle tabs
+                            tabs.retitle(input_def.title);
+                            
+                            // trigger refresh
+                            self.app.refresh();
+                        }
+                    });
+                    
+                    // retitle tabs
+                    tabs.retitle(input_def.title);
+                            
+                    // show tab
+                    tabs.show(sub_section_id);
+            
+                    // trigger refresh
+                    self.app.refresh();
+                }
+            });
+            
+            //
+            // add min number of tabs
+            //
+            for (var i = 0; i < input_def.min; i++) {
+                // create id tag
+                var sub_section_id = input_def.id + '-section-' + Utils.uuid();
+            
+                // create sub section
+                var sub_section = new View(self.app, {
+                    inputs  : input_def.inputs,
+                    cls     : 'ui-table-plain'
+                });
+                
+                // add tab
+                tabs.add({
+                    id      : sub_section_id,
+                    title   : input_def.title,
+                    $el     : sub_section.$el
+                });
+            }
+            
+            // retitle tabs
+            tabs.retitle(input_def.title);
+            
+            // append sub section
+            this.table.add('');
+            this.table.add(tabs.$el);
+            this.table.append(input_def.id);
         },
         
         // add table row
@@ -215,7 +255,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             }
             
             // create table row
-            this.table.add('<span class="ui-table-form-title">' + input_def.label + '</span>', '25%');
+            this.table.add('<span class="ui-table-form-title">' + input_def.label + '</span>', '20%');
             this.table.add($input);
             
             // append to table
@@ -342,7 +382,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                             var column_field = self.app.field_list[column_list[i]]
                             if (column_field) {
                                 column_field.update(columns);
-                                column_field.value(column_field.first());
+                                if (!column_field.exists(column_field.value())) {
+                                    column_field.value(column_field.first());
+                                }
                             }
                         }
                     } else {
