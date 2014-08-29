@@ -769,16 +769,16 @@ class ToolBox( object, Dictifiable ):
             tarball_files.append( tool_tup )
             # TODO: This feels hacky.
             tool_command = tool.command.split( ' ' )[0]
-            tool_path = os.path.dirname( tool_tup[0] )
+            tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
             # Add the tool XML to the tuple that will be used to populate the tarball.
             if os.path.exists( os.path.join( tool_path, tool_command ) ):
                 tarball_files.append( ( os.path.join( tool_path, tool_command ), tool_command ) )
-            tests = tool.tests
             # Find and add macros and code files.
             for external_file in tool.get_externally_referenced_paths( os.path.abspath( tool.config_file ) ):
                 external_file_abspath = os.path.abspath( os.path.join( tool_path, external_file ) )
                 tarball_files.append( ( external_file_abspath, external_file ) )
             # Find tests, and check them for test data.
+            tests = tool.tests
             if tests is not None:
                 for test in tests:
                     # Add input file tuples to the list.
