@@ -1711,7 +1711,14 @@ var BaseOutputTerminalView = TerminalView.extend( {
     },
 
     onDragEnd: function ( e, d ) {
-        d.proxy.terminal.connectors[0].destroy();
+        var connector = d.proxy.terminal.connectors[0];
+        // check_changes_in_active_form may change the state and cause a
+        // the connection to have already been destroyed. There must be better
+        // ways to handle this but the following check fixes some serious GUI
+        // bugs for now.
+        if(connector) {
+            connector.destroy();
+        }
         $(d.proxy).remove();
         $( d.available ).removeClass( "input-terminal-active" );
         $("#canvas-container").get(0).scroll_panel.stop();
