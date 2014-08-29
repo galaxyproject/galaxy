@@ -2004,7 +2004,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      history_content_type=hda.history_content_type,
                      file_size = int( hda.get_size() ),
                      update_time = hda.update_time.isoformat(),
-                     data_type = hda.ext,
+                     data_type = hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                      genome_build = hda.dbkey,
                      misc_info = hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
                      misc_blurb = hda.blurb )
@@ -2316,7 +2316,8 @@ class LibraryDataset( object ):
                      message = ldda.message,
                      date_uploaded = ldda.create_time.isoformat(),
                      file_size = int( ldda.get_size() ),
-                     data_type = ldda.ext,
+                     file_ext = ldda.ext,
+                     data_type = ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb,
@@ -2432,6 +2433,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             file_size = int( ldda.get_size() )
         except OSError:
             file_size = 0
+        
         rval = dict( id = ldda.id,
                      hda_ldda = 'ldda',
                      model_class = self.__class__.__name__,
@@ -2443,7 +2445,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                      file_size = file_size,
                      file_name = ldda.file_name,
                      update_time = ldda.update_time.isoformat(),
-                     data_type = ldda.ext,
+                     file_ext = ldda.ext,
+                     data_type = ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb )

@@ -413,10 +413,10 @@ DatasetListItemView.prototype.templates = (function(){
             '</div>',
         '<% } %>',
 
-        '<% if( dataset.data_type ){ %>',
+        '<% if( dataset.file_ext ){ %>',
             '<div class="datatype">',
                 '<label class="prompt">', _l( 'format' ), '</label>',
-                '<span class="value"><%- dataset.data_type %></span>',
+                '<span class="value"><%- dataset.file_ext %></span>',
             '</div>',
         '<% } %>',
 

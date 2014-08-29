@@ -75,7 +75,7 @@ function _filterDatasetJSON( datasetJSON, where, datasetsOnly ){
  *      // returns a jQuery promise (that 'fail's only if no datasets are found matching 'where' below)
  *      var choice = new DatasetChoiceModal( datasetJSON, {
  *          datasetsOnly    : false,
- *          where           : { state: 'ok', data_type: 'bed', ... },
+ *          where           : { state: 'ok', file_ext: 'bed', ... },
  *          multiselect     : true,
  *          selected        : [ 'df7a1f0c02a5b08e', 'abcdef0123456789' ]
  *
@@ -191,7 +191,7 @@ var DatasetChoiceModal = function( datasetJSON, options ){
  *  Options:
  *      datasetJSON:    array of plain json objects representing allowed choices
  *      datasetsOnly:   T: only show datasets in the allowed choices, F: datasets + collections
- *      where:          map of attributes to filter datasetJSON by (e.g. { data_type: 'bed' })
+ *      where:          map of attributes to filter datasetJSON by (e.g. { file_ext: 'bed' })
  *      label:          the label/prompt displayed
  *      selected:       array of dataset ids that will show as already selected in the control
  *
@@ -263,7 +263,7 @@ var DatasetChoice = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
                     '<span class="title"><%= selected.hid %>: <%= selected.name %></span>',
                     '<span class="subtitle">',
                         '<i><%= selected.misc_blurb %></i>',
-                        '<i>', _l( 'format' ) + ': ', '<%= selected.data_type %></i>',
+                        '<i>', _l( 'format' ) + ': ', '<%= selected.file_ext %></i>',
                         '<i><%= selected.misc_info %></i>',
                     '</span>',
                 '</div>'
@@ -355,7 +355,7 @@ var DatasetChoice = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
  *  Additional options:
  *      showHeaders:    T: show headers for selected dataset attributes in the display table
  *      cells:          map of attribute keys -> Human readable/localized column headers
- *          (e.g. { data_type: _l( 'Format' ) }) - defaults are listed below
+ *          (e.g. { file_ext: _l( 'Format' ) }) - defaults are listed below
  */
 var MultiDatasetChoice = DatasetChoice.extend({
 
@@ -366,7 +366,7 @@ var MultiDatasetChoice = DatasetChoice.extend({
         hid             : _l( 'History #' ),
         name            : _l( 'Name' ),
         misc_blurb      : _l( 'Summary' ),
-        data_type       : _l( 'Format' ),
+        file_ext        : _l( 'Format' ),
         genome_build    : _l( 'Genome' ),
         tags            : _l( 'Tags' ),
         annotation      : _l( 'Annotation' )

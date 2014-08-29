@@ -30,7 +30,7 @@ define([ 'mvc/history/history-contents' ], function( HISTORY_CONTENTS ){
             return this.currHistoryContents.filter( function( content ){
                 // link details
                 var history_content_type = content.get( 'history_content_type' );
-                var data_type = content.get( 'data_type');
+                var data_type = content.get( 'file_ext');
                 
                 // apply filter
                 return history_content_type === 'dataset';// && (data_type === filter_type || filter_type === '');
