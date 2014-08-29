@@ -2107,6 +2107,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def to_string( self, value, app ):
         if value is None or isinstance( value, basestring ):
             return value
+        elif isinstance( value, DummyDataset ):
+            return None
         try:
             if isinstance( value, galaxy.model.DatasetCollectionElement ):
                 return "dce:%s" % value.id
