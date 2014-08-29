@@ -738,7 +738,34 @@ class ToolBox( object, Dictifiable ):
         else:
             tool = self.tools_by_id[ tool_id ]
             tarball_files = []
-            tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
+            temp_files = []
+            tool_xml = file( os.path.abspath( tool.config_file ), 'r' ).read()
+            # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
+            # modified to be relative to the repository root.
+            tool_help = tool.help._source
+            image_found = False
+            # Check each line of the rendered tool help for an image tag that points to a location under static/
+            for help_line in tool_help.split( '\n' ):
+                image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
+                matches = re.search( image_regex, help_line )
+                if matches is not None:
+                    tool_help_image = matches.group(1)
+                    tarball_path = tool_help_image
+                    filesystem_path = os.path.abspath( os.path.join( trans.app.config.root, 'static', tool_help_image ) )
+                    if os.path.exists( filesystem_path ):
+                        tarball_files.append( ( filesystem_path, tarball_path ) )
+                        image_found = True
+                        tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
+                    log.debug( tarball_files )
+            # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
+            if image_found:
+                fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
+                os.close( fd )
+                file( new_tool_config, 'w' ).write( tool_xml )
+                tool_tup = ( os.path.abspath( new_tool_config ), os.path.split( tool.config_file )[-1]  )
+                temp_files.append( os.path.abspath( new_tool_config ) )
+            else:
+                tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
             tarball_files.append( tool_tup )
             # TODO: This feels hacky.
             tool_command = tool.command.split( ' ' )[0]
@@ -796,6 +823,7 @@ class ToolBox( object, Dictifiable ):
                                 os.close( fd )
                                 file( table_conf, 'w' ).write( table_definition )
                                 tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
+                                temp_files.append( table_conf )
             # Create the tarball.
             fd, tarball_archive = tempfile.mkstemp( suffix='.tgz' )
             os.close( fd )
@@ -804,6 +832,9 @@ class ToolBox( object, Dictifiable ):
             for fspath, tarpath in tarball_files:
                 tarball.add( fspath, arcname=tarpath )
             tarball.close()
+            # Delete any temporary files that were generated.
+            for temp_file in temp_files:
+                os.remove( temp_file )
             return tarball_archive, True, None
         return None, False, "An unknown error occurred."
 
