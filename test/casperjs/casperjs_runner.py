@@ -6,8 +6,9 @@ Tests can be run in any of the following ways:
 * casperjs test mytests.js --url='http://localhost:8080'
 * python casperjs_runner.py
 * nosetests
-* sh run_functional_tests.sh test/casperjs/casperjs_runner.py
-* sh run_functional_tests.sh
+* sh run_tests.sh -j
+* sh run_tests.sh test/casperjs/casperjs_runner.py
+* sh run_tests.sh
 
 Note: that you can enable (lots of) debugging info using cli options:
 * casperjs test api-user-tests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
