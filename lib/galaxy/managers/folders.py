@@ -38,9 +38,7 @@ class FolderManager( object ):
             raise exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
         except Exception, e:
             raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
-
         folder = self.secure( trans, folder, check_ownership, check_accessible )
-
         return folder
 
     def secure( self, trans, folder, check_ownership=True, check_accessible=True ):
@@ -94,7 +92,7 @@ class FolderManager( object ):
         :param  folder:       folder item
         :type   folder:       LibraryFolder
 
-        :returns:   dict with data about the new folder
+        :returns:   dict with data about the folder
         :rtype:     dictionary
 
         """
@@ -153,8 +151,33 @@ class FolderManager( object ):
         manage_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE ) )
         add_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_ADD ) )
 
-        modify_folder_role_list = [ modify_role.name for modify_role in modify_roles ]
-        manage_folder_role_list = [ manage_role.name for manage_role in manage_roles ]
-        add_library_item_role_list = [ add_role.name for add_role in add_roles ]
-
+        modify_folder_role_list = [ ( modify_role.name, trans.security.encode_id( modify_role.id ) ) for modify_role in modify_roles ]
+        manage_folder_role_list = [ ( manage_role.name, trans.security.encode_id( manage_role.id ) ) for manage_role in manage_roles ]
+        add_library_item_role_list = [ ( add_role.name, trans.security.encode_id( add_role.id ) ) for add_role in add_roles ]
         return dict( modify_folder_role_list=modify_folder_role_list, manage_folder_role_list=manage_folder_role_list, add_library_item_role_list=add_library_item_role_list )
+
+    def cut_the_prefix( self, encoded_folder_id ):
+        """
+        Remove the prefix from the encoded folder id.
+        """
+        if ( ( len( encoded_folder_id ) % 16 == 1 ) and encoded_folder_id.startswith( 'F' ) ):
+            cut_id = encoded_folder_id[ 1: ]
+        else:
+            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_id ) )
+        return cut_id
+
+    def decode_folder_id( self, trans, encoded_folder_id ):
+        """
+        Decode the folder id given that it has already lost the prefixed 'F'.
+        """
+        try:
+            decoded_id = trans.security.decode_id( encoded_folder_id )
+        except ValueError:
+            raise exceptions.MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( encoded_folder_id ) ) )
+        return decoded_id
+
+    def cut_and_decode( self, trans, encoded_folder_id ):
+        """
+        Cuts the folder prefix (the prepended 'F') and returns the decoded id.
+        """
+        return self.decode_folder_id( trans, self.cut_the_prefix( encoded_folder_id ) )

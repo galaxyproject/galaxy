@@ -1,5 +1,5 @@
 """
-API operations on library folders
+API operations on library folders.
 """
 from galaxy import util
 from galaxy import web
@@ -43,7 +43,8 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         :returns:   dictionary including details of the folder
         :rtype:     dict
         """
-        folder = self.folder_manager.get( trans, self.__cut_and_decode( trans, id ), check_ownership=False, check_accessible=True )
+        folder_id = self.folder_manager.cut_and_decode( trans, id )
+        folder = self.folder_manager.get( trans, folder_id, check_ownership=False, check_accessible=True )
         return_dict = self.folder_manager.get_folder_dict( trans, folder )
         return return_dict
 
@@ -77,7 +78,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         if name is None:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
         description = payload.get( 'description', '' )
-        decoded_parent_folder_id = self.__cut_and_decode( trans, encoded_parent_folder_id )
+        decoded_parent_folder_id = self.folder_manager.cut_and_decode( trans, encoded_parent_folder_id )
         parent_folder = self.folder_manager.get( trans, decoded_parent_folder_id )
         new_folder = self.folder_manager.create( trans, parent_folder.id, name, description )
         return self.folder_manager.get_folder_dict( trans, new_folder )
@@ -102,8 +103,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin()
-        encoded_folder_id = self.__cut_the_prefix( encoded_folder_id )
-        decoded_folder_id = self.__decode_folder_id( trans, encoded_folder_id )
+        decoded_folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
         folder = self.folder_manager.get( trans, decoded_folder_id )
 
         if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) ):
@@ -128,7 +128,8 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             roles, total_roles = trans.app.security_agent.get_valid_roles( trans, folder, query, page, page_limit )
             return_roles = []
             for role in roles:
-                return_roles.append( dict( id=role.name, name=role.name, type=role.type ) )
+                role_id = trans.security.encode_id( role.id )
+                return_roles.append( dict( id=role_id, name=role.name, type=role.type ) )
             return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
         else:
             raise exceptions.RequestParameterInvalidException( "The value of 'scope' parameter is invalid. Alllowed values: current, available" )
@@ -146,15 +147,15 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
                             available actions: set_permissions
         :type   action:     string        
 
-        :param  add_ids[]:         list of Role.name defining roles that should have add item permission on the folder
+        :param  add_ids[]:         list of Role.id defining roles that should have add item permission on the folder
         :type   add_ids[]:         string or list  
-        :param  manage_ids[]:      list of Role.name defining roles that should have manage permission on the folder
+        :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the folder
         :type   manage_ids[]:      string or list  
-        :param  modify_ids[]:      list of Role.name defining roles that should have modify permission on the folder
+        :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the folder
         :type   modify_ids[]:      string or list          
 
         :rtype:     dictionary
-        :returns:   dict of current roles for all available permission types
+        :returns:   dict of current roles for all available permission types.
 
         :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
@@ -162,7 +163,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         is_admin = trans.user_is_admin()
         current_user_roles = trans.get_current_user_roles()
 
-        decoded_folder_id = self.__decode_folder_id( trans, self.__cut_the_prefix( encoded_folder_id ) )
+        decoded_folder_id = self.folder_manager.decode_folder_id( trans, self.folder_manager.cut_the_prefix( encoded_folder_id ) )
         folder = self.folder_manager.get( trans, decoded_folder_id )
         if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) ):
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to modify permissions of this folder.' )
@@ -236,32 +237,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         raise exceptions.NotImplemented( 'Updating folder through this endpoint is not implemented yet.' )
 
-    def __cut_the_prefix( self, encoded_id ):
-        """
-        Remove the prefix from the encoded folder id.
-        """
-        if ( ( len( encoded_id ) % 16 == 1 ) and encoded_id.startswith( 'F' ) ):
-            cut_id = encoded_id[ 1: ]
-        else:
-            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_id ) )
-        return cut_id
-
-    def __decode_folder_id( self, trans, encoded_id ):
-        """
-        Decode the folder id given that it has already lost the prefixed 'F'.
-        """
-        try:
-            decoded_id = trans.security.decode_id( encoded_id )
-        except ValueError:
-            raise exceptions.MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( encoded_id ) ) )
-        return decoded_id
-
-    def __cut_and_decode( self, trans, encoded_folder_id ):
-        """
-        Cuts the prefix (the prepended 'F') and returns the decoded id.
-        """
-        return self.__decode_folder_id( trans, self.__cut_the_prefix( encoded_folder_id ) )
-
+    # TODO move to Role manager
     def _load_role( self, trans, role_name ):
         """
         Method loads the role from the DB based on the given role name.
