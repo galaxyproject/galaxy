@@ -6,6 +6,7 @@ import galaxy.web
 from galaxy import exceptions
 from galaxy.model import orm
 from galaxy.managers import base as manager_base
+from galaxy.model.orm import and_, not_, or_
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
