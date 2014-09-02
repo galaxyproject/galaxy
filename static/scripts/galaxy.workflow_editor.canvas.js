@@ -302,25 +302,34 @@ var BaseInputTerminal = Terminal.extend( {
             inputFilled = false;
         } else {
             if( this.multiple ) {
-                if( ! this.connected() ) {
-                    inputFilled = false;
+                if(this._collectionAttached()) {
+                    // Can only attach one collection to multiple input
+                    // data parameter.
+                    inputsFilled = true;
                 } else {
-                    var firstOutput = this.connectors[ 0 ].handle1;
-                    if( ! firstOutput ){
-                        inputFilled = false;
-                    } else {
-                        if( firstOutput.isDataCollectionInput || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
-                            inputFilled = true;
-                        } else {
-                            inputFilled = false;
-                        }
-                    }
+                    inputFilled = false;
                 }
             } else {
                 inputFilled = true;
             }
         }
         return inputFilled;
+    },
+    _collectionAttached: function( ) {
+        if( ! this.connected() ) {
+            return false;
+        } else {
+            var firstOutput = this.connectors[ 0 ].handle1;
+            if( ! firstOutput ){
+                return false;
+            } else {
+                if( firstOutput.isDataCollectionInput || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
     },
     _mappingConstraints: function( ) {
         // If this is a connected terminal, return list of collection types
@@ -407,7 +416,9 @@ var InputTerminal = BaseInputTerminal.extend( {
         var thisMapOver = this.mapOver();
         if( otherCollectionType.isCollection ) {
             if( this.multiple ) {
-                if( this.connected() ) {
+                if( this.connected() && ! this._collectionAttached() ) {
+                    // if single inputs attached, cannot also attach a
+                    // collection (yet...)
                     return false;
                 }
                 if( otherCollectionType.rank == 1 ) {
