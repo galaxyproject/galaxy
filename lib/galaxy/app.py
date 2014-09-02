@@ -64,9 +64,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load dbkey / genome build manager
         self._configure_genome_builds( data_table_name="__dbkeys__", load_old_style=True )
 
-        # Load build sites (old-style)
-        self._configure_build_sites()
-
         # Genomes
         self.genomes = Genomes( self )
         # Data providers registry.

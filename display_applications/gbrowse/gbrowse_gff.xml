@@ -1,6 +1,6 @@
 <display id="gbrowse_gff" version="1.0.0" name="display at GBrowse">
     <!-- Load links from file: one line to one link -->
-    <dynamic_links from_file="tool-data/shared/gbrowse/gbrowse_build_sites.txt" skip_startswith="#" id="0" name="1">
+    <dynamic_links site_type="gbrowse" skip_startswith="#" id="0" name="1">
         
         <!-- Define parameters by column from file, allow splitting on builds -->
         <dynamic_param name="site_id" value="0"/>

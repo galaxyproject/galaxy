@@ -312,4 +312,12 @@
     <sniffer type="galaxy.datatypes.assembly:Amos"/>
     -->
   </sniffers>
+  <build_sites>
+      <site type="ucsc" file="tool-data/shared/ucsc/ucsc_build_sites.txt"/>
+      <site type="gbrowse" file="tool-data/shared/gbrowse/gbrowse_build_sites.txt"/>
+      <site type="ensembl" file="tool-data/shared/ensembl/ensembl_sites.txt"/>
+      <site type="ensembl_data_url" file="tool-data/shared/ensembl/ensembl_sites_data_URL.txt"/>
+      <site type="igv" file="tool-data/shared/igv/igv_build_sites.txt"/>
+      <site type="rviewer" file="tool-data/shared/rviewer/rviewer_build_sites.txt"/>
+  </build_sites>
 </datatypes>
