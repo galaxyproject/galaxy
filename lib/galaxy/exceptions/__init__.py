@@ -127,6 +127,14 @@ class ObjectNotFound( MessageException ):
     status_code = 404
     err_code = error_codes.USER_OBJECT_NOT_FOUND
 
+class DeprecatedMethod( MessageException ):
+    """
+    Method (or a particular form/arg signature) has been removed and won't be available later
+    """
+    status_code = 404
+    #TODO:?? 410 Gone?
+    err_code = error_codes.DEPRECATED_API_CALL
+
 
 class Conflict( MessageException ):
     status_code = 409

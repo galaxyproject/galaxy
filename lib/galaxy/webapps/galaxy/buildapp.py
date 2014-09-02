@@ -197,10 +197,6 @@ def populate_api_routes( webapp, app ):
                                 controller='page_revisions',
                                 parent_resources=dict( member_name='page', collection_name='pages' ) )
 
-    # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
-    webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
-        controller="histories", action="set_as_current", conditions=dict( method=["PUT"] ) )
-
     webapp.mapper.connect( "history_archive_export", "/api/histories/{id}/exports",
         controller="histories", action="archive_export", conditions=dict( method=[ "PUT" ] ) )
     webapp.mapper.connect( "history_archive_download", "/api/histories/{id}/exports/{jeha_id}",

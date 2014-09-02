@@ -84,13 +84,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             return the deleted history with ``id``
         * GET /api/histories/most_recently_used:
             return the most recently used history
-        * GET /api/histories/current:
-            return the current (working) history
-        .. note:: Anonymous users are allowed to get their current history
 
         :type   id:      an encoded id string
-        :param  id:      the encoded id of the history to query
-            or the string 'most_recently_used' or the string 'current'
+        :param  id:      the encoded id of the history to query or the string 'most_recently_used'
         :type   deleted: boolean
         :param  deleted: if True, allow information on a deleted history to be shown.
 
@@ -106,9 +102,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
                 return None
             # Most recent active history for user sessions, not deleted
             history = trans.user.galaxy_sessions[0].histories[-1].history
-
-        elif history_id == "current":
-            history = trans.get_history( create=True )
 
         else:
             history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
@@ -133,30 +126,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         return map( lambda citation: citation.to_dict( "bibtex" ), self.citations_manager.citations_for_tool_ids( tool_ids ) )
 
     @expose_api
-    def set_as_current( self, trans, id, **kwd ):
-        """
-        set_as_current( trans, id, **kwd )
-        * PUT /api/histories/{id}/set_as_current:
-            set the history with ``id`` to the user's current history and return details
-
-        :type   id:      an encoded id string
-        :param  id:      the encoded id of the history to query or the string 'most_recently_used'
-
-        :rtype:     dictionary
-        :returns:   detailed history information from
-            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_history_dict`
-        """
-        # added as a non-ATOM API call to support the notion of a 'current/working' history
-        #   - unique to the history resource
-        history_id = id
-        history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-            check_ownership=True, check_accessible=True )
-        trans.history = history
-        history_data = self.get_history_dict( trans, history )
-        history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
-        return history_data
-
-    @expose_api
     def create( self, trans, payload, **kwd ):
         """
         create( trans, payload )
@@ -166,8 +135,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         :type   payload: dict
         :param  payload: (optional) dictionary structure containing:
             * name:             the new history's name
-            * current:          if passed, set the new history to be the user's
-                                'current' history
             * history_id:       the id of the history to copy
             * archive_source:   the url that will generate the archive to import
             * archive_type:     'url' (default)
@@ -178,8 +145,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         hist_name = None
         if payload.get( 'name', None ):
             hist_name = restore_text( payload['name'] )
-        #TODO: possibly default to True here - but favor explicit for now (and backwards compat)
-        set_as_current = string_as_bool( payload[ 'current' ] ) if 'current' in payload else False
         copy_this_history_id = payload.get( 'history_id', None )
 
         if "archive_source" in payload:
@@ -202,8 +167,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
-        if set_as_current:
-            trans.history = new_history
 
         item = {}
         item = self.get_history_dict( trans, new_history )

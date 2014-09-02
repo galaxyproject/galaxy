@@ -273,10 +273,11 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
     //NOTE: all the following fns replace the existing history model with a new model
     // (in the following 'details' refers to the full set of hda api data (urls, display_apps, misc_info, etc.)
     //  - hdas w/o details will have summary data only (name, hid, deleted, visible, state, etc.))
+//TODO: too tangled...
 
     /** loads a history & hdas w/ details (but does not make them the current history) */
     loadHistoryWithHDADetails : function( historyId, attributes, historyFn, hdaFn ){
-        //this.info( 'loadHistoryWithHDADetails:', historyId, attributes, historyFn, hdaFn );
+        this.info( 'loadHistoryWithHDADetails:', historyId, attributes, historyFn, hdaFn );
         var hdaDetailIds = function( historyData ){
                 // will be called to get hda ids that need details from the api
 //TODO: non-visible HDAs are getting details loaded... either stop loading them at all or filter ids thru isVisible
@@ -287,6 +288,7 @@ var ReadOnlyHistoryPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
 
     /** loads a history & hdas w/ NO details (but does not make them the current history) */
     loadHistory : function( historyId, attributes, historyFn, hdaFn, hdaDetailIds ){
+        this.info( 'loadHistory:', historyId, attributes, historyFn, hdaFn, hdaDetailIds );
         var panel = this;
         attributes = attributes || {};
 

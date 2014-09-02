@@ -234,13 +234,16 @@ History.getHistoryData = function getHistoryData( historyId, options ){
     options = options || {};
     var hdaDetailIds = options.hdaDetailIds || [];
     var hdcaDetailIds = options.hdcaDetailIds || [];
-    //this.debug( 'getHistoryData:', historyId, options );
+    //console.debug( 'getHistoryData:', historyId, options );
 
     var df = jQuery.Deferred(),
         historyJSON = null;
 
     function getHistory( id ){
         // get the history data
+        if( historyId === 'current' ){
+            return jQuery.getJSON( galaxy_config.root + 'history/current_history_json' );
+        }
         return jQuery.ajax( galaxy_config.root + 'api/histories/' + historyId );
     }
     function isEmpty( historyData ){

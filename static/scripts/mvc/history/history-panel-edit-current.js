@@ -1,9 +1,10 @@
 define([
+    "mvc/history/history-model",
     "mvc/history/history-panel-edit",
     "mvc/collection/collection-panel",
     "mvc/base-mvc",
     "utils/localization"
-], function( HPANEL_EDIT, DC_PANEL, BASE_MVC, _l ){
+], function( HISTORY_MODEL, HPANEL_EDIT, DC_PANEL, BASE_MVC, _l ){
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
  */
@@ -74,6 +75,7 @@ var CurrentHistoryPanel = _super.extend(
     // ------------------------------------------------------------------------ loading history/hda models
     /** (re-)loads the user's current history & hdas w/ details */
     loadCurrentHistory : function( attributes ){
+        this.debug( this + '.loadCurrentHistory' );
         // implemented as a 'fresh start' or for when there is no model (intial panel render)
         var panel = this;
         return this.loadHistoryWithHDADetails( 'current', attributes )
@@ -88,10 +90,9 @@ var CurrentHistoryPanel = _super.extend(
         var panel = this,
             historyFn = function(){
                 // make this current and get history data with one call
-                return jQuery.ajax({
-                    url     : galaxy_config.root + 'api/histories/' + historyId + '/set_as_current',
-                    method  : 'PUT'
-                });
+                return jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + historyId  );
+                //    method  : 'PUT'
+                //});
             };
         return this.loadHistoryWithHDADetails( historyId, attributes, historyFn )
             .then(function( historyData, hdaData ){
@@ -107,9 +108,10 @@ var CurrentHistoryPanel = _super.extend(
         }
         var panel = this,
             historyFn = function(){
-                // get history data from posting a new history (and setting it to current)
-                return jQuery.post( galaxy_config.root + 'api/histories', { current: true });
+                // create a new history and save: the server will return the proper JSON
+                return jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
             };
+
         // id undefined bc there is no historyId yet - the server will provide
         //  (no need for details - nothing expanded in new history)
         return this.loadHistory( undefined, attributes, historyFn )
