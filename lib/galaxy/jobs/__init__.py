@@ -103,6 +103,7 @@ class JobConfiguration( object ):
         """
         self.app = app
         self.runner_plugins = []
+        self.dynamic_params = None
         self.handlers = {}
         self.handler_runner_plugins = {}
         self.default_handler_id = None
@@ -147,6 +148,10 @@ class JobConfiguration( object ):
                     self.runner_plugins.append(runner_info)
                 else:
                     log.error('Unknown plugin type: %s' % plugin.get('type'))
+            for plugin in self.__findall_with_required(plugins, 'plugin', ('id', 'type')):
+                if plugin.get('id') == 'dynamic' and plugin.get('type') == 'runner':
+                    self.dynamic_params = self.__get_params(plugin)
+
         # Load tasks if configured
         if self.app.config.use_tasked_jobs:
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
