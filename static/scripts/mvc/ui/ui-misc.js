@@ -1,6 +1,6 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-select-default', 'mvc/ui/ui-checkbox', 'mvc/ui/ui-radiobutton', 'mvc/ui/ui-button-menu', 'mvc/ui/ui-modal'],
-        function(Utils, Select, Checkbox, RadioButton, ButtonMenu, Modal) {
+define(['utils/utils', 'mvc/ui/ui-select-default', 'mvc/ui/ui-slider', 'mvc/ui/ui-checkbox', 'mvc/ui/ui-radiobutton', 'mvc/ui/ui-button-menu', 'mvc/ui/ui-modal'],
+        function(Utils, Select, Slider, Checkbox, RadioButton, ButtonMenu, Modal) {
 
 /**
  *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
@@ -456,6 +456,7 @@ return {
     Searchbox   : Searchbox,
     Select      : Select,
     Textarea    : Textarea,
-    Hidden      : Hidden
+    Hidden      : Hidden,
+    Slider      : Slider
 }
 });

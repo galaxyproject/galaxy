@@ -39,7 +39,7 @@ return Backbone.Model.extend({
             var id = $(child).attr('id');
             
             // create new branch
-            if ($(child).hasClass('form-row') || $(child).hasClass('tab-pane')) {
+            if ($(child).hasClass('section-row') || $(child).hasClass('tab-pane')) {
                 // create sub dictionary
                 dict[id] = {};
                 

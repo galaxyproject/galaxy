@@ -2,14 +2,11 @@
 define([], function() {
 
 // frame manager
-var View = Backbone.View.extend(
-{
+var View = Backbone.View.extend({
     // defaults inputs
-    options:
-    {
+    options: {
         // default frame size
-        frame:
-        {
+        frame: {
             cols : 6,
             rows : 3
         },
@@ -67,14 +64,14 @@ var View = Backbone.View.extend(
     visible: null,
     
     // initialize
-    initialize : function(options)
-    {
+    initialize : function(options) {
         // add to masthead menu
         var self = this;
         
         // read in defaults
-        if (options)
+        if (options) {
             this.options = _.defaults(options, this.options);
+        }
         
         // set visibility
         this.visible = this.options.visible;
@@ -129,8 +126,7 @@ var View = Backbone.View.extend(
         
         // catch window resize event
         var self = this;
-        $(window).resize(function ()
-        {
+        $(window).resize(function () {
             if (self.visible)
                 self._panel_refresh();
         });
@@ -145,11 +141,9 @@ var View = Backbone.View.extend(
      *        argument that is the frame's content DOM element
      *  content: the content to be loaded into the frame.
      */
-    add: function(options)
-    {
+    add: function(options) {
         // frame default options
-        var frameOptions =
-        {
+        var frameOptions = {
             title: '',
             content: null,
             target: '',
@@ -157,18 +151,19 @@ var View = Backbone.View.extend(
         }
         
         // read in defaults
-        if (options)
+        if (options) {
             options = _.defaults(options, frameOptions);
-        else
+        } else {
             options = frameOptions;
+        }
     
         // check for content
-        if(!options.content)
+        if(!options.content) {
             return;
+        }
         
         // check for number of frames
-        if (this.frame_counter >= this.options.frame_max)
-        {
+        if (this.frame_counter >= this.options.frame_max) {
             alert("You have reached the maximum number of allowed frames (" + this.options.frame_max + ").");   
             return;
         }
@@ -177,8 +172,7 @@ var View = Backbone.View.extend(
         var frame_id = '#frame-' + (this.frame_counter_id++);
 
         // check if frame exists
-        if ($(frame_id).length !== 0)
-        {
+        if ($(frame_id).length !== 0) {
             alert("This frame already exists. This page might contain multiple frame managers.");
             return;
         }
@@ -190,8 +184,7 @@ var View = Backbone.View.extend(
         var $frame_el = null;
         if (options.type === 'url') {
             $frame_el = $(this._template_frame_url(frame_id.substring(1), options.title, options.content));
-        } 
-        else if (options.type === 'other') {
+        } else if (options.type === 'other') {
             $frame_el = $(this._template_frame(frame_id.substring(1), options.title));
 
             // Load content into frame.
@@ -234,13 +227,13 @@ var View = Backbone.View.extend(
         this._frame_insert(frame, {top: 0, left: 0}, true);
             
         // show frames if hidden
-        if (!this.visible)
+        if (!this.visible) {
             this.show();
+        }
     },
     
     // show panel
-    show: function()
-    {           
+    show: function() {
         // show
         this.visible = true;
         
@@ -261,8 +254,7 @@ var View = Backbone.View.extend(
     },
     
     // hide panel
-    hide: function()
-    {
+    hide: function() {
         // make sure that no event is currently processing
         if (this.event.type !== null)
             return;
@@ -298,16 +290,14 @@ var View = Backbone.View.extend(
     */
     
     // event
-    event:
-    {
+    event: {
         type    : null,
         target  : null,
         xy      : null
     },
     
     // events
-    events:
-    {
+    events: {
         // global frame events
         'mousemove'                         : '_event_frame_mouse_move',
         'mouseup'                           : '_event_frame_mouse_up',
@@ -325,24 +315,26 @@ var View = Backbone.View.extend(
     },
 
     // drag start
-    _event_frame_mouse_down: function (e)
-    {
+    _event_frame_mouse_down: function (e) {
         // skip if event is already active
-        if (this.event.type !== null)
+        if (this.event.type !== null) {
             return;
+        }
         
         // check for drag event
-        if ($(e.target).hasClass('f-header') ||
-            $(e.target).hasClass('f-title'))
+        if ($(e.target).hasClass('f-header') || $(e.target).hasClass('f-title')) {
             this.event.type = 'drag';
+        }
         
         // check for resize event
-        if ($(e.target).hasClass('f-resize'))
+        if ($(e.target).hasClass('f-resize')) {
             this.event.type = 'resize';
+        }
         
         // skip if no event has to be handled
-        if (this.event.type === null)
+        if (this.event.type === null) {
             return;
+        }
 
         // prevent
         e.preventDefault();
@@ -351,32 +343,36 @@ var View = Backbone.View.extend(
         this.event.target = this._frame_identify(e.target);
        
         // check if frame is locked
-        if (this.event.target.grid_lock)
-        {
+        if (this.event.target.grid_lock) {
             this.event.type = null;
             return;
         }
         
         // backup event details
-        this.event.xy = {x: e.originalEvent.pageX, y: e.originalEvent.pageY};
+        this.event.xy = {
+            x: e.originalEvent.pageX,
+            y: e.originalEvent.pageY
+        };
             
         // prepare drag/resize
         this._frame_drag_start(this.event.target);
     },
 
     // mouse move event
-    _event_frame_mouse_move: function (e)
-    {
+    _event_frame_mouse_move: function (e) {
         // check
-        if (this.event.type != 'drag' && this.event.type != 'resize')
+        if (this.event.type != 'drag' && this.event.type != 'resize') {
             return;
+        }
             
         // current position
-        var event_xy_new = {x: e.originalEvent.pageX , y: e.originalEvent.pageY};
+        var event_xy_new = {
+            x : e.originalEvent.pageX,
+            y : e.originalEvent.pageY
+        };
             
         // position delta
-        var event_xy_delta =
-        {
+        var event_xy_delta = {
             x : event_xy_new.x - this.event.xy.x,
             y : event_xy_new.y - this.event.xy.y
         };
@@ -388,8 +384,7 @@ var View = Backbone.View.extend(
         var p = this._frame_screen (this.event.target);
         
         // resize event
-        if (this.event.type == 'resize')
-        {
+        if (this.event.type == 'resize') {
             // update
             p.width  += event_xy_delta.x;
             p.height += event_xy_delta.y;
@@ -421,8 +416,7 @@ var View = Backbone.View.extend(
         }
                  
         // drag event
-        if (this.event.type == 'drag')
-        {
+        if (this.event.type == 'drag') {
             // update
             p.left  += event_xy_delta.x;
             p.top   += event_xy_delta.y;
@@ -437,8 +431,9 @@ var View = Backbone.View.extend(
             };
        
             // increase priority of current frame
-            if (l.left !== 0)
+            if (l.left !== 0) {
                 l.left++;
+            }
             
             // fix position
             this._frame_insert(this.frame_shadow, l);
@@ -446,11 +441,11 @@ var View = Backbone.View.extend(
     },
     
     // mouse up
-    _event_frame_mouse_up: function (e)
-    {
+    _event_frame_mouse_up: function (e) {
         // check
-        if (this.event.type != 'drag' && this.event.type != 'resize')
+        if (this.event.type != 'drag' && this.event.type != 'resize') {
             return;
+        }
             
         // stop
         this._frame_drag_stop(this.event.target);
@@ -460,11 +455,11 @@ var View = Backbone.View.extend(
     },
     
     // drag start
-    _event_frame_close: function (e)
-    {
+    _event_frame_close: function (e) {
         // check
-        if (this.event.type !== null)
+        if (this.event.type !== null) {
             return;
+        }
         
         // prevent
         e.preventDefault();
@@ -474,8 +469,7 @@ var View = Backbone.View.extend(
         var self  = this;
         
         // fade out
-        $(frame.id).fadeOut('fast', function()
-        {
+        $(frame.id).fadeOut('fast', function() {
             // remove element
             $(frame.id).remove();
             
@@ -498,11 +492,11 @@ var View = Backbone.View.extend(
     },
     
     // drag start
-    _event_frame_lock: function (e)
-    {
+    _event_frame_lock: function (e) {
         // check
-        if (this.event.type !== null)
+        if (this.event.type !== null) {
             return;
+        }
         
         // prevent
         e.preventDefault();
@@ -511,8 +505,7 @@ var View = Backbone.View.extend(
         var frame = this._frame_identify(e.target);
         
         // check
-        if (frame.grid_lock)
-        {
+        if (frame.grid_lock) {
             // unlock
             frame.grid_lock = false;
             
@@ -536,11 +529,11 @@ var View = Backbone.View.extend(
     },
 
     // show/hide panel
-    _event_hide: function (e)
-    {
+    _event_hide: function (e) {
         // check
-        if (this.event.type !== null)
+        if (this.event.type !== null) {
             return;
+        }
 
         // hide panel
         this.hide();
@@ -549,11 +542,11 @@ var View = Backbone.View.extend(
     /**
      * Fired when scrolling occurs on panel.
      */
-    _event_panel_scroll: function(e)
-    {
+    _event_panel_scroll: function(e) {
         // check
-        if (this.event.type !== null || !this.visible)
+        if (this.event.type !== null || !this.visible) {
             return;
+        }
 
         // Stop propagation if scrolling is happening inside a frame.
         // TODO: could propagate scrolling if at top/bottom of frame.
@@ -574,8 +567,7 @@ var View = Backbone.View.extend(
     },
     
     // scroll up
-    _event_panel_scroll_up: function(e)
-    {
+    _event_panel_scroll_up: function(e) {
         // check
         if (this.event.type !== null)
             return;
@@ -588,8 +580,7 @@ var View = Backbone.View.extend(
     },
     
     // scroll down
-    _event_panel_scroll_down: function(e)
-    {
+    _event_panel_scroll_down: function(e) {
         // check
         if (this.event.type !== null)
             return;
@@ -606,14 +597,12 @@ var View = Backbone.View.extend(
     */
     
     // identify
-    _frame_identify: function(target)
-    {
+    _frame_identify: function(target) {
         return this.frame_list['#' + $(target).closest('.frame').attr('id')];
     },
 
     // drag start
-    _frame_drag_start : function (frame)
-    {
+    _frame_drag_start : function (frame) {
         // set focus
         this._frame_focus(frame, true);
             
@@ -635,8 +624,7 @@ var View = Backbone.View.extend(
     },
     
     // drag stop
-    _frame_drag_stop : function (frame)
-    {
+    _frame_drag_stop : function (frame) {
         // remove focus
         this._frame_focus(frame, false);
         
@@ -665,8 +653,7 @@ var View = Backbone.View.extend(
     */
     
     // converts a pixel coordinate to grids
-    _to_grid_coord: function (type, px)
-    {
+    _to_grid_coord: function (type, px) {
         // determine sign
         var sign = (type == 'width' || type == 'height') ? 1 : -1;
         
@@ -677,8 +664,7 @@ var View = Backbone.View.extend(
     },
     
     // converts a grid coordinate to pixels
-    _to_pixel_coord: function (type, g)
-    {
+    _to_pixel_coord: function (type, g) {
         // determine sign
         var sign = (type == 'width' || type == 'height') ? 1 : -1;
         
@@ -691,8 +677,7 @@ var View = Backbone.View.extend(
     },
     
     // get grid coordinates
-    _to_grid: function (px)
-    {
+    _to_grid: function (px) {
         // full set
         return {
             top     : this._to_grid_coord('top', px.top),
@@ -703,8 +688,7 @@ var View = Backbone.View.extend(
     },
        
     // get pixel coordinates
-    _to_pixel: function(g)
-    {
+    _to_pixel: function(g) {
         return {
             top     : this._to_pixel_coord('top', g.top),
             left    : this._to_pixel_coord('left', g.left),
@@ -718,18 +702,15 @@ var View = Backbone.View.extend(
     */
     
     // check collision
-    _is_collision: function(g)
-    {
+    _is_collision: function(g) {
         // is collision pair
-        function is_collision_pair (a, b)
-        {
+        function is_collision_pair (a, b) {
             return !(a.left > b.left + b.width - 1 || a.left + a.width - 1 < b.left ||
                      a.top > b.top + b.height  - 1 || a.top + a.height - 1 < b.top);
         }
         
         // search
-        for (var i in this.frame_list)
-        {
+        for (var i in this.frame_list) {
             // get frame
             var frame = this.frame_list[i];
 
@@ -747,8 +728,7 @@ var View = Backbone.View.extend(
     },
     
     // location/grid rank
-    _location_rank: function(loc)
-    {
+    _location_rank: function(loc) {
         return (loc.top * this.cols) + loc.left;
     },
     
@@ -757,8 +737,7 @@ var View = Backbone.View.extend(
     */
     
     // update frame counter
-    _menu_refresh: function()
-    {
+    _menu_refresh: function() {
         // scroll up possible?
         if (this.visible) {
             if (this.top == this.options.top_min)
@@ -784,15 +763,13 @@ var View = Backbone.View.extend(
     */
 
     // panel on animation complete / frames not moving
-    _panel_animation_complete: function()
-    {
+    _panel_animation_complete: function() {
         var self = this;
         $(".frame").promise().done(function() {self._panel_scroll(0, true)});
     },
 
     // refresh panel
-    _panel_refresh: function(animate)
-    {
+    _panel_refresh: function(animate) {
         // get current size
         this.cols = parseInt($(window).width() / this.options.cell, 10) + 1;
         
@@ -801,8 +778,7 @@ var View = Backbone.View.extend(
     },
     
     // update scroll
-    _panel_scroll: function(delta, animate)
-    {
+    _panel_scroll: function(delta, animate) {
         // new top value
         var top_new = this.top - this.options.scroll * delta;
 
@@ -811,17 +787,14 @@ var View = Backbone.View.extend(
         top_new = Math.min(top_new, this.options.top_min);
             
         // update screen if necessary
-        if (this.top != top_new)
-        {
+        if (this.top != top_new) {
             // update screen
-            for (var i in this.frame_list)
-            {
+            for (var i in this.frame_list) {
                 // get frame
                 var frame = this.frame_list[i];
 
                 // skip
-                if (frame.grid_location !== null)
-                {
+                if (frame.grid_location !== null) {
                     var screen_location = {
                         top  : frame.screen_location.top - (this.top - top_new),
                         left : frame.screen_location.left
@@ -843,14 +816,12 @@ var View = Backbone.View.extend(
     */
       
     // frame insert at given location
-    _frame_insert: function(frame, new_loc, animate)
-    {
+    _frame_insert: function(frame, new_loc, animate) {
         // define
         var place_list = [];
        
         // frame to place
-        if (frame)
-        {
+        if (frame) {
             // reset grid location
             frame.grid_location = null;
             
@@ -860,14 +831,12 @@ var View = Backbone.View.extend(
         
         // search
         var i = null;
-        for (i in this.frame_list)
-        {
+        for (i in this.frame_list) {
             // get frame
             var f = this.frame_list[i];
 
             // check
-            if (f.grid_location !== null && !f.grid_lock)
-            {
+            if (f.grid_location !== null && !f.grid_lock) {
                 // reset grid location
                 f.grid_location = null;
                 
@@ -877,21 +846,20 @@ var View = Backbone.View.extend(
         }
 
         // sort place list by rank
-        place_list.sort(function(a, b)
-        {
+        place_list.sort(function(a, b) {
             var i = a[1];
             var j = b[1];
             return i < j ? -1 : (i > j ? 1 : 0);
         });
                 
         // place
-        for (i = 0; i < place_list.length; i++)
+        for (i = 0; i < place_list.length; i++) {
             this._frame_place(place_list[i][0], animate);
+        }
         
         // identify maximum viewport size
         this.top_max = 0;
-        for (var i in this.frame_list)
-        {
+        for (var i in this.frame_list) {
             // get frame
             var frame = this.frame_list[i];
 
@@ -911,8 +879,7 @@ var View = Backbone.View.extend(
     },
 
     // naive frame place
-    _frame_place: function(frame, animate)
-    {
+    _frame_place: function(frame, animate) {
         // reset grid location
         frame.grid_location = null;
         
@@ -921,38 +888,36 @@ var View = Backbone.View.extend(
         
         // try grid coordinates
         var done = false;
-        for (var i = 0; i < this.options.rows; i++)
-        {
+        for (var i = 0; i < this.options.rows; i++) {
             // ensure that the first grid column is checked despite limited window space
-            for (var j = 0; j < Math.max(1, this.cols - g.width); j++)
-            {
+            for (var j = 0; j < Math.max(1, this.cols - g.width); j++) {
                 // coordinates
                 g.top   = i;
                 g.left  = j;
        
                 // no collision
-                if (!this._is_collision(g))
-                {
+                if (!this._is_collision(g)) {
                     done = true;
                     break;
                 }
             }
        
             // break
-            if (done)
+            if (done) {
                 break;
+            }
         }
         
         // check if valid spot was found
-        if (done)
+        if (done) {
             this._frame_grid(frame, g, animate);
-        else
+        } else {
             console.log("Grid dimensions exceeded.");
+        }
     },
     
     // focus
-    _frame_focus: function(frame, has_focus)
-    {
+    _frame_focus: function(frame, has_focus) {
         // get new z-value
         var z = this.frame_z + (has_focus ? 1 : 0);
         
@@ -961,15 +926,13 @@ var View = Backbone.View.extend(
     },
     
     // new left/top position frame
-    _frame_offset: function(frame, p, animate)
-    {
+    _frame_offset: function(frame, p, animate) {
         // update screen location
         frame.screen_location.left = p.left;
         frame.screen_location.top = p.top;
                 
         // animate
-        if (animate)
-        {
+        if (animate) {
             // set focus on animated
             this._frame_focus(frame, true);
             
@@ -988,8 +951,7 @@ var View = Backbone.View.extend(
     },
 
     // resize frame
-    _frame_resize: function(frame, p)
-    {
+    _frame_resize: function(frame, p) {
         // update css
         $(frame.id).css({width: p.width, height: p.height});
     
@@ -999,8 +961,7 @@ var View = Backbone.View.extend(
     },
 
     // new grid location
-    _frame_grid: function (frame, l, animate)
-    {
+    _frame_grid: function (frame, l, animate) {
         // update grid location
         frame.grid_location = l;
 
@@ -1012,8 +973,7 @@ var View = Backbone.View.extend(
     },
     
     // get frame dimensions
-    _frame_screen: function(frame)
-    {   
+    _frame_screen: function(frame) {
         var p = frame.screen_location;
         return {top: p.top, left: p.left, width: p.width, height: p.height};
     },
@@ -1023,14 +983,12 @@ var View = Backbone.View.extend(
     */
     
     // main element
-    _template: function()
-    {
+    _template: function() {
         return  '<div class="galaxy-frame"></div>';
     },
     
     // fill regular frame template
-    _template_frame: function(id, title)
-    {
+    _template_frame: function(id, title) {
         // check title
         if (!title)
             title = '';
@@ -1050,8 +1008,7 @@ var View = Backbone.View.extend(
     },
     
     // fill regular frame template
-    _template_frame_url: function(id, title, url)
-    {
+    _template_frame_url: function(id, title, url) {
         // url
         if (url.indexOf('?') == -1)
             url += '?';
@@ -1068,20 +1025,17 @@ var View = Backbone.View.extend(
     },
     
     // fill shadow template
-    _template_shadow: function(id)
-    {
+    _template_shadow: function(id) {
         return '<div id="' + id + '" class="frame-shadow corner"></div>';
     },
     
     // fill background template in order to cover underlying iframes
-    _template_background: function()
-    {
+    _template_background: function() {
         return '<div class="frame-background"></div>';
     },
     
     // fill menu button template
-    _template_menu: function()
-    {
+    _template_menu: function() {
         return  '<div class="frame-scroll-up frame-menu fa fa-chevron-up fa-2x"></div>' +
                 '<div class="frame-scroll-down frame-menu fa fa-chevron-down fa-2x"></div>';
     }

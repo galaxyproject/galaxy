@@ -19,7 +19,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             
             // add table class for tr tag
             // this assist in transforming the form into a json structure
-            options.cls_tr = 'form-row';
+            options.cls_tr = 'section-row';
             
             // create table
             this.table = new Table.View(options);
@@ -230,12 +230,21 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                 case 'hidden':
                     field = this._field_hidden(input_def, data);
                     break;
-            }
-            
-            // check if field type was detected
-            if (!field) {
-                console.debug('tools-form::_addRow() : Unmatched field type (' + field_type + ').');
-                return;
+                
+                // integer field
+                case 'integer':
+                    field = this._field_integer(input_def, data);
+                    break;
+                
+                // boolean field
+                case 'boolean':
+                    field = this._field_radiobutton(input_def, data);
+                    break;
+                    
+                // default
+                default:
+                    field = this._field_text(input_def, data);
+                    console.debug('tools-form::_addRow() : Unmatched field type (' + field_type + ').');
             }
             
             // set value
@@ -449,6 +458,18 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             });
         },
         
+        // integer field
+        _field_integer: function(input_def, data) {
+            var id = input_def.id;
+            return new Ui.Slider.View({
+                id          : 'field-' + id,
+                value       : data.get(id),
+                onchange    : function(value) {
+                    data.set(id, value);
+                }
+            });
+        },
+        
         // text area
         _field_textarea : function(input_def, data) {
             var id = input_def.id;
@@ -479,6 +500,25 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             return new Ui.Hidden({
                 id          : 'field-' + id,
                 value       : data.get(id)
+            });
+        },
+        
+        // hidden field
+        _field_radiobutton : function(input_def, data) {
+            var id = input_def.id;
+            return new Ui.RadioButton.View({
+                id          : 'field-' + id,
+                value       : data.get(id),
+                data        : [
+                    {
+                        label   : 'Yes',
+                        value   : 'true'
+                    },
+                    {
+                        label   : 'No',
+                        value   : 'false'
+                    }
+                ]
             });
         }
     });

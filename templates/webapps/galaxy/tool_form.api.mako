@@ -29,7 +29,8 @@
         'citations' : tool_citations
     }
 %>
-${h.js( "libs/bibtex" )}
+${h.js( "libs/bibtex", "libs/jquery/jquery-ui" )}
+${h.css( 'base', 'jquery-ui/smoothness/jquery-ui')}
 <script>
     require(['mvc/tools/tools-form'], function(ToolsForm){
         $(function(){
