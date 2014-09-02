@@ -34,6 +34,7 @@
 // ------------------------------------------------------------------- modules
 var require = patchRequire( require ),
     Casper = require( 'casper' ).Casper,
+    system = require( 'system' ),
     fs = require( 'fs' ),
     utils = require( 'utils' );
 
@@ -1022,7 +1023,7 @@ SpaceGhost.prototype.addListeners = function addListeners( eventName, handlerArr
  */
 SpaceGhost.prototype.stderr = function( msg ){
     if( msg.trim() ){
-        fs.write( '/dev/stderr', msg + '\n', 'w' );
+        system.stderr.writeLine( msg );
     }
 };
 

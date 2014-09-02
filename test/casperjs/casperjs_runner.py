@@ -382,7 +382,7 @@ class Test_03_HistoryPanel( CasperJSTestCase ):
         """
         self.run_js_script( 'history-panel-tests.js' )
 
-    def test_10_anonymous_histories( self ):
+    def test_10_history_options( self ):
         """Test history options button.
         """
         self.run_js_script( 'history-options-tests.js' )
@@ -425,7 +425,7 @@ class Test_05_API( CasperJSTestCase ):
         """
         self.run_js_script( 'api-anon-history-tests.js' )
 
-    def test_04_anon_history_api( self ):
+    def test_04_anon_history_permissions_api( self ):
         """Test API permissions for importable, published histories using anonymous user.
         """
         self.run_js_script( 'api-anon-history-permission-tests.js' )
