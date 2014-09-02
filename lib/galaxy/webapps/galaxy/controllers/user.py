@@ -1680,9 +1680,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 continue
             else:
                 # Set chrom count.
-                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                attributes[ 'count' ] = chrom_count
-                updated = True
+                try:
+                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                    attributes[ 'count' ] = chrom_count
+                    updated = True
+                except Exception, e:
+                    log.error( "Failed to open chrom count dataset: %s", e )
 
         if updated:
             user.preferences['dbkeys'] = to_json_string(dbkeys)
