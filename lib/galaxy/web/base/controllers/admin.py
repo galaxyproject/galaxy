@@ -67,7 +67,6 @@ class Admin( object ):
         tool_id = None
         if params.get( 'package_tool_button', False ):
             tool_id = params.get('tool_id', None)
-            galaxy.queue_worker.send_control_task(trans, 'package_tool', noop_self=True, kwargs={'tool_id': tool_id} )
             tool_tarball, success, message = trans.app.toolbox.package_tool( trans, tool_id )
             if success:
                 trans.response.set_content_type( 'application/x-gzip' )
