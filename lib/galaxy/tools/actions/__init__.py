@@ -1,18 +1,13 @@
-import os
-
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy import model
 from galaxy.tools.parameters import DataToolParameter
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
-from galaxy.util.json import from_json_string
 from galaxy.util.json import to_json_string
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
-from galaxy.util import listify
-from galaxy.util.json import to_json_string
 from galaxy.web import url_for
 
 import logging
@@ -194,8 +189,7 @@ class DefaultToolAction( object ):
                 input_dbkey = data.dbkey
 
         # Collect chromInfo dataset and add as parameters to incoming
-        db_datasets = {}
-        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id!='CONVERTER_fasta_to_len' )
+        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
         if db_dataset:
             inp_data.update( { "chromInfo": db_dataset } )
         incoming[ "chromInfo" ] = chrom_info
@@ -238,7 +232,7 @@ class DefaultToolAction( object ):
                 if name in incoming:
                     dataid = incoming[name]
                     data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataid )
-                    assert data != None
+                    assert data is not None
                     out_data[name] = data
                 else:
                     # the type should match the input
