@@ -210,8 +210,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Visualizations config directory: where to look for individual visualization plugins.
 # The path is relative to the Galaxy root dir. To use an absolute path begin the path
-# with '/'.
-visualization_plugins_directory = config/plugins/visualizations
+# with '/'. Defaults to "config/plugins/visualizations".
+#visualization_plugins_directory = config/plugins/visualizations
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be

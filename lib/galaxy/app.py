@@ -96,11 +96,9 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load history import/export tools.
         load_history_imp_exp_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = None
-        if self.config.visualization_plugins_directory:
-            self.visualizations_registry = VisualizationsRegistry( self,
-                directories_setting=self.config.visualization_plugins_directory,
-                template_cache_dir=self.config.template_cache )
+        self.visualizations_registry = VisualizationsRegistry( self,
+            directories_setting=self.config.visualization_plugins_directory,
+            template_cache_dir=self.config.template_cache )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
