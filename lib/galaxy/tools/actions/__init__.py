@@ -229,39 +229,7 @@ class DefaultToolAction( object ):
                 assert data is not None
                 out_data[name] = data
             else:
-                # the type should match the input
-                ext = output.format
-                if ext == "input":
-                    ext = input_ext
-                if output.format_source is not None and output.format_source in inp_data:
-                    try:
-                        input_dataset = inp_data[output.format_source]
-                        input_extension = input_dataset.ext
-                        ext = input_extension
-                    except Exception:
-                        pass
-
-                #process change_format tags
-                if output.change_format:
-                    for change_elem in output.change_format:
-                        for when_elem in change_elem.findall( 'when' ):
-                            check = when_elem.get( 'input', None )
-                            if check is not None:
-                                try:
-                                    if '$' not in check:
-                                        #allow a simple name or more complex specifications
-                                        check = '${%s}' % check
-                                    if str( fill_template( check, context=wrapped_params.params ) ) == when_elem.get( 'value', None ):
-                                        ext = when_elem.get( 'format', ext )
-                                except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
-                                    continue
-                            else:
-                                check = when_elem.get( 'input_dataset', None )
-                                if check is not None:
-                                    check = inp_data.get( check, None )
-                                    if check is not None:
-                                        if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
-                                            ext = when_elem.get( 'format', ext )
+                ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
                 if output.hidden:
                     data.visible = False
@@ -484,3 +452,51 @@ def on_text_for_names( input_names ):
     else:
         on_text = ""
     return on_text
+
+
+def determine_output_format(output, parameter_context, input_datasets, random_input_ext):
+    """ Determines the output format for a dataset based on an abstract
+    description of the output (galaxy.tools.ToolOutput), the parameter
+    wrappers, a map of the input datasets (name => HDA), and the last input
+    extensions in the tool form.
+
+    TODO: Don't deal with XML here - move this logic into ToolOutput.
+    TODO: Make the input extension used deterministic instead of random.
+    """
+    # the type should match the input
+    ext = output.format
+    if ext == "input":
+        ext = random_input_ext
+    if output.format_source is not None and output.format_source in input_datasets:
+        try:
+            input_dataset = input_datasets[output.format_source]
+            input_extension = input_dataset.ext
+            ext = input_extension
+        except Exception:
+            pass
+
+    #process change_format tags
+    if output.change_format:
+        for change_elem in output.change_format:
+            print change_elem
+            for when_elem in change_elem.findall( 'when' ):
+                check = when_elem.get( 'input', None )
+                print check
+                if check is not None:
+                    try:
+                        if '$' not in check:
+                            #allow a simple name or more complex specifications
+                            check = '${%s}' % check
+                        if str( fill_template( check, context=parameter_context ) ) == when_elem.get( 'value', None ):
+                            ext = when_elem.get( 'format', ext )
+                    except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                        continue
+                else:
+                    check = when_elem.get( 'input_dataset', None )
+                    if check is not None:
+                        check = input_datasets.get( check, None )
+                        if check is not None:
+                            if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
+                                ext = when_elem.get( 'format', ext )
+
+    return ext
