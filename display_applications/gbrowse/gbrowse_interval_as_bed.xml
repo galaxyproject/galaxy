@@ -10,7 +10,7 @@
         <dynamic_param name="site_organisms" value="4" split="True" separator="," />
         
         <!-- Filter out some of the links based upon matching site_id to a Galaxy application configuration parameter and by dataset dbkey -->
-        <filter>${site_id in $APP.config.gbrowse_display_sites}</filter>
+        <filter>${site_id in $APP.datatypes_registry.get_display_sites('gbrowse')}</filter>
         <filter>${dataset.dbkey in $site_dbkeys}</filter>
         
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->

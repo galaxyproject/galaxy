@@ -86,7 +86,7 @@ class GenomeGraphs( Tabular ):
               dataset.dbkey = 'hg18' # punt!
         if dataset.has_data():
               for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
-                    if site_name in app.config.ucsc_display_sites:
+                    if site_name in datatypes_registry.get_display_sites('ucsc'):
                         site_url = site_url.replace('/hgTracks?','/hgGenome?') # for genome graphs
                         internal_url = "%s" % url_for( controller='dataset',
                                 dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )

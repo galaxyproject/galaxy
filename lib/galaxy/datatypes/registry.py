@@ -71,6 +71,7 @@ class Registry( object ):
         self.xml_filename = None
         # Build sites
         self.build_sites = {}
+        self.display_sites = {}
         self.legacy_build_sites = {}
 
     def load_datatypes( self, root_dir=None, config=None, deactivate=False, override=True ):
@@ -314,19 +315,27 @@ class Registry( object ):
                 if not (elem.get( 'type' ) and elem.get( 'file' )):
                     self.log.exception( "Site is missing required 'type' and 'file' attributes: %s" )
                 else:
-                    self.build_sites[elem.get( 'type' )] = elem.get( 'file' )
-                    self.log.debug( "Loaded build site '%s': %s", elem.get( 'type' ), elem.get( 'file' ) )
-        for site, file in self.build_sites.items():
-            if site in ( 'ucsc', 'gbrowse' ):
-                self.legacy_build_sites[site] = galaxy.util.read_build_sites( file )
-                self.log.debug( "Loaded legacy build site '%s': %s", site, file )
+                    site_type = elem.get( 'type' )
+                    file = elem.get( 'file' )
+                    self.build_sites[site_type] = file
+                    if site_type in ('ucsc', 'gbrowse'):
+                        self.legacy_build_sites[site_type] = galaxy.util.read_build_sites( file )
+                    if elem.get( 'display', None ):
+                        display = elem.get( 'display' )
+                        self.display_sites[site_type] = [ x.strip() for x in display.lower().split( ',' ) ]
+                        self.log.debug( "Loaded build site '%s': %s with display sites: %s", site_type, file, display )
+                    else:
+                        self.log.debug( "Loaded build site '%s': %s", site_type, file )
 
     def get_legacy_sites_by_build( self, site_type, build ):
         sites = []
-        for site in self.legacy_build_sites[site_type]:
+        for site in self.legacy_build_sites.get(site_type, []):
             if build in site['builds']:
                 sites.append((site['name'], site['url']))
         return sites
+
+    def get_display_sites( self, site_type ):
+        return self.display_sites.get( site_type, [] )
 
     def load_datatype_sniffers( self, root, deactivate=False, handling_proprietary_datatypes=False, override=False ):
         """
