@@ -213,7 +213,7 @@ class DefaultToolAction( object ):
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        object_store_id = None
+        object_store_populator = ObjectStorePopulator( trans.app )
         for name, output in tool.outputs.items():
             for filter in output.filters:
                 try:
@@ -275,15 +275,9 @@ class DefaultToolAction( object ):
                     trans.sa_session.add( data )
                     trans.sa_session.flush()
                     trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
-                # Create an empty file immediately.  The first dataset will be
-                # created in the "default" store, all others will be created in
-                # the same store as the first.
-                data.dataset.object_store_id = object_store_id
-                try:
-                    trans.app.object_store.create( data.dataset )
-                except ObjectInvalid:
-                    raise Exception('Unable to create output dataset: object store is full')
-                object_store_id = data.dataset.object_store_id      # these will be the same thing after the first output
+
+                object_store_populator.set_object_store_id( data )
+
                 # This may not be neccesary with the new parent/child associations
                 data.designation = name
                 # Copy metadata from one of the inputs if requested.
@@ -362,7 +356,7 @@ class DefaultToolAction( object ):
                 job.add_input_dataset( name, None )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
-        job.object_store_id = object_store_id
+        job.object_store_id = object_store_populator.object_store_id
         if job_params:
             job.params = to_json_string( job_params )
         job.set_handler(tool.get_job_handler(job_params))
@@ -441,6 +435,27 @@ class DefaultToolAction( object ):
         if on_text:
             name += ( " on " + on_text )
         return name
+
+
+class ObjectStorePopulator( object ):
+    """ Small helper for interacting with the object store and making sure all
+    datasets from a job end up with the same object_store_id.
+    """
+
+    def __init__( self, app ):
+        self.object_store = app.object_store
+        self.object_store_id = None
+
+    def set_object_store_id( self, data ):
+        # Create an empty file immediately.  The first dataset will be
+        # created in the "default" store, all others will be created in
+        # the same store as the first.
+        data.dataset.object_store_id = self.object_store_id
+        try:
+            self.object_store.create( data.dataset )
+        except ObjectInvalid:
+            raise Exception('Unable to create output dataset: object store is full')
+        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
 
 
 def on_text_for_names( input_names ):
