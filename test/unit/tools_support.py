@@ -103,7 +103,9 @@ class MockApp( object ):
         )
 
         # Setup some attributes for downstream extension by specific tests.
-        self.job_config = Bunch()
+        self.job_config = Bunch(
+            dynamic_params=None,
+        )
 
         # Two ways to handle model layer, one is to stub out some objects that
         # have an interface similar to real model (mock_model) and can keep
