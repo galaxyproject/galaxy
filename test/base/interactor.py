@@ -236,6 +236,9 @@ class GalaxyInteractorApi( object ):
         for output in datasets_object[ 'outputs' ]:
             outputs_dict[ index ] = outputs_dict[ output.get("output_name") ] = output
             index += 1
+        # Adding each item twice (once with index for backward compat),
+        # overiding length to reflect the real number of outputs.
+        outputs_dict.__len__ = lambda: index
         return outputs_dict
 
     def output_hid( self, output_data ):
