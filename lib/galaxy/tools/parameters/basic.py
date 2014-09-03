@@ -248,6 +248,10 @@ class TextToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context, history=None ):
         return self.value
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super(TextToolParameter, self).to_dict(trans)
+        d['area'] = self.area
+        return d
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -460,7 +464,7 @@ class BooleanToolParameter( ToolParameter ):
             return self.falsevalue
 
     def to_dict( self, trans, view='collection', value_mapper=None ):
-        d = super( ToolParameter, self ).to_dict()
+        d = super(BooleanToolParameter, self).to_dict(trans)
         d['value'] = self.checked
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue

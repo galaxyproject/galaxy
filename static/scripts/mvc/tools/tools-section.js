@@ -204,11 +204,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                 case 'data_column':
                     field = this._field_column(input_def);
                     break;
-                
-                // text area field
-                case 'textarea' :
-                    field = this._field_textarea(input_def);
-                    break;
                     
                 // conditional select field
                 case 'conditional':
@@ -427,6 +422,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                     break;
             }
             
+            // force checkboxes if multiple has been selected
+            if (input_def.multiple) {
+                SelectClass = Ui.Checkbox;
+            }
+            
             // select field
             return new SelectClass.View({
                 id      : 'field-' + input_def.id,
@@ -443,7 +443,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
 
         // text input field
         _field_text : function(input_def) {
-            return new Ui.Input({
+            var TextClass = Ui.Input;
+            if (input_def.area) {
+                TextClass = Ui.Textarea;
+            }
+            return new TextClass({
                 id      : 'field-' + input_def.id
             });
         },
@@ -455,13 +459,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                 min     : input_def.min || 0,
                 max     : input_def.max || 1000,
                 decimal : input_def.type == 'float'
-            });
-        },
-        
-        // text area
-        _field_textarea : function(input_def) {
-            return new Ui.Textarea({
-                id      : 'field-' + input_def.id
             });
         },
         

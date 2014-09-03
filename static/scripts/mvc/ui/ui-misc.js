@@ -405,7 +405,7 @@ var Textarea = Backbone.View.extend({
     
     // element
     _template: function(options) {
-        return '<textarea id="' + options.id + '" class="ui-textarea ' + options.cls + '" rows="5"></textarea>';
+        return '<textarea id="' + options.id + '" class="ui-textarea ' + options.cls + '"></textarea>';
     }
 });
 
