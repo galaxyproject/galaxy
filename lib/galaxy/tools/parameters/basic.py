@@ -2096,6 +2096,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         elif isinstance( value, basestring ):
             if value.startswith( "dce:" ):
                 rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
+            elif value.startswith( "hdca:" ):
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value[ len( "hdca:"): ] )
             else:
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value )
         if rval and isinstance( rval, trans.app.model.HistoryDatasetCollectionAssociation ):
