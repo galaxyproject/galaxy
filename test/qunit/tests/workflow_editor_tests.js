@@ -803,11 +803,12 @@ define([
             return node;
         },
         addOutput: function( terminal, connected ) {
+            var self = this;
             var connectedOutput = this.newOutputTerminal();
-            var inputTerminal = this.newInputTerminal();
             var node = terminal.node;
             if( connected ) {
                 with_workflow_global( function() {
+                    var inputTerminal = self.newInputTerminal();
                     new Connector( inputTerminal, connectedOutput );
                 } );
             }
@@ -818,10 +819,11 @@ define([
             return this.addOutput( terminal, true );
         },
         addConnectedInput: function( terminal ) {
+            var self = this;
             var connectedInput = this.newInputTerminal();
-            var outputTerminal = this.newOutputTerminal();
             var node = terminal.node;
             with_workflow_global( function() {
+                var outputTerminal = self.newOutputTerminal();
                 new Connector( connectedInput, outputTerminal );
             } );
             this._addTerminalTo( connectedInput, node.input_terminals );

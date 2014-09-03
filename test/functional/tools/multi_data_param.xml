@@ -4,8 +4,19 @@
     cat #for $f in $f2# ${f} #end for# >> $out2
   </command>
   <inputs>
-    <param name="f1" type="data" format="txt" multiple="true" />
-    <param name="f2" type="data" format="txt" multiple="true" />
+    <param name="f1" type="data" format="txt" multiple="true" label="Data 1" />
+    <param name="f2" type="data" format="txt" multiple="true" label="Data 2" />
+    <conditional name="advanced">
+      <param name="full" type="select" label="Parameter Settings">
+        <option value="no">Use defaults</option>
+        <option value="yes">Full parameter list</option>
+      </param>
+      <when value="yes">
+        <param name="advanced_threshold" type="integer" value="8" />
+      </when>
+      <when value="no">
+      </when>
+    </conditional>
   </inputs>
   <outputs>
     <data format="txt" name="out1" />
