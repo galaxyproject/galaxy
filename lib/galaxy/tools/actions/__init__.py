@@ -214,6 +214,89 @@ class DefaultToolAction( object ):
         parent_to_child_pairs = []
         child_dataset_names = set()
         object_store_populator = ObjectStorePopulator( trans.app )
+
+        def handle_output( name, output ):
+            if output.parent:
+                parent_to_child_pairs.append( ( output.parent, name ) )
+                child_dataset_names.add( name )
+            ## What is the following hack for? Need to document under what
+            ## conditions can the following occur? (james@bx.psu.edu)
+            # HACK: the output data has already been created
+            #      this happens i.e. as a result of the async controller
+            if name in incoming:
+                dataid = incoming[name]
+                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataid )
+                assert data is not None
+                out_data[name] = data
+            else:
+                # the type should match the input
+                ext = output.format
+                if ext == "input":
+                    ext = input_ext
+                if output.format_source is not None and output.format_source in inp_data:
+                    try:
+                        input_dataset = inp_data[output.format_source]
+                        input_extension = input_dataset.ext
+                        ext = input_extension
+                    except Exception:
+                        pass
+
+                #process change_format tags
+                if output.change_format:
+                    for change_elem in output.change_format:
+                        for when_elem in change_elem.findall( 'when' ):
+                            check = when_elem.get( 'input', None )
+                            if check is not None:
+                                try:
+                                    if '$' not in check:
+                                        #allow a simple name or more complex specifications
+                                        check = '${%s}' % check
+                                    if str( fill_template( check, context=wrapped_params.params ) ) == when_elem.get( 'value', None ):
+                                        ext = when_elem.get( 'format', ext )
+                                except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                                    continue
+                            else:
+                                check = when_elem.get( 'input_dataset', None )
+                                if check is not None:
+                                    check = inp_data.get( check, None )
+                                    if check is not None:
+                                        if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
+                                            ext = when_elem.get( 'format', ext )
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                if output.hidden:
+                    data.visible = False
+                # Commit the dataset immediately so it gets database assigned unique id
+                trans.sa_session.add( data )
+                trans.sa_session.flush()
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
+
+            object_store_populator.set_object_store_id( data )
+
+            # This may not be neccesary with the new parent/child associations
+            data.designation = name
+            # Copy metadata from one of the inputs if requested.
+            if output.metadata_source:
+                data.init_meta( copy_from=inp_data[output.metadata_source] )
+            else:
+                data.init_meta()
+            # Take dbkey from LAST input
+            data.dbkey = str(input_dbkey)
+            # Set state
+            # FIXME: shouldn't this be NEW until the job runner changes it?
+            data.state = data.states.QUEUED
+            data.blurb = "queued"
+            # Set output label
+            data.name = self.get_output_name( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
+            # Store output
+            out_data[ name ] = data
+            if output.actions:
+                #Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
+                output_action_params = dict( out_data )
+                output_action_params.update( incoming )
+                output.actions.apply_action( data, output_action_params )
+            # Store all changes to database
+            trans.sa_session.flush()
+
         for name, output in tool.outputs.items():
             for filter in output.filters:
                 try:
@@ -221,87 +304,8 @@ class DefaultToolAction( object ):
                         break  # do not create this dataset
                 except Exception, e:
                     log.debug( 'Dataset output filter failed: %s' % e )
-            else:  # all filters passed
-                if output.parent:
-                    parent_to_child_pairs.append( ( output.parent, name ) )
-                    child_dataset_names.add( name )
-                ## What is the following hack for? Need to document under what
-                ## conditions can the following occur? (james@bx.psu.edu)
-                # HACK: the output data has already been created
-                #      this happens i.e. as a result of the async controller
-                if name in incoming:
-                    dataid = incoming[name]
-                    data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataid )
-                    assert data is not None
-                    out_data[name] = data
-                else:
-                    # the type should match the input
-                    ext = output.format
-                    if ext == "input":
-                        ext = input_ext
-                    if output.format_source is not None and output.format_source in inp_data:
-                        try:
-                            input_dataset = inp_data[output.format_source]
-                            input_extension = input_dataset.ext
-                            ext = input_extension
-                        except Exception, e:
-                            pass
-
-                    #process change_format tags
-                    if output.change_format:
-                        for change_elem in output.change_format:
-                            for when_elem in change_elem.findall( 'when' ):
-                                check = when_elem.get( 'input', None )
-                                if check is not None:
-                                    try:
-                                        if '$' not in check:
-                                            #allow a simple name or more complex specifications
-                                            check = '${%s}' % check
-                                        if str( fill_template( check, context=wrapped_params.params ) ) == when_elem.get( 'value', None ):
-                                            ext = when_elem.get( 'format', ext )
-                                    except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
-                                        continue
-                                else:
-                                    check = when_elem.get( 'input_dataset', None )
-                                    if check is not None:
-                                        check = inp_data.get( check, None )
-                                        if check is not None:
-                                            if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
-                                                ext = when_elem.get( 'format', ext )
-                    data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
-                    if output.hidden:
-                        data.visible = False
-                    # Commit the dataset immediately so it gets database assigned unique id
-                    trans.sa_session.add( data )
-                    trans.sa_session.flush()
-                    trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
-
-                object_store_populator.set_object_store_id( data )
-
-                # This may not be neccesary with the new parent/child associations
-                data.designation = name
-                # Copy metadata from one of the inputs if requested.
-                if output.metadata_source:
-                    data.init_meta( copy_from=inp_data[output.metadata_source] )
-                else:
-                    data.init_meta()
-                # Take dbkey from LAST input
-                data.dbkey = str(input_dbkey)
-                # Set state
-                # FIXME: shouldn't this be NEW until the job runner changes it?
-                data.state = data.states.QUEUED
-                data.blurb = "queued"
-                # Set output label
-                data.name = self.get_output_name( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
-                # Store output
-                out_data[ name ] = data
-                if output.actions:
-                    #Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
-                    output_action_params = dict( out_data )
-                    output_action_params.update( incoming )
-                    output.actions.apply_action( data, output_action_params )
-                # Store all changes to database
-                trans.sa_session.flush()
+            else:
+                handle_output( name, output )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
