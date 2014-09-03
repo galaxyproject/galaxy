@@ -22,13 +22,6 @@ def test_valid_new_tool_has_no_errors():
     assert not tool_module.get_errors()
 
 
-def test_missing_tool_has_errors():
-    trans = MockTrans()
-    tool_dict = { "type": "tool", "tool_id": "cat1" }
-    tool_module = modules.module_factory.from_dict( trans, tool_dict )
-    assert tool_module.get_errors()
-
-
 def test_cannot_create_tool_modules_for_missing_tools():
     trans = MockTrans()
     exception = False
