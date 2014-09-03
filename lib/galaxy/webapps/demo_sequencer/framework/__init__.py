@@ -32,7 +32,7 @@ from galaxy.web.framework.formbuilder import FormInput
 from galaxy.web.framework.formbuilder import FormData
 import galaxy.web.framework.base
 
-from galaxy.web.util.bunch import Bunch
+from galaxy.util.bunch import Bunch
 from galaxy.exceptions import MessageException
 from galaxy.util import asbool
 
