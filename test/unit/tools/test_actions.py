@@ -25,6 +25,20 @@ DATA_IN_LABEL_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
 </tool>
 '''
 
+# Tool with two outputs - used to verify all datasets within same job get same
+# object store id.
+TWO_OUTPUTS = '''<tool id="test_tool" name="Test Tool">
+    <command>echo "$param1" &lt; $out1</command>
+    <inputs>
+        <param type="text" name="param1" value="" />
+    </inputs>
+    <outputs>
+        <data name="out1" format="data" label="Output ($param1)" />
+        <data name="out2" format="data" label="Output 2 ($param1)" />
+    </outputs>
+</tool>
+'''
+
 
 def test_on_text_for_names():
     def assert_on_text_is( expected, *names ):
@@ -79,6 +93,11 @@ class DefaultToolActionTestCase( unittest.TestCase, tools_support.UsesApp, tools
             incoming,
         )
         self.assertEquals( output[ "out1" ].name, "Test Tool on data 2 and data 1" )
+
+    def test_object_store_ids( self ):
+        _, output = self._simple_execute( contents=TWO_OUTPUTS )
+        self.assertEquals( output[ "out1" ].name, "Output (moo)" )
+        self.assertEquals( output[ "out2" ].name, "Output 2 (moo)" )
 
     def test_params_wrapped( self ):
         hda1 = self.__add_dataset()
@@ -142,6 +161,14 @@ class MockObjectStore( object ):
 
     def __init__( self ):
         self.created_datasets = []
+        self.first_create = True
+        self.object_store_id = "mycoolid"
 
     def create( self, dataset ):
         self.created_datasets.append( dataset )
+        if self.first_create:
+            self.first_create = False
+            assert dataset.object_store_id is None
+            dataset.object_store_id = self.object_store_id
+        else:
+            assert dataset.object_store_id == self.object_store_id
