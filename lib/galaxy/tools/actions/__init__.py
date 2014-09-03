@@ -266,13 +266,7 @@ class DefaultToolAction( object ):
             trans.sa_session.flush()
 
         for name, output in tool.outputs.items():
-            for filter in output.filters:
-                try:
-                    if not eval( filter.text.strip(), globals(), incoming ):
-                        break  # do not create this dataset
-                except Exception, e:
-                    log.debug( 'Dataset output filter failed: %s' % e )
-            else:
+            if not filter_output(output, incoming):
                 handle_output( name, output )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name in out_data.keys():
@@ -452,6 +446,16 @@ def on_text_for_names( input_names ):
     else:
         on_text = ""
     return on_text
+
+
+def filter_output(output, incoming):
+    for filter in output.filters:
+        try:
+            if not eval( filter.text.strip(), globals(), incoming ):
+                return True  # do not create this dataset
+        except Exception, e:
+            log.debug( 'Dataset output filter failed: %s' % e )
+    return False
 
 
 def determine_output_format(output, parameter_context, input_datasets, random_input_ext):
