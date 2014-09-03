@@ -83,7 +83,7 @@ class FolderManager( object ):
         Check whether the folder is accessible to current user.
         By default every folder is accessible (contents have their own permissions).
         """
-        return True
+        return folder
 
     def get_folder_dict( self, trans, folder ):
         """
@@ -155,6 +155,19 @@ class FolderManager( object ):
         manage_folder_role_list = [ ( manage_role.name, trans.security.encode_id( manage_role.id ) ) for manage_role in manage_roles ]
         add_library_item_role_list = [ ( add_role.name, trans.security.encode_id( add_role.id ) ) for add_role in add_roles ]
         return dict( modify_folder_role_list=modify_folder_role_list, manage_folder_role_list=manage_folder_role_list, add_library_item_role_list=add_library_item_role_list )
+
+    def can_add_item( self, trans, folder ):
+        """
+        Return true if the user has permissions to add item to the given folder.
+        """
+        if trans.user_is_admin:
+            return True
+        current_user_roles = trans.get_current_user_roles()
+        add_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_ADD ) )
+        for role in current_user_roles:
+            if role in add_roles:
+                return True
+        return False
 
     def cut_the_prefix( self, encoded_folder_id ):
         """
