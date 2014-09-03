@@ -98,6 +98,21 @@ def is_binary( value, binary_chars=None ):
     return False
 
 
+def is_uuid( value ):
+    """
+    This method returns True if value is a UUID, otherwise False.
+    >>> is_uuid( "123e4567-e89b-12d3-a456-426655440000" )
+    True
+    >>> is_uuid( "0x3242340298902834" )
+    False
+    """
+    uuid_re = re.compile( "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}" )
+    if re.match( uuid_re, str( value ) ):
+        return True
+    else:
+        return False
+
+
 def get_charset_from_http_headers( headers, default=None ):
     rval = headers.get('content-type', None )
     if rval and 'charset=' in rval:
