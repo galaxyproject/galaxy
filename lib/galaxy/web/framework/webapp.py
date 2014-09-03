@@ -35,7 +35,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.managers import context
 from galaxy.web.framework import base
 from galaxy.web.framework import helpers
-from galaxy.web.framework import transaction
 from galaxy.web.framework import formbuilder
 
 import logging
