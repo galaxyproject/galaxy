@@ -74,7 +74,7 @@ class DatasetCollectionsService(
             if implicit_collection_info:
                 for input_name, input_collection in implicit_collection_info[ "implicit_inputs" ]:
                     dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
-                for output_dataset in implicit_collection_info.get( "outputs_datasets" ):
+                for output_dataset in implicit_collection_info.get( "outputs" ):
                     output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
                     trans.sa_session.add( output_dataset )
 

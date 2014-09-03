@@ -104,3 +104,16 @@ class CollectionTypeDescription( object ):
 
     def __str__( self ):
         return "CollectionTypeDescription[%s]" % self.collection_type
+
+
+def map_over_collection_type( mapped_over_collection_type, target_collection_type ):
+    if hasattr( mapped_over_collection_type, 'collection_type' ):
+        mapped_over_collection_type = mapped_over_collection_type.collection_type
+
+    if not target_collection_type:
+        return mapped_over_collection_type
+    else:
+        if hasattr( target_collection_type, 'collection_type' ):
+            target_collection_type = target_collection_type.collection_type
+
+        return "%s:%s" % (mapped_over_collection_type, target_collection_type)
