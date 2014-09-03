@@ -7,7 +7,9 @@ var View = Backbone.View.extend({
     optionsDefault: {
         value   : '',
         min     : 1,
-        max     : 100
+        max     : 100,
+        step    : 0.1,
+        decimal : false
     },
     
     // initialize
@@ -27,6 +29,11 @@ var View = Backbone.View.extend({
         // backup integer field
         this.$text = this.$el.find('#text');
         
+        // set step size
+        if (!this.options.decimal) {
+            this.options.step = 1;
+        }
+        
         // load slider plugin
         this.$slider.slider(this.options);
         
@@ -38,7 +45,8 @@ var View = Backbone.View.extend({
         // add text field event
         this.$text.on('keydown', function (event) {
             var v = event.which;
-            if (!(v == 13 || v == 8 || v == 189 || (v >= 48 && v <= 57))) {
+            if (!(v == 13 || v == 8 || v == 37 || v == 39 || v == 189 || (v >= 48 && v <= 57)
+                || (self.options.decimal && $(this).val().indexOf('.') == -1) && v == 190)) {
                 event.preventDefault();
             }
         });

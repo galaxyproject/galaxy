@@ -459,6 +459,13 @@ class BooleanToolParameter( ToolParameter ):
         else:
             return self.falsevalue
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super( ToolParameter, self ).to_dict()
+        d['value'] = self.checked
+        d['truevalue'] = self.truevalue
+        d['falsevalue'] = self.falsevalue
+        return d
+    
     @property
     def legal_values( self ):
         return [ self.truevalue, self.falsevalue ]
@@ -992,7 +999,8 @@ class SelectToolParameter( ToolParameter ):
                     value = option[1]
             d[ 'value' ] = value
             
-        d[ 'display' ] = self.display
+        d['display'] = self.display
+        d['multiple'] = self.multiple
 
         return d
 
@@ -1251,7 +1259,10 @@ class ColumnListParameter( SelectToolParameter ):
         d = super( ColumnListParameter, self ).to_dict( trans )
 
         # add data reference
-        d[ 'data_ref' ] = self.data_ref
+        d['data_ref'] = self.data_ref
+        
+        # add numerical flag
+        d['numerical'] = self.numerical
         
         # return
         return d
@@ -2008,6 +2019,11 @@ class DataToolParameter( BaseDataToolParameter ):
             ref = ref()
         return ref
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super( DataToolParameter, self ).to_dict( trans )
+        d['extensions'] = self.extensions
+        d['multiple'] = self.multiple
+        return d
 
 class DataCollectionToolParameter( BaseDataToolParameter ):
     """
