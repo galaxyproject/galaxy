@@ -22,7 +22,7 @@ import galaxy.web.framework
 
 log = logging.getLogger( __name__ )
 
-class ReportsWebApplication( galaxy.web.framework.WebApplication ):
+class ReportsWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
 
 def add_ui_controllers( webapp, app ):

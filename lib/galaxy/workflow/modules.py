@@ -11,14 +11,15 @@ eggs.require( "elementtree" )
 from elementtree.ElementTree import Element
 
 import galaxy.tools
-from galaxy import web
+from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.tools.parameters import check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.util.bunch import Bunch
 from galaxy.util import odict
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import from_json_string
+from galaxy.util.json import to_json_string
 
 log = logging.getLogger( __name__ )
 
@@ -160,7 +161,7 @@ class InputModule( WorkflowModule ):
         return [ dict( name='output', extensions=['input'] ) ]
 
     def get_config_form( self ):
-        form = web.FormBuilder( title=self.name ) \
+        form = formbuilder.FormBuilder( title=self.name ) \
             .add_text( "name", "Name", value=self.state['name'] )
         return self.trans.fill_template( "workflow/editor_generic_form.mako",
                                          module=self, form=form )
@@ -256,14 +257,14 @@ class InputDataCollectionModule( InputModule ):
         type_hints[ "paired" ] = "Dataset Pair"
         type_hints[ "list:paired" ] = "List of Dataset Pairs"
         
-        type_input = web.framework.DatalistInput(
+        type_input = formbuilder.DatalistInput(
             name="collection_type",
             label="Collection Type",
             value=self.state[ "collection_type" ],
             extra_attributes=dict(refresh_on_change='true'),
             options=type_hints
         )
-        form = web.FormBuilder(
+        form = formbuilder.FormBuilder(
             title=self.name
         ).add_text(
             "name", "Name", value=self.state['name']

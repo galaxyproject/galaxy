@@ -21,7 +21,7 @@ from galaxy.tools.parameters import visit_input_values
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
-from galaxy.web.framework import form
+from galaxy.web.framework.formbuilder import form
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.workflow.modules import WorkflowModuleInjector
