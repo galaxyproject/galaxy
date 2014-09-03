@@ -54,8 +54,12 @@ class DatasetCollectionsService(
     ):
         """
         """
-        if element_identifiers:
+        # Trust embedded, newly created objects created by tool subsystem.
+        trusted_identifiers = implicit_collection_info is not None
+
+        if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers( element_identifiers )
+
         dataset_collection = self.__create_dataset_collection(
             trans=trans,
             collection_type=collection_type,

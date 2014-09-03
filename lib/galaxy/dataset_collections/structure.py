@@ -78,7 +78,7 @@ class Tree( object ):
                 child_identifiers[ "name" ] = identifier
                 element_identifiers.append( child_identifiers )
             else:
-                element_identifiers.append( dict( name=identifier, src="hda", id=trans.security.encode_id( datasets[ 0 ].id ) ) )
+                element_identifiers.append( dict( name=identifier, __object__=datasets[ 0 ] ) )
 
             datasets = datasets[ len( child ): ]
 
