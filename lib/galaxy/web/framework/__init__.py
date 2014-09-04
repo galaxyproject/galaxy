@@ -926,7 +926,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction, ProvidesAppContext, Prov
                 url_for( controller='dataset', action='list' )
             )
             display_as = url_for( controller='root', action='display_as' )
-            if self.app.config.ucsc_display_sites and self.request.path == display_as:
+            if self.app.datatypes_registry.get_display_sites('ucsc') and self.request.path == display_as:
                 try:
                     host = socket.gethostbyaddr( self.environ[ 'REMOTE_ADDR' ] )[0]
                 except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
