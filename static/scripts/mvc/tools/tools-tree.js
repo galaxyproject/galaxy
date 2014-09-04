@@ -66,7 +66,7 @@ return Backbone.Model.extend({
     },
     
     // find referenced elements
-    findReferences: function(identifier) {
+    findReferences: function(identifier, type) {
         // referenced elements
         var referenced = [];
         
@@ -105,7 +105,7 @@ return Backbone.Model.extend({
                         }
                         
                         // check for referenced element
-                        if (input.data_ref == name) {
+                        if (input.data_ref == name && input.type == type) {
                             list.push(id);
                         }
                     }

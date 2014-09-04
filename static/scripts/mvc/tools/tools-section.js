@@ -11,12 +11,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             // link inputs
             this.inputs = options.inputs;
             
-            // link datasets
-            this.datasets = app.datasets;
-            
-            // link data model
-            this.data = app.data;
-            
             // add table class for tr tag
             // this assist in transforming the form into a json structure
             options.cls_tr = 'section-row';
@@ -38,12 +32,12 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             
             // load settings elements into table
             for (var i in this.inputs) {
-                this._add(this.inputs[i], this.data);
+                this._add(this.inputs[i]);
             }
         },
         
         // add table row
-        _add: function(input, data) {
+        _add: function(input) {
             // link this
             var self = this;
             
@@ -61,7 +55,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             switch(type) {
                 // conditional field
                 case 'conditional':
-                    this._addConditional(input_def, data);
+                    this._addConditional(input_def);
                     break;
                 // repeat block
                 case 'repeat':
@@ -69,12 +63,12 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                     break;
                 // default single element row
                 default:
-                    this._addRow(type, input_def, data);
+                    this._addRow(type, input_def);
             }
         },
         
         // add conditional block
-        _addConditional: function(input_def, data) {
+        _addConditional: function(input_def) {
             // add label to input definition root
             input_def.label = input_def.test_param.label;
         
@@ -82,7 +76,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             input_def.value = input_def.test_param.value;
         
             // build options field
-            this._addRow('conditional', input_def, data);
+            this._addRow('conditional', input_def);
             
             // add fields
             for (var i in input_def.cases) {
@@ -182,7 +176,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
         },
         
         // add table row
-        _addRow: function(field_type, input_def, data) {
+        _addRow: function(field_type, input_def) {
             // get id
             var id = input_def.id;
             
@@ -193,65 +187,59 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             switch(field_type) {
                 // text input field
                 case 'text' :
-                    field = this._field_text(input_def, data);
+                    field = this._field_text(input_def);
                     break;
                     
                 // select field
                 case 'select' :
-                    field = this._field_select(input_def, data);
+                    field = this._field_select(input_def);
                     break;
                     
-                // radiobox field
-                case 'radiobutton' :
-                    field = this._field_radio(input_def, data);
-                    break;
-                
                 // dataset
                 case 'data':
-                    field = this._field_data(input_def, data);
+                    field = this._field_data(input_def);
                     break;
                 
                 // dataset column
                 case 'data_column':
-                    field = this._field_column(input_def, data);
-                    break;
-                
-                // text area field
-                case 'textarea' :
-                    field = this._field_textarea(input_def, data);
+                    field = this._field_column(input_def);
                     break;
                     
                 // conditional select field
                 case 'conditional':
-                    field = this._field_conditional(input_def, data);
+                    field = this._field_conditional(input_def);
                     break;
                 
                 // hidden field
                 case 'hidden':
-                    field = this._field_hidden(input_def, data);
+                    field = this._field_hidden(input_def);
                     break;
                 
                 // integer field
                 case 'integer':
-                    field = this._field_integer(input_def, data);
+                    field = this._field_slider(input_def);
                     break;
                 
+                // float field
+                case 'float':
+                    field = this._field_slider(input_def);
+                    break;
+                                    
                 // boolean field
                 case 'boolean':
-                    field = this._field_radiobutton(input_def, data);
+                    field = this._field_boolean(input_def);
                     break;
                     
                 // default
                 default:
-                    field = this._field_text(input_def, data);
+                    field = this._field_text(input_def);
                     console.debug('tools-form::_addRow() : Unmatched field type (' + field_type + ').');
             }
             
-            // set value
-            if (!data.get(id)) {
-                data.set(id, input_def.value);
+            // set field value
+            if (input_def.value !== undefined) {
+                field.value(input_def.value);
             }
-            field.value(data.get(id));
             
             // add to field list
             this.app.field_list[id] = field;
@@ -272,7 +260,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
         },
         
         // conditional input field
-        _field_conditional : function(input_def, data) {
+        _field_conditional : function(input_def) {
             // link this
             var self = this;
 
@@ -287,15 +275,10 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             }
             
             // select field
-            var id = input_def.id;
             return new Ui.Select.View({
-                id          : 'field-' + id,
+                id          : 'field-' + input_def.id,
                 data        : options,
-                value       : data.get(id),
                 onchange    : function(value) {
-                    // update value
-                    data.set(id, value);
-                    
                     // check value in order to hide/show options
                     for (var i in input_def.cases) {
                         // get case
@@ -329,7 +312,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
         },
         
         // data input field
-        _field_data : function(input_def, data) {
+        _field_data : function(input_def) {
             // link this
             var self = this;
             
@@ -337,7 +320,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             var id = input_def.id;
             
             // get datasets
-            var datasets = this.datasets.filterType();
+            var datasets = this.app.datasets.filterType();
             
             // configure options fields
             var options = [];
@@ -353,15 +336,19 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                 id          : 'field-' + id,
                 data        : options,
                 value       : options[0].value,
+                multiple    : input_def.multiple,
                 onchange    : function(value) {
-                    // update value
-                    data.set(id, value);
+                    // pick the first dataset if multiple might be selected
+                    // TODO: iterate over all datasets and filter common/consistent columns
+                    if (input_def.multiple) {
+                        value = value[0];
+                    }
                     
                     // get referenced columns
-                    var column_list = self.app.tree.findReferences(id);
+                    var column_list = self.app.tree.findReferences(id, 'data_column');
                     
                     // find selected dataset
-                    var dataset = self.datasets.filter(value);
+                    var dataset = self.app.datasets.filter(value);
         
                     // check dataset
                     if (dataset && column_list.length > 0) {
@@ -376,19 +363,34 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                             console.debug('tool-form::field_data() - FAILED: Could not find metadata for dataset ' + value + '.');
                         }
                         
-                        // load column options
-                        var columns = [];
-                        for (var key in meta) {
-                            // add to selection
-                            columns.push({
-                                'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
-                                'value' : key
-                            });
-                        }
-                
                         // update referenced columns
                         for (var i in column_list) {
-                            var column_field = self.app.field_list[column_list[i]]
+                            // get column input/field
+                            var column_input = self.app.input_list[column_list[i]];
+                            var column_field = self.app.field_list[column_list[i]];
+                            if (!column_input || !column_field) {
+                                console.debug('tool-form::field_data() - FAILED: Column not found.');
+                            }
+                        
+                            // is numerical?
+                            var numerical = column_input.numerical;
+                            
+                            // identify column options
+                            var columns = [];
+                            for (var key in meta) {
+                                // get column type
+                                var column_type = meta[key];
+                                
+                                // add to selection
+                                if (column_type == 'int' || column_type == 'float' || !numerical) {
+                                    columns.push({
+                                        'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
+                                        'value' : key
+                                    });
+                                }
+                            }
+                            
+                            // update field
                             if (column_field) {
                                 column_field.update(columns);
                                 if (!column_field.exists(column_field.value())) {
@@ -404,20 +406,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             });
         },
         
-        // column selection field
-        _field_column : function (input_def, data) {
-            var id = input_def.id;
-            return new Ui.Select.View({
-                id          : 'field-' + id,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
-            });
-        },
-
         // select field
-        _field_select : function (input_def, data) {
+        _field_select : function (input_def) {
             // configure options fields
             var options = [];
             for (var i in input_def.options) {
@@ -430,95 +420,66 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             
             // identify display type
             var SelectClass = Ui.Select;
-            if (input_def.display == 'checkboxes') {
+            switch (input_def.display) {
+                case 'checkboxes':
+                    SelectClass = Ui.Checkbox;
+                    break;
+                case 'radio':
+                    SelectClass = Ui.RadioButton;
+                    break;
+            }
+            
+            // force checkboxes if multiple has been selected
+            if (input_def.multiple) {
                 SelectClass = Ui.Checkbox;
             }
             
             // select field
-            var id = input_def.id;
             return new SelectClass.View({
-                id          : 'field-' + id,
-                data        : options,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
+                id      : 'field-' + input_def.id,
+                data    : options
             });
         },
-        
+
+        // column selection field
+        _field_column : function (input_def) {
+            return new Ui.Select.View({
+                id      : 'field-' + input_def.id,
+                multiple: input_def.multiple
+            });
+        },
+
         // text input field
-        _field_text : function(input_def, data) {
-            var id = input_def.id;
+        _field_text : function(input_def) {
             return new Ui.Input({
-                id          : 'field-' + id,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
+                id      : 'field-' + input_def.id,
+                area    : input_def.area
             });
         },
         
         // integer field
-        _field_integer: function(input_def, data) {
-            var id = input_def.id;
+        _field_slider: function(input_def) {
             return new Ui.Slider.View({
-                id          : 'field-' + id,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
-            });
-        },
-        
-        // text area
-        _field_textarea : function(input_def, data) {
-            var id = input_def.id;
-            return new Ui.Textarea({
-                id          : 'field-' + id,
-                onchange    : function() {
-                    data.set(id, field.value());
-                }
-            });
-        },
-        
-        // radio field
-        _field_radio : function(input_def, data) {
-            var id = input_def.id;
-            return new Ui.RadioButton({
-                id          : 'field-' + id,
-                data        : input_def.data,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
+                id      : 'field-' + input_def.id,
+                min     : input_def.min || 0,
+                max     : input_def.max || 1000,
+                decimal : input_def.type == 'float'
             });
         },
         
         // hidden field
-        _field_hidden : function(input_def, data) {
-            var id = input_def.id;
+        _field_hidden : function(input_def) {
             return new Ui.Hidden({
-                id          : 'field-' + id,
-                value       : data.get(id)
+                id      : 'field-' + input_def.id
             });
         },
         
-        // hidden field
-        _field_radiobutton : function(input_def, data) {
-            var id = input_def.id;
+        // boolean field
+        _field_boolean : function(input_def) {
             return new Ui.RadioButton.View({
-                id          : 'field-' + id,
-                value       : data.get(id),
-                data        : [
-                    {
-                        label   : 'Yes',
-                        value   : 'true'
-                    },
-                    {
-                        label   : 'No',
-                        value   : 'false'
-                    }
-                ]
+                id      : 'field-' + input_def.id,
+                data    : [ { label : 'Yes', value : true  },
+                            { label : 'No',  value : false }]
             });
         }
     });

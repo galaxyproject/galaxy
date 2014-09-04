@@ -312,7 +312,8 @@ var Input = Backbone.View.extend({
         placeholder     : '',
         disabled        : false,
         visible         : true,
-        cls             : ''
+        cls             : '',
+        area            : false
     },
     
     // initialize
@@ -352,60 +353,11 @@ var Input = Backbone.View.extend({
     
     // element
     _template: function(options) {
-        return '<input id="' + options.id + '" type="' + options.type + '" value="' + options.value + '" placeholder="' + options.placeholder + '" class="ui-input ' + options.cls + '">';
-    }
-});
-
-// plugin
-var Textarea = Backbone.View.extend({
-    // options
-    optionsDefault: {
-        value           : '',
-        type            : 'text',
-        placeholder     : '',
-        disabled        : false,
-        visible         : true,
-        cls             : ''
-    },
-    
-    // initialize
-    initialize : function(options) {
-        // configure options
-        this.options = Utils.merge(options, this.optionsDefault);
-            
-        // create new element
-        this.setElement(this._template(this.options));
-        
-        // disable input field
-        if (this.options.disabled) {
-            this.$el.prop('disabled', true);
+        if (options.area) {
+            return '<textarea id="' + options.id + '" class="ui-textarea ' + options.cls + '"></textarea>';
+        } else {
+            return '<input id="' + options.id + '" type="' + options.type + '" value="' + options.value + '" placeholder="' + options.placeholder + '" class="ui-input ' + options.cls + '">';
         }
-        
-        // hide input field
-        if (!this.options.visible) {
-            this.$el.hide();
-        }
-        
-        // onchange event handler. fires on user activity.
-        var self = this;
-        this.$el.on('input', function() {
-            if (self.options.onchange) {
-                self.options.onchange(self.$el.val());
-            }
-        });
-    },
-    
-    // value
-    value : function (new_val) {
-        if (new_val !== undefined) {
-            this.$el.val(new_val);
-        }
-        return this.$el.val();
-    },
-    
-    // element
-    _template: function(options) {
-        return '<textarea id="' + options.id + '" class="ui-textarea ' + options.cls + '" rows="5"></textarea>';
     }
 });
 
@@ -455,7 +407,6 @@ return {
     Checkbox    : Checkbox,
     Searchbox   : Searchbox,
     Select      : Select,
-    Textarea    : Textarea,
     Hidden      : Hidden,
     Slider      : Slider
 }

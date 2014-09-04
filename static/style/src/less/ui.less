@@ -32,6 +32,7 @@
 
 .ui-table-form-info {
     &:extend(.toolParamHelp);
+    clear: both !important;
 }
 
 .ui-table-form-separator {
@@ -74,6 +75,11 @@
 
 .ui-input {
     &:extend(.form-control);
+}
+
+.ui-textarea {
+    &:extend(.form-control);
+    height: 100px !important;
 }
 
 .ui-tabs {
@@ -203,4 +209,10 @@
         border-radius: 0;
         -webkit-appearance: none;
     }
+}
+
+.ui-select-multiple {
+    &:extend(.ui-select);
+    height: 100% !important;
+    width: 100% !important;
 }

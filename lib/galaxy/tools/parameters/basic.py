@@ -248,6 +248,10 @@ class TextToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context, history=None ):
         return self.value
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super(TextToolParameter, self).to_dict(trans)
+        d['area'] = self.area
+        return d
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -459,6 +463,13 @@ class BooleanToolParameter( ToolParameter ):
         else:
             return self.falsevalue
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super(BooleanToolParameter, self).to_dict(trans)
+        d['value'] = self.checked
+        d['truevalue'] = self.truevalue
+        d['falsevalue'] = self.falsevalue
+        return d
+    
     @property
     def legal_values( self ):
         return [ self.truevalue, self.falsevalue ]
@@ -992,7 +1003,8 @@ class SelectToolParameter( ToolParameter ):
                     value = option[1]
             d[ 'value' ] = value
             
-        d[ 'display' ] = self.display
+        d['display'] = self.display
+        d['multiple'] = self.multiple
 
         return d
 
@@ -1251,7 +1263,10 @@ class ColumnListParameter( SelectToolParameter ):
         d = super( ColumnListParameter, self ).to_dict( trans )
 
         # add data reference
-        d[ 'data_ref' ] = self.data_ref
+        d['data_ref'] = self.data_ref
+        
+        # add numerical flag
+        d['numerical'] = self.numerical
         
         # return
         return d
@@ -2008,6 +2023,11 @@ class DataToolParameter( BaseDataToolParameter ):
             ref = ref()
         return ref
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super( DataToolParameter, self ).to_dict( trans )
+        d['extensions'] = self.extensions
+        d['multiple'] = self.multiple
+        return d
 
 class DataCollectionToolParameter( BaseDataToolParameter ):
     """
@@ -2110,6 +2130,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         elif isinstance( value, basestring ):
             if value.startswith( "dce:" ):
                 rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
+            elif value.startswith( "hdca:" ):
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value[ len( "hdca:"): ] )
             else:
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value )
         if rval and isinstance( rval, trans.app.model.HistoryDatasetCollectionAssociation ):
