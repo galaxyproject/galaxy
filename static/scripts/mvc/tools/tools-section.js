@@ -336,7 +336,14 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                 id          : 'field-' + id,
                 data        : options,
                 value       : options[0].value,
+                multiple    : input_def.multiple,
                 onchange    : function(value) {
+                    // pick the first dataset if multiple might be selected
+                    // TODO: iterate over all datasets and filter common/consistent columns
+                    if (input_def.multiple) {
+                        value = value[0];
+                    }
+                    
                     // get referenced columns
                     var column_list = self.app.tree.findReferences(id, 'data_column');
                     
@@ -437,18 +444,16 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
         // column selection field
         _field_column : function (input_def) {
             return new Ui.Select.View({
-                id      : 'field-' + input_def.id
+                id      : 'field-' + input_def.id,
+                multiple: input_def.multiple
             });
         },
 
         // text input field
         _field_text : function(input_def) {
-            var TextClass = Ui.Input;
-            if (input_def.area) {
-                TextClass = Ui.Textarea;
-            }
-            return new TextClass({
-                id      : 'field-' + input_def.id
+            return new Ui.Input({
+                id      : 'field-' + input_def.id,
+                area    : input_def.area
             });
         },
         

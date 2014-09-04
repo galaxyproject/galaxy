@@ -1282,6 +1282,7 @@ label{font-weight:normal}
 .ui-table tbody{cursor:pointer}
 .ui-table-plain tbody td{padding:5px 0px 5px 5px !important;border:none !important}
 .ui-table-plain tbody{cursor:auto !important}
+.ui-table-form-info{clear:both !important}
 .ui-table-form-separator{font-weight:bold;font-size:0.9em}
 .ui-label{font-weight:bold}
 .ui-message{padding:2px 2px 2px 10px}
@@ -1299,8 +1300,9 @@ label{font-weight:normal}
 .ui-portlet .no-scroll{height:calc(100% - 80px)}
 .ui-popover{max-width:700px;display:none}.ui-popover .popover-close{position:absolute;right:10px;top:7px;font-size:1.2em;cursor:pointer}
 .ui-popover .popover-title{padding:4px 10px}
-.ui-select{position:relative;height:27px;overflow:hidden;border:1px solid #bfbfbf;-moz-border-radius:3px;border-radius:3px}.ui-select .button{position:relative;width:25px;height:100%;float:right;border-left:1px solid #bfbfbf;padding-left:9px;padding-top:4px;background:#f2f2f2}
+.ui-select,.ui-select-multiple{position:relative;height:27px;overflow:hidden;border:1px solid #bfbfbf;-moz-border-radius:3px;border-radius:3px}.ui-select .button{position:relative;width:25px;height:100%;float:right;border-left:1px solid #bfbfbf;padding-left:9px;padding-top:4px;background:#f2f2f2}
 .ui-select select{position:absolute;top:0px;height:100%;width:100%;padding-left:5px;cursor:pointer;background:transparent;border:0;border-radius:0;-webkit-appearance:none}
+.ui-select-multiple{height:100% !important;width:100% !important}
 .libraryRow{background-color:#ebd9b2}
 .datasetHighlighted{background-color:#f9f9f9}
 .libraryItemDeleted-True{font-style:italic}

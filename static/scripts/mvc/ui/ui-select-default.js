@@ -7,23 +7,18 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend({
     // options
     optionsDefault : {
-        id      : '',
-        cls     : '',
-        empty   : 'No data available',
-        visible : true,
-        wait    : false
+        id          : '',
+        cls         : '',
+        empty       : 'No data available',
+        visible     : true,
+        wait        : false,
+        multiple    : false
     },
-    
-    // value
-    selected : null,
     
     // initialize
     initialize : function(options) {
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
-        
-        // initial value
-        this.selected = this.options.value;
         
         // create new element
         this.setElement(this._template(this.options));
@@ -32,21 +27,17 @@ var View = Backbone.View.extend({
         this.$select = this.$el.find('#select');
         this.$icon = this.$el.find('#icon');
         
-        // add change event. fires only on user activity
-        var self = this;
-        this.$select.on('change', function() {
-            self.value(self.$select.val());
-        });
-        
-        // add change event. fires on trigger
-        this.on('change', function() {
-            if (self.options.onchange) {
-                self.options.onchange(self.value());
-            }
-        });
+        // configure multiple
+        if (this.options.multiple) {
+            this.$select.prop('multiple', true);
+            this.$select.addClass('ui-select-multiple');
+            this.$icon.remove();
+        } else {
+            this.$el.addClass('ui-select');
+        }
         
         // refresh
-        this._refresh();
+        this.update(this.options.data);
         
         // show/hide
         if (!this.options.visible) {
@@ -59,31 +50,25 @@ var View = Backbone.View.extend({
         } else {
             this.show();
         }
+        
+        // add change event. fires only on user activity
+        var self = this;
+        this.$select.on('change', function() {
+            self._change();
+        });
+        
+        // add change event. fires on trigger
+        this.on('change', function() {
+            self._change();
+        });
     },
     
     // value
     value : function (new_value) {
-        
-        // get current id/value
-        var before = this.selected;
-        
-        // check if new_value is defined
         if (new_value !== undefined) {
-            this.selected = new_value;
             this.$select.val(new_value);
         }
-        
-        // get current id/value
-        var after = this.selected;
-        if (after) {
-            // fire onchange
-            if (after != before && this.options.onchange) {
-                this.options.onchange(after);
-            }
-        }
-        
-        // return
-        return after;
+        return this.$select.val();
     },
     
     // first
@@ -157,6 +142,9 @@ var View = Backbone.View.extend({
     
     // render
     update: function(options) {
+        // backup current value
+        var current = this.$select.val();
+        
         // remove all options
         this.$select.find('option').remove();
 
@@ -167,6 +155,14 @@ var View = Backbone.View.extend({
         
         // refresh
         this._refresh();
+        
+        // set previous value
+        this.$select.val(current);
+        
+        // check if any value was set
+        if (!this.$select.val()) {
+            this.$select.val(this.first());
+        }
     },
     
     // set on change event
@@ -177,6 +173,13 @@ var View = Backbone.View.extend({
     // check if selected value exists
     exists: function(value) {
         return this.$select.find('option[value=' + value + ']').length > 0;
+    },
+    
+    // change
+    _change: function() {
+        if (this.options.onchange) {
+            this.options.onchange(this.$select.val());
+        }
     },
     
     // refresh
@@ -196,41 +199,21 @@ var View = Backbone.View.extend({
             // enable select field
             this.enable();
         }
-        
-        // update value
-        if (this.selected) {
-            this.$select.val(this.selected);
-        }
     },
     
-    // option
+    // template option
     _templateOption: function(options) {
         return '<option value="' + options.value + '">' + options.label + '</option>';
     },
     
-    // element
+    // template
     _template: function(options) {
-        var tmpl =  '<div id="' + options.id + '" class="ui-select">' +
-                        '<div class="button">' +
-                            '<i id="icon"/>' +
-                        '</div>' +
-                        '<select id="select" class="select ' + options.cls + ' ' + options.id + '">';
-        for (key in options.data) {
-            // options
-            var item = options.data[key];
-            
-            // identify selected value
-            var tag = '';
-            if (item.value == options.value || item.value == '') {
-                tag = 'selected';
-            }
-            
-            // add template string
-            tmpl +=         '<option value="' + item.value + '" ' + tag + '>' + item.label + '</option>';
-        }
-        tmpl +=         '</select>' +
-                    '</div>';
-        return tmpl;
+        return  '<div id="' + options.id + '">' +
+                    '<div class="button">' +
+                        '<i id="icon"/>' +
+                    '</div>' +
+                    '<select id="select" class="select ' + options.cls + ' ' + options.id + '"></select>' +
+                '</div>';
     }
 });
 
