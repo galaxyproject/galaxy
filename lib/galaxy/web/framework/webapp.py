@@ -55,6 +55,8 @@ UCSC_SERVERS = (
 
 class WebApplication( base.WebApplication ):
     """
+    Base WSGI application instantiated for all Galaxy webapps.
+
     A web application that:
         * adds API and UI controllers by scanning given directories and
         importing all modules found there.
