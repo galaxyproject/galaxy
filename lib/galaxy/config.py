@@ -16,7 +16,6 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.util import string_as_bool
 from galaxy.util import listify
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.util.build_sites import BuildSites
 from galaxy import eggs
 
 log = logging.getLogger( __name__ )
@@ -224,10 +223,6 @@ class Configuration( object ):
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
-        self.ucsc_build_sites = resolve_path( kwargs.get( 'ucsc_build_sites', os.path.join( self.tool_data_path, 'shared', 'ucsc', 'ucsc_build_sites.txt') ), self.root )
-        self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
-        self.gbrowse_build_sites = resolve_path( kwargs.get( 'gbrowse_build_sites', os.path.join( self.tool_data_path, 'shared', 'gbrowse', 'gbrowse_build_sites.txt') ), self.root )
-        self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
         # Configuration for the message box directly below the masthead.
@@ -574,9 +569,6 @@ class ConfiguresGalaxyMixin:
 
     def _configure_genome_builds( self, data_table_name="__dbkeys__", load_old_style=True ):
         self.genome_builds = GenomeBuilds( self, data_table_name=data_table_name, load_old_style=load_old_style )
-
-    def _configure_build_sites( self ):
-        self.build_sites = BuildSites( self )
 
     def _configure_toolbox( self ):
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
