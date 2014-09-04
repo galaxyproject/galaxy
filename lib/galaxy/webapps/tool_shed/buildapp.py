@@ -18,13 +18,13 @@ import pkg_resources
 
 import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
-import galaxy.web.framework
+import galaxy.web.framework.webapp
 from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
 
 log = logging.getLogger( __name__ )
 
-class CommunityWebApplication( galaxy.web.framework.WebApplication ):
+class CommunityWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
 
 def add_ui_controllers( webapp, app ):

@@ -579,7 +579,7 @@ class PageServingPluginManager( PluginManager ):
         """
         Pass control over to trans and render ``template_filename``.
 
-        :type   trans:              ``galaxy.web.framework.GalaxyWebTransaction``
+        :type   trans:              ``galaxy.web.framework.webapp.GalaxyWebTransaction``
         :param  trans:              transaction doing the rendering
         :type   plugin:             ``util.bunch.Bunch``
         :param  plugin:             the plugin containing the template to render

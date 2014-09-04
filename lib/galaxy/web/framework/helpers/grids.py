@@ -5,7 +5,8 @@ from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemR
 from galaxy.util import sanitize_text
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.odict import odict
-from galaxy.web.framework import error, url_for
+from galaxy.web.framework import decorators
+from galaxy.web.framework import url_for
 from galaxy.web.framework.helpers import iff
 
 from sqlalchemy.sql.expression import and_, func, or_
@@ -317,7 +318,7 @@ class Grid( object ):
             try:
                 id = map( int, id )
             except:
-                error( "Invalid id" )
+                decorators.error( "Invalid id" )
         return id
     # ---- Override these ----------------------------------------------------
     def handle_operation( self, trans, operation, ids, **kwargs ):

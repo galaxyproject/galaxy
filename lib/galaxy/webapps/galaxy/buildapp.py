@@ -16,6 +16,7 @@ import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
+import galaxy.web.framework.webapp
 from galaxy import util
 from galaxy.util import asbool
 
@@ -23,7 +24,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class GalaxyWebApplication( galaxy.web.framework.WebApplication ):
+class GalaxyWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
 
 def app_factory( global_conf, **kwargs ):
