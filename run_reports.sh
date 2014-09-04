@@ -11,6 +11,13 @@
 
 cd `dirname $0`
 
+# If there is a .venv/ directory, assume it contains a virtualenv that we
+# should run this instance in.
+if [ -d .venv ];
+then
+    . .venv/bin/activate
+fi
+
 ./scripts/common_startup.sh --skip-samples
 
 GALAXY_REPORTS_CONFIG=${GALAXY_REPORTS_CONFIG:-reports_wsgi.ini}

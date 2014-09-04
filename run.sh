@@ -2,6 +2,13 @@
 
 cd `dirname $0`
 
+# If there is a .venv/ directory, assume it contains a virtualenv that we
+# should run this instance in.
+if [ -d .venv ];
+then
+    . .venv/bin/activate
+fi
+
 python ./scripts/check_python.py
 [ $? -ne 0 ] && exit 1
 
@@ -9,13 +16,6 @@ python ./scripts/check_python.py
 
 if [ -n "$GALAXY_UNIVERSE_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_UNIVERSE_CONFIG_DIR"
-fi
-
-# If there is a .venv/ directory, assume it contains a virtualenv that we
-# should run this instance in.
-if [ -d .venv ];
-then
-    . .venv/bin/activate
 fi
 
 if [ -n "$GALAXY_RUN_ALL" ]; then
