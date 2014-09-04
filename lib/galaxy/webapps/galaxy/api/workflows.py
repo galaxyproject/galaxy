@@ -433,24 +433,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return stored_workflow
 
     def __get_stored_workflow( self, trans, workflow_id ):
-        try:
+        if util.is_uuid(workflow_id):
+            # see if they have passed in the UUID for a workflow that is attached to a stored workflow
+            workflow_uuid = uuid.UUID(workflow_id)
+            stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).filter( and_(
+                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.Workflow.uuid == workflow_uuid
+            )).first()
+            if stored_workflow is None:
+                raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
+        else:
             workflow_id = self.__decode_id( trans, workflow_id )
             query = trans.sa_session.query( trans.app.model.StoredWorkflow )
             stored_workflow = query.get( workflow_id )
-        except Exception:
-            try:
-                #see if they have passed in the UUID for a workflow that is attached to a stored workflow
-                workflow_uuid = uuid.UUID(workflow_id)
-                stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).filter( and_(
-                    trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
-                    trans.app.model.Workflow.uuid == workflow_uuid
-                )).first()            
-                if stored_workflow is None:
-                    raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
-                return stored_workflow
-            except:
-                pass #let the outer raise exception happen
-            raise exceptions.ObjectNotFound( "No such workflow found - invalid workflow identifier." )
         if stored_workflow is None:
             raise exceptions.ObjectNotFound( "No such workflow found." )
         return stored_workflow
