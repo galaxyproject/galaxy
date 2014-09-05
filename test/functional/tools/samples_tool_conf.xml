@@ -28,8 +28,13 @@
   <tool file="collection_optional_param.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
+
+  <!-- Next three tools demonstrate concatenating multiple datasets
+       with a repeat, multiple datasets with a multiple input data
+       parameter, and multiple datasets from a collection. -->
   <tool file="for_workflows/cat.xml" />
   <tool file="for_workflows/cat_list.xml" />
+  <tool file="for_workflows/cat_collection.xml" />
   <tool file="for_workflows/head.xml" />
 
 </toolbox>
