@@ -1,5 +1,5 @@
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
-    function(Utils, Table, Ui, Tabs) {
+define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-select-dataset'],
+    function(Utils, Table, Ui, Tabs, SelectDataset) {
 
     // create form view
     var View = Backbone.View.extend({
@@ -202,7 +202,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                 
                 // dataset column
                 case 'data_column':
-                    field = this._field_column(input_def);
+                    field = this._field_data_colum(input_def);
                     break;
                     
                 // conditional select field
@@ -229,11 +229,20 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                 case 'boolean':
                     field = this._field_boolean(input_def);
                     break;
-                    
-                // default
-                default:
+            }
+            
+            // pick a generic field if specific mapping failed
+            if (!field) {
+                if (input_def.options) {
+                    // assign select field
+                    field = this._field_select(input_def);
+                } else {
+                    // assign text field
                     field = this._field_text(input_def);
-                    console.debug('tools-form::_addRow() : Unmatched field type (' + field_type + ').');
+                }
+                
+                // log
+                console.debug('tools-form::_addRow() : Auto matched field type (' + field_type + ').');
             }
             
             // set field value
@@ -319,28 +328,15 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             // get element id
             var id = input_def.id;
             
-            // get datasets
-            var datasets = this.app.datasets.filterType();
-            
-            // configure options fields
-            var options = [];
-            for (var i in datasets) {
-                options.push({
-                    label: datasets[i].get('name'),
-                    value: datasets[i].get('id')
-                });
-            }
-            
             // select field
-            return new Ui.Select.View({
+            return new SelectDataset.View(this.app, {
                 id          : 'field-' + id,
-                data        : options,
-                value       : options[0].value,
+                extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
                 onchange    : function(value) {
                     // pick the first dataset if multiple might be selected
                     // TODO: iterate over all datasets and filter common/consistent columns
-                    if (input_def.multiple) {
+                    if (value instanceof Array) {
                         value = value[0];
                     }
                     
@@ -429,26 +425,22 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
                     break;
             }
             
-            // force checkboxes if multiple has been selected
-            if (input_def.multiple) {
-                SelectClass = Ui.Checkbox;
-            }
-            
             // select field
             return new SelectClass.View({
                 id      : 'field-' + input_def.id,
-                data    : options
+                data    : options,
+                multiple: input_def.multiple
             });
         },
 
-        // column selection field
-        _field_column : function (input_def) {
+        // column field
+        _field_data_colum : function (input_def) {
             return new Ui.Select.View({
                 id      : 'field-' + input_def.id,
                 multiple: input_def.multiple
             });
         },
-
+        
         // text input field
         _field_text : function(input_def) {
             return new Ui.Input({
@@ -457,13 +449,20 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'],
             });
         },
         
-        // integer field
+        // slider field
         _field_slider: function(input_def) {
+            // calculate step size
+            var step = 1;
+            if (input_def.type == 'float') {
+                step = (input_def.max - input_def.min) / 10000;
+            }
+            
+            // create slider
             return new Ui.Slider.View({
                 id      : 'field-' + input_def.id,
                 min     : input_def.min || 0,
                 max     : input_def.max || 1000,
-                decimal : input_def.type == 'float'
+                step    : step
             });
         },
         

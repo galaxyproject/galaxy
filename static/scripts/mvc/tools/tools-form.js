@@ -40,7 +40,8 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // initialize datasets
             this.datasets = new ToolDatasets({
-                success: function() {
+                history_id  : this.options.history_id,
+                success     : function() {
                     self._initializeToolForm();
                 }
             });
@@ -48,8 +49,40 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         
         // initialize tool form
         _initializeToolForm: function() {
-            // fetch model and render form
+            // link this
             var self = this;
+            
+            // create question button
+            var button_question = new Ui.ButtonIcon({
+                icon    : 'fa-question-circle',
+                title   : 'Question?',
+                tooltip : 'Ask a question about this tool (Biostar)',
+                onclick : function() {
+                    window.open(self.options.biostar_url + '/p/new/post/');
+                }
+            });
+            
+            // create search button
+            var button_search = new Ui.ButtonIcon({
+                icon    : 'fa-search',
+                title   : 'Search',
+                tooltip : 'Search help for this tool (Biostar)',
+                onclick : function() {
+                    window.open(self.options.biostar_url + '/t/' + self.options.id + '/');
+                }
+            });
+            
+            // create share button
+            var button_share = new Ui.ButtonIcon({
+                icon    : 'fa-share',
+                title   : 'Share',
+                tooltip : 'Share this tool',
+                onclick : function() {
+                    prompt('Copy to clipboard: Ctrl+C, Enter', galaxy_config.root + 'root?tool_id=' + self.options.id);
+                }
+            });
+            
+            // fetch model and render form
             this.model.fetch({
                 error: function(response) {
                     console.debug('tools-form::_initializeToolForm() : Attempt to fetch tool model failed.');
@@ -72,8 +105,19 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                                     console.log(self.tree.create(self));
                                 }
                             })
+                        },
+                        operations: {
+                            button_question: button_question,
+                            button_search: button_search,
+                            button_share: button_share
                         }
                     });
+                    
+                    // configure button selection
+                    if(!self.options.biostar_url) {
+                        button_question.$el.hide();
+                        button_search.$el.hide();
+                    }
                     
                     // create message
                     self.message = new Ui.Message();

@@ -24,9 +24,11 @@
 
     # form configuration
     self.form_config = {
-        'id'        : tool.id,
-        'help'      : tool_help,
-        'citations' : tool_citations
+        'id'            : tool.id,
+        'help'          : tool_help,
+        'citations'     : tool_citations,
+        'biostar_url'   : trans.app.config.biostar_url,
+        'history_id'    : trans.security.encode_id( trans.history.id )
     }
 %>
 ${h.js( "libs/bibtex", "libs/jquery/jquery-ui" )}

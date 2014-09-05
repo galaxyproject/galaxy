@@ -71,6 +71,11 @@ var View = Backbone.View.extend({
         return _.size(this.list);
     },
     
+    // front
+    current: function() {
+        return this.$el.find('.tab-pane.active').attr('id');
+    },
+    
     // append
     add: function(options) {
         // self
