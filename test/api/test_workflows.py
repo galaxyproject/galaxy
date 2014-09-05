@@ -506,22 +506,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_has_keys( pja, "action_type", "output_name", "action_arguments" )
 
     @skip_without_tool( "cat1" )
+    def test_only_own_invocations_accessible( self ):
+        workflow_id, usage = self._run_workflow_once_get_invocation( "test_usage")
+        with self._different_user():
+            usage_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, usage[ "id" ] ) )
+            self._assert_status_code_is( usage_details_response, 403 )
+
+    @skip_without_tool( "cat1" )
     def test_invocation_usage( self ):
-        workflow = self.workflow_populator.load_workflow( name="test_usage" )
-        workflow_request, history_id = self._setup_workflow_run( workflow )
-        workflow_id = workflow_request[ "workflow_id" ]
-        response = self._get( "workflows/%s/usage" % workflow_id )
-        self._assert_status_code_is( response, 200 )
-        assert len( response.json() ) == 0
-        run_workflow_response = self._post( "workflows", data=workflow_request )
-        self._assert_status_code_is( run_workflow_response, 200 )
-
-        response = self._get( "workflows/%s/usage" % workflow_id )
-        self._assert_status_code_is( response, 200 )
-        usages = response.json()
-        assert len( usages ) == 1
-
-        usage_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, usages[ 0 ][ "id" ] ) )
+        workflow_id, usage = self._run_workflow_once_get_invocation( "test_usage")
+        usage_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, usage[ "id" ] ) )
         self._assert_status_code_is( usage_details_response, 200 )
         usage_details = usage_details_response.json()
         # Assert some high-level things about the structure of data returned.
@@ -543,6 +537,22 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         # loading workflow with add_pja=True causes workflow output to be
         # renamed to 'the_new_name'.
         assert "the_new_name" in map( lambda hda: hda[ "name" ], contents )
+
+    def _run_workflow_once_get_invocation( self, name ):
+        workflow = self.workflow_populator.load_workflow( name=name )
+        workflow_request, history_id = self._setup_workflow_run( workflow )
+        workflow_id = workflow_request[ "workflow_id" ]
+        response = self._get( "workflows/%s/usage" % workflow_id )
+        self._assert_status_code_is( response, 200 )
+        assert len( response.json() ) == 0
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+
+        response = self._get( "workflows/%s/usage" % workflow_id )
+        self._assert_status_code_is( response, 200 )
+        usages = response.json()
+        assert len( usages ) == 1
+        return workflow_id, usages[ 0 ]
 
     def _setup_workflow_run( self, workflow, inputs_by='step_id', history_id=None ):
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
