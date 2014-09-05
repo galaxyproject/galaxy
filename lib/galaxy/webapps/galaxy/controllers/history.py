@@ -1118,7 +1118,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         #TODO: used in this file and index.mako
 
     @web.expose
-    def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
+    def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False, preview=False ):
         """ Export a history to an archive. """
         #
         # Get history to export.
@@ -1139,7 +1139,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         jeha = history.latest_export
         if jeha and jeha.up_to_date:
             if jeha.ready:
-                return self.serve_ready_history_export( trans, jeha )
+                if preview:
+                    url = url_for( controller='history', action="export_archive", id=id, qualified=True )
+                    return trans.show_message( "History Ready: '%(n)s'. Use this link to download \
+                                                the archive or import it to another Galaxy server: \
+                                                <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
+                else:
+                    return self.serve_ready_history_export( trans, jeha )
             elif jeha.preparing:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
                         % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )

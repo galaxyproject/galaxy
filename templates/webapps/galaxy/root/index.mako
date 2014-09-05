@@ -105,7 +105,7 @@
                 galaxy_main.location = "${h.url_for( controller='history', action='citations' )}";
             },
             "${_("Export to File")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
+                galaxy_main.location = "${h.url_for( controller='history', action='export_archive', preview=True )}";
             },
             "${_("Delete")}": function() {
                 if ( confirm( "Really delete the current history?" ) ) {

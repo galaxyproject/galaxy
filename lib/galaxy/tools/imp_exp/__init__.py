@@ -3,6 +3,7 @@ import shutil
 import logging
 import tempfile
 import json
+import datetime
 from galaxy import model
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
@@ -134,6 +135,11 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 datasets_attrs_file_name = os.path.join( archive_dir, 'datasets_attrs.txt')
                 datasets_attr_str = read_file_contents( datasets_attrs_file_name )
                 datasets_attrs = from_json_string( datasets_attr_str )
+                
+                if os.path.exists( datasets_attrs_file_name + ".provenance" ):
+                    provenance_attr_str = read_file_contents( datasets_attrs_file_name + ".provenance" )
+                    provenance_attrs = from_json_string( provenance_attr_str )
+                    datasets_attrs += provenance_attrs                    
 
                 # Get counts of how often each dataset file is used; a file can
                 # be linked to multiple dataset objects (HDAs).
@@ -162,7 +168,14 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                                            history=new_history,
                                                            create_dataset=True,
                                                            sa_session=self.sa_session )
-                    hda.state = hda.states.OK
+                    if 'uuid' in dataset_attrs:
+                        hda.dataset.uuid = dataset_attrs["uuid"]
+                    if dataset_attrs.get('exported', True) == False:
+                        hda.state = hda.states.DISCARDED
+                        hda.deleted = True
+                        hda.purged = True
+                    else:
+                        hda.state = hda.states.OK
                     self.sa_session.add( hda )
                     self.sa_session.flush()
                     new_history.add_dataset( hda, genome_build=None )
@@ -171,17 +184,18 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     #permissions = trans.app.security_agent.history_get_default_permissions( new_history )
                     #trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
                     self.sa_session.flush()
-
-                    # Do security check and move/copy dataset data.
-                    temp_dataset_file_name = \
-                        os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
-                    if not file_in_dir( temp_dataset_file_name, os.path.join( archive_dir, "datasets" ) ):
-                        raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
-                    if datasets_usage_counts[ temp_dataset_file_name ] == 1:
-                        shutil.move( temp_dataset_file_name, hda.file_name )
-                    else:
-                        datasets_usage_counts[ temp_dataset_file_name ] -= 1
-                        shutil.copyfile( temp_dataset_file_name, hda.file_name )
+                    if dataset_attrs.get('exported', True) == True:
+                        # Do security check and move/copy dataset data.
+                        temp_dataset_file_name = \
+                            os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
+                        if not file_in_dir( temp_dataset_file_name, os.path.join( archive_dir, "datasets" ) ):
+                            raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
+                        if datasets_usage_counts[ temp_dataset_file_name ] == 1:
+                            shutil.move( temp_dataset_file_name, hda.file_name )
+                        else:
+                            datasets_usage_counts[ temp_dataset_file_name ] -= 1
+                            shutil.copyfile( temp_dataset_file_name, hda.file_name )
+                        hda.dataset.set_total_size() #update the filesize record in the database
 
                     # Set tags, annotations.
                     if user:
@@ -225,10 +239,21 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     # TODO: set session?
                     # imported_job.session = trans.get_galaxy_session().id
                     imported_job.history = new_history
+                    imported_job.imported = True
                     imported_job.tool_id = job_attrs[ 'tool_id' ]
                     imported_job.tool_version = job_attrs[ 'tool_version' ]
                     imported_job.set_state( job_attrs[ 'state' ] )
-                    imported_job.imported = True
+                    imported_job.info = job_attrs.get('info', None)
+                    imported_job.exit_code = job_attrs.get('exit_code', None)
+                    imported_job.traceback = job_attrs.get('traceback', None)
+                    imported_job.stdout = job_attrs.get('stdout', None)
+                    imported_job.stderr = job_attrs.get('stderr', None)
+                    imported_job.command_line = job_attrs.get('command_line', None)
+                    try:
+                        imported_job.create_time = datetime.datetime.strptime(job_attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
+                        imported_job.update_time = datetime.datetime.strptime(job_attrs["update_time"], "%Y-%m-%dT%H:%M:%S.%f")
+                    except:
+                        pass
                     self.sa_session.add( imported_job )
                     self.sa_session.flush()
 
@@ -265,6 +290,16 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                         .filter_by( history=new_history, hid=output_hid ).first()
                         if output_hda:
                             imported_job.add_output_dataset( output_hda.name, output_hda )
+
+                    # Connect jobs to input datasets.
+                    if 'input_mapping' in job_attrs: 
+                        for input_name, input_hid in job_attrs[ 'input_mapping' ].items():
+                            #print "%s job has input dataset %i" % (imported_job.id, input_hid)
+                            input_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
+                                            .filter_by( history=new_history, hid=input_hid ).first()
+                            if input_hda:
+                                imported_job.add_input_dataset( input_name, input_hda )
+                            
 
                     self.sa_session.flush()
 
@@ -323,7 +358,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             def default( self, obj ):
                 """ Encode an HDA, default encoding for everything else. """
                 if isinstance( obj, trans.app.model.HistoryDatasetAssociation ):
-                    return {
+                    rval = {
                         "__HistoryDatasetAssociation__": True,
                         "create_time": obj.create_time.__str__(),
                         "update_time": obj.update_time.__str__(),
@@ -339,9 +374,17 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                         "deleted": obj.deleted,
                         "visible": obj.visible,
                         "file_name": obj.file_name,
+                        "uuid" :  ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
                         "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags": get_item_tag_dict( obj ),
                     }
+                    if not obj.visible and not include_hidden:
+                        rval['exported'] = False
+                    elif obj.deleted and not include_deleted:
+                        rval['exported'] = False
+                    else:
+                        rval['exported'] = True
+                    return rval
                 if isinstance( obj, UnvalidatedValue ):
                     return obj.__str__()
                 return json.JSONEncoder.default( self, obj )
@@ -374,19 +417,23 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         datasets = self.get_history_datasets( trans, history )
         included_datasets = []
         datasets_attrs = []
+        provenance_attrs = []
         for dataset in datasets:
-            if not dataset.visible and not include_hidden:
-                continue
-            if dataset.deleted and not include_deleted:
-                continue
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
-            datasets_attrs.append( dataset )
-            included_datasets.append( dataset )
+            if (not dataset.visible and not include_hidden) or (dataset.deleted and not include_deleted):
+                provenance_attrs.append( dataset )
+            else:
+                datasets_attrs.append( dataset )
+                included_datasets.append( dataset )
         datasets_attrs_filename = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
         datasets_attrs_out = open( datasets_attrs_filename, 'w' )
         datasets_attrs_out.write( to_json_string( datasets_attrs, cls=HistoryDatasetAssociationEncoder ) )
         datasets_attrs_out.close()
         jeha.datasets_attrs_filename = datasets_attrs_filename
+        
+        provenance_attrs_out = open( datasets_attrs_filename + ".provenance", 'w' )
+        provenance_attrs_out.write( to_json_string( provenance_attrs, cls=HistoryDatasetAssociationEncoder ) )
+        provenance_attrs_out.close()
 
         #
         # Write jobs attributes file.
@@ -422,6 +469,15 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             job_attrs[ 'tool_id' ] = job.tool_id
             job_attrs[ 'tool_version' ] = job.tool_version
             job_attrs[ 'state' ] = job.state
+            job_attrs[ 'info' ] = job.info
+            job_attrs[ 'traceback' ] = job.traceback
+            job_attrs[ 'command_line' ] = job.command_line
+            job_attrs[ 'stderr' ] = job.stderr
+            job_attrs[ 'stdout' ] = job.stdout
+            job_attrs[ 'exit_code' ] = job.exit_code
+            job_attrs[ 'create_time' ] = job.create_time.isoformat()
+            job_attrs[ 'update_time' ] = job.update_time.isoformat()
+            
 
             # Get the job's parameters
             try:
@@ -438,11 +494,14 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             # -- Get input, output datasets. --
 
             input_datasets = []
+            input_mapping = {}
             for assoc in job.input_datasets:
                 # Optional data inputs will not have a dataset.
                 if assoc.dataset:
                     input_datasets.append( assoc.dataset.hid )
+                    input_mapping[assoc.name] = assoc.dataset.hid
             job_attrs[ 'input_datasets' ] = input_datasets
+            job_attrs[ 'input_mapping'] = input_mapping
             output_datasets = [ assoc.dataset.hid for assoc in job.output_datasets ]
             job_attrs[ 'output_datasets' ] = output_datasets
 
