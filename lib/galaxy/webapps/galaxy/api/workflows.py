@@ -383,7 +383,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         results = self.workflow_manager.build_invocations_query( trans, decoded_stored_workflow_invocation_id )
         out = []
         for r in results:
-            out.append( self.encode_all_ids( trans, r.to_dict(), True) )
+            out.append( self.__encode_invocation( trans, r ) )
         return out
 
     @expose_api
@@ -403,7 +403,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
         workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
         if workflow_invocation:
-            return self.encode_all_ids( trans, workflow_invocation.to_dict('element'), True)
+            return self.__encode_invocation( trans, workflow_invocation )
         return None
 
     def __get_stored_accessible_workflow( self, trans, workflow_id ):
@@ -434,6 +434,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         if stored_workflow is None:
             raise exceptions.ObjectNotFound( "No such workflow found." )
         return stored_workflow
+
+    def __encode_invocation( self, trans, invocation, view="element" ):
+        return self.encode_all_ids(
+            trans,
+            invocation.to_dict( view ),
+            True
+        )
 
     def __decode_id( self, trans, workflow_id, model_type="workflow" ):
         try:

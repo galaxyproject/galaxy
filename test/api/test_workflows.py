@@ -515,9 +515,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
     @skip_without_tool( "cat1" )
     def test_invocation_usage( self ):
         workflow_id, usage = self._run_workflow_once_get_invocation( "test_usage")
-        usage_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, usage[ "id" ] ) )
-        self._assert_status_code_is( usage_details_response, 200 )
-        usage_details = usage_details_response.json()
+        usage_details = self._invocation_details( workflow_id, usage[ "id" ] )
         # Assert some high-level things about the structure of data returned.
         self._assert_has_keys( usage_details, "inputs", "steps" )
         for step in usage_details[ "steps" ]:
@@ -537,6 +535,12 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         # loading workflow with add_pja=True causes workflow output to be
         # renamed to 'the_new_name'.
         assert "the_new_name" in map( lambda hda: hda[ "name" ], contents )
+
+    def _invocation_details( self, workflow_id, invocation_id ):
+        invocation_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, invocation_id ) )
+        self._assert_status_code_is( invocation_details_response, 200 )
+        invocation_details = invocation_details_response.json()
+        return invocation_details
 
     def _run_workflow_once_get_invocation( self, name ):
         workflow = self.workflow_populator.load_workflow( name=name )
