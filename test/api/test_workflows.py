@@ -520,8 +520,8 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         usage_details = usage_details_response.json()
         # Assert some high-level things about the structure of data returned.
         self._assert_has_keys( usage_details, "inputs", "steps" )
-        for step in usage_details[ "steps" ].values():
-            self._assert_has_keys( step, "workflow_step_id", "order_index" )
+        for step in usage_details[ "steps" ]:
+            self._assert_has_keys( step, "workflow_step_id", "order_index", "id" )
 
     @skip_without_tool( "cat1" )
     def test_post_job_action( self ):

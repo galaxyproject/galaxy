@@ -3081,20 +3081,22 @@ class WorkflowInvocation( object, Dictifiable ):
     def to_dict( self, view='collection', value_mapper=None ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
         if view == 'element':
-            steps = {}
+            steps = []
             for step in self.steps:
                 v = step.to_dict()
-                steps[str(v['order_index'])] = v
+                steps.append( v )
             rval['steps'] = steps
 
             inputs = {}
             for step in self.steps:
                 if step.workflow_step.type == 'tool':
                     for step_input in step.workflow_step.input_connections:
-                        if step_input.output_step.type == 'data_input':
+                        output_step_type = step_input.output_step.type
+                        if output_step_type in [ 'data_input', 'data_collection_input' ]:
+                            src = "hda" if output_step_type == 'data_input' else 'hdca'
                             for job_input in step.job.input_datasets:
                                 if job_input.name == step_input.input_name:
-                                    inputs[str(step_input.output_step.order_index)] = { "id": job_input.dataset_id, "src": "hda"}
+                                    inputs[str(step_input.output_step.order_index)] = { "id": job_input.dataset_id, "src": src }
             rval['inputs'] = inputs
         return rval
 
