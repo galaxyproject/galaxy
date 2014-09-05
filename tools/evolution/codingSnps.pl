@@ -564,6 +564,8 @@ sub getGalaxyInfo {
    if ($nibDir eq 'Galaxy') {
       print STDERR "Failed to find sequence directory in locfile $locFile\n";
    }
-   $nibDir .= "/$build.2bit";  #we want full path and filename
+   # lparsons: allow specification of full filename in loc file for greater felxibility
+   unless ($nibDir =~ /(.*)\.2bit$/) { $nibDir .= "/$build.2bit"; }
+   #$nibDir .= "/$build.2bit";  #we want full path and filename
 }
 
