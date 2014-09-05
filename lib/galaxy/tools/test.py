@@ -14,7 +14,7 @@ log = logging.getLogger( __name__ )
 
 DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = 'hg17'
-DEFAULT_INTERACTOR = "twill"  # Default mechanism test code uses for interacting with Galaxy instance.
+DEFAULT_INTERACTOR = "api"  # Default mechanism test code uses for interacting with Galaxy instance.
 DEFAULT_MAX_SECS = 120
 
 
