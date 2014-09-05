@@ -10,7 +10,9 @@ from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
 from functional import database_contexts
-from json import dumps, loads
+from requests import get
+from requests import post
+from json import dumps
 
 from logging import getLogger
 log = getLogger( __name__ )
@@ -366,7 +368,7 @@ class GalaxyInteractorApi( object ):
             key = self.api_key if not admin else self.master_api_key
         data = data.copy()
         data['key'] = key
-        return post_request( "%s/%s" % (self.api_url, path), data=data, files=files )
+        return post( "%s/%s" % (self.api_url, path), data=data, files=files )
 
     def _get( self, path, data={}, key=None, admin=False ):
         if not key:
@@ -376,7 +378,7 @@ class GalaxyInteractorApi( object ):
         if path.startswith("/api"):
             path = path[ len("/api"): ]
         url = "%s/%s" % (self.api_url, path)
-        return get_request( url, params=data )
+        return get( url, params=data )
 
 
 class GalaxyInteractorTwill( object ):
@@ -496,9 +498,3 @@ GALAXY_INTERACTORS = {
     'api': GalaxyInteractorApi,
     'twill': GalaxyInteractorTwill,
 }
-
-
-from requests import get as get_request
-from requests import post as post_request
-from requests import put as put_request
-from requests import delete as delete_request

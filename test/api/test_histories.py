@@ -1,8 +1,7 @@
 from base import api
-# requests.{post,put,get} or something like it if unavailable
-from base.interactor import post_request
-from base.interactor import put_request
-from base.interactor import get_request
+from requests import post
+from requests import put
+from requests import get
 from .helpers import DatasetPopulator, wait_on
 
 
@@ -29,7 +28,7 @@ class HistoriesApiTestCase( api.ApiTestCase ):
         post_data = dict( name="CannotCreate" )
         # Using lower-level _api_url will cause key to not be injected.
         histories_url = self._api_url( "histories" )
-        create_response = post_request( url=histories_url, data=post_data )
+        create_response = post( url=histories_url, data=post_data )
         self._assert_status_code_is( create_response, 403 )
 
     def test_import_export( self ):
@@ -38,7 +37,7 @@ class HistoriesApiTestCase( api.ApiTestCase ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         download_path = self._export( history_id )
         full_download_url = "%s%s?key=%s" % ( self.url, download_path, self.galaxy_interactor.api_key )
-        download_response = get_request( full_download_url )
+        download_response = get( full_download_url )
         self._assert_status_code_is( download_response, 200 )
 
         def history_names():
@@ -72,11 +71,11 @@ class HistoriesApiTestCase( api.ApiTestCase ):
 
     def _export(self, history_id):
         export_url = self._api_url( "histories/%s/exports" % history_id, use_key=True )
-        put_response = put_request( export_url )
+        put_response = put( export_url )
         self._assert_status_code_is( put_response, 202 )
 
         def export_ready_response():
-            put_response = put_request( export_url )
+            put_response = put( export_url )
             if put_response.status_code == 202:
                 return None
             return put_response

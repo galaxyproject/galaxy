@@ -8,7 +8,8 @@ from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
 from .helpers import skip_without_tool
 
-from base.interactor import delete_request  # requests like delete
+from requests import delete
+
 from galaxy.exceptions import error_codes
 
 
@@ -40,7 +41,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         workflow_name = "test_delete (imported from API)"
         self._assert_user_has_workflow_with_name( workflow_name )
         workflow_url = self._api_url( "workflows/%s" % workflow_id, use_key=True )
-        delete_response = delete_request( workflow_url )
+        delete_response = delete( workflow_url )
         self._assert_status_code_is( delete_response, 200 )
         # Make sure workflow is no longer in index by default.
         assert workflow_name not in self.__workflow_names()
@@ -49,7 +50,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         workflow_id = self.workflow_populator.simple_workflow( "test_other_delete" )
         with self._different_user():
             workflow_url = self._api_url( "workflows/%s" % workflow_id, use_key=True )
-            delete_response = delete_request( workflow_url )
+            delete_response = delete( workflow_url )
             self._assert_status_code_is( delete_response, 403 )
 
     def test_index( self ):
