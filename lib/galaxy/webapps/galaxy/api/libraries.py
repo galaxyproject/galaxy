@@ -284,6 +284,7 @@ class LibrariesController( BaseAPIController ):
         action = kwd.get( 'action', None )
         if action is None:
             payload = kwd.get( 'payload', None )
+            del kwd[ 'payload' ]
             if payload is not None:
                 return self.set_permissions_old( trans, library, payload, **kwd )
             else:
@@ -368,6 +369,7 @@ class LibrariesController( BaseAPIController ):
         POST /api/libraries/{encoded_library_id}/permissions
         Updates the library permissions.
         """
+        import galaxy.util
         params = galaxy.util.Params( payload )
         permissions = {}
         for k, v in trans.app.model.Library.permitted_actions.items():
