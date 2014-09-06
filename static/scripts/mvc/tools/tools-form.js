@@ -102,7 +102,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                                 title    : 'Execute',
                                 floating : 'clear',
                                 onclick  : function() {
-                                    console.log(self.tree.create(self));
+                                    self._submit();
                                 }
                             })
                         },
@@ -173,6 +173,11 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // log
             console.debug('tools-form::refresh() - Recreated tree structure. Refresh.');
+        },
+        
+        // submit
+        _submit: function() {
+            console.log(this.tree.jobDictionary());
         }
     });
 

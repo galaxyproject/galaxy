@@ -1,3 +1,18 @@
+.ui-form-slider {
+    .ui-form-slider-text {
+        &:extend(.form-control);
+        width: 100px;
+        float: left;
+    }
+
+    .ui-form-slider-element {
+        width: ~'calc(100% - 110px)';
+        float: left;
+        top: 8px;
+        left: 10px;
+    }
+}
+
 .ui-radiobutton {
     label {
         height: 23px;
@@ -28,6 +43,17 @@
     tbody {
         cursor: auto !important;
     }
+}
+
+.ui-table-form-section {
+    border-left: solid 3px @form-heading-bg;
+    border-radius: 5px;
+    padding-left: 5px;
+}
+
+.ui-table-form-title-strong {
+    font-weight: bold;
+    padding-bottom: 5px;
 }
 
 .ui-table-form-info {

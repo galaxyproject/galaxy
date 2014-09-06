@@ -9,7 +9,8 @@ var View = Backbone.View.extend({
         operations      : null,
         onnew           : null,
         min             : null,
-        max             : null
+        max             : null,
+        onchange        : null
     },
     
     // initialize
@@ -186,6 +187,11 @@ var View = Backbone.View.extend({
             this.$el.find('.tab-pane').removeClass('active');
             this.$el.find('#tab-' + id).addClass('active');
             this.$el.find('#' + id).addClass('active');
+        }
+        
+        // change
+        if (this.options.onchange) {
+            this.options.onchange(id);
         }
     },
     

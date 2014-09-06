@@ -73,9 +73,9 @@ var View = Backbone.View.extend({
     
     // element
     _template: function(options) {
-        return  '<div id="' + options.id + '" style="">' +
-                    '<input id="text" type="text" class="ui-input" style="width: 50px; float: left"/>' +
-                    '<div id="slider" style="width: calc(100% - 60px); float: left; top: 8px; left: 10px;"/>' +
+        return  '<div id="' + options.id + '" class="ui-form-slider">' +
+                    '<input id="text" type="text" class="ui-form-slider-text"/>' +
+                    '<div id="slider" class="ui-form-slider-element"/>' +
                 '</div>';
     }
 });

@@ -89,9 +89,15 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
                     cls     : 'ui-table-plain'
                 });
                 
-                // append sub section
-                this.table.add('');
-                this.table.add(sub_section.$el);
+                // create table row
+                this.table.add(this._create_field({
+                    label : '',
+                    help  : input_def.help,
+                    $el   : sub_section.$el,
+                    color : true
+                }));
+                
+                // append to table
                 this.table.append(sub_section_id);
             }
         },
@@ -169,9 +175,15 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
             // retitle tabs
             tabs.retitle(input_def.title);
             
-            // append sub section
-            this.table.add('');
-            this.table.add(tabs.$el);
+            // create table row
+            this.table.add(this._create_field({
+                label : input_def.title,
+                help  : input_def.help,
+                $el   : tabs.$el,
+                color : true
+            }));
+            
+            // append row to table
             this.table.append(input_def.id);
         },
         
@@ -253,16 +265,12 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
             // add to field list
             this.app.field_list[id] = field;
             
-            // combine field and info
-            var $input = $('<div/>');
-            $input.append(field.$el);
-            if (input_def.help) {
-                $input.append('<div class="ui-table-form-info">' + input_def.help + '</div>');
-            }
-            
             // create table row
-            this.table.add('<span class="ui-table-form-title">' + input_def.label + '</span>', '20%');
-            this.table.add($input);
+            this.table.add(this._create_field({
+                label : input_def.label,
+                help  : input_def.help,
+                $el   : field.$el
+            }));
             
             // append to table
             this.table.append(id);
@@ -480,6 +488,24 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
                 data    : [ { label : 'Yes', value : true  },
                             { label : 'No',  value : false }]
             });
+        },
+        
+        // create a field element with title and help information
+        _create_field: function(options) {
+            var $input;
+            if (options.color) {
+                $input = $('<div class="ui-table-form-section"/>');
+            } else {
+                $input = $('<div/>');
+            }
+            if (options.label) {
+                $input.append('<div class="ui-table-form-title-strong">' + options.label + '</div>');
+            }
+            $input.append(options.$el);
+            if (options.help) {
+                $input.append('<div class="ui-table-form-info">' + options.help + '</div>');
+            }
+            return $input;
         }
     });
 

@@ -56,7 +56,11 @@ var View = Backbone.View.extend({
         });
         
         // tabs
-        this.tabs = new Tabs.View();
+        this.tabs = new Tabs.View({
+            onchange: function() {
+                self.trigger('change');
+            }
+        });
         
         // add tab
         this.tabs.add({

@@ -26,6 +26,46 @@ return Backbone.Model.extend({
         this._iterate(this.app.section.$el, this.dict, this.xml);
     },
 
+
+    // convert to job dictionary
+    jobDictionary: function() {
+        // link this
+        var self = this;
+        
+        // dictionary formatted for job submission
+        var job_def = {};
+
+        // converter between raw dictionary and job dictionary
+        function convert(identifier, head) {
+            for (var i in head) {
+                if (head[i].input) {
+                    var input = head[i].input;
+                    var job_input_id = identifier + input.name;
+                    
+                    if (input.type == 'repeat') {
+                        
+                    
+                    } else {
+                        //var value = self.app.field_list[input.id].value();
+                        switch(input.type) {
+                            case 'repeat':
+                                job_def[job_input_id] = value;
+                                break;
+                            default:
+                                job_def[job_input_id] = value;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // start conversion
+        convert('', this.dict);
+        
+        // return result
+        return job_def;
+    },
+
     // iterate
     _iterate: function(parent, dict, xml) {
         // get child nodes
