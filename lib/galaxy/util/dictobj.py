@@ -2,6 +2,10 @@ import pickle
 
 class DictionaryObject(object):
   """
+  Helper class written by William Grim - grimwm
+  Original repo: https://github.com/grimwm/py-dictobj
+  Thank you!
+  ************************
   A class that has all the functionality of a normal Python dictionary, except
   for the fact it is itself immutable.  It also has the added feature of
   being able to lookup values by using keys as attributes.

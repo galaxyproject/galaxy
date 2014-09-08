@@ -8,6 +8,11 @@ Path = namedtuple('Path', ('path', 'id', 'options'))
 
 class Node(dictobj.DictionaryObject):
   """
+  Helper class written by William Grim - grimwm
+  Original repo: https://github.com/grimwm/py-jstree
+  Code adjusted according to the idea of Frank Blechschmidt - FraBle
+  Thank you!
+  ************************
   This class exists as a helper to the JSTree.  Its "jsonData" method can
   generate sub-tree JSON without putting the logic directly into the JSTree.
 
