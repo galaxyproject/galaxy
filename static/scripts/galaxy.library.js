@@ -47,7 +47,8 @@ var LibraryRouter = Backbone.Router.extend({
     "folders/:folder_id/datasets/:dataset_id"                       : "dataset_detail",
     "folders/:folder_id/datasets/:dataset_id/permissions"           : "dataset_permissions",
     "folders/:folder_id/datasets/:dataset_id/versions/:ldda_id"     : "dataset_version",
-    "folders/:folder_id/download/:format"                           : "download"
+    "folders/:folder_id/download/:format"                           : "download",
+    "folders/:folder_id/import/:source"                             : "import_datasets"
   },
 
   back: function() {
@@ -146,6 +147,15 @@ var GalaxyLibrary = Backbone.View.extend({
             Galaxy.libraries.folderView.$el.unbind('click');
           }
           Galaxy.libraries.folderView = new mod_library_folder_view.FolderView({id: folder_id, show_permissions: true});
+       });
+       this.library_router.on('route:import_datasets', function(folder_id, source){
+          if (Galaxy.libraries.folderToolbarView && Galaxy.libraries.folderListView){
+            Galaxy.libraries.folderToolbarView.showImportModal({source:source});
+          } else {
+            Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView({id: folder_id});
+            Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView({id: folder_id});
+            Galaxy.libraries.folderToolbarView.showImportModal({source: source});
+          }
        });
 
     Backbone.history.start({pushState: false});

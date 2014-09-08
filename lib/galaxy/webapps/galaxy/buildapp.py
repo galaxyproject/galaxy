@@ -258,6 +258,12 @@ def populate_api_routes( webapp, app ):
                            action='show',
                            conditions=dict( method=[ "GET" ] ) )
 
+    webapp.mapper.connect( 'load_ld',
+                           '/api/libraries/datasets/',
+                           controller='lda_datasets',
+                           action='load',
+                           conditions=dict( method=[ "POST" ] ) )
+
     webapp.mapper.connect( 'show_version_of_ld_item',
                            '/api/libraries/datasets/:encoded_dataset_id/versions/:encoded_ldda_id',
                            controller='lda_datasets',

@@ -4,6 +4,7 @@ API operations on the contents of a library folder.
 from galaxy import web
 from galaxy import util
 from galaxy import exceptions
+from galaxy.managers import folders
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from sqlalchemy.orm.exc import MultipleResultsFound
@@ -18,6 +19,10 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     """
     Class controls retrieval, creation and updating of folder contents.
     """
+
+    def __init__( self, app ):
+        super( FolderContentsController, self ).__init__( app )
+        self.folder_manager = folders.FolderManager()
 
     @expose_api_anonymous
     def index( self, trans, folder_id, **kwd ):
@@ -46,32 +51,17 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         is_admin = trans.user_is_admin()
         deleted = kwd.get( 'include_deleted', 'missing' )
+        current_user_roles = trans.get_current_user_roles()
         try:
             deleted = util.asbool( deleted )
         except ValueError:
             deleted = False
 
-        if ( len( folder_id ) == 17 and folder_id.startswith( 'F' ) ):
-            try:
-                decoded_folder_id = trans.security.decode_id( folder_id[ 1: ] )
-            except TypeError:
-                raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( folder_id ) )
-        else:
-            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( folder_id ) )
-
-        try:
-            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).filter( trans.app.model.LibraryFolder.table.c.id == decoded_folder_id ).one()
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase( 'Multiple folders with same id found.' )
-        except NoResultFound:
-            raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
-        except Exception:
-            raise exceptions.InternalServerError( 'Error loading from the database.' )
-
-        current_user_roles = trans.get_current_user_roles()
+        decoded_folder_id = self.folder_manager.cut_and_decode( trans, folder_id )
+        folder = self.folder_manager.get( trans, decoded_folder_id )
 
         # Special level of security on top of libraries.
-        if trans.app.security_agent.can_access_library( current_user_roles, folder.parent_library ):
+        if trans.app.security_agent.can_access_library( current_user_roles, folder.parent_library ) or is_admin:
             pass
         else:
             if trans.user:
@@ -79,29 +69,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             else:
                 log.warning( "SECURITY: Anonymous user is trying to load restricted folder with ID of %s" % ( decoded_folder_id ) )
             raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
-
-        # if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-        #     log.debug('folder parent id:   ' + str(folder.parent_id))
-        #     if folder.parent_id is None:
-        #         try:
-        #             library = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.root_folder_id == decoded_folder_id ).one()
-        #         except Exception:
-        #             raise exceptions.InternalServerError( 'Error loading from the database.' )
-        #         if trans.app.security_agent.library_is_unrestricted( library ):
-        #             pass
-        #         else:
-        #             if trans.user:
-        #                 log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
-        #             else:
-        #                 log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
-        #             raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
-            # else:
-            #     if trans.user:
-            #         log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
-            #     else:
-            #         log.debug('PARENT ID IS NOT NONE')
-            #         log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
-            #     raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
 
         folder_contents = []
         update_time = ''
@@ -161,9 +128,11 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # Check whether user can modify the current folder
         can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
+        
         parent_library_id = None
         if folder.parent_library is not None:
             parent_library_id = trans.security.encode_id( folder.parent_library.id )
+
         metadata = dict( full_path=full_path,
                          can_add_library_item=can_add_library_item,
                          can_modify_folder=can_modify_folder,
