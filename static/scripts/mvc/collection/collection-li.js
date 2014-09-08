@@ -98,8 +98,7 @@ var DCEListItemView = ListItemView.extend(
 //TODO: this might be expendable - compacted with HDAListItemView
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
-    logger              : console,
+    //logger              : console,
 
     /** add the DCE class to the list item */
     className   : ListItemView.prototype.className + " dataset-collection-element",

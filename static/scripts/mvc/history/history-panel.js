@@ -429,14 +429,11 @@ var HistoryPanel = _super.extend(
             // if sentry is available, attempt to get the event id
             var parsed = this._parseErrorMessage( model, xhr, options, msg, details );
             // it's possible to have a triggered error before the message container is rendered - wait for it to show
-            console.debug( this.$messages(), this.$messages().is( ':visible' ) );
             if( !this.$messages().is( ':visible' ) ){
-                console.debug( 'parsing error - waiting for render', model, xhr, options, msg, details );
                 this.once( 'rendered', function(){
                     this.displayMessage( 'error', parsed.message, parsed.details );
                 });
             } else {
-                console.debug( 'parsing error - showing', model, xhr, options, msg, details );
                 this.displayMessage( 'error', parsed.message, parsed.details );
             }
         }
@@ -543,7 +540,6 @@ var HistoryPanel = _super.extend(
 
     /** Remove all messages from the panel. */
     clearMessages : function( ev ){
-        console.debug( ev.currentTarget );
         $( ev.currentTarget ).fadeOut( this.fxSpeed, function(){
             $( this ).remove();
         });

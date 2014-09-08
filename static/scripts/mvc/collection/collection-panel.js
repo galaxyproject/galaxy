@@ -18,7 +18,7 @@ var CollectionPanel = _super.extend(
     //MODEL is either a DatasetCollection (or subclass) or a DatasetCollectionElement (list of pairs)
 
     /** logger used to record this.log messages, commonly set to console */
-    logger              : console,
+    //logger              : console,
 
     className           : _super.prototype.className + ' dataset-collection-panel',
 
@@ -41,7 +41,7 @@ var CollectionPanel = _super.extend(
         this.panelStack = [];
         this.parentName = attributes.parentName;
 
-        window.collectionPanel = this;
+        //window.collectionPanel = this;
     },
 
     // ------------------------------------------------------------------------ sub-views

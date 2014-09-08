@@ -131,7 +131,6 @@ var CurrentHistoryPanel = _super.extend(
         // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
         this.collection.on( 'state:ready', function( model, newState, oldState ){
-            console.debug( 'state:ready', model, newState, model.get( 'visible' ), this.storage.get( 'show_hidden' ) );
             if( ( !model.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
                 this.removeItemView( this.viewFromModel( model ) );
@@ -274,7 +273,6 @@ var CurrentHistoryPanel = _super.extend(
             });
         panel.panelStack.push( overlaid );
 
-        console.debug( panel.$( '.controls' ).add( panel.$list() ) );
         panel.$( '.controls' ).add( panel.$list() ).hide();
         panel.$el.append( overlaid.$el );
         overlaid.on( 'close', function(){

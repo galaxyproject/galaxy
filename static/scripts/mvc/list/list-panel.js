@@ -419,7 +419,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     _renderEmptyMessage : function( $whereTo ){
         this.debug( '_renderEmptyMessage', $whereTo, this.searchFor );
         var text = this.searchFor? this.noneFoundMsg : this.emptyMsg;
-        console.debug( this.$emptyMessage( $whereTo ) );
         return this.$emptyMessage( $whereTo ).text( text );
     },
 
