@@ -14,7 +14,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers, get_test_fname
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 import dataproviders
 
 log = logging.getLogger(__name__)
@@ -272,7 +272,7 @@ class Tabular( data.Text ):
         while cursor and ck_data[-1] != '\n':
             ck_data += cursor
             cursor = f.read(1)
-        return to_json_string( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
+        return dumps( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
         preview = util.string_as_bool( preview )

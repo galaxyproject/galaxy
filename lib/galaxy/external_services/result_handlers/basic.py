@@ -1,4 +1,4 @@
-from galaxy.util.json import to_json_string, from_json_string
+from galaxy.util.json import dumps, loads
 from galaxy.util.template import fill_template
 import logging
 
@@ -44,7 +44,7 @@ class ExternalServiceActionJSONResultHandler( ExternalServiceActionResultHandler
     type = 'json_display'
 
     def handle_result( self, result, param_dict, trans ):
-        rval = from_json_string( result.content )
+        rval = loads( result.content )
         return trans.fill_template( '/external_services/generic_json.mako', result = rval, param_dict = param_dict, action=self.parent )
 
 class ExternalServiceActionJQueryGridResultHandler( ExternalServiceActionResultHandler ):
@@ -53,7 +53,7 @@ class ExternalServiceActionJQueryGridResultHandler( ExternalServiceActionResultH
     type = 'jquery_grid'
 
     def handle_result( self, result, param_dict, trans ):
-        rval = from_json_string( result.content )
+        rval = loads( result.content )
         return trans.fill_template( '/external_services/generic_jquery_grid.mako', result = rval, param_dict = param_dict, action=self.parent )
 
 result_type_to_class = {}

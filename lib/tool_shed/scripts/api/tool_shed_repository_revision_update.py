@@ -13,8 +13,8 @@ sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import update
 
 
-to_json_string = json.dumps
-from_json_string = json.loads
+dumps = json.dumps
+loads = json.loads
 
 data = {}
 for key, value in [ kwarg.split( '=', 1 ) for kwarg in sys.argv[ 3: ] ]:
@@ -28,7 +28,7 @@ for key, value in [ kwarg.split( '=', 1 ) for kwarg in sys.argv[ 3: ] ]:
         else:
             new_value = False
     elif key in [ 'tool_test_results' ]:
-        new_value = from_json_string( value )
+        new_value = loads( value )
     else:
         new_value = str( value )
     data[ key ] = new_value

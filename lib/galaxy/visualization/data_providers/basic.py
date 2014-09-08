@@ -1,6 +1,6 @@
 import sys
 from galaxy.datatypes.tabular import Tabular
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 
 class BaseDataProvider( object ):
     """
@@ -96,7 +96,7 @@ class ColumnDataProvider( BaseDataProvider ):
             start_val = int( self.original_dataset.metadata.comment_lines )
 
         # columns is an array of ints for now (should handle column names later)
-        columns = from_json_string( columns )
+        columns = loads( columns )
         for column in columns:
             assert( ( column < self.original_dataset.metadata.columns )
             and     ( column >= 0 ) ),(

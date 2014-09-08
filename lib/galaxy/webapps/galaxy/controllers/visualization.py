@@ -12,7 +12,7 @@ from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisu
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
 from galaxy.datatypes.interval import Bed
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util import bunch
 from galaxy import util
@@ -673,7 +673,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         visualization is created. Returns JSON of visualization.
         """
         # Get visualization attributes from kwargs or from config.
-        vis_config = from_json_string( vis_json )
+        vis_config = loads( vis_json )
         vis_type = type or vis_config[ 'type' ]
         vis_id = id or vis_config.get( 'id', None )
         vis_title = title or vis_config.get( 'title', None )
@@ -747,7 +747,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             if type is None or config is None:
                 return HTTPBadRequest( 'A visualization type and config are required to save a visualization' )
             if isinstance( config, basestring ):
-                config = from_json_string( config )
+                config = loads( config )
             title = title or DEFAULT_VISUALIZATION_NAME
 
             #TODO: allow saving to (updating) a specific revision - should be part of UsesVisualization
@@ -976,7 +976,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
-                'regions': from_json_string( regions )
+                'regions': loads( regions )
             }
 
         # Add tool, dataset attributes to config based on id.

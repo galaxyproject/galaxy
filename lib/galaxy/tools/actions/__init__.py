@@ -4,7 +4,7 @@ from galaxy import model
 from galaxy.tools.parameters import DataToolParameter
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
@@ -324,7 +324,7 @@ class DefaultToolAction( object ):
             job.add_output_dataset( name, dataset )
         job.object_store_id = object_store_populator.object_store_id
         if job_params:
-            job.params = to_json_string( job_params )
+            job.params = dumps( job_params )
         job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
         # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs

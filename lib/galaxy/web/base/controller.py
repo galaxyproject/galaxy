@@ -42,7 +42,7 @@ from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.tools.parameters.basic import DataCollectionToolParameter
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.util import validation
@@ -1706,7 +1706,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
                     missing_tool_tups.append( missing_tool_tup )
                 # Save the entire step_dict in the unused config field, be parsed later
                 # when we do have the tool
-                step.config = to_json_string(step_dict)
+                step.config = dumps(step_dict)
             if step.tool_errors:
                 workflow.has_errors = True
             # Stick this in the step temporarily

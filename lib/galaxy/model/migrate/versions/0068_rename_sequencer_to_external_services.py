@@ -15,7 +15,7 @@ from sqlalchemy.exc import *
 
 from galaxy.model.custom_types import *
 
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 
 import datetime
 now = datetime.datetime.utcnow

@@ -4,7 +4,7 @@ Mixins for transaction-like objects.
 
 import os
 
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.util import bunch
 
 class ProvidesAppContext( object ):
@@ -19,7 +19,7 @@ class ProvidesAppContext( object ):
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
-            action = self.app.model.UserAction(action=action, context=context, params=unicode( to_json_string( params ) ) )
+            action = self.app.model.UserAction(action=action, context=context, params=unicode( dumps( params ) ) )
             try:
                 if user:
                     action.user = user

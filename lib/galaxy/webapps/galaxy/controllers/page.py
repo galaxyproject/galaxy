@@ -7,7 +7,7 @@ from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHist
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 
 def format_bool( b ):
     if b:
@@ -542,7 +542,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         page_revision.content = content
 
         # Save annotations.
-        annotations = from_json_string( annotations )
+        annotations = loads( annotations )
         for annotation_dict in annotations:
             item_id = trans.security.decode_id( annotation_dict[ 'item_id' ] )
             item_class = self.get_class( annotation_dict[ 'item_class' ] )

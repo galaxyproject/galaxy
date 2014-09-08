@@ -17,8 +17,8 @@ from Cheetah.Template import Template
 from galaxy.web.framework import helpers
 
 from galaxy import util
-from galaxy.util.json import to_json_string
-from galaxy.util.json import from_json_string
+from galaxy.util.json import dumps
+from galaxy.util.json import loads
 from galaxy.web.framework import url_for
 from galaxy.web.framework.decorators import expose
 from galaxy.web.framework.decorators import json

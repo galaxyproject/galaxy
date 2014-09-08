@@ -1865,7 +1865,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
                 changeset_revisions.append( changeset_revision )
             if encoded_repository_ids and changeset_revisions:
-                repo_info_dict = json.from_json_string( self.get_repository_information( trans, encoded_repository_ids, changeset_revisions ) )
+                repo_info_dict = json.loads( self.get_repository_information( trans, encoded_repository_ids, changeset_revisions ) )
         return repo_info_dict
 
     @web.expose
@@ -1933,7 +1933,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if current_changeset_revision == changeset_revision:
                     break
         if tool_version_dicts:
-            return json.to_json_string( tool_version_dicts )
+            return json.dumps( tool_version_dicts )
         return ''
 
     @web.json
@@ -2253,7 +2253,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         skip_tool_tests_comment = kwd.get( 'skip_tool_tests_comment', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
         if repository.email_alerts:
-            email_alerts = json.from_json_string( repository.email_alerts )
+            email_alerts = json.loads( repository.email_alerts )
         else:
             email_alerts = []
         allow_push = kwd.get( 'allow_push', '' )
@@ -2365,12 +2365,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if alerts_checked:
                 if user.email not in email_alerts:
                     email_alerts.append( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     flush_needed = True
             else:
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
@@ -2930,18 +2930,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             for repository_id in repository_ids:
                 repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository.email_alerts:
-                    email_alerts = json.from_json_string( repository.email_alerts )
+                    email_alerts = json.loads( repository.email_alerts )
                 else:
                     email_alerts = []
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     trans.sa_session.add( repository )
                     flush_needed = True
                     total_alerts_removed += 1
                 else:
                     email_alerts.append( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     trans.sa_session.add( repository )
                     flush_needed = True
                     total_alerts_added += 1
@@ -3309,7 +3309,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         alerts = kwd.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
         if repository.email_alerts:
-            email_alerts = json.from_json_string( repository.email_alerts )
+            email_alerts = json.loads( repository.email_alerts )
         else:
             email_alerts = []
         repository_dependencies = None
@@ -3319,12 +3319,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if alerts_checked:
                 if user.email not in email_alerts:
                     email_alerts.append( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     flush_needed = True
             else:
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )

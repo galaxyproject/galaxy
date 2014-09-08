@@ -18,8 +18,8 @@ from galaxy.tools.parameters import check_param, DataToolParameter, DummyDataset
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.util.bunch import Bunch
 from galaxy.util import odict
-from galaxy.util.json import from_json_string
-from galaxy.util.json import to_json_string
+from galaxy.util.json import loads
+from galaxy.util.json import dumps
 
 log = logging.getLogger( __name__ )
 
@@ -137,7 +137,7 @@ class InputModule( WorkflowModule ):
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         module = Class( trans )
-        state = from_json_string( d["tool_state"] )
+        state = loads( d["tool_state"] )
         module.state = dict( name=state.get( "name", Class.default_name ) )
         return module
 
@@ -167,7 +167,7 @@ class InputModule( WorkflowModule ):
                                          module=self, form=form )
 
     def get_state( self, secure=True ):
-        return to_json_string( self.state )
+        return dumps( self.state )
 
     def update_state( self, incoming ):
         self.state['name'] = incoming.get( 'name', 'Input Dataset' )
@@ -226,7 +226,7 @@ class InputDataCollectionModule( InputModule ):
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         module = Class( trans )
-        state = from_json_string( d["tool_state"] )
+        state = loads( d["tool_state"] )
         module.state = dict(
             name=state.get( "name", Class.default_name ),
             collection_type=state.get( "collection_type", Class.default_collection_type )
@@ -337,7 +337,7 @@ class ToolModule( WorkflowModule ):
             if step.config:
                 # This step has its state saved in the config field due to the
                 # tool being previously unavailable.
-                return module_factory.from_dict(trans, from_json_string(step.config), secure=False)
+                return module_factory.from_dict(trans, loads(step.config), secure=False)
             module = Class( trans, tool_id )
             module.state = galaxy.tools.DefaultToolState()
             if step.tool_version and (step.tool_version != module.tool.version):

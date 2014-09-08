@@ -8,7 +8,7 @@ from galaxy import model
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 from galaxy.web.base.controller import UsesHistoryMixin
 
 log = logging.getLogger(__name__)
@@ -108,7 +108,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 #
                 history_attr_file_name = os.path.join( archive_dir, 'history_attrs.txt')
                 history_attr_str = read_file_contents( history_attr_file_name )
-                history_attrs = from_json_string( history_attr_str )
+                history_attrs = loads( history_attr_str )
 
                 # Create history.
                 new_history = model.History( name='imported from archive: %s' % history_attrs['name'].encode( 'utf-8' ), \
@@ -134,12 +134,12 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 #
                 datasets_attrs_file_name = os.path.join( archive_dir, 'datasets_attrs.txt')
                 datasets_attr_str = read_file_contents( datasets_attrs_file_name )
-                datasets_attrs = from_json_string( datasets_attr_str )
-                
+                datasets_attrs = loads( datasets_attr_str )
+
                 if os.path.exists( datasets_attrs_file_name + ".provenance" ):
                     provenance_attr_str = read_file_contents( datasets_attrs_file_name + ".provenance" )
-                    provenance_attrs = from_json_string( provenance_attr_str )
-                    datasets_attrs += provenance_attrs                    
+                    provenance_attrs = loads( provenance_attr_str )
+                    datasets_attrs += provenance_attrs
 
                 # Get counts of how often each dataset file is used; a file can
                 # be linked to multiple dataset objects (HDAs).
@@ -230,7 +230,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                             return self.sa_session.query( model.HistoryDatasetAssociation ) \
                                             .filter_by( history=new_history, hid=obj_dct['hid'] ).first()
                     return obj_dct
-                jobs_attrs = from_json_string( jobs_attr_str, object_hook=as_hda )
+                jobs_attrs = loads( jobs_attr_str, object_hook=as_hda )
 
                 # Create each job.
                 for job_attrs in jobs_attrs:
@@ -279,7 +279,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                             .filter_by( history=new_history, hid=value.hid ).first()
                             value = input_hda.id
                         #print "added parameter %s-->%s to job %i" % ( name, value, imported_job.id )
-                        imported_job.add_parameter( name, to_json_string( value, cls=HistoryDatasetAssociationIDEncoder ) )
+                        imported_job.add_parameter( name, dumps( value, cls=HistoryDatasetAssociationIDEncoder ) )
 
                     # TODO: Connect jobs to input datasets.
 
@@ -292,14 +292,14 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                             imported_job.add_output_dataset( output_hda.name, output_hda )
 
                     # Connect jobs to input datasets.
-                    if 'input_mapping' in job_attrs: 
+                    if 'input_mapping' in job_attrs:
                         for input_name, input_hid in job_attrs[ 'input_mapping' ].items():
                             #print "%s job has input dataset %i" % (imported_job.id, input_hid)
                             input_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
                                             .filter_by( history=new_history, hid=input_hid ).first()
                             if input_hda:
                                 imported_job.add_input_dataset( input_name, input_hda )
-                            
+
 
                     self.sa_session.flush()
 
@@ -409,7 +409,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         }
         history_attrs_filename = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
         history_attrs_out = open( history_attrs_filename, 'w' )
-        history_attrs_out.write( to_json_string( history_attrs ) )
+        history_attrs_out.write( dumps( history_attrs ) )
         history_attrs_out.close()
         jeha.history_attrs_filename = history_attrs_filename
 
@@ -427,12 +427,12 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 included_datasets.append( dataset )
         datasets_attrs_filename = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
         datasets_attrs_out = open( datasets_attrs_filename, 'w' )
-        datasets_attrs_out.write( to_json_string( datasets_attrs, cls=HistoryDatasetAssociationEncoder ) )
+        datasets_attrs_out.write( dumps( datasets_attrs, cls=HistoryDatasetAssociationEncoder ) )
         datasets_attrs_out.close()
         jeha.datasets_attrs_filename = datasets_attrs_filename
-        
+
         provenance_attrs_out = open( datasets_attrs_filename + ".provenance", 'w' )
-        provenance_attrs_out.write( to_json_string( provenance_attrs, cls=HistoryDatasetAssociationEncoder ) )
+        provenance_attrs_out.write( dumps( provenance_attrs, cls=HistoryDatasetAssociationEncoder ) )
         provenance_attrs_out.close()
 
         #
@@ -477,7 +477,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
             job_attrs[ 'exit_code' ] = job.exit_code
             job_attrs[ 'create_time' ] = job.create_time.isoformat()
             job_attrs[ 'update_time' ] = job.update_time.isoformat()
-            
+
 
             # Get the job's parameters
             try:
@@ -509,7 +509,7 @@ class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
 
         jobs_attrs_filename = tempfile.NamedTemporaryFile( dir=temp_output_dir ).name
         jobs_attrs_out = open( jobs_attrs_filename, 'w' )
-        jobs_attrs_out.write( to_json_string( jobs_attrs, cls=HistoryDatasetAssociationEncoder ) )
+        jobs_attrs_out.write( dumps( jobs_attrs, cls=HistoryDatasetAssociationEncoder ) )
         jobs_attrs_out.close()
         jeha.jobs_attrs_filename = jobs_attrs_filename
 

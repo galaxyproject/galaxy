@@ -39,7 +39,7 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
         except OverflowError:
             pass
         datasets_attr_in.close()
-        datasets_attrs = from_json_string( datasets_attr_str )
+        datasets_attrs = loads( datasets_attr_str )
 
         # Add datasets to archive and update dataset attributes.
         # TODO: security check to ensure that files added are in Galaxy dataset directory?
@@ -54,7 +54,7 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
 
         # Rewrite dataset attributes file.
         datasets_attrs_out = open( datasets_attrs_file, 'w' )
-        datasets_attrs_out.write( to_json_string( datasets_attrs ) )
+        datasets_attrs_out.write( dumps( datasets_attrs ) )
         datasets_attrs_out.close()
 
         # Finish archive.

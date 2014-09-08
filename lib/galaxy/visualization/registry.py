@@ -791,7 +791,7 @@ class ResourceParser( object ):
         'int'   : lambda param: int( param ),
         'float' : lambda param: float( param ),
         #'date'  : lambda param: ,
-        'json'  : ( lambda param: galaxy.util.json.from_json_string(
+        'json'  : ( lambda param: galaxy.util.json.loads(
                         galaxy.util.sanitize_html.sanitize_html( param ) ) ),
     }
 
