@@ -6,6 +6,7 @@ from galaxy import eggs
 eggs.require( "Paste" )
 import paste.httpexceptions
 
+from galaxy.web.framework import url_for
 from galaxy import util
 from galaxy.exceptions import error_codes
 from galaxy.exceptions import MessageException
