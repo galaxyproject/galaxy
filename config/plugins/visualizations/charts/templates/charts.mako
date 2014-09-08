@@ -86,8 +86,8 @@
                 require(['plugin/app'], function(App) {
                     // load options
                     var options = {
-                        id      : ${h.to_json_string( visualization_id )} || undefined,
-                        config  : ${h.to_json_string( config )}
+                        id      : ${h.dumps( visualization_id )} || undefined,
+                        config  : ${h.dumps( config )}
                     }
                     
                     // create application

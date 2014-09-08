@@ -50,11 +50,11 @@ ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 <script type="text/javascript">
 $(function(){
     var model = new ScatterplotModel({
-            id      : ${h.to_json_string( visualization_id )} || undefined,
+            id      : ${h.dumps( visualization_id )} || undefined,
             title   : "${title}",
-            config  : ${h.to_json_string( config, indent=2 )}
+            config  : ${h.dumps( config, indent=2 )}
         });
-        hdaJson = ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )},
+        hdaJson = ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )},
         display = new ScatterplotDisplay({
             el      : $( '.scatterplot-display' ).attr( 'id', 'scatterplot-display-' + '${visualization_id}' ),
             model   : model,
@@ -78,11 +78,11 @@ $(function(){
 <script type="text/javascript">
 $(function(){
     var model   = new ScatterplotModel({
-            id      : ${h.to_json_string( visualization_id )} || undefined,
+            id      : ${h.dumps( visualization_id )} || undefined,
             title   : "${title or default_title}",
-            config  : ${h.to_json_string( config, indent=2 )}
+            config  : ${h.dumps( config, indent=2 )}
         }),
-        hdaJson = ${h.to_json_string( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )},
+        hdaJson = ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )},
         editor  = new ScatterplotConfigEditor({
             el      : $( '.scatterplot-editor' ).attr( 'id', 'scatterplot-editor-hda-' + hdaJson.id ),
             model   : model,
