@@ -73,7 +73,7 @@
         // load grid viewer
         require(['mvc/grid/grid-view'], function(GridView) {
             $(function() {
-                gridView = new GridView( ${ h.to_json_string( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
+                gridView = new GridView( ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
             });
         });
     </script>

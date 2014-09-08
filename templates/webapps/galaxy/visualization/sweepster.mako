@@ -125,7 +125,7 @@
             $(function() {            
                 // -- Viz set up. --    
                 var viz = new sweepster.SweepsterVisualization(
-                    ${ h.to_json_string( config )}
+                    ${ h.dumps( config )}
                 );
                 var viz_view = new sweepster.SweepsterVisualizationView({ model: viz });
                 viz_view.render();

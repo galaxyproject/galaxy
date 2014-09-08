@@ -26,7 +26,7 @@
             data.createTabularDatasetChunkedView({
                 // TODO: encode id.
                 dataset_config:
-                    _.extend( ${h.to_json_string( item.to_dict() )},
+                    _.extend( ${h.dumps( item.to_dict() )},
                             {
                                 chunk_url: "${h.url_for( controller='/dataset', action='display',
                                                  dataset_id=trans.security.encode_id( item.id ))}",

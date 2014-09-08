@@ -24,7 +24,7 @@
                             %if value != "All":
                                 <%
                                     if isinstance( temp_column, TextColumn ):
-                                        value = h.to_json_string( value )
+                                        value = h.dumps( value )
                                 %>
                                 <input type="hidden" id="${temp_column.key}" name="f-${temp_column.key}" value='${value}'/>
                             %endif
@@ -51,7 +51,7 @@
                                         <%
                                             new_filter = list( column_filter )
                                             del new_filter[ i ]
-                                            new_column_filter = GridColumnFilter( "", { column.key : h.to_json_string( new_filter ) } )
+                                            new_column_filter = GridColumnFilter( "", { column.key : h.dumps( new_filter ) } )
                                         %>
                                         <a href="${url(new_column_filter.get_url_args())}"><span class="delete-search-icon" /></a>
                                     </span>

@@ -46,8 +46,8 @@
 </div>
 <script type="text/javascript">
     var debugging    = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
-        historyJSON  = ${h.to_json_string( history_dict )},
-        hdaJSON      = ${h.to_json_string( hda_dicts )};
+        historyJSON  = ${h.dumps( history_dict )},
+        hdaJSON      = ${h.dumps( hda_dicts )};
     //window.historyJSON = historyJSON;
     //window.hdaJSON = hdaJSON;
 

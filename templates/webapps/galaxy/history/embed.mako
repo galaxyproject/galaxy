@@ -67,8 +67,8 @@
                 panel = new panelMod.AnnotatedHistoryPanel({
                     el      : $embeddedHistory.find( ".history-panel" ),
                     model   : new historyModel.History(
-                        ${h.to_json_string( history_dict )},
-                        ${h.to_json_string( hda_dicts )},
+                        ${h.dumps( history_dict )},
+                        ${h.dumps( hda_dicts )},
                         { logger: ( debugging )?( console ):( null ) }
                     )
                 }).render();

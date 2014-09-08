@@ -87,7 +87,7 @@
         ], function( mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload, user, quotameter ){
             if( !Galaxy.currUser ){
                 // this doesn't need to wait for the page being readied
-                Galaxy.currUser = new user.User(${ h.to_json_string( get_user_json(), indent=2 ) });
+                Galaxy.currUser = new user.User(${ h.dumps( get_user_json(), indent=2 ) });
             }
 
             $(function() {
@@ -97,7 +97,7 @@
                 }
 
                 // get configuration
-                var masthead_config = ${ h.to_json_string( masthead_config ) };
+                var masthead_config = ${ h.dumps( masthead_config ) };
 
                 // load global galaxy objects
                 Galaxy.masthead = new mod_masthead.GalaxyMasthead(masthead_config);

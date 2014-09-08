@@ -83,8 +83,8 @@ ${parent.javascripts()}
     show_hidden  = context.get( 'show_hidden',  None )
 
     user_is_owner_json = 'true' if user_is_owner else 'false'
-    show_deleted_json  = h.to_json_string( show_deleted )
-    show_hidden_json   = h.to_json_string( show_hidden )
+    show_deleted_json  = h.dumps( show_deleted )
+    show_hidden_json   = h.dumps( show_hidden )
 %>
 
 <div id="header" class="clear">
@@ -164,8 +164,8 @@ ${parent.javascripts()}
     }
 
     var userIsOwner  = ${'true' if user_is_owner else 'false'},
-        historyJSON  = ${h.to_json_string( history )},
-        hdaJSON      = ${h.to_json_string( hdas )};
+        historyJSON  = ${h.dumps( history )},
+        hdaJSON      = ${h.dumps( hdas )};
         panelToUse   = ( userIsOwner )?
 //TODO: change class names
             ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanel' }):
