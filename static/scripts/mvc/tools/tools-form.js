@@ -157,6 +157,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     
                     // trigger refresh
                     self.refresh();
+                    self._submit();
                 }
             });
         },
@@ -177,7 +178,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         
         // submit
         _submit: function() {
-            console.log(this.tree.jobDictionary());
+            console.log(this.tree.finalize());
         }
     });
 
