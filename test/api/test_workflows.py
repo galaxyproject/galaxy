@@ -478,6 +478,21 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self.__assert_lines_hid_line_count_is( history_id, 2, 5 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
 
+    @skip_without_tool( "validation_default" )
+    def test_parameter_substitution_validation( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_validation_1" )
+        uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+            workflow_id=uploaded_workflow_id,
+            parameters=dumps( dict( validation_default=dict( input1="\" ; echo \"moo" ) ) )
+        )
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.assertEquals("__dq__ X echo __dq__moo\n", self.dataset_populator.get_history_dataset_content( history_id ) )
+
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_steps( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_step_params" )

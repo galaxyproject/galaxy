@@ -1,6 +1,6 @@
 <tool id="head" name="Select first">
   <description>lines from a dataset</description>
-  <command>head $input $lineNum > $out_file1</command>
+  <command>head -n $lineNum $input > $out_file1</command>
   <inputs>
     <param name="lineNum" size="5" type="integer" value="10" label="Select first" help="lines"/>
     <param format="txt" name="input" type="data" label="from"/>
