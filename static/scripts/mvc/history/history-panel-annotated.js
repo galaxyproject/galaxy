@@ -1,118 +1,97 @@
 define([
     "mvc/history/history-panel",
     "mvc/history/hda-li",
+    "mvc/history/hdca-li",
+    "mvc/base-mvc",
     "utils/localization"
-], function( HPANEL, HDA_LI, _l ){
+], function( HPANEL, HDA_LI, HDCA_LI, BASE_MVC, _l ){
 /* =============================================================================
 TODO:
 
 ============================================================================= */
-var _super = HPANEL.ReadOnlyHistoryPanel;
+var _super = HPANEL.HistoryPanel;
 // used in history/display.mako and history/embed.mako
 /** @class View/Controller for a tabular view of the history model.
- *  @name AnnotatedHistoryPanel
  *
  *  As ReadOnlyHistoryPanel, but with:
  *      history annotation always shown
  *      datasets displayed in a table:
  *          datasets in left cells, dataset annotations in the right
- *
- *  @augments Backbone.View
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
 var AnnotatedHistoryPanel = _super.extend(
 /** @lends AnnotatedHistoryPanel.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
-    className    : 'annotated-history-panel',
-
-    //TODO:?? possibly into own annotated class
-    /** class to use for constructing the HDA views */
-    //HDAViewClass : HDA_LI.HDAListItemView,
+    className    : _super.prototype.className + ' annotated-history-panel',
 
     // ------------------------------------------------------------------------ panel rendering
-    /** render with history data
-     *  In this override:
-     *      replace the datasets list with a table,
-     *      add the history annotation,
-     *      and move the search controls
-     *  @returns {jQuery} dom fragment as temporary container to be swapped out later
+    /** In this override, add the history annotation
      */
-    renderModel : function( ){
-        // why do we need this here? why isn't className being applied?
-        this.$el.addClass( this.className );
-        var $newRender = _super.prototype.renderModel.call( this ),
-        // move datasets from div to table
-            $datasetsList = this.$datasetsList( $newRender ),
-            $datasetsTable = $( '<table/>' ).addClass( 'datasets-list datasets-table' );
-        $datasetsTable.append( $datasetsList.children() );
-        $datasetsList.replaceWith( $datasetsTable );
-        //TODO: it's possible to do this with css only, right? display: table-cell, etc.?
-
-        // add history annotation under subtitle
-        $newRender.find( '.history-subtitle' ).after( this.renderHistoryAnnotation() );
-
-        // hide search button, move search bar beneath controls (instead of above title), show, and set up
-        $newRender.find( '.history-search-btn' ).hide();
-        $newRender.find( '.history-controls' ).after( $newRender.find( '.history-search-controls' ).show() );
-
+    _buildNewRender : function(){
+        //TODO: shouldn't this display regardless (on all non-current panels)?
+        var $newRender = _super.prototype._buildNewRender.call( this );
+        this.renderHistoryAnnotation( $newRender );
         return $newRender;
     },
 
     /** render the history's annotation as its own field */
-    renderHistoryAnnotation : function(){
+    renderHistoryAnnotation : function( $newRender ){
         var annotation = this.model.get( 'annotation' );
-        if( !annotation ){ return null; }
-        return $([
-            '<div class="history-annotation">', annotation, '</div>'
-        ].join( '' ));
+        if( !annotation ){ return; }
+        $newRender.find( '.controls .annotation-display' ).text( annotation );
     },
 
-    /** Set up/render a view for each HDA to be shown, init with model and listeners.
-     *  In this override, add table header cells to indicate the dataset, annotation columns
+    /** In this override, convert the list-items tag to a table
+     *      and add table header cells to indicate the dataset, annotation columns
      */
-    renderHdas : function( $whereTo ){
+    renderItems : function( $whereTo ){
         $whereTo = $whereTo || this.$el;
-        var hdaViews = _super.prototype.renderHdas.call( this, $whereTo );
-        this.$datasetsList( $whereTo ).prepend( $( '<tr/>' ).addClass( 'headers' ).append([
-            $( '<th/>' ).text( _l( 'Dataset' ) ),
-            $( '<th/>' ).text( _l( 'Annotation' ) )
-        ]));
-        return hdaViews;
+
+        // convert to table
+        $whereTo.find( '.list-items' )
+            .replaceWith( $( '<table/>' ).addClass( 'list-items' ) );
+
+        // render rows/contents and prepend headers
+        var views = _super.prototype.renderItems.call( this, $whereTo );
+        this.$list( $whereTo )
+            .prepend( $( '<tr/>' ).addClass( 'headers' ).append([
+                $( '<th/>' ).text( _l( 'Dataset' ) ),
+                $( '<th/>' ).text( _l( 'Annotation' ) )
+            ]));
+        return views;
     },
 
-    // ------------------------------------------------------------------------ hda sub-views
-    /** attach an hdaView to the panel
-     *  In this override, wrap the hdaView in a table row and cell, adding a 2nd cell for the hda annotation
+    // ------------------------------------------------------------------------ sub-views
+    /** In this override, wrap the content view in a table row
+     *      with the content in the left td and annotation/extra-info in the right
      */
-    attachContentView : function( hdaView, $whereTo ){
-        $whereTo = $whereTo || this.$el;
-        // build a row around the dataset with the std hdaView in the first cell and the annotation in the next
-        var stateClass = _.find( hdaView.el.classList, function( c ){ return ( /^state\-/ ).test( c ); }),
-            annotation = hdaView.model.get( 'annotation' ) || '',
-            $tr = $( '<tr/>' ).addClass( 'dataset-row' ).append([
-                $( '<td/>' ).addClass( 'dataset-container' ).append( hdaView.$el )
-                    // visually match the cell bg to the dataset at runtime (prevents the empty space)
-                    // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
-                    //.css( 'background-color', hdaView.$el.css( 'background-color' ) ),
-                    .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
-                $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
-            ]);
-        this.$datasetsList( $whereTo ).append( $tr );
+    _attachItems : function( $whereTo ){
+        this.$list( $whereTo ).append( this.views.map( function( view ){
+            //TODO:?? possibly make this more flexible: instead of annotation use this._additionalInfo()
+            // build a row around the dataset with the std itemView in the first cell and the annotation in the next
+            var stateClass = _.find( view.el.classList, function( c ){ return ( /^state\-/ ).test( c ); }),
+                annotation = view.model.get( 'annotation' ) || '',
+                $tr = $( '<tr/>' ).append([
+                    $( '<td/>' ).addClass( 'contents-container' ).append( view.$el )
+                        // visually match the cell bg to the dataset at runtime (prevents the empty space)
+                        // (getting bg via jq on hidden elem doesn't work on chrome/webkit - so use states)
+                        //.css( 'background-color', view.$el.css( 'background-color' ) ),
+                        .addClass( stateClass? stateClass.replace( '-', '-color-' ): '' ),
+                    $( '<td/>' ).addClass( 'additional-info' ).text( annotation )
+                ]);
+            return $tr;
+        }));
+        return this;
     },
 
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
+        // clicking on any part of the row will expand the items
         'click tr' : function( ev ){
-            //if( !ev.target.hasAttribute( 'href' ) ){
-                $( ev.currentTarget ).find( '.dataset-title-bar' ).click();
-            //}
+            $( ev.currentTarget ).find( '.title-bar' ).click();
         },
         // prevent propagation on icon btns so they won't bubble up to tr and toggleBodyVisibility
         'click .icon-btn' : function( ev ){
@@ -126,6 +105,7 @@ var AnnotatedHistoryPanel = _super.extend(
         return 'AnnotatedHistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
+
 
 //==============================================================================
     return {

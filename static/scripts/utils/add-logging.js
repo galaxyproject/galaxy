@@ -14,6 +14,9 @@ function addLogging( obj, namespace ){
                 return this.logger.emit( logFn, this._logNamespace, arguments );
             }
             if( this.logger[ logFn ] ){
+//TODO:! there has to be a way to get the lineno/file into this
+// http://stackoverflow.com/questions/13815640/a-proper-wrapper-for-console-log-with-correct-line-number
+// http://www.paulirish.com/2009/log-a-lightweight-wrapper-for-consolelog/
                 return this.logger[ logFn ].apply( this.logger, arguments );
             }
             return undefined;

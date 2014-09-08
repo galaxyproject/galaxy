@@ -612,7 +612,7 @@ function LoadingIndicator( $where, options ){
      *      of characters, a callback is called. Pressing ESC when the input
      *      is focused will clear the input and call a separate callback.
      */
-    var _l = window._l || function( s ){ return s; }
+    var _l = window._l || function( s ){ return s; };
 
     // contructor
     function searchInput( parentNode, options ){
@@ -637,11 +637,9 @@ function LoadingIndicator( $where, options ){
         // .................................................................... input rendering and events
         // visually clear the search, trigger an event, and call the callback
         function clearSearchInput( event ){
-            //console.debug( this, 'clear' );
             var $input = $( this ).parent().children( 'input' );
-            //console.debug( 'input', $input );
-            $input.val( '' );
-            $input.trigger( 'clear:searchInput' );
+            //console.debug( this, 'clear', $input );
+            $input.focus().val( '' ).trigger( 'clear:searchInput' );
             options.onclear();
         }
 

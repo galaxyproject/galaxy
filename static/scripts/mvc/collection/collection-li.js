@@ -1,11 +1,12 @@
 define([
+    "mvc/list/list-item",
     "mvc/dataset/dataset-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( DATASET_LI, BASE_MVC, _l ){
+], function( LIST_ITEM, DATASET_LI, BASE_MVC, _l ){
 /* global Backbone, LoggableMixin */
 //==============================================================================
-var ListItemView = BASE_MVC.ListItemView;
+var ListItemView = LIST_ITEM.ListItemView;
 /** @class Read only view for DatasetCollection.
  */
 var DCListItemView = ListItemView.extend(

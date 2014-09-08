@@ -214,12 +214,12 @@
                     el              : $( "#current-history-panel" ),
                     purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                     linkTarget      : 'galaxy_main',
-                    onready         : function loadAsCurrentHistoryPanel(){
-                        this.connectToQuotaMeter( Galaxy.quotaMeter )
-                            .connectToOptionsMenu( Galaxy.historyOptionsMenu );
-                        this.loadCurrentHistory();
-                    }
+                    $scrollContainer: function(){ return this.$el.parent(); }
                 });
+                currPanel
+                    .connectToQuotaMeter( Galaxy.quotaMeter )
+                    .connectToOptionsMenu( Galaxy.historyOptionsMenu );
+                currPanel.loadCurrentHistory();
                 Galaxy.currHistoryPanel = currPanel;
             });
         });

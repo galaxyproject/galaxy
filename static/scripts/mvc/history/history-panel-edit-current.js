@@ -11,8 +11,6 @@ define([
 var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend(
 /** @lends HistoryPanelPrefs.prototype */{
     defaults : {
-        /** is the panel currently showing the search/filter controls? */
-        searching       : false,
         /** should the tags editor be shown or hidden initially? */
         tagsEditorShown : false,
         /** should the annotation editor be shown or hidden initially? */
@@ -32,31 +30,26 @@ HistoryPanelPrefs.storageKey = function storageKey(){
 TODO:
 
 ============================================================================= */
-var _super = HPANEL_EDIT.HistoryPanel;
+var _super = HPANEL_EDIT.HistoryPanelEdit;
 // used in root/index.mako
 /** @class View/Controller for the user's current history model as used in the history
  *      panel (current right hand panel) of the analysis page.
- *  @name HistoryPanel
  *
- *  @augments Backbone.View
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
+ *  The only history panel that will poll for updates.
  */
 var CurrentHistoryPanel = _super.extend(
 /** @lends CurrentHistoryPanel.prototype */{
 
+    className           : _super.prototype.className + ' current-history-panel',
+
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
     emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left tool menu to start" ),
     noneFoundMsg        : _l( "No matching datasets found" ),
 
     // ......................................................................... SET UP
-    /** Set up the view, set up storage, bind listeners to HistoryContents events
-     *  @param {Object} attributes
-     */
+    /** Set up the view, set up storage, bind listeners to HistoryContents events */
     initialize : function( attributes ){
         attributes = attributes || {};
 
@@ -72,19 +65,19 @@ var CurrentHistoryPanel = _super.extend(
         this.panelStack = [];
     },
 
-    // ------------------------------------------------------------------------ loading history/hda models
-    /** (re-)loads the user's current history & hdas w/ details */
+    // ------------------------------------------------------------------------ loading history/item models
+    /** (re-)loads the user's current history & contents w/ details */
     loadCurrentHistory : function( attributes ){
         this.debug( this + '.loadCurrentHistory' );
         // implemented as a 'fresh start' or for when there is no model (intial panel render)
         var panel = this;
-        return this.loadHistoryWithHDADetails( 'current', attributes )
-            .then(function( historyData, hdaData ){
+        return this.loadHistoryWithDetails( 'current', attributes )
+            .then(function( historyData, contentsData ){
                 panel.trigger( 'current-history', panel );
             });
     },
 
-    /** loads a history & hdas w/ details and makes them the current history */
+    /** loads a history & contents w/ details and makes them the current history */
     switchToHistory : function( historyId, attributes ){
         //this.info( 'switchToHistory:', historyId, attributes );
         var panel = this,
@@ -94,8 +87,8 @@ var CurrentHistoryPanel = _super.extend(
                 //    method  : 'PUT'
                 //});
             };
-        return this.loadHistoryWithHDADetails( historyId, attributes, historyFn )
-            .then(function( historyData, hdaData ){
+        return this.loadHistoryWithDetails( historyId, attributes, historyFn )
+            .then(function( historyData, contentsData ){
                 panel.trigger( 'switched-history', panel );
             });
     },
@@ -115,7 +108,7 @@ var CurrentHistoryPanel = _super.extend(
         // id undefined bc there is no historyId yet - the server will provide
         //  (no need for details - nothing expanded in new history)
         return this.loadHistory( undefined, attributes, historyFn )
-            .then(function( historyData, hdaData ){
+            .then(function( historyData, contentsData ){
                 panel.trigger( 'new-history', panel );
             });
     },
@@ -130,98 +123,61 @@ var CurrentHistoryPanel = _super.extend(
         return this;
     },
 
-    // ------------------------------------------------------------------------ history/hda event listening
-    /** listening for history and HDA events */
-    _setUpModelEventHandlers : function(){
-        _super.prototype._setUpModelEventHandlers.call( this );
-        // ---- history
-        // update the quota meter when current history changes size
-        if( Galaxy && Galaxy.quotaMeter ){
-            this.listenTo( this.model, 'change:nice_size', function(){
-                //this.info( '!! model size changed:', this.model.get( 'nice_size' ) )
-//TODO: global
-                Galaxy.quotaMeter.update();
-            });
-        }
+    // ------------------------------------------------------------------------ history/content event listening
+    /** listening for collection events */
+    _setUpCollectionListeners : function(){
+        _super.prototype._setUpCollectionListeners.call( this );
 
-        // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
+        // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
-        this.model.contents.on( 'state:ready', function( hda, newState, oldState ){
-            if( ( !hda.get( 'visible' ) )
+        this.collection.on( 'state:ready', function( model, newState, oldState ){
+            console.debug( 'state:ready', model, newState, model.get( 'visible' ), this.storage.get( 'show_hidden' ) );
+            if( ( !model.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
-                this.removeHdaView( this.hdaViews[ hda.id ] );
+                this.removeItemView( this.viewFromModel( model ) );
             }
         }, this );
     },
 
-    // ------------------------------------------------------------------------ panel rendering
-    /** Render urls, historyPanel body, and hdas (if any are shown)
-     *  @fires: rendered    when the panel is attached and fully visible
-     *  @see Backbone.View#render
-     */
-    render : function( speed, callback ){
-        this.log( 'render:', speed, callback );
-        // send a speed of 0 to have no fade in/out performed
-        speed = ( speed === undefined )?( this.fxSpeed ):( speed );
-        var panel = this,
-            $newRender;
-
-        // handle the possibility of no model (can occur if fetching the model returns an error)
-        if( this.model ){
-            $newRender = this.renderModel();
-        } else {
-            $newRender = this.renderWithoutModel();
+    /** listening for history events */
+    _setUpModelListeners : function(){
+        _super.prototype._setUpModelListeners.call( this );
+        // ---- history
+        // update the quota meter when current history changes size
+//TODO: global - have Galaxy listen to this instead
+        if( Galaxy && Galaxy.quotaMeter ){
+            this.listenTo( this.model, 'change:nice_size', function(){
+                //this.info( '!! model size changed:', this.model.get( 'nice_size' ) )
+                Galaxy.quotaMeter.update();
+            });
         }
 
-        // fade out existing, swap with the new, fade in, set up behaviours
-        $( panel ).queue( 'fx', [
-            function( next ){
-                if( speed && panel.$el.is( ':visible' ) ){
-                    panel.$el.fadeOut( speed, next );
-                } else {
-                    next();
-                }
-            },
-            function( next ){
-                // swap over from temp div newRender
-                panel.$el.empty();
-                if( $newRender ){
-                    panel.$el.append( $newRender.children() );
-                    panel.renderBasedOnPrefs();
-                }
-                next();
-            },
-            function( next ){
-                if( speed && !panel.$el.is( ':visible' ) ){
-                    panel.$el.fadeIn( speed, next );
-                } else {
-                    next();
-                }
-            },
-            function( next ){
-                //TODO: ideally, these would be set up before the fade in (can't because of async save text)
-                if( callback ){ callback.call( this ); }
-                panel.trigger( 'rendered', this );
-                next();
-            }
-        ]);
-        return this;
     },
 
-    /** perform additional rendering based on preferences */
-    renderBasedOnPrefs : function(){
-        if( this.preferences.get( 'searching' ) ){
-            this.toggleSearchControls( 0, true );
-        }
+    // ------------------------------------------------------------------------ panel rendering
+    /** In this override, handle null models and move the search input to the top */
+    _buildNewRender : function(){
+        if( !this.model ){ return $(); }
+        var $newRender = _super.prototype._buildNewRender.call( this );
+        //TODO: hacky
+        $newRender.find( '.search' ).prependTo( $newRender.find( '.controls' ) );
+        this._renderQuotaMessage( $newRender );
+        return $newRender;
+    },
+
+    /** render the message displayed when a user is over quota and can't run jobs */
+    _renderQuotaMessage : function( $whereTo ){
+        $whereTo = $whereTo || this.$el;
+        return $( this.templates.quotaMsg( {}, this ) ).prependTo( $whereTo.find( '.messages' ) );
     },
 
     /** In this override, add links to open data uploader or get data in the tools section */
-    _renderEmptyMsg : function( $whereTo ){
+    _renderEmptyMessage : function( $whereTo ){
         var panel = this,
             $emptyMsg = panel.$emptyMessage( $whereTo ),
             $toolMenu = $( '.toolMenuContainer' );
 
-        if( ( _.isEmpty( panel.hdaViews ) && !panel.searchFor )
+        if( ( _.isEmpty( panel.views ) && !panel.searchFor )
         &&  ( Galaxy && Galaxy.upload && $toolMenu.size() ) ){
             $emptyMsg.empty();
 
@@ -246,25 +202,12 @@ var CurrentHistoryPanel = _super.extend(
                     //    $( this ).fadeTo( 200, 1.0 );
                     //});
             });
-
-            $emptyMsg.show();
-
-
-        } else {
-            _super.prototype._renderEmptyMsg.call( this, $whereTo );
+            return $emptyMsg.show();
         }
-        return this;
+        return _super.prototype._renderEmptyMessage.call( this, $whereTo );
     },
 
-    /** In this override, save the search control visibility state to preferences */
-    toggleSearchControls : function( eventOrSpeed, show ){
-        var visible = _super.prototype.toggleSearchControls.call( this, eventOrSpeed, show );
-        this.preferences.set( 'searching', visible );
-    },
-
-    /** render the tag sub-view controller
-     *  In this override, get and set current panel preferences when editor is used
-     */
+    /** In this override, get and set current panel preferences when editor is used */
     _renderTags : function( $where ){
         var panel = this;
         // render tags and show/hide based on preferences
@@ -278,9 +221,7 @@ var CurrentHistoryPanel = _super.extend(
                 panel.preferences.set( 'tagsEditorShown', tagsEditor.hidden );
             });
     },
-    /** render the annotation sub-view controller
-     *  In this override, get and set current panel preferences when editor is used
-     */
+    /** In this override, get and set current panel preferences when editor is used */
     _renderAnnotation : function( $where ){
         var panel = this;
         // render annotation and show/hide based on preferences
@@ -296,54 +237,63 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     // ------------------------------------------------------------------------ sub-views
-    /** Set up HistoryPanel listeners for HDAView events. In this override, handle collection expansion.
-     */
-    _setUpHdaListeners : function( hdaView ){
-        _super.prototype._setUpHdaListeners.call( this, hdaView );
+    /** Override to reverse order of views - newest contents on top */
+    _attachItems : function( $whereTo ){
+        this.$list( $whereTo ).append( this.views.reverse().map( function( view ){
+            return view.$el;
+        }));
+        return this;
+    },
 
-        var historyView = this;
-        if( hdaView instanceof historyView.HDCAViewClass ){
-            hdaView.off( 'expanded' );
-            hdaView.on( 'expanded', function( collectionView ){
-                this.info( 'expanded', collectionView );
-                historyView._addCollectionPanel( collectionView );
+    /** In this override, handle collection expansion. */
+    _setUpItemViewListeners : function( view ){
+        var panel = this;
+        _super.prototype._setUpItemViewListeners.call( panel, view );
+
+        if( view instanceof panel.HDCAViewClass ){
+            view.off( 'expanded' );
+            view.on( 'expanded', function( collectionView ){
+                panel.info( 'expanded', collectionView );
+                panel._addCollectionPanel( collectionView );
             });
-            hdaView.off( 'collapsed' );
+            view.off( 'collapsed' );
         }
     },
 
+    /** In this override, handle collection expansion. */
     _addCollectionPanel : function( collectionView ){
-        var historyView = this,
+        var panel = this,
             collectionModel = collectionView.model;
 
         this.debug( 'history panel (stack), collectionModel:', collectionModel );
-        var panel = new ( this._getCollectionPanelClass( collectionModel ) )({
+        var overlaid = new ( this._getCollectionPanelClass( collectionModel ) )({
                 model           : collectionModel,
                 HDAViewClass    : this.HDAViewClass,
                 parentName      : this.model.get( 'name' ),
                 linkTarget      : this.linkTarget
             });
-        historyView.panelStack.push( panel );
+        panel.panelStack.push( overlaid );
 
-        historyView.$( '.history-controls' ).add( '.datasets-list' ).hide();
-        historyView.$el.append( panel.$el );
-        panel.on( 'close', function(){
-            historyView.render();
+        console.debug( panel.$( '.controls' ).add( panel.$list() ) );
+        panel.$( '.controls' ).add( panel.$list() ).hide();
+        panel.$el.append( overlaid.$el );
+        overlaid.on( 'close', function(){
+            panel.render();
             collectionView.collapse();
-            historyView.panelStack.pop();
+            panel.panelStack.pop();
         });
 
         //TODO: to hdca-model, hasDetails
-        if( !panel.model.hasDetails() ){
-            var xhr = panel.model.fetch();
+        if( !overlaid.model.hasDetails() ){
+            var xhr = overlaid.model.fetch();
             xhr.done( function(){
                 //this.debug( 'collection data fetched' );
-                //this.debug( JSON.stringify( panel.model.toJSON(), null, '  ' ) );
+                //this.debug( JSON.stringify( overlaid.model.toJSON(), null, '  ' ) );
                 //TODO: (re-)render collection contents
-                panel.render();
+                overlaid.render();
             });
         } else {
-            panel.render();
+            overlaid.render();
         }
     },
 
@@ -359,18 +309,43 @@ var CurrentHistoryPanel = _super.extend(
         throw new TypeError( 'Uknown collection_type: ' + model.get( 'collection_type' ) );
     },
 
-    /** In this override, check for any overlaid panels first
-     *  @param {HistoryDatasetAssociation} hda
-     */
-    addContentView : function( hda ){
+    /** In this override, check for any overlaid panels first */
+    addItemView : function( model, collection, options ){
+        this.log( this + '.addItemView:', model );
+        if( !this._filterItem( model ) ){ return undefined; }
+
+        var panel = this;
+        // don't show/add if there are panels overlaid on this one
         if( this.panelStack.length ){
-            return this;
+            return panel;
         }
-        return _super.prototype.addContentView.call( this, hda );
+
+        // current history item order is reversed - use unshift and prepend
+        var view = panel._createItemView( model );
+        this.views.unshift( view );
+        panel.scrollToTop();
+
+        $({}).queue([
+            function fadeOutEmptyMsg( next ){
+                var $emptyMsg = panel.$emptyMessage();
+                if( $emptyMsg.is( ':visible' ) ){
+                    $emptyMsg.fadeOut( panel.fxSpeed, next );
+                } else {
+                    next();
+                }
+            },
+            function createAndPrepend( next ){
+                //view.render().$el.hide();
+                panel.scrollToTop();
+                panel.$list().prepend( view.render( 0 ).$el.hide() );
+                view.$el.slideDown( panel.fxSpeed );
+            }
+        ]);
+        return view;
     },
 
     // ........................................................................ external objects/MVC
-    //TODO: remove quota meter from panel and remove this
+//TODO: remove quota meter from panel and remove this
     /** add listeners to an external quota meter (mvc/user/user-quotameter.js) */
     connectToQuotaMeter : function( quotaMeter ){
         if( !quotaMeter ){
@@ -429,6 +404,22 @@ var CurrentHistoryPanel = _super.extend(
         return 'CurrentHistoryPanel(' + (( this.model )?( this.model.get( 'name' )):( '' )) + ')';
     }
 });
+
+
+//------------------------------------------------------------------------------ TEMPLATES
+CurrentHistoryPanel.prototype.templates = (function(){
+
+    var quotaMsgTemplate = BASE_MVC.wrapTemplate([
+        '<div class="quota-message errormessage">',
+            _l( 'You are over your disk quota' ), '. ',
+            _l( 'Tool execution is on hold until your disk usage drops below your allocated quota' ), '.',
+        '</div>'
+    ], 'history' );
+    return _.extend( _.clone( _super.prototype.templates ), {
+        quotaMsg : quotaMsgTemplate
+    });
+
+}());
 
 
 //==============================================================================

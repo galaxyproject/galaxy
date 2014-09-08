@@ -53,6 +53,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
      */
     initialize : function( models, options ){
         options = options || {};
+//TODO: could probably use the contents.history_id instead
         this.historyId = options.historyId;
         //this._setUpListeners();
 
@@ -226,7 +227,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
             if( !existing ){ return model; }
 
             // merge the models _BEFORE_ calling the superclass version
-            var merged = existing.toJSON();
+            var merged = _.clone( existing.attributes );
             _.extend( merged, model );
             return merged;
         });
@@ -301,6 +302,13 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
             // Do something?
         });
         return xhr;
+    },
+
+    /** In this override, copy the historyId to the clone */
+    clone : function(){
+        var clone = Backbone.Collection.prototype.clone.call( this );
+        clone.historyId = this.historyId;
+        return clone;
     },
 
     /** debugging */

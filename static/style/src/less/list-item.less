@@ -101,24 +101,25 @@
 // ---------------------------------------------------------------------------- generic panel list (of list-items)
 .list-panel {
 
+    //TODO: duplicated
+    @vertical-gap: 8px;
+    .vertical-spacing {
+        margin-bottom: @vertical-gap;
+    }
+
     .controls {
         & > *:not(:empty) {
+            //background: rgba( 0, 255, 0, 0.2 );
             margin-bottom: 8px;
-        }
-        .title {
         }
         .name {
             word-wrap: break-word;
             font-weight: bold;
         }
-
         .subtitle {
-            color: grey;
-            &:not(:empty) {
-                margin-top: -8px;
-            }
+            color: #777;
+            font-size: 90%;
         }
-
         .actions {
             .icon-btn-group();
             float: right;
@@ -126,19 +127,16 @@
                 margin-left: @icon-btn-margin;
             }
         }
-
         .messages {
-            [class$=message] {
+            .clearfix();
+            [class$=message],
+            [class$=messagesmall] {
                 margin: 0px;
                 &:not(:last-child) {
                     margin-bottom: 8px;
                 }
             }
         }
-
-        .search {
-        }
-
         .list-actions {
             display: none;
             .clear;
@@ -149,8 +147,7 @@
             }
         }
     }
-
-    // display only a top border on all
+    // display only a top border on all but the last
     .list-items {
         .list-item {
             &:not(:last-child) {
@@ -158,7 +155,6 @@
             }
         }
     }
-
     .empty-message {
         display: none;
         margin: 0px;

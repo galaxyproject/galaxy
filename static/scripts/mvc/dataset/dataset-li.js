@@ -1,8 +1,9 @@
 define([
+    "mvc/list/list-item",
     "mvc/dataset/states",
     "mvc/base-mvc",
     "utils/localization"
-], function( STATES, BASE_MVC, _l ){
+], function( LIST_ITEM, STATES, BASE_MVC, _l ){
 /* global Backbone */
 /*==============================================================================
 TODO:
@@ -11,7 +12,7 @@ TODO:
     simplify button rendering
 
 ==============================================================================*/
-var _super = BASE_MVC.ListItemView;
+var _super = LIST_ITEM.ListItemView;
 /** @class Read only list view for either LDDAs, HDAs, or HDADCEs.
  *      Roughly, any DatasetInstance (and not a raw Dataset).
  */
