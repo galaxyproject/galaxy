@@ -36,7 +36,7 @@ def stop_err( msg, ret=1 ):
     sys.stderr.write( msg )
     sys.exit( ret )
 def file_err( msg, dataset, json_file ):
-    json_file.write( to_json_string( dict( type = 'dataset',
+    json_file.write( dumps( dict( type = 'dataset',
                                            ext = 'data',
                                            dataset_id = dataset.dataset_id,
                                            stderr = msg ) ) + "\n" )
@@ -319,7 +319,7 @@ def add_file( dataset, registry, json_file, output_path ):
                  line_count = line_count )
     if dataset.get('uuid', None) is not None:
         info['uuid'] = dataset.get('uuid')
-    json_file.write( to_json_string( info ) + "\n" )
+    json_file.write( dumps( info ) + "\n" )
 
     if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
         # Groom the dataset content if necessary
@@ -358,7 +358,7 @@ def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         info = dict( type = 'dataset',
                      dataset_id = dataset.dataset_id,
                      stdout = 'uploaded %s file' % dataset.file_type )
-        json_file.write( to_json_string( info ) + "\n" )
+        json_file.write( dumps( info ) + "\n" )
 
 
 def output_adjacent_tmpdir( output_path ):
@@ -382,7 +382,7 @@ def __main__():
     registry.load_datatypes( root_dir=sys.argv[1], config=sys.argv[2] )
 
     for line in open( sys.argv[3], 'r' ):
-        dataset = from_json_string( line )
+        dataset = loads( line )
         dataset = util.bunch.Bunch( **safe_dict( dataset ) )
         try:
             output_path = output_paths[int( dataset.dataset_id )][0]
