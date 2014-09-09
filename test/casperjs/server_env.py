@@ -100,7 +100,7 @@ class TestEnvironment( object ):
                 f = open( self.tool_shed_test_file, 'r' )
                 text = f.read()
                 f.close()
-                shed_tools_dict = from_json_string( text )
+                shed_tools_dict = loads( text )
             except Exception, exc:
                 log.error( 'Error reading tool shed test file "%s": %s', self.tool_shed_test_file, exc, exc_info=True )
 

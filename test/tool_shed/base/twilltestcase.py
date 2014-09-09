@@ -15,7 +15,7 @@ import galaxy.util
 
 from base.tool_shed_util import repository_installation_timeout
 from base.twilltestcase import TwillTestCase
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from galaxy.web import security
 from tool_shed.util.encoding_util import tool_shed_encode
 from tool_shed.util import shed_util_common as suc
@@ -637,7 +637,7 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/api/datatypes?upload_only=false'
         self.visit_galaxy_url( url )
         html = self.last_page()
-        datatypes = from_json_string( html )
+        datatypes = loads( html )
         return len( datatypes )
         
     def get_env_sh_path( self, tool_dependency_name, tool_dependency_version, repository ):
@@ -714,7 +714,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # Get the current folder's contents.
         url = '/repository/open_folder?folder_path=%s' % request_param_path
         self.visit_url( url )
-        file_list = from_json_string( self.last_page() )
+        file_list = loads( self.last_page() )
         returned_file_list = []
         if current_path is not None:
             returned_file_list.append( current_path )
@@ -753,7 +753,7 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/api/datatypes/sniffers'
         self.visit_galaxy_url( url )
         html = self.last_page()
-        sniffers = from_json_string( html )
+        sniffers = loads( html )
         return len( sniffers )
 
     def get_tools_from_repository_metadata( self, repository, include_invalid=False ):
@@ -772,7 +772,7 @@ class ShedTwillTestCase( TwillTestCase ):
         tool_guid = urllib.quote_plus( tool_metadata[ 0 ][ 'guid' ], safe='' )
         api_url = '/%s' % '/'.join( [ 'api', 'tools', tool_guid ] )
         self.visit_galaxy_url( api_url )
-        tool_dict = from_json_string( self.last_page() )
+        tool_dict = loads( self.last_page() )
         tool_panel_section = tool_dict[ 'panel_section_name' ]
         return tool_panel_section
         
