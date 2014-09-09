@@ -122,7 +122,7 @@ class ListenerRequestHandler( SocketServer.BaseRequestHandler ):
         response = {}
         valid, request, response = json.validate_jsonrpc_request( request, ( 'get_state', ), () )
         if valid:
-            self.request.send( json.to_json_string( json.jsonrpc_response( request=request, result=self.server.state_result.result ) ) )
+            self.request.send( json.dumps( json.jsonrpc_response( request=request, result=self.server.state_result.result ) ) )
         else:
             error_msg = 'Unable to serve request: %s' % response['error']['message']
             if 'data' in response['error']:
