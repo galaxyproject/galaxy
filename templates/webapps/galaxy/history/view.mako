@@ -168,8 +168,8 @@ ${parent.javascripts()}
         hdaJSON      = ${h.dumps( hdas )};
         panelToUse   = ( userIsOwner )?
 //TODO: change class names
-            ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanel' }):
-            ({ location: 'mvc/history/history-panel',       className: 'ReadOnlyHistoryPanel' });
+            ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanelEdit' }):
+            ({ location: 'mvc/history/history-panel',       className: 'HistoryPanel' });
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
@@ -187,17 +187,14 @@ ${parent.javascripts()}
                 show_hidden     : ${show_hidden_json},
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 el              : $( "#history-" + historyJSON.id ),
-                model           : history,
-                onready         : function(){
-                    var panel = this;
-                    $( '#toggle-deleted' ).on( 'click', function(){
-                        panel.toggleShowDeleted();
-                    });
-                    $( '#toggle-hidden' ).on( 'click', function(){
-                        panel.toggleShowHidden();
-                    });
-                    this.render();
-                }
+                model           : history
+            }).render();
+
+            $( '#toggle-deleted' ).on( 'click', function(){
+                historyPanel.toggleShowDeleted();
+            });
+            $( '#toggle-hidden' ).on( 'click', function(){
+                historyPanel.toggleShowHidden();
             });
         });
     });

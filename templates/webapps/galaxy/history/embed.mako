@@ -62,14 +62,12 @@
         }
 
         $(function(){
-            var debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
-                historyModel = require( 'mvc/history/history-model' ),
+            var historyModel = require( 'mvc/history/history-model' ),
                 panel = new panelMod.AnnotatedHistoryPanel({
                     el      : $embeddedHistory.find( ".history-panel" ),
                     model   : new historyModel.History(
                         ${h.dumps( history_dict )},
-                        ${h.dumps( hda_dicts )},
-                        { logger: ( debugging )?( console ):( null ) }
+                        ${h.dumps( hda_dicts )}
                     )
                 }).render();
 

@@ -11,7 +11,7 @@
 .embedded-item .expanded-content{display:none;background-color:white;padding:5px}
 .embedded-item .item-content{max-height:25em;overflow:auto}
 .embedded-item.visualization .item-content{overflow:hidden}
-.embedded-item .title{vertical-align:top;text-align:center;font-weight:bold;padding-bottom:5px}
+.embedded-item>.title{vertical-align:top;text-align:center;font-weight:bold;padding-bottom:5px}
 .embedded-item.placeholder .content{padding:0.5em 0.5em;font-style:italic;text-align:center}
 table.annotated-item{width:100%;border-collapse:collapse}
 table.annotated-item td,th{padding:0}

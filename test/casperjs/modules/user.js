@@ -56,14 +56,14 @@ User.prototype._submitRegistration = function _submitRegistration( email, passwo
                 // need manual submit (not a normal html form)
                 this.click( xpath( spaceghost.data.selectors.registrationPage.submit_xpath ) );
             });
+            this.waitForNavigation( 'user/create', function afterRegister(){
+            //    this.withMainPanel( function mainAfterRegister(){
+            //        var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
+            //        spaceghost.debug( 'post registration message:\n' + spaceghost.jsonStr( messageInfo ) );
+            //    });
+            });
         });
 
-        this.waitForNavigation( 'user/create', function afterRegister(){
-        //    this.withMainPanel( function mainAfterRegister(){
-        //        var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
-        //        spaceghost.debug( 'post registration message:\n' + spaceghost.jsonStr( messageInfo ) );
-        //    });
-        });
     });
 };
 

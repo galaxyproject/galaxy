@@ -94,6 +94,9 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
                 this.trigger( 'state:ready', currModel, newState, this.previous( 'state' ) );
             }
         });
+        this.on( 'change:urls', function(){
+            console.warn( 'change:urls', arguments );
+        });
         // the download url (currenlty) relies on having a correct file extension
         this.on( 'change:id change:file_ext', function( currModel ){
             this._generateUrls();
@@ -104,6 +107,8 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     /** override to add urls */
     toJSON : function(){
         var json = Backbone.Model.prototype.toJSON.call( this );
+        //console.warn( 'returning json?' );
+        //return json;
         return _.extend( json, {
             urls : this.urls
         });

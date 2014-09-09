@@ -305,7 +305,8 @@
             .list-item .vertical-spacing;
             .annotation {
                 .list-item .info-section;
-                white-space: pre-line;
+                //white-space: pre-line;
+                white-space: pre-wrap;
                 overflow: auto;
             }
             // fake placeholder for editable text annotation
@@ -371,38 +372,26 @@
 // ---------------------------------------------------------------------------- history
 .history-panel {
 
-    .history-controls {
+    .controls {
         margin: 10px;
         padding: 0px;
 
-        [class$="messagesmall"] {
-            margin: 0px;
-        }
-        .message-container  {
+        .messages > * {
             cursor: pointer;
         }
-        .message-container [class$=message] {
-            margin: 0px;
-            margin-bottom: 8px;
-        }
 
-        .history-search-controls {
-            display: none;
-            padding: 0px 0px 8px 0px;
+        .title {
+            margin-bottom: 4px;
+            input {
+                width: 100%;
+                // keep the text in position
+                margin: -3px 0px -3px -3px;
+                font-weight: bold;
+            }
         }
-
-        .history-title {
-            margin-bottom: 8px;
-        }
-        .history-name {
-            word-wrap: break-word;
-            font-weight: bold;
-        }
-        .history-title input {
-            width: 100%;
-            // keep the text in position
-            margin: -2px 0px -2px -4px;
-            font-weight: bold;
+        .subtitle:not(:empty){
+            margin-top: -4px;
+            margin-bottom: 4px;
         }
         .editable-text {
             border: solid transparent 1px;
@@ -412,18 +401,12 @@
             border: 1px dotted #999999;
         }
 
-        .history-subtitle {
-            margin-bottom: 8px;
-        }
         .history-size {
-            float: left;
+            display: inline-block;
+            color: black;
         }
-        .history-secondary-actions {
-            .icon-btn-group();
-            float: right;
-            .icon-btn {
-                margin-left: @icon-btn-margin;
-            }
+        .actions {
+            margin-bottom: 0px;
         }
 
         .quota-message {
@@ -462,7 +445,8 @@
                 border-radius: 3px;
                 border: 1px solid fadeout( @layout-border-color, 50% );
                 padding: 4px;
-                white-space: pre-line;
+                //white-space: pre-line;
+                white-space: pre-wrap;
                 overflow: auto;
             }
             // fake placeholder for editable text annotation
@@ -483,15 +467,8 @@
             }
         }
 
-        .history-dataset-actions {
-            display: none;
-            .clear;
-            .btn {
-                padding-top: 2px;
-                padding-bottom: 2px;
-                font-size: 90%;
-            }
-            .history-dataset-action-popup-btn {
+        .list-actions {
+            .list-action-popup-btn {
                 float: right;
             }
         }
@@ -506,52 +483,50 @@
         }
     }
 
-    .empty-history-message {
-        display: none;
+    .empty-message {
         margin: 0px 10px 0px 10px;
     }
 }
 
 // ---------------------------------------------------------------------------- annotated-history-panel
 .annotated-history-panel {
-    //TODO: most of these styles are specific to history/display.mako and not to this type of panel in general
-    //TODO: some of these styles are also overrides of history-panel - remove those from hpanel and revisit this
-
-    [class$=messagesmall] {
-        margin: 8px 0px 8px 0px;
-    }
-
-    .history-controls {
-        margin: 0px 0px 16px 4px;
-        padding: 0px;
-
-        .history-name {
+    .controls {
+        margin: 0px;
+        .name {
             font-size: 150%;
             margin-bottom: 4px;
         }
-        .history-subtitle {
-            margin: 0px;
-            padding: 0px 0px 0px 4px;
-            padding-left: 4px;
+        .subtitle {
+            color: black;
+            &:not(:empty) {
+                margin: 0px 0px 0px 4px;
+            }
         }
-
-        .history-annotation {
+        .messages {
+            &:not(:empty) {
+                margin-top: 16px;
+            }
+        }
+        // annotations are displayed by default in this view
+        .annotation-display {
+            display: block;
             border: 1px solid lightgrey;
             border-width: 1px 0px 0px 0px;
             padding: 4px 0px 4px 0px;
-            margin: 4px;
+            margin: 4px 4px 0px 4px;
             white-space: pre-wrap;
-        }
-        .history-annotation:empty {
-            display: none;
+            &:empty {
+                display: none;
+            }
         }
 
-        .history-search-controls {
+        .search {
             padding: 16px 0px 0px 0px;
+            margin-bottom: 0px;
         }
     }
 
-    table.datasets-list {
+    table.list-items {
         width: 100%;
         table-layout: fixed;
 
@@ -561,25 +536,48 @@
         .headers th {
             padding: 8px;
         }
-        .dataset-row {
+        & > tbody > tr {
+            // tr is clickable for expansion
             cursor: pointer;
             border-bottom: 1px solid grey;
+            & > td {
+                margin: 0px;
+                padding: 0px;
+                vertical-align: top;
+                &:nth-child(1) {
+                    width: 50%;
+                }
+                &:nth-child(2) {
+                    /* top and bottom should be == title-bar padding */
+                    padding: 8px 16px 8px 16px;
+                    // do not html format
+                    white-space: pre-wrap;
+                }
+            }
+            // tr has border - remove from items
+            .list-item {
+                border: 0px;
+            }
         }
-        .dataset-row > td {
-            margin: 0px;
+    }
+    .empty-message {
+        margin-top: 8px;
+    }
+}
+
+
+// ---------------------------------------------------------------------------- collections nested in histories
+.history-panel {
+    .dataset-collection {
+        .subtitle {
+            margin-top: 2px;
+            font-size: 90%;
+            color: #777;
+        }
+    }
+    .dataset-collection-panel {
+        .controls {
             padding: 0px;
-            vertical-align: top;
-        }
-        .dataset-row > td:nth-child(1) {
-            width: 50%;
-        }
-        .dataset-row > td:nth-child(2) {
-            /* top and bottom should be <= title-bar padding */
-            padding: 8px 16px 8px 16px;
-            white-space: pre-wrap;
-        }
-        .dataset-row .dataset {
-            border: 0px;
         }
     }
 }

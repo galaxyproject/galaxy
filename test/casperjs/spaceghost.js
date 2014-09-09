@@ -638,7 +638,7 @@ SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigat
     }
 
     function catchNavReq( url ){
-        //this.debug( 'nav.req: ' + url );
+        this.debug( 'nav.req: ' + url );
         for( var i=( urlsToWaitFor.length - 1 ); i>=0; i -= 1 ){
             //this.debug( '\t checking: ' + urlsToWaitFor[i] );
             if( urlMatches( urlsToWaitFor[i], url ) ){

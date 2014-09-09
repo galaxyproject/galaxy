@@ -1,11 +1,12 @@
 define([
+    "mvc/list/list-item",
     "mvc/dataset/dataset-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( DATASET_LI, BASE_MVC, _l ){
+], function( LIST_ITEM, DATASET_LI, BASE_MVC, _l ){
 /* global Backbone, LoggableMixin */
 //==============================================================================
-var ListItemView = BASE_MVC.ListItemView;
+var ListItemView = LIST_ITEM.ListItemView;
 /** @class Read only view for DatasetCollection.
  */
 var DCListItemView = ListItemView.extend(
@@ -97,8 +98,7 @@ var DCEListItemView = ListItemView.extend(
 //TODO: this might be expendable - compacted with HDAListItemView
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
-    logger              : console,
+    //logger              : console,
 
     /** add the DCE class to the list item */
     className   : ListItemView.prototype.className + " dataset-collection-element",

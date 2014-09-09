@@ -27,6 +27,7 @@ var tooltipSelector     = spaceghost.data.selectors.tooltipBalloon,
 
     nameSelector     = spaceghost.historypanel.data.selectors.history.name,
     subtitleSelector = spaceghost.historypanel.data.selectors.history.subtitle,
+    sizeSelector     = spaceghost.historypanel.data.selectors.history.size,
     unnamedName      = spaceghost.historypanel.data.text.history.newName,
     initialSizeStr   = spaceghost.historypanel.data.text.history.newSize,
     tagIconSelector  = spaceghost.historypanel.data.selectors.history.tagIcon,
@@ -64,11 +65,11 @@ spaceghost.openHomePage().historypanel.waitForHdas( function(){
     this.test.assertVisible( nameSelector, 'History name is visible' );
     this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
 
-    this.test.comment( "history subtitle should display size and size should be: " + initialSizeStr );
-    this.test.assertExists( subtitleSelector, 'Found ' + subtitleSelector );
-    this.test.assertVisible( subtitleSelector, 'History subtitle is visible' );
-    this.test.assertSelectorHasText( subtitleSelector, initialSizeStr,
-        'History subtitle has "' + initialSizeStr + '"' );
+    this.test.comment( "history should display size and size should be: " + initialSizeStr );
+    this.test.assertExists( sizeSelector, 'Found ' + sizeSelector );
+    this.test.assertVisible( sizeSelector, 'History size is visible' );
+    this.test.assertSelectorHasText( sizeSelector, initialSizeStr,
+        'History size has "' + initialSizeStr + '"' );
 
     this.test.comment( "tags and annotation icons should be available" );
     this.test.assertExists( tagIconSelector,  'Tag icon button found' );
@@ -157,12 +158,12 @@ spaceghost.then( function checkPanelStructure(){
     this.test.assertSelectorHasText( nameSelector, newHistoryName, 'History name is ' + newHistoryName );
 
     var onetxtFilesize = require( 'fs' ).size( filepathToUpload ),
-        expectedSubtitle = onetxtFilesize + ' bytes';
-    this.test.comment( "history subtitle should display size and size should be " + onetxtFilesize + " bytes" );
-    this.test.assertExists( subtitleSelector, 'Found ' + subtitleSelector );
-    this.test.assertVisible( subtitleSelector, 'History subtitle is visible' );
-    this.test.assertSelectorHasText( subtitleSelector, expectedSubtitle,
-        'History subtitle has "' + expectedSubtitle + '": ' + this.fetchText( subtitleSelector ).trim() );
+        expectedSize = onetxtFilesize + ' bytes';
+    this.test.comment( "history should display size and size should be " + onetxtFilesize + " bytes" );
+    this.test.assertExists( sizeSelector, 'Found ' + sizeSelector );
+    this.test.assertVisible( sizeSelector, 'History size is visible' );
+    this.test.assertSelectorHasText( sizeSelector, expectedSize,
+        'History size has "' + expectedSize + '": ' + this.fetchText( sizeSelector ).trim() );
 
     this.test.comment( "tags and annotation icons should be available" );
     this.test.assertExists( tagIconSelector,  'Tag icon button found' );

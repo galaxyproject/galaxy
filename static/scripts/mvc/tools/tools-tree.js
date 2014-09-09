@@ -11,24 +11,23 @@ return Backbone.Model.extend({
     
     // creates tree structure
     refresh: function() {
-        // check if section is available
-        if (!this.app.section) {
-            return {};
-        }
-        
         // create dictionary
         this.dict = {};
         
         // create xml object
         this.xml = $('<div/>');
         
+        // check if section is available
+        if (!this.app.section) {
+            return {};
+        }
+        
         // fill dictionary
         this._iterate(this.app.section.$el, this.dict, this.xml);
     },
 
-
     // convert to job dictionary
-    jobDictionary: function() {
+    finalize: function() {
         // link this
         var self = this;
         
@@ -38,22 +37,48 @@ return Backbone.Model.extend({
         // converter between raw dictionary and job dictionary
         function convert(identifier, head) {
             for (var i in head) {
-                if (head[i].input) {
-                    var input = head[i].input;
-                    var job_input_id = identifier + input.name;
+                var node = head[i];
+                if (node.input) {
+                    // get node
+                    var input = node.input;
                     
-                    if (input.type == 'repeat') {
-                        
+                    // create identifier
+                    var job_input_id = identifier;
+                    if (identifier != '') {
+                        job_input_id += '|';
+                    }
+                    job_input_id += input.name;
                     
-                    } else {
-                        //var value = self.app.field_list[input.id].value();
-                        switch(input.type) {
-                            case 'repeat':
-                                job_def[job_input_id] = value;
-                                break;
-                            default:
-                                job_def[job_input_id] = value;
-                        }
+                    // process input type
+                    switch (input.type) {
+                        // handle repeats
+                        case 'repeat':
+                            var index = 0;
+                            for (var j in node) {
+                                if (j.indexOf('section') != -1) {
+                                    convert(job_input_id + '_' + index++, node[j]);
+                                }
+                            }
+                            break;
+                        // handle conditionals
+                        case 'conditional':
+                            // get conditional value
+                            var value = self.app.field_list[input.id].value();
+                            
+                            // find selected case
+                            for (var j in input.cases) {
+                                if (input.cases[j].value == value) {
+                                    convert(job_input_id, head[input.id + '-section-' + j]);
+                                    break;
+                                }
+                            }
+                            
+                            // break
+                            break;
+                        default:
+                            // handle default value
+                            var value = self.app.field_list[input.id].value();
+                            job_def[job_input_id] = value;
                     }
                 }
             }
@@ -61,48 +86,9 @@ return Backbone.Model.extend({
         
         // start conversion
         convert('', this.dict);
-        
+       
         // return result
         return job_def;
-    },
-
-    // iterate
-    _iterate: function(parent, dict, xml) {
-        // get child nodes
-        var self = this;
-        var children = $(parent).children();
-        children.each(function() {
-            // get child element
-            var child = this;
-            
-            // get id
-            var id = $(child).attr('id');
-            
-            // create new branch
-            if ($(child).hasClass('section-row') || $(child).hasClass('tab-pane')) {
-                // create sub dictionary
-                dict[id] = {};
-                
-                // add input element if it exists
-                var input = self.app.input_list[id];
-                if (input) {
-                    dict[id] = {
-                        input : input
-                    }
-                }
-                
-                // create xml element
-                var $el = $('<div id="' + id + '"/>');
-                
-                // append xml
-                xml.append($el);
-                
-                // fill sub dictionary
-                self._iterate(child, dict[id], $el);
-            } else {
-                self._iterate(child, dict, xml);
-            }
-        });
     },
     
     // find referenced elements
@@ -176,6 +162,45 @@ return Backbone.Model.extend({
         
         // return
         return referenced;
+    },
+    
+    // iterate
+    _iterate: function(parent, dict, xml) {
+        // get child nodes
+        var self = this;
+        var children = $(parent).children();
+        children.each(function() {
+            // get child element
+            var child = this;
+            
+            // get id
+            var id = $(child).attr('id');
+            
+            // create new branch
+            if ($(child).hasClass('section-row') || $(child).hasClass('tab-pane')) {
+                // create sub dictionary
+                dict[id] = {};
+                
+                // add input element if it exists
+                var input = self.app.input_list[id];
+                if (input) {
+                    dict[id] = {
+                        input : input
+                    }
+                }
+                
+                // create xml element
+                var $el = $('<div id="' + id + '"/>');
+                
+                // append xml
+                xml.append($el);
+                
+                // fill sub dictionary
+                self._iterate(child, dict[id], $el);
+            } else {
+                self._iterate(child, dict, xml);
+            }
+        });
     }
 });
 

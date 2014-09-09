@@ -20,7 +20,8 @@ var View = Backbone.View.extend({
         this.$nav       = null;
         this.$content   = null;
         this.first_tab  = null;
-        
+        this.current_id = null;
+            
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
         
@@ -139,6 +140,11 @@ var View = Backbone.View.extend({
                 self.show(id);
             }
         });
+        
+        // initialize current id
+        if (!this.current_id) {
+            this.current_id = id;
+        }
     },
     
     // delete tab
@@ -183,10 +189,14 @@ var View = Backbone.View.extend({
         
         // show selected tab
         if (id) {
-            this.$el.find('.tab-element').removeClass('active');
-            this.$el.find('.tab-pane').removeClass('active');
+            // reassign active class
+            this.$el.find('#tab-' + this.current_id).removeClass('active');
+            this.$el.find('#' + this.current_id).removeClass('active');
             this.$el.find('#tab-' + id).addClass('active');
             this.$el.find('#' + id).addClass('active');
+            
+            // update current id
+            this.current_id = id;
         }
         
         // change

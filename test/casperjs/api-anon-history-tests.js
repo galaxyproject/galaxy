@@ -8,7 +8,7 @@ spaceghost.test.begin( 'Test API functions for histories with an anonymous user'
     spaceghost.start();
 
 // =================================================================== TESTS
-spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( '.history-name' );
+spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( spaceghost.historypanel.data.selectors.history.name );
 spaceghost.then( function(){
 
     // ------------------------------------------------------------------------------------------- anon allowed
@@ -65,7 +65,7 @@ spaceghost.then( function(){
 });
 
 // ------------------------------------------------------------------------------------------- hdas
-spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( '.history-name' );
+spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( spaceghost.historypanel.data.selectors.history.name );
 spaceghost.then( function(){
     spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
         this.test.assert( uploadInfo.hdaElement !== null, "Convenience function produced hda" );
