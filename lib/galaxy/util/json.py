@@ -7,8 +7,8 @@ import logging
 import random
 import string
 
-to_json_string = json.dumps
-from_json_string = json.loads
+to_json_string = json.dumps  # deprecated
+from_json_string = json.loads  # deprecated
 dumps = json.dumps
 loads = json.loads
 
@@ -25,8 +25,8 @@ def json_fix( val ):
     else:
         return val
 
-# Methods for handling JSON-RPC
 
+# Methods for handling JSON-RPC
 
 def validate_jsonrpc_request( request, regular_methods, notification_methods ):
     try:
