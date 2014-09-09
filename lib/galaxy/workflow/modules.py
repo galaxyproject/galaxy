@@ -114,6 +114,14 @@ class WorkflowModule( object ):
         raise TypeError( "Abstract method" )
 
     def encode_runtime_state( self, trans, state ):
+        """ Encode the runtime state (loaded from the stored step and
+        populated via the WorkflowModuleInjector below) for use in a hidden
+        parameter on the webpage.
+
+        This will combined with runtime parameters supplied by user running
+        the workflow to create the final state to pass along to execute during
+        workflow invocation.
+        """
         raise TypeError( "Abstract method" )
 
     def decode_runtime_state( self, trans, string ):
@@ -459,6 +467,9 @@ class ToolModule( WorkflowModule ):
         self.add_dummy_datasets()
         return self.trans.fill_template( "workflow/editor_tool_form.mako",
             tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
+
+    def encode_runtime_state( self, trans, state ):
+        return state.encode( self.tool, self.trans.app )
 
     def update_state( self, incoming ):
         # Build a callback that handles setting an input to be required at

@@ -542,11 +542,15 @@ if wf_parms:
     </script>
 %endif
 %for i, step in enumerate( steps ):
+    <!-- Only way module would be missing is if tool is missing, but
+         that would cause missing_tools.mako to render instead of this
+         template. -->
+    <% module = step.module %>
+    <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
     %if step.type == 'tool' or step.type is None:
       <%
         tool = trans.app.toolbox.get_tool( step.tool_id )
       %>
-      <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
       <div class="toolForm">
           <div class="toolFormTitle">
               <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${tool.name}</span>
@@ -580,8 +584,6 @@ if wf_parms:
               </div>
           </div>
         %else:
-        <% module = step.module %>
-          <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
           <div class="toolForm">
               <div class="toolFormTitle">
                   <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name}</span>
