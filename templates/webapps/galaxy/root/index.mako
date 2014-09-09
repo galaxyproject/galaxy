@@ -66,7 +66,7 @@
             },
             "${_("Collapse Expanded Datasets")}": function() {
                 if( Galaxy && Galaxy.currHistoryPanel ){
-                    Galaxy.currHistoryPanel.collapseAllHdaBodies();
+                    Galaxy.currHistoryPanel.collapseAll();
                 }
             },
             "${_("Include Deleted Datasets")}": function( clickEvent, thisMenuOption ) {

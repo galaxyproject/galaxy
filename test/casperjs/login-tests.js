@@ -17,7 +17,8 @@ if( spaceghost.fixtureData.testUser ){
     password = spaceghost.fixtureData.testUser.password;
 }
 
-var userEmailSelector = '//a[contains(text(),"Logged in as")]';
+//var userEmailSelector = '//a[contains(text(),"Logged in as")]';
+var userEmailSelector = spaceghost.data.selectors.masthead.userMenu.userEmail_xpath;
 
 // =================================================================== TESTS
 // register a user (again...)
