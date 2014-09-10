@@ -109,6 +109,15 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test" )
 
+    @skip_without_tool( "validation_default" )
+    def test_validation( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            'select_param': "\" ; echo \"moo",
+        }
+        response = self._run( "validation_default", history_id, inputs )
+        self._assert_status_code_is( response, 400 )
+
     @skip_without_tool( "cat1" )
     def test_run_cat1_with_two_inputs( self ):
         # Run tool with an multiple data parameter and grouping (repeat)

@@ -231,21 +231,15 @@ class WorkflowInvoker( object ):
         # Build the state for each step
         module_injector = modules.WorkflowModuleInjector( self.trans )
         for step in self.workflow.steps:
-            step_errors = module_injector.inject( step )
+            step_args = self.param_map.get( step.id, {} )
+            step_errors = module_injector.inject( step, step_args=step_args )
             if step.type == 'tool' or step.type is None:
-                _update_step_parameters( step, self.param_map )
-                if step.tool_errors:
+                if step_errors:
                     message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
                     raise exceptions.MessageException( message )
                 if step.upgrade_messages:
                     message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
                     raise exceptions.MessageException( message )
-
-
-def _update_step_parameters(step, normalized_param_map):
-    param_dict = normalized_param_map.get(step.id, {})
-    if param_dict:
-        step.state.inputs.update(param_dict)
 
 
 __all__ = [ invoke, WorkflowRunConfig ]

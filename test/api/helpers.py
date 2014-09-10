@@ -131,8 +131,9 @@ class DatasetPopulator( object ):
         elif "dataset" in kwds:
             dataset_id = kwds[ "dataset" ][ "id" ]
         else:
+            hid = kwds.get( "hid", -1 )  # If not hid, just grab last dataset
             dataset_contents = self.galaxy_interactor.get( contents_url ).json()
-            dataset_id = dataset_contents[ -1 ][ "id" ]
+            dataset_id = dataset_contents[ hid ][ "id" ]
 
         display_response = self.galaxy_interactor.get( "%s/%s/display" % ( contents_url, dataset_id ) )
         assert display_response.status_code == 200
