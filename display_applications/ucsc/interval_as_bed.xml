@@ -6,7 +6,7 @@
         <dynamic_param name="ucsc_link" value="1"/>
         <dynamic_param name="builds" value="2" split="True" separator="," />
         <!-- Filter out some of the links based upon matching site_id to a Galaxy application configuration parameter and by dataset dbkey -->
-        <filter>${site_id in $APP.config.ucsc_display_sites}</filter>
+        <filter>${site_id in $APP.datatypes_registry.get_display_sites('ucsc')}</filter>
         <filter>${dataset.dbkey in $builds}</filter>
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
         <url>${ucsc_link}db=${qp($bed_file.dbkey)}&amp;position=${position.qp}&amp;hgt.customText=${bed_file.qp}</url>
