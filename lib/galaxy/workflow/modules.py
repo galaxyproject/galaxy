@@ -96,6 +96,9 @@ class WorkflowModule( object ):
         pass
 
     def get_config_form( self ):
+        """ Render form that is embedded in workflow editor for modifying the
+        step state of a node.
+        """
         raise TypeError( "Abstract method" )
 
     def check_and_update_state( self ):
