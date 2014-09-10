@@ -467,6 +467,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             assert n == expected_len, "Expected %d steps of type %s, found %d" % ( expected_len, type, n )
         return sorted( steps, key=operator.itemgetter("id") )
 
+    @skip_without_tool( "cat1" )
+    def test_run_with_pja( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_pja_run", add_pja=True )
+        workflow_request, history_id = self._setup_workflow_run( workflow, inputs_by='step_index' )
+        workflow_request[ "replacement_params" ] = dumps( dict( replaceme="was replaced" ) )
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
+        assert content[ "name" ] == "foo was replaced"
+
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_tool( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )

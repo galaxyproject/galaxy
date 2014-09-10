@@ -120,24 +120,38 @@ class DatasetPopulator( object ):
         return tool_response.json()
 
     def get_history_dataset_content( self, history_id, wait=True, **kwds ):
+        dataset_id = self.__history_dataset_id( history_id, wait=wait, **kwds )
+        display_response = self.__get_contents_request( history_id, "/%s/display" % dataset_id )
+        assert display_response.status_code == 200, display_response.content
+        return display_response.content
+
+    def get_history_dataset_details( self, history_id, **kwds ):
+        dataset_id = self.__history_dataset_id( history_id, **kwds )
+        details_response = self.__get_contents_request( history_id, "/%s" % dataset_id )
+        assert details_response.status_code == 200
+        return details_response.json()
+
+    def __history_dataset_id( self, history_id, wait=True, **kwds ):
         if wait:
             assert_ok = kwds.get( "assert_ok", True )
             self.wait_for_history( history_id, assert_ok=assert_ok )
         # kwds should contain a 'dataset' object response, a 'dataset_id' or
         # the last dataset in the history will be fetched.
-        contents_url = "histories/%s/contents" % history_id
         if "dataset_id" in kwds:
             dataset_id = kwds[ "dataset_id" ]
         elif "dataset" in kwds:
             dataset_id = kwds[ "dataset" ][ "id" ]
         else:
             hid = kwds.get( "hid", -1 )  # If not hid, just grab last dataset
-            dataset_contents = self.galaxy_interactor.get( contents_url ).json()
-            dataset_id = dataset_contents[ hid ][ "id" ]
+            dataset_contents = self.__get_contents_request( history_id ).json()
+            dataset_id = dataset_contents[ hid - 1 ][ "id" ]
+        return dataset_id
 
-        display_response = self.galaxy_interactor.get( "%s/%s/display" % ( contents_url, dataset_id ) )
-        assert display_response.status_code == 200
-        return display_response.content
+    def __get_contents_request( self, history_id, suffix=""):
+        url = "histories/%s/contents" % history_id
+        if suffix:
+            url = "%s%s" % ( url, suffix )
+        return self.galaxy_interactor.get( url )
 
 
 class WorkflowPopulator( object ):
@@ -154,7 +168,7 @@ class WorkflowPopulator( object ):
             tool_step[ "post_job_actions" ][ "RenameDatasetActionout_file1" ] = dict(
                 action_type="RenameDatasetAction",
                 output_name="out_file1",
-                action_arguments=dict( newname="the_new_name" ),
+                action_arguments=dict( newname="foo ${replaceme}" ),
             )
         return workflow
 
