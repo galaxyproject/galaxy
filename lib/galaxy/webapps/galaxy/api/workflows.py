@@ -228,6 +228,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             trans=trans,
             workflow=workflow,
             workflow_run_config=run_config,
+            populate_state=True,
         )
         trans.sa_session.flush()
 

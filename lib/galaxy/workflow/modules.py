@@ -11,6 +11,7 @@ eggs.require( "elementtree" )
 from elementtree.ElementTree import Element
 
 import galaxy.tools
+from galaxy import exceptions
 from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
@@ -668,3 +669,20 @@ class WorkflowModuleInjector(object):
         step.state = state
 
         return step_errors
+
+
+def populate_module_and_state( trans, workflow, param_map ):
+    """ Used by API but not web controller, walks through a workflow's steps
+    and populates transient module and state attributes on each.
+    """
+    module_injector = WorkflowModuleInjector( trans )
+    for step in workflow.steps:
+        step_args = param_map.get( step.id, {} )
+        step_errors = module_injector.inject( step, step_args=step_args )
+        if step.type == 'tool' or step.type is None:
+            if step_errors:
+                message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
+                raise exceptions.MessageException( message )
+            if step.upgrade_messages:
+                message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
+                raise exceptions.MessageException( message )
