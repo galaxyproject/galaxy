@@ -12,11 +12,15 @@ from elementtree.ElementTree import Element
 
 import galaxy.tools
 from galaxy import exceptions
+from galaxy import model
+from galaxy.dataset_collections import matching
 from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.tools.parameters import check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
 from galaxy.tools.parameters import DataCollectionToolParameter
+from galaxy.tools.parameters.wrapped import make_dict_copy
+from galaxy.tools.execute import execute
 from galaxy.util.bunch import Bunch
 from galaxy.util import odict
 from galaxy.util.json import loads
@@ -141,7 +145,11 @@ class WorkflowModule( object ):
         """
         raise TypeError( "Abstract method" )
 
-    def execute( self, trans, state ):
+    def execute( self, trans, progress, invocation, step ):
+        """ Execute the given workflow step in the given workflow invocation.
+        Use the supplied workflow progress object to track outputs, find
+        inputs, etc...
+        """
         raise TypeError( "Abstract method" )
 
 
@@ -230,8 +238,26 @@ class InputModule( WorkflowModule ):
 
         return state, step_errors
 
-    def execute( self, trans, state ):
-        return None, dict( output=state.inputs['input'])
+    def execute( self, trans, progress, invocation, step ):
+        job, step_outputs = None, dict( output=step.state.inputs['input'])
+
+        # Web controller may set copy_inputs_to_history, API controller always sets
+        # inputs.
+        if invocation.copy_inputs_to_history:
+            for input_dataset_hda in step_outputs.values():
+                content_type = input_dataset_hda.history_content_type
+                if content_type == "dataset":
+                    new_hda = input_dataset_hda.copy( copy_children=True )
+                    invocation.history.add_dataset( new_hda )
+                    step_outputs[ 'input_ds_copy' ] = new_hda
+                elif content_type == "dataset_collection":
+                    new_hdca = input_dataset_hda.copy()
+                    invocation.history.add_dataset_collection( new_hdca )
+                    step_outputs[ 'input_ds_copy' ] = new_hdca
+                else:
+                    raise Exception("Unknown history content encountered")
+        progress.set_outputs_for_input( step, step_outputs )
+        return job
 
 
 class InputDataModule( InputModule ):
@@ -540,8 +566,100 @@ class ToolModule( WorkflowModule ):
             # Update the state
             step_errors = tool.update_state( trans, tool.inputs, state.inputs, step_updates,
                                              update_only=True, old_errors=old_errors )
+        return state, step_errors
+
+    def execute( self, trans, progress, invocation, step ):
+        tool = trans.app.toolbox.get_tool( step.tool_id )
+        tool_state = step.state
+
+        collections_to_match = self._find_collections_to_match( tool, progress, step )
+        # Have implicit collections...
+        if collections_to_match.has_collections():
+            collection_info = self.trans.app.dataset_collections_service.match_collections( collections_to_match )
         else:
-            return state, step_errors
+            collection_info = None
+
+        param_combinations = []
+        if collection_info:
+            iteration_elements_iter = collection_info.slice_collections()
+        else:
+            iteration_elements_iter = [ None ]
+
+        for iteration_elements in iteration_elements_iter:
+            execution_state = tool_state.copy()
+            # TODO: Move next step into copy()
+            execution_state.inputs = make_dict_copy( execution_state.inputs )
+
+            # Connect up
+            def callback( input, value, prefixed_name, prefixed_label ):
+                replacement = None
+                if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
+                    if iteration_elements and prefixed_name in iteration_elements:
+                        if isinstance( input, DataToolParameter ):
+                            # Pull out dataset instance from element.
+                            replacement = iteration_elements[ prefixed_name ].dataset_instance
+                        else:
+                            # If collection - just use element model object.
+                            replacement = iteration_elements[ prefixed_name ]
+                    else:
+                        replacement = progress.replacement_for_tool_input( step, input, prefixed_name )
+                return replacement
+            try:
+                # Replace DummyDatasets with historydatasetassociations
+                visit_input_values( tool.inputs, execution_state.inputs, callback )
+            except KeyError, k:
+                message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
+                message = message_template % (tool.name, k.message)
+                raise exceptions.MessageException( message )
+            param_combinations.append( execution_state.inputs )
+
+        execution_tracker = execute(
+            trans=self.trans,
+            tool=tool,
+            param_combinations=param_combinations,
+            history=invocation.history,
+            collection_info=collection_info,
+            workflow_invocation_uuid=invocation.uuid
+        )
+        if collection_info:
+            step_outputs = dict( execution_tracker.created_collections )
+        else:
+            step_outputs = dict( execution_tracker.output_datasets )
+        progress.set_step_outputs( step, step_outputs )
+        jobs = execution_tracker.successful_jobs
+        for job in jobs:
+            self._handle_post_job_actions( step, job, invocation.replacement_dict )
+        return jobs
+
+    def _find_collections_to_match( self, tool, progress, step ):
+        collections_to_match = matching.CollectionsToMatch()
+
+        def callback( input, value, prefixed_name, prefixed_label ):
+            is_data_param = isinstance( input, DataToolParameter )
+            if is_data_param and not input.multiple:
+                data = progress.replacement_for_tool_input( step, input, prefixed_name )
+                if isinstance( data, model.HistoryDatasetCollectionAssociation ):
+                    collections_to_match.add( prefixed_name, data )
+
+            is_data_collection_param = isinstance( input, DataCollectionToolParameter )
+            if is_data_collection_param and not input.multiple:
+                data = progress.replacement_for_tool_input( step, input, prefixed_name )
+                history_query = input._history_query( self.trans )
+                if history_query.can_map_over( data ):
+                    collections_to_match.add( prefixed_name, data, subcollection_type=input.collection_type )
+
+        visit_input_values( tool.inputs, step.state.inputs, callback )
+        return collections_to_match
+
+    def _handle_post_job_actions( self, step, job, replacement_dict ):
+        # Create new PJA associations with the created job, to be run on completion.
+        # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
+        # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
+        for pja in step.post_job_actions:
+            if pja.action_type in ActionBox.immediate_actions:
+                ActionBox.execute( self.trans.app, self.trans.sa_session, pja, job, replacement_dict )
+            else:
+                job.add_post_job_action( pja )
 
     def add_dummy_datasets( self, connections=None):
         if connections:
