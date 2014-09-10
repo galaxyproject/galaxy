@@ -108,12 +108,13 @@ class WorkflowModule( object ):
         """
         pass
 
+    def add_dummy_datasets( self, connections=None):
+        # Replaced connected inputs with DummyDataset values.
+        pass
+
     ## ---- Run time ---------------------------------------------------------
 
     def get_runtime_inputs( self ):
-        raise TypeError( "Abstract method" )
-
-    def get_runtime_state( self ):
         raise TypeError( "Abstract method" )
 
     def encode_runtime_state( self, trans, state ):
@@ -127,10 +128,16 @@ class WorkflowModule( object ):
         """
         raise TypeError( "Abstract method" )
 
-    def decode_runtime_state( self, trans, string ):
-        raise TypeError( "Abstract method" )
+    def compute_state( self, trans, step_updates=None ):
+        """ Recover the transient "state" attribute to populate corresponding
+        step with (currently this is always a DefaultToolState instance,
+        though I am not sure this is strictly nessecary).
 
-    def update_runtime_state( self, trans, state, values ):
+        If `step_updates` is `None`, this is likely for rendering the run form
+        for instance and no runtime properties are available and state must be
+        solely determined by step. If `step_updates` are available they describe
+        the runtime properties supplied by the workflow runner.
+        """
         raise TypeError( "Abstract method" )
 
     def execute( self, trans, state ):
@@ -210,6 +217,17 @@ class InputModule( WorkflowModule ):
             if error:
                 errors[ name ] = error
         return errors
+
+    def compute_state( self, trans, step_updates=None ):
+        if step_updates:
+            # Fix this for multiple inputs
+            state = self.decode_runtime_state( trans, step_updates.pop( "tool_state" ) )
+            step_errors = self.update_runtime_state( trans, state, step_updates )
+        else:
+            state = self.get_runtime_state()
+            step_errors = {}
+
+        return state, step_errors
 
     def execute( self, trans, state ):
         return None, dict( output=state.inputs['input'])
@@ -509,6 +527,21 @@ class ToolModule( WorkflowModule ):
     def check_and_update_state( self ):
         return self.tool.check_and_update_param_values( self.state.inputs, self.trans, allow_workflow_parameters=True )
 
+    def compute_state( self, trans, step_updates=None ):
+        # Warning: This method destructively modifies existing step state.
+        step_errors = None
+        state = self.state
+        if step_updates:
+            # Get the tool
+            tool = self.tool
+            # Get old errors
+            old_errors = state.inputs.pop( "__errors__", {} )
+            # Update the state
+            step_errors = tool.update_state( trans, tool.inputs, state.inputs, step_updates,
+                                             update_only=True, old_errors=old_errors )
+        else:
+            return state, step_errors
+
     def add_dummy_datasets( self, connections=None):
         if connections:
             # Store onnections by input name
@@ -619,36 +652,19 @@ class WorkflowModuleInjector(object):
         module = step.module = module_factory.from_workflow_step( trans, step )
 
         # Calculating step errors and state depends on whether step is a tool step or not.
-        if step.type == 'tool' or step.type is None:
-            if not module:
-                step.module = None
-                step.state = None
-                raise MissingToolException()
+        if not module:
+            step.module = None
+            step.state = None
+            raise MissingToolException()
 
-            # Fix any missing parameters
-            step.upgrade_messages = module.check_and_update_state()
+        # Fix any missing parameters
+        step.upgrade_messages = module.check_and_update_state()
 
-            # Any connected input needs to have value DummyDataset (these
-            # are not persisted so we need to do it every time)
-            module.add_dummy_datasets( connections=step.input_connections )
+        # Any connected input needs to have value DummyDataset (these
+        # are not persisted so we need to do it every time)
+        module.add_dummy_datasets( connections=step.input_connections )
 
-            state = module.state
-            step.state = state
-            if step_args is not None:
-                # Get the tool
-                tool = module.tool
-                # Get old errors
-                old_errors = state.inputs.pop( "__errors__", {} )
-                # Update the state
-                step_errors = tool.update_state( trans, tool.inputs, step.state.inputs, step_args,
-                                                 update_only=True, old_errors=old_errors )
-
-        else:
-            if step_args:
-                # Fix this for multiple inputs
-                state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
-                step_errors = module.update_runtime_state( trans, state, step_args )
-            else:
-                step.state = step.module.get_runtime_state()
+        state, step_errors = module.compute_state( trans, step_args )
+        step.state = state
 
         return step_errors
