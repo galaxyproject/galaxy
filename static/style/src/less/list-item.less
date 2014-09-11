@@ -22,9 +22,18 @@
     }
 
     .warnings {
+        &:not(:empty) {
+            padding-top: 4px;
+        }
         [class$=messagesmall] {
             margin: @spacing-top @spacing-right ( @spacing-bottom - 4 ) @spacing-left;
             font-size: 90%;
+            &:first-child {
+                margin-top: 0px;
+            }
+            &:last-child {
+                margin-bottom: 0px;
+            }
         }
     }
 
@@ -79,7 +88,7 @@
         display: none;
         padding: 0px @spacing-right @spacing-bottom @spacing-left;
 
-        [class$=messagesmall] {
+        & > [class$=messagesmall] {
             margin: 0px 0px 8px 0px;
         }
 
@@ -158,5 +167,27 @@
     .empty-message {
         display: none;
         margin: 0px;
+    }
+}
+
+// ---------------------------------------------------------------------------- a list panel nested inside a list-item
+.list-item .details .list-panel {
+    margin-top: 8px;
+    border-radius: 3px;
+    background: white;
+    padding: 4px;
+    .list-items {
+        border: 1px solid @border-default-color;
+        border-radius: 3px;
+        .list-item {
+            &:first-child {
+                border-top-width: 0px;
+                border-radius: 3px 3px 0px 0px;
+            }
+            &:last-child {
+                border-bottom-width: 0px;
+                border-radius: 0px 0px 3px 3px;
+            }
+        }
     }
 }

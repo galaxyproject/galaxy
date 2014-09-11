@@ -4,10 +4,21 @@ define([
     "mvc/history/history-contents",
     "mvc/history/hda-li",
     "mvc/history/hdca-li",
+    "mvc/collection/collection-panel",
     "mvc/user/user-model",
     "mvc/base-mvc",
     "utils/localization"
-], function( LIST_PANEL, HISTORY_MODEL, HISTORY_CONTENTS, HDA_LI, HDCA_LI, USER, BASE_MVC, _l ){
+], function(
+    LIST_PANEL,
+    HISTORY_MODEL,
+    HISTORY_CONTENTS,
+    HDA_LI,
+    HDCA_LI,
+    COLLECTION_PANEL,
+    USER,
+    BASE_MVC,
+    _l
+){
 // ============================================================================
 /** session storage for individual history preferences */
 var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
@@ -22,13 +33,13 @@ var HistoryPrefs = BASE_MVC.SessionStorageModel.extend(
         //TODO: add scroll position?
     },
     /** add an hda id to the hash of expanded hdas */
-    addExpandedHda : function( model ){
+    addExpanded : function( model ){
         var key = 'expandedIds';
 //TODO:?? is this right anymore?
         this.save( key, _.extend( this.get( key ), _.object([ model.id ], [ model.get( 'id' ) ]) ) );
     },
     /** remove an hda id from the hash of expanded hdas */
-    removeExpandedHda : function( model ){
+    removeExpanded : function( model ){
         var key = 'expandedIds';
         this.save( key, _.omit( this.get( key ), model.id ) );
     },
@@ -199,6 +210,15 @@ var HistoryPanel = _super.extend(
         return xhr;
     },
 
+    /** convenience alias to the model. Updates the item list only (not the history) */
+    refreshContents : function( detailIds, options ){
+        if( this.model ){
+            return this.model.refresh( detailIds, options );
+        }
+        // may have callbacks - so return an empty promise
+        return $.when();
+    },
+
 //TODO:?? seems unneccesary
 //TODO: Maybe better in History?
     /** create a new history model from JSON and call setModel on it */
@@ -319,22 +339,12 @@ var HistoryPanel = _super.extend(
         //TODO:?? could use 'view:expanded' here?
         // maintain a list of items whose bodies are expanded
         view.on( 'expanded', function( v ){
-            panel.storage.addExpandedHda( v.model );
+            panel.storage.addExpanded( v.model );
         });
         view.on( 'collapsed', function( v ){
-            panel.storage.removeExpandedHda( v.model );
+            panel.storage.removeExpanded( v.model );
         });
         return this;
-    },
-
-    // ------------------------------------------------------------------------ collection/views syncing
-    /** convenience alias to the model. Updates the item list only (not the history) */
-    refreshContents : function( detailIds, options ){
-        if( this.model ){
-            return this.model.refresh( detailIds, options );
-        }
-        // may have callbacks - so return an empty promise
-        return $.when();
     },
 
     // ------------------------------------------------------------------------ selection

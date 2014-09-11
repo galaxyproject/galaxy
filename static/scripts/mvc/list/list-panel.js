@@ -184,9 +184,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         // shift to select a range
         this.on( 'view:selected', function( view, ev ){
             if( ev && ev.shiftKey && this.lastSelected ){
-                var lastSelectedView = _.find( this.views, function( view ){
-                    return view.model.id === this.lastSelected;
-                });
+                var lastSelectedView = this.viewFromModelId( this.lastSelected );
                 if( lastSelectedView ){
                     this.selectRange( view, lastSelectedView );
                 }
@@ -294,15 +292,15 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     },
     /**  */
     $list : function( $where ){
-        return ( $where || this.$el ).find( '.list-items' );
+        return ( $where || this.$el ).find( '> .list-items' );
     },
     /** container where list messages are attached */
     $messages : function( $where ){
-        return ( $where || this.$el ).find( '.messages' );
+        return ( $where || this.$el ).find( '> .controls .messages' );
     },
     /** the message displayed when no views can be shown (no views, none matching search) */
     $emptyMessage : function( $where ){
-        return ( $where || this.$el ).find( '.empty-message' );
+        return ( $where || this.$el ).find( '> .empty-message' );
     },
 
     // ------------------------------------------------------------------------ hda sub-views
@@ -593,6 +591,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.selecting = true;
         this.$( '.list-actions' ).slideDown( speed );
         _.each( this.views, function( view ){
+console.debug( view.$el );
             view.showSelector( speed );
         });
         //this.selected = [];
@@ -915,7 +914,7 @@ ModelListPanel.prototype.templates = (function(){
 
 //=============================================================================
     return {
-        ListPanel       : ListPanel,
-        ModelListPanel  : ModelListPanel
+        ListPanel      : ListPanel,
+        ModelListPanel : ModelListPanel
     };
 });

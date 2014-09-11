@@ -553,10 +553,10 @@
                     // do not html format
                     white-space: pre-wrap;
                 }
-            }
-            // tr has border - remove from items
-            .list-item {
-                border: 0px;
+                // tr has border - remove from items
+                & > .list-item {
+                    border: 0px;
+                }
             }
         }
     }
@@ -578,6 +578,9 @@
     .dataset-collection-panel {
         .controls {
             padding: 0px;
+        }
+        .list-items {
+            margin-top: 0px;
         }
     }
 }

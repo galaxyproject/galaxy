@@ -9,7 +9,6 @@ define([
 TODO:
 
 ============================================================================= */
-// =============================================================================
 /** @class non-editable, read-only View/Controller for a dataset collection.
  */
 var _super = LIST_PANEL.ModelListPanel;
@@ -23,11 +22,11 @@ var CollectionPanel = _super.extend(
     className           : _super.prototype.className + ' dataset-collection-panel',
 
     /** sub view class used for datasets */
-    DatasetDCEViewClass  : DC_LI.DatasetDCEListItemView,
+    DatasetDCEViewClass : DC_LI.DatasetDCEListItemView,
     /** sub view class used for nested collections */
-    NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView,
+    NestedDCDCEViewClass: DC_LI.NestedDCDCEListItemView,
     /** key of attribute in model to assign to this.collection */
-    modelCollectionKey : 'elements',
+    modelCollectionKey  : 'elements',
 
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HistoryContents events
@@ -38,16 +37,19 @@ var CollectionPanel = _super.extend(
         this.linkTarget = attributes.linkTarget || '_blank';
 
         this.hasUser = attributes.hasUser;
-        this.panelStack = [];
-        this.parentName = attributes.parentName;
 
-        //window.collectionPanel = this;
+        /**  */
+        this.panelStack = [];
+        /**  */
+        this.parentName = attributes.parentName;
+        /**  */
+        this.foldoutStyle = attributes.foldoutStyle || 'foldout';
     },
 
     // ------------------------------------------------------------------------ sub-views
     /** In this override, use model.getVisibleContents */
     _filterCollection : function(){
-//TODO: should *not* be model.getVisibleContents
+//TODO: should *not* be model.getVisibleContents - visibility is not model related
         return this.model.getVisibleContents();
     },
 
@@ -69,59 +71,41 @@ var CollectionPanel = _super.extend(
         var options = _super.prototype._getItemViewOptions.call( this, model );
         return _.extend( options, {
             linkTarget      : this.linkTarget,
-            hasUser         : this.hasUser
+            hasUser         : this.hasUser,
+//TODO: could move to only nested: list:paired
+            foldoutStyle    : this.foldoutStyle
         });
     },
 
-    /** when a sub-view is clicked in the collection panel that is itself a collection,
-     *      hide this panel's elements and show the sub-collection in its own panel.
-     */
+    // ------------------------------------------------------------------------ collection sub-views
+    /** In this override, add/remove expanded/collapsed model ids to/from web storage */
     _setUpItemViewListeners : function( view ){
         var panel = this;
         _super.prototype._setUpItemViewListeners.call( panel, view );
-        //TODO:?? doesn't seem to belong here
-        if( view.model.get( 'element_type' ) === 'dataset_collection' ){
-            view.on( 'expanded', function( collectionView ){
-                panel.info( 'expanded', collectionView );
-                panel._addCollectionPanel( collectionView );
-            });
-        }
-        return panel;
+
+        // use pub-sub to: handle drilldown expansion and collapse
+        view.on( 'expanded:drilldown', function( v, drilldown ){
+            this._expandDrilldownPanel( drilldown );
+        }, this );
+        view.on( 'collapsed:drilldown', function( v, drilldown ){
+            this._collapseDrilldownPanel( drilldown );
+        }, this );
+        return this;
     },
 
-    /** When a sub-collection is clicked, hide the current panel and render the sub-collection in its own panel  */
-    _addCollectionPanel : function( collectionView ){
-//TODO: a bit hackish
-        var currPanel = this,
-            collectionModel = collectionView.model;
+    /**  */
+    _expandDrilldownPanel : function( drilldown ){
+        this.panelStack.push( drilldown );
+        // hide this panel's controls and list, set the name for back navigation, and attach to the $el
+        this.$( '> .controls' ).add( this.$list() ).hide();
+        drilldown.parentName = this.model.get( 'name' );
+        this.$el.append( drilldown.render().$el );
+    },
 
-        //this.debug( 'collection panel (stack), collectionView:', collectionView );
-        //this.debug( 'collection panel (stack), collectionModel:', collectionModel );
-        var panel = new PairCollectionPanel({
-                model       : collectionModel,
-                parentName  : this.model.get( 'name' ),
-                linkTarget  : this.linkTarget
-            });
-        currPanel.panelStack.push( panel );
-
-        currPanel.$( '.controls' ).add( '.list-items' ).hide();
-        currPanel.$el.append( panel.$el );
-        panel.on( 'close', function(){
-            currPanel.render();
-            collectionView.collapse();
-            currPanel.panelStack.pop();
-        });
-
-        //TODO: to hdca-model, hasDetails
-        if( !panel.model.hasDetails() ){
-            var xhr = panel.model.fetch();
-            xhr.done( function(){
-                //TODO: (re-)render collection contents
-                panel.render();
-            });
-        } else {
-            panel.render();
-        }
+    /**  */
+    _collapseDrilldownPanel : function( drilldown ){
+        this.panelStack.pop();
+        this.render();
     },
 
     // ------------------------------------------------------------------------ panel events
@@ -216,7 +200,9 @@ var ListOfPairsCollectionPanel = CollectionPanel.extend(
 
     //TODO: not strictly needed - due to switch in CollectionPanel._getContentClass
     /** sub view class used for nested collections */
-    NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView,
+    NestedDCDCEViewClass : DC_LI.NestedDCDCEListItemView.extend({
+        foldoutPanelClass : PairCollectionPanel
+    }),
 
     // ........................................................................ misc
     /** string rep */

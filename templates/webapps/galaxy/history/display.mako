@@ -45,7 +45,7 @@
 <div id="history-${ history_dict[ 'id' ] }" class="history-panel">
 </div>
 <script type="text/javascript">
-    var historyJSON  = ${h.to_json_string( history_dict )},
+    var historyJSON  = ${h.dumps( history_dict )},
         hdaJSON      = ${h.dumps( hda_dicts )};
 
     require.config({
@@ -62,6 +62,7 @@
             el              : $( "#history-" + historyJSON.id ),
             model           : history
         }).render();
+        console.debug( historyPanel.$el )
     });
 </script>
 </%def>

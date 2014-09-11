@@ -87,7 +87,7 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     /** shortcut to details DOM (as jQ) */
     $details : function( $where ){
         $where = $where || this.$el;
-        return $where.find( '.details' );
+        return $where.find( '> .details' );
     },
 
     /** build the DOM for the details and set up behaviors on it */
@@ -123,7 +123,7 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
                 view.$details().replaceWith( $newDetails );
                 // needs to be set after the above or the slide will not show
                 view.expanded = true;
-                $newDetails.slideDown( view.fxSpeed, function(){
+                view.$details().slideDown( view.fxSpeed, function(){
                     view.trigger( 'expanded', view );
                 });
             });
@@ -143,6 +143,7 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
      *  @fires collapsed when a body has been collapsed
      */
     collapse : function(){
+        this.debug( this + '(ExpandableView).collapse' );
         var view = this;
         view.expanded = false;
         this.$details().slideUp( view.fxSpeed, function(){
@@ -177,16 +178,33 @@ var ListItemView = ExpandableView.extend(
         ExpandableView.prototype.initialize.call( this, attributes );
         BASE_MVC.SelectableViewMixin.initialize.call( this, attributes );
         BASE_MVC.DraggableViewMixin.initialize.call( this, attributes );
+        this._setUpListeners();
+    },
+
+    /** event listeners */
+    _setUpListeners : function(){
+        // hide the primary actions in the title bar when selectable and narrow
+        this.on( 'selectable', function( isSelectable ){
+            if( isSelectable ){
+                this.$( '.primary-actions' ).hide();
+            } else {
+                this.$( '.primary-actions' ).show();
+            }
+        }, this );
+        //this.on( 'all', function( event ){
+        //    this.log( event );
+        //}, this );
+        return this;
     },
 
     // ........................................................................ rendering
     /** In this override, call methods to build warnings, titlebar and primary actions */
     _buildNewRender : function(){
         var $newRender = ExpandableView.prototype._buildNewRender.call( this );
-        $newRender.find( '.warnings' ).replaceWith( this._renderWarnings() );
-        $newRender.find( '.title-bar' ).replaceWith( this._renderTitleBar() );
-        $newRender.find( '.primary-actions' ).append( this._renderPrimaryActions() );
-        $newRender.find( '.subtitle' ).replaceWith( this._renderSubtitle() );
+        $newRender.children( '.warnings' ).replaceWith( this._renderWarnings() );
+        $newRender.children( '.title-bar' ).replaceWith( this._renderTitleBar() );
+        $newRender.children( '.primary-actions' ).append( this._renderPrimaryActions() );
+        $newRender.find( '.title-bar .subtitle' ).replaceWith( this._renderSubtitle() );
         return $newRender;
     },
 
@@ -325,8 +343,135 @@ ListItemView.prototype.templates = (function(){
 
 
 //==============================================================================
+/** A view that is displayed in some larger list/grid/collection.
+ *  *AND* can display some sub-list of it's own when expanded (e.g. dataset collections).
+ *  This list will 'foldout' when the item is expanded depending on this.foldoutStyle:
+ *      If 'foldout': will expand vertically to show the nested list
+ *      If 'drilldown': will overlay the parent list
+ *
+ *  Inherits from ListItemView.
+ *
+ *  _renderDetails does the work of creating this.details: a sub-view that shows the nested list
+ */
+var FoldoutListItemView = ListItemView.extend({
+    
+    foldoutStyle        : 'foldout',
+    foldoutPanelClass   : null,
+
+    initialize : function( attributes ){
+        ListItemView.prototype.initialize.call( this, attributes );
+//TODO: hackish
+        if( this.foldoutStyle === 'drilldown' ){ this.expanded = false; }
+        this.foldoutStyle = attributes.foldoutStyle || this.foldoutStyle;
+        this.foldoutPanelClass = attributes.foldoutPanelClass || this.foldoutPanelClass;
+    },
+
+//TODO:?? override to exclude foldout scope?
+    $ : function( selector ){
+        var $found = ListItemView.prototype.$.call( this, selector );
+        return $found;
+    },
+
+    /** in this override, attach the foldout panel when rendering details */
+    _renderDetails : function(){
+//TODO: hackish
+        if( this.foldoutStyle === 'drilldown' ){ return $(); }
+        var $newDetails = ListItemView.prototype._renderDetails.call( this );
+        return this._attachFoldout( this._createFoldoutPanel(), $newDetails );
+    },
+
+    /** In this override, handle collection expansion. */
+    _createFoldoutPanel : function(){
+        var model = this.model;
+        var FoldoutClass = this._getFoldoutPanelClass( model ),
+            options = this._getFoldoutPanelOptions( model ),
+            foldout = new FoldoutClass( _.extend( options, {
+                model           : model
+            }));
+        return foldout;
+    },
+
+    _getFoldoutPanelClass : function(){
+        // override
+        return this.foldoutPanelClass;
+    },
+
+    _getFoldoutPanelOptions : function(){
+        return {
+            // propagate foldout style down
+            foldoutStyle : this.foldoutStyle
+        };
+    },
+
+    /**  */
+    _attachFoldout : function( foldout, $whereTo ){
+        $whereTo = $whereTo || this.$( '> .details' );
+        this.foldout = foldout.render( 0 );
+//TODO: hack
+        foldout.$( '> .controls' ).hide();
+        return $whereTo.append( foldout.$el );
+    },
+
+    /** Render and show the full, detailed body of this view including extra data and controls.
+     *      note: if the model does not have detailed data, fetch that data before showing the body
+     *  @fires expanded when a body has been expanded
+     */
+    expand : function(){
+        var view = this;
+        return view._fetchModelDetails()
+            .always(function(){
+                if( view.foldoutStyle === 'foldout' ){
+                    view._expandByFoldout();
+                } else if( view.foldoutStyle === 'drilldown' ){
+                    view._expandByDrilldown();
+                }
+            });
+    },
+
+    _expandByFoldout : function(){
+        var view = this;
+        var $newDetails = view._renderDetails();
+        view.$details().replaceWith( $newDetails );
+        // needs to be set after the above or the slide will not show
+        view.expanded = true;
+        view.$details().slideDown( view.fxSpeed, function(){
+            view.trigger( 'expanded', view );
+        });
+    },
+
+    _expandByDrilldown : function(){
+        var view = this;
+        // attachment and rendering done by listener
+        view.foldout = this._createFoldoutPanel();
+        view.foldout.on( 'close', function(){
+            view.trigger( 'collapsed:drilldown', view, view.foldout );
+        });
+        view.trigger( 'expanded:drilldown', view, view.foldout );
+    }
+
+});
+
+// ............................................................................ TEMPLATES
+/** underscore templates */
+FoldoutListItemView.prototype.templates = (function(){
+
+    // use element identifier
+    var detailsTemplate = BASE_MVC.wrapTemplate([
+        '<div class="details">',
+            // override with more info (that goes above the panel)
+        '</div>'
+    ], 'collection' );
+
+    return _.extend( {}, ListItemView.prototype.templates, {
+        details : detailsTemplate
+    });
+}());
+
+
+//==============================================================================
     return {
         ExpandableView                  : ExpandableView,
-        ListItemView                    : ListItemView
+        ListItemView                    : ListItemView,
+        FoldoutListItemView             : FoldoutListItemView
     };
 });

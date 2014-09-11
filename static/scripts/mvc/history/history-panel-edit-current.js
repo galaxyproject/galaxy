@@ -35,18 +35,25 @@ var _super = HPANEL_EDIT.HistoryPanelEdit;
 /** @class View/Controller for the user's current history model as used in the history
  *      panel (current right hand panel) of the analysis page.
  *
- *  The only history panel that will poll for updates.
+ *  The only history panel that:
+ *      will poll for updates.
+ *      displays datasets in reverse hid order.
  */
 var CurrentHistoryPanel = _super.extend(
 /** @lends CurrentHistoryPanel.prototype */{
 
-    className           : _super.prototype.className + ' current-history-panel',
-
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
+    className           : _super.prototype.className + ' current-history-panel',
+
     emptyMsg            : _l( "This history is empty. Click 'Get Data' on the left tool menu to start" ),
     noneFoundMsg        : _l( "No matching datasets found" ),
+
+    /**  */
+    HDCAViewClass       : _super.prototype.HDCAViewClass.extend({
+        foldoutStyle : 'drilldown'
+    }),
 
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HistoryContents events */
@@ -220,6 +227,7 @@ var CurrentHistoryPanel = _super.extend(
                 panel.preferences.set( 'tagsEditorShown', tagsEditor.hidden );
             });
     },
+
     /** In this override, get and set current panel preferences when editor is used */
     _renderAnnotation : function( $where ){
         var panel = this;
@@ -236,6 +244,7 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     // ------------------------------------------------------------------------ sub-views
+    // reverse HID order
     /** Override to reverse order of views - newest contents on top */
     _attachItems : function( $whereTo ){
         this.$list( $whereTo ).append( this.views.reverse().map( function( view ){
@@ -244,85 +253,20 @@ var CurrentHistoryPanel = _super.extend(
         return this;
     },
 
-    /** In this override, handle collection expansion. */
-    _setUpItemViewListeners : function( view ){
-        var panel = this;
-        _super.prototype._setUpItemViewListeners.call( panel, view );
-
-        if( view instanceof panel.HDCAViewClass ){
-            view.off( 'expanded' );
-            view.on( 'expanded', function( collectionView ){
-                panel.info( 'expanded', collectionView );
-                panel._addCollectionPanel( collectionView );
-            });
-            view.off( 'collapsed' );
-        }
-    },
-
-    /** In this override, handle collection expansion. */
-    _addCollectionPanel : function( collectionView ){
-        var panel = this,
-            collectionModel = collectionView.model;
-
-        this.debug( 'history panel (stack), collectionModel:', collectionModel );
-        var overlaid = new ( this._getCollectionPanelClass( collectionModel ) )({
-                model           : collectionModel,
-                HDAViewClass    : this.HDAViewClass,
-                parentName      : this.model.get( 'name' ),
-                linkTarget      : this.linkTarget
-            });
-        panel.panelStack.push( overlaid );
-
-        panel.$( '.controls' ).add( panel.$list() ).hide();
-        panel.$el.append( overlaid.$el );
-        overlaid.on( 'close', function(){
-            panel.render();
-            collectionView.collapse();
-            panel.panelStack.pop();
-        });
-
-        //TODO: to hdca-model, hasDetails
-        if( !overlaid.model.hasDetails() ){
-            var xhr = overlaid.model.fetch();
-            xhr.done( function(){
-                //this.debug( 'collection data fetched' );
-                //this.debug( JSON.stringify( overlaid.model.toJSON(), null, '  ' ) );
-                //TODO: (re-)render collection contents
-                overlaid.render();
-            });
-        } else {
-            overlaid.render();
-        }
-    },
-
-    _getCollectionPanelClass : function( model ){
-        switch( model.get( 'collection_type' ) ){
-            case 'list':
-                return DC_PANEL.ListCollectionPanel;
-            case 'paired':
-                return DC_PANEL.PairCollectionPanel;
-            case 'list:paired':
-                return DC_PANEL.ListOfPairsCollectionPanel;
-        }
-        throw new TypeError( 'Uknown collection_type: ' + model.get( 'collection_type' ) );
-    },
-
-    /** In this override, check for any overlaid panels first */
+    /** Override to add datasets at the top */
     addItemView : function( model, collection, options ){
         this.log( this + '.addItemView:', model );
-        if( !this._filterItem( model ) ){ return undefined; }
-
         var panel = this;
-        // don't show/add if there are panels overlaid on this one
-        if( this.panelStack.length ){
-            return panel;
-        }
+        if( !panel._filterItem( model ) ){ return undefined; }
+//TODO: alternately, call collapse drilldown
+        // if this panel is currently hidden, return undefined
+        if( panel.panelStack.length ){ return this._collapseDrilldownPanel(); }
 
-        // current history item order is reversed - use unshift and prepend
         var view = panel._createItemView( model );
-        this.views.unshift( view );
-        panel.scrollToTop();
+        // use unshift and prepend to preserve reversed order
+        panel.views.unshift( view );
 
+        panel.scrollToTop();
         $({}).queue([
             function fadeOutEmptyMsg( next ){
                 var $emptyMsg = panel.$emptyMessage();
@@ -333,13 +277,42 @@ var CurrentHistoryPanel = _super.extend(
                 }
             },
             function createAndPrepend( next ){
-                //view.render().$el.hide();
-                panel.scrollToTop();
+                // render as hidden then slide down
                 panel.$list().prepend( view.render( 0 ).$el.hide() );
                 view.$el.slideDown( panel.fxSpeed );
             }
         ]);
         return view;
+    },
+
+    // ------------------------------------------------------------------------ collection sub-views
+    /** In this override, add/remove expanded/collapsed model ids to/from web storage */
+    _setUpItemViewListeners : function( view ){
+        var panel = this;
+        _super.prototype._setUpItemViewListeners.call( panel, view );
+
+        // use pub-sub to: handle drilldown expansion and collapse
+        view.on( 'expanded:drilldown', function( v, drilldown ){
+            this._expandDrilldownPanel( drilldown );
+        }, this );
+        view.on( 'collapsed:drilldown', function( v, drilldown ){
+            this._collapseDrilldownPanel( drilldown );
+        }, this );
+        return this;
+    },
+
+    _expandDrilldownPanel : function( drilldown ){
+        this.panelStack.push( drilldown );
+        // hide this panel's controls and list, set the name for back navigation, and attach to the $el
+        this.$( '> .controls' ).add( this.$list() ).hide();
+        drilldown.parentName = this.model.get( 'name' );
+        this.$el.append( drilldown.render().$el );
+    },
+
+    _collapseDrilldownPanel : function( drilldown ){
+        this.panelStack.pop();
+//TODO: MEM: free the panel
+        this.render();
     },
 
     // ........................................................................ external objects/MVC
