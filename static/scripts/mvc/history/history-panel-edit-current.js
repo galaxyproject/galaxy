@@ -301,6 +301,7 @@ var CurrentHistoryPanel = _super.extend(
         return this;
     },
 
+    /** Handle drill down by hiding this panels list and controls and showing the sub-panel */
     _expandDrilldownPanel : function( drilldown ){
         this.panelStack.push( drilldown );
         // hide this panel's controls and list, set the name for back navigation, and attach to the $el
@@ -309,6 +310,7 @@ var CurrentHistoryPanel = _super.extend(
         this.$el.append( drilldown.render().$el );
     },
 
+    /** Handle drilldown close by freeing the panel and re-rendering this panel */
     _collapseDrilldownPanel : function( drilldown ){
         this.panelStack.pop();
 //TODO: MEM: free the panel

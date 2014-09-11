@@ -355,9 +355,18 @@ ListItemView.prototype.templates = (function(){
  */
 var FoldoutListItemView = ListItemView.extend({
     
+    /** If 'foldout': show the sub-panel inside the expanded item
+     *  If 'drilldown': only fire events and handle by pub-sub
+     *      (allow the panel containing this item to attach it, hide itself, etc.)
+     */
     foldoutStyle        : 'foldout',
+    /** Panel view class to instantiate for the sub-panel */
     foldoutPanelClass   : null,
 
+    /** override to:
+     *      add attributes foldoutStyle and foldoutPanelClass for config poly
+     *      disrespect attributes.expanded if drilldown
+     */
     initialize : function( attributes ){
         ListItemView.prototype.initialize.call( this, attributes );
 //TODO: hackish
@@ -367,10 +376,10 @@ var FoldoutListItemView = ListItemView.extend({
     },
 
 //TODO:?? override to exclude foldout scope?
-    $ : function( selector ){
-        var $found = ListItemView.prototype.$.call( this, selector );
-        return $found;
-    },
+    //$ : function( selector ){
+    //    var $found = ListItemView.prototype.$.call( this, selector );
+    //    return $found;
+    //},
 
     /** in this override, attach the foldout panel when rendering details */
     _renderDetails : function(){
@@ -391,11 +400,13 @@ var FoldoutListItemView = ListItemView.extend({
         return foldout;
     },
 
+    /** Stub to return proper foldout panel class */
     _getFoldoutPanelClass : function(){
         // override
         return this.foldoutPanelClass;
     },
 
+    /** Stub to return proper foldout panel options */
     _getFoldoutPanelOptions : function(){
         return {
             // propagate foldout style down
@@ -403,7 +414,7 @@ var FoldoutListItemView = ListItemView.extend({
         };
     },
 
-    /**  */
+    /** Render the foldout panel inside the view, hiding controls */
     _attachFoldout : function( foldout, $whereTo ){
         $whereTo = $whereTo || this.$( '> .details' );
         this.foldout = foldout.render( 0 );
@@ -412,10 +423,7 @@ var FoldoutListItemView = ListItemView.extend({
         return $whereTo.append( foldout.$el );
     },
 
-    /** Render and show the full, detailed body of this view including extra data and controls.
-     *      note: if the model does not have detailed data, fetch that data before showing the body
-     *  @fires expanded when a body has been expanded
-     */
+    /** In this override, branch on foldoutStyle to show expanded */
     expand : function(){
         var view = this;
         return view._fetchModelDetails()
@@ -428,6 +436,7 @@ var FoldoutListItemView = ListItemView.extend({
             });
     },
 
+    /** For foldout, call render details then slide down */
     _expandByFoldout : function(){
         var view = this;
         var $newDetails = view._renderDetails();
@@ -439,6 +448,10 @@ var FoldoutListItemView = ListItemView.extend({
         });
     },
 
+    /** For drilldown, set up close handler and fire expanded:drilldown
+     *      containing views can listen to this and handle other things
+     *      (like hiding themselves) by listening for expanded/collapsed:drilldown
+     */
     _expandByDrilldown : function(){
         var view = this;
         // attachment and rendering done by listener
@@ -455,6 +468,7 @@ var FoldoutListItemView = ListItemView.extend({
 /** underscore templates */
 FoldoutListItemView.prototype.templates = (function(){
 
+//TODO:?? unnecessary?
     // use element identifier
     var detailsTemplate = BASE_MVC.wrapTemplate([
         '<div class="details">',

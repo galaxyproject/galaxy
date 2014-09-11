@@ -47,6 +47,7 @@ var DCListItemView = FoldoutListItemView.extend(
     },
 
     // ......................................................................... foldout
+    /** override to add linktarget to sub-panel */
     _getFoldoutPanelOptions : function(){
         var options = FoldoutListItemView.prototype._getFoldoutPanelOptions.call( this );
         return _.extend( options, {
@@ -54,7 +55,7 @@ var DCListItemView = FoldoutListItemView.extend(
         });
     },
 
-    /** override in the case of sub-panels */
+    /** override to not catch sub-panel selectors */
     $selector : function(){
         return this.$( '> .selector' );
     },
