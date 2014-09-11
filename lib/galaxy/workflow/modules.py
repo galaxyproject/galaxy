@@ -120,6 +120,11 @@ class WorkflowModule( object ):
     ## ---- Run time ---------------------------------------------------------
 
     def get_runtime_inputs( self ):
+        """ Used internally to modules and when displaying inputs in display
+        and run workflow templates. The ToolModule doesn't implement this and
+        these templates contain specialized logic for dealing with the tool and
+        state directly in these cases.
+        """
         raise TypeError( "Abstract method" )
 
     def encode_runtime_state( self, trans, state ):
