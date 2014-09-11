@@ -38,6 +38,7 @@ from galaxy.datatypes.data import Text
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
 from galaxy.managers import api_keys
+from galaxy.managers import tags
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
@@ -2808,16 +2809,9 @@ class UsesTagsMixin( SharableItemSecurityMixin ):
         return self.get_tag_handler( trans )._get_item_tag_assoc( user, tagged_item, tag_name )
 
     def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
-        #precondition: item is already security checked against user
-        #precondition: incoming tags is a list of sanitized/formatted strings
-        user = user or trans.user
-
-        # based on controllers/tag retag_async: delete all old, reset to entire new
-        trans.app.tag_handler.delete_item_tags( trans, user, item )
-        new_tags_str = ','.join( new_tags_list )
-        trans.app.tag_handler.apply_item_tags( trans, user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
-        trans.sa_session.flush()
-        return item.tags
+        # Method deprecated - try to use TagsHandler instead.
+        tags_manager = tags.TagsManager( trans.app )
+        return tags_manager.set_tags_from_list( trans, item, new_tags_list, user=user )
 
     def get_user_tags_used( self, trans, user=None ):
         """

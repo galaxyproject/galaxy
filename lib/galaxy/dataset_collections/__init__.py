@@ -10,9 +10,9 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.web.base.controller import (
     UsesHistoryDatasetAssociationMixin,
     UsesLibraryMixinItems,
-    UsesTagsMixin,
 )
 from galaxy.managers import hdas  # TODO: Refactor all mixin use into managers.
+from galaxy.managers import tags
 from galaxy.managers.collections_util import validate_input_element_identifiers
 from galaxy.util import validation
 from galaxy.util import odict
@@ -27,8 +27,7 @@ ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
 
 class DatasetCollectionsService(
     UsesHistoryDatasetAssociationMixin,
-    UsesLibraryMixinItems,
-    UsesTagsMixin,
+    UsesLibraryMixinItems
 ):
     """
     Abstraction for interfacing with dataset collections instance - ideally abstarcts
@@ -41,6 +40,7 @@ class DatasetCollectionsService(
         self.model = app.model
         self.security = app.security
         self.hda_manager = hdas.HDAManager()
+        self.tag_manager = tags.TagsManager( app )
 
     def create(
         self,
@@ -166,7 +166,7 @@ class DatasetCollectionsService(
             dataset_collection_instance.add_item_annotation( trans.sa_session, trans.get_user(), dataset_collection_instance, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
         if 'tags' in new_data.keys() and trans.get_user():
-            self.set_tags_from_list( trans, dataset_collection_instance, new_data[ 'tags' ], user=trans.user )
+            self.tag_manager.set_tags_from_list( trans, dataset_collection_instance, new_data[ 'tags' ], user=trans.user )
 
         if changed.keys():
             trans.sa_session.flush()
