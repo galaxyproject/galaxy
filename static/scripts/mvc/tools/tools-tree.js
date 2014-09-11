@@ -1,3 +1,6 @@
+/*
+    This class maps the tool form to javascript datastructures. Once refreshed it converts the tool form (including sub sections) into a xml (containing only ids) and a detailed dictionary representation. The xml object is a jquery element and can be searched/filtered e.g. in order to hierarchically identify referenced fields. Once the job is ready for submission, the finalize function will transform the generic dictionary representation into the specific flat dictionary format required by the tools api.
+*/
 // dependencies
 define([], function() {
 
@@ -9,7 +12,8 @@ return Backbone.Model.extend({
         this.app = app;
     },
     
-    // creates tree structure
+    /** Refresh the datastructures representing the ToolForm.
+    */
     refresh: function() {
         // create dictionary
         this.dict = {};
@@ -26,13 +30,23 @@ return Backbone.Model.extend({
         this._iterate(this.app.section.$el, this.dict, this.xml);
     },
 
-    // convert to job dictionary
+    /** Convert dictionary representation into tool api specific flat dictionary format.
+    */
     finalize: function() {
         // link this
         var self = this;
         
         // dictionary formatted for job submission
-        var job_def = {};
+        this.job_def = {};
+
+        // dictionary with api specific identifiers
+        this.job_ids = {};
+
+        // add identifier and value to job definition
+        function add(job_input_id, input_id, input_value) {
+            self.job_def[job_input_id] = input_value;
+            self.job_ids[job_input_id] = input_id;
+        };
 
         // converter between raw dictionary and job dictionary
         function convert(identifier, head) {
@@ -65,6 +79,9 @@ return Backbone.Model.extend({
                             // get conditional value
                             var value = self.app.field_list[input.id].value();
                             
+                            // add conditional value
+                            add (job_input_id + '|' + input.test_param.name, input.id, value);
+                            
                             // find selected case
                             for (var j in input.cases) {
                                 if (input.cases[j].value == value) {
@@ -72,13 +89,28 @@ return Backbone.Model.extend({
                                     break;
                                 }
                             }
-                            
-                            // break
+                            break;
+                        // handle data inputs
+                        case 'data':
+                            var value = {
+                                id  : self.app.field_list[input.id].value(),
+                                src : 'hda'
+                            }
+                            add(job_input_id, input.id, value);
+                            break;
+                        // handle boolean input
+                        case 'boolean':
+                            var value = self.app.field_list[input.id].value();
+                            if (value === 'true') {
+                                value = input.truevalue;
+                            } else {
+                                value = input.falsevalue;
+                            }
+                            add (job_input_id, input.id, value);
                             break;
                         default:
                             // handle default value
-                            var value = self.app.field_list[input.id].value();
-                            job_def[job_input_id] = value;
+                            add (job_input_id, input.id, self.app.field_list[input.id].value());
                     }
                 }
             }
@@ -88,11 +120,46 @@ return Backbone.Model.extend({
         convert('', this.dict);
        
         // return result
-        return job_def;
+        return this.job_def;
     },
     
-    // find referenced elements
-    findReferences: function(identifier, type) {
+    /** Matches identifier from api response to input element
+    */
+    match: function(response) {
+        // final result dictionary
+        var result = {};
+        
+        // link this
+        var self = this;
+        
+        // search throughout response
+        function search (id, head) {
+            if (typeof head === 'string') {
+                var input_id = self.app.tree.job_ids[id];
+                if (input_id) {
+                    result[input_id] = head;
+                }
+            } else {
+                for (var i in head) {
+                    var new_id = i;
+                    if (id !== '') {
+                        new_id = id + '|' + new_id;
+                    }
+                    search (new_id, head[i]);
+                }
+            }
+        }
+        
+        // match all ids and return messages
+        search('', response);
+        
+        // return matched results
+        return result;
+    },
+    
+    /** Find referenced elements.
+    */
+    references: function(identifier, type) {
         // referenced elements
         var referenced = [];
         
@@ -164,7 +231,8 @@ return Backbone.Model.extend({
         return referenced;
     },
     
-    // iterate
+    /** Iterate through the tool form dom and map it to the dictionary and xml representation.
+    */
     _iterate: function(parent, dict, xml) {
         // get child nodes
         var self = this;

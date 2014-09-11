@@ -1,5 +1,59 @@
+/*
+    This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _addRow() function.
+*/
 define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-select-dataset'],
     function(Utils, Table, Ui, Tabs, SelectDataset) {
+
+    // input field element wrapper
+    var InputElement = Backbone.View.extend({
+        // initialize input wrapper
+        initialize: function(options) {
+            this.setElement(this._template(options));
+        },
+        
+        // set error text
+        error: function(text) {
+            // set text
+            this.$el.find('.ui-table-form-error-text').html(text);
+            this.$el.find('.ui-table-form-error').fadeIn();
+            this.$el.addClass('ui-table-row-error');
+        },
+        
+        // reset
+        reset: function() {
+            this.$el.find('.ui-table-form-error').hide();
+            this.$el.removeClass('ui-table-form-error');
+        },
+        
+        // template
+        _template: function(options) {
+            var $input;
+            if (options.highlight) {
+                $input = $('<div class="ui-table-element ui-table-form-section"/>');
+            } else {
+                $input = $('<div class="ui-table-element"/>');
+            }
+            
+            // add error
+            $input.append('<div class="ui-table-form-error"><span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"></div>');
+            
+            // add label
+            if (options.label) {
+                $input.append('<div class="ui-table-form-title-strong">' + options.label + '</div>');
+            }
+            
+            // add input element
+            $input.append(options.$el);
+            
+            // add help
+            if (options.help) {
+                $input.append('<div class="ui-table-form-info">' + options.help + '</div>');
+            }
+            
+            // return input element
+            return $input;
+        }
+    });
 
     // create form view
     var View = Backbone.View.extend({
@@ -76,7 +130,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
             input_def.value = input_def.test_param.value;
         
             // build options field
-            this._addRow('conditional', input_def);
+            var table_row = this._addRow('conditional', input_def);
             
             // add fields
             for (var i in input_def.cases) {
@@ -89,13 +143,16 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
                     cls     : 'ui-table-plain'
                 });
                 
+                // create input field wrapper
+                var input_element = new InputElement({
+                    label       : '',
+                    help        : input_def.help,
+                    $el         : sub_section.$el,
+                    highlight   : true
+                });
+                
                 // create table row
-                this.table.add(this._create_field({
-                    label : '',
-                    help  : input_def.help,
-                    $el   : sub_section.$el,
-                    color : true
-                }));
+                this.table.add(input_element.$el);
                 
                 // append to table
                 this.table.append(sub_section_id);
@@ -175,13 +232,16 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
             // retitle tabs
             tabs.retitle(input_def.title);
             
+            // create input field wrapper
+            var input_element = new InputElement({
+                label       : input_def.title,
+                help        : input_def.help,
+                $el         : tabs.$el,
+                highlight   : true
+            });
+                
             // create table row
-            this.table.add(this._create_field({
-                label : input_def.title,
-                help  : input_def.help,
-                $el   : tabs.$el,
-                color : true
-            }));
+            this.table.add(input_element.$el);
             
             // append row to table
             this.table.append(input_def.id);
@@ -265,15 +325,24 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
             // add to field list
             this.app.field_list[id] = field;
             
-            // create table row
-            this.table.add(this._create_field({
+            // create input field wrapper
+            var input_element = new InputElement({
                 label : input_def.label,
                 help  : input_def.help,
                 $el   : field.$el
-            }));
+            });
+            
+            // add to element list
+            this.app.element_list[id] = input_element;
+               
+            // create table row
+            this.table.add(input_element.$el);
             
             // append to table
             this.table.append(id);
+            
+            // return table row
+            return this.table.get(id)
         },
         
         // conditional input field
@@ -349,7 +418,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
                     }
                     
                     // get referenced columns
-                    var column_list = self.app.tree.findReferences(id, 'data_column');
+                    var column_list = self.app.tree.references(id, 'data_column');
                     
                     // find selected dataset
                     var dataset = self.app.datasets.filter(value);
@@ -385,11 +454,20 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
                                 // get column type
                                 var column_type = meta[key];
                                 
+                                // column index
+                                var column_index = (parseInt(key) + 1);
+                                
+                                // column type label
+                                var column_label = 'Text';
+                                if (column_type == 'int' || column_type == 'float') {
+                                    column_label = 'Number';
+                                }
+                                
                                 // add to selection
                                 if (column_type == 'int' || column_type == 'float' || !numerical) {
                                     columns.push({
-                                        'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
-                                        'value' : key
+                                        'label' : 'Column: ' + column_index + ' [' + column_label + ']',
+                                        'value' : column_index
                                     });
                                 }
                             }
@@ -485,27 +563,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
         _field_boolean : function(input_def) {
             return new Ui.RadioButton.View({
                 id      : 'field-' + input_def.id,
-                data    : [ { label : 'Yes', value : true  },
-                            { label : 'No',  value : false }]
+                data    : [ { label : 'Yes', value : 'true'  },
+                            { label : 'No',  value : 'false' }]
             });
-        },
-        
-        // create a field element with title and help information
-        _create_field: function(options) {
-            var $input;
-            if (options.color) {
-                $input = $('<div class="ui-table-form-section"/>');
-            } else {
-                $input = $('<div/>');
-            }
-            if (options.label) {
-                $input.append('<div class="ui-table-form-title-strong">' + options.label + '</div>');
-            }
-            $input.append(options.$el);
-            if (options.help) {
-                $input.append('<div class="ui-table-form-info">' + options.help + '</div>');
-            }
-            return $input;
         }
     });
 
