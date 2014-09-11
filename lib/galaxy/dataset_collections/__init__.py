@@ -7,11 +7,9 @@ from galaxy import model
 from galaxy.exceptions import MessageException
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.web.base.controller import (
-    UsesHistoryDatasetAssociationMixin,
-    UsesLibraryMixinItems,
-)
 from galaxy.managers import hdas  # TODO: Refactor all mixin use into managers.
+from galaxy.managers import histories
+from galaxy.managers import lddas
 from galaxy.managers import tags
 from galaxy.managers.collections_util import validate_input_element_identifiers
 from galaxy.util import validation
@@ -25,10 +23,7 @@ ERROR_INVALID_ELEMENTS_SPECIFICATION = "Create called with invalid parameters, m
 ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
 
 
-class DatasetCollectionsService(
-    UsesHistoryDatasetAssociationMixin,
-    UsesLibraryMixinItems
-):
+class DatasetCollectionsService( object ):
     """
     Abstraction for interfacing with dataset collections instance - ideally abstarcts
     out model and plugin details.
@@ -40,7 +35,9 @@ class DatasetCollectionsService(
         self.model = app.model
         self.security = app.security
         self.hda_manager = hdas.HDAManager()
+        self.history_manager = histories.HistoryManager()
         self.tag_manager = tags.TagsManager( app )
+        self.ldda_manager = lddas.LDDAManager( )
 
     def create(
         self,
@@ -249,7 +246,7 @@ class DatasetCollectionsService(
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )
             element = self.hda_manager.get( trans, decoded_id, check_ownership=False )
         elif src_type == 'ldda':
-            element = self.get_library_dataset_dataset_association( trans, encoded_id )
+            element = self.ldda_manager.get( trans, encoded_id )
         elif src_type == 'hdca':
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
             element = self.__get_history_collection_instance( trans, encoded_id ).collection
@@ -281,7 +278,7 @@ class DatasetCollectionsService(
     def __get_history_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):
         instance_id = int( trans.app.security.decode_id( id ) )
         collection_instance = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( instance_id )
-        self.security_check( trans, collection_instance.history, check_ownership=check_ownership, check_accessible=check_accessible )
+        self.history_manager.secure( trans, collection_instance.history, check_ownership=check_ownership, check_accessible=check_accessible )
         return collection_instance
 
     def __get_library_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):

@@ -875,6 +875,9 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
                                 check_ownership=False, check_accessible=check_accessible )
 
     def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
+        # Deprecated in lieu to galaxy.managers.lddas.LDDAManager.get() but not
+        # reusing that exactly because of subtle differences in exception handling
+        # logic (API controller override get_object to be slightly different).
         return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation',
                                 check_ownership=False, check_accessible=check_accessible )
 
