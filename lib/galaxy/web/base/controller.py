@@ -78,70 +78,14 @@ class BaseController( object ):
 
     def get_class( self, class_name ):
         """ Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>). """
-        if class_name == 'History':
-            item_class = self.app.model.History
-        elif class_name == 'HistoryDatasetAssociation':
-            item_class = self.app.model.HistoryDatasetAssociation
-        elif class_name == 'Page':
-            item_class = self.app.model.Page
-        elif class_name == 'StoredWorkflow':
-            item_class = self.app.model.StoredWorkflow
-        elif class_name == 'Visualization':
-            item_class = self.app.model.Visualization
-        elif class_name == 'Tool':
-            item_class = self.app.model.Tool
-        elif class_name == 'Job':
-            item_class = self.app.model.Job
-        elif class_name == 'User':
-            item_class = self.app.model.User
-        elif class_name == 'Group':
-            item_class = self.app.model.Group
-        elif class_name == 'Role':
-            item_class = self.app.model.Role
-        elif class_name == 'Quota':
-            item_class = self.app.model.Quota
-        elif class_name == 'Library':
-            item_class = self.app.model.Library
-        elif class_name == 'LibraryFolder':
-            item_class = self.app.model.LibraryFolder
-        elif class_name == 'LibraryDatasetDatasetAssociation':
-            item_class = self.app.model.LibraryDatasetDatasetAssociation
-        elif class_name == 'LibraryDataset':
-            item_class = self.app.model.LibraryDataset
-        elif class_name == 'ToolShedRepository':
-            item_class = self.app.install_model.ToolShedRepository
-        else:
-            item_class = None
-        return item_class
+        return managers_base.get_class( class_name )
 
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         """
         Convenience method to get a model object with the specified checks.
         """
-        try:
-            decoded_id = trans.security.decode_id( id )
-        except:
-            raise MessageException( "Malformed %s id ( %s ) specified, unable to decode"
-                                    % ( class_name, str( id ) ), type='error' )
-        try:
-            item_class = self.get_class( class_name )
-            assert item_class is not None
-            item = trans.sa_session.query( item_class ).get( decoded_id )
-            assert item is not None
-        except Exception:
-            log.exception( "Invalid %s id ( %s ) specified." % ( class_name, id ) )
-            raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
-
-        if check_ownership or check_accessible:
-            self.security_check( trans, item, check_ownership, check_accessible )
-        if deleted == True and not item.deleted:
-            raise ItemDeletionException( '%s "%s" is not deleted'
-                                         % ( class_name, getattr( item, 'name', id ) ), type="warning" )
-        elif deleted == False and item.deleted:
-            raise ItemDeletionException( '%s "%s" is deleted'
-                                         % ( class_name, getattr( item, 'name', id ) ), type="warning" )
-        return item
-
+        return managers_base.get_object( trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+  
     # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
     #   but *don't* then becomes difficult
     #def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
