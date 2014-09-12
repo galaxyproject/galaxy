@@ -7,7 +7,6 @@ import mock
 from galaxy import model
 
 from galaxy.workflow import modules
-from galaxy.tools import parameters
 from .workflow_support import MockTrans
 
 
@@ -49,17 +48,17 @@ def test_data_input_step_modified_state():
     __assert_has_runtime_input( module, label="Cool Input" )
 
 
-def test_data_input_compute_state_default():
+def test_data_input_compute_runtime_state_default():
     module = __from_step(
         type="data_input",
     )
-    state, errors = module.compute_state( module.trans )
+    state, errors = module.compute_runtime_state( module.trans )
     assert not errors
     assert 'input' in state.inputs
     assert state.inputs[ 'input' ] is None
 
 
-def test_data_input_compute_state_args():
+def test_data_input_compute_runtime_state_args():
     module = __from_step(
         type="data_input",
     )
@@ -68,7 +67,7 @@ def test_data_input_compute_state_args():
     hda = model.HistoryDatasetAssociation()
     with mock.patch('galaxy.workflow.modules.check_param') as check_method:
         check_method.return_value = ( hda, None )
-        state, errors = module.compute_state( module.trans, { 'input': 4, 'tool_state': tool_state } )
+        state, errors = module.compute_runtime_state( module.trans, { 'input': 4, 'tool_state': tool_state } )
 
     assert not errors
     assert 'input' in state.inputs

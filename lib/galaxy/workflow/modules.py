@@ -79,9 +79,15 @@ class WorkflowModule( object ):
     def get_state( self ):
         """ Return a serializable representation of the persistable state of
         the step - for tools it DefaultToolState.encode returns a string and
-        for inputs a json description is dumped out.
+        for simpler module types a json description is dumped out.
         """
         return None
+
+    def update_state( self, incoming ):
+        """ Update the current state of the module against the user supplied
+        parameters in the dict-like object `incoming`.
+        """
+        pass
 
     def get_errors( self ):
         """ It seems like this is effectively just used as boolean - some places
@@ -96,9 +102,6 @@ class WorkflowModule( object ):
 
     def get_data_outputs( self ):
         return []
-
-    def update_state( self ):
-        pass
 
     def get_config_form( self ):
         """ Render form that is embedded in workflow editor for modifying the
@@ -120,33 +123,38 @@ class WorkflowModule( object ):
     ## ---- Run time ---------------------------------------------------------
 
     def get_runtime_inputs( self ):
-        """ Used internally to modules and when displaying inputs in display
-        and run workflow templates. The ToolModule doesn't implement this and
-        these templates contain specialized logic for dealing with the tool and
-        state directly in these cases.
+        """ Used internally by modules and when displaying inputs in workflow
+        editor and run workflow templates.
+
+        Note: The ToolModule doesn't implement this and these templates contain
+        specialized logic for dealing with the tool and state directly in the
+        case of ToolModules.
         """
         raise TypeError( "Abstract method" )
 
     def encode_runtime_state( self, trans, state ):
-        """ Encode the runtime state (loaded from the stored step and
-        populated via the WorkflowModuleInjector below) for use in a hidden
-        parameter on the webpage.
+        """ Encode the default runtime state at return as a simple `str` for
+        use in a hidden parameter on the workflow run submission form.
 
-        This will combined with runtime parameters supplied by user running
-        the workflow to create the final state to pass along to execute during
-        workflow invocation.
+        This default runtime state will be combined with user supplied
+        parameters in `compute_runtime_state` below at workflow invocation time to
+        actually describe how each step will be executed.
         """
         raise TypeError( "Abstract method" )
 
-    def compute_state( self, trans, step_updates=None ):
-        """ Recover the transient "state" attribute to populate corresponding
-        step with (currently this is always a DefaultToolState instance,
-        though I am not sure this is strictly nessecary).
+    def compute_runtime_state( self, trans, step_updates=None ):
+        """ Determine the runtime state (potentially different from self.state
+        which describes configuration state). This (again unlike self.state) is
+        currently always a `DefaultToolState` object.
 
         If `step_updates` is `None`, this is likely for rendering the run form
         for instance and no runtime properties are available and state must be
-        solely determined by step. If `step_updates` are available they describe
-        the runtime properties supplied by the workflow runner.
+        solely determined by the default runtime state described by the step.
+
+        If `step_updates` are available they describe the runtime properties
+        supplied by the workflow runner (potentially including a `tool_state`
+        parameter which is the serialized default encoding state created with
+        encode_runtime_state above).
         """
         raise TypeError( "Abstract method" )
 
@@ -232,7 +240,7 @@ class InputModule( WorkflowModule ):
                 errors[ name ] = error
         return errors
 
-    def compute_state( self, trans, step_updates=None ):
+    def compute_runtime_state( self, trans, step_updates=None ):
         if step_updates:
             # Fix this for multiple inputs
             state = self.decode_runtime_state( trans, step_updates.pop( "tool_state" ) )
@@ -559,7 +567,7 @@ class ToolModule( WorkflowModule ):
     def check_and_update_state( self ):
         return self.tool.check_and_update_param_values( self.state.inputs, self.trans, allow_workflow_parameters=True )
 
-    def compute_state( self, trans, step_updates=None ):
+    def compute_runtime_state( self, trans, step_updates=None ):
         # Warning: This method destructively modifies existing step state.
         step_errors = None
         state = self.state
@@ -788,7 +796,7 @@ class WorkflowModuleInjector(object):
         # are not persisted so we need to do it every time)
         module.add_dummy_datasets( connections=step.input_connections )
 
-        state, step_errors = module.compute_state( trans, step_args )
+        state, step_errors = module.compute_runtime_state( trans, step_args )
         step.state = state
 
         return step_errors
