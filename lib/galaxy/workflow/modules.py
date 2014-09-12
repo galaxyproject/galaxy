@@ -171,23 +171,40 @@ class InputModule( WorkflowModule ):
     @classmethod
     def new( Class, trans, tool_id=None ):
         module = Class( trans )
-        module.state = dict( name=Class.default_name )
+        module.state = Class.default_state()
         return module
 
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         module = Class( trans )
         state = loads( d["tool_state"] )
-        module.state = dict( name=state.get( "name", Class.default_name ) )
+        module.recover_state( state )
         return module
 
     @classmethod
     def from_workflow_step( Class, trans, step ):
         module = Class( trans )
-        module.state = dict( name="Input Dataset" )
-        if step.tool_inputs and "name" in step.tool_inputs:
-            module.state['name'] = step.tool_inputs[ 'name' ]
+        module.recover_state( step.tool_inputs )
         return module
+
+    @classmethod
+    def default_state( Class ):
+        """ This method should return a dictionary describing each
+        configuration property and its default value.
+        """
+        raise TypeError( "Abstract method" )
+
+    def recover_state( self, state, **kwds ):
+        """ Recover state `dict` from simple dictionary describing configuration
+        state (potentially from persisted step state).
+
+        Sub-classes should supply `default_state` method and `state_fields`
+        attribute which are used to build up the state `dict`.
+        """
+        self.state = self.default_state()
+        for key in self.state_fields:
+            if state and key in state:
+                self.state[ key ] = state[ key ]
 
     def save_to_step( self, step ):
         step.type = self.type
@@ -277,6 +294,11 @@ class InputDataModule( InputModule ):
     type = "data_input"
     name = "Input dataset"
     default_name = "Input Dataset"
+    state_fields = [ "name" ]
+
+    @classmethod
+    def default_state( Class ):
+        return dict( name=Class.default_name )
 
 
 class InputDataCollectionModule( InputModule ):
@@ -285,34 +307,11 @@ class InputDataCollectionModule( InputModule ):
     type = "data_collection_input"
     name = "Input dataset collection"
     collection_type = default_collection_type
+    state_fields = [ "name", "collection_type" ]
 
     @classmethod
-    def new( Class, trans, tool_id=None ):
-        module = Class( trans )
-        module.state = dict( name=Class.default_name, collection_type=Class.default_collection_type )
-        return module
-
-    @classmethod
-    def from_dict( Class, trans, d, secure=True ):
-        module = Class( trans )
-        state = loads( d["tool_state"] )
-        module.state = dict(
-            name=state.get( "name", Class.default_name ),
-            collection_type=state.get( "collection_type", Class.default_collection_type )
-        )
-        return module
-
-    @classmethod
-    def from_workflow_step( Class, trans, step ):
-        module = Class( trans )
-        module.state = dict(
-            name=Class.default_name,
-            collection_type=Class.default_collection_type
-        )
-        for key in [ "name", "collection_type" ]:
-            if step.tool_inputs and key in step.tool_inputs:
-                module.state[ key ] = step.tool_inputs[ key ]
-        return module
+    def default_state( Class ):
+        return dict( name=Class.default_name, collection_type=Class.default_collection_type )
 
     def get_runtime_inputs( self, filter_set=['data'] ):
         label = self.state.get( "name", self.default_name )
@@ -408,10 +407,9 @@ class ToolModule( WorkflowModule ):
                 # tool being previously unavailable.
                 return module_factory.from_dict(trans, loads(step.config), secure=False)
             module = Class( trans, tool_id )
-            module.state = galaxy.tools.DefaultToolState()
             if step.tool_version and (step.tool_version != module.tool.version):
                 module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version))
-            module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
+            module.recover_state( step.tool_inputs )
             module.errors = step.tool_errors
             module.workflow_outputs = step.workflow_outputs
             pjadict = {}
@@ -420,6 +418,17 @@ class ToolModule( WorkflowModule ):
             module.post_job_actions = pjadict
             return module
         return None
+
+    def recover_state( self, state, **kwds ):
+        """ Recover module configuration state property (a `DefaultToolState`
+        object) using the tool's `params_from_strings` method.
+        """
+        app = self.trans.app
+        self.state = galaxy.tools.DefaultToolState()
+        params_from_kwds = dict(
+            ignore_errors=kwds.get( "ignore_errors", True )
+        )
+        self.state.inputs = self.tool.params_from_strings( state, app, **params_from_kwds )
 
     @classmethod
     def __get_tool_version( cls, trans, tool_id ):
