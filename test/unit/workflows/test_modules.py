@@ -74,6 +74,49 @@ def test_data_input_compute_runtime_state_args():
     assert state.inputs[ 'input' ] is hda
 
 
+def test_data_input_connections():
+    module = __from_step(
+        type="data_input",
+    )
+    assert len( module.get_data_inputs() ) == 0
+
+    outputs = module.get_data_outputs()
+    assert len( outputs ) == 1
+    output = outputs[ 0 ]
+    assert output[ 'name' ] == 'output'
+    assert output[ 'extensions' ] == [ 'input' ]
+
+
+def test_data_input_update():
+    module = __from_step(
+        type="data_input",
+        tool_inputs={
+            "name": "Cool Input",
+        },
+    )
+    module.update_state( dict( name="Awesome New Name" ) )
+    assert module.state[ 'name' ] == "Awesome New Name"
+
+
+def test_data_input_get_form():
+    module = __from_step(
+        type="data_input",
+        tool_inputs={
+            "name": "Cool Input",
+        },
+    )
+
+    def test_form(template, **kwds ):
+        assert template == "workflow/editor_generic_form.mako"
+        assert "form" in kwds
+        assert len( kwds[ "form" ].inputs ) == 1
+        return "TEMPLATE"
+
+    fill_mock = mock.Mock( side_effect=test_form )
+    module.trans.fill_template = fill_mock
+    assert module.get_config_form() == "TEMPLATE"
+
+
 def test_data_collection_input_default_state():
     trans = MockTrans()
     module = modules.module_factory.new( trans, "data_collection_input" )
@@ -97,6 +140,55 @@ def test_data_input_collection_step_modified_state():
         },
     )
     __assert_has_runtime_input( module, label="Cool Input Collection", collection_type="list:paired" )
+
+
+def test_data_collection_input_connections():
+    module = __from_step(
+        type="data_collection_input",
+        tool_inputs={
+            'collection_type': 'list:paired'
+        }
+    )
+    assert len( module.get_data_inputs() ) == 0
+
+    outputs = module.get_data_outputs()
+    assert len( outputs ) == 1
+    output = outputs[ 0 ]
+    assert output[ 'name' ] == 'output'
+    assert output[ 'extensions' ] == [ 'input_collection' ]
+    assert output[ 'collection_type' ] == 'list:paired'
+
+
+def test_data_collection_input_update():
+    module = __from_step(
+        type="data_collection_input",
+        tool_inputs={
+            'name': 'Cool Collection',
+            'collection_type': 'list:paired',
+        }
+    )
+    module.update_state( dict( name="New Collection", collection_type="list" ) )
+    assert module.state[ 'name' ] == "New Collection"
+
+
+def test_data_collection_input_config_form():
+    module = __from_step(
+        type="data_collection_input",
+        tool_inputs={
+            'name': 'Cool Collection',
+            'collection_type': 'list:paired',
+        }
+    )
+
+    def test_form(template, **kwds ):
+        assert template == "workflow/editor_generic_form.mako"
+        assert "form" in kwds
+        assert len( kwds[ "form" ].inputs ) == 2
+        return "TEMPLATE"
+
+    fill_mock = mock.Mock( side_effect=test_form )
+    module.trans.fill_template = fill_mock
+    assert module.get_config_form() == "TEMPLATE"
 
 
 def test_cannot_create_tool_modules_for_missing_tools():

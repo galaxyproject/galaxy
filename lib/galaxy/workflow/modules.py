@@ -214,12 +214,8 @@ class InputModule( WorkflowModule ):
     def get_data_inputs( self ):
         return []
 
-    def get_data_outputs( self ):
-        return [ dict( name='output', extensions=['input'] ) ]
-
     def get_config_form( self ):
-        form = formbuilder.FormBuilder( title=self.name ) \
-            .add_text( "name", "Name", value=self.state['name'] )
+        form = self._abstract_config_form( )
         return self.trans.fill_template( "workflow/editor_generic_form.mako",
                                          module=self, form=form )
 
@@ -227,11 +223,7 @@ class InputModule( WorkflowModule ):
         return dumps( self.state )
 
     def update_state( self, incoming ):
-        self.state['name'] = incoming.get( 'name', 'Input Dataset' )
-
-    def get_runtime_inputs( self, filter_set=['data'] ):
-        label = self.state.get( "name", "Input Dataset" )
-        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=True, type="data", format=', '.join(filter_set) ), self.trans ) )
+        self.recover_state( incoming )
 
     def get_runtime_state( self ):
         state = galaxy.tools.DefaultToolState()
@@ -300,6 +292,18 @@ class InputDataModule( InputModule ):
     def default_state( Class ):
         return dict( name=Class.default_name )
 
+    def _abstract_config_form( self ):
+        form = formbuilder.FormBuilder( title=self.name ) \
+            .add_text( "name", "Name", value=self.state['name'] )
+        return form
+
+    def get_data_outputs( self ):
+        return [ dict( name='output', extensions=['input'] ) ]
+
+    def get_runtime_inputs( self, filter_set=['data'] ):
+        label = self.state.get( "name", "Input Dataset" )
+        return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=True, type="data", format=', '.join(filter_set) ), self.trans ) )
+
 
 class InputDataCollectionModule( InputModule ):
     default_name = "Input Dataset Collection"
@@ -319,7 +323,7 @@ class InputDataCollectionModule( InputModule ):
         input_element = Element( "param", name="input", label=label, type="data_collection", collection_type=collection_type )
         return dict( input=DataCollectionToolParameter( None, input_element, self.trans ) )
 
-    def get_config_form( self ):
+    def _abstract_config_form( self ):
         type_hints = odict.odict()
         type_hints[ "list" ] = "List of Datasets"
         type_hints[ "paired" ] = "Dataset Pair"
@@ -338,12 +342,7 @@ class InputDataCollectionModule( InputModule ):
             "name", "Name", value=self.state['name']
         )
         form.inputs.append( type_input )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako",
-                                         module=self, form=form )
-
-    def update_state( self, incoming ):
-        self.state[ 'name' ] = incoming.get( 'name', self.default_name )
-        self.state[ 'collection_type' ] = incoming.get( 'collection_type', self.collection_type )
+        return form
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input_collection'], collection_type=self.state[ 'collection_type' ] ) ]
