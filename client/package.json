@@ -1,0 +1,11 @@
+{
+  "name": "galaxy-client",
+  "version": "0.1.0",
+  "description": "Galaxy client application build system",
+  "keywords": [
+    "galaxy"
+  ],
+  "devDependencies": {
+    "grunt-contrib-copy": "^0.5.0"
+  }
+}
