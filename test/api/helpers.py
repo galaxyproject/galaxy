@@ -11,7 +11,6 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
-workflow_two_paired_str = resource_string( __name__, "test_workflow_two_paired.ga" )
 
 
 DEFAULT_HISTORY_TIMEOUT = 10  # Secs to wait on history to turn ok
@@ -121,23 +120,38 @@ class DatasetPopulator( object ):
         return tool_response.json()
 
     def get_history_dataset_content( self, history_id, wait=True, **kwds ):
+        dataset_id = self.__history_dataset_id( history_id, wait=wait, **kwds )
+        display_response = self.__get_contents_request( history_id, "/%s/display" % dataset_id )
+        assert display_response.status_code == 200, display_response.content
+        return display_response.content
+
+    def get_history_dataset_details( self, history_id, **kwds ):
+        dataset_id = self.__history_dataset_id( history_id, **kwds )
+        details_response = self.__get_contents_request( history_id, "/%s" % dataset_id )
+        assert details_response.status_code == 200
+        return details_response.json()
+
+    def __history_dataset_id( self, history_id, wait=True, **kwds ):
         if wait:
             assert_ok = kwds.get( "assert_ok", True )
             self.wait_for_history( history_id, assert_ok=assert_ok )
         # kwds should contain a 'dataset' object response, a 'dataset_id' or
         # the last dataset in the history will be fetched.
-        contents_url = "histories/%s/contents" % history_id
         if "dataset_id" in kwds:
             dataset_id = kwds[ "dataset_id" ]
         elif "dataset" in kwds:
             dataset_id = kwds[ "dataset" ][ "id" ]
         else:
-            dataset_contents = self.galaxy_interactor.get( contents_url ).json()
-            dataset_id = dataset_contents[ -1 ][ "id" ]
+            hid = kwds.get( "hid", -1 )  # If not hid, just grab last dataset
+            dataset_contents = self.__get_contents_request( history_id ).json()
+            dataset_id = dataset_contents[ hid - 1 ][ "id" ]
+        return dataset_id
 
-        display_response = self.galaxy_interactor.get( "%s/%s/display" % ( contents_url, dataset_id ) )
-        assert display_response.status_code == 200
-        return display_response.content
+    def __get_contents_request( self, history_id, suffix=""):
+        url = "histories/%s/contents" % history_id
+        if suffix:
+            url = "%s%s" % ( url, suffix )
+        return self.galaxy_interactor.get( url )
 
 
 class WorkflowPopulator( object ):
@@ -154,15 +168,18 @@ class WorkflowPopulator( object ):
             tool_step[ "post_job_actions" ][ "RenameDatasetActionout_file1" ] = dict(
                 action_type="RenameDatasetAction",
                 output_name="out_file1",
-                action_arguments=dict( newname="the_new_name" ),
+                action_arguments=dict( newname="foo ${replaceme}" ),
             )
         return workflow
 
     def load_random_x2_workflow( self, name ):
         return self.load_workflow( name, content=workflow_random_x2_str )
 
-    def load_two_paired_workflow( self, name ):
-        return self.load_workflow( name, content=workflow_two_paired_str )
+    def load_workflow_from_resource( self, name, filename=None ):
+        if filename is None:
+            filename = "%s.ga" % name
+        content = resource_string( __name__, filename )
+        return self.load_workflow( name, content=content )
 
     def simple_workflow( self, name, **create_kwds ):
         workflow = self.load_workflow( name )
@@ -323,8 +340,14 @@ class DatasetCollectionPopulator( object ):
 
     def list_identifiers( self, history_id, contents=None ):
         count = 3 if not contents else len( contents )
-        hdas = self.__datasets( history_id, count=count, contents=contents )
-        hda_to_identifier = lambda ( i, hda ): dict( name="data%d" % ( i + 1 ), src="hda", id=hda[ "id" ] )
+        # Contents can be a list of strings (with name auto-assigned here) or a list of
+        # 2-tuples of form (name, dataset_content).
+        if contents and isinstance(contents[0], tuple):
+            hdas = self.__datasets( history_id, count=count, contents=[c[1] for c in contents] )
+            hda_to_identifier = lambda ( i, hda ): dict( name=contents[i][0], src="hda", id=hda[ "id" ] )
+        else:
+            hdas = self.__datasets( history_id, count=count, contents=contents )
+            hda_to_identifier = lambda ( i, hda ): dict( name="data%d" % ( i + 1 ), src="hda", id=hda[ "id" ] )
         element_identifiers = map( hda_to_identifier, enumerate( hdas ) )
         return element_identifiers
 
@@ -343,17 +366,27 @@ class DatasetCollectionPopulator( object ):
 
 
 def wait_on_state( state_func, assert_ok=False, timeout=5 ):
-    delta = .25
-    iteration = 0
-    while True:
-        if (delta * iteration) > timeout:
-            assert False, "Timed out waiting on state."
-        iteration += 1
+    def get_state( ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
         state = response.json()[ "state" ]
         if state not in [ "running", "queued", "new" ]:
-            break
+            if assert_ok:
+                assert state == "ok", "Final state - %s - not okay." % state
+            return state
+        else:
+            return None
+    wait_on( get_state, desc="state", timeout=timeout)
+
+
+def wait_on( function, desc, timeout=5 ):
+    delta = .25
+    iteration = 0
+    while True:
+        if (delta * iteration) > timeout:
+            assert False, "Timed out waiting on %s." % desc
+        iteration += 1
+        value = function()
+        if value is not None:
+            return value
         time.sleep( delta )
-    if assert_ok:
-        assert state == "ok", "Final state - %s - not okay." % state

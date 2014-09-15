@@ -24,16 +24,19 @@
 
     # form configuration
     self.form_config = {
-        'id'        : tool.id,
-        'help'      : tool_help,
-        'citations' : tool_citations
+        'id'            : tool.id,
+        'help'          : tool_help,
+        'citations'     : tool_citations,
+        'biostar_url'   : trans.app.config.biostar_url,
+        'history_id'    : trans.security.encode_id( trans.history.id )
     }
 %>
-${h.js( "libs/bibtex" )}
+${h.js( "libs/bibtex", "libs/jquery/jquery-ui" )}
+${h.css( 'base', 'jquery-ui/smoothness/jquery-ui')}
 <script>
     require(['mvc/tools/tools-form'], function(ToolsForm){
         $(function(){
-            var form = new ToolsForm.View(${ h.to_json_string(self.form_config) });
+            var form = new ToolsForm.View(${ h.dumps(self.form_config) });
         });
     });
 </script>

@@ -21,11 +21,11 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 //TODO: can we decorate the mixed models using the model fn below (instead of having them build their own type_id)?
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
     //logger              : console,
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
+        //console.debug( 'HistoryContents.model:', attrs, options );
 
 //TODO: can we move the type_id stuff here?
         //attrs.type_id = typeIdStr( attrs );
@@ -53,6 +53,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
      */
     initialize : function( models, options ){
         options = options || {};
+//TODO: could probably use the contents.history_id instead
         this.historyId = options.historyId;
         //this._setUpListeners();
 
@@ -184,6 +185,23 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         return deferred;
     },
 
+    /** copy an existing, accessible hda into this collection */
+    copy : function( id ){
+        var collection = this,
+            xhr = jQuery.post( this.url(), {
+                source  : 'hda',
+                content : id
+            });
+        xhr.done( function( json ){
+            collection.add([ json ]);
+        });
+        xhr.fail( function( error, status, message ){
+//TODO: better distinction btwn not-allowed and actual ajax error
+            collection.trigger( 'error', collection, xhr, {}, 'Error copying dataset' );
+        });
+        return xhr;
+    },
+
     // ........................................................................ sorting/filtering
     /** return a new collection of contents whose attributes contain the substring matchesWhat */
     matches : function( matchesWhat ){
@@ -195,6 +213,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     // ........................................................................ misc
     /** override to get a correct/smarter merge when incoming data is partial */
     set : function( models, options ){
+        this.debug( 'set:', models );
         // arrrrrrrrrrrrrrrrrg...
         //  (e.g. stupid backbone)
         //  w/o this partial models from the server will fill in missing data with model defaults
@@ -208,7 +227,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
             if( !existing ){ return model; }
 
             // merge the models _BEFORE_ calling the superclass version
-            var merged = existing.toJSON();
+            var merged = _.clone( existing.attributes );
             _.extend( merged, model );
             return merged;
         });
@@ -283,6 +302,13 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
             // Do something?
         });
         return xhr;
+    },
+
+    /** In this override, copy the historyId to the clone */
+    clone : function(){
+        var clone = Backbone.Collection.prototype.clone.call( this );
+        clone.historyId = this.historyId;
+        return clone;
     },
 
     /** debugging */

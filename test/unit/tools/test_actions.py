@@ -1,8 +1,11 @@
 import unittest
 
 from galaxy import model
+from galaxy.tools import ToolOutput
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions import on_text_for_names
+from galaxy.tools.actions import determine_output_format
+from elementtree.ElementTree import XML
 
 import tools_support
 
@@ -21,6 +24,20 @@ DATA_IN_LABEL_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
     </inputs>
     <outputs>
         <data name="out1" format="data" label="Output (${repeat1[0].param1})" />
+    </outputs>
+</tool>
+'''
+
+# Tool with two outputs - used to verify all datasets within same job get same
+# object store id.
+TWO_OUTPUTS = '''<tool id="test_tool" name="Test Tool">
+    <command>echo "$param1" &lt; $out1</command>
+    <inputs>
+        <param type="text" name="param1" value="" />
+    </inputs>
+    <outputs>
+        <data name="out1" format="data" label="Output ($param1)" />
+        <data name="out2" format="data" label="Output 2 ($param1)" />
     </outputs>
 </tool>
 '''
@@ -80,6 +97,11 @@ class DefaultToolActionTestCase( unittest.TestCase, tools_support.UsesApp, tools
         )
         self.assertEquals( output[ "out1" ].name, "Test Tool on data 2 and data 1" )
 
+    def test_object_store_ids( self ):
+        _, output = self._simple_execute( contents=TWO_OUTPUTS )
+        self.assertEquals( output[ "out1" ].name, "Output (moo)" )
+        self.assertEquals( output[ "out2" ].name, "Output 2 (moo)" )
+
     def test_params_wrapped( self ):
         hda1 = self.__add_dataset()
         _, output = self._simple_execute(
@@ -116,6 +138,57 @@ class DefaultToolActionTestCase( unittest.TestCase, tools_support.UsesApp, tools
         )
 
 
+def test_determine_output_format():
+    # Test simple case of explicitly defined output with no changes.
+    direct_output = quick_output("txt")
+    __assert_output_format_is("txt", direct_output)
+
+    # Test if format is "input" (which just uses the last input on the form.)
+    input_based_output = quick_output("input")
+    __assert_output_format_is("fastq", input_based_output, [("i1", "fasta"), ("i2", "fastq")])
+
+    # Test using format_source (testing a couple different positions)
+    input_based_output = quick_output("txt", format_source="i1")
+    __assert_output_format_is("fasta", input_based_output, [("i1", "fasta"), ("i2", "fastq")])
+
+    input_based_output = quick_output("txt", format_source="i2")
+    __assert_output_format_is("fastq", input_based_output, [("i1", "fasta"), ("i2", "fastq")])
+
+    change_format_xml = """<data><change_format>
+        <when input="options_type.output_type" value="solexa" format="fastqsolexa" />
+        <when input="options_type.output_type" value="illumina" format="fastqillumina" />
+    </change_format></data>"""
+
+    change_format_output = quick_output("fastq", change_format_xml=change_format_xml)
+    # Test maching a change_format when.
+    __assert_output_format_is("fastqillumina", change_format_output, param_context={"options_type": {"output_type": "illumina"}} )
+    # Test change_format but no match
+    __assert_output_format_is("fastq", change_format_output, param_context={"options_type": {"output_type": "sanger"}} )
+
+
+def __assert_output_format_is( expected, output, input_extensions=[], param_context=[] ):
+    inputs = {}
+    last_ext = "data"
+    for name, ext in input_extensions:
+        hda = model.HistoryDatasetAssociation(extension=ext)
+        inputs[ name ] = hda
+        last_ext = ext
+
+    actual_format = determine_output_format( output, param_context, inputs, last_ext )
+    assert actual_format == expected, "Actual format %s, does not match expected %s" % (actual_format, expected)
+
+
+def quick_output(format, format_source=None, change_format_xml=None):
+    test_output = ToolOutput( "test_output" )
+    test_output.format = format
+    test_output.format_source = format_source
+    if change_format_xml:
+        test_output.change_format = XML(change_format_xml)
+    else:
+        test_output.change_format = None
+    return test_output
+
+
 class MockTrans( object ):
 
     def __init__( self, app, history, user=None ):
@@ -142,6 +215,14 @@ class MockObjectStore( object ):
 
     def __init__( self ):
         self.created_datasets = []
+        self.first_create = True
+        self.object_store_id = "mycoolid"
 
     def create( self, dataset ):
         self.created_datasets.append( dataset )
+        if self.first_create:
+            self.first_create = False
+            assert dataset.object_store_id is None
+            dataset.object_store_id = self.object_store_id
+        else:
+            assert dataset.object_store_id == self.object_store_id

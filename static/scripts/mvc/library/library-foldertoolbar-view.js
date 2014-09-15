@@ -80,7 +80,7 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   // shows modal for creating folder
-  createFolderFromModal: function(){
+  createFolderFromModal: function( event ){
     event.preventDefault();
     event.stopPropagation();
 
@@ -226,11 +226,13 @@ var FolderToolbarView = Backbone.View.extend({
 
       // set the used history as current so user will see the last one 
       // that he imported into in the history panel on the 'analysis' page
-      var set_current_url =  '/api/histories/' + history_id + '/set_as_current';
-      $.ajax({
-        url: set_current_url,
-        type: 'PUT'
-      });
+      //var set_current_url =  '/api/histories/' + history_id + '/set_as_current';
+      //$.ajax({
+      //  url: set_current_url,
+      //  type: 'PUT'
+      //});
+      jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + historyId  );
+
       // call the recursive function to call ajax one after each other (request FIFO queue)
       this.chainCall(datasets_to_import, history_name);
   },

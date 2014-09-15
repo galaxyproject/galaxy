@@ -16,6 +16,7 @@ import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
+import galaxy.web.framework.webapp
 from galaxy import util
 from galaxy.util import asbool
 
@@ -23,7 +24,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class GalaxyWebApplication( galaxy.web.framework.WebApplication ):
+class GalaxyWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
 
 def app_factory( global_conf, **kwargs ):
@@ -197,10 +198,6 @@ def populate_api_routes( webapp, app ):
                                 controller='page_revisions',
                                 parent_resources=dict( member_name='page', collection_name='pages' ) )
 
-    # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
-    webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
-        controller="histories", action="set_as_current", conditions=dict( method=["PUT"] ) )
-
     webapp.mapper.connect( "history_archive_export", "/api/histories/{id}/exports",
         controller="histories", action="archive_export", conditions=dict( method=[ "PUT" ] ) )
     webapp.mapper.connect( "history_archive_download", "/api/histories/{id}/exports/{jeha_id}",
@@ -299,11 +296,6 @@ def populate_api_routes( webapp, app ):
                             'contents',
                             controller='library_contents',
                             name_prefix='library_',
-                            path_prefix='/api/libraries/:library_id',
-                            parent_resources=dict( member_name='library', collection_name='libraries' ) )
-
-    webapp.mapper.resource( 'permission',
-                            'permissions',
                             path_prefix='/api/libraries/:library_id',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
 
@@ -561,12 +553,12 @@ def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
     # Send to dynamic app by default
     urlmap["/"] = app
     # Define static mappings from config
-    urlmap["/static"] = Static( conf.get( "static_dir" ), cache_time )
-    urlmap["/images"] = Static( conf.get( "static_images_dir" ), cache_time )
-    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir" ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
-    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
-    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", 'static/robots.txt'), cache_time )
+    urlmap["/static"] = Static( conf.get( "static_dir", "./static/" ), cache_time )
+    urlmap["/images"] = Static( conf.get( "static_images_dir", "./static/images" ), cache_time )
+    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", "./static/scripts/" ), cache_time )
+    urlmap["/static/style"] = Static( conf.get( "static_style_dir", "./static/style/blue" ), cache_time )
+    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", "./static/favicon.ico" ), cache_time )
+    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", "./static/robots.txt" ), cache_time )
 
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []

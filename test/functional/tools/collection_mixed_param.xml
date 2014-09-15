@@ -3,8 +3,19 @@
     cat #for $f in $f1# ${f} #end for# $f2 >> $out1;
   </command>
   <inputs>
-    <param name="f1" type="data_collection" collection_type="paired" />
-    <param name="f2" type="data" format="txt" />
+    <param name="f1" type="data_collection" collection_type="paired" label="collection param" />
+    <param name="f2" type="data" format="txt" label="data param" />
+    <conditional name="advanced">
+      <param name="full" type="select" label="Parameter Settings">
+        <option value="no">Use defaults</option>
+        <option value="yes">Full parameter list</option>
+      </param>
+      <when value="yes">
+        <param name="advanced_threshold" type="integer" value="8" />
+      </when>
+      <when value="no">
+      </when>
+    </conditional>
   </inputs>
   <outputs>
     <data format="txt" name="out1" />

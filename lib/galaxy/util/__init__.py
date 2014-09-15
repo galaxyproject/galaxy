@@ -98,6 +98,21 @@ def is_binary( value, binary_chars=None ):
     return False
 
 
+def is_uuid( value ):
+    """
+    This method returns True if value is a UUID, otherwise False.
+    >>> is_uuid( "123e4567-e89b-12d3-a456-426655440000" )
+    True
+    >>> is_uuid( "0x3242340298902834" )
+    False
+    """
+    uuid_re = re.compile( "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}" )
+    if re.match( uuid_re, str( value ) ):
+        return True
+    else:
+        return False
+
+
 def get_charset_from_http_headers( headers, default=None ):
     rval = headers.get('content-type', None )
     if rval and 'charset=' in rval:
@@ -323,8 +338,8 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
 
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:
-        json_data = json.from_json_string(json_data)
-    return json.to_json_string(json_data, sort_keys=True, indent=4)
+        json_data = json.loads(json_data)
+    return json.dumps(json_data, sort_keys=True, indent=4)
 
 # characters that are valid
 valid_chars = set(string.letters + string.digits + " -=_.()/+*^,:?!")
@@ -827,6 +842,30 @@ def read_dbnames(filename):
     if len(db_names) < 1:
         db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
     return db_names
+
+
+def read_build_sites( filename, check_builds=True ):
+    """ read db names to ucsc mappings from file, this file should probably be merged with the one above """
+    build_sites = []
+    try:
+        for line in open(filename):
+            try:
+                if line[0:1] == "#":
+                    continue
+                fields = line.replace("\r", "").replace("\n", "").split("\t")
+                site_name = fields[0]
+                site = fields[1]
+                if check_builds:
+                    site_builds = fields[2].split(",")
+                    site_dict = {'name': site_name, 'url': site, 'builds': site_builds}
+                else:
+                    site_dict = {'name': site_name, 'url': site}
+                build_sites.append( site_dict )
+            except:
+                continue
+    except:
+        print "ERROR: Unable to read builds for site file %s" % filename
+    return build_sites
 
 
 def relativize_symlinks( path, start=None, followlinks=False):

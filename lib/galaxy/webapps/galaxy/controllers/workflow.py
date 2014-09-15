@@ -21,10 +21,12 @@ from galaxy.tools.parameters import visit_input_values
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
-from galaxy.web.framework import form
+from galaxy.web.framework.formbuilder import form
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.framework.helpers import to_unicode
-from galaxy.workflow.modules import module_factory
+from galaxy.workflow.modules import WorkflowModuleInjector
+from galaxy.workflow.modules import MissingToolException
+from galaxy.workflow.modules import module_factory, is_tool_module_type
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
 from galaxy.workflow.extract import summarize
@@ -836,8 +838,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         steps_by_external_id = {}
         errors = []
         for key, step_dict in data['steps'].iteritems():
-            is_input = step_dict[ 'type' ] in [ 'data_input', 'data_collection_input' ]
-            if not is_input and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
+            is_tool = is_tool_module_type( step_dict[ 'type' ] )
+            if is_tool and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
                 errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
         if errors:
             return dict( name=workflow.name,
@@ -1269,6 +1271,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 error("That history does not exist.")
         try:  # use a try/finally block to restore the user's current history
             default_target_history = trans.get_history()
+            module_injector = WorkflowModuleInjector( trans )
             if kwargs:
                 # If kwargs were provided, the states for each step should have
                 # been POSTed
@@ -1276,45 +1279,15 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 invocations = []
                 for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs):
                     for step in workflow.steps:
-                        step.upgrade_messages = {}
-                        # Connections by input name
-                        input_connections_by_name = {}
-                        for conn in step.input_connections:
-                            input_name = conn.input_name
-                            if not input_name in input_connections_by_name:
-                                input_connections_by_name[input_name] = []
-                            input_connections_by_name[input_name].append(conn)
-                        step.input_connections_by_name = input_connections_by_name
                         # Extract just the arguments for this step by prefix
                         p = "%s|" % step.id
                         l = len(p)
                         step_args = dict( ( k[l:], v ) for ( k, v ) in kwargs.iteritems() if k.startswith( p ) )
-                        step_errors = None
-                        if step.type == 'tool' or step.type is None:
-                            module = module_factory.from_workflow_step( trans, step )
-                            # Fix any missing parameters
-                            step.upgrade_messages = module.check_and_update_state()
-                            if step.upgrade_messages:
-                                has_upgrade_messages = True
-                            # Any connected input needs to have value DummyDataset (these
-                            # are not persisted so we need to do it every time)
-                            module.add_dummy_datasets( connections=step.input_connections )
-                            # Get the tool
-                            tool = module.tool
-                            # Get the state
-                            step.state = state = module.state
-                            # Get old errors
-                            old_errors = state.inputs.pop( "__errors__", {} )
-                            # Update the state
-                            step_errors = tool.update_state( trans, tool.inputs, step.state.inputs, step_args,
-                                                             update_only=True, old_errors=old_errors )
-                        else:
-                            # Fix this for multiple inputs
-                            module = step.module = module_factory.from_workflow_step( trans, step )
-                            state = step.state = module.decode_runtime_state( trans, step_args.pop( "tool_state" ) )
-                            step_errors = module.update_runtime_state( trans, state, step_args )
+                        step_errors = module_injector.inject( step, step_args )
+                        if step.upgrade_messages:
+                            has_upgrade_messages = True
                         if step_errors:
-                            errors[step.id] = state.inputs["__errors__"] = step_errors
+                            errors[step.id] = step.state.inputs["__errors__"] = step_errors
                     if 'run_workflow' in kwargs and not errors:
                         new_history = None
                         if 'new_history' in kwargs:
@@ -1361,43 +1334,25 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # Prepare each step
                 missing_tools = []
                 for step in workflow.steps:
-                    step.upgrade_messages = {}
-                    # Contruct modules
+                    try:
+                        module_injector.inject( step )
+                    except MissingToolException:
+                        if step.tool_id not in missing_tools:
+                            missing_tools.append(step.tool_id)
+                        continue
+                    if step.upgrade_messages:
+                        has_upgrade_messages = True
                     if step.type == 'tool' or step.type is None:
-                        # Restore the tool state for the step
-                        step.module = module_factory.from_workflow_step( trans, step )
-                        if not step.module:
-                            if step.tool_id not in missing_tools:
-                                missing_tools.append(step.tool_id)
-                            continue
-                        step.upgrade_messages = step.module.check_and_update_state()
-                        if step.upgrade_messages:
-                            has_upgrade_messages = True
-                        if step.type == 'tool' and step.module.version_changes:
+                        if step.module.version_changes:
                             step_version_changes.extend(step.module.version_changes)
-                        # Any connected input needs to have value DummyDataset (these
-                        # are not persisted so we need to do it every time)
-                        step.module.add_dummy_datasets( connections=step.input_connections )
-                        # Store state with the step
-                        step.state = step.module.state
                         # Error dict
                         if step.tool_errors:
-                            # has_errors is never used.
-                            # has_errors = True
                             errors[step.id] = step.tool_errors
-                    else:
-                        ## Non-tool specific stuff?
-                        step.module = module_factory.from_workflow_step( trans, step )
-                        step.state = step.module.get_runtime_state()
-                    # Connections by input name
-                    step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
                 if missing_tools:
                     stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
                     return trans.fill_template(
-                        "workflow/run.mako",
-                        steps=[],
+                        "workflow/missing_tools.mako",
                         workflow=stored,
-                        hide_fixed_params=hide_fixed_params,
                         missing_tools=missing_tools
                     )
             # Render the form
@@ -1464,32 +1419,17 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         trans.sa_session.add(m)
         # Prepare each step
         trans.sa_session.flush()
+        module_injector = WorkflowModuleInjector( trans )
         for step in workflow.steps:
             step.upgrade_messages = {}
             # Contruct modules
+            module_injector.inject( step )
+            if step.upgrade_messages:
+                has_upgrade_messages = True
             if step.type == 'tool' or step.type is None:
-                # Restore the tool state for the step
-                step.module = module_factory.from_workflow_step( trans, step )
-                # Fix any missing parameters
-                step.upgrade_messages = step.module.check_and_update_state()
-                if step.upgrade_messages:
-                    has_upgrade_messages = True
-                # Any connected input needs to have value DummyDataset (these
-                # are not persisted so we need to do it every time)
-                step.module.add_dummy_datasets( connections=step.input_connections )
-                # Store state with the step
-                step.state = step.module.state
                 # Error dict
                 if step.tool_errors:
-                    # has_errors is never used
-                    # has_errors = True
                     errors[step.id] = step.tool_errors
-            else:
-                ## Non-tool specific stuff?
-                step.module = module_factory.from_workflow_step( trans, step )
-                step.state = step.module.get_runtime_state()
-            # Connections by input name
-            step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
         # Render the form
         return trans.fill_template(
             "workflow/tag_outputs.mako",

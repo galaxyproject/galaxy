@@ -17,8 +17,8 @@ from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import transform_publicname
-from galaxy.util.json import from_json_string
-from galaxy.util.json import to_json_string
+from galaxy.util.json import loads
+from galaxy.util.json import dumps
 from galaxy.util import listify
 from galaxy.util import docstring_trim
 from galaxy.web import url_for
@@ -616,11 +616,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if biostar_url:
                 # TODO: It would be better if we automatically logged this user out of biostar
                 message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % ( biostar_url )
-        return trans.fill_template( '/user/logout.mako',
-                                    refresh_frames=refresh_frames,
-                                    message=message,
-                                    status='done',
-                                    active_view="user" )
+        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
+            trans.response.send_redirect(trans.app.config.remote_user_logout_href)
+        else:
+            return trans.fill_template('/user/logout.mako',
+                                       refresh_frames=refresh_frames,
+                                       message=message,
+                                       status='done',
+                                       active_view="user" )
 
     @web.expose
     def create( self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd ):
@@ -1583,7 +1586,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if 'dbkeys' not in user.preferences:
             dbkeys = {}
         else:
-            dbkeys = from_json_string(user.preferences['dbkeys'])
+            dbkeys = loads(user.preferences['dbkeys'])
         if 'delete' in kwds:
             # Delete a build.
             key = kwds.get('key', '')
@@ -1646,7 +1649,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 dbkeys[key] = build_dict
         # Save builds.
         # TODO: use database table to save builds.
-        user.preferences['dbkeys'] = to_json_string(dbkeys)
+        user.preferences['dbkeys'] = dumps(dbkeys)
         trans.sa_session.flush()
 
         #
@@ -1677,12 +1680,15 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 continue
             else:
                 # Set chrom count.
-                chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
-                attributes[ 'count' ] = chrom_count
-                updated = True
+                try:
+                    chrom_count = int( open( chrom_count_dataset.file_name ).readline() )
+                    attributes[ 'count' ] = chrom_count
+                    updated = True
+                except Exception, e:
+                    log.error( "Failed to open chrom count dataset: %s", e )
 
         if updated:
-            user.preferences['dbkeys'] = to_json_string(dbkeys)
+            user.preferences['dbkeys'] = dumps(dbkeys)
             trans.sa_session.flush()
 
         # Potential genome data for custom builds is limited to fasta datasets in current history for now.

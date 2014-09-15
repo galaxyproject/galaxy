@@ -12,7 +12,7 @@ now = datetime.datetime.utcnow
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 from galaxy.model.custom_types import _sniffnfix_pg9_hex
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 
 import sys, logging
 log = logging.getLogger( __name__ )
@@ -77,7 +77,7 @@ def upgrade(migrate_engine):
     for row in result:
         if row[1]:
             tool_shed_repository_id = row[0]
-            repository_metadata = from_json_string( _sniffnfix_pg9_hex( str( row[1] ) ) )
+            repository_metadata = loads( _sniffnfix_pg9_hex( str( row[1] ) ) )
             # Create a new row in the tool table for each tool included in repository.  We will NOT
             # handle tool_version_associaions because we do not have the information we need to do so.
             tools = repository_metadata.get( 'tools', [] )

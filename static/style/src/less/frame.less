@@ -1,18 +1,14 @@
-.galaxy-frame
-{
-    .corner
-    {
+.galaxy-frame{
+    .corner {
         -moz-border-radius: @border-radius-large;
         border-radius: @border-radius-large;
     }
 
-    .toggle
-    {
+    .toggle {
         color: gold;
     }
 
-    .frame-background
-    {
+    .frame-background {
         z-index         : @zindex-navbar;
         position        : absolute;
         display         : none;
@@ -25,8 +21,7 @@
         overflow        : auto;
     }
 
-    .frame-shadow
-    {
+    .frame-shadow {
         z-index         : @zindex-navbar + 1;
         position        : absolute;
         display         : none;
@@ -40,8 +35,7 @@
     /*
         panel menu button
     */
-    .frame-menu
-    {
+    .frame-menu {
         z-index         : @zindex-navbar + 5;
         position        : absolute;
         cursor          : pointer;
@@ -49,13 +43,11 @@
         right           : 10px;
     }
 
-    .frame-scroll-up
-    {
+    .frame-scroll-up {
         top             : 50px;
     }
 
-    .frame-scroll-down
-    {
+    .frame-scroll-down {
         bottom          : 20px;
     }
 
@@ -63,8 +55,7 @@
         frame components
     */
     
-    .frame
-    {
+    .frame {
         z-index         : @zindex-navbar + 2;
         overflow        : hidden;
         position        : absolute;
@@ -72,8 +63,7 @@
         border          : 1px solid @navbar-default-border;
         -webkit-box-shadow: 0 0 5px rgba(0,0,0,0.3);
     
-        .f-content
-        {
+        .f-content{
             position        : absolute;
             overflow        : hidden;
             background      : @white;
@@ -84,8 +74,7 @@
             right           : 3px;
         }
 
-        .f-cover
-        {
+        .f-cover{
             position        : absolute;
             display         : none;
             top             : 0px;
@@ -96,15 +85,13 @@
             background      : @white;
         }
 
-        .f-iframe
-        {
+        .f-iframe{
             border          : none;
             width           : 100%;
             height          : 100%;
         }
 
-        .f-header
-        {
+        .f-header{
             height          : 17px;
             margin          : 2px;
             cursor          : pointer;
@@ -113,8 +100,7 @@
             color           : @white;
         }
 
-        .f-title
-        {
+        .f-title {
             position        : absolute;
             top             : 2px;
             left            : 16px;
@@ -128,32 +114,27 @@
             frame icons
         */
 
-        .f-icon
-        {
+        .f-icon{
             position        : absolute;
             cursor          : pointer;
             font-size       : 14px;
         }
 
-        .f-not-allowed
-        {
+        .f-not-allowed{
             cursor          : not-allowed;
         }
 
-        .f-close
-        {
+        .f-close{
             right           : 5px;
             top             : 3px;
         }
 
-        .f-pin
-        {
+        .f-pin{
             left            : 6px;
             top             : 3px;
         }
 
-        .f-resize
-        {
+        .f-resize{
             right           : 0px;
             bottom          : 0px;
             background      : @white;

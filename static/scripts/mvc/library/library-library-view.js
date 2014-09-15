@@ -266,10 +266,10 @@ var LibraryView = Backbone.View.extend({
     tmpl_array.push('           <td><%= _.escape(item.get("name")) %></td>');
     tmpl_array.push('       </tr>');
 
-    tmpl_array.push('   <% if (item.get("data_type")) { %>');
+    tmpl_array.push('   <% if (item.get("file_ext")) { %>');
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Data type</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("data_type")) %></td>');
+    tmpl_array.push('           <td><%= _.escape(item.get("file_ext")) %></td>');
     tmpl_array.push('       </tr>');
     tmpl_array.push('   <% } %>');
 

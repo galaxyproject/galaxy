@@ -185,11 +185,12 @@ var LibraryDatasetView = Backbone.View.extend({
 
       // set the used history as current so user will see the last one 
       // that he imported into in the history panel on the 'analysis' page
-      var set_current_url =  '/api/histories/' + history_id + '/set_as_current';
-      $.ajax({
-        url: set_current_url,
-        type: 'PUT'
-      });
+      //var set_current_url =  '/api/histories/' + history_id + '/set_as_current';
+      //$.ajax({
+      //  url: set_current_url,
+      //  type: 'PUT'
+      //});
+      jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + history_id  );
 
       // save the dataset into selected history
       historyItem.save({ content : this.id, source : 'library' }, { 
@@ -541,10 +542,10 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('           <td><%= _.escape(item.get("name")) %></td>');
     tmpl_array.push('       </tr>');
 
-    tmpl_array.push('   <% if (item.get("data_type")) { %>');
+    tmpl_array.push('   <% if (item.get("file_ext")) { %>');
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Data type</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("data_type")) %></td>');
+    tmpl_array.push('           <td><%= _.escape(item.get("file_ext")) %></td>');
     tmpl_array.push('       </tr>');
     tmpl_array.push('   <% } %>');
 
@@ -681,10 +682,10 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('           <td><%= _.escape(ldda.get("name")) %></td>');
     tmpl_array.push('       </tr>');
 
-    tmpl_array.push('   <% if (ldda.get("data_type")) { %>');
+    tmpl_array.push('   <% if (ldda.get("file_ext")) { %>');
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Data type</th>');
-    tmpl_array.push('           <td><%= _.escape(ldda.get("data_type")) %></td>');
+    tmpl_array.push('           <td><%= _.escape(ldda.get("file_ext")) %></td>');
     tmpl_array.push('       </tr>');
     tmpl_array.push('   <% } %>');
 
@@ -811,7 +812,7 @@ var LibraryDatasetView = Backbone.View.extend({
     tmpl_array.push('       </tr>');
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Data type</th>');
-    tmpl_array.push('           <td><%= _.escape(item.get("data_type")) %></td>');
+    tmpl_array.push('           <td><%= _.escape(item.get("file_ext")) %></td>');
     tmpl_array.push('       </tr>');
     tmpl_array.push('       <tr>');
     tmpl_array.push('           <th scope="row">Genome build</th>');

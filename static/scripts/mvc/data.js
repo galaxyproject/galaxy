@@ -344,7 +344,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
     genome_build: null,
 
     // data type
-    data_type   : null,
+    file_ext   : null,
 
     // backbone initialize
     initialize: function (options) {
@@ -371,15 +371,15 @@ var TabularButtonTracksterView = Backbone.View.extend({
         var metadata    = model.get('metadata');
 
         // check for datatype
-        if (!model.get('data_type')) {
+        if (!model.get('file_ext')) {
             return;
         }
 
         // get data type
-        this.data_type = model.get('data_type');
+        this.file_ext = model.get('file_ext');
 
         // check for bed-file format
-        if (this.data_type == 'bed')
+        if (this.file_ext == 'bed')
         {
             // verify that metadata exists
             if (metadata.get('chromCol') && metadata.get('startCol') && metadata.get('endCol'))
@@ -395,7 +395,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
         }
 
         // check for vcf-file format
-        if (this.data_type == 'vcf')
+        if (this.file_ext == 'vcf')
         {
             // search array
             function search (str, array) {

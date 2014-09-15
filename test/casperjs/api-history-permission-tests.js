@@ -35,7 +35,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
     this.test.comment( 'importable, slug, and published should all be returned by show and initially off' );
     // make the current the inaccessible one
-    inaccessibleHistory = this.api.histories.show( 'current' );
+    inaccessibleHistory = this.api.histories.show( this.api.histories.index()[0].id );
     this.test.assert( this.hasKeys( inaccessibleHistory, [ 'id', 'name', 'slug', 'importable', 'published' ] ),
         'Has the proper keys' );
     this.test.assert( inaccessibleHistory.slug === null,
@@ -45,7 +45,7 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( inaccessibleHistory.published === false,
         'initial published is false: ' + inaccessibleHistory.published );
     this.api.histories.update( inaccessibleHistory.id, { name: 'inaccessible' });
-    inaccessibleHistory = this.api.histories.show( 'current' );
+    inaccessibleHistory = this.api.histories.show( inaccessibleHistory.id );
 
     this.test.comment( 'Setting importable to true should create a slug, username_and_slug, and importable === true' );
     accessibleHistory = this.api.histories.create({ name: 'accessible' });
@@ -129,7 +129,7 @@ function testReadFunctionsOnAccessible( history, hdas ){
 
     this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
                      + ' should work from accessible history: ' + history.name );
-    returned = this.api.hdas.create( this.api.histories.show( 'current' ).id, {
+    returned = this.api.hdas.create( this.api.histories.index()[0].id, {
         source  : 'hda',
         content : hdas[0].id
     });
@@ -161,7 +161,7 @@ function testReadFunctionsOnInaccessible( history, hdas ){
     this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
                      + ' from an inaccessible history should fail for: ' + history.name );
     this.api.assertRaises( function(){
-        var returned = this.api.hdas.create( this.api.histories.show( 'current' ).id, {
+        var returned = this.api.hdas.create( this.api.histories.index()[0].id, {
             source  : 'hda',
             content : hdas[0].id
         });
@@ -181,10 +181,6 @@ function testWriteFunctions( history, hdas ){
     this.api.assertRaises( function(){
         this.api.histories.delete_( history.id );
     }, 403, 'History is not owned by the current user', 'delete failed with error' );
-    this.test.comment( 'set_as_current should fail for history: ' + history.name );
-    this.api.assertRaises( function(){
-        this.api.histories.set_as_current( history.id );
-    }, 403, 'History is not owned by the current user', 'set_as_current failed with error' );
 
     this.test.comment( 'hda updating should fail for history: ' + history.name );
     this.api.assertRaises( function(){

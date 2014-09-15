@@ -10,10 +10,10 @@ var GalaxyMenu = Backbone.Model.extend(
 {
     // options
     options: null,
-    
+
     // link masthead class
     masthead: null,
-    
+
     // initialize
     initialize: function(options)
     {
@@ -21,7 +21,7 @@ var GalaxyMenu = Backbone.Model.extend(
         this.masthead  = options.masthead;
         this.create();
     },
-    
+
     // default menu
     create: function()
     {
@@ -149,7 +149,7 @@ var GalaxyMenu = Backbone.Model.extend(
                 content     : "visualization/list",
                 target      : "_frame"
             });
-        } 
+        }
         this.masthead.append(tab_visualization);
 
         //
@@ -289,35 +289,25 @@ var GalaxyMenu = Backbone.Model.extend(
                 title       : "Logged in as " + this.options.user.email
             });
 
-            // remote user
-            if (this.options.use_remote_user && this.options.remote_user_logout_href)
-            {
-                tab_user.add({
-                    title   : "Logout",
-                    content : this.options.remote_user_logout_href,
-                    target  : "_top"
-                });
-            } else {
-                tab_user.add({
-                    title   : "Preferences",
-                    content : "user?cntrller=user",
-                    target  : "galaxy_main"
-                });
+            tab_user.add({
+                title   : "Preferences",
+                content : "user?cntrller=user",
+                target  : "galaxy_main"
+            });
 
-                tab_user.add({
-                    title   : "Custom Builds",
-                    content : "user/dbkeys",
-                    target  : "galaxy_main"
-                });
-            
-                tab_user.add({
-                    title   : "Logout",
-                    content : "user/logout",
-                    target  : "_top",
-                    divider : true
-                });
-            }
-        
+            tab_user.add({
+                title   : "Custom Builds",
+                content : "user/dbkeys",
+                target  : "galaxy_main"
+            });
+
+            tab_user.add({
+                title   : "Logout",
+                content : "user/logout",
+                target  : "_top",
+                divider : true
+            });
+
             // default tabs
             tab_user.add({
                 title   : "Saved Histories",
@@ -353,7 +343,7 @@ var GalaxyMenu = Backbone.Model.extend(
             // add to masthead
             this.masthead.append(tab_user);
         }
-        
+
         // identify active tab
         if (this.options.active_view)
             this.masthead.highlight(this.options.active_view);

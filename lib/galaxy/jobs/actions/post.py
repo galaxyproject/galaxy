@@ -5,7 +5,7 @@ Actions to be run at job completion.  Currently only used in workflows.
 import datetime
 import logging
 from galaxy.util import send_mail
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 
 log = logging.getLogger( __name__ )
 
@@ -461,7 +461,7 @@ class ActionBox(object):
             else:
                 # Not pja stuff.
                 pass
-        return to_json_string(npd)
+        return dumps(npd)
 
     @classmethod
     def get_add_list(cls):

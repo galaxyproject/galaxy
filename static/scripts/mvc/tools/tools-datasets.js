@@ -6,7 +6,7 @@ define([ 'mvc/history/history-contents' ], function( HISTORY_CONTENTS ){
             this.currHistoryContents = new HISTORY_CONTENTS.HistoryContents({});
             
             // identify current history id
-            this.currHistoryContents.historyId = "f597429621d6eb2b";//Galaxy.currHistoryPanel.model.id;
+            this.currHistoryContents.historyId = options.history_id;
             
             // make request
             var self = this;
@@ -30,7 +30,7 @@ define([ 'mvc/history/history-contents' ], function( HISTORY_CONTENTS ){
             return this.currHistoryContents.filter( function( content ){
                 // link details
                 var history_content_type = content.get( 'history_content_type' );
-                var data_type = content.get( 'data_type');
+                var data_type = content.get( 'file_ext');
                 
                 // apply filter
                 return history_content_type === 'dataset';// && (data_type === filter_type || filter_type === '');

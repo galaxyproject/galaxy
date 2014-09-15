@@ -10,7 +10,7 @@ from migrate.changeset import *
 from sqlalchemy.exc import *
 
 from galaxy.model.custom_types import *
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 
 import datetime
 now = datetime.datetime.utcnow
@@ -46,13 +46,13 @@ def upgrade(migrate_engine):
             id = int(r[0])
             notify_old = r[1]
             notify_new = dict(email=[], sample_states=[], body='', subject='')
-            cmd = "update request set notification='%s' where id=%i" % (to_json_string(notify_new), id)
+            cmd = "update request set notification='%s' where id=%i" % (dumps(notify_new), id)
             migrate_engine.execute( cmd )
 
         cmd = "SELECT id, notification FROM request"
         result = migrate_engine.execute( cmd )
         for r in result:
-            rr = from_json_string(str(r[1]))
+            rr = loads(str(r[1]))
 
         # remove the 'notify' column for non-sqlite databases.
         if migrate_engine.name != 'sqlite':

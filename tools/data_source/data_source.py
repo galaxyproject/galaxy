@@ -3,7 +3,7 @@
 # Data source application parameters are temporarily stored in the dataset file.
 import socket, urllib, sys, os
 from galaxy import eggs #eggs needs to be imported so that galaxy.util can find docutils egg...
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 from galaxy.util import get_charset_from_http_headers
 import galaxy.model # need to import model before sniff to resolve a circular import dependency
 from galaxy.datatypes import sniff
@@ -23,7 +23,7 @@ GALAXY_DATATYPES_CONF_FILE = os.path.join( GALAXY_ROOT_DIR, 'datatypes_conf.xml'
 def load_input_parameters( filename, erase_file = True ):
     datasource_params = {}
     try:
-        json_params = from_json_string( open( filename, 'r' ).read() )
+        json_params = loads( open( filename, 'r' ).read() )
         datasource_params = json_params.get( 'param_dict' )
     except:
         json_params = None
@@ -44,7 +44,7 @@ def __main__():
         max_file_size = int( sys.argv[2] )
     except:
         max_file_size = 0
-    
+
     job_params, params = load_input_parameters( filename )
     if job_params is None: #using an older tabular file
         enhanced_handling = False
@@ -57,13 +57,13 @@ def __main__():
     else:
         enhanced_handling = True
         json_file = open( job_params[ 'job_config' ][ 'TOOL_PROVIDED_JOB_METADATA_FILE' ], 'w' ) #specially named file for output junk to pass onto set metadata
-    
+
     datatypes_registry = Registry()
     datatypes_registry.load_datatypes( root_dir = job_params[ 'job_config' ][ 'GALAXY_ROOT_DIR' ], config = job_params[ 'job_config' ][ 'GALAXY_DATATYPES_CONF_FILE' ] )
-    
+
     URL = params.get( 'URL', None ) #using exactly URL indicates that only one dataset is being downloaded
     URL_method = params.get( 'URL_method', None )
-    
+
     # The Python support for fetching resources from the web is layered. urllib uses the httplib
     # library, which in turn uses the socket library.  As of Python 2.3 you can specify how long
     # a socket should wait for a response before timing out. By default the socket module has no
@@ -71,14 +71,14 @@ def __main__():
     # levels. However, you can set the default timeout ( in seconds ) globally for all sockets by
     # doing the following.
     socket.setdefaulttimeout( 600 )
-    
+
     for data_dict in job_params[ 'output_data' ]:
         cur_filename =  data_dict.get( 'file_name', filename )
         cur_URL =  params.get( '%s|%s|URL' % ( GALAXY_PARAM_PREFIX, data_dict[ 'out_data_name' ] ), URL )
         if not cur_URL:
             open( cur_filename, 'w' ).write( "" )
             stop_err( 'The remote data source application has not sent back a URL parameter in the request.' )
-        
+
         # The following calls to urllib.urlopen() will use the above default timeout
         try:
             if not URL_method or URL_method == 'get':
@@ -96,7 +96,7 @@ def __main__():
             cur_filename, is_multi_byte = sniff.stream_to_open_named_file( page, os.open( cur_filename, os.O_WRONLY | os.O_CREAT ), cur_filename, source_encoding=get_charset_from_http_headers( page.headers ) )
         except Exception, e:
             stop_err( 'Unable to fetch %s:\n%s' % ( cur_URL, e ) )
-        
+
         #here import checks that upload tool performs
         if enhanced_handling:
             try:
@@ -106,7 +106,7 @@ def __main__():
             info = dict( type = 'dataset',
                          dataset_id = data_dict[ 'dataset_id' ],
                          ext = ext)
-            
-            json_file.write( "%s\n" % to_json_string( info ) )
-    
+
+            json_file.write( "%s\n" % dumps( info ) )
+
 if __name__ == "__main__": __main__()

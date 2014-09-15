@@ -48,7 +48,7 @@ from galaxy.web import buildapp
 from galaxy import tools
 from galaxy.util import bunch
 from galaxy import util
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 
 from functional import database_contexts
 from base.api_util import get_master_api_key
@@ -520,7 +520,7 @@ def main():
                     has_test_data, shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
             # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
             shed_tools_file = open( galaxy_tool_shed_test_file, 'w' )
-            shed_tools_file.write( to_json_string( shed_tools_dict ) )
+            shed_tools_file.write( dumps( shed_tools_dict ) )
             shed_tools_file.close()
             if not os.path.isabs( galaxy_tool_shed_test_file ):
                 galaxy_tool_shed_test_file = os.path.join( os.getcwd(), galaxy_tool_shed_test_file )

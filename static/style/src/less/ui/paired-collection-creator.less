@@ -211,58 +211,90 @@
     }
 
     // ------------------------------------------------------------------------ middle
-    .middle {
-    }
-    .unpaired-columns,
-    .paired-columns {
+    // ---- all
+    // macro
+    .flex-bordered-vertically {
         // huh! - giving these any static height will pull them in
         height: 0;
         // NOT setting the above will give a full-height page
 
         border: 1px solid lightgrey;
         border-width: 1px 0 1px 0;
-        //overflow-y: auto;
-        padding: 4px;
-    }
-    // ------------------------------------------------------------------------ unpaired
-    .paired-columns {
-        margin-bottom: 8px;
     }
 
-    // ------------------------------------------------------------------------ middle
-    // ---- all
     .column-datasets {
         list-style: none;
         overflow: hidden;
 
         .dataset {
             height: 32px;
-            margin-bottom: 2px;
+            margin-top: 2px;
+            &:last-of-type {
+                margin-bottom: 2px;
+            }
             border: 1px solid lightgrey;
             border-radius: 3px;
             padding: 0 8px 0 8px;
             line-height: 28px;
             cursor: pointer;
-            overflow: hidden;
-            &:last-child {
-                margin-bottom: 4px;
-            }
-        }
-    }
 
-    // ---- unpaired
-    .unpaired-columns {
-        .dataset.unpaired {
-            border-color: grey;
+            &.unpaired {
+                border-color: grey;
+            }
+
+            &.paired {
+                margin-left: 34px;
+                margin-right: 34px;
+                border: 2px solid grey;
+                background: #AFF1AF;
+
+                span {
+                    display: inline-block;
+                    overflow: hidden;
+                }
+                .forward-dataset-name {
+                    text-align: right;
+                    border-right: 1px solid grey;
+                    padding-right: 8px;
+                    &:after {
+                        margin-left: 8px;
+                        font-family: FontAwesome;
+                        content: '\f061';
+                    }
+                }
+                .pair-name-column {
+                    text-align: center;
+                    .pair-name:hover {
+                        text-decoration: underline;
+                    }
+                }
+                .reverse-dataset-name {
+                    border-left: 1px solid grey;
+                    padding-left: 8px;
+                    &:before {
+                        margin-right: 8px;
+                        font-family: FontAwesome;
+                        content: '\f060';
+                    }
+                }
+            }
+
             &:hover {
                 border-color: black;
             }
+
             &.selected {
                 border-color: black;
                 background: black;
                 color: white;
             }
         }
+    }
+
+    // ---- unpaired
+    .unpaired-columns {
+        .flex-bordered-vertically;
+
         .forward-column {
             .dataset.unpaired {
                 margin-right: 32px;
@@ -292,8 +324,15 @@
             width: 100%;
             height: 8px;
             cursor: ns-resize;
+            &:before {
+                content: '...';
+            }
+            line-height: 2px;
+            text-align: center;
+            color: lightgrey;
             &:hover {
                 background: lightgrey;
+                color: black;
             }
         }
         .column-header {
@@ -313,65 +352,46 @@
 
     // ---- paired datasets
     .paired-columns {
-        .dataset.paired {
-            background: #AFF1AF;
-            border-color: grey;
-            border-width: 2px;
-            &:hover,
-            &.emphasized {
-                border-color: black;
+        .flex-bordered-vertically;
+        margin-bottom: 8px;
+
+        .column-datasets {
+            width: 100%;
+            overflow: auto;
+        }
+        .unpair-btn {
+            float: right;
+            margin-top: -32px;
+            width: 31px;
+            height: 32px;
+            //z-index: 1;
+            border-color: transparent;
+            //border-color: #BFBFBF;
+            background: transparent;
+            font-size: 120%;
+            &:hover {
+                border-color: #BFBFBF;
+                background: #DEDEDE;
             }
         }
-        .forward-column {
-            .dataset.paired {
-                margin-left: 32px;
-                border-radius: 3px 0 0 3px;
-                border-right-color: grey;
-                border-right-width: 1px;
-                text-align: right;
-                &:after {
-                    margin-left: 8px;
-                    font-family: FontAwesome;
-                    content: '\f061';
-                }
-            }
-        }
-        .paired-column {
-            .dataset.paired {
-                border-radius: 0;
-                border-width: 2px 0 2px 0;
-                .dataset-name:hover {
-                    text-decoration: underline;
-                }
-            }
-        }
-        .reverse-column {
-            .dataset.paired {
-                margin-right: 32px;
-                border-radius: 0 3px 3px 0;
-                border-left-color: grey;
-                border-left-width: 1px;
-                &:before {
-                    margin-right: 8px;
-                    font-family: FontAwesome;
-                    content: '\f060';
-                }
-            }
-            .unpair-btn {
-                float: right;
-                margin-top: -34px;
-                width: 31px;
-                height: 32px;
-                //z-index: 1;
-                border-color: transparent;
-                //border-color: #BFBFBF;
-                background: transparent;
+        .paired-drop-placeholder {
+            width   : 60px;
+            height  : 3px;
+            margin : 2px 0px 0px 14px;
+            background : black;
+            &:before {
+                float: left;
                 font-size: 120%;
-                &:hover {
-                    border-color: #BFBFBF;
-                    background: #DEDEDE;
-                }
+                margin: -9px 0px 0px -8px;
+                font-family: FontAwesome;
+                content: '\f0da';
             }
+            &:last-child {
+                margin-bottom: 8px;
+            }
+        }
+        .empty-message {
+            text-align: center;
         }
     }
 

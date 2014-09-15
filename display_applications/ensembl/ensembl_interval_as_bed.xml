@@ -1,7 +1,7 @@
 <display id="ensembl_interval" version="1.0.0" name="display at Ensembl">
     <!-- Current Ensembl method of attaching user data via URL; archives older than ~November 2008 will use a different method -->
     <!-- Load links from file: one line to one link -->
-    <dynamic_links from_file="tool-data/shared/ensembl/ensembl_sites.txt" skip_startswith="#" id="0" name="1">
+    <dynamic_links site_type="ensembl" skip_startswith="#" id="0" name="1">
         
         <!-- Define parameters by column from file, allow splitting on builds -->
         <dynamic_param name="site_id" value="0"/>
@@ -41,7 +41,7 @@ ${chrom}:${int( start ) + 1}-${end}
 
     <!-- Old Ensembl method of attaching user data via URL -->
     <!-- Load links from file: one line to one link -->
-    <dynamic_links from_file="tool-data/shared/ensembl/ensembl_sites_data_URL.txt" skip_startswith="#" id="0" name="1">
+    <dynamic_links site_type="ensembl_data_url" skip_startswith="#" id="0" name="1">
         
         <!-- Define parameters by column from file, allow splitting on builds -->
         <dynamic_param name="site_id" value="0"/>

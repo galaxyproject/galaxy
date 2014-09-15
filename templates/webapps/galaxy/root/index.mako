@@ -66,7 +66,7 @@
             },
             "${_("Collapse Expanded Datasets")}": function() {
                 if( Galaxy && Galaxy.currHistoryPanel ){
-                    Galaxy.currHistoryPanel.collapseAllHdaBodies();
+                    Galaxy.currHistoryPanel.collapseAll();
                 }
             },
             "${_("Include Deleted Datasets")}": function( clickEvent, thisMenuOption ) {
@@ -105,7 +105,7 @@
                 galaxy_main.location = "${h.url_for( controller='history', action='citations' )}";
             },
             "${_("Export to File")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='export_archive' )}";
+                galaxy_main.location = "${h.url_for( controller='history', action='export_archive', preview=True )}";
             },
             "${_("Delete")}": function() {
                 if ( confirm( "Really delete the current history?" ) ) {
@@ -214,12 +214,12 @@
                     el              : $( "#current-history-panel" ),
                     purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                     linkTarget      : 'galaxy_main',
-                    onready         : function loadAsCurrentHistoryPanel(){
-                        this.connectToQuotaMeter( Galaxy.quotaMeter )
-                            .connectToOptionsMenu( Galaxy.historyOptionsMenu );
-                        this.loadCurrentHistory();
-                    }
+                    $scrollContainer: function(){ return this.$el.parent(); }
                 });
+                currPanel
+                    .connectToQuotaMeter( Galaxy.quotaMeter )
+                    .connectToOptionsMenu( Galaxy.historyOptionsMenu );
+                currPanel.loadCurrentHistory();
                 Galaxy.currHistoryPanel = currPanel;
             });
         });

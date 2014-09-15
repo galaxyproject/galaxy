@@ -17,11 +17,11 @@ var HDAListItemView = _super.extend(
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
+    className   : _super.prototype.className + " history-content",
+
     initialize : function( attributes, options ){
         _super.prototype.initialize.call( this, attributes, options );
     },
-
-    className   : _super.prototype.className + " history-content",
 
     // ......................................................................... misc
     /** String representation */

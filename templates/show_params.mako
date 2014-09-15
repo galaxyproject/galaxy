@@ -107,6 +107,7 @@
     <tbody>
         <%
         encoded_hda_id = trans.security.encode_id( hda.id )
+        encoded_history_id = trans.security.encode_id( hda.history_id )
         %>
         <tr><td>Name:</td><td>${hda.name | h}</td></tr>
         <tr><td>Created:</td><td>${hda.create_time.strftime(trans.app.config.pretty_datetime_format)}</td></tr>
@@ -120,6 +121,7 @@
         <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr', dataset_id=encoded_hda_id )}">stderr</a></td></tr>
         <tr><td>Tool Exit Code:</td><td>${job.exit_code | h}</td></tr>
         <tr><td>API ID:</td><td>${encoded_hda_id}</td></tr>
+        <tr><td>History ID:</td><td>${encoded_history_id}</td></tr>
         %if hda.dataset.uuid:
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif

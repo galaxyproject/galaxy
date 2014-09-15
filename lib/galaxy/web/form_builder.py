@@ -7,7 +7,7 @@ import logging, sys, os, time
 from operator import itemgetter
 from cgi import escape
 from galaxy.util import restore_text, relpath, nice_size, unicodify
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.web import url_for
 from binascii import hexlify
 
@@ -563,7 +563,7 @@ class SwitchingSelectField(BaseField):
         html += '<input name="__switch_default__" type="hidden" value="%s" />' % self.default_field
         options = []
         for name, delegate_field in self.delegate_fields.items():
-            field = to_json_string( delegate_field.to_dict() )
+            field = dumps( delegate_field.to_dict() )
             option = " '%s': %s" % ( name, field )
             options.append( option )
         html += '<script>$(document).ready( function() {\nvar switchOptions = {\n'

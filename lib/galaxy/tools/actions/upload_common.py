@@ -7,7 +7,7 @@ from cgi import FieldStorage
 from galaxy import datatypes, util
 from galaxy.util.odict import odict
 from galaxy.datatypes import sniff
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.model.orm import eagerload_all
 from galaxy.exceptions import ObjectInvalid
 
@@ -243,6 +243,7 @@ def get_uploaded_datasets( trans, cntrller, params, precreated_datasets, dataset
         else:
             data.extension = uploaded_dataset.file_type
             data.dbkey = uploaded_dataset.dbkey
+            data.uuid = uploaded_dataset.uuid
             trans.sa_session.add( data )
             trans.sa_session.flush()
             if library_bunch:
@@ -341,7 +342,7 @@ def create_paramfile( trans, uploaded_datasets ):
             # user cannot remove it unless the parent directory is writable.
             if link_data_only == 'copy_files' and trans.app.config.external_chown_script:
                 _chown( uploaded_dataset.path )
-        json_file.write( to_json_string( json ) + '\n' )
+        json_file.write( dumps( json ) + '\n' )
     json_file.close()
     if trans.app.config.external_chown_script:
         _chown( json_file_path )
@@ -374,7 +375,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
 
     for name, value in tool.params_to_strings( params, trans.app ).iteritems():
         job.add_parameter( name, value )
-    job.add_parameter( 'paramfile', to_json_string( json_file_path ) )
+    job.add_parameter( 'paramfile', dumps( json_file_path ) )
     object_store_id = None
     for i, dataset in enumerate( data_list ):
         if folder:

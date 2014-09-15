@@ -574,6 +574,8 @@ function LoadingIndicator( $where, options ){
     self.show = function( msg, speed, callback ){
         msg = msg || 'loading...';
         speed = speed || 'fast';
+        // remove previous
+        $where.parent().find( '.loading-indicator' ).remove();
         // since position is fixed - we insert as sibling
         self.$indicator = render().insertBefore( $where );
         self.message( msg );
@@ -610,6 +612,7 @@ function LoadingIndicator( $where, options ){
      *      of characters, a callback is called. Pressing ESC when the input
      *      is focused will clear the input and call a separate callback.
      */
+    var _l = window._l || function( s ){ return s; };
 
     // contructor
     function searchInput( parentNode, options ){
@@ -634,11 +637,9 @@ function LoadingIndicator( $where, options ){
         // .................................................................... input rendering and events
         // visually clear the search, trigger an event, and call the callback
         function clearSearchInput( event ){
-            //console.debug( this, 'clear' );
             var $input = $( this ).parent().children( 'input' );
-            //console.debug( 'input', $input );
-            $input.val( '' );
-            $input.trigger( 'clear:searchInput' );
+            //console.debug( this, 'clear', $input );
+            $input.focus().val( '' ).trigger( 'clear:searchInput' );
             options.onclear();
         }
 
@@ -670,6 +671,11 @@ function LoadingIndicator( $where, options ){
                 })
                 // attach behaviors to esc, return if desired, search on some min len string
                 .keyup( function( event ){
+                    event.preventDefault();
+                    event.stopPropagation();
+//TODO: doesn't work
+                    if( !$( this ).val() ){ $( this ).blur(); }
+
                     // esc key will clear if desired
                     if( event.which === KEYCODE_ESC && options.escWillClear ){
                         clearSearchInput.call( this, event );

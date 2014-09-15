@@ -81,9 +81,13 @@ class DisplayApplicationLink( object ):
 
 class DynamicDisplayApplicationBuilder( object ):
     @classmethod
-    def __init__( self, elem, display_application ):
+    def __init__( self, elem, display_application, build_sites ):
         rval = []
-        filename = elem.get( 'from_file', None )
+        filename = None
+        if elem.get( 'site_type', None ) is not None:
+            filename = build_sites.get( elem.get( 'site_type' ) )
+        else:
+            filename = elem.get( 'from_file', None )
         assert filename is not None, 'Filename and id attributes required for dynamic_links'
         skip_startswith = elem.get( 'skip_startswith', None )
         separator = elem.get( 'separator', '\t' )
@@ -176,7 +180,7 @@ class DisplayApplication( object ):
             if link:
                 rval.links[ link.id ] = link
         for dynamic_links in elem.findall( 'dynamic_links' ):
-            for link in DynamicDisplayApplicationBuilder( dynamic_links, rval ):
+            for link in DynamicDisplayApplicationBuilder( dynamic_links, rval, datatypes_registry.build_sites ):
                 rval.links[ link.id ] = link
         return rval
     def __init__( self, display_id, name, datatypes_registry, version = None ):

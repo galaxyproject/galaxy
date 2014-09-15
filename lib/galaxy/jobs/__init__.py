@@ -25,7 +25,7 @@ from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from galaxy.util import unicodify
 
 from .output_checker import check_output
@@ -103,6 +103,7 @@ class JobConfiguration( object ):
         """
         self.app = app
         self.runner_plugins = []
+        self.dynamic_params = None
         self.handlers = {}
         self.handler_runner_plugins = {}
         self.default_handler_id = None
@@ -147,6 +148,10 @@ class JobConfiguration( object ):
                     self.runner_plugins.append(runner_info)
                 else:
                     log.error('Unknown plugin type: %s' % plugin.get('type'))
+            for plugin in self.__findall_with_required(plugins, 'plugin', ('id', 'type')):
+                if plugin.get('id') == 'dynamic' and plugin.get('type') == 'runner':
+                    self.dynamic_params = self.__get_params(plugin)
+
         # Load tasks if configured
         if self.app.config.use_tasked_jobs:
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
@@ -718,7 +723,7 @@ class JobWrapper( object ):
         self.job_runner_mapper = JobRunnerMapper( self, queue.dispatcher.url_to_destination, self.app.job_config )
         self.params = None
         if job.params:
-            self.params = from_json_string( job.params )
+            self.params = loads( job.params )
         if use_persisted_destination:
             self.job_runner_mapper.cached_job_destination = JobDestination( from_job=job )
 
@@ -1385,7 +1390,7 @@ class JobWrapper( object ):
         if os.path.exists( meta_file ):
             for line in open( meta_file, 'r' ):
                 try:
-                    line = from_json_string( line )
+                    line = loads( line )
                     assert 'type' in line
                 except:
                     log.exception( '(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % self.job_id )

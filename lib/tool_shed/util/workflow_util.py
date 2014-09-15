@@ -346,7 +346,7 @@ def import_workflow( trans, repository, workflow_name ):
                 workflow_file = open( relative_path_to_workflow_file, 'rb' )
                 workflow_data = workflow_file.read()
                 workflow_file.close()
-                workflow_dict = json.from_json_string( workflow_data )
+                workflow_dict = json.loads( workflow_data )
             else:
                 # Use the current exported_workflow_dict.
                 workflow_dict = exported_workflow_dict

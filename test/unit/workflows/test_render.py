@@ -1,5 +1,4 @@
 from galaxy import model
-from galaxy.util import bunch
 from galaxy.workflow import render
 
 
@@ -18,6 +17,12 @@ def test_render():
         workflow.steps.append( workflow_step )
         return workflow_step
 
+    def connection( **kwds ):
+        conn = model.WorkflowStepConnection()
+        for key, value in kwds.iteritems():
+            setattr(conn, key, value)
+        return conn
+
     step_0 = add_step(
         type="data_input",
         order_index=0,
@@ -32,12 +37,13 @@ def test_render():
         input_connections=[],
         position={"top": 6, "left": 4}
     )
+
     step_2 = add_step(
         type="tool",
         tool_id="cat1",
         order_index=2,
         input_connections=[
-            bunch.Bunch(input_name="input1", output_step=step_0, output_name="di1")
+            connection(input_name="input1", output_step=step_0, output_name="di1")
         ],
         position={"top": 13, "left": 10}
     )
@@ -46,7 +52,7 @@ def test_render():
         tool_id="cat1",
         order_index=3,
         input_connections=[
-            bunch.Bunch(input_name="input1", output_step=step_0, output_name="di1")
+            connection(input_name="input1", output_step=step_0, output_name="di1")
         ],
         position={"top": 33, "left": 103}
     )

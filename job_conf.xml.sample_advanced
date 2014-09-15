@@ -22,6 +22,17 @@
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
         <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner" />
+        <plugin id="dynamic" type="runner">
+            <!-- The dynamic runner is not a real job running plugin and is
+                 always loaded, so it does not need to be explicitly stated in
+                 <plugins>. However, if you wish to change the base module
+                 containing your dynamic rules, you can do so.
+
+                 The `load` attribute is not required (and ignored if
+                 included).
+            -->
+            <param id="rules_module">galaxy.jobs.rules</param>
+        </plugin>
         <!-- Pulsar runners (see more at https://pulsar.readthedocs.org) -->
         <plugin id="pulsar_rest" type="runner" load="galaxy.jobs.runners.pulsar:PulsarRESTJobRunner">
           <!-- Allow optimized HTTP calls with libcurl (defaults to urllib) -->

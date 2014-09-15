@@ -1,0 +1,34 @@
+<tool id="validation_default" name="Validation (default)">
+  <command>
+    echo "$input1" > out1;
+    echo $float_param > out2;
+    echo $select_param > out3;
+  </command>
+  <inputs>
+    <param name="input1" type="text" label="text input" />
+    <param name="float_param" type="float" label="float input" value="8.0" />
+    <param name="select_param" type="select" label="select_param">
+      <option value="opt1">Option 1</option>
+      <option value="opt2">Option 2</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="out_file1" from_work_dir="out1" />
+    <data name="out_file2" from_work_dir="out2" />
+    <data name="out_file3" from_work_dir="out3" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="&quot; ; echo &quot;moo" />
+      <param name="float_param" value="5" />
+      <param name="select_param" value="opt1" />
+      <output name="out_file1">
+         <assert_contents>
+            <has_line line="__dq__ X echo __dq__moo" />
+         </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help>
+  </help>
+</tool>

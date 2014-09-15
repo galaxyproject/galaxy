@@ -17,7 +17,8 @@ var View = Backbone.View.extend({
         onchange    : null,
         ondblclick  : null,
         onconfirm   : null,
-        cls         : ''
+        cls         : 'ui-table',
+        cls_tr      : ''
     },
     
     // events
@@ -43,7 +44,7 @@ var View = Backbone.View.extend({
         this.setElement($el);
                 
         // initialize row
-        this.row = $('<tr></tr>');
+        this.row = this._row();
     },
     
     // add header cell
@@ -156,11 +157,16 @@ var View = Backbone.View.extend({
         }
         
         // row
-        this.row = $('<tr></tr>');
+        this.row = this._row();
         
         // row count
         this.row_count++;
         this._refresh();
+    },
+    
+    // create new row
+    _row: function() {
+        return $('<tr class="' + this.options.cls_tr + '"></tr>');
     },
     
     // onclick
@@ -198,12 +204,11 @@ var View = Backbone.View.extend({
     },
         
     // load html template
-    _template: function(options)
-    {
+    _template: function(options) {
         return  '<div>' +
-                    '<table class="ui-table ' + options.cls + '">' +
+                    '<table class="' + options.cls + '">' +
                         '<thead></thead>' +
-                        '<tbody style="cursor: pointer;"></tbody>' +
+                        '<tbody></tbody>' +
                     '</table>' +
                     '<tmessage>' + options.content + '</tmessage>' +
                 '<div>';

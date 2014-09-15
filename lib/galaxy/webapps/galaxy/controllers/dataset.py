@@ -9,7 +9,7 @@ from galaxy.datatypes.display_applications.util import decode_dataset_user, enco
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago
 from galaxy.web.framework.helpers import to_unicode
@@ -331,7 +331,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         if len(em_string):
                             em_payload = None
                             try:
-                                em_payload = from_json_string(em_string)
+                                em_payload = loads(em_string)
                             except Exception, e:
                                 message = 'Invalid JSON input'
                                 error = True

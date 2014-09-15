@@ -3,6 +3,8 @@
 import logging
 log = logging.getLogger( __name__ )
 
+from .type_description import map_over_collection_type
+
 
 class Leaf( object ):
 
@@ -35,9 +37,9 @@ class Tree( object ):
         return self._walk_collections( dict_map( lambda hdca: hdca.collection, hdca_dict ) )
 
     def _walk_collections( self, collection_dict ):
-        for ( identifier, substructure ) in self.children:
+        for index, ( identifier, substructure ) in enumerate( self.children ):
             def element( collection ):
-                return collection[ identifier ]
+                return collection[ index ]
 
             if substructure.is_leaf:
                 yield dict_map( element, collection_dict )
@@ -70,21 +72,27 @@ class Tree( object ):
     def __len__( self ):
         return sum( [ len( c[ 1 ] ) for c in self.children ] )
 
-    def element_identifiers_for_datasets( self, trans, datasets ):
+    def element_identifiers_for_outputs( self, trans, outputs ):
         element_identifiers = []
+        elements_collection_type = None
         for identifier, child in self.children:
             if isinstance( child, Tree ):
-                child_identifiers = child.element_identifiers_for_datasets( trans, datasets[ 0:len( child ) ] )
+                child_identifiers = child.element_identifiers_for_outputs( trans, outputs[ 0:len( child ) ] )
                 child_identifiers[ "name" ] = identifier
                 element_identifiers.append( child_identifiers )
+                elements_collection_type = child_identifiers[ "collection_type" ]
             else:
-                element_identifiers.append( dict( name=identifier, src="hda", id=trans.security.encode_id( datasets[ 0 ].id ) ) )
+                output_object = outputs[ 0 ]
+                element_identifiers.append( dict( name=identifier, __object__=output_object ) )
+                if hasattr( output_object, "collection_type" ):
+                    elements_collection_type = output_object.collection_type
 
-            datasets = datasets[ len( child ): ]
+            outputs = outputs[ len( child ): ]
 
+        collection_type = map_over_collection_type( self.collection_type_description.rank_collection_type(), elements_collection_type )
         return dict(
             src="new_collection",
-            collection_type=self.collection_type_description.collection_type,
+            collection_type=collection_type,
             element_identifiers=element_identifiers,
         )
 

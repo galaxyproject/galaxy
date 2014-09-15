@@ -186,7 +186,8 @@ class DatasetCollector( object ):
         return self.pattern.replace( DATASET_ID_TOKEN, token_replacement )
 
     def match( self, dataset_instance, filename ):
-        re_match = re.match( self.pattern_for_dataset( dataset_instance ), filename )
+        pattern = self.pattern_for_dataset( dataset_instance )
+        re_match = re.match( pattern, filename )
         match_object = None
         if re_match:
             match_object = CollectedDatasetMatch( re_match, self )

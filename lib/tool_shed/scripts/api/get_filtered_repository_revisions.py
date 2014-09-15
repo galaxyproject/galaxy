@@ -33,7 +33,7 @@ from common import get_repository_dict
 from common import json_from_url
 
 from galaxy.util import asbool
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from tool_shed.util import hg_util
 
 def main( options ):

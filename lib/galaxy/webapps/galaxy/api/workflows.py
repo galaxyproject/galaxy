@@ -4,11 +4,13 @@ API operations for Workflows
 
 from __future__ import absolute_import
 
+import uuid
 import logging
-from sqlalchemy import desc, or_
+from sqlalchemy import desc, or_, and_
 from galaxy import exceptions, util
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.managers import histories
+from galaxy.managers import workflows
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
 from galaxy.web.base.controller import UsesHistoryMixin
@@ -25,6 +27,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
     def __init__( self, app ):
         super( BaseAPIController, self ).__init__( app )
         self.history_manager = histories.HistoryManager()
+        self.workflow_manager = workflows.WorkflowsManager( app )
 
     @expose_api
     def index(self, trans, **kwd):
@@ -225,6 +228,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             trans=trans,
             workflow=workflow,
             workflow_run_config=run_config,
+            populate_state=True,
         )
         trans.sa_session.flush()
 
@@ -376,18 +380,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        try:
-            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception:
-            raise exceptions.ObjectNotFound()
-        # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
-            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                raise exceptions.ItemOwnershipException()
-        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter_by(workflow_id=stored_workflow.latest_workflow_id)
+        decoded_stored_workflow_invocation_id = self.__decode_id( trans, workflow_id )
+        results = self.workflow_manager.build_invocations_query( trans, decoded_stored_workflow_invocation_id )
         out = []
         for r in results:
-            out.append( self.encode_all_ids( trans, r.to_dict(), True) )
+            out.append( self.__encode_invocation( trans, r ) )
         return out
 
     @expose_api
@@ -404,20 +401,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-
-        try:
-            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
-        except Exception:
-            raise exceptions.ObjectNotFound()
-        # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
-            if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
-                raise exceptions.ItemOwnershipException()
-        results = trans.sa_session.query(self.app.model.WorkflowInvocation).filter_by(workflow_id=stored_workflow.latest_workflow_id)
-        results = results.filter_by(id=trans.security.decode_id(usage_id))
-        out = results.first()
-        if out is not None:
-            return self.encode_all_ids( trans, out.to_dict('element'), True)
+        decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
+        workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
+        if workflow_invocation:
+            return self.__encode_invocation( trans, workflow_invocation )
         return None
 
     def __get_stored_accessible_workflow( self, trans, workflow_id ):
@@ -432,15 +419,29 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return stored_workflow
 
     def __get_stored_workflow( self, trans, workflow_id ):
-        workflow_id = self.__decode_id( trans, workflow_id )
-        try:
+        if util.is_uuid(workflow_id):
+            # see if they have passed in the UUID for a workflow that is attached to a stored workflow
+            workflow_uuid = uuid.UUID(workflow_id)
+            stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).filter( and_(
+                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.Workflow.uuid == workflow_uuid
+            )).first()
+            if stored_workflow is None:
+                raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
+        else:
+            workflow_id = self.__decode_id( trans, workflow_id )
             query = trans.sa_session.query( trans.app.model.StoredWorkflow )
             stored_workflow = query.get( workflow_id )
-        except Exception:
-            raise exceptions.ObjectNotFound( "No such workflow found - invalid workflow identifier." )
         if stored_workflow is None:
             raise exceptions.ObjectNotFound( "No such workflow found." )
         return stored_workflow
+
+    def __encode_invocation( self, trans, invocation, view="element" ):
+        return self.encode_all_ids(
+            trans,
+            invocation.to_dict( view ),
+            True
+        )
 
     def __decode_id( self, trans, workflow_id, model_type="workflow" ):
         try:

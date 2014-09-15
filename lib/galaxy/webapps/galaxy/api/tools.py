@@ -7,7 +7,7 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.visualization.data_providers.genome import *
 
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
@@ -248,7 +248,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         # TODO: need to handle updates to conditional parameters; conditional
         # params are stored in dicts (and dicts within dicts).
         new_inputs = payload[ 'inputs' ]
-        tool_params.update( dict( [ ( key, to_json_string( value ) ) for key, value in new_inputs.items() if key in tool.inputs and new_inputs[ key ] is not None ] ) )
+        tool_params.update( dict( [ ( key, dumps( value ) ) for key, value in new_inputs.items() if key in tool.inputs and new_inputs[ key ] is not None ] ) )
         tool_params = tool.params_from_strings( tool_params, self.app )
 
         #

@@ -3,7 +3,7 @@ Functionality for dealing with dbkeys.
 """
 #dbkeys read from disk using builds.txt
 from galaxy.util import read_dbnames
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 import os.path
 
 
@@ -38,7 +38,7 @@ class GenomeBuilds( object ):
                     rval.append( ( dataset.dbkey, "%s (%s) [History]" % ( dataset.name, dataset.dbkey ) ) )
             user = trans.user
             if user and 'dbkeys' in user.preferences:
-                user_keys = from_json_string( user.preferences['dbkeys'] )
+                user_keys = loads( user.preferences['dbkeys'] )
                 for key, chrom_dict in user_keys.iteritems():
                     rval.append( ( key, "%s (%s) [Custom]" % ( chrom_dict['name'], key ) ) )
         # Load old builds.txt static keys
@@ -61,8 +61,8 @@ class GenomeBuilds( object ):
                 chrom_info = db_dataset.file_name
             else:
                 # Do Custom Build handling
-                if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( dbkey in from_json_string( trans.user.preferences[ 'dbkeys' ] ) ):
-                    custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ dbkey ]
+                if trans.user and ( 'dbkeys' in trans.user.preferences ) and ( dbkey in loads( trans.user.preferences[ 'dbkeys' ] ) ):
+                    custom_build_dict = loads( trans.user.preferences[ 'dbkeys' ] )[ dbkey ]
                     # HACK: the attempt to get chrom_info below will trigger the
                     # fasta-to-len converter if the dataset is not available or,
                     # which will in turn create a recursive loop when

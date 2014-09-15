@@ -82,7 +82,7 @@ class TransferManager( object ):
                     sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
                     sock.settimeout( 5 )
                     sock.connect( ( 'localhost', tj.socket ) )
-                    sock.send( json.to_json_string( request ) )
+                    sock.send( json.dumps( request ) )
                     response = sock.recv( 8192 )
                     valid, response = json.validate_jsonrpc_response( response, id=request['id'] )
                     if not valid:

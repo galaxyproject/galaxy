@@ -19,13 +19,7 @@
             %if trans.app.config.enable_openid and not trans.app.config.use_remote_user:
                 <li><a href="${h.url_for( controller='user', action='openid_manage', cntrller=cntrller )}">${_('Manage OpenIDs')}</a> linked to your account</li>
             %endif
-            %if trans.app.config.use_remote_user:
-                %if trans.app.config.remote_user_logout_href:
-                    <li><a href="${trans.app.config.remote_user_logout_href}" target="_top">${_('Logout')}</a></li>
-                %endif
-            %else:
-                <li><a href="${h.url_for( controller='user', action='logout', logout_all=True )}" target="_top">${_('Logout')}</a> ${_('of all user sessions')}</li>
-            %endif
+            <li><a href="${h.url_for( controller='user', action='logout', logout_all=True )}" target="_top">${_('Logout')}</a> ${_('of all user sessions')}</li>
         %else:
             <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller )}">${_('Manage your information')}</a></li>
             <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller )}">${_('Manage your API keys')}</a></li>

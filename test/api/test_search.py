@@ -1,5 +1,5 @@
 from base import api
-from base.interactor import delete_request
+from requests import delete
 
 from .helpers import WorkflowPopulator
 
@@ -14,7 +14,7 @@ class SearchApiTestCase( api.ApiTestCase ):
 
         # Deleted
         delete_url = self._api_url( "workflows/%s" % workflow_id, use_key=True )
-        delete_request( delete_url )
+        delete( delete_url )
 
         search_response = self.__search( "select * from workflow where deleted = False" )
         assert not self.__has_result_with_name( search_response, "test_for_search (imported from API)" ), search_response.json()

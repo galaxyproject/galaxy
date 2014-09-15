@@ -1118,7 +1118,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         #TODO: used in this file and index.mako
 
     @web.expose
-    def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False ):
+    def export_archive( self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False, preview=False ):
         """ Export a history to an archive. """
         #
         # Get history to export.
@@ -1139,7 +1139,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         jeha = history.latest_export
         if jeha and jeha.up_to_date:
             if jeha.ready:
-                return self.serve_ready_history_export( trans, jeha )
+                if preview:
+                    url = url_for( controller='history', action="export_archive", id=id, qualified=True )
+                    return trans.show_message( "History Ready: '%(n)s'. Use this link to download \
+                                                the archive or import it to another Galaxy server: \
+                                                <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
+                else:
+                    return self.serve_ready_history_export( trans, jeha )
             elif jeha.preparing:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
                         % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
@@ -1375,13 +1381,50 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             msg = 'Copied and created %d new histories.' % len( histories )
         return trans.show_ok_message( msg )
 
+
+    # ------------------------------------------------------------------------- current history
     @web.expose
     @web.require_login( "switch to a history" )
     def switch_to_history( self, trans, hist_id=None ):
-        history = self.get_history( trans, hist_id )
-        trans.set_history( history )
+        """
+        """
+        self.set_as_current( trans, id=hist_id )
         return trans.response.send_redirect( url_for( "/" ) )
 
     def get_item( self, trans, id ):
         return self.get_history( trans, id )
         #TODO: override of base ui controller?
+
+    def history_data( self, trans, history ):
+        """
+        """
+        #TODO: to manager
+        history_data = self.get_history_dict( trans, history )
+        encoded_history_id = trans.security.encode_id( history.id )
+        history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=encoded_history_id )
+        return history_data
+
+    #TODO: combine these next two - poss. with a redirect flag
+    @web.require_login( "switch to a history" )
+    @web.json
+    def set_as_current( self, trans, id=None ):
+        """
+        """
+        history = self.get_history( trans, id )
+        trans.set_history( history )
+        return self.history_data( trans, history )
+
+    @web.json
+    def current_history_json( self, trans ):
+        """
+        """
+        history = trans.get_history( create=True )
+        return self.history_data( trans, history )
+
+    @web.json
+    def create_new_current( self, trans, name=None ):
+        """
+        """
+        return self.history_data( trans, trans.new_history( name ) )
+
+    #TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current

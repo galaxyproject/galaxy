@@ -119,6 +119,7 @@ class MockJobConfig( object ):
 
     def __init__( self ):
         self.rule_response = None
+        self.dynamic_params = None
 
     def get_destination( self, rep ):
         # Called to transform dynamic job destination rule response

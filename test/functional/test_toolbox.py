@@ -49,7 +49,13 @@ class ToolTestCase( TwillTestCase ):
 
     def _verify_outputs( self, testdef, history, shed_tool_id, data_list, galaxy_interactor ):
         maxseconds = testdef.maxseconds
-
+        if testdef.num_outputs is not None:
+            expected = testdef.num_outputs
+            actual = len( data_list )
+            if expected != actual:
+                messaage_template = "Incorrect number of outputs - expected %d, found %s."
+                message = messaage_template % ( expected, actual )
+                raise Exception( message )
         for output_index, output_tuple in enumerate(testdef.outputs):
             # Get the correct hid
             name, outfile, attributes = output_tuple

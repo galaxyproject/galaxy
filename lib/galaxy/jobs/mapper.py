@@ -1,6 +1,7 @@
 import logging
 import inspect
 import os
+import sys
 
 log = logging.getLogger( __name__ )
 
@@ -48,6 +49,11 @@ class JobRunnerMapper( object ):
         self.job_config = job_config
 
         self.rules_module = galaxy.jobs.rules
+
+        if job_config.dynamic_params is not None:
+            rules_module_name = job_config.dynamic_params['rules_module']
+            __import__(rules_module_name)
+            self.rules_module = sys.modules[rules_module_name]
 
     def __get_rule_modules( self ):
         unsorted_module_names = self.__get_rule_module_names( )

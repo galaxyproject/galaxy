@@ -8,7 +8,8 @@ from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
 from .helpers import skip_without_tool
 
-from base.interactor import delete_request  # requests like delete
+from requests import delete
+
 from galaxy.exceptions import error_codes
 
 
@@ -40,7 +41,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         workflow_name = "test_delete (imported from API)"
         self._assert_user_has_workflow_with_name( workflow_name )
         workflow_url = self._api_url( "workflows/%s" % workflow_id, use_key=True )
-        delete_response = delete_request( workflow_url )
+        delete_response = delete( workflow_url )
         self._assert_status_code_is( delete_response, 200 )
         # Make sure workflow is no longer in index by default.
         assert workflow_name not in self.__workflow_names()
@@ -49,7 +50,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         workflow_id = self.workflow_populator.simple_workflow( "test_other_delete" )
         with self._different_user():
             workflow_url = self._api_url( "workflows/%s" % workflow_id, use_key=True )
-            delete_response = delete_request( workflow_url )
+            delete_response = delete( workflow_url )
             self._assert_status_code_is( delete_response, 403 )
 
     def test_index( self ):
@@ -149,16 +150,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 403 )
 
-    @skip_without_tool( "cat1" )
-    @skip_without_tool( "collection_two_paired" )
-    def test_run_workflow_collection_params( self ):
-        workflow = self.workflow_populator.load_two_paired_workflow( name="test_for_run_two_paired" )
+    @skip_without_tool( "cat" )
+    @skip_without_tool( "cat_list" )
+    def test_workflow_run_with_matching_lists( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_matching_lists" )
         workflow_id = self.workflow_populator.create_workflow( workflow )
         history_id = self.dataset_populator.new_history()
-        hdca1 = self.dataset_collection_populator.create_pair_in_history( history_id, contents=["1 2 3", "4 5 6"] ).json()
-        hdca2 = self.dataset_collection_populator.create_pair_in_history( history_id, contents=["7 8 9", "0 a b"] ).json()
+        hdca1 = self.dataset_collection_populator.create_list_in_history( history_id, contents=[("sample1-1", "1 2 3"), ("sample2-1", "7 8 9")] ).json()
+        hdca2 = self.dataset_collection_populator.create_list_in_history( history_id, contents=[("sample1-2", "4 5 6"), ("sample2-2", "0 a b")] ).json()
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        label_map = { "f1": self._ds_entry( hdca1 ), "f2": self._ds_entry( hdca2 ) }
+        label_map = { "list1": self._ds_entry( hdca1 ), "list2": self._ds_entry( hdca2 ) }
         workflow_request = dict(
             history="hist_id=%s" % history_id,
             workflow_id=workflow_id,
@@ -466,6 +467,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             assert n == expected_len, "Expected %d steps of type %s, found %d" % ( expected_len, type, n )
         return sorted( steps, key=operator.itemgetter("id") )
 
+    @skip_without_tool( "cat1" )
+    def test_run_with_pja( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_pja_run", add_pja=True )
+        workflow_request, history_id = self._setup_workflow_run( workflow, inputs_by='step_index' )
+        workflow_request[ "replacement_params" ] = dumps( dict( replaceme="was replaced" ) )
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
+        assert content[ "name" ] == "foo was replaced"
+
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_tool( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
@@ -476,6 +487,33 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is( history_id, 2, 5 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
+
+    @skip_without_tool( "validation_default" )
+    def test_parameter_substitution_validation( self ):
+        substitions = dict( input1="\" ; echo \"moo" )
+        run_workflow_response, history_id = self._run_validation_workflow_with_substitions( substitions )
+
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.assertEquals("__dq__ X echo __dq__moo\n", self.dataset_populator.get_history_dataset_content( history_id, hid=1 ) )
+
+    @skip_without_tool( "validation_default" )
+    def test_parameter_substitution_validation_value_errors_1( self ):
+        substitions = dict( select_param="\" ; echo \"moo" )
+        run_workflow_response, history_id = self._run_validation_workflow_with_substitions( substitions )
+
+        self._assert_status_code_is( run_workflow_response, 400 )
+
+    def _run_validation_workflow_with_substitions( self, substitions ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_validation_1" )
+        uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+            workflow_id=uploaded_workflow_id,
+            parameters=dumps( dict( validation_default=substitions ) )
+        )
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        return run_workflow_response, history_id
 
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_steps( self ):
@@ -505,28 +543,20 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_has_keys( pja, "action_type", "output_name", "action_arguments" )
 
     @skip_without_tool( "cat1" )
+    def test_only_own_invocations_accessible( self ):
+        workflow_id, usage = self._run_workflow_once_get_invocation( "test_usage")
+        with self._different_user():
+            usage_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, usage[ "id" ] ) )
+            self._assert_status_code_is( usage_details_response, 403 )
+
+    @skip_without_tool( "cat1" )
     def test_invocation_usage( self ):
-        workflow = self.workflow_populator.load_workflow( name="test_usage" )
-        workflow_request, history_id = self._setup_workflow_run( workflow )
-        workflow_id = workflow_request[ "workflow_id" ]
-        response = self._get( "workflows/%s/usage" % workflow_id )
-        self._assert_status_code_is( response, 200 )
-        assert len( response.json() ) == 0
-        run_workflow_response = self._post( "workflows", data=workflow_request )
-        self._assert_status_code_is( run_workflow_response, 200 )
-
-        response = self._get( "workflows/%s/usage" % workflow_id )
-        self._assert_status_code_is( response, 200 )
-        usages = response.json()
-        assert len( usages ) == 1
-
-        usage_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, usages[ 0 ][ "id" ] ) )
-        self._assert_status_code_is( usage_details_response, 200 )
-        usage_details = usage_details_response.json()
+        workflow_id, usage = self._run_workflow_once_get_invocation( "test_usage")
+        usage_details = self._invocation_details( workflow_id, usage[ "id" ] )
         # Assert some high-level things about the structure of data returned.
         self._assert_has_keys( usage_details, "inputs", "steps" )
-        for step in usage_details[ "steps" ].values():
-            self._assert_has_keys( step, "workflow_step_id", "order_index" )
+        for step in usage_details[ "steps" ]:
+            self._assert_has_keys( step, "workflow_step_id", "order_index", "id" )
 
     @skip_without_tool( "cat1" )
     def test_post_job_action( self ):
@@ -542,6 +572,28 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         # loading workflow with add_pja=True causes workflow output to be
         # renamed to 'the_new_name'.
         assert "the_new_name" in map( lambda hda: hda[ "name" ], contents )
+
+    def _invocation_details( self, workflow_id, invocation_id ):
+        invocation_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, invocation_id ) )
+        self._assert_status_code_is( invocation_details_response, 200 )
+        invocation_details = invocation_details_response.json()
+        return invocation_details
+
+    def _run_workflow_once_get_invocation( self, name ):
+        workflow = self.workflow_populator.load_workflow( name=name )
+        workflow_request, history_id = self._setup_workflow_run( workflow )
+        workflow_id = workflow_request[ "workflow_id" ]
+        response = self._get( "workflows/%s/usage" % workflow_id )
+        self._assert_status_code_is( response, 200 )
+        assert len( response.json() ) == 0
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+
+        response = self._get( "workflows/%s/usage" % workflow_id )
+        self._assert_status_code_is( response, 200 )
+        usages = response.json()
+        assert len( usages ) == 1
+        return workflow_id, usages[ 0 ]
 
     def _setup_workflow_run( self, workflow, inputs_by='step_id', history_id=None ):
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )

@@ -1,10 +1,10 @@
 from galaxy import model
 from galaxy.model import mapping
 from galaxy.util import bunch
-from galaxy.web import framework
+from galaxy.managers import context
 
 
-class TestTransaction( framework.ProvidesAppContext ):
+class TestTransaction( context.ProvidesAppContext ):
 
     def __init__( self ):
         self.app = TestApp()

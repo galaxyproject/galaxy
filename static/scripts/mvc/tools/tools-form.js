@@ -1,8 +1,11 @@
-define(['mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc',
+/*
+    This is the main class of the tool form plugin. It is referenced as 'app' in all lower level modules.
+*/
+define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         'mvc/citation/citation-model', 'mvc/citation/citation-view',
-        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets'],
-    function(Portlet, Table, Ui, CitationModel, CitationView,
-             Tools, ToolTemplate, ToolDatasets) {
+        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets', 'mvc/tools/tools-section', 'mvc/tools/tools-tree', 'mvc/tools/tools-jobs'],
+    function(Portlet, Ui, CitationModel, CitationView,
+             Tools, ToolTemplate, ToolDatasets, ToolSection, ToolTree, ToolJobs) {
 
     // create tool model
     var Model = Backbone.Model.extend({
@@ -29,19 +32,77 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc',
                 id : options.id
             });
             
+            // creates a tree/json structure from the input form
+            this.tree = new ToolTree(this);
+            
+            // creates the job handler
+            this.job_handler = new ToolJobs(this);
+            
+            // reset field list
+            this.field_list = {};
+            
+            // reset sequential input definition list
+            this.input_list = {};
+            
+            // reset input element definition list
+            this.element_list = {};
+            
             // initialize datasets
             this.datasets = new ToolDatasets({
-                success: function() {
+                history_id  : this.options.history_id,
+                success     : function() {
                     self._initializeToolForm();
                 }
             });
         },
         
+        // reset form
+        reset: function() {
+            for (var i in this.element_list) {
+                this.element_list[i].reset();
+            }
+        },
+        
         // initialize tool form
         _initializeToolForm: function() {
-            // fetch model and render form
+            // link this
             var self = this;
+            
+            // create question button
+            var button_question = new Ui.ButtonIcon({
+                icon    : 'fa-question-circle',
+                title   : 'Question?',
+                tooltip : 'Ask a question about this tool (Biostar)',
+                onclick : function() {
+                    window.open(self.options.biostar_url + '/p/new/post/');
+                }
+            });
+            
+            // create search button
+            var button_search = new Ui.ButtonIcon({
+                icon    : 'fa-search',
+                title   : 'Search',
+                tooltip : 'Search help for this tool (Biostar)',
+                onclick : function() {
+                    window.open(self.options.biostar_url + '/t/' + self.options.id + '/');
+                }
+            });
+            
+            // create share button
+            var button_share = new Ui.ButtonIcon({
+                icon    : 'fa-share',
+                title   : 'Share',
+                tooltip : 'Share this tool',
+                onclick : function() {
+                    prompt('Copy to clipboard: Ctrl+C, Enter', galaxy_config.root + 'root?tool_id=' + self.options.id);
+                }
+            });
+            
+            // fetch model and render form
             this.model.fetch({
+                error: function(response) {
+                    console.debug('tools-form::_initializeToolForm() : Attempt to fetch tool model failed.');
+                },
                 success: function() {
                     // inputs
                     self.inputs = self.model.get('inputs');
@@ -57,13 +118,22 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc',
                                 title    : 'Execute',
                                 floating : 'clear',
                                 onclick  : function() {
+                                    self.job_handler.submit();
                                 }
                             })
+                        },
+                        operations: {
+                            button_question: button_question,
+                            button_search: button_search,
+                            button_share: button_share
                         }
                     });
                     
-                    // create table
-                    self.table = new Table.View();
+                    // configure button selection
+                    if(!self.options.biostar_url) {
+                        button_question.$el.hide();
+                        button_search.$el.hide();
+                    }
                     
                     // create message
                     self.message = new Ui.Message();
@@ -92,284 +162,34 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-table', 'mvc/ui/ui-misc',
                     
                     // configure portlet and form table
                     self.setElement(self.portlet.content());
-                    self.portlet.append(self.table.$el);
-                    self.render();
+                    
+                    // create tool form section
+                    self.section = new ToolSection.View(self, {
+                        inputs : self.model.get('inputs')
+                    });
+                    
+                    // append tool section
+                    self.portlet.append(self.section.$el);
+                    
+                    // trigger refresh
+                    self.refresh();
+                    //self.job_handler.submit();
                 }
             });
         },
         
-        // update
-        render: function() {
-            // reset table
-            this.table.delAll();
-            
-            // reset list
-            this.list = [];
-            
-            // model
-            var data = new Backbone.Model();
-            
-            // load settings elements into table
-            for (var id in this.inputs) {
-                this._add(this.inputs[id], data);
-            }
+        // refresh
+        refresh: function() {
+            // recreate tree structure
+            this.tree.refresh();
             
             // trigger change
-            for (var id in this.list) {
-                this.list[id].trigger('change');
-            }
-        },
-        
-        // add table row
-        _add: function(inputs_def, data) {
-            // link this
-            var self = this;
-            
-            // get id
-            var id = inputs_def.name;
-            
-            // field wrapper
-            var field = null;
-            console.log(inputs_def);
-            // create select field
-            var type = inputs_def.type;
-            switch(type) {
-                // text input field
-                case 'text' :
-                    field = this.field_text(inputs_def, data);
-                    break;
-                    
-                // select field
-                case 'select' :
-                    field = this.field_select(inputs_def, data);
-                    break;
-                    
-                // radiobox field
-                case 'radiobutton' :
-                    field = this.field_radio(inputs_def, data);
-                    break;
-                
-                // dataset
-                case 'data':
-                    field = this.field_data(inputs_def, data);
-                    break;
-                
-                // dataset column
-                case 'data_column':
-                    field = this.field_column(inputs_def, data);
-                    break;
-                
-                // text area field
-                case 'textarea' :
-                    field = this.field_textarea(inputs_def, data);
-                    break;
-
-                // default
-                default:
-                    field = new Ui.Input({
-                        id          : 'field-' + id,
-                        placeholder : inputs_def.placeholder,
-                        type        : inputs_def.type,
-                        onchange    : function() {
-                            data.set(id, field.value());
-                        }
-                    });
+            for (var id in this.field_list) {
+                this.field_list[id].trigger('change');
             }
             
-            // set value
-            if (!data.get(id)) {
-                data.set(id, inputs_def.value);
-            }
-            field.value(data.get(id));
-            
-            // add list
-            this.list[id] = field;
-            
-            // combine field and info
-            var $input = $('<div/>');
-            $input.append(field.$el);
-            if (inputs_def.info) {
-                $input.append('<div class="ui-table-form-info">' + inputs_def.info + '</div>');
-            }
-            
-            // add row to table
-            this.table.add('<span class="ui-table-form-title">' + inputs_def.label + '</span>', '25%');
-            this.table.add($input);
-            
-            // add to table
-            this.table.append(id);
-            
-            // show/hide
-            if (inputs_def.hide) {
-                this.table.get(id).hide();
-            }
-        },
-        
-        // text input field
-        field_text : function(inputs_def, data) {
-            var id = inputs_def.name;
-            return new Ui.Input({
-                id          : 'field-' + id,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
-            });
-        },
-        
-        // text area
-        field_textarea : function(inputs_def, data) {
-            var id = inputs_def.name;
-            return new Ui.Textarea({
-                id          : 'field-' + id,
-                onchange    : function() {
-                    data.set(id, field.value());
-                }
-            });
-        },
-        
-        // data input field
-        field_data : function(inputs_def, data) {
-            // link this
-            var self = this;
-            
-            // get element id
-            var id = inputs_def.name;
-            
-            // get datasets
-            var datasets = this.datasets.filterType();
-            
-            // configure options fields
-            var options = [];
-            for (var i in datasets) {
-                options.push({
-                    label: datasets[i].get('name'),
-                    value: datasets[i].get('id')
-                });
-            }
-            
-            // find referenced columns
-            var column_list = _.where(this.inputs, {
-                data_ref    : id,
-                type        : 'data_column'
-            });
-            
-            // select field
-            return new Ui.Select.View({
-                id          : 'field-' + id,
-                data        : options,
-                value       : options[0].value,
-                onchange    : function(value) {
-                    // update value
-                    data.set(id, value);
-                    
-                    // find selected dataset
-                    var dataset = self.datasets.filter(value);
-        
-                    // check dataset
-                    if (dataset && column_list.length > 0) {
-                        // log selection
-                        console.debug('tool-form::field_data() - Selected dataset ' + value + '.');
-                    
-                        // get meta data
-                        var meta = dataset.get('metadata_column_types');
-                    
-                        // check meta data
-                        if (!meta) {
-                            console.debug('tool-form::field_data() - FAILED: Could not find metadata for dataset ' + value + '.');
-                        }
-                        
-                        // load column options
-                        var columns = [];
-                        for (var key in meta) {
-                            // add to selection
-                            columns.push({
-                                'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
-                                'value' : key
-                            });
-                        }
-                
-                        // update referenced columns
-                        for (var i in column_list) {
-                            var column_field = self.list[column_list[i].name]
-                            if (column_field) {
-                                column_field.update(columns);
-                                column_field.value(column_field.first());
-                            }
-                        }
-                    } else {
-                        // log failure
-                        console.debug('tool-form::field_data() - FAILED: Could not find dataset ' + value + '.');
-                    }
-                }
-            });
-        },
-        
-        // select field
-        field_column : function (inputs_def, data) {
-            // configure options fields
-            var options = [];
-            for (var i in inputs_def.options) {
-                var option = inputs_def.options[i];
-                options.push({
-                    label: option[0],
-                    value: option[1]
-                });
-            }
-            
-            // select field
-            var id = inputs_def.name;
-            return new Ui.Select.View({
-                id          : 'field-' + id,
-                data        : options,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
-            });
-        },
-
-        // select field
-        field_select : function (inputs_def, data) {
-            // configure options fields
-            var options = [];
-            for (var i in inputs_def.options) {
-                var option = inputs_def.options[i];
-                options.push({
-                    label: option[0],
-                    value: option[1]
-                });
-            }
-            
-            // identify display type
-            var SelectClass = Ui.Select;
-            if (inputs_def.display == 'checkboxes') {
-                SelectClass = Ui.Checkbox;
-            }
-            
-            // select field
-            var id = inputs_def.name;
-            return new SelectClass.View({
-                id          : 'field-' + id,
-                data        : options,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
-            });
-        },
-        
-        // radio field
-        field_radio : function(inputs_def, data) {
-            var id = inputs_def.name;
-            return new Ui.RadioButton({
-                id          : 'field-' + id,
-                data        : inputs_def.data,
-                value       : data.get(id),
-                onchange    : function(value) {
-                    data.set(id, value);
-                }
-            });
+            // log
+            console.debug('tools-form::refresh() - Recreated tree structure. Refresh.');
         }
     });
 

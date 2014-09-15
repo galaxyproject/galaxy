@@ -14,7 +14,7 @@ log = logging.getLogger( __name__ )
 
 DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = 'hg17'
-DEFAULT_INTERACTOR = "twill"  # Default mechanism test code uses for interacting with Galaxy instance.
+DEFAULT_INTERACTOR = "api"  # Default mechanism test code uses for interacting with Galaxy instance.
 DEFAULT_MAX_SECS = 120
 
 
@@ -50,6 +50,9 @@ class ToolTestBuilder( object ):
         self.required_files = []
         self.inputs = []
         self.outputs = []
+        self.num_outputs = None  # By default do not making assertions on
+                                 # number of outputs - but to test filtering
+                                 # allow explicitly state number of outputs.
         self.error = False
         self.exception = None
 
@@ -122,6 +125,10 @@ class ToolTestBuilder( object ):
             self.__parse_inputs_elems( test_elem, i )
 
             self.outputs = parse_output_elems( test_elem )
+            num_outputs = test_elem.get( 'expect_num_outputs', None )
+            if num_outputs:
+                num_outputs = int( num_outputs )
+            self.num_outputs = num_outputs
         except Exception, e:
             self.error = True
             self.exception = e

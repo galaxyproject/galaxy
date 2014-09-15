@@ -113,7 +113,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if raw_text:
             # If successful, the response from get_ordered_installable_revisions will be a list of
             # changeset_revision hash strings.
-            changeset_revisions = json.from_json_string( raw_text )
+            changeset_revisions = json.loads( raw_text )
             if len( changeset_revisions ) >= 1:
                 return changeset_revisions[ -1 ]
         return hg_util.INITIAL_CHANGELOG_HASH
@@ -146,7 +146,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if index is None:
             raise HTTPBadRequest( detail="Missing required parameter 'index'." )
         repository = suc.get_tool_shed_repository_by_id( trans.app, tool_shed_repository_id )
-        exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
+        exported_workflows = json.loads( self.exported_workflows( trans, tool_shed_repository_id ) )
         # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its location (i.e., index) in the list.
         exported_workflow = exported_workflows[ int( index ) ]
         workflow_name = exported_workflow[ 'workflow_name' ]
@@ -173,7 +173,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if not tool_shed_repository_id:
             raise HTTPBadRequest( detail="Missing required parameter 'id'." )
         repository = suc.get_tool_shed_repository_by_id( trans.app, tool_shed_repository_id )
-        exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
+        exported_workflows = json.loads( self.exported_workflows( trans, tool_shed_repository_id ) )
         imported_workflow_dicts = []
         for exported_workflow_dict in exported_workflows:
             workflow_name = exported_workflow_dict[ 'workflow_name' ]
@@ -438,7 +438,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             results[ 'repository_status' ].append( message )
         stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 )
+        return json.dumps( results, sort_keys=True, indent=4 )
 
     @expose_api
     def show( self, trans, id, **kwd ):

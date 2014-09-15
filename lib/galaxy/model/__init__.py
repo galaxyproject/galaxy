@@ -2004,7 +2004,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      history_content_type=hda.history_content_type,
                      file_size = int( hda.get_size() ),
                      update_time = hda.update_time.isoformat(),
-                     data_type = hda.ext,
+                     data_type = hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                      genome_build = hda.dbkey,
                      misc_info = hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
                      misc_blurb = hda.blurb )
@@ -2316,7 +2316,8 @@ class LibraryDataset( object ):
                      message = ldda.message,
                      date_uploaded = ldda.create_time.isoformat(),
                      file_size = int( ldda.get_size() ),
-                     data_type = ldda.ext,
+                     file_ext = ldda.ext,
+                     data_type = ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb,
@@ -2432,6 +2433,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             file_size = int( ldda.get_size() )
         except OSError:
             file_size = 0
+        
         rval = dict( id = ldda.id,
                      hda_ldda = 'ldda',
                      model_class = self.__class__.__name__,
@@ -2443,7 +2445,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                      file_size = file_size,
                      file_name = ldda.file_name,
                      update_time = ldda.update_time.isoformat(),
-                     data_type = ldda.ext,
+                     file_ext = ldda.ext,
+                     data_type = ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb )
@@ -2463,6 +2466,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                 val = getattr( ldda.datatype, name )
             rval['metadata_' + name] = val
         return rval
+
     def get_template_widgets( self, trans, get_contents=True ):
         # See if we have any associated templatesThe get_contents
         # param is passed by callers that are inheriting a template - these
@@ -2489,6 +2493,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             else:
                 return template.get_widgets( trans.user )
         return []
+
     def templates_dict( self, use_name=False ):
         """
         Returns a dict of template info
@@ -2507,6 +2512,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
                 tmp_dict[ name ] = content.get( field[ 'name' ] )
             template_data[template.name] = tmp_dict
         return template_data
+
     def templates_json( self, use_name=False ):
         return json.dumps( self.templates_dict( use_name=use_name ) )
 
@@ -2530,6 +2536,7 @@ class LibraryInfoAssociation( object ):
         self.info = info
         self.inheritable = inheritable
 
+
 class LibraryFolderInfoAssociation( object ):
     def __init__( self, folder, form_definition, info, inheritable=False ):
         self.folder = folder
@@ -2537,15 +2544,18 @@ class LibraryFolderInfoAssociation( object ):
         self.info = info
         self.inheritable = inheritable
 
+
 class LibraryDatasetDatasetInfoAssociation( object ):
     def __init__( self, library_dataset_dataset_association, form_definition, info ):
         # TODO: need to figure out if this should be inheritable to the associated LibraryDataset
         self.library_dataset_dataset_association = library_dataset_dataset_association
         self.template = form_definition
         self.info = info
+
     @property
     def inheritable( self ):
-        return True #always allow inheriting, used for replacement
+        return True  # always allow inheriting, used for replacement
+
 
 class ValidationError( object ):
     def __init__( self, message=None, err_type=None, attributes=None ):
@@ -2553,42 +2563,47 @@ class ValidationError( object ):
         self.err_type = err_type
         self.attributes = attributes
 
+
 class DatasetToValidationErrorAssociation( object ):
     def __init__( self, dataset, validation_error ):
         self.dataset = dataset
         self.validation_error = validation_error
 
+
 class ImplicitlyConvertedDatasetAssociation( object ):
-    def __init__( self, id = None, parent = None, dataset = None, file_type = None, deleted = False, purged = False, metadata_safe = True ):
+
+    def __init__( self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True ):
         self.id = id
         if isinstance(dataset, HistoryDatasetAssociation):
             self.dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.dataset_ldda = dataset
         else:
-            raise AttributeError, 'Unknown dataset type provided for dataset: %s' % type( dataset )
+            raise AttributeError( 'Unknown dataset type provided for dataset: %s' % type( dataset ) )
         if isinstance(parent, HistoryDatasetAssociation):
             self.parent_hda = parent
         elif isinstance(parent, LibraryDatasetDatasetAssociation):
             self.parent_ldda = parent
         else:
-            raise AttributeError, 'Unknown dataset type provided for parent: %s' % type( parent )
+            raise AttributeError( 'Unknown dataset type provided for parent: %s' % type( parent ) )
         self.type = file_type
         self.deleted = deleted
         self.purged = purged
         self.metadata_safe = metadata_safe
 
-    def clear( self, purge = False, delete_dataset = True ):
+    def clear( self, purge=False, delete_dataset=True ):
         self.deleted = True
         if self.dataset:
             if delete_dataset:
                 self.dataset.deleted = True
             if purge:
                 self.dataset.purged = True
-        if purge and self.dataset.deleted: #do something with purging
+        if purge and self.dataset.deleted:  # do something with purging
             self.purged = True
-            try: os.unlink( self.file_name )
-            except Exception, e: print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
+            try:
+                os.unlink( self.file_name )
+            except Exception, e:
+                print "Failed to purge associated file (%s) from disk: %s" % ( self.file_name, e )
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -2900,6 +2915,7 @@ class Event( object ):
         self.tool_id = None
         self.message = message
 
+
 class GalaxySession( object ):
     def __init__( self,
                   id=None,
@@ -2921,23 +2937,28 @@ class GalaxySession( object ):
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
         self.histories = []
+
     def add_history( self, history, association=None ):
         if association is None:
             self.histories.append( GalaxySessionToHistoryAssociation( self, history ) )
         else:
             self.histories.append( association )
+
     def get_disk_usage( self ):
         if self.disk_usage is None:
             return 0
         return self.disk_usage
+
     def set_disk_usage( self, bytes ):
         self.disk_usage = bytes
     total_disk_usage = property( get_disk_usage, set_disk_usage )
+
 
 class GalaxySessionToHistoryAssociation( object ):
     def __init__( self, galaxy_session, history ):
         self.galaxy_session = galaxy_session
         self.history = history
+
 
 class UCI( object ):
     def __init__( self ):
@@ -2959,14 +2980,14 @@ class StoredWorkflow( object, Dictifiable):
         self.latest_workflow_id = None
         self.workflows = []
 
-    def copy_tags_from(self,target_user,source_workflow):
+    def copy_tags_from(self, target_user, source_workflow):
         for src_swta in source_workflow.owner_tags:
             new_swta = src_swta.copy()
             new_swta.user = target_user
             self.tags.append(new_swta)
 
-    def to_dict( self, view='collection', value_mapper = None  ):
-        rval = super( StoredWorkflow, self ).to_dict( view=view, value_mapper = value_mapper )
+    def to_dict( self, view='collection', value_mapper=None ):
+        rval = super( StoredWorkflow, self ).to_dict( view=view, value_mapper=value_mapper )
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
@@ -2974,6 +2995,7 @@ class StoredWorkflow( object, Dictifiable):
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
         rval['tags'] = tags_str_list
+        rval['latest_workflow_uuid'] = ( lambda uuid: str( uuid ) if self.latest_workflow.uuid else None )( self.latest_workflow.uuid )
         return rval
 
 
@@ -2982,12 +3004,16 @@ class Workflow( object, Dictifiable ):
     dict_collection_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
     dict_element_visible_keys = ( 'name', 'has_cycles', 'has_errors' )
 
-    def __init__( self ):
+    def __init__( self, uuid=None ):
         self.user = None
         self.name = None
         self.has_cycles = None
         self.has_errors = None
         self.steps = []
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
 
     def has_outputs_defined(self):
         """
@@ -2998,6 +3024,10 @@ class Workflow( object, Dictifiable ):
                 return True
         return False
 
+    def to_dict( self, view='collection', value_mapper=None):
+        rval = super( Workflow, self ).to_dict( view=view, value_mapper=value_mapper )
+        rval['uuid'] = ( lambda uuid: str( uuid ) if uuid else None )( self.uuid )
+        return rval
 
 
 class WorkflowStep( object ):
@@ -3048,23 +3078,25 @@ class WorkflowInvocation( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'update_time', 'workflow_id' )
     dict_element_visible_keys = ( 'id', 'update_time', 'workflow_id' )
 
-    def to_dict( self, view='collection', value_mapper = None ):
+    def to_dict( self, view='collection', value_mapper=None ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
         if view == 'element':
-            steps = {}
+            steps = []
             for step in self.steps:
                 v = step.to_dict()
-                steps[str(v['order_index'])] = v
+                steps.append( v )
             rval['steps'] = steps
 
             inputs = {}
             for step in self.steps:
-                if step.workflow_step.type =='tool':
+                if step.workflow_step.type == 'tool':
                     for step_input in step.workflow_step.input_connections:
-                        if step_input.output_step.type == 'data_input':
+                        output_step_type = step_input.output_step.type
+                        if output_step_type in [ 'data_input', 'data_collection_input' ]:
+                            src = "hda" if output_step_type == 'data_input' else 'hdca'
                             for job_input in step.job.input_datasets:
                                 if job_input.name == step_input.input_name:
-                                    inputs[str(step_input.output_step.order_index)] = { "id" : job_input.dataset_id, "src" : "hda"}
+                                    inputs[str(step_input.output_step.order_index)] = { "id": job_input.dataset_id, "src": src }
             rval['inputs'] = inputs
         return rval
 
@@ -3073,19 +3105,20 @@ class WorkflowInvocationStep( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id' )
     dict_element_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id' )
 
-    def to_dict( self, view='collection', value_mapper = None ):
+    def to_dict( self, view='collection', value_mapper=None ):
         rval = super( WorkflowInvocationStep, self ).to_dict( view=view, value_mapper=value_mapper )
         rval['order_index'] = self.workflow_step.order_index
         return rval
 
 class MetadataFile( object ):
 
-    def __init__( self, dataset = None, name = None ):
+    def __init__( self, dataset=None, name=None ):
         if isinstance( dataset, HistoryDatasetAssociation ):
             self.history_dataset = dataset
         elif isinstance( dataset, LibraryDatasetDatasetAssociation ):
             self.library_dataset = dataset
         self.name = name
+
     @property
     def file_name( self ):
         assert self.id is not None, "ID must be set before filename used (commit the object)"
@@ -3116,14 +3149,15 @@ class MetadataFile( object ):
 class FormDefinition( object, Dictifiable ):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [ AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
-    types = Bunch( REQUEST = 'Sequencing Request Form',
-                   SAMPLE = 'Sequencing Sample Form',
-                   EXTERNAL_SERVICE = 'External Service Information Form',
-                   RUN_DETAILS_TEMPLATE = 'Sample run details template',
-                   LIBRARY_INFO_TEMPLATE = 'Library information template',
-                   USER_INFO = 'User Information' )
+    types = Bunch( REQUEST='Sequencing Request Form',
+                   SAMPLE='Sequencing Sample Form',
+                   EXTERNAL_SERVICE='External Service Information Form',
+                   RUN_DETAILS_TEMPLATE='Sample run details template',
+                   LIBRARY_INFO_TEMPLATE='Library information template',
+                   USER_INFO='User Information' )
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name', 'desc', 'form_definition_current_id', 'fields', 'layout' )
+
     def __init__( self, name=None, desc=None, fields=[], form_definition_current=None, form_type=None, layout=None ):
         self.name = name
         self.desc = desc
@@ -3131,6 +3165,7 @@ class FormDefinition( object, Dictifiable ):
         self.form_definition_current = form_definition_current
         self.type = form_type
         self.layout = layout
+
     def grid_fields( self, grid_index ):
         # Returns a dictionary whose keys are integers corresponding to field positions
         # on the grid and whose values are the field.
@@ -3139,6 +3174,7 @@ class FormDefinition( object, Dictifiable ):
             if str( f[ 'layout' ] ) == str( grid_index ):
                 gridfields[i] = f
         return gridfields
+
     def get_widgets( self, user, contents={}, **kwd ):
         '''
         Return the list of widgets that comprise a form definition,
@@ -3200,24 +3236,28 @@ class FormDefinition( object, Dictifiable ):
                 field_widget.params = params
             elif field_type == 'SelectField':
                 for option in field[ 'selectlist' ]:
+
                     if option == value:
                         field_widget.add_option( option, option, selected=True )
                     else:
                         field_widget.add_option( option, option )
             elif field_type == 'CheckboxField':
+
                 field_widget.set_checked( value )
             if field[ 'required' ] == 'required':
                 req = 'Required'
             else:
                 req = 'Optional'
             if field[ 'helptext' ]:
-                helptext='%s (%s)' % ( field[ 'helptext' ], req )
+                helptext = '%s (%s)' % ( field[ 'helptext' ], req )
             else:
                 helptext = '(%s)' % req
             widgets.append( dict( label=field[ 'label' ],
+
                                   widget=field_widget,
                                   helptext=helptext ) )
         return widgets
+
     def field_as_html( self, field ):
         """Generates disabled html for a field"""
         type = field[ 'type' ]
@@ -3232,21 +3272,25 @@ class FormDefinition( object, Dictifiable ):
         # Return None if unsupported field type
         return None
 
+
 class FormDefinitionCurrent( object ):
     def __init__(self, form_definition=None):
         self.latest_form = form_definition
+
 
 class FormValues( object ):
     def __init__(self, form_def=None, content=None):
         self.form_definition = form_def
         self.content = content
 
+
 class Request( object, Dictifiable ):
-    states = Bunch( NEW = 'New',
-                    SUBMITTED = 'In Progress',
-                    REJECTED = 'Rejected',
-                    COMPLETE = 'Complete' )
+    states = Bunch( NEW='New',
+                    SUBMITTED='In Progress',
+                    REJECTED='Rejected',
+                    COMPLETE='Complete' )
     dict_collection_visible_keys = ( 'id', 'name', 'state' )
+
     def __init__( self, name=None, desc=None, request_type=None, user=None, form_values=None, notification=None ):
         self.name = name
         self.desc = desc
@@ -3255,17 +3299,20 @@ class Request( object, Dictifiable ):
         self.user = user
         self.notification = notification
         self.samples_list = []
+
     @property
     def state( self ):
         latest_event = self.latest_event
         if latest_event:
             return latest_event.state
         return None
+
     @property
     def latest_event( self ):
         if self.events:
             return self.events[0]
         return None
+
     @property
     def samples_have_common_state( self ):
         """
@@ -3281,6 +3328,7 @@ class Request( object, Dictifiable ):
             if s.state.id != state_for_comparison.id:
                 return False
         return state_for_comparison
+
     @property
     def last_comment( self ):
         latest_event = self.latest_event
@@ -3289,26 +3337,34 @@ class Request( object, Dictifiable ):
                 return latest_event.comment
             return ''
         return 'No comment'
+
     def get_sample( self, sample_name ):
         for sample in self.samples:
             if sample.name == sample_name:
                 return sample
         return None
+
     @property
     def is_unsubmitted( self ):
         return self.state in [ self.states.REJECTED, self.states.NEW ]
+
     @property
     def is_rejected( self ):
         return self.state == self.states.REJECTED
+
     @property
     def is_submitted( self ):
         return self.state == self.states.SUBMITTED
+
     @property
     def is_new( self ):
+
         return self.state == self.states.NEW
+
     @property
     def is_complete( self ):
         return self.state == self.states.COMPLETE
+
     @property
     def samples_without_library_destinations( self ):
         # Return all samples that are not associated with a library
@@ -3317,6 +3373,7 @@ class Request( object, Dictifiable ):
             if not sample.library:
                 samples.append( sample )
         return samples
+
     @property
     def samples_with_bar_code( self ):
         # Return all samples that have associated bar code
@@ -3325,6 +3382,7 @@ class Request( object, Dictifiable ):
             if sample.bar_code:
                 samples.append( sample )
         return samples
+
     def send_email_notification( self, trans, common_state, final_state=False ):
         # Check if an email notification is configured to be sent when the samples
         # are in this state
@@ -3377,7 +3435,7 @@ All samples in state:     %(sample_state)s
             try:
                 send_mail( frm, to, subject, body, trans.app.config )
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
-            except Exception,e:
+            except Exception, e:
                 comments = "Email notification failed. (%s)" % str(e)
             # update the request history with the email notification event
         elif not trans.app.config.smtp_server:
@@ -3388,16 +3446,19 @@ All samples in state:     %(sample_state)s
             trans.sa_session.flush()
         return comments
 
+
 class RequestEvent( object ):
     def __init__(self, request=None, request_state=None, comment=''):
         self.request = request
         self.state = request_state
         self.comment = comment
 
+
 class ExternalService( object ):
-    data_transfer_protocol = Bunch( HTTP = 'http',
-                                    HTTPS = 'https',
-                                    SCP = 'scp' )
+    data_transfer_protocol = Bunch( HTTP='http',
+                                    HTTPS='https',
+                                    SCP='scp' )
+
     def __init__( self, name=None, description=None, external_service_type_id=None, version=None, form_definition_id=None, form_values_id=None, deleted=None ):
         self.name = name
         self.description = description
@@ -3406,9 +3467,11 @@ class ExternalService( object ):
         self.form_definition_id = form_definition_id
         self.form_values_id = form_values_id
         self.deleted = deleted
-        self.label = None # Used in the request_type controller's __build_external_service_select_field() method
+        self.label = None  # Used in the request_type controller's __build_external_service_select_field() method
+
     def get_external_service_type( self, trans ):
         return trans.app.external_service_types.all_external_service_types[ self.external_service_type_id ]
+
     def load_data_transfer_settings( self, trans ):
         trans.app.external_service_types.reload( self.external_service_type_id )
         self.data_transfer = {}
@@ -3429,33 +3492,39 @@ class ExternalService( object ):
                 automatic_transfer = data_transfer_obj.config.get( 'automatic_transfer', 'false' )
                 http_configs[ 'automatic_transfer' ] = galaxy.util.string_as_bool( automatic_transfer )
                 self.data_transfer[ self.data_transfer_protocol.HTTP ] = http_configs
+
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
+
 
 class RequestType( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'desc' )
     dict_element_visible_keys = ( 'id', 'name', 'desc', 'request_form_id', 'sample_form_id' )
-    rename_dataset_options = Bunch( NO = 'Do not rename',
-                                    SAMPLE_NAME = 'Preprend sample name',
-                                    EXPERIMENT_NAME = 'Prepend experiment name',
-                                    EXPERIMENT_AND_SAMPLE_NAME = 'Prepend experiment and sample name')
+    rename_dataset_options = Bunch( NO='Do not rename',
+                                    SAMPLE_NAME='Preprend sample name',
+                                    EXPERIMENT_NAME='Prepend experiment name',
+                                    EXPERIMENT_AND_SAMPLE_NAME='Prepend experiment and sample name')
     permitted_actions = get_permitted_actions( filter='REQUEST_TYPE' )
+
     def __init__( self, name=None, desc=None, request_form=None, sample_form=None ):
         self.name = name
         self.desc = desc
         self.request_form = request_form
         self.sample_form = sample_form
+
     @property
     def external_services( self ):
         external_services = []
         for rtesa in self.external_service_associations:
             external_services.append( rtesa.external_service )
         return external_services
+
     def get_external_service( self, external_service_type_id ):
         for rtesa in self.external_service_associations:
             if rtesa.external_service.external_service_type_id == external_service_type_id:
                 return rtesa.external_service
         return None
+
     def get_external_services_for_manual_data_transfer( self, trans ):
         '''Returns all external services that use manual data transfer'''
         external_services = []
@@ -3468,6 +3537,7 @@ class RequestType( object, Dictifiable ):
                     if not transfer_type_settings[ 'automatic_transfer' ]:
                         external_services.append( external_service )
         return external_services
+
     def delete_external_service_associations( self, trans ):
         '''Deletes all external service associations.'''
         flush_needed = False
@@ -3476,20 +3546,24 @@ class RequestType( object, Dictifiable ):
             flush_needed = True
         if flush_needed:
             trans.sa_session.flush()
+
     def add_external_service_association( self, trans, external_service ):
         rtesa = trans.model.RequestTypeExternalServiceAssociation( self, external_service )
         trans.sa_session.add( rtesa )
         trans.sa_session.flush()
+
     @property
     def final_sample_state( self ):
         # The states mapper for this object orders ascending
         return self.states[-1]
+
     @property
     def run_details( self ):
         if self.run:
             # self.run[0] is [RequestTypeRunAssociation]
             return self.run[0]
         return None
+
     def get_template_widgets( self, trans, get_contents=True ):
         # See if we have any associated templates.  The get_contents param
         # is passed by callers that are inheriting a template - these are
@@ -3507,10 +3581,12 @@ class RequestType( object, Dictifiable ):
             return template.get_widgets( trans.user )
         return []
 
+
 class RequestTypeExternalServiceAssociation( object ):
     def __init__( self, request_type, external_service ):
         self.request_type = request_type
         self.external_service = external_service
+
 
 class RequestTypePermissions( object ):
     def __init__( self, action, request_type, role ):
@@ -3518,12 +3594,14 @@ class RequestTypePermissions( object ):
         self.request_type = request_type
         self.role = role
 
+
 class Sample( object, Dictifiable ):
     # The following form_builder classes are supported by the Sample class.
     supported_field_types = [ CheckboxField, SelectField, TextField, WorkflowField, WorkflowMappingField, HistoryField ]
-    bulk_operations = Bunch( CHANGE_STATE = 'Change state',
-                             SELECT_LIBRARY = 'Select data library and folder' )
+    bulk_operations = Bunch( CHANGE_STATE='Change state',
+                             SELECT_LIBRARY='Select data library and folder' )
     dict_collection_visible_keys = ( 'id', 'name' )
+
     def __init__(self, name=None, desc=None, request=None, form_values=None, bar_code=None, library=None, folder=None, workflow=None, history=None):
         self.name = name
         self.desc = desc
@@ -3534,17 +3612,20 @@ class Sample( object, Dictifiable ):
         self.folder = folder
         self.history = history
         self.workflow = workflow
+
     @property
     def state( self ):
         latest_event = self.latest_event
         if latest_event:
             return latest_event.state
         return None
+
     @property
     def latest_event( self ):
         if self.events:
             return self.events[0]
         return None
+
     @property
     def adding_to_library_dataset_files( self ):
         adding_to_library_datasets = []
@@ -3552,6 +3633,7 @@ class Sample( object, Dictifiable ):
             if dataset.status == SampleDataset.transfer_status.ADD_TO_LIBRARY:
                 adding_to_library_datasets.append( dataset )
         return adding_to_library_datasets
+
     @property
     def inprogress_dataset_files( self ):
         inprogress_datasets = []
@@ -3559,6 +3641,7 @@ class Sample( object, Dictifiable ):
             if dataset.status not in [ SampleDataset.transfer_status.NOT_STARTED, SampleDataset.transfer_status.COMPLETE ]:
                 inprogress_datasets.append( dataset )
         return inprogress_datasets
+
     @property
     def queued_dataset_files( self ):
         queued_datasets = []
@@ -3566,6 +3649,7 @@ class Sample( object, Dictifiable ):
             if dataset.status == SampleDataset.transfer_status.IN_QUEUE:
                 queued_datasets.append( dataset )
         return queued_datasets
+
     @property
     def transfer_error_dataset_files( self ):
         transfer_error_datasets = []
@@ -3573,6 +3657,7 @@ class Sample( object, Dictifiable ):
             if dataset.status == SampleDataset.transfer_status.ERROR:
                 transfer_error_datasets.append( dataset )
         return transfer_error_datasets
+
     @property
     def transferred_dataset_files( self ):
         transferred_datasets = []
@@ -3580,6 +3665,7 @@ class Sample( object, Dictifiable ):
             if dataset.status == SampleDataset.transfer_status.COMPLETE:
                 transferred_datasets.append( dataset )
         return transferred_datasets
+
     @property
     def transferring_dataset_files( self ):
         transferring_datasets = []
@@ -3587,6 +3673,7 @@ class Sample( object, Dictifiable ):
             if dataset.status == SampleDataset.transfer_status.TRANSFERRING:
                 transferring_datasets.append( dataset )
         return transferring_datasets
+
     @property
     def untransferred_dataset_files( self ):
         untransferred_datasets = []
@@ -3594,6 +3681,7 @@ class Sample( object, Dictifiable ):
             if dataset.status != SampleDataset.transfer_status.COMPLETE:
                 untransferred_datasets.append( dataset )
         return untransferred_datasets
+
     def get_untransferred_dataset_size( self, filepath, scp_configs ):
         def print_ticks( d ):
             pass

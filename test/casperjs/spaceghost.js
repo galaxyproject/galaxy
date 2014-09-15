@@ -34,6 +34,7 @@
 // ------------------------------------------------------------------- modules
 var require = patchRequire( require ),
     Casper = require( 'casper' ).Casper,
+    system = require( 'system' ),
     fs = require( 'fs' ),
     utils = require( 'utils' );
 
@@ -637,7 +638,7 @@ SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigat
     }
 
     function catchNavReq( url ){
-        //this.debug( 'nav.req: ' + url );
+        this.debug( 'nav.req: ' + url );
         for( var i=( urlsToWaitFor.length - 1 ); i>=0; i -= 1 ){
             //this.debug( '\t checking: ' + urlsToWaitFor[i] );
             if( urlMatches( urlsToWaitFor[i], url ) ){
@@ -1022,7 +1023,7 @@ SpaceGhost.prototype.addListeners = function addListeners( eventName, handlerArr
  */
 SpaceGhost.prototype.stderr = function( msg ){
     if( msg.trim() ){
-        fs.write( '/dev/stderr', msg + '\n', 'w' );
+        system.stderr.writeLine( msg );
     }
 };
 

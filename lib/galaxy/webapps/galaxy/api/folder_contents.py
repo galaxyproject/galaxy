@@ -136,7 +136,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
                 library_dataset_dict = content_item.to_dict()
 
-                return_item.update( dict( data_type=library_dataset_dict[ 'data_type' ],
+                return_item.update( dict( file_ext=library_dataset_dict[ 'file_ext' ],
                                           date_uploaded=library_dataset_dict[ 'date_uploaded' ],
                                           is_unrestricted=is_unrestricted,
                                           is_private=is_private,

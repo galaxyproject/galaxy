@@ -1,3 +1,32 @@
+.ui-table-row-error {
+    -moz-border-radius: @border-radius-base;
+    border-radius: @border-radius-base;
+    background: @state-danger-bg;
+    padding: 5px;
+}
+
+.ui-table-form-error {
+    display: none;
+    .ui-table-form-error-text  {
+        padding-left: 5px;
+    }
+}
+
+.ui-form-slider {
+    .ui-form-slider-text {
+        &:extend(.form-control);
+        width: 100px;
+        float: left;
+    }
+
+    .ui-form-slider-element {
+        width: ~'calc(100% - 110px)';
+        float: left;
+        top: 8px;
+        left: 10px;
+    }
+}
+
 .ui-radiobutton {
     label {
         height: 23px;
@@ -11,13 +40,39 @@
     tbody td {
         &:extend(.grid tbody td);
     }
-    .current {
-        &:extend(.grid .current);
+    
+    tbody {
+        cursor: pointer;
     }
+}
+
+.ui-table-plain {
+    &:extend(.grid);
+
+    tbody td {
+        padding: 5px 0px 5px 5px !important;
+        border: none !important;
+    }
+    
+    tbody {
+        cursor: auto !important;
+    }
+}
+
+.ui-table-form-section {
+    border-left: solid 3px @form-heading-bg;
+    border-radius: 5px;
+    padding-left: 5px;
+}
+
+.ui-table-form-title-strong {
+    font-weight: bold;
+    padding-bottom: 5px;
 }
 
 .ui-table-form-info {
     &:extend(.toolParamHelp);
+    clear: both !important;
 }
 
 .ui-table-form-separator {
@@ -60,6 +115,11 @@
 
 .ui-input {
     &:extend(.form-control);
+}
+
+.ui-textarea {
+    &:extend(.form-control);
+    height: 100px !important;
 }
 
 .ui-tabs {
@@ -189,4 +249,10 @@
         border-radius: 0;
         -webkit-appearance: none;
     }
+}
+
+.ui-select-multiple {
+    &:extend(.ui-select);
+    height: 100% !important;
+    width: 100% !important;
 }

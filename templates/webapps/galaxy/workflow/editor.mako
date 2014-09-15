@@ -7,16 +7,6 @@
 %>
 </%def>
 
-## <%def name="late_javascripts()">
-##     <script type='text/javascript' src="${h.url_for('/static/scripts/galaxy.panels.js')}"> </script>
-##     <script type="text/javascript">
-##         ensure_dd_helper();
-##         make_left_panel( $("#left"), $("#center"), $("#left-border" ) );
-##         make_right_panel( $("#right"), $("#center"), $("#right-border" ) );
-##         ## handle_minwidth_hint = rp.handle_minwidth_hint;
-##     </script>
-## </%def>
-
 <%def name="javascripts()">
 
     ${parent.javascripts()}
@@ -86,18 +76,6 @@
 
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
-
-    /* Wider right panel */
-    ## #center       { right: 309px; }
-    ## #right-border { right: 300px; }
-    ## #right        { width: 300px; }
-    ## /* Relative masthead size */
-    ## #masthead { height: 2.5em; }
-    ## #masthead div.title { font-size: 1.8em; }
-    ## #left, #left-border, #center, #right-border, #right {
-    ##     top: 2.5em;
-    ##     margin-top: 7px;
-    ## }
 
     #left {
         background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;

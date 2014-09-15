@@ -6,16 +6,17 @@ Tests can be run in any of the following ways:
 * casperjs test mytests.js --url='http://localhost:8080'
 * python casperjs_runner.py
 * nosetests
-* sh run_functional_tests.sh test/casperjs/test_runner
-* sh run_functional_tests.sh
+* sh run_tests.sh -j
+* sh run_tests.sh test/casperjs/casperjs_runner.py
+* sh run_tests.sh
 
 Note: that you can enable (lots of) debugging info using cli options:
-* casperjs test usertests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
+* casperjs test api-user-tests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
 
 (see casperjs.org for more information)
 
-Note: This seems to not work with CasperJS 1.1 (and PhantomJS 1.9) - Casper 1.0.xx and
-PhantomJS 1.8 work for me (John).
+Note: This works with CasperJS 1.1 and PhantomJS 1.9.2 and these libraries seem to break backward
+compatbility a lot.
 
 Note: You can pass in extra data using --data='<some JSON object>'
     and it will be available in your script as spaceghost.fixtureData.
@@ -381,7 +382,7 @@ class Test_03_HistoryPanel( CasperJSTestCase ):
         """
         self.run_js_script( 'history-panel-tests.js' )
 
-    def test_10_anonymous_histories( self ):
+    def test_10_history_options( self ):
         """Test history options button.
         """
         self.run_js_script( 'history-options-tests.js' )
@@ -424,7 +425,7 @@ class Test_05_API( CasperJSTestCase ):
         """
         self.run_js_script( 'api-anon-history-tests.js' )
 
-    def test_04_anon_history_api( self ):
+    def test_04_anon_history_permissions_api( self ):
         """Test API permissions for importable, published histories using anonymous user.
         """
         self.run_js_script( 'api-anon-history-permission-tests.js' )

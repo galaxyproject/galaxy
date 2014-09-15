@@ -1,6 +1,6 @@
 import base64
 
-from base.interactor import get_request
+from requests import get
 from base import api
 
 
@@ -18,12 +18,12 @@ class AuthenticationApiTestCase( api.ApiTestCase ):
         headers = {
             "Authorization": authorization,
         }
-        auth_response = get_request( baseauth_url, headers=headers )
+        auth_response = get( baseauth_url, headers=headers )
         self._assert_status_code_is( auth_response, 200 )
         auth_dict = auth_response.json()
         self._assert_has_keys( auth_dict, "api_key" )
 
         # Verify key...
         random_api_url = self._api_url( "users", use_key=False )
-        random_api_response = get_request( random_api_url, params=dict( key=auth_dict[ "api_key" ] ) )
+        random_api_response = get( random_api_url, params=dict( key=auth_dict[ "api_key" ] ) )
         self._assert_status_code_is( random_api_response, 200 )
