@@ -21,8 +21,7 @@ def init():
     if options.email == 'all':
         options.email = None
 
-    os.chdir( os.path.dirname( options.config ) )
-    sys.path.append( 'lib' )
+    sys.path.append( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
 
     from galaxy import eggs
     import pkg_resources
@@ -35,7 +34,7 @@ def init():
 
     config_parser = ConfigParser( dict( here = os.getcwd(),
                                         database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
-    config_parser.read( os.path.basename( options.config ) )
+    config_parser.read( options.config )
 
     config_dict = {}
     for key, value in config_parser.items( "app:main" ):

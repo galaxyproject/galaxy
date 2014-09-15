@@ -13,15 +13,14 @@ parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config 
 def init():
 
     options.config = os.path.abspath( options.config )
-    os.chdir( os.path.dirname( options.config ) )
-    sys.path.append( 'lib' )
+    sys.path.append( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
 
     from galaxy import eggs
     import pkg_resources
 
     config = ConfigParser( dict( file_path = 'database/files',
                                  database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
-    config.read( os.path.basename( options.config ) )
+    config.read( options.config )
 
     from galaxy.model import mapping
 
