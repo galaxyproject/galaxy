@@ -416,21 +416,23 @@ class ToolMigrationManager( object ):
                     log.exception( "Exception attempting to filter and persist non-shed-related tool panel configs:\n%s" % str( e ) )
                 finally:
                     lock.release()
-        irmm = InstalledRepositoryMetadataManager( self.app, self.tpm )
-        metadata_dict, invalid_file_tups = \
-            irmm.generate_metadata_for_changeset_revision( repository=tool_shed_repository,
-                                                           changeset_revision=tool_shed_repository.changeset_revision,
-                                                           repository_clone_url=repository_clone_url,
-                                                           shed_config_dict = self.shed_config_dict,
-                                                           relative_install_dir=relative_install_dir,
-                                                           repository_files_dir=None,
-                                                           resetting_all_metadata_on_repository=False,
-                                                           updating_installed_repository=False,
-                                                           persist=True )
-        tool_shed_repository.metadata = metadata_dict
+        irmm = InstalledRepositoryMetadataManager( app=self.app,
+                                                   tpm=self.tpm,
+                                                   repository=tool_shed_repository,
+                                                   changeset_revision=tool_shed_repository.changeset_revision,
+                                                   repository_clone_url=repository_clone_url,
+                                                   shed_config_dict = self.shed_config_dict,
+                                                   relative_install_dir=relative_install_dir,
+                                                   repository_files_dir=None,
+                                                   resetting_all_metadata_on_repository=False,
+                                                   updating_installed_repository=False,
+                                                   persist=True )
+        irmm.generate_metadata_for_changeset_revision()
+        irmm_metadata_dict = irmm.get_metadata_dict()
+        tool_shed_repository.metadata = irmm_metadata_dict
         self.app.install_model.context.add( tool_shed_repository )
         self.app.install_model.context.flush()
-        has_tool_dependencies = self.__has_tool_dependencies( metadata_dict )
+        has_tool_dependencies = self.__has_tool_dependencies( irmm_metadata_dict )
         if has_tool_dependencies:
             # All tool_dependency objects must be created before the tools are processed even if no
             # tool dependencies will be installed.
@@ -440,14 +442,14 @@ class ToolMigrationManager( object ):
                                                                                      set_status=True )
         else:
             tool_dependencies = None
-        if 'tools' in metadata_dict:
+        if 'tools' in irmm_metadata_dict:
             tdtm = data_table_manager.ToolDataTableManager( self.app )
-            sample_files = metadata_dict.get( 'sample_files', [] )
+            sample_files = irmm_metadata_dict.get( 'sample_files', [] )
             sample_files = [ str( s ) for s in sample_files ]
             tool_index_sample_files = tdtm.get_tool_index_sample_files( sample_files )
             tool_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=self.tool_path )
             sample_files_copied = [ s for s in tool_index_sample_files ]
-            repository_tools_tups = irmm.get_repository_tools_tups( metadata_dict )
+            repository_tools_tups = irmm.get_repository_tools_tups()
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically
                 # generated select lists.
@@ -491,7 +493,7 @@ class ToolMigrationManager( object ):
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                     print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
                     print installed_tool_dependency.error_message, '\n\n'
-        if 'datatypes' in metadata_dict:
+        if 'datatypes' in irmm_metadata_dict:
             cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
             tool_shed_repository.status = self.app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
@@ -514,7 +516,7 @@ class ToolMigrationManager( object ):
                                                                           name=tool_shed_repository.name,
                                                                           owner=self.repository_owner,
                                                                           installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                          tool_dicts=metadata_dict.get( 'tools', [] ),
+                                                                          tool_dicts=irmm_metadata_dict.get( 'tools', [] ),
                                                                           converter_path=converter_path,
                                                                           display_path=display_path )
             if converter_path:

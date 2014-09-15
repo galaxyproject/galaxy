@@ -1732,20 +1732,21 @@ class AdminToolshed( AdminGalaxy ):
         tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
         if relative_install_dir:
             original_metadata_dict = repository.metadata
-            irmm = InstalledRepositoryMetadataManager( trans.app )
-            metadata_dict, invalid_file_tups = \
-                irmm.generate_metadata_for_changeset_revision( repository=repository,
-                                                               changeset_revision=repository.changeset_revision,
-                                                               repository_clone_url=repository_clone_url,
-                                                               shed_config_dict = repository.get_shed_config_dict( trans.app ),
-                                                               relative_install_dir=relative_install_dir,
-                                                               repository_files_dir=None,
-                                                               resetting_all_metadata_on_repository=False,
-                                                               updating_installed_repository=False,
-                                                               persist=False )
-            repository.metadata = metadata_dict
-            if metadata_dict != original_metadata_dict:
-                irmm.update_in_shed_tool_config( repository )
+            irmm = InstalledRepositoryMetadataManager( app=trans.app,
+                                                       repository=repository,
+                                                       changeset_revision=repository.changeset_revision,
+                                                       repository_clone_url=repository_clone_url,
+                                                       shed_config_dict = repository.get_shed_config_dict( trans.app ),
+                                                       relative_install_dir=relative_install_dir,
+                                                       repository_files_dir=None,
+                                                       resetting_all_metadata_on_repository=False,
+                                                       updating_installed_repository=False,
+                                                       persist=False )
+            irmm.generate_metadata_for_changeset_revision()
+            irmm_metadata_dict = irmm.get_metadata_dict()
+            if irmm_metadata_dict != original_metadata_dict:
+                repository.metadata = irmm_metadata_dict
+                irmm.update_in_shed_tool_config()
                 trans.install_model.context.add( repository )
                 trans.install_model.context.flush()
                 message = 'Metadata has been reset on repository <b>%s</b>.' % repository.name
@@ -1938,22 +1939,24 @@ class AdminToolshed( AdminGalaxy ):
                         dmh.remove_from_data_manager( repository )
                     # Update the repository metadata.
                     tpm = tool_panel_manager.ToolPanelManager( trans.app )
-                    irmm = InstalledRepositoryMetadataManager( trans.app, tpm )
-                    metadata_dict, invalid_file_tups = \
-                        irmm.generate_metadata_for_changeset_revision( repository=repository,
-                                                                       changeset_revision=latest_changeset_revision,
-                                                                       repository_clone_url=repository_clone_url,
-                                                                       shed_config_dict=repository.get_shed_config_dict( trans.app ),
-                                                                       relative_install_dir=relative_install_dir,
-                                                                       repository_files_dir=None,
-                                                                       resetting_all_metadata_on_repository=False,
-                                                                       updating_installed_repository=True,
-                                                                       persist=True )
-                    if 'tools' in metadata_dict:
-                        tool_panel_dict = metadata_dict.get( 'tool_panel_section', None )
+                    irmm = InstalledRepositoryMetadataManager( app=trans.app,
+                                                               tpm=tpm,
+                                                               repository=repository,
+                                                               changeset_revision=latest_changeset_revision,
+                                                               repository_clone_url=repository_clone_url,
+                                                               shed_config_dict=repository.get_shed_config_dict( trans.app ),
+                                                               relative_install_dir=relative_install_dir,
+                                                               repository_files_dir=None,
+                                                               resetting_all_metadata_on_repository=False,
+                                                               updating_installed_repository=True,
+                                                               persist=True )
+                    irmm.generate_metadata_for_changeset_revision()
+                    irmm_metadata_dict = irmm.get_metadata_dict()
+                    if 'tools' in irmm_metadata_dict:
+                        tool_panel_dict = irmm_metadata_dict.get( 'tool_panel_section', None )
                         if tool_panel_dict is None:
                             tool_panel_dict = tpm.generate_tool_panel_dict_from_shed_tool_conf_entries( repository )
-                        repository_tools_tups = irmm.get_repository_tools_tups( metadata_dict )
+                        repository_tools_tups = irmm.get_repository_tools_tups()
                         tpm.add_to_tool_panel( repository_name=str( repository.name ),
                                                repository_clone_url=repository_clone_url,
                                                changeset_revision=str( repository.installed_changeset_revision ),
@@ -1963,18 +1966,18 @@ class AdminToolshed( AdminGalaxy ):
                                                tool_panel_dict=tool_panel_dict,
                                                new_install=False )
                         # Add new Data Manager entries
-                        if 'data_manager' in metadata_dict:
+                        if 'data_manager' in irmm_metadata_dict:
                             dmh = data_manager.DataManagerHandler( trans.app )
                             new_data_managers = dmh.install_data_managers( trans.app.config.shed_data_manager_config_file,
-                                                                           metadata_dict,
+                                                                           irmm_metadata_dict,
                                                                            repository.get_shed_config_dict( trans.app ),
                                                                            os.path.join( relative_install_dir, name ),
                                                                            repository,
                                                                            repository_tools_tups )
-                    if 'repository_dependencies' in metadata_dict or 'tool_dependencies' in metadata_dict:
-                        new_repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', {} )
+                    if 'repository_dependencies' in irmm_metadata_dict or 'tool_dependencies' in irmm_metadata_dict:
+                        new_repository_dependencies_dict = irmm_metadata_dict.get( 'repository_dependencies', {} )
                         new_repository_dependencies = new_repository_dependencies_dict.get( 'repository_dependencies', [] )
-                        new_tool_dependencies_dict = metadata_dict.get( 'tool_dependencies', {} )
+                        new_tool_dependencies_dict = irmm_metadata_dict.get( 'tool_dependencies', {} )
                         if new_repository_dependencies:
                             # [[http://localhost:9009', package_picard_1_56_0', devteam', 910b0b056666', False', False']]
                             proceed_to_install = False
@@ -2017,7 +2020,7 @@ class AdminToolshed( AdminGalaxy ):
                                                 updating_repository_id=trans.security.encode_id( repository.id ),
                                                 updating_to_ctx_rev=latest_ctx_rev,
                                                 updating_to_changeset_revision=latest_changeset_revision,
-                                                encoded_updated_metadata=encoding_util.tool_shed_encode( metadata_dict ),
+                                                encoded_updated_metadata=encoding_util.tool_shed_encode( irmm_metadata_dict ),
                                                 updating=True )
                                 return self.prepare_for_install( trans, **new_kwd )
                         # Updates received did not include any newly defined repository dependencies but did include
@@ -2033,12 +2036,12 @@ class AdminToolshed( AdminGalaxy ):
                                 proceed_to_install = True
                                 break
                         if proceed_to_install:
-                            encoded_tool_dependencies_dict = encoding_util.tool_shed_encode( metadata_dict.get( 'tool_dependencies', {} ) )
+                            encoded_tool_dependencies_dict = encoding_util.tool_shed_encode( irmm_metadata_dict.get( 'tool_dependencies', {} ) )
                             encoded_relative_install_dir = encoding_util.tool_shed_encode( relative_install_dir )
                             new_kwd = dict( updating_repository_id=trans.security.encode_id( repository.id ),
                                             updating_to_ctx_rev=latest_ctx_rev,
                                             updating_to_changeset_revision=latest_changeset_revision,
-                                            encoded_updated_metadata=encoding_util.tool_shed_encode( metadata_dict ),
+                                            encoded_updated_metadata=encoding_util.tool_shed_encode( irmm_metadata_dict ),
                                             encoded_relative_install_dir=encoded_relative_install_dir,
                                             encoded_tool_dependencies_dict=encoded_tool_dependencies_dict,
                                             message=message,
@@ -2047,7 +2050,7 @@ class AdminToolshed( AdminGalaxy ):
                     # Updates received did not include any newly defined repository dependencies or newly defined
                     # tool dependencies that need to be installed.
                     repository = trans.app.update_repository_manager.update_repository_record( repository=repository,
-                                                                                               updated_metadata_dict=metadata_dict,
+                                                                                               updated_metadata_dict=irmm_metadata_dict,
                                                                                                updated_changeset_revision=latest_changeset_revision,
                                                                                                updated_ctx_rev=latest_ctx_rev )
                     message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % \
