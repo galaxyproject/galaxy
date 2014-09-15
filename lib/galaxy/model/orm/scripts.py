@@ -18,7 +18,7 @@ import pkg_resources
 
 log = logging.getLogger( __name__ )
 
-DEFAULT_CONFIG_FILE = 'universe_wsgi.ini'
+DEFAULT_CONFIG_FILE = 'config/galaxy.ini'
 DEFAULT_CONFIG_PREFIX = ''
 DEFAULT_DATABASE = 'galaxy'
 
@@ -85,7 +85,7 @@ def get_config( argv, cwd=None ):
     'lib/galaxy/webapps/tool_shed/model/migrate'
     >>> config['db_url']
     'sqlite:///pg/testdb1'
-    >>> write_ini('universe_wsgi.ini', 'database_file', 'moo.sqlite')
+    >>> write_ini('galaxy.ini', 'database_file', 'moo.sqlite')
     >>> config = get_config(['manage_db.py'], cwd=config_dir)
     >>> config['db_url']
     'sqlite:///moo.sqlite?isolation_level=IMMEDIATE'

@@ -117,7 +117,6 @@
     <tool file="plotting/boxplot.xml" />
     <tool file="visualization/LAJ.xml" />
     <tool file="maf/vcf_to_maf_customtrack.xml" />
-    <tool file="mutation/visualize.xml" />
   </section>
   <section id="hyphy" name="Evolution">
     <tool file="evolution/codingSnps.xml" />

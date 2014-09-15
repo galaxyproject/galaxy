@@ -11,7 +11,7 @@ define([
  *          logger      : the logger/metrics-logger
  *          localize    : the string localizer
  *          config      : the current configuration (any k/v in
- *              universe_wsgi.ini available from the configuration API)
+ *              galaxy.ini available from the configuration API)
  *          user        : the current user (as a mvc/user/user-model)
  */
 function GalaxyApp( options ){

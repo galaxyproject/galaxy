@@ -8,7 +8,9 @@
 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
-# values are set to the default value.
+# values are set to the default value. Relative paths are relative to the root
+# Galaxy directory.
+#
 # Examples of many of these options are explained in more detail in the wiki:
 #
 #   https://wiki.galaxyproject.org/Admin/Config
@@ -132,7 +134,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Tool config files, defines what tools are available in Galaxy.
 # Tools can be locally developed or installed from Galaxy tool sheds.
-#tool_config_file = tool_conf.xml,shed_tool_conf.xml
+# (config/tool_conf.xml.sample will be used if left unset and
+# config/tool_conf.xml does not exist).
+#tool_config_file = config/tool_conf.xml,shed_tool_conf.xml
 
 # Enable / disable checking if any tools defined in the above non-shed tool_config_files
 # (i.e., tool_conf.xml) have been migrated from the Galaxy code distribution to the Tool
@@ -165,8 +169,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #tool_dependency_dir = None
 
 # File containing the Galaxy Tool Sheds that should be made available to
-# install from in the admin interface
-#tool_sheds_config_file = tool_sheds_conf.xml
+# install from in the admin interface (.sample used if default does not exist).
+#tool_sheds_config_file = config/tool_sheds_conf.xml
 
 # Enable automatic polling of relative tool sheds to see if any updates
 # are available for installed repositories.  Ideally only one Galaxy 
@@ -180,15 +184,16 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # repository, keep an in-memory registry of dependent items for each repository.
 #manage_dependency_relationships = False
 
-# XML config file that contains data table entries for the ToolDataTableManager. This file is manually
-# maintained by the Galaxy administrator.
-#tool_data_table_config_path = tool_data_table_conf.xml
+# XML config file that contains data table entries for the
+# ToolDataTableManager. This file is manually # maintained by the Galaxy
+# administrator (.sample used if default does not exist).
+#tool_data_table_config_path = config/tool_data_table_conf.xml
 
 # XML config file that contains additional data table entries for the ToolDataTableManager.  This file
 # is automatically generated based on the current installed tool shed repositories that contain valid
 # tool_data_table_conf.xml.sample files.  At the time of installation, these entries are automatically
 # added to the following file, which is parsed and applied to the ToolDataTableManager at server start up.
-#shed_tool_data_table_config = shed_tool_data_table_conf.xml
+#shed_tool_data_table_config = config/shed_tool_data_table_conf.xml
 
 # Directory where data used by tools is located, see the samples in that
 # directory and the wiki for help:
@@ -202,7 +207,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #len_file_path = tool-data/shared/ucsc/chrom
 
 # Datatypes config file, defines what data (file) types are available in
-# Galaxy.
+# Galaxy (.sample is used if default does not exist).
 #datatypes_config_file = config/datatypes_conf.xml
 
 # Disable the 'Auto-detect' option for file uploads
@@ -234,7 +239,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #citation_cache_lock_dir = database/citations/lock
 
 # External service types config file, defines what types of external_services configurations 
-# are available in Galaxy.
+# are available in Galaxy (.sample is used if default does not exist).
 #external_service_type_config_file = config/external_service_types_conf.xml
 
 # Path to the directory containing the external_service_types defined in the config.
@@ -252,7 +257,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #
 # Configuration file for the object store
 # If this is set and exists, it overrides any other objectstore settings.
-# object_store_config_file = object_store_conf.xml
+# object_store_config_file = config/object_store_conf.xml
 
 # Object store backend module (valid options are: disk, s3, swift, irods,
 # distributed, hierarchical)
@@ -448,14 +453,14 @@ nglims_config_file = tool-data/nglims.yaml
 # proxy server.  These options should be self explanatory and so are not
 # documented individually.  You can use these paths (or ones in the proxy
 # server) to point to your own styles.
-static_enabled = True
-static_cache_time = 360
-static_dir = %(here)s/static/
-static_images_dir = %(here)s/static/images
-static_favicon_dir = %(here)s/static/favicon.ico
-static_scripts_dir = %(here)s/static/scripts/
-static_style_dir = %(here)s/static/june_2007_style/blue
-static_robots_txt = %(here)s/static/robots.txt
+#static_enabled = True
+#static_cache_time = 360
+#static_dir = static/
+#static_images_dir = static/images
+#static_favicon_dir = static/favicon.ico
+#static_scripts_dir = static/scripts/
+#static_style_dir = static/june_2007_style/blue
+#static_robots_txt = static/robots.txt
 
 # Pack javascript at launch (/static/scripts/*.js)
 # This only happens if the modified timestamp of the source .js is newer
@@ -691,7 +696,8 @@ use_interactive = True
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.
 #enable_openid = False
-#openid_config_file = openid_conf.xml
+# .sample used if default does not exist
+#openid_config_file = config/openid_conf.xml
 #openid_consumer_cache_path = database/openid_consumer_cache
 
 # Optional list of email addresses of API users who can make calls on behalf of
@@ -741,10 +747,11 @@ use_interactive = True
 # Data manager configuration options
 # Allow non-admin users to view available Data Manager options
 #enable_data_manager_user_view = False
-# File where Data Managers are configured
+# File where Data Managers are configured (.sample used if default does not
+# exist)
 #data_manager_config_file = config/data_manager_conf.xml
 # File where Tool Shed based Data Managers are configured 
-#shed_data_manager_config_file = shed_data_manager_conf.xml
+#shed_data_manager_config_file = config/shed_data_manager_conf.xml
 # Directory to store Data Manager based tool-data; defaults to tool_data_path
 #galaxy_data_manager_data_path = tool-data
 
@@ -760,7 +767,7 @@ use_interactive = True
 # notifies itself of new jobs via in-memory queues.  Jobs are run locally on
 # the system on which Galaxy is started.  Advanced job running capabilities can
 # be configured through the job configuration file.
-#job_config_file = job_conf.xml
+#job_config_file = config/job_conf.xml
 
 # In multiprocess configurations, notification between processes about new jobs
 # is done via the database.  In single process configurations, this is done in
@@ -822,7 +829,7 @@ use_interactive = True
 # Optional file containing job resource data entry fields definition.
 # These fields will be presented to users in the tool forms and allow them to
 # overwrite default job resources such as number of processors, memory, and walltime.
-#job_resource_params_file = job_resource_params_conf.xml
+#job_resource_params_file = config/job_resource_params_conf.xml
 
 # If using job concurrency limits (configured in job_config_file), several
 # extra database queries must be performed to determine the number of jobs a

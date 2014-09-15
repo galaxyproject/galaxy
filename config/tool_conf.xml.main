@@ -98,7 +98,6 @@
   <section id="plots" name="Graph/Display Data">
     <tool file="plotting/boxplot.xml" />
     <tool file="maf/vcf_to_maf_customtrack.xml" />
-    <tool file="mutation/visualize.xml" />
   </section>
   <section id="hgv" name="Phenotype Association">
     <tool file="evolution/codingSnps.xml" />

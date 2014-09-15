@@ -4,10 +4,10 @@ import os, sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
-default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'universe_wsgi.ini') )
+default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'config/galaxy.ini') )
 
 parser = OptionParser()
-parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default=default_config )
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config )
 ( options, args ) = parser.parse_args()
 
 def init():

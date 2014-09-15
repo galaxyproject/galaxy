@@ -453,7 +453,7 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from universe_wsgi.ini
+    #TODO: these should be copied from galaxy.ini
     #TODO: static_enabled needed here?
     return dict( static_enabled = True,
                  static_cache_time = 360,

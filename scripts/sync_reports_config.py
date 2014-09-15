@@ -5,13 +5,13 @@ REPLACE_PROPERTIES = ["file_path", "database_connection", "new_file_path"]
 MAIN_SECTION = "app:main"
 
 def sync():
-    # Add or replace the relevant properites from universe_wsgi.ini
+    # Add or replace the relevant properites from galaxy.ini
     # into reports_wsgi.ini
-    reports_config_file = "reports_wsgi.ini"
+    reports_config_file = "config/reports_wsgi.ini"
     if len(argv) > 1:
         reports_config_file = argv[1]
 
-    universe_config_file = "universe_wsgi.ini"
+    universe_config_file = "config/galaxy.ini"
     if len(argv) > 2:
         universe_config_file = argv[2]
 

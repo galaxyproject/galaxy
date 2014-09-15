@@ -71,7 +71,7 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
                 have_tool_dependencies = True
                 break
         config_arg = ''
-        if os.path.abspath( os.path.join( os.getcwd(), 'universe_wsgi.ini' ) ) != galaxy_config_file:
+        if os.path.abspath( os.path.join( os.getcwd(), 'galaxy.ini' ) ) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
         if not app.config.running_functional_tests:
             if tool_shed_accessible:
