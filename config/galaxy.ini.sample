@@ -203,7 +203,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Datatypes config file, defines what data (file) types are available in
 # Galaxy.
-#datatypes_config_file = datatypes_conf.xml
+#datatypes_config_file = config/datatypes_conf.xml
 
 # Disable the 'Auto-detect' option for file uploads
 #datatypes_disable_auto = False
@@ -235,7 +235,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # External service types config file, defines what types of external_services configurations 
 # are available in Galaxy.
-#external_service_type_config_file = external_service_types_conf.xml
+#external_service_type_config_file = config/external_service_types_conf.xml
 
 # Path to the directory containing the external_service_types defined in the config.
 #external_service_type_path = external_service_types
@@ -742,7 +742,7 @@ use_interactive = True
 # Allow non-admin users to view available Data Manager options
 #enable_data_manager_user_view = False
 # File where Data Managers are configured
-#data_manager_config_file = data_manager_conf.xml
+#data_manager_config_file = config/data_manager_conf.xml
 # File where Tool Shed based Data Managers are configured 
 #shed_data_manager_config_file = shed_data_manager_conf.xml
 # Directory to store Data Manager based tool-data; defaults to tool_data_path
