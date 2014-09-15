@@ -417,12 +417,13 @@ class ToolShedRepositoriesController( BaseAPIController ):
         query = irmm.get_query_for_setting_metadata_on_repositories( order=False )
         # Now reset metadata on all remaining repositories.
         for repository in query:
-            repository_id = trans.security.encode_id( repository.id )
             try:
-                invalid_file_tups, metadata_dict = irmm.reset_all_metadata_on_installed_repository( repository_id )
-                if invalid_file_tups:
+                irmm.set_repository( repository )
+                irmm.reset_all_metadata_on_installed_repository()
+                irmm_invalid_file_tups = irmm.get_invalid_file_tups()
+                if irmm_invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
-                                                                            invalid_file_tups,
+                                                                            irmm_invalid_file_tups,
                                                                             repository,
                                                                             None,
                                                                             as_html=False )
