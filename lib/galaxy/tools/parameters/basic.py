@@ -1887,6 +1887,11 @@ class DataToolParameter( BaseDataToolParameter ):
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
+            elif value['src'] == 'hdca':
+                decoded_id = trans.app.security.decode_id( value[ 'id' ] )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+            else:
+                raise ValueError("Unknown input source %s passed to job submission API." % value['src'])
         elif str( value ).startswith( "__collection_reduce__|" ):
             encoded_id = str( value )[ len( "__collection_reduce__|" ): ]
             decoded_id = trans.app.security.decode_id( encoded_id )

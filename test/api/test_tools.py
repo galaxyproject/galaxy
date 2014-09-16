@@ -457,7 +457,7 @@ class ToolsTestCase( api.ApiTestCase ):
         assert run_response.status_code >= 400
 
     @skip_without_tool( "multi_data_param" )
-    def test_reduce_collections( self ):
+    def test_reduce_collections_legacy( self ):
         history_id = self.dataset_populator.new_history()
         hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
         hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id  ).json()[ "id" ]
@@ -465,6 +465,20 @@ class ToolsTestCase( api.ApiTestCase ):
             "f1": "__collection_reduce__|%s" % hdca1_id,
             "f2": "__collection_reduce__|%s" % hdca2_id,
         }
+        self._check_simple_reduce_job( history_id, inputs )
+
+    @skip_without_tool( "multi_data_param" )
+    def test_reduce_collections( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id  ).json()[ "id" ]
+        inputs = {
+            "f1": { 'src': 'hdca', 'id': hdca1_id },
+            "f2": { 'src': 'hdca', 'id': hdca2_id },
+        }
+        self._check_simple_reduce_job( history_id, inputs )
+
+    def _check_simple_reduce_job( self, history_id, inputs ):
         create = self._run( "multi_data_param", history_id, inputs, assert_ok=True )
         outputs = create[ 'outputs' ]
         jobs = create[ 'jobs' ]
