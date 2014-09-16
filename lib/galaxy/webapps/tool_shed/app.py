@@ -20,7 +20,7 @@ class UniverseApplication( object ):
     def __init__( self, **kwd ):
         print >> sys.stderr, "python path is: " + ", ".join( sys.path )
         self.name = "tool_shed"
-        # Read the tool_shed_wsgi.ini configuration file and check for errors.
+        # Read the tool_shed.ini configuration file and check for errors.
         self.config = config.Configuration( **kwd )
         self.config.check()
         config.configure_logging( self.config )
