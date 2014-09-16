@@ -218,7 +218,7 @@
                     }
                 });
             });
-            $("#tool_form").submit(function(e) {
+            $("#tool_form").preventDoubleSubmission().submit(function(e) {
                 var matchLength = -1;
                 $('span.multiinput_wrap select[name*="|input"]').each(function() {
                     var value = $(this).val();

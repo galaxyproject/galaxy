@@ -56,11 +56,31 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
         },
         
+        // message
+        message: function(options) {
+            $(this.main_el).empty();
+            $(this.main_el).append(ToolTemplate.message(options));
+        },
+        
         // reset form
         reset: function() {
             for (var i in this.element_list) {
                 this.element_list[i].reset();
             }
+        },
+        
+        // refresh
+        refresh: function() {
+            // recreate tree structure
+            this.tree.refresh();
+            
+            // trigger change
+            for (var id in this.field_list) {
+                this.field_list[id].trigger('change');
+            }
+            
+            // log
+            console.debug('tools-form::refresh() - Recreated tree structure. Refresh.');
         },
         
         // initialize tool form
@@ -135,10 +155,6 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         button_search.$el.hide();
                     }
                     
-                    // create message
-                    self.message = new Ui.Message();
-                    self.portlet.append(self.message.$el);
-                    
                     // append form
                     $(self.main_el).append(self.portlet.$el);
                     
@@ -174,22 +190,9 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     // trigger refresh
                     self.refresh();
                     //self.job_handler.submit();
+                    self.tree.finalize();
                 }
             });
-        },
-        
-        // refresh
-        refresh: function() {
-            // recreate tree structure
-            this.tree.refresh();
-            
-            // trigger change
-            for (var id in this.field_list) {
-                this.field_list[id].trigger('change');
-            }
-            
-            // log
-            console.debug('tools-form::refresh() - Recreated tree structure. Refresh.');
         }
     });
 

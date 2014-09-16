@@ -214,16 +214,14 @@ return Backbone.View.extend({
     //
     
     // genome
-    _refreshGenome: function()
-    {
+    _refreshGenome: function() {
         // update genome info on screen
         var genome = this.model.get('genome');
         this.select_genome.value(genome);
     },
         
     // progress
-    _refreshInfo: function()
-    {
+    _refreshInfo: function() {
         // write error message
         var info = this.model.get('info');
         if (info) {
@@ -234,8 +232,7 @@ return Backbone.View.extend({
     },
             
     // progress
-    _refreshPercentage : function()
-    {
+    _refreshPercentage : function() {
         var percentage = parseInt(this.model.get('percentage'));
         this.$el.find('.progress-bar').css({ width : percentage + '%' });
         if (percentage != 100)
@@ -245,8 +242,7 @@ return Backbone.View.extend({
     },
     
     // status
-    _refreshStatus : function()
-    {
+    _refreshStatus : function() {
         // get element
         var it = this.$el;
         
@@ -315,8 +311,7 @@ return Backbone.View.extend({
     },
     
     // attach file info popup
-    _showExtensionInfo : function()
-    {
+    _showExtensionInfo : function() {
         // initialize
         var $el = $(this.el).find('#extension-info');
         var extension = this.model.get('extension');
@@ -343,8 +338,7 @@ return Backbone.View.extend({
     },
 
     // attach file info popup
-    _showSettings : function()
-    {
+    _showSettings : function() {
         // check if popover is visible
         if (!this.settings.visible) {
             // show popover
@@ -371,8 +365,7 @@ return Backbone.View.extend({
     },
     
     // template
-    _template: function(options)
-    {
+    _template: function(options) {
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
                         '<div style="position: relative;">' +

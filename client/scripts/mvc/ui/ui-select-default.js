@@ -172,7 +172,7 @@ var View = Backbone.View.extend({
     
     // check if selected value exists
     exists: function(value) {
-        return this.$select.find('option[value=' + value + ']').length > 0;
+        return this.$select.find('option[value="' + value + '"]').length > 0;
     },
     
     // change

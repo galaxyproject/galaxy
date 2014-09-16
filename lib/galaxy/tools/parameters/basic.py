@@ -794,6 +794,8 @@ class SelectToolParameter( ToolParameter ):
         if value is not None:
             if not isinstance( value, list ):
                 value = [ value ]
+            # We could have an unvalidated value here when e.g. running a workflow.
+            value = [ val.value if isinstance( val, UnvalidatedValue ) else val for val in value ]
         field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
         options = self.get_options( trans, context )
         for text, optval, selected in options:

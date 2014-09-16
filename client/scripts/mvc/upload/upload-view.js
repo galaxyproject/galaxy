@@ -19,8 +19,7 @@ define(["utils/utils",
                 ) {
 
 // galaxy upload
-return Backbone.View.extend(
-{
+return Backbone.View.extend({
     // options
     options : {
         nginx_upload_path : ''

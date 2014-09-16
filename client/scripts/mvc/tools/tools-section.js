@@ -16,13 +16,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
             // set text
             this.$el.find('.ui-table-form-error-text').html(text);
             this.$el.find('.ui-table-form-error').fadeIn();
-            this.$el.addClass('ui-table-row-error');
         },
         
         // reset
         reset: function() {
             this.$el.find('.ui-table-form-error').hide();
-            this.$el.removeClass('ui-table-form-error');
         },
         
         // template
@@ -35,7 +33,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
             }
             
             // add error
-            $input.append('<div class="ui-table-form-error"><span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"></div>');
+            $input.append('<div class="ui-table-form-error ui-error"><span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"></div>');
             
             // add label
             if (options.label) {
@@ -274,7 +272,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
                 
                 // dataset column
                 case 'data_column':
-                    field = this._field_data_colum(input_def);
+                    field = this._field_select(input_def);
                     break;
                     
                 // conditional select field

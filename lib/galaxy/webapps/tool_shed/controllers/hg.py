@@ -1,6 +1,8 @@
 import os, logging
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
+
+from tool_shed.util.common_util import generate_clone_url_for_repository_in_tool_shed
 from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
 from tool_shed.util.hg_util import update_repository
 from tool_shed.metadata import repository_metadata_manager
@@ -47,9 +49,19 @@ class HgController( BaseUIController ):
                         # interface will result in a new head being created.
                         repo = hg.repository( ui.ui(), repository.repo_path( trans.app ) )
                         update_repository( repo, ctx_rev=None )
+                        repository_clone_url = generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
                         # Set metadata using the repository files on disk.
-                        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
-                        error_message, status = rmm.set_repository_metadata( trans.request.host, repository )
+                        rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                                     user=trans.user,
+                                                                                     repository=repository,
+                                                                                     changeset_revision=repository.tip( trans.app ),
+                                                                                     repository_clone_url=repository_clone_url,
+                                                                                     relative_install_dir=repository.repo_path( trans.app ),
+                                                                                     repository_files_dir=None,
+                                                                                     resetting_all_metadata_on_repository=False,
+                                                                                     updating_installed_repository=False,
+                                                                                     persist=False )
+                        error_message, status = rmm.set_repository_metadata( trans.request.host )
                         if status == 'ok' and error_message:
                             log.debug( "Successfully reset metadata on repository %s owned by %s, but encountered problem: %s" % \
                                        ( str( repository.name ), str( repository.user.username ), error_message ) )

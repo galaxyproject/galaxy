@@ -25,21 +25,26 @@ define([ 'mvc/history/history-contents' ], function( HISTORY_CONTENTS ){
         },
         
         // filter datasets by data type
-        filterType: function(filter_type) {
-            // return matched datasets
-            return this.currHistoryContents.filter( function( content ){
-                // link details
-                var history_content_type = content.get( 'history_content_type' );
-                var data_type = content.get( 'file_ext');
+        filterType: function(options) {
+            options = options || {};
+            return this.currHistoryContents.filter(function(content){
+                // match datatypes
+                var found = false;
+                for (var i in options.data_types) {
+                    if (content.get('data_type').indexOf(options.data_types[i]) != -1) {
+                        found = true;
+                        break;
+                    }
+                }
                 
-                // apply filter
-                return history_content_type === 'dataset';// && (data_type === filter_type || filter_type === '');
+                // final match result
+                return  (content.get('history_content_type') === options.content_type || !options.content_type) &&
+                        (found || !options.data_types) && !content.get('deleted');
             });
         },
         
         // filter datasets by id
         filter: function(filter_id) {
-            // return matched datasets
             return _.first( this.currHistoryContents.filter( function( content ){ return content.get( 'id' ) === filter_id; }) );
         }
     });

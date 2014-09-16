@@ -1,8 +1,13 @@
-.ui-table-row-error {
+.ui-error {
     -moz-border-radius: @border-radius-base;
     border-radius: @border-radius-base;
     background: @state-danger-bg;
     padding: 5px;
+}
+
+.ui-checkbox {
+    &:extend(.form-control);
+    height: 100% !important;
 }
 
 .ui-table-form-error {
