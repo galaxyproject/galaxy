@@ -1903,6 +1903,10 @@ class DataToolParameter( BaseDataToolParameter ):
                     raise ValueError( "The previously selected dataset has been previously deleted" )
                 if hasattr( v, "dataset" ) and v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
+        if not self.multiple:
+            if len( values ) > 1:
+                raise ValueError( "More than one dataset supplied to single input dataset parameter.")
+            rval = values[ 0 ]
         return rval
 
     def to_string( self, value, app ):

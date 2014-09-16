@@ -109,6 +109,20 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Test" )
 
+    @skip_without_tool( "cat1" )
+    def test_run_cat1_listified_param( self ):
+        # Run simple non-upload tool with an input data parameter.
+        history_id = self.dataset_populator.new_history()
+        new_dataset = self.dataset_populator.new_dataset( history_id, content='Cat1Testlistified' )
+        inputs = dict(
+            input1=[dataset_to_param( new_dataset )],
+        )
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 1 )
+        output1 = outputs[ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        self.assertEqual( output1_content.strip(), "Cat1Testlistified" )
+
     @skip_without_tool( "validation_default" )
     def test_validation( self ):
         history_id = self.dataset_populator.new_history()
