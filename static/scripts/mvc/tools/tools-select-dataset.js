@@ -6,54 +6,6 @@ var View = Backbone.View.extend({
     initialize : function(app, options) {
         // link this
         var self = this;
-    
-        // get datasets
-        var datasets = app.datasets.filterType();
-        
-        // configure options fields
-        var select_data = [];
-        for (var i in datasets) {
-            select_data.push({
-                label: datasets[i].get('name'),
-                value: datasets[i].get('id')
-            });
-        }
-        
-        // create select field
-        this.select = new Ui.Select.View({
-            data        : select_data,
-            value       : select_data[0].value,
-            onchange    : function() {
-                self.trigger('change');
-            }
-        });
-        
-        // create select field for multiple files
-        this.select_multiple = new Ui.Select.View({
-            multiple    : true,
-            data        : select_data,
-            value       : select_data[0].value,
-            onchange    : function() {
-                self.trigger('change');
-            }
-        });
-
-        
-        // create select field for multiple files
-        this.select_collection = new Ui.Select.View({
-            data        : select_data,
-            value       : select_data[0].value,
-            onchange    : function() {
-                self.trigger('change');
-            }
-        });
-                
-        // add change event. fires on trigger
-        this.on('change', function() {
-            if (options.onchange) {
-                options.onchange(self.value());
-            }
-        });
         
         // tabs
         this.tabs = new Tabs.View({
@@ -62,20 +14,66 @@ var View = Backbone.View.extend({
             }
         });
         
-        // add tab
-        this.tabs.add({
-            id      : 'single',
-            title   : 'Select a dataset',
-            $el     : this.select.$el
+        //
+        // datasets
+        //
+        var datasets = app.datasets.filterType({
+            content_type    : 'dataset',
+            data_types      : options.extensions
+        });
+
+        // configure options fields
+        var dataset_options = [];
+        for (var i in datasets) {
+            dataset_options.push({
+                label: datasets[i].get('name'),
+                value: datasets[i].get('id')
+            });
+        }
+        
+        // select field
+        this.select_datasets = new Ui.Select.View({
+            multiple    : true,
+            data        : dataset_options,
+            value       : dataset_options[0] && dataset_options[0].value,
+            onchange    : function() {
+                self.trigger('change');
+            }
         });
         
         // add tab
         this.tabs.add({
-            id      : 'multiple',
-            title   : 'Select multiple datasets',
-            $el     : this.select_multiple.$el
+            id      : 'datasets',
+            title   : 'Select datasets',
+            $el     : this.select_datasets.$el
         });
-
+        
+        //
+        // collections
+        //
+        var collections = app.datasets.filterType({
+            content_type    : 'collection',
+            data_types      : options.extensions
+        });
+        
+        // configure options fields
+        var collection_options = [];
+        for (var i in collections) {
+            collection_options.push({
+                label: collections[i].get('name'),
+                value: collections[i].get('id')
+            });
+        }
+        
+        // create select field for collections
+        this.select_collection = new Ui.Select.View({
+            data        : collection_options,
+            value       : collection_options[0] && collection_options[0].value,
+            onchange    : function() {
+                self.trigger('change');
+            }
+        });
+        
         // add tab
         this.tabs.add({
             id      : 'collection',
@@ -85,18 +83,23 @@ var View = Backbone.View.extend({
         
         // add element
         this.setElement(this.tabs.$el);
+        
+        // add change event. fires on trigger
+        this.on('change', function() {
+            if (options.onchange) {
+                options.onchange(self.value());
+            }
+        });
     },
     
     // value
     value : function (new_value) {
         var current_tab = this.tabs.current();
         switch(current_tab) {
-            case 'multiple' :
-                return this.select_multiple.value();
-            case 'collection' :
+            case 'datasets':
+                return this.select_datasets.value();
+            case 'collection':
                 return this.select_collection.value();
-            default :
-                return this.select.value();
         }
     },
     

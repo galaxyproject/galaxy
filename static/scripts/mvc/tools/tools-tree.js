@@ -50,8 +50,8 @@ return Backbone.Model.extend({
 
         // converter between raw dictionary and job dictionary
         function convert(identifier, head) {
-            for (var i in head) {
-                var node = head[i];
+            for (var index in head) {
+                var node = head[index];
                 if (node.input) {
                     // get node
                     var input = node.input;
@@ -68,9 +68,9 @@ return Backbone.Model.extend({
                         // handle repeats
                         case 'repeat':
                             var index = 0;
-                            for (var j in node) {
-                                if (j.indexOf('section') != -1) {
-                                    convert(job_input_id + '_' + index++, node[j]);
+                            for (var i in node) {
+                                if (i.indexOf('section') != -1) {
+                                    convert(job_input_id + '_' + index++, node[i]);
                                 }
                             }
                             break;
@@ -83,20 +83,38 @@ return Backbone.Model.extend({
                             add (job_input_id + '|' + input.test_param.name, input.id, value);
                             
                             // find selected case
-                            for (var j in input.cases) {
-                                if (input.cases[j].value == value) {
-                                    convert(job_input_id, head[input.id + '-section-' + j]);
+                            for (var i in input.cases) {
+                                if (input.cases[i].value == value) {
+                                    convert(job_input_id, head[input.id + '-section-' + i]);
                                     break;
                                 }
                             }
                             break;
                         // handle data inputs
                         case 'data':
-                            var value = {
-                                id  : self.app.field_list[input.id].value(),
-                                src : 'hda'
+                            // create array for dataset ids
+                            var dataset_selection = null;
+                            
+                            // collect dataset ids from input field
+                            var value = self.app.field_list[input.id].value();
+                            if (typeof value === 'string') {
+                                dataset_selection = {
+                                        id  : value,
+                                        src : 'hda'
+                                };
+                            } else {
+                                // create array of dataset dictionaries for api submission
+                                dataset_selection = [];
+                                for (var i in value) {
+                                    dataset_selection.push({
+                                        id  : value[i],
+                                        src : 'hda'
+                                    });
+                                }
                             }
-                            add(job_input_id, input.id, value);
+                            
+                            // add final array to job definition
+                            add(job_input_id, input.id, dataset_selection);
                             break;
                         // handle boolean input
                         case 'boolean':
@@ -118,7 +136,7 @@ return Backbone.Model.extend({
         
         // start conversion
         convert('', this.dict);
-       
+        console.log(this.job_def);
         // return result
         return this.job_def;
     },

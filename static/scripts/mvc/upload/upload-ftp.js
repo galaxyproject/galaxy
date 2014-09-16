@@ -31,10 +31,9 @@ return Backbone.View.extend({
     
     // fill table
     _fill: function(ftp_files) {
-    
         if (ftp_files.length > 0) {
             // add table
-            this.$el.find('#upload-ftp-content').html($(this._template_table()));
+            this.$el.find('#upload-ftp-content').html($(this._templateTable()));
             
             // add files to table
             var size = 0;
@@ -48,7 +47,7 @@ return Backbone.View.extend({
             this.$el.find('#upload-ftp-disk').html(Utils.bytesToString (size, true));
         } else {
             // add info
-            this.$el.find('#upload-ftp-content').html($(this._template_info()));
+            this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
         }
         
         // hide spinner
@@ -58,7 +57,7 @@ return Backbone.View.extend({
     // add
     add: function(ftp_file) {
         // create new item
-        var $it = $(this._template_row(ftp_file));
+        var $it = $(this._templateRow(ftp_file));
         
         // append to table
         $(this.el).find('tbody').append($it);
@@ -118,7 +117,7 @@ return Backbone.View.extend({
     },
     
     // template row
-    _template_row: function(options) {
+    _templateRow: function(options) {
         return  '<tr>' +
                     '<td><div id="upload-ftp-add"/></td>' +
                     '<td style="width: 200px"><p style="width: inherit; word-wrap: break-word;">' + options.path + '</p></td>' +
@@ -128,8 +127,7 @@ return Backbone.View.extend({
     },
     
     // load table template
-    _template_table: function()
-    {
+    _templateTable: function() {
         return  '<span style="whitespace: nowrap; float: left;">Available files: </span>' +
                 '<span style="whitespace: nowrap; float: right;">' +
                     '<span class="upload-icon fa fa-file-text-o"/>' +
@@ -151,16 +149,14 @@ return Backbone.View.extend({
     },
     
     // load table template
-    _template_info: function()
-    {
+    _templateInfo: function() {
         return  '<div class="upload-ftp-warning warningmessage">' +
                     'Your FTP directory does not contain any files.' +
                 '</div>';
     },
     
     // load html template
-    _template: function()
-    {
+    _template: function() {
         return  '<div class="upload-ftp">' +
                     '<div id="upload-ftp-wait" class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
                     '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.app.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +

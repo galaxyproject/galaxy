@@ -31,12 +31,16 @@ return Backbone.Model.extend({
             // success handler
             function(response) {
                 if (!response.outputs || response.outputs.length == 0) {
-                    console.log(response);
+                    console.debug(response);
                 }
+                self.app.message({
+                    text : 'A job has been successfully added to the queue. You can check the status of queued jobs and view the resulting data by refreshing the History pane. When the job has been run the status will change from \'running\' to \'finished\' if completed successfully or \'error\' if problems were encountered.'
+                });
                 self._refreshHdas();
             },
             // error handler
             function(response) {
+                console.debug(response);
                 if (response && response.message && response.message.data) {
                     var error_messages = self.app.tree.match(response.message.data);
                     for (var id in error_messages) {

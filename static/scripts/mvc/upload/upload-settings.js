@@ -25,12 +25,12 @@ return Backbone.View.extend({
         
         // ui event: space to tabs
         this.$el.find('#upload-space-to-tabs').on('click', function() {
-            self._switch_state('#upload-space-to-tabs', 'space_to_tabs');
+            self._switchState('#upload-space-to-tabs', 'space_to_tabs');
         });
         
         // ui event: to posix
         this.$el.find('#upload-to-posix-lines').on('click', function() {
-            self._switch_state('#upload-to-posix-lines', 'to_posix_lines');
+            self._switchState('#upload-to-posix-lines', 'to_posix_lines');
         });
         
         // render
@@ -45,8 +45,8 @@ return Backbone.View.extend({
     // render
     render: function() {
         // render states
-        this._render_state('#upload-space-to-tabs', this.model.get('space_to_tabs'));
-        this._render_state('#upload-to-posix-lines', this.model.get('to_posix_lines'));
+        this._renderState('#upload-space-to-tabs', this.model.get('space_to_tabs'));
+        this._renderState('#upload-to-posix-lines', this.model.get('to_posix_lines'));
         
         // disable options
         var $cover = this.$el.find('#upload-settings-cover');
@@ -58,16 +58,16 @@ return Backbone.View.extend({
     },
     
     // switch state
-    _switch_state: function (element_id, parameter_id) {
+    _switchState: function (element_id, parameter_id) {
         if (this.model.get('status') == 'init') {
             var checked = !this.model.get(parameter_id);
             this.model.set(parameter_id, checked);
-            this._render_state(element_id, checked);
+            this._renderState(element_id, checked);
         }
     },
     
     // render state
-    _render_state: function (element_id, checked) {
+    _renderState: function (element_id, checked) {
         // swith icon class
         var $it = this.$el.find(element_id);
         $it.removeClass();
@@ -79,8 +79,7 @@ return Backbone.View.extend({
     },
     
     // load template
-    _template: function()
-    {
+    _template: function() {
         return  '<div class="upload-settings" style="position: relative;">' +
                     '<div id="upload-settings-cover" class="upload-settings-cover"/>' +
                     '<table class="table table-striped">' +
