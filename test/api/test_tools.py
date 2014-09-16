@@ -138,7 +138,6 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "123" )
 
-
     @skip_without_tool( "validation_default" )
     def test_validation( self ):
         history_id = self.dataset_populator.new_history()
