@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 try:
     from galaxy import eggs
-    eggs.require("requets")
+    eggs.require("requests")
 except ImportError:
     pass
 
