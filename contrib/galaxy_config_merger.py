@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 '''
-universe_merger.py
+galaxy_config_merger.py
 
 Created by Anne Pajon on 31 Jan 2012
 
@@ -21,7 +21,7 @@ LIMITATION, THE WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY OR
 FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY OF
 THE ORIGINAL WORK IS WITH YOU.
 
-Script for merging specific local Galaxy config universe_wsgi.ini.cri with default Galaxy universe_wsgi.ini.sample
+Script for merging specific local Galaxy config galaxy.ini.cri with default Galaxy galaxy.ini.sample
 '''
 import ConfigParser
 import sys
@@ -34,9 +34,9 @@ def main():
     
     # get the options
     parser = optparse.OptionParser()
-    parser.add_option("-s", "--sample", dest="sample", action="store", help="path to Galaxy universe_wsgi.ini.sample file")
-    parser.add_option("-c", "--config", dest="config", action="store", help="path to your own universe_wsgi.ini file")
-    parser.add_option("-o", "--output", dest="output", action="store", help="path to the new merged universe_wsgi.ini.new file")
+    parser.add_option("-s", "--sample", dest="sample", action="store", help="path to Galaxy galaxy.ini.sample file")
+    parser.add_option("-c", "--config", dest="config", action="store", help="path to your own galaxy.ini file")
+    parser.add_option("-o", "--output", dest="output", action="store", help="path to the new merged galaxy.ini.new file")
     (options, args) = parser.parse_args()
 
     for option in ['sample', 'config']:
@@ -81,7 +81,7 @@ def main():
         #print "----------"
         logging.info("use -o OUTPUT to write the merged configuration into a file.")
 
-    logging.info("read Galaxy universe_wsgi.ini.sample for detailed information.")
+    logging.info("read Galaxy galaxy.ini.sample for detailed information.")
     
 if __name__ == '__main__':
     main()

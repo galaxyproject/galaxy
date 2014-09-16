@@ -43,15 +43,10 @@ LINKS="
 "
 
 SAMPLES="
-tool_conf.xml.sample
-datatypes_conf.xml.sample
-universe_wsgi.ini.sample
-tool_data_table_conf.xml.sample
-tool_sheds_conf.xml.sample
-shed_tool_data_table_conf.xml.sample
-migrated_tools_conf.xml.sample
-data_manager_conf.xml.sample
-shed_data_manager_conf.xml.sample
+config/galaxy.ini.sample
+config/shed_tool_data_table_conf.xml.sample
+config/migrated_tools_conf.xml.sample
+config/shed_data_manager_conf.xml.sample
 tool-data/shared/igv/igv_build_sites.txt.sample
 tool-data/shared/rviewer/rviewer_build_sites.txt.sample
 tool-data/shared/ucsc/builds.txt.sample

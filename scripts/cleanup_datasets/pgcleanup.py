@@ -61,10 +61,10 @@ class Cleanup(object):
                 self.action_names.append(name)
 
     def __parse_args(self):
-        default_config = os.path.abspath(os.path.join(galaxy_root, 'universe_wsgi.ini'))
+        default_config = os.path.abspath(os.path.join(galaxy_root, 'config', 'galaxy.ini'))
 
         parser = OptionParser()
-        parser.add_option('-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default=default_config)
+        parser.add_option('-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config)
         parser.add_option('-d', '--debug', action='store_true', dest='debug', help='Enable debug logging', default=False)
         parser.add_option('--dry-run', action='store_true', dest='dry_run', help="Dry run (rollback all transactions)", default=False)
         parser.add_option('--force-retry', action='store_true', dest='force_retry', help="Retry file removals (on applicable actions)", default=False)

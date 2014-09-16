@@ -45,7 +45,7 @@
 
 ## ----------------------------------------------------------------------------
 <%def name="get_config_dict()">
-    ## Return a dictionary of universe_wsgi.ini settings
+    ## Return a dictionary of galaxy.ini settings
     <%
         config_dict = {}
         try:

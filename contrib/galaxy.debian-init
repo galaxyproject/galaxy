@@ -17,7 +17,7 @@ USER="galaxy"
 GROUP="nogroup"
 DIR="/home/galaxy/galaxy_dist/"
 PYTHON="/usr/bin/python"
-OPTS="-ES ./scripts/paster.py serve --log-file /home/galaxy/galaxy.log universe_wsgi.ini"
+OPTS="./scripts/paster.py serve --log-file /home/galaxy/galaxy.log config/galaxy.ini"
 PIDFILE="/var/run/galaxy.pid"
 
 case "${1:-''}" in

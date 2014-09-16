@@ -2,8 +2,8 @@
 """
 Build index for full-text whoosh search of files in data libraries.
 
-Requires configuration settings in universe_wsgi.ini. See the whoosh settings
-in the data library search section for more details.
+Requires configuration settings in galaxy.ini. See the whoosh settings in the
+data library search section for more details.
 
 Run from the ~/scripts/data_libraries directory:
 %sh build_whoosh_index.sh

@@ -16,7 +16,13 @@ check_if_not_started(){
 	fi
 }
 
-servers=`sed -n 's/^\[server:\(.*\)\]/\1/  p' universe_wsgi.ini | xargs echo`
+
+GALAXY_CONFIG_FILE=config/galaxy.ini
+if [ ! -f $GALAXY_CONFIG_FILE ]; then
+    GALAXY_CONFIG_FILE=universe_wsgi.ini
+fi
+
+servers=`sed -n 's/^\[server:\(.*\)\]/\1/  p' $GALAXY_CONFIG_FILE | xargs echo`
 for server in $servers;
 do
 	# If there's a pid
@@ -31,7 +37,7 @@ do
 		echo "$server not running"
 	fi
 	# Start the server (and background) (should this be nohup'd?)
-	python ./scripts/paster.py serve universe_wsgi.ini --server-name=$server --pid-file=$server.pid --log-file=$server.log --daemon $@
+	python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log --daemon $@
 	# Wait for the server to start
 	sleep 1
 	# Grab the new pid

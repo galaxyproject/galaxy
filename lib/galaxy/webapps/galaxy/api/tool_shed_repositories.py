@@ -27,7 +27,7 @@ log = logging.getLogger( __name__ )
 
 def get_message_for_no_shed_tool_config():
     # This Galaxy instance is not configured with a shed-related tool panel configuration file.
-    message = 'The tool_config_file setting in universe_wsgi.ini must include at least one shed tool configuration file name with a <toolbox> '
+    message = 'The tool_config_file setting in galaxy.ini must include at least one shed tool configuration file name with a <toolbox> '
     message += 'tag that includes a tool_path attribute value which is a directory relative to the Galaxy installation directory in order to '
     message += 'automatically install tools from a tool shed into Galaxy (e.g., the file name shed_tool_conf.xml whose <toolbox> tag is '
     message += '<toolbox tool_path="../shed_tools">).  For details, see the "Installation of Galaxy tool shed repository tools into a local '
@@ -229,7 +229,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param install_tool_dependencies (optional): Set to True if you want to install tool dependencies defined for the specified repository being
                                                      installed.  The default setting is False.
         :param shed_tool_conf (optional): The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
-                                          (e.g., universe_wsgi.ini).  At least one shed-related tool panel config file is required to be configured. Setting
+                                          (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
                                           this parameter to a specific file enables you to choose where the specified repository will be installed because
                                           the tool_path attribute of the <toolbox> from the specified file is used as the installation location
                                           (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
@@ -283,7 +283,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param install_tool_dependencies (optional): Set to True if you want to install tool dependencies defined for the specified repository being
                                                      installed.  The default setting is False.
         :param shed_tool_conf (optional): The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
-                                          (e.g., universe_wsgi.ini).  At least one shed-related tool panel config file is required to be configured. Setting
+                                          (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
                                           this parameter to a specific file enables you to choose where the specified repository will be installed because
                                           the tool_path attribute of the <toolbox> from the specified file is used as the installation location
                                           (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration

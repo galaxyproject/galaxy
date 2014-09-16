@@ -32,7 +32,7 @@ def restrict_upload_to_admins( context, tool ):
     users.
 
     This can be enabled by renaming this file to examples.py and adding
-    the following to the ``app:main`` section of ``universe_wsgi.ini``:
+    the following to the ``app:main`` section of ``galaxy.ini``:
 
         tool_filters = examples:restrict_upload_to_admins
     """
@@ -46,7 +46,7 @@ def disable_gatk( context, tool ):
     This tool filter will disable all gatk tools when enabled.
 
     This can be enabled by renaming this file to examples.py and adding the following to the
-     ``app:main`` section of ``universe_wsgi.ini``:
+     ``app:main`` section of ``galaxy.ini``:
 
         tool_filters = examples:disable_gatk
     """
@@ -59,7 +59,7 @@ def explicit_user_mapping( context, section ):
     which tool sections. Anonymous users will only be able to view the "Get Data"
     tool section (with id getext). This can be enabled by renaming this file to
     examples.py and adding the following to the ``app:main`` section of
-    ``universe_wsgi.ini``:
+    ``galaxy.ini``:
 
         tool_section_filters = examples:explicit_user_mapping
     """
@@ -82,7 +82,7 @@ def restrict_development_tools( context, tool ):
     This tool filter will disable all tools with the string alpha appearing in
     the version for all users except those explicitly appearing in the DEVELOPERS list
     defined above. This can be enabled by renaming this file to examples.py and
-    adding the following to the ``app:main`` section of ``universe_wsgi.ini``:
+    adding the following to the ``app:main`` section of ``galaxy.ini``:
 
         tool_filters = examples:restrict_development_tools
     """
@@ -98,7 +98,7 @@ def per_host_tool_sections( context, section ):
     the URL the user is making the request to. This could allow a single Galaxy instance
     to seem like several different instances hosting different tools based on the URL used
     to access the Galxy. This can be enabled by renaming this file to examples.py and adding
-    the following to the ``app:main`` section of ``universe_wsgi.ini``:
+    the following to the ``app:main`` section of ``galaxy.ini``:
 
         tool_section_filters = examples:per_host_tool_sections
     """

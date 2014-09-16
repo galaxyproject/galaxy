@@ -793,7 +793,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # validate name vs. registry
         registry = trans.app.visualizations_registry
         if not registry:
-            raise HTTPNotFound( 'No visualization registry (possibly disabled in universe_wsgi.ini)' )
+            raise HTTPNotFound( 'No visualization registry (possibly disabled in galaxy.ini)' )
         if visualization_name not in registry.plugins:
             raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
             # or redirect to list?

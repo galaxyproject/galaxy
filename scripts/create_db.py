@@ -1,19 +1,19 @@
 """
 Creates the initial galaxy database schema using the settings defined in
-universe_wsgi.ini.
+config/galaxy.ini.
 
 This script is also wrapped by create_db.sh.
 
 .. note: pass '-c /location/to/your_config.ini' for non-standard ini file
 locations.
 
-.. note: if no database_connection is set in universe_wsgi.ini, the default,
-sqlite database will be constructed.
-    Using the database_file setting in universe_wsgi.ini will create the file
-    at the settings location (??)
+.. note: if no database_connection is set in galaxy.ini, the default, sqlite
+database will be constructed.
+    Using the database_file setting in galaxy.ini will create the file at the
+    settings location (??)
 
-.. seealso: universe_wsgi.ini, specifically the settings: database_connection
-and database file
+.. seealso: galaxy.ini, specifically the settings: database_connection and
+database file
 """
 
 import sys

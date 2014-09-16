@@ -86,7 +86,7 @@
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
-             [server:<id>] in universe_wsgi.ini.
+             [server:<id>] in galaxy.ini.
          -->
         <handler id="handler0" tags="handlers"/>
         <handler id="handler1" tags="handlers"/>
@@ -148,7 +148,7 @@
 
                This configuration allows any docker instance to write to any Galaxy
                file - for greater isolation set outputs_to_working_directory in
-               universe_wsgi.ini. This will cause $defaults to allow writing to much
+               galaxy.ini. This will cause $defaults to allow writing to much
                less. It will then expand as follows:
 
                $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro

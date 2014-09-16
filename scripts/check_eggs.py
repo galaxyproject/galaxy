@@ -10,7 +10,7 @@ import os, sys, logging
 from optparse import OptionParser
 
 parser = OptionParser()
-parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default='universe_wsgi.ini' )
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default='config/galaxy.ini' )
 parser.add_option( '-q', '--quiet', dest='quiet', action="store_true", help='Quiet (no output, only set return code)', default=False )
 ( options, args ) = parser.parse_args()
 
@@ -23,7 +23,7 @@ root.setLevel( 10 )
 root.addHandler( logging.StreamHandler( sys.stdout ) )
 
 config_arg = ''
-if options.config != 'universe_wsgi.ini':
+if options.config != 'config/galaxy.ini':
     config_arg = '-c %s' % options.config
 
 lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )

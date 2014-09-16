@@ -2,7 +2,7 @@ import os, sys, logging
 from optparse import OptionParser
 
 parser = OptionParser()
-parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default='universe_wsgi.ini' )
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default='config/galaxy.ini' )
 parser.add_option( '-e', '--egg-name', dest='egg_name', help='Egg name (as defined in eggs.ini) to fetch, or "all" for all eggs, even those not needed by your configuration' )
 ( options, args ) = parser.parse_args()
 
@@ -36,7 +36,7 @@ try:
             sys.exit( 1 )
         for dependency in egg.dependencies:
             config_arg = ''
-            if options.config != 'universe_wsgi.ini':
+            if options.config != 'config/galaxy.ini':
                 config_arg = '-c %s' % options.config
             print "Checking %s dependency: %s" % ( egg.name, dependency )
             try:

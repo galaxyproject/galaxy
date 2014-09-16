@@ -1192,13 +1192,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     def toolbox_filters( self, trans, cntrller, **kwd ):
         """
             Sets the user's default filters for the toolbox.
-            Toolbox filters are specified in universe_wsgi.ini.
+            Toolbox filters are specified in galaxy.ini.
             The user can activate them and the choice is stored in user_preferences.
         """
 
         def get_filter_mapping( db_filters, config_filters ):
             """
-                Compare the allowed filters from the universe_wsgi.ini config file with the previously saved or default filters from the database.
+                Compare the allowed filters from the galaxy.ini config file with the previously saved or default filters from the database.
                 We need that to toogle the checkboxes for the formular in the right way.
                 Furthermore we extract all information associated to a filter to display them in the formular.
             """

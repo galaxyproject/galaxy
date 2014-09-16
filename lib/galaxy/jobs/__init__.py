@@ -267,7 +267,7 @@ class JobConfiguration( object ):
         log.debug('Done loading job configuration')
 
     def __parse_job_conf_legacy(self):
-        """Loads the old-style job configuration from options in the galaxy config file (by default, universe_wsgi.ini).
+        """Loads the old-style job configuration from options in the galaxy config file (by default, config/galaxy.ini).
         """
         log.debug('Loading job configuration from %s' % self.app.config.config_file)
 
