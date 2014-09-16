@@ -558,21 +558,6 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         for step in usage_details[ "steps" ]:
             self._assert_has_keys( step, "workflow_step_id", "order_index", "id" )
 
-    @skip_without_tool( "cat1" )
-    def test_post_job_action( self ):
-        """ Tests both import and execution of post job actions.
-        """
-        workflow = self.workflow_populator.load_workflow( name="test_for_pja_run", add_pja=True )
-        workflow_request, history_id = self._setup_workflow_run( workflow )
-        run_workflow_response = self._post( "workflows", data=workflow_request )
-        self._assert_status_code_is( run_workflow_response, 200 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        time.sleep(.1)  # Give another little bit of time for rename (needed?)
-        contents = self._get( "histories/%s/contents" % history_id ).json()
-        # loading workflow with add_pja=True causes workflow output to be
-        # renamed to 'the_new_name'.
-        assert "the_new_name" in map( lambda hda: hda[ "name" ], contents )
-
     def _invocation_details( self, workflow_id, invocation_id ):
         invocation_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, invocation_id ) )
         self._assert_status_code_is( invocation_details_response, 200 )
