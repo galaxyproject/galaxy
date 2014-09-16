@@ -7,7 +7,7 @@ module.exports = function(grunt) {
     copy: {
       main: {
         expand: true,
-        cwd: 'scripts/',
+        cwd: 'galaxy/scripts/',
         src: '**',
         dest: '../static/scripts/'
       }
