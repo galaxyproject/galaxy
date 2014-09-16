@@ -270,6 +270,11 @@ var DatasetCollection = Backbone.Model
         return this.save( { deleted: false }, options );
     },
 
+    /** Is this collection deleted or purged? */
+    isDeletedOrPurged : function(){
+        return ( this.get( 'deleted' ) || this.get( 'purged' ) );
+    },
+
     // ........................................................................ searchable
     /** searchable attributes for collections */
     searchAttributes : [

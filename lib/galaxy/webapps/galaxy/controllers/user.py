@@ -17,8 +17,8 @@ from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_publicname
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import transform_publicname
-from galaxy.util.json import from_json_string
-from galaxy.util.json import to_json_string
+from galaxy.util.json import loads
+from galaxy.util.json import dumps
 from galaxy.util import listify
 from galaxy.util import docstring_trim
 from galaxy.web import url_for
@@ -1586,7 +1586,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if 'dbkeys' not in user.preferences:
             dbkeys = {}
         else:
-            dbkeys = from_json_string(user.preferences['dbkeys'])
+            dbkeys = loads(user.preferences['dbkeys'])
         if 'delete' in kwds:
             # Delete a build.
             key = kwds.get('key', '')
@@ -1649,7 +1649,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 dbkeys[key] = build_dict
         # Save builds.
         # TODO: use database table to save builds.
-        user.preferences['dbkeys'] = to_json_string(dbkeys)
+        user.preferences['dbkeys'] = dumps(dbkeys)
         trans.sa_session.flush()
 
         #
@@ -1688,7 +1688,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     log.error( "Failed to open chrom count dataset: %s", e )
 
         if updated:
-            user.preferences['dbkeys'] = to_json_string(dbkeys)
+            user.preferences['dbkeys'] = dumps(dbkeys)
             trans.sa_session.flush()
 
         # Potential genome data for custom builds is limited to fasta datasets in current history for now.

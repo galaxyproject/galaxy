@@ -1,46 +1,31 @@
 define([
+    "mvc/list/list-item",
     "mvc/dataset/dataset-li",
     "mvc/base-mvc",
     "utils/localization"
-], function( DATASET_LI, BASE_MVC, _l ){
+], function( LIST_ITEM, DATASET_LI, BASE_MVC, _l ){
 /* global Backbone, LoggableMixin */
 //==============================================================================
-var ListItemView = BASE_MVC.ListItemView;
+var FoldoutListItemView = LIST_ITEM.FoldoutListItemView,
+    ListItemView = LIST_ITEM.ListItemView;
 /** @class Read only view for DatasetCollection.
  */
-var DCListItemView = ListItemView.extend(
+var DCListItemView = FoldoutListItemView.extend(
 /** @lends DCListItemView.prototype */{
 //TODO: may not be needed
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-    className   : ListItemView.prototype.className + " dataset-collection",
+    className   : FoldoutListItemView.prototype.className + " dataset-collection",
     id          : function(){
         return [ 'dataset_collection', this.model.get( 'id' ) ].join( '-' );
     },
 
-    /** jq speed for effects used */
-    fxSpeed     : 'fast',
-
-//TODO: ununsed
-    /** set up */
-    initialize  : function( attributes ){
-        if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
-        this.log( this + '(DCListItemView).initialize:', attributes );
-        ListItemView.prototype.initialize.call( this, attributes );
-    },
-
-    /** In this override, don't show or render any details (no need to do anything here)
-     *      - currently the parent control will load a panel for this collection over itself
-     *  @fires expanded when a body has been expanded
-     */
-    expand : function(){
-        var view = this;
-        return view._fetchModelDetails()
-            .always(function(){
-                view.trigger( 'expanded', view );
-            });
+    /** override to add linkTarget */
+    initialize : function( attributes ){
+        FoldoutListItemView.prototype.initialize.call( this, attributes );
+        this.linkTarget = attributes.linkTarget || '_blank';
     },
 
     // ......................................................................... rendering
@@ -59,6 +44,20 @@ var DCListItemView = ListItemView.extend(
                 return $subtitle.text( _l( 'a list of paired datasets' ) );
         }
         return $subtitle;
+    },
+
+    // ......................................................................... foldout
+    /** override to add linktarget to sub-panel */
+    _getFoldoutPanelOptions : function(){
+        var options = FoldoutListItemView.prototype._getFoldoutPanelOptions.call( this );
+        return _.extend( options, {
+            linkTarget : this.linkTarget
+        });
+    },
+
+    /** override to not catch sub-panel selectors */
+    $selector : function(){
+        return this.$( '> .selector' );
     },
 
     // ......................................................................... misc
@@ -83,7 +82,7 @@ DCListItemView.prototype.templates = (function(){
         '</div>'
     ], 'collection' );
 
-    return _.extend( {}, ListItemView.prototype.templates, {
+    return _.extend( {}, FoldoutListItemView.prototype.templates, {
         titleBar : titleBarTemplate
     });
 }());
@@ -97,8 +96,7 @@ var DCEListItemView = ListItemView.extend(
 //TODO: this might be expendable - compacted with HDAListItemView
 
     /** logger used to record this.log messages, commonly set to console */
-    // comment this out to suppress log output
-    logger              : console,
+    //logger              : console,
 
     /** add the DCE class to the list item */
     className   : ListItemView.prototype.className + " dataset-collection-element",

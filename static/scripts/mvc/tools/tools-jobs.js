@@ -1,9 +1,7 @@
-// dependencies
+/*
+    This class handles job submissions and the error handling.
+*/
 define(['utils/utils'], function(Utils) {
-
-/**
- *  This class handles job submissions.
- */
 return Backbone.Model.extend({
     // initialize
     initialize: function(app, options) {
@@ -15,34 +13,49 @@ return Backbone.Model.extend({
     },
     
     // create job
-    submit: function(data, success, error) {
+    submit: function() {
         // link this
         var self = this;
         
+        // create job definition for submission to tools api
+        var job_def = {
+            tool_id : this.app.options.id,
+            inputs  : this.app.tree.finalize()
+        }
+        
+        // reset
+        this.app.reset();
+        
         // post job
-        Utils.request('POST', config.root + 'api/tools', data,
+        Utils.request('POST', galaxy_config.root + 'api/tools', job_def,
             // success handler
             function(response) {
                 if (!response.outputs || response.outputs.length == 0) {
-                    // call error
-                    error && error();
-                } else {
-                    // update galaxy history
                     console.log(response);
                 }
+                self._refreshHdas();
             },
             // error handler
             function(response) {
-                var message = '';
-                if (response && response.message && response.message.data && response.message.data.input) {
-                    message = response.message.data.input + '.';
+                if (response && response.message && response.message.data) {
+                    var error_messages = self.app.tree.match(response.message.data);
+                    for (var id in error_messages) {
+                        var error_text = error_messages[id];
+                        if (!error_text) {
+                            error_text = 'Please verify this parameter.';
+                        }
+                        self.app.element_list[id].error(error_text);
+                    }
                 }
-                
-                // call error
-                error && error();
-                      
             }
         );
+    },
+    
+    // refresh history panel
+    _refreshHdas: function() {
+        if (parent.Galaxy && parent.Galaxy.currHistoryPanel) {
+            parent.Galaxy.currHistoryPanel.refreshContents();
+        }
     }
 });
 

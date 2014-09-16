@@ -25,12 +25,12 @@
                             hidden: false 
                         }),
                         tools = new tools_mod.ToolCollection( 
-                                    ${ h.to_json_string( trans.app.toolbox.to_dict( trans, in_panel=False ) ) } 
+                                    ${ h.dumps( trans.app.toolbox.to_dict( trans, in_panel=False ) ) } 
                                                         ),
                         tool_panel = new tools_mod.ToolPanel({ 
                             tool_search: tool_search,
                             tools: tools,
-                            layout: ${h.to_json_string( trans.app.toolbox.to_dict( trans ) )}
+                            layout: ${h.dumps( trans.app.toolbox.to_dict( trans ) )}
                         }),
                         tool_panel_view = new tools_mod.ToolPanelView({ model: tool_panel });
                     

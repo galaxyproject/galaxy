@@ -247,7 +247,7 @@ class RepositoryGrid( grids.Grid ):
     class EmailAlertsColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository ):
-            if trans.user and repository.email_alerts and trans.user.email in json.from_json_string( repository.email_alerts ):
+            if trans.user and repository.email_alerts and trans.user.email in json.loads( repository.email_alerts ):
                 return 'yes'
             return ''
 

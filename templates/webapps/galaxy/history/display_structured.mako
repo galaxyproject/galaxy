@@ -144,7 +144,7 @@
     <script type="text/javascript">
         define( 'display-structured', function(){
             require([ 'mvc/history/hda-li-edit', 'mvc/history/hda-model' ], function( hdaEdit, hdaModel ){
-                var hdaJSON = ${ h.to_json_string( hda_dicts, indent=( 2 if trans.debug else 0 ) ) };
+                var hdaJSON = ${ h.dumps( hda_dicts, indent=( 2 if trans.debug else 0 ) ) };
 
                 window.hdas = hdaJSON.map( function( hda ){
                     return new hdaEdit.HDAListItemEdit({

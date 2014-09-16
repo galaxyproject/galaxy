@@ -1,9 +1,10 @@
 define([
     "mvc/dataset/states",
     "mvc/collection/collection-li",
+    "mvc/collection/collection-panel",
     "mvc/base-mvc",
     "utils/localization"
-], function( STATES, DC_LI, BASE_MVC, _l ){
+], function( STATES, DC_LI, DC_PANEL, BASE_MVC, _l ){
 /* global Backbone */
 //==============================================================================
 var _super = DC_LI.DCListItemView;
@@ -16,6 +17,18 @@ var HDCAListItemView = _super.extend(
     //logger              : console,
 
     className   : _super.prototype.className + " history-content",
+
+    _getFoldoutPanelClass : function(){
+        switch( this.model.get( 'collection_type' ) ){
+            case 'list':
+                return DC_PANEL.ListCollectionPanel;
+            case 'paired':
+                return DC_PANEL.PairCollectionPanel;
+            case 'list:paired':
+                return DC_PANEL.ListOfPairsCollectionPanel;
+        }
+        throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
+    },
 
     /** In this override, add the state as a class for use with state-based CSS */
     _swapNewRender : function( $newRender ){

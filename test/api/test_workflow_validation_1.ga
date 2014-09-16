@@ -23,7 +23,7 @@
             "post_job_actions": {}, 
             "tool_errors": null, 
             "tool_id": "validation_default", 
-            "tool_state": "{\"__page__\": 0, \"__rerun_remap_job_id__\": null, \"input1\": \"\\\"cow\\\"\", \"chromInfo\": \"\\\"/home/john/workspace/galaxy-central/tool-data/shared/ucsc/chrom/?.len\\\"\"}", 
+            "tool_state": "{\"__page__\": 0, \"__rerun_remap_job_id__\": null, \"input1\": \"\\\"cow\\\"\", \"float_param\": \"8.0\", \"select_param\": \"\\\"opt1\\\"\", \"chromInfo\": \"\\\"/home/john/workspace/galaxy-central/tool-data/shared/ucsc/chrom/?.len\\\"\"}", 
             "tool_version": null, 
             "type": "tool", 
             "user_outputs": []

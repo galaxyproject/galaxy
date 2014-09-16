@@ -132,7 +132,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                          repository_name=repository.name,
                                                                          repository_owner=repository.owner,
                                                                          changeset_revision=current_changeset_revision )
-                            json_repo_info_dict = json.to_json_string( updated_repo_info_dict )
+                            json_repo_info_dict = json.dumps( updated_repo_info_dict )
                             encoded_repo_info_dict = encoding_util.tool_shed_encode( json_repo_info_dict )
                             kwd[ 'latest_changeset_revision' ] = current_changeset_revision
                             kwd[ 'latest_ctx_rev' ] = current_ctx_rev
@@ -409,7 +409,7 @@ class AdminToolshed( AdminGalaxy ):
                                     'repository/get_tool_dependencies%s' % params )
         raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         if len( raw_text ) > 2:
-            encoded_text = json.from_json_string( raw_text )
+            encoded_text = json.loads( raw_text )
             text = encoding_util.tool_shed_decode( encoded_text )
         else:
             text = ''
@@ -435,7 +435,7 @@ class AdminToolshed( AdminGalaxy ):
         url = common_util.url_join( tool_shed_url,
                                     'repository/get_updated_repository_information%s' % params )
         raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-        repo_information_dict = json.from_json_string( raw_text )
+        repo_information_dict = json.loads( raw_text )
         return repo_information_dict
 
     @web.expose
@@ -525,7 +525,7 @@ class AdminToolshed( AdminGalaxy ):
                 url = common_util.url_join( tool_shed_url,
                                             'repository/get_latest_downloadable_changeset_revision%s' % params )
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-                latest_downloadable_revision = json.from_json_string( raw_text )
+                latest_downloadable_revision = json.loads( raw_text )
                 if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
                     message = 'Error retrieving the latest downloadable revision for this repository via the url <b>%s</b>.' % url
                     status = 'error'
@@ -1047,7 +1047,7 @@ class AdminToolshed( AdminGalaxy ):
             url = common_util.url_join( tool_shed_url,
                                         'repository/get_repository_information%s' % params )
             raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-            repo_information_dict = json.from_json_string( raw_text )
+            repo_information_dict = json.loads( raw_text )
             for encoded_repo_info_dict in repo_information_dict.get( 'repo_info_dicts', [] ):
                 decoded_repo_info_dict = encoding_util.tool_shed_decode( encoded_repo_info_dict )
                 if not includes_tools:
@@ -1594,7 +1594,7 @@ class AdminToolshed( AdminGalaxy ):
                 url = common_util.url_join( tool_shed_url,
                                             'repository/get_readme_files%s' % params )
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-                readme_files_dict = json.from_json_string( raw_text )
+                readme_files_dict = json.loads( raw_text )
                 tool_dependencies = metadata.get( 'tool_dependencies', None )
             rdim = repository_dependency_manager.RepositoryDependencyInstallManager( trans.app )
             repository_dependencies = \
@@ -1801,7 +1801,7 @@ class AdminToolshed( AdminGalaxy ):
                                     'repository/get_tool_versions%s' % params )
         text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         if text:
-            tool_version_dicts = json.from_json_string( text )
+            tool_version_dicts = json.loads( text )
             tvm = tool_version_manager.ToolVersionManager( trans.app )
             tvm.handle_tool_versions( tool_version_dicts, repository )
             message = "Tool versions have been set for all included tools."

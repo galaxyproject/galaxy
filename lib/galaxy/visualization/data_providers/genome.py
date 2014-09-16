@@ -17,7 +17,7 @@ from bx.bbi.bigbed_file import BigBedFile
 from pysam import csamtools, ctabix
 
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
 from galaxy.datatypes.interval import Bed, Gff, Gtf
@@ -409,7 +409,7 @@ class IntervalDataProvider( GenomeDataProvider ):
         #
         # First three entries are mandatory, others are optional.
         #
-        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        filter_cols = loads( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
         rval = []
         message = None
@@ -490,7 +490,7 @@ class BedDataProvider( GenomeDataProvider ):
         #
         # First three entries are mandatory, others are optional.
         #
-        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        filter_cols = loads( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
         rval = []
         message = None
@@ -1336,7 +1336,7 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
         #
         # First three entries are mandatory, others are optional.
         #
-        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        filter_cols = loads( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
         for count, val in enumerate( iterator ):
             start, end, offset = val[0], val[1], val[2]
@@ -1404,7 +1404,7 @@ class RawGFFDataProvider( GenomeDataProvider ):
         """
         Process data from an iterator to a format that can be provided to client.
         """
-        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        filter_cols = loads( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
         results = []
         message = None
@@ -1446,7 +1446,7 @@ class GtfTabixDataProvider( TabixDataProvider ):
             feature.append( GFFInterval( None, line.split( '\t') ) )
 
         # Process data.
-        filter_cols = from_json_string( kwargs.get( "filter_cols", "[]" ) )
+        filter_cols = loads( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
         results = []
         message = None

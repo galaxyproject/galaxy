@@ -6,10 +6,11 @@ from galaxy import eggs
 eggs.require( "Paste" )
 import paste.httpexceptions
 
+from galaxy.web.framework import url_for
 from galaxy import util
 from galaxy.exceptions import error_codes
 from galaxy.exceptions import MessageException
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 
 import logging
 log = logging.getLogger( __name__ )
@@ -43,7 +44,7 @@ def json( func, **json_kwargs ):
     @wraps(func)
     def call_and_format( self, trans, *args, **kwargs ):
         trans.response.set_content_type( JSON_CONTENT_TYPE )
-        return to_json_string( func( self, trans, *args, **kwargs ), **json_kwargs )
+        return dumps( func( self, trans, *args, **kwargs ), **json_kwargs )
     if not hasattr( func, '_orig' ):
         call_and_format._orig = func
     return expose( _save_orig_fn( call_and_format, func ) )
@@ -132,9 +133,9 @@ def expose_api( func, to_json=True, user_required=True ):
         try:
             rval = func( self, trans, *args, **kwargs)
             if to_json and trans.debug:
-                rval = to_json_string( rval, indent=4, sort_keys=True )
+                rval = dumps( rval, indent=4, sort_keys=True )
             elif to_json:
-                rval = to_json_string( rval )
+                rval = dumps( rval )
             return rval
         except paste.httpexceptions.HTTPException:
             raise  # handled
@@ -159,7 +160,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         for k, v in payload.iteritems():
             if isinstance(v, (str, unicode)):
                 try:
-                    payload[k] = from_json_string(v)
+                    payload[k] = loads(v)
                 except:
                     # may not actually be json, just continue
                     pass
@@ -168,7 +169,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-        payload = util.recursively_stringify_dictionary_keys( from_json_string( trans.request.body ) )
+        payload = util.recursively_stringify_dictionary_keys( loads( trans.request.body ) )
     return payload
 
 def expose_api_raw( func ):
@@ -241,9 +242,9 @@ def _future_expose_api( func, to_json=True, user_required=True ):
         try:
             rval = func( self, trans, *args, **kwargs)
             if to_json and trans.debug:
-                rval = to_json_string( rval, indent=4, sort_keys=True )
+                rval = dumps( rval, indent=4, sort_keys=True )
             elif to_json:
-                rval = to_json_string( rval )
+                rval = dumps( rval )
             return rval
         except MessageException as e:
             traceback_string = format_exc()
@@ -315,7 +316,7 @@ def __api_error_response( trans, **kwds ):
         # non-success (i.e. not 200 or 201) has been set, do not override
         # underlying controller.
         response.status = status_code
-    return to_json_string( error_dict )
+    return dumps( error_dict )
 
 
 # TODO: rename as expose_api and make default.

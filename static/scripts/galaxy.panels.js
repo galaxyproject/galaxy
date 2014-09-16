@@ -92,28 +92,32 @@ $.extend( Panel.prototype, {
         }
     },
     init: function() {
-        var self = this;
+        var self = this,
+            prevX;
         // Pull the collapse element out to body level so it is visible when panel is hidden
-        this.$toggle.remove().appendTo( "body" );
-        // Resizing using drag element
-        this.$drag.on( "dragstart", function( e, d ) {
-            $( '#DD-helper' ).show();
-            d.width = self.$panel.width();
-        }).on( "dragend", function() {  
-            $( '#DD-helper' ).hide();
-        }).on( "drag", function( e, d ) {
-            var x;
-            if ( self.left ) {
-                x = d.width + d.deltaX;
-            } else {
-                x = d.width - d.deltaX;
-            }
-            // Limit range
-            x = Math.min( MAX_PANEL_WIDTH, Math.max( MIN_PANEL_WIDTH, x ) );
-            self.resize( x );
-        });
+        self.$toggle.remove().appendTo( "body" );
         // Hide/show using toggle element
         self.$toggle.on( "click", function() { self.do_toggle(); } );
+
+        // Resizing using drag element
+        function move( e ){
+            var delta = e.pageX - prevX;
+            prevX = e.pageX;
+
+            var oldWidth = self.$panel.width(),
+                newWidth = ( self.left )?( oldWidth + delta ):( oldWidth - delta );
+            // Limit range
+            newWidth = Math.min( MAX_PANEL_WIDTH, Math.max( MIN_PANEL_WIDTH, newWidth ) );
+            self.resize( newWidth );
+        }
+        this.$drag.on( "mousedown", function( e ) {
+            prevX = e.pageX;
+            $( '#DD-helper' ).show()
+                .on( 'mousemove', move )
+                .one( 'mouseup', function( e ){
+                    $( this ).hide().off( 'mousemove', move );
+                });
+        });
     }
 });
   

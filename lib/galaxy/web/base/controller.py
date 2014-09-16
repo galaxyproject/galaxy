@@ -38,11 +38,13 @@ from galaxy.datatypes.data import Text
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
 from galaxy.managers import api_keys
+from galaxy.managers import tags
+from galaxy.managers import base as managers_base
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import RuntimeValue, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.tools.parameters.basic import DataCollectionToolParameter
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.util import validation
@@ -76,70 +78,14 @@ class BaseController( object ):
 
     def get_class( self, class_name ):
         """ Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>). """
-        if class_name == 'History':
-            item_class = self.app.model.History
-        elif class_name == 'HistoryDatasetAssociation':
-            item_class = self.app.model.HistoryDatasetAssociation
-        elif class_name == 'Page':
-            item_class = self.app.model.Page
-        elif class_name == 'StoredWorkflow':
-            item_class = self.app.model.StoredWorkflow
-        elif class_name == 'Visualization':
-            item_class = self.app.model.Visualization
-        elif class_name == 'Tool':
-            item_class = self.app.model.Tool
-        elif class_name == 'Job':
-            item_class = self.app.model.Job
-        elif class_name == 'User':
-            item_class = self.app.model.User
-        elif class_name == 'Group':
-            item_class = self.app.model.Group
-        elif class_name == 'Role':
-            item_class = self.app.model.Role
-        elif class_name == 'Quota':
-            item_class = self.app.model.Quota
-        elif class_name == 'Library':
-            item_class = self.app.model.Library
-        elif class_name == 'LibraryFolder':
-            item_class = self.app.model.LibraryFolder
-        elif class_name == 'LibraryDatasetDatasetAssociation':
-            item_class = self.app.model.LibraryDatasetDatasetAssociation
-        elif class_name == 'LibraryDataset':
-            item_class = self.app.model.LibraryDataset
-        elif class_name == 'ToolShedRepository':
-            item_class = self.app.install_model.ToolShedRepository
-        else:
-            item_class = None
-        return item_class
+        return managers_base.get_class( class_name )
 
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         """
         Convenience method to get a model object with the specified checks.
         """
-        try:
-            decoded_id = trans.security.decode_id( id )
-        except:
-            raise MessageException( "Malformed %s id ( %s ) specified, unable to decode"
-                                    % ( class_name, str( id ) ), type='error' )
-        try:
-            item_class = self.get_class( class_name )
-            assert item_class is not None
-            item = trans.sa_session.query( item_class ).get( decoded_id )
-            assert item is not None
-        except Exception:
-            log.exception( "Invalid %s id ( %s ) specified." % ( class_name, id ) )
-            raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
-
-        if check_ownership or check_accessible:
-            self.security_check( trans, item, check_ownership, check_accessible )
-        if deleted == True and not item.deleted:
-            raise ItemDeletionException( '%s "%s" is not deleted'
-                                         % ( class_name, getattr( item, 'name', id ) ), type="warning" )
-        elif deleted == False and item.deleted:
-            raise ItemDeletionException( '%s "%s" is deleted'
-                                         % ( class_name, getattr( item, 'name', id ) ), type="warning" )
-        return item
-
+        return managers_base.get_object( trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+  
     # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
     #   but *don't* then becomes difficult
     #def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
@@ -300,28 +246,7 @@ class SharableItemSecurityMixin:
 
     def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
-        # all items are accessible to an admin
-        if trans.user_is_admin():
-            return item
-
-        # Verify ownership: there is a current user and that user is the same as the item's
-        if check_ownership:
-            if not trans.user:
-                raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
-            if item.user != trans.user:
-                raise ItemOwnershipException( "%s is not owned by the current user" % item.__class__.__name__, type='error' )
-
-        # Verify accessible:
-        #   if it's part of a lib - can they access via security
-        #   if it's something else (sharable) have they been added to the item's users_shared_with_dot_users
-        if check_accessible:
-            if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
-                if not trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ):
-                    raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
-            else:
-                if ( item.user != trans.user ) and ( not item.importable ) and ( trans.user not in item.users_shared_with_dot_users ):
-                    raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
-        return item
+        return managers_base.security_check( trans, item, check_ownership=check_ownership, check_accessible=check_accessible )
 
 
 class UsesHistoryMixin( SharableItemSecurityMixin ):
@@ -950,6 +875,9 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
                                 check_ownership=False, check_accessible=check_accessible )
 
     def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
+        # Deprecated in lieu to galaxy.managers.lddas.LDDAManager.get() but not
+        # reusing that exactly because of subtle differences in exception handling
+        # logic (API controller override get_object to be slightly different).
         return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation',
                                 check_ownership=False, check_accessible=check_accessible )
 
@@ -1706,7 +1634,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
                     missing_tool_tups.append( missing_tool_tup )
                 # Save the entire step_dict in the unused config field, be parsed later
                 # when we do have the tool
-                step.config = to_json_string(step_dict)
+                step.config = dumps(step_dict)
             if step.tool_errors:
                 workflow.has_errors = True
             # Stick this in the step temporarily
@@ -2808,16 +2736,9 @@ class UsesTagsMixin( SharableItemSecurityMixin ):
         return self.get_tag_handler( trans )._get_item_tag_assoc( user, tagged_item, tag_name )
 
     def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
-        #precondition: item is already security checked against user
-        #precondition: incoming tags is a list of sanitized/formatted strings
-        user = user or trans.user
-
-        # based on controllers/tag retag_async: delete all old, reset to entire new
-        trans.app.tag_handler.delete_item_tags( trans, user, item )
-        new_tags_str = ','.join( new_tags_list )
-        trans.app.tag_handler.apply_item_tags( trans, user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
-        trans.sa_session.flush()
-        return item.tags
+        # Method deprecated - try to use TagsHandler instead.
+        tags_manager = tags.TagsManager( trans.app )
+        return tags_manager.set_tags_from_list( trans, item, new_tags_list, user=user )
 
     def get_user_tags_used( self, trans, user=None ):
         """

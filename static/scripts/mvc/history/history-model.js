@@ -232,7 +232,7 @@ History.UPDATE_DELAY = 4000;
 /** Get data for a history then its hdas using a sequential ajax call, return a deferred to receive both */
 History.getHistoryData = function getHistoryData( historyId, options ){
     options = options || {};
-    var hdaDetailIds = options.hdaDetailIds || [];
+    var detailIdsFn = options.detailIdsFn || [];
     var hdcaDetailIds = options.hdcaDetailIds || [];
     //console.debug( 'getHistoryData:', historyId, options );
 
@@ -250,20 +250,20 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         // get the number of hdas accrd. to the history
         return historyData && historyData.empty;
     }
-    function getHdas( historyData ){
+    function getContents( historyData ){
         // get the hda data
         // if no hdas accrd. to history: return empty immed.
         if( isEmpty( historyData ) ){ return []; }
         // if there are hdas accrd. to history: get those as well
-        if( _.isFunction( hdaDetailIds ) ){
-            hdaDetailIds = hdaDetailIds( historyData );
+        if( _.isFunction( detailIdsFn ) ){
+            detailIdsFn = detailIdsFn( historyData );
         }
         if( _.isFunction( hdcaDetailIds ) ){
             hdcaDetailIds = hdcaDetailIds( historyData );
         }
         var data = {};
-        if( hdaDetailIds.length ) {
-            data.dataset_details = hdaDetailIds.join( ',' );
+        if( detailIdsFn.length ) {
+            data.dataset_details = detailIdsFn.join( ',' );
         }
         if( hdcaDetailIds.length ) {
             // for symmetry, not actually used by backend of consumed
@@ -274,10 +274,10 @@ History.getHistoryData = function getHistoryData( historyId, options ){
     }
 
     // getting these concurrently is 400% slower (sqlite, local, vanilla) - so:
-    //  chain the api calls - getting history first then hdas
+    //  chain the api calls - getting history first then contents
 
     var historyFn = options.historyFn || getHistory,
-        hdaFn = options.hdaFn || getHdas;
+        contentsFn = options.contentsFn || getContents;
 
     // chain ajax calls: get history first, then hdas
     var historyXHR = historyFn( historyId );
@@ -291,15 +291,15 @@ History.getHistoryData = function getHistoryData( historyId, options ){
         df.reject( xhr, 'loading the history' );
     });
 
-    var hdaXHR = historyXHR.then( hdaFn );
-    hdaXHR.then( function( hdaJSON ){
-        df.notify({ status: 'dataset data retrieved', historyJSON: historyJSON, hdaJSON: hdaJSON });
+    var contentsXHR = historyXHR.then( contentsFn );
+    contentsXHR.then( function( contentsJSON ){
+        df.notify({ status: 'contents data retrieved', historyJSON: historyJSON, contentsJSON: contentsJSON });
         // we've got both: resolve the outer scope deferred
-        df.resolve( historyJSON, hdaJSON );
+        df.resolve( historyJSON, contentsJSON );
     });
-    hdaXHR.fail( function( xhr, status, message ){
+    contentsXHR.fail( function( xhr, status, message ){
         // call reject on the outer deferred to allow its fail callback to run
-        df.reject( xhr, 'loading the datasets', { history: historyJSON } );
+        df.reject( xhr, 'loading the contents', { history: historyJSON } );
     });
 
     return df;

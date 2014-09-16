@@ -218,7 +218,7 @@
                     }
                 });
             });
-            $("#tool_form").submit(function(e) {
+            $("#tool_form").preventDoubleSubmission().submit(function(e) {
                 var matchLength = -1;
                 $('span.multiinput_wrap select[name*="|input"]').each(function() {
                     var value = $(this).val();
@@ -542,11 +542,15 @@ if wf_parms:
     </script>
 %endif
 %for i, step in enumerate( steps ):
+    <!-- Only way module would be missing is if tool is missing, but
+         that would cause missing_tools.mako to render instead of this
+         template. -->
+    <% module = step.module %>
+    <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
     %if step.type == 'tool' or step.type is None:
       <%
         tool = trans.app.toolbox.get_tool( step.tool_id )
       %>
-      <input type="hidden" name="${step.id}|tool_state" value="${step.state.encode( tool, app )}">
       <div class="toolForm">
           <div class="toolFormTitle">
               <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${tool.name}</span>
@@ -580,8 +584,6 @@ if wf_parms:
               </div>
           </div>
         %else:
-        <% module = step.module %>
-          <input type="hidden" name="${step.id}|tool_state" value="${module.encode_runtime_state( t, step.state )}">
           <div class="toolForm">
               <div class="toolFormTitle">
                   <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name}</span>
@@ -605,21 +607,11 @@ if wf_parms:
       </div>
     %endif
 %endfor
-%if missing_tools:
-    <div class='errormessage'>
-    <strong>This workflow utilizes tools which are unavailable, and cannot be run.  Enable the tools listed below, or <a href="${h.url_for(controller='workflow', action='editor', id=trans.security.encode_id(workflow.id) )}" target="_parent">edit the workflow</a> to correct these errors.</strong><br/>
-    <ul>
-    %for i, tool in enumerate( missing_tools ):
-        <li>${tool}</li>
-    %endfor
-    </ul>
-%else:
-    %if history_id is None:
-<p id='new_history_p'>
-    <input type="checkbox" name='new_history' value="true" id='new_history_cbx'/><label for='new_history_cbx'>Send results to a new history </label>
-    <span id="new_history_input">named: <input type='text' name='new_history_name' value='${ h.to_unicode( workflow.name ) | h }'/></span>
-</p>
-    %endif
+%if history_id is None:
+    <p id='new_history_p'>
+        <input type="checkbox" name='new_history' value="true" id='new_history_cbx'/><label for='new_history_cbx'>Send results to a new history </label>
+        <span id="new_history_input">named: <input type='text' name='new_history_name' value='${ h.to_unicode( workflow.name ) | h }'/></span>
+    </p>
+%endif
 <input type="submit" class="btn btn-primary" name="run_workflow" value="Run workflow" />
 </form>
-%endif

@@ -1,14 +1,16 @@
 from __future__ import absolute_import
 
-__all__ = [ "to_json_string", "from_json_string", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
+__all__ = [ "dumps", "loads", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
 
 import json
 import logging
 import random
 import string
 
-to_json_string = json.dumps
-from_json_string = json.loads
+to_json_string = json.dumps  # deprecated
+from_json_string = json.loads  # deprecated
+dumps = json.dumps
+loads = json.loads
 
 log = logging.getLogger( __name__ )
 
@@ -23,12 +25,12 @@ def json_fix( val ):
     else:
         return val
 
-# Methods for handling JSON-RPC
 
+# Methods for handling JSON-RPC
 
 def validate_jsonrpc_request( request, regular_methods, notification_methods ):
     try:
-        request = from_json_string( request )
+        request = loads( request )
     except Exception, e:
         return False, request, jsonrpc_response( id=None,
                                                  error=dict( code=-32700,
@@ -65,7 +67,7 @@ def validate_jsonrpc_request( request, regular_methods, notification_methods ):
 
 def validate_jsonrpc_response( response, id=None ):
     try:
-        response = from_json_string( response )
+        response = loads( response )
     except Exception, e:
         log.error( 'Response was not valid JSON: %s' % str( e ) )
         log.debug( 'Response was: %s' % response )

@@ -467,6 +467,16 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             assert n == expected_len, "Expected %d steps of type %s, found %d" % ( expected_len, type, n )
         return sorted( steps, key=operator.itemgetter("id") )
 
+    @skip_without_tool( "cat1" )
+    def test_run_with_pja( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_pja_run", add_pja=True )
+        workflow_request, history_id = self._setup_workflow_run( workflow, inputs_by='step_index' )
+        workflow_request[ "replacement_params" ] = dumps( dict( replaceme="was replaced" ) )
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
+        assert content[ "name" ] == "foo was replaced"
+
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_tool( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
@@ -480,18 +490,30 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
 
     @skip_without_tool( "validation_default" )
     def test_parameter_substitution_validation( self ):
+        substitions = dict( input1="\" ; echo \"moo" )
+        run_workflow_response, history_id = self._run_validation_workflow_with_substitions( substitions )
+
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.assertEquals("__dq__ X echo __dq__moo\n", self.dataset_populator.get_history_dataset_content( history_id, hid=1 ) )
+
+    @skip_without_tool( "validation_default" )
+    def test_parameter_substitution_validation_value_errors_1( self ):
+        substitions = dict( select_param="\" ; echo \"moo" )
+        run_workflow_response, history_id = self._run_validation_workflow_with_substitions( substitions )
+
+        self._assert_status_code_is( run_workflow_response, 400 )
+
+    def _run_validation_workflow_with_substitions( self, substitions ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_validation_1" )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
         history_id = self.dataset_populator.new_history()
         workflow_request = dict(
             history="hist_id=%s" % history_id,
             workflow_id=uploaded_workflow_id,
-            parameters=dumps( dict( validation_default=dict( input1="\" ; echo \"moo" ) ) )
+            parameters=dumps( dict( validation_default=substitions ) )
         )
         run_workflow_response = self._post( "workflows", data=workflow_request )
-        self._assert_status_code_is( run_workflow_response, 200 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        self.assertEquals("__dq__ X echo __dq__moo\n", self.dataset_populator.get_history_dataset_content( history_id ) )
+        return run_workflow_response, history_id
 
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_steps( self ):

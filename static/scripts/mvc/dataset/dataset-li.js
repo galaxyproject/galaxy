@@ -1,8 +1,9 @@
 define([
+    "mvc/list/list-item",
     "mvc/dataset/states",
     "mvc/base-mvc",
     "utils/localization"
-], function( STATES, BASE_MVC, _l ){
+], function( LIST_ITEM, STATES, BASE_MVC, _l ){
 /* global Backbone */
 /*==============================================================================
 TODO:
@@ -11,7 +12,7 @@ TODO:
     simplify button rendering
 
 ==============================================================================*/
-var _super = BASE_MVC.ListItemView;
+var _super = LIST_ITEM.ListItemView;
 /** @class Read only list view for either LDDAs, HDAs, or HDADCEs.
  *      Roughly, any DatasetInstance (and not a raw Dataset).
  */
@@ -41,15 +42,7 @@ var DatasetListItemView = _super.extend(
 
     /** event listeners */
     _setUpListeners : function(){
-//TODO:?? may want to move this to ListItemView (although this is only needed in the *narrow* panel views (current))
-        // hide the primary actions in the title bar when selectable and narrow
-        this.on( 'selectable', function( isSelectable ){
-            if( isSelectable ){
-                this.$( '.primary-actions' ).hide();
-            } else {
-                this.$( '.primary-actions' ).show();
-            }
-        }, this );
+        _super.prototype._setUpListeners.call( this );
 
         // re-rendering on any model changes
         this.model.on( 'change', function( model, options ){
@@ -62,10 +55,6 @@ var DatasetListItemView = _super.extend(
             } else {
                 this.render();
             }
-        }, this );
-
-        this.on( 'all', function( event ){
-            this.log( event );
         }, this );
     },
 

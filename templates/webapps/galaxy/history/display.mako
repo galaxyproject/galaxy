@@ -45,11 +45,8 @@
 <div id="history-${ history_dict[ 'id' ] }" class="history-panel">
 </div>
 <script type="text/javascript">
-    var debugging    = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
-        historyJSON  = ${h.to_json_string( history_dict )},
-        hdaJSON      = ${h.to_json_string( hda_dicts )};
-    //window.historyJSON = historyJSON;
-    //window.hdaJSON = hdaJSON;
+    var historyJSON  = ${h.dumps( history_dict )},
+        hdaJSON      = ${h.dumps( hda_dicts )};
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
@@ -57,18 +54,15 @@
         // history module is already in the dpn chain from the panel. We can re-scope it here.
         var historyModel = require( 'mvc/history/history-model' ),
             history = new historyModel.History( historyJSON, hdaJSON, {
-                logger: ( debugging )?( console ):( null )
             });
 
         window.historyPanel = new panelMod.AnnotatedHistoryPanel({
             show_deleted    : false,
             show_hidden     : false,
             el              : $( "#history-" + historyJSON.id ),
-            model           : history,
-            onready         : function(){
-                this.render();
-            }
-        });
+            model           : history
+        }).render();
+        console.debug( historyPanel.$el )
     });
 </script>
 </%def>

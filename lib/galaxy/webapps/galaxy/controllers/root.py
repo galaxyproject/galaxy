@@ -15,7 +15,7 @@ from galaxy.web import url_for
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy import util
 from galaxy.util import listify, Params, string_as_bool, string_as_bool_or_none
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 
 import logging
 log = logging.getLogger( __name__ )

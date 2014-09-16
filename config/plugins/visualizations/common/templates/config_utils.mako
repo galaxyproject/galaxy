@@ -36,7 +36,7 @@
         'action'        : 'saved',
         'type'          : visualization_name,
         'title'         : title,
-        'config'        : h.to_json_string( config )
+        'config'        : h.dumps( config )
     }
     # save to existing visualization
     if visualization_id:

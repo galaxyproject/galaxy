@@ -29,7 +29,7 @@ class CommonController( BaseUIController ):
                 response = self.handle_request( trans, url, http_method, **request_params )
                 # Handle response, currently only handles json
                 if response_type == 'json':
-                    response = from_json_string( response )
+                    response = loads( response )
                     # Handle response that is an error, for example:
                     # { "Success":false, "Message":"some error string" }
                     if 'Success' in response and response[ 'Success' ] == 'false':
@@ -121,7 +121,7 @@ class CommonController( BaseUIController ):
             response = self.handle_request( trans, url, http_method, **request_params )
             # Handle response, currently only handles json
             if response_type == 'json':
-                response = from_json_string( response )
+                response = loads( response )
                 # Handle response that is an error, for example:
                 # { "Success":false, "Message":"some error string" }
                 if 'Success' in response and response[ 'Success' ] == 'false':
@@ -211,12 +211,12 @@ class CommonController( BaseUIController ):
                                                           **params ) )
     def put( self, url, **kwd ):
         opener = urllib2.build_opener( urllib2.HTTPHandler )
-        request = urllib2.Request( url, data=to_json_string( kwd ) )
+        request = urllib2.Request( url, data=dumps( kwd ) )
         request.add_header( 'Content-Type', 'application/json' )
         request.get_method = lambda: 'PUT'
         url = opener.open( request )
         output = url.read()
-        return from_json_string( output )
+        return loads( output )
     @web.expose
     def login( self, trans, **kwd ):
         trans.app.sequencer_actions_registry.authenticated = True

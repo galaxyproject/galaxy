@@ -1,5 +1,5 @@
 define([
-    "mvc/dataset/list-panel",
+    "mvc/list/list-panel",
     "mvc/dataset/dataset-li",
     "mvc/base-mvc",
     "utils/localization"

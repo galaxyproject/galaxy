@@ -1,9 +1,8 @@
 // dependencies
 define(['utils/utils'], function(Utils) {
 
-// return
-var View = Backbone.View.extend(
-{
+// portlet view class
+var View = Backbone.View.extend({
     // visibility
     visible: false,
     

@@ -3,7 +3,7 @@ import math
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
 from galaxy.util import sanitize_text
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators
 from galaxy.web.framework import url_for
@@ -72,11 +72,11 @@ class Grid( object ):
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
             if pref_name in trans.get_user().preferences:
-                saved_filter = from_json_string( trans.get_user().preferences[pref_name] )
+                saved_filter = loads( trans.get_user().preferences[pref_name] )
                 base_filter.update( saved_filter )
             pref_name = unicode( self.__class__.__name__ + self.cur_sort_key_pref_name )
             if pref_name in trans.get_user().preferences:
-                base_sort_key = from_json_string( trans.get_user().preferences[pref_name] )
+                base_sort_key = loads( trans.get_user().preferences[pref_name] )
         # Build initial query
         query = self.build_initial_query( trans, **kwargs )
         query = self.apply_query_filter( trans, query, **kwargs )
@@ -108,28 +108,28 @@ class Grid( object ):
                     column_filter = base_filter.get( column.key )
                 
                 # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
-                def from_json_string_recurse(item):
+                def loads_recurse(item):
                     decoded_list = []
                     if isinstance( item, basestring):
                         try:
                             # Not clear what we're decoding, so recurse to ensure that we catch everything.
-                             decoded_item = from_json_string( item )
+                             decoded_item = loads( item )
                              if isinstance( decoded_item, list):
-                                 decoded_list = from_json_string_recurse( decoded_item )
+                                 decoded_list = loads_recurse( decoded_item )
                              else:
                                  decoded_list = [ unicode( decoded_item ) ]
                         except ValueError:
                             decoded_list = [ unicode ( item ) ]
                     elif isinstance( item, list):
                         for element in item:
-                            a_list = from_json_string_recurse( element )
+                            a_list = loads_recurse( element )
                             decoded_list = decoded_list + a_list
                     return decoded_list
                 # If column filter found, apply it.
                 if column_filter is not None:
                     # TextColumns may have a mix of json and strings.
                     if isinstance( column, TextColumn ):
-                        column_filter = from_json_string_recurse( column_filter )
+                        column_filter = loads_recurse( column_filter )
                         if len( column_filter ) == 1:
                             column_filter = column_filter[0]
                     # Interpret ',' as a separator for multiple terms.
@@ -159,7 +159,7 @@ class Grid( object ):
                         for filter in column_filter:
                             if not isinstance( filter, basestring ):
                                 filter = unicode( filter ).encode("utf-8")
-                        extra_url_args[ "f-" + column.key ] = to_json_string( column_filter )
+                        extra_url_args[ "f-" + column.key ] = dumps( column_filter )
                     else:
                         # Process singleton filter.
                         if not isinstance( column_filter, basestring ):
@@ -229,10 +229,10 @@ class Grid( object ):
         # Preserve grid state: save current filter and sort key.
         if self.preserve_state:
             pref_name = unicode( self.__class__.__name__ + self.cur_filter_pref_name )
-            trans.get_user().preferences[pref_name] = unicode( to_json_string( cur_filter_dict ) )
+            trans.get_user().preferences[pref_name] = unicode( dumps( cur_filter_dict ) )
             if sort_key:
                 pref_name = unicode( self.__class__.__name__ + self.cur_sort_key_pref_name )
-                trans.get_user().preferences[pref_name] = unicode( to_json_string( sort_key ) )
+                trans.get_user().preferences[pref_name] = unicode( dumps( sort_key ) )
             trans.sa_session.flush()
         # Log grid view.
         context = unicode( self.__class__.__name__ )

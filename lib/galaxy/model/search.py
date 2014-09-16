@@ -39,7 +39,7 @@ JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDa
 Page, PageRevision)
 from galaxy.model.tool_shed_install import ToolVersion
 
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
@@ -429,7 +429,7 @@ def job_param_filter(view, left, operator, right):
         and_(
             Job.id == alias.job_id,
             alias.name == param_name,
-            alias.value == to_json_string(right)
+            alias.value == dumps(right)
         )
     )
 

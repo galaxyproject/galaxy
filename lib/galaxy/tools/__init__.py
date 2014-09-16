@@ -756,7 +756,6 @@ class ToolBox( object, Dictifiable ):
                         tarball_files.append( ( filesystem_path, tarball_path ) )
                         image_found = True
                         tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
-                    log.debug( tarball_files )
             # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
             if image_found:
                 fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
@@ -817,8 +816,7 @@ class ToolBox( object, Dictifiable ):
                             if len( data_table_definitions ) > 0:
                                 # Put the data table definition XML in a temporary file.
                                 table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
-                                table_xml = [ data_table.xml_string for data_table in data_table_definitions ]
-                                table_definition = table_definition % '\n'.join( table_xml ) 
+                                table_definition = table_definition % '\n'.join( data_table_definitions ) 
                                 fd, table_conf = tempfile.mkstemp()
                                 os.close( fd )
                                 file( table_conf, 'w' ).write( table_definition )

@@ -1,6 +1,6 @@
 import galaxy.queue_worker
 from galaxy import web
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController
 
 import pkg_resources;
@@ -59,7 +59,7 @@ class DataManager( BaseUIController ):
         error_messages = []
         for hda in hdas:
             try:
-                data_manager_json = from_json_string( open( hda.get_file_name() ).read() )
+                data_manager_json = loads( open( hda.get_file_name() ).read() )
             except Exception, e:
                 data_manager_json = {}
                 error_messages.append( "Unable to obtain data_table info for hda (%s): %s" % ( hda.id, e ) )

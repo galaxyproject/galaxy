@@ -1351,10 +1351,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 if missing_tools:
                     stored.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, stored )
                     return trans.fill_template(
-                        "workflow/run.mako",
-                        steps=[],
+                        "workflow/missing_tools.mako",
                         workflow=stored,
-                        hide_fixed_params=hide_fixed_params,
                         missing_tools=missing_tools
                     )
             # Render the form

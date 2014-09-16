@@ -1,8 +1,11 @@
+/*
+    This is the main class of the tool form plugin. It is referenced as 'app' in all lower level modules.
+*/
 define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         'mvc/citation/citation-model', 'mvc/citation/citation-view',
-        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets', 'mvc/tools/tools-section', 'mvc/tools/tools-tree'],
+        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets', 'mvc/tools/tools-section', 'mvc/tools/tools-tree', 'mvc/tools/tools-jobs'],
     function(Portlet, Ui, CitationModel, CitationView,
-             Tools, ToolTemplate, ToolDatasets, ToolSection, ToolTree) {
+             Tools, ToolTemplate, ToolDatasets, ToolSection, ToolTree, ToolJobs) {
 
     // create tool model
     var Model = Backbone.Model.extend({
@@ -32,11 +35,17 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // creates a tree/json structure from the input form
             this.tree = new ToolTree(this);
             
+            // creates the job handler
+            this.job_handler = new ToolJobs(this);
+            
             // reset field list
             this.field_list = {};
             
             // reset sequential input definition list
             this.input_list = {};
+            
+            // reset input element definition list
+            this.element_list = {};
             
             // initialize datasets
             this.datasets = new ToolDatasets({
@@ -45,6 +54,13 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     self._initializeToolForm();
                 }
             });
+        },
+        
+        // reset form
+        reset: function() {
+            for (var i in this.element_list) {
+                this.element_list[i].reset();
+            }
         },
         
         // initialize tool form
@@ -102,7 +118,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                                 title    : 'Execute',
                                 floating : 'clear',
                                 onclick  : function() {
-                                    self._submit();
+                                    self.job_handler.submit();
                                 }
                             })
                         },
@@ -157,6 +173,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     
                     // trigger refresh
                     self.refresh();
+                    //self.job_handler.submit();
                 }
             });
         },
@@ -173,11 +190,6 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // log
             console.debug('tools-form::refresh() - Recreated tree structure. Refresh.');
-        },
-        
-        // submit
-        _submit: function() {
-            console.log(this.tree.jobDictionary());
         }
     });
 

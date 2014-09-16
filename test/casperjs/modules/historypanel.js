@@ -356,15 +356,16 @@ HistoryPanel.prototype.data = {
     },
     selectors : {
         history : {
-            title       : '.history-title',
-            name        : '.history-title .history-name',
-            nameEditableTextInput : '.history-name input',
-            subtitle    : '.history-subtitle',
-            tagIcon     : '.history-secondary-actions .history-tag-btn',
-            tagArea     : '.history-controls .tags-display',
-            annoIcon    : '.history-secondary-actions .history-annotate-btn',
-            annoArea    : '.history-controls .annotation-display',
-            emptyMsg    : '.empty-history-message',
+            title       : '.controls .title',
+            name        : '.title .name',
+            nameEditableTextInput : '.name input',
+            subtitle    : '.subtitle',
+            size        : '.history-size',
+            tagIcon     : '.actions .history-tag-btn',
+            tagArea     : '.controls .tags-display',
+            annoIcon    : '.actions .history-annotate-btn',
+            annoArea    : '.controls .annotation-display',
+            emptyMsg    : '.empty-message',
             hdaContainer: '.datasets-list'
         },
         hda : {

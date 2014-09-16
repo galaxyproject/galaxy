@@ -11,13 +11,25 @@ class MockTrans( object ):
 class TestApp( object ):
 
     def __init__( self ):
-        self.config = bunch.Bunch( )
+        self.config = bunch.Bunch(
+            tool_secret="awesome_secret",
+        )
         self.model = mapping.init(
             "/tmp",
             "sqlite:///:memory:",
             create_tables=True
         )
         self.toolbox = TestToolbox()
+        self.datatypes_registry = TestDatatypesRegistry()
+
+
+class TestDatatypesRegistry( object ):
+
+    def __init__( self ):
+        pass
+
+    def get_datatype_by_extension( self, ext ):
+        return ext
 
 
 class TestToolbox( object ):
