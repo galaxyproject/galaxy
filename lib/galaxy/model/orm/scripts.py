@@ -18,7 +18,7 @@ import pkg_resources
 
 log = logging.getLogger( __name__ )
 
-DEFAULT_CONFIG_FILE = 'config/galaxy.ini'
+DEFAULT_CONFIG_FILE = 'galaxy.ini'
 DEFAULT_CONFIG_PREFIX = ''
 DEFAULT_DATABASE = 'galaxy'
 

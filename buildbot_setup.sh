@@ -107,7 +107,7 @@ for sample in $SAMPLES; do
 done
 
 echo "Copying job_conf.xml.sample_basic to job_conf.xml"
-cp job_conf.xml.sample_basic job_conf.xml
+cp config/job_conf.xml.sample_basic config/job_conf.xml
 
 for dir in $DIRS; do
     if [ ! -d $dir ]; then
