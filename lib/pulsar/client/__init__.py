@@ -34,7 +34,7 @@ line to ``galaxy.ini``::
     test_tool = pulsar://http://remotehost:8913
 
 Remember this must be added after the ``[galaxy:tool_runners]`` header
-in the ``universe.ini`` file.
+in the ``galaxy.ini`` file.
 
 
 """
