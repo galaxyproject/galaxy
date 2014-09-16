@@ -14,7 +14,7 @@ def expand_meta_parameters( trans, tool, incoming ):
     execution).
     """
 
-    def classifiy_unmodified_parameter( input_key ):
+    def classify_unmodified_parameter( input_key ):
         value = incoming[ input_key ]
         if isinstance( value, dict ) and 'values' in value:
             # Explicit meta wrapper for inputs...
@@ -55,7 +55,7 @@ def expand_meta_parameters( trans, tool, incoming ):
             values = __expand_collection_parameter( trans, input_key, incoming_val, collections_to_match )
             return permutations.input_classification.MATCHED, values
         else:
-            return classifiy_unmodified_parameter( input_key )
+            return classify_unmodified_parameter( input_key )
 
     # Stick an unexpanded version of multirun keys so they can be replaced,
     # by expand_mult_inputs.
