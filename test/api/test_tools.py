@@ -148,6 +148,20 @@ class ToolsTestCase( api.ApiTestCase ):
         response = self._run( "validation_default", history_id, inputs )
         self._assert_status_code_is( response, 400 )
 
+    @skip_without_tool( "collection_paired_test" )
+    def test_collection_parameter( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "f1": { "src": "hdca", "id": hdca_id },
+        }
+        output = self._run( "collection_paired_test", history_id, inputs, assert_ok=True )
+        assert len( output[ 'jobs' ] ) == 1
+        assert len( output[ 'implicit_collections' ] ) == 0
+        assert len( output[ 'outputs' ] ) == 1
+        contents = self.dataset_populator.get_history_dataset_content( history_id, hid=4 )
+        assert contents.strip() == "123\n456", contents
+
     @skip_without_tool( "cat1" )
     def test_run_cat1_with_two_inputs( self ):
         # Run tool with an multiple data parameter and grouping (repeat)
