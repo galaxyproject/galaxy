@@ -32,7 +32,6 @@
         'libs/jquery/jquery',
         'libs/jquery/jquery-ui',
         "libs/jquery/select2",
-        "libs/jquery/jstree",
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',

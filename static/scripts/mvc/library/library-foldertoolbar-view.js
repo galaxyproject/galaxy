@@ -2,13 +2,11 @@ define([
     "galaxy.masthead",
     "utils/utils",
     "libs/toastr",
-    "libs/jquery/jstree",
     "mvc/library/library-model"],
-function(mod_masthead,
+function( mod_masthead,
          mod_utils,
          mod_toastr,
-         ignore_jstree,
-         mod_library_model) {
+         mod_library_model ) {
 
 var FolderToolbarView = Backbone.View.extend({
   el: '#center',
@@ -40,7 +38,7 @@ var FolderToolbarView = Backbone.View.extend({
   histories : null,
 
   initialize: function(options){
-    this.options = _.defaults(options || {}, this.defaults);
+    this.options = _.defaults( options || {}, this.defaults );
     this.render();
   },
 
@@ -202,89 +200,42 @@ var FolderToolbarView = Backbone.View.extend({
    * Import all selected datasets into history.
    */
   importAllIntoHistory : function (){
-      this.modal.disableButton('Import');
-
-      // init the control counters
-      this.options.chain_call_control.total_number = 0;
-      this.options.chain_call_control.failed_number = 0;
-
-      var history_id = $("select[name=dataset_import_bulk] option:selected").val();
-      // we can save last used history to pre-select it next time
-      this.options.last_used_history_id = history_id;
-      var history_name = $("select[name=dataset_import_bulk] option:selected").text();
-
-      var dataset_ids = [];
-      $('#folder_table').find(':checked').each(function(){
-          if (this.parentElement.parentElement.id !== '') {
-              dataset_ids.push(this.parentElement.parentElement.id);
-          }
-      });
-      var progress_bar_tmpl = this.templateImportIntoHistoryProgressBar();
-      this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ history_name : history_name }));
-
-      // init the progress bar
-      var progressStep = 100 / dataset_ids.length;
-      this.initProgress(progressStep);
-
-      // prepare the dataset objects to be imported
-      var datasets_to_import = [];
-      for (var i = dataset_ids.length - 1; i >= 0; i--) {
-          var library_dataset_id = dataset_ids[i];
-          var historyItem = new mod_library_model.HistoryItem();
-          historyItem.url = historyItem.urlRoot + history_id + '/contents';
-          historyItem.content = library_dataset_id;
-          historyItem.source = 'library';
-          datasets_to_import.push(historyItem);
-      }
-      this.options.chain_call_control.total_number = datasets_to_import.length;
-
-      // set the used history as current so user will see the last one 
-      // that he imported into in the history panel on the 'analysis' page
-      jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + history_id  );
-
-      // call the recursive function to call ajax one after each other (request FIFO queue)
-      this.chainCall(datasets_to_import, history_name);
-  },
-
-  chainCall: function(history_item_set, history_name){
-    var self = this;
-    var popped_item = history_item_set.pop();
-    if (typeof popped_item === "undefined") {
-      if (this.options.chain_call_control.failed_number === 0){
-        mod_toastr.success('Selected datasets imported into history. Click this to start analysing it.', '', {onclick: function() {window.location='/'}});
-      } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number){
-        mod_toastr.error('There was an error and no datasets were imported into history.');
-      } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number){
-        mod_toastr.warning('Some of the datasets could not be imported into history. Click this to see what was imported.', '', {onclick: function() {window.location='/'}});
-      }
-      Galaxy.modal.hide();
-      return;
+    this.modal.disableButton('Import');
+    var history_id = $("select[name=dataset_import_bulk] option:selected").val();
+    var history_name = $("select[name=dataset_import_bulk] option:selected").text();
+    // we can save last used history to pre-select it next time
+    this.options.last_used_history_id = history_id;
+    var dataset_ids = [];
+    $('#folder_table').find(':checked').each(function(){
+        if (this.parentElement.parentElement.id !== '') {
+            dataset_ids.push(this.parentElement.parentElement.id);
+        }
+    });
+    // prepare the dataset objects to be imported
+    var datasets_to_import = [];
+    for (var i = dataset_ids.length - 1; i >= 0; i--) {
+        var library_dataset_id = dataset_ids[i];
+        var historyItem = new mod_library_model.HistoryItem();
+        historyItem.url = historyItem.urlRoot + history_id + '/contents';
+        historyItem.content = library_dataset_id;
+        historyItem.source = 'library';
+        datasets_to_import.push(historyItem);
     }
-    var promise = $.when(popped_item.save({content: popped_item.content, source: popped_item.source}));
-
-    promise.done(function(){
-              // we are fine
-              self.updateProgress();
-              self.chainCall(history_item_set, history_name);
-            })
-            .fail(function(){
-              // we have a problem
-              self.options.chain_call_control.failed_number += 1;
-              self.updateProgress();
-              self.chainCall(history_item_set, history_name);
-            });
+    this.initChainCallControl( { length: datasets_to_import.length, action: 'to_history', history_name: history_name } );
+    // set the used history as current so user will see the last one 
+    // that he imported into in the history panel on the 'analysis' page
+    jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + history_id  );
+    this.chainCallImportingIntoHistory( datasets_to_import, history_name );
   },
 
-  initProgress: function(progressStep){
-      this.progress = 0;
-      this.progressStep = progressStep;
-  },
-
+  /**
+   * Update the progress bar in modal window.
+   */
   updateProgress: function(){
       this.progress += this.progressStep;
-      $('.progress-bar-import').width(Math.round(this.progress) + '%');
-      txt_representation = Math.round(this.progress) + '% Complete';
-      $('.completion_span').text(txt_representation);
+      $( '.progress-bar-import' ).width( Math.round( this.progress ) + '%' );
+      txt_representation = Math.round( this.progress ) + '% Complete';
+      $( '.completion_span' ).text( txt_representation );
   },
 
   /**
@@ -292,16 +243,16 @@ var FolderToolbarView = Backbone.View.extend({
    * @param  {str} folder_id id of the current folder
    * @param  {str} format    requested archive format
    */
-  download : function(folder_id, format){
+  download : function( folder_id, format ){
     var dataset_ids = [];
-        $('#folder_table').find(':checked').each(function(){
-            if (this.parentElement.parentElement.id !== '') {
-                dataset_ids.push(this.parentElement.parentElement.id);
+        $( '#folder_table' ).find( ':checked' ).each( function(){
+            if ( this.parentElement.parentElement.id !== '' ) {
+                dataset_ids.push( this.parentElement.parentElement.id );
             }
-        });
+        } );
     var url = '/api/libraries/datasets/download/' + format;
-    var data = {'ldda_ids' : dataset_ids};
-    this.processDownload(url, data, 'get');
+    var data = { 'ldda_ids' : dataset_ids };
+    this.processDownload( url, data, 'get' );
   },
 
   /**
@@ -311,27 +262,27 @@ var FolderToolbarView = Backbone.View.extend({
    * @param  {obj} data   data to include in the request
    * @param  {str} method method of the request
    */
-  processDownload: function(url, data, method){
+  processDownload: function( url, data, method ){
     if ( url && data ){
       // data can be string of parameters or array/object
-      data = typeof data === 'string' ? data : $.param(data);
+      data = typeof data === 'string' ? data : $.param( data );
       // split params into form inputs
       var inputs = '';
-      $.each(data.split('&'), function(){
-              var pair = this.split('=');
+      $.each( data.split( '&' ), function(){
+              var pair = this.split( '=' );
               inputs+='<input type="hidden" name="'+ pair[0] +'" value="'+ pair[1] +'" />';
       });
       // send request
       $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
-      .appendTo('body').submit().remove();
-      mod_toastr.info('Your download will begin soon');
+      .appendTo( 'body' ).submit().remove();
+      mod_toastr.info( 'Your download will begin soon' );
     } else {
-      mod_toastr.error('An error occurred :(');
+      mod_toastr.error( 'An error occurred :(' );
     }
   },
 
   addFilesFromHistoryModal: function(){
-    this.refreshUserHistoriesList(function(self){
+    this.refreshUserHistoriesList( function( self ){
       self.modal = Galaxy.modal;
       var template_modal = self.templateAddFilesFromHistory();
       var folder_name = self.options.full_path[self.options.full_path.length - 1][1]
@@ -355,7 +306,7 @@ var FolderToolbarView = Backbone.View.extend({
           self.fetchAndDisplayHistoryContents(event.target.value);
         });
       } else {
-        mod_toastr.error('An error ocurred :(');
+        mod_toastr.error( 'An error ocurred :(' );
       }
     });
   },
@@ -438,23 +389,28 @@ var FolderToolbarView = Backbone.View.extend({
     this.jstree.url = this.jstree.urlRoot + '?target=userdir&format=jstree&disable=' + disabled_jstree_element;
     this.jstree.fetch({
       success: function(model, response){
-        $('#jstree_browser').jstree("destroy");
-        var jstreeObject = $('#jstree_browser').jstree({
-          'core':{
-            'data': model
-          },
-          'plugins': ['types', 'checkbox'],
-          'types': {
-            "folder": {
-              "icon": "jstree-folder"
+        // This is to prevent double jquery load. I think. Carl is magician.
+        define( 'jquery', function(){ return jQuery; });
+        // Now we need jstree, time to lazy load it.
+        require([ 'libs/jquery/jstree' ], function(jstree){
+          $('#jstree_browser').jstree("destroy");
+          $('#jstree_browser').jstree({
+            'core':{
+              'data': model
             },
-            "file": {
-              "icon": "jstree-file"
+            'plugins': ['types', 'checkbox'],
+            'types': {
+              "folder": {
+                "icon": "jstree-folder"
+              },
+              "file": {
+                "icon": "jstree-file"
+              }
+            },
+            'checkbox': {
+              three_state: false
             }
-          },
-          'checkbox': {
-            three_state: false
-          }
+          });
         });
       },
       error: function(model, response){
@@ -476,19 +432,19 @@ var FolderToolbarView = Backbone.View.extend({
     var preserve_dirs = this.modal.$el.find('.preserve-checkbox').is(':checked');
     var link_data = this.modal.$el.find('.link-checkbox').is(':checked');
     var paths = $('textarea#import_paths').val();
+    var valid_paths = [];
     if (!paths){
       mod_toastr.info('Please enter a path relative to Galaxy root');
     } else {
       this.modal.disableButton('Import');
       paths = paths.split('\n');
-      var valid_paths = [];
       for (var i = paths.length - 1; i >= 0; i--) {
         trimmed = paths[i].trim();
         if (trimmed.length!==0){
           valid_paths.push(trimmed);
         }
       };
-      this.initChainCallControl(valid_paths.length);
+      this.initChainCallControl( { length: valid_paths.length, action: 'adding_datasets' } );
       this.chainCallImportingFolders(valid_paths, preserve_dirs, link_data, 'admin_path');
     }
   },
@@ -496,125 +452,66 @@ var FolderToolbarView = Backbone.View.extend({
   /**
    * Initialize the control of chaining requests
    * in the current modal.
+   * @param {int} length The number of items in the chain call.
    */
-  initChainCallControl: function(length){
-    var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
-    this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : this.options.folder_name }));
+  initChainCallControl: function( options ){
+    var template;
+    switch( options.action ){
+      case "adding_datasets":
+        template = this.templateAddingDatasetsProgressBar();
+        this.modal.$el.find( '.modal-body' ).html( template( { folder_name : this.options.folder_name } ) );
+        break;
+      case "deleting_datasets":
+        template = this.templateDeletingDatasetsProgressBar();
+        this.modal.$el.find( '.modal-body' ).html( template() );
+        break;
+      case "to_history":
+        template = this.templateImportIntoHistoryProgressBar();
+        this.modal.$el.find( '.modal-body' ).html( template( { history_name : options.history_name } ) );
+        break;
+      default:
+        console.error( 'Wrong action specified.')
+        break;
+    }
+
+    // var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
+    // this.modal.$el.find( '.modal-body' ).html( progress_bar_tmpl( { folder_name : this.options.folder_name } ) );
     this.progress = 0;
-    this.progressStep = 100 / length;
-    this.options.chain_call_control.total_number = length;
+    this.progressStep = 100 / options.length;
+    this.options.chain_call_control.total_number = options.length;
     this.options.chain_call_control.failed_number = 0;
   },
 
   /**
    * Take the selected items from the jstree, create a request queue
    * and send them one by one to the server for importing into 
-   * the current folder.
+   * the current folder. 
+   * 
+   * jstree.js has to be loaded before
+   * @see renderJstree
    */
-  importFromUserdirClicked: function (that){
-    var selected_nodes = $('#jstree_browser').jstree().get_selected(true);
-    var preserve_dirs = this.modal.$el.find('.preserve-checkbox').is(':checked');
-    var link_data = this.modal.$el.find('.link-checkbox').is(':checked');
+  importFromUserdirClicked: function ( that ){
+    var selected_nodes = $( '#jstree_browser' ).jstree().get_selected( true );
+    var preserve_dirs = this.modal.$el.find( '.preserve-checkbox' ).is( ':checked' );
+    var link_data = this.modal.$el.find( '.link-checkbox' ).is( ':checked' );
+    var selection_type = selected_nodes[0].type;
     var paths = [];
-    if (selected_nodes.length < 1){
-      mod_toastr.info('You have to select some items first');
+    if ( selected_nodes.length < 1 ){
+      mod_toastr.info( 'You have to select some items first' );
     } else {
-      // disable the button to prevent multiple submission
-      this.modal.disableButton('Import');
-      // init the chain control counters
-      this.options.chain_call_control.total_number = 0;
-      this.options.chain_call_control.failed_number = 0;
-
-      for (var i = selected_nodes.length - 1; i >= 0; i--){
-        if(selected_nodes[i].li_attr.full_path !== undefined){
-          paths.push(selected_nodes[i].li_attr.full_path);
+      this.modal.disableButton( 'Import' );
+      for ( var i = selected_nodes.length - 1; i >= 0; i-- ){
+        if ( selected_nodes[i].li_attr.full_path !== undefined ){
+          paths.push( selected_nodes[i].li_attr.full_path );
         }
       }
-      var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
-      this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : this.options.folder_name }));
-
-      // init the progress bar
-      this.progressStep = 100 / paths.length;
-      this.progress = 0;
-      this.options.chain_call_control.total_number = paths.length;
-      
-      var selection_type = selected_nodes[0].type;
-      // call the recursive function to call ajax one after each other (request FIFO queue)
-      if (selection_type === 'folder'){
-        this.chainCallImportingFolders(paths, preserve_dirs, link_data, 'userdir_folder');
-      } else if (selection_type === 'file'){
-        this.chainCallImportingUserdirFiles(paths);
+      this.initChainCallControl( { length: paths.length, action: 'adding_datasets' } );
+      if ( selection_type === 'folder' ){
+        this.chainCallImportingFolders( paths, preserve_dirs, link_data, 'userdir_folder' );
+      } else if ( selection_type === 'file' ){
+        this.chainCallImportingUserdirFiles( paths );
       }
     }
-  },
-
-  /**
-   * Take the array of paths and createa request for each of them
-   * calling them in chain. Update the progress bar in between each.
-   * @param  {array} paths           paths relative to user folder on Galaxy
-   */
-  chainCallImportingUserdirFiles: function(paths){
-    var that = this;
-    var popped_item = paths.pop();
-    if (typeof popped_item === "undefined") {
-      if (this.options.chain_call_control.failed_number === 0){
-        mod_toastr.success('Selected files imported into the current folder');
-        Galaxy.modal.hide();
-      } else {
-        mod_toastr.error('Something went wrong :(');
-      }
-      return true;
-    }
-    var promise = $.when($.post('/api/libraries/datasets?encoded_folder_id=' + that.id + 
-                                                       '&source=userdir_file' +
-                                                       '&path=' + popped_item))
-    promise.done(function(response){
-              that.updateProgress();
-              that.chainCallImportingUserdirFiles(paths);
-            })
-            .fail(function(){
-              that.options.chain_call_control.failed_number += 1;
-              that.updateProgress();
-              that.chainCallImportingUserdirFiles(paths);
-            });
-  },
-
-  /**
-   * Take the array of paths and createa request for each of them
-   * calling them in chain. Update the progress bar in between each.
-   * @param  {array} paths           paths relative to Galaxy root folder
-   * @param  {boolean} preserve_dirs indicates whether to preserve folder structure
-   * @param  {boolean} link_data     copy files to Galaxy or link instead
-   * @param  {str} source            string representing what type of folder 
-   *                                 is the source of import
-   */
-  chainCallImportingFolders: function(paths, preserve_dirs, link_data, source){
-    // need to check which paths to call
-    var that = this;
-    var popped_item = paths.pop();
-    if (typeof popped_item == "undefined") {
-      if (this.options.chain_call_control.failed_number === 0){
-        mod_toastr.success('Selected folders and their contents imported into the current folder');
-        Galaxy.modal.hide();
-      } else {
-        mod_toastr.error('Something went wrong :(');
-      }
-      return true;
-    }
-    var promise = $.when($.post('/api/libraries/datasets?encoded_folder_id=' + that.id +
-                                                      '&source=' + source +
-                                                      '&path=' + popped_item +
-                                                      '&preserve_dirs=' + preserve_dirs +
-                                                      '&link_data=' + link_data))
-    promise.done(function(response){
-              that.updateProgress();
-              that.chainCallImportingFolders(paths, preserve_dirs, link_data, source);
-            })
-            .fail(function(){
-              that.options.chain_call_control.failed_number += 1;
-              that.updateProgress();
-              that.chainCallImportingFolders(paths, preserve_dirs, link_data, source);
-            });
   },
 
   fetchAndDisplayHistoryContents: function(history_id){
@@ -636,76 +533,209 @@ var FolderToolbarView = Backbone.View.extend({
     });
   },
 
-  // add all selected datasets from history into current folder
+  /**
+   * Import all selected datasets from history into the current folder.
+   */
   addAllDatasetsFromHistory : function (){
-    var checked_hdas = this.modal.$el.find('#selected_history_content').find(':checked');
-      if (checked_hdas.length < 1){
-        mod_toastr.info('You have to select some datasets first');
-      } else {
-        // disable the button to prevent multiple submission
-        this.modal.disableButton('Add');
-        // init the control counters
-        this.options.chain_call_control.total_number = 0;
-        this.options.chain_call_control.failed_number = 0;
-
-        var history_dataset_ids = [];
-        checked_hdas.each(function(){
-          var hid = $(this.parentElement).data('id');
-            if (hid) {
-                history_dataset_ids.push(hid);
-            }
-        });
-        var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
-        this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : this.options.folder_name }));
-
-        // init the progress bar
-        this.progressStep = 100 / history_dataset_ids.length;
-        this.progress = 0;
-
-        // prepare the dataset items to be added
-        var hdas_to_add = [];
-        for (var i = history_dataset_ids.length - 1; i >= 0; i--) {
-            history_dataset_id = history_dataset_ids[i];
-            var folder_item = new mod_library_model.Item();
-            folder_item.url = '/api/folders/' + this.options.id + '/contents';
-            folder_item.set({'from_hda_id':history_dataset_id});
-            hdas_to_add.push(folder_item);
-        }
-        this.options.chain_call_control.total_number = hdas_to_add.length;
-        // call the recursive function to call ajax one after each other (request FIFO queue)
-        this.chainCallAddingHdas(hdas_to_add);
+    var checked_hdas = this.modal.$el.find( '#selected_history_content' ).find( ':checked' );
+    var history_dataset_ids = [];
+    var hdas_to_add = [];
+    if ( checked_hdas.length < 1 ){
+      mod_toastr.info( 'You have to select some datasets first' );
+    } else {
+      this.modal.disableButton( 'Add' );
+      checked_hdas.each(function(){
+        var hid = $( this.parentElement ).data( 'id' );
+          if ( hid ) {
+            history_dataset_ids.push( hid );
+          }
+      });
+      for ( var i = history_dataset_ids.length - 1; i >= 0; i-- ) {
+        history_dataset_id = history_dataset_ids[i];
+        var folder_item = new mod_library_model.Item();
+        folder_item.url = '/api/folders/' + this.options.id + '/contents';
+        folder_item.set( { 'from_hda_id':history_dataset_id } );
+        hdas_to_add.push( folder_item );
       }
+      this.initChainCallControl( { length: hdas_to_add.length, action: 'adding_datasets' } );
+      this.chainCallAddingHdas( hdas_to_add );
+    }
   },
 
-  chainCallAddingHdas: function(hdas_set){
+  /**
+   * Take array of empty history items and make request for each of them
+   * to create it on server. Update progress in between calls.
+   * @param  {array} history_item_set array of empty history items
+   * @param  {str} history_name     name of the history to import to
+   */
+  chainCallImportingIntoHistory: function( history_item_set, history_name ){
+    var self = this;
+    var popped_item = history_item_set.pop();
+    if ( typeof popped_item == "undefined" ) {
+      if ( this.options.chain_call_control.failed_number === 0 ){
+        mod_toastr.success( 'Selected datasets imported into history. Click this to start analysing it.', '', { onclick: function() { window.location='/' } } );
+      } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
+        mod_toastr.error( 'There was an error and no datasets were imported into history.' );
+      } else if ( this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number ){
+        mod_toastr.warning( 'Some of the datasets could not be imported into history. Click this to see what was imported.', '', { onclick: function() { window.location='/' } } );
+      }
+      Galaxy.modal.hide();
+      return true;
+    }
+    var promise = $.when( popped_item.save( { content: popped_item.content, source: popped_item.source } ) );
+
+    promise.done( function(){
+              self.updateProgress();
+              self.chainCallImportingIntoHistory( history_item_set, history_name );
+            } )
+            .fail( function(){
+              self.options.chain_call_control.failed_number += 1;
+              self.updateProgress();
+              self.chainCallImportingIntoHistory( history_item_set, history_name );
+            } );
+  },
+
+  /**
+   * Take the array of paths and createa request for each of them
+   * calling them in chain. Update the progress bar in between each.
+   * @param  {array} paths           paths relative to user folder on Galaxy
+   */
+  chainCallImportingUserdirFiles: function( paths ){
+    var that = this;
+    var popped_item = paths.pop();
+    if ( typeof popped_item === "undefined" ) {
+      if ( this.options.chain_call_control.failed_number === 0 ){
+        mod_toastr.success( 'Selected files imported into the current folder' );
+        Galaxy.modal.hide();
+      } else {
+        mod_toastr.error( 'Something went wrong :(' );
+      }
+      return true;
+    }
+    var promise = $.when( $.post( '/api/libraries/datasets?encoded_folder_id=' + that.id + 
+                                                       '&source=userdir_file' +
+                                                       '&path=' + popped_item ) )
+    promise.done( function( response ){
+              that.updateProgress();
+              that.chainCallImportingUserdirFiles( paths );
+            } )
+            .fail( function(){
+              that.options.chain_call_control.failed_number += 1;
+              that.updateProgress();
+              that.chainCallImportingUserdirFiles( paths );
+            } );
+  },
+
+  /**
+   * Take the array of paths and createa request for each of them
+   * calling them in chain. Update the progress bar in between each.
+   * @param  {array} paths           paths relative to Galaxy root folder
+   * @param  {boolean} preserve_dirs indicates whether to preserve folder structure
+   * @param  {boolean} link_data     copy files to Galaxy or link instead
+   * @param  {str} source            string representing what type of folder 
+   *                                 is the source of import
+   */
+  chainCallImportingFolders: function(paths, preserve_dirs, link_data, source){
+    // need to check which paths to call
+    var that = this;
+    var popped_item = paths.pop();
+    if (typeof popped_item == "undefined") {
+      if (this.options.chain_call_control.failed_number === 0){
+        mod_toastr.success('Selected folders and their contents imported into the current folder');
+        Galaxy.modal.hide();
+      } else {
+        // TODO better error report
+        mod_toastr.error('Something went wrong :(');
+      }
+      return true;
+    }
+    var promise = $.when($.post('/api/libraries/datasets?encoded_folder_id=' + that.id +
+                                                      '&source=' + source +
+                                                      '&path=' + popped_item +
+                                                      '&preserve_dirs=' + preserve_dirs +
+                                                      '&link_data=' + link_data))
+    promise.done(function(response){
+              that.updateProgress();
+              that.chainCallImportingFolders(paths, preserve_dirs, link_data, source);
+            })
+            .fail(function(){
+              that.options.chain_call_control.failed_number += 1;
+              that.updateProgress();
+              that.chainCallImportingFolders(paths, preserve_dirs, link_data, source);
+            });
+  },
+
+  /**
+   * Take the array of hdas and create a request for each. 
+   * Call them in chain and update progress bar in between each.
+   * @param  {array} hdas_set array of empty hda objects
+   */
+  chainCallAddingHdas: function( hdas_set ){
     var self = this;
     this.added_hdas = new mod_library_model.Folder();
     var popped_item = hdas_set.pop();
-    if (typeof popped_item === "undefined") {
-      if (this.options.chain_call_control.failed_number === 0){
-        mod_toastr.success('Selected datasets from history added to the folder');
-      } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number){
-        mod_toastr.error('There was an error and no datasets were added to the folder.');
-      } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number){
-        mod_toastr.warning('Some of the datasets could not be added to the folder');
+    if ( typeof popped_item == "undefined" ) {
+      if ( this.options.chain_call_control.failed_number === 0 ){
+        mod_toastr.success( 'Selected datasets from history added to the folder' );
+      } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
+        mod_toastr.error( 'There was an error and no datasets were added to the folder.' );
+      } else if ( this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number ){
+        mod_toastr.warning( 'Some of the datasets could not be added to the folder' );
       }
       Galaxy.modal.hide();
       return this.added_hdas;
     }
-    var promise = $.when(popped_item.save({from_hda_id: popped_item.get('from_hda_id')}));
+    var promise = $.when( popped_item.save( { from_hda_id: popped_item.get( 'from_hda_id' ) } ) );
 
-    promise.done(function(model){
-              // we are fine
-              Galaxy.libraries.folderListView.collection.add(model);
+    promise.done( function( model ){
+              Galaxy.libraries.folderListView.collection.add( model );
               self.updateProgress();
-              self.chainCallAddingHdas(hdas_set);
+              self.chainCallAddingHdas( hdas_set );
             })
-            .fail(function(){
-              // we have a problem
+            .fail( function(){
               self.options.chain_call_control.failed_number += 1;
               self.updateProgress();
-              self.chainCallAddingHdas(hdas_set);
+              self.chainCallAddingHdas( hdas_set );
             });
+  },
+
+  /**
+   * Take the array of lddas, create request for each and 
+   * call them in chain. Update progress bar in between each.
+   * @param  {array} lddas_set array of lddas to delete
+   */
+  chainCallDeletingHdas: function( lddas_set ){
+  var self = this;
+  this.deleted_lddas = new mod_library_model.Folder();
+  var popped_item = lddas_set.pop();
+  if ( typeof popped_item === "undefined" ) {
+    if ( this.options.chain_call_control.failed_number === 0 ){
+      mod_toastr.success( 'Selected datasets deleted' );
+    } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
+      mod_toastr.error( 'There was an error and no datasets were deleted.' );
+    } else if ( this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number ){
+      mod_toastr.warning( 'Some of the datasets could not be deleted' );
+    }
+    Galaxy.modal.hide();
+    return this.deleted_lddas;
+  }
+  var promise = $.when( popped_item.destroy() );
+
+  promise.done( function( dataset ){
+            Galaxy.libraries.folderListView.collection.remove( popped_item.id );
+            self.updateProgress();
+            // add the deleted dataset to collection, triggers rendering
+            if ( Galaxy.libraries.folderListView.options.include_deleted ){
+              var updated_dataset = new mod_library_model.Item( dataset );
+              Galaxy.libraries.folderListView.collection.add( updated_dataset );
+            }
+            self.chainCallDeletingHdas( lddas_set );
+          })
+          .fail( function(){
+            self.options.chain_call_control.failed_number += 1;
+            self.updateProgress();
+            self.chainCallDeletingHdas( lddas_set );
+          });
   },
 
   /**
@@ -764,43 +794,6 @@ var FolderToolbarView = Backbone.View.extend({
     }
   },
 
-  chainCallDeletingHdas: function(lddas_set){
-  var self = this;
-  this.deleted_lddas = new mod_library_model.Folder();
-  var popped_item = lddas_set.pop();
-  if (typeof popped_item === "undefined") {
-    if (this.options.chain_call_control.failed_number === 0){
-      mod_toastr.success('Selected datasets deleted');
-    } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number){
-      mod_toastr.error('There was an error and no datasets were deleted.');
-    } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number){
-      mod_toastr.warning('Some of the datasets could not be deleted');
-    }
-    Galaxy.modal.hide();
-    return this.deleted_lddas;
-  }
-  var promise = $.when(popped_item.destroy());
-
-  promise.done(function(dataset){
-            // we are fine
-            Galaxy.libraries.folderListView.collection.remove(popped_item.id);
-            self.updateProgress();
-            // add the deleted dataset to collection, triggers rendering
-            if (Galaxy.libraries.folderListView.options.include_deleted){
-              var updated_dataset = new mod_library_model.Item(dataset);
-              Galaxy.libraries.folderListView.collection.add(updated_dataset);
-            }
-            // execute next request
-            self.chainCallDeletingHdas(lddas_set);
-          })
-          .fail(function(){
-            // we have a problem
-            self.options.chain_call_control.failed_number += 1;
-            self.updateProgress();
-            // execute next request
-            self.chainCallDeletingHdas(lddas_set);
-          });
-  },
 
   showLibInfo: function(){
     var library_id = Galaxy.libraries.folderListView.folderContainer.attributes.metadata.parent_library_id;
@@ -988,7 +981,7 @@ var FolderToolbarView = Backbone.View.extend({
     var tmpl_array = [];
 
     tmpl_array.push('<div class="import_text">');
-    tmpl_array.push('Adding selected datasets from history to library folder <b><%= _.escape(folder_name) %></b>');
+    tmpl_array.push('Adding selected datasets to library folder <b><%= _.escape(folder_name) %></b>');
     tmpl_array.push('</div>');
     tmpl_array.push('<div class="progress">');
     tmpl_array.push('   <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 00%;">');

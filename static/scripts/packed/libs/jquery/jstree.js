@@ -1,4 +1,4 @@
-(function(a){if(typeof define==="function"&&define.amd){}else{if(typeof exports==="object"){a(require("jquery"))}else{a(jQuery)}}}(function(i,e){
+(function(a){if(typeof define==="function"&&define.amd){define(["jquery"],a)}else{if(typeof exports==="object"){a(require("jquery"))}else{a(jQuery)}}}(function(i,e){
 /*
  * jsTree 3.0.3
  * http://jstree.com/
