@@ -408,7 +408,6 @@ class Configuration( object ):
                         break
                 else:
                     path = defaults[-1]
-            print( "Using config '%s' at: %s" % ( var, path ) )
             setattr( self, var, resolve_path( path, self.root ) )
 
         for var, defaults in listify_defaults.items():
@@ -425,7 +424,6 @@ class Configuration( object ):
                         break
                 else:
                     paths = listify( defaults[-1] )
-            print( "Using config '%s' at: %s" % ( var, ', '.join( paths ) ) )
             setattr( self, var, [ resolve_path( x, self.root ) for x in paths ] )
 
         # Backwards compatibility for names used in too many places to fix

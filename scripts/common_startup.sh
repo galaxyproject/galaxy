@@ -10,7 +10,6 @@ for arg in "$@"; do
 done
 
 SAMPLES="
-    config/galaxy.ini.sample
     config/migrated_tools_conf.xml.sample
     config/shed_tool_conf.xml.sample
     config/shed_tool_data_table_conf.xml.sample
@@ -35,11 +34,13 @@ if [ $COPY_SAMPLE_FILES -eq 1 ]; then
 	done
 fi
 
+: ${GALAXY_CONFIG_FILE:=config/galaxy.ini.sample}
+
 if [ $FETCH_EGGS -eq 1 ]; then
-    python ./scripts/check_eggs.py -q
+    python ./scripts/check_eggs.py -q -c $GALAXY_CONFIG_FILE
     if [ $? -ne 0 ]; then
         echo "Some eggs are out of date, attempting to fetch..."
-        python ./scripts/fetch_eggs.py
+        python ./scripts/fetch_eggs.py -c $GALAXY_CONFIG_FILE
         if [ $? -eq 0 ]; then
             echo "Fetch successful."
         else
