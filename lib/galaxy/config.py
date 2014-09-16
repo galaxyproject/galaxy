@@ -400,7 +400,7 @@ class Configuration( object ):
 
         for var, defaults in defaults.items():
             if kwargs.get( var, None ) is not None:
-                path = var
+                path = kwargs.get( var )
             else:
                 for default in defaults:
                     if os.path.exists( resolve_path( default, self.root ) ):
@@ -413,7 +413,7 @@ class Configuration( object ):
         for var, defaults in listify_defaults.items():
             paths = []
             if kwargs.get( var, None ) is not None:
-                paths = listify( var )
+                paths = listify( kwargs.get( var ) )
             else:
                 for default in defaults:
                     for path in listify( default ):
