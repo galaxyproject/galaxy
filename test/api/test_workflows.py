@@ -26,9 +26,9 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
         self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
 
-    def test_show_invalid_is_404( self ):
-        show_response = self._get( "workflow/%s" % self._random_key() )
-        self._assert_status_code_is( show_response, 404 )
+    def test_show_invalid_key_is_400( self ):
+        show_response = self._get( "workflows/%s" % self._random_key() )
+        self._assert_status_code_is( show_response, 400 )
 
     def test_cannot_show_private_workflow( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_not_importportable" )
@@ -134,12 +134,12 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             run_workflow_response = self._post( "workflows", data=workflow_request )
             self._assert_status_code_is( run_workflow_response, 403 )
 
-    def test_404_on_invalid_workflow( self ):
+    def test_400_on_invalid_workflow_id( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run_does_not_exist" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
         workflow_request[ "workflow_id" ] = self._random_key()
         run_workflow_response = self._post( "workflows", data=workflow_request )
-        self._assert_status_code_is( run_workflow_response, 404 )
+        self._assert_status_code_is( run_workflow_response, 400 )
 
     def test_cannot_run_against_other_users_history( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run_does_not_exist" )
