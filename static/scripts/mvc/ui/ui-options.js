@@ -3,22 +3,17 @@ define(['utils/utils'], function(Utils) {
 
 /** base class for options based ui elements **/
 var OptionsBase = Backbone.View.extend({
-    // settings
-    settings : {
-        multiple    : false
-    },
-    
-    // options
-    optionsDefault: {
-        value       : [],
-        visible     : true,
-        data        : [],
-        id          : Utils.uuid(),
-        empty       : 'No data available'
-    },
-
     // initialize
     initialize: function(options) {
+        // options
+        this.optionsDefault = {
+            value       : [],
+            visible     : true,
+            data        : [],
+            id          : Utils.uuid(),
+            empty       : 'No data available'
+        };
+    
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
     
@@ -123,7 +118,7 @@ var OptionsBase = Backbone.View.extend({
         }
         
         // return multiple or single value
-        if (this.settings.multiple) {
+        if (this.options.multiple) {
             var values = [];
             selected.each(function() {
                 values.push($(this).val());
@@ -145,7 +140,7 @@ var Checkbox = {};
 Checkbox.View = OptionsBase.extend({
     // initialize
     initialize: function(options) {
-        this.settings.multiple = true;
+        options.multiple = true;
         OptionsBase.prototype.initialize.call(this, options);
     },
     
@@ -196,8 +191,9 @@ RadioButton.View = OptionsBase.extend({
     value: function (new_val) {
         // set new value
         if (new_val !== undefined) {
+            this.$el.find('input').prop('checked', false);
             this.$el.find('label').removeClass('active');
-            this.$el.find('[value="' + new_val + '"]').closest('label').addClass('active');
+            this.$el.find('[value="' + new_val + '"]').prop('checked', true).closest('label').addClass('active');
         }
         
         // get and return value
@@ -206,7 +202,7 @@ RadioButton.View = OptionsBase.extend({
     
     // template for options
     _templateOption: function(pair) {
-        return  '<label class="btn btn-default">' +
+        return  '<label class="ui-option btn btn-default">' +
                     '<input type="radio" name="' + this.options.id + '" value="' + pair.value + '">' + pair.label +
                 '</label>';
     },
