@@ -106,9 +106,10 @@ def __expand_collection_parameter( trans, input_key, incoming_val, collections_t
             if src != "hdca":
                 raise exceptions.ToolMetaParameterException( "Invalid dataset collection source type %s" % src )
             encoded_hdc_id = incoming_val[ "id" ]
+            subcollection_type = incoming_val.get( 'map_over_type', None )
         except TypeError:
             encoded_hdc_id = incoming_val
-        subcollection_type = None
+            subcollection_type = None
     hdc_id = trans.app.security.decode_id( encoded_hdc_id )
     hdc = trans.sa_session.query( model.HistoryDatasetCollectionAssociation ).get( hdc_id )
     collections_to_match.add( input_key, hdc, subcollection_type=subcollection_type )

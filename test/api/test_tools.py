@@ -492,12 +492,27 @@ class ToolsTestCase( api.ApiTestCase ):
         assert len( output2_content.strip().split("\n") ) == 3, output2_content
 
     @skip_without_tool( "collection_paired_test" )
-    def test_subcollection_mapping( self ):
+    def test_subcollection_mapping_legacy( self ):
         history_id = self.dataset_populator.new_history()
         hdca_list_id = self.__build_nested_list( history_id )
         inputs = {
             "f1|__collection_multirun__": "%s|paired" % hdca_list_id
         }
+        self._check_simple_subcollection_mapping( history_id, inputs )
+
+    @skip_without_tool( "collection_paired_test" )
+    def test_subcollection_mapping( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_list_id = self.__build_nested_list( history_id )
+        inputs = {
+            "f1": {
+                'batch': True,
+                'values': [ { 'src': 'hdca', 'map_over_type': 'paired', 'id': hdca_list_id }],
+            }
+        }
+        self._check_simple_subcollection_mapping( history_id, inputs )
+
+    def _check_simple_subcollection_mapping( self, history_id, inputs ):
         # Following wait not really needed - just getting so many database
         # locked errors with sqlite.
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
@@ -511,7 +526,7 @@ class ToolsTestCase( api.ApiTestCase ):
         assert output2_content.strip() == "789\n0ab", output2_content
 
     @skip_without_tool( "collection_mixed_param" )
-    def test_combined_mapping_and_subcollection_mapping( self ):
+    def test_combined_mapping_and_subcollection_mapping_legacy( self ):
         history_id = self.dataset_populator.new_history()
         nested_list_id = self.__build_nested_list( history_id )
         create_response = self.dataset_collection_populator.create_list_in_history( history_id, contents=["xxx", "yyy"] )
@@ -520,6 +535,27 @@ class ToolsTestCase( api.ApiTestCase ):
             "f1|__collection_multirun__": "%s|paired" % nested_list_id,
             "f2|__collection_multirun__": list_id,
         }
+        self._check_combined_mapping_and_subcollection_mapping( history_id, inputs )
+
+    @skip_without_tool( "collection_mixed_param" )
+    def test_combined_mapping_and_subcollection_mapping( self ):
+        history_id = self.dataset_populator.new_history()
+        nested_list_id = self.__build_nested_list( history_id )
+        create_response = self.dataset_collection_populator.create_list_in_history( history_id, contents=["xxx", "yyy"] )
+        list_id = create_response.json()[ "id" ]
+        inputs = {
+            "f1": {
+                'batch': True,
+                'values': [ { 'src': 'hdca', 'map_over_type': 'paired', 'id': nested_list_id }],
+            },
+            "f2": {
+                'batch': True,
+                'values': [ { 'src': 'hdca', 'id': list_id }],
+            },
+        }
+        self._check_combined_mapping_and_subcollection_mapping( history_id, inputs )
+
+    def _check_combined_mapping_and_subcollection_mapping( self, history_id, inputs ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         outputs = self._run_and_get_outputs( "collection_mixed_param", history_id, inputs )
         assert len( outputs ), 2
