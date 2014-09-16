@@ -423,6 +423,26 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( response_object[ 'implicit_collections' ] ), 0 )
 
     @skip_without_tool( "cat1" )
+    def test_map_over_collected_and_individual_datasets( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='789' )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='0ab' )
+
+        inputs = {
+            "input1": { 'batch': True, 'values': [ {'src': 'hdca', 'id': hdca1_id } ] },
+            "queries_0|input2": { 'batch': True, 'values': [ dataset_to_param( new_dataset1 ), dataset_to_param( new_dataset2 ) ] },
+        }
+        response = self._run_cat1( history_id, inputs )
+        self._assert_status_code_is( response, 200 )
+        response_object = response.json()
+        outputs = response_object[ 'outputs' ]
+        self.assertEquals( len( outputs ), 2 )
+
+        self.assertEquals( len( response_object[ 'jobs' ] ), 2 )
+        self.assertEquals( len( response_object[ 'implicit_collections' ] ), 1 )
+
+    @skip_without_tool( "cat1" )
     def test_cannot_map_over_incompatible_collections( self ):
         history_id = self.dataset_populator.new_history()
         hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )

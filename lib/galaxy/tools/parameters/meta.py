@@ -36,7 +36,11 @@ def expand_meta_parameters( trans, tool, incoming ):
             values = value
         return classification, values
 
+    from galaxy.dataset_collections import matching
+    collections_to_match = matching.CollectionsToMatch()
+
     def classifier( input_key ):
+        collection_multirun_key = "%s|__collection_multirun__" % input_key
         multirun_key = "%s|__multirun__" % input_key
         if multirun_key in incoming:
             multi_value = util.listify( incoming[ multirun_key ] )
@@ -46,16 +50,8 @@ def expand_meta_parameters( trans, tool, incoming ):
                 if len( multi_value ) == 0:
                     multi_value = None
                 return permutations.input_classification.SINGLE, multi_value[ 0 ]
-        else:
-            return classifiy_unmodified_parameter( input_key )
-
-    from galaxy.dataset_collections import matching
-    collections_to_match = matching.CollectionsToMatch()
-
-    def collection_classifier( input_key ):
-        multirun_key = "%s|__collection_multirun__" % input_key
-        if multirun_key in incoming:
-            incoming_val = incoming[ multirun_key ]
+        elif collection_multirun_key in incoming:
+            incoming_val = incoming[ collection_multirun_key ]
             values = __expand_collection_parameter( trans, input_key, incoming_val, collections_to_match )
             return permutations.input_classification.MATCHED, values
         else:
@@ -87,24 +83,16 @@ def expand_meta_parameters( trans, tool, incoming ):
             else:
                 continue
         else:
-            # Old-style batching (remove someday - didn't live in API long?)
-            multirun_found = try_replace_key( key, "|__multirun__" ) or multirun_found
-            collection_multirun_found = try_replace_key( key, "|__collection_multirun__" ) or collection_multirun_found
+            # Old-style batching (remove someday? - pretty hacky and didn't live in API long)
+            try_replace_key( key, "|__multirun__" ) or multirun_found
+            try_replace_key( key, "|__collection_multirun__" ) or collection_multirun_found
 
-    if sum( [ 1 if f else 0 for f in [ multirun_found, collection_multirun_found ] ] ) > 1:
-        # In theory doable, but to complicated for a first pass.
-        message = "Cannot specify parallel execution across both multiple datasets and dataset collections."
-        raise exceptions.ToolMetaParameterException( message )
-
-    if multirun_found:
-        return permutations.expand_multi_inputs( incoming_template, classifier ), None
+    expanded_incomings = permutations.expand_multi_inputs( incoming_template, classifier )
+    if collections_to_match.has_collections():
+        collection_info = trans.app.dataset_collections_service.match_collections( collections_to_match )
     else:
-        expanded_incomings = permutations.expand_multi_inputs( incoming_template, collection_classifier )
-        if collections_to_match.has_collections():
-            collection_info = trans.app.dataset_collections_service.match_collections( collections_to_match )
-        else:
-            collection_info = None
-        return expanded_incomings, collection_info
+        collection_info = None
+    return expanded_incomings, collection_info
 
 
 def __expand_collection_parameter( trans, input_key, incoming_val, collections_to_match ):
