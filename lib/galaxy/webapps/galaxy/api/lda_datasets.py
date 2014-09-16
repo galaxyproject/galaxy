@@ -435,22 +435,28 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         link_data = util.string_as_bool( kwd.get( 'link_data', False ) )
 
         source = kwd.get( 'source', None )
-        if source not in [ 'userdir_file', 'userdir_folder' ]:
-            raise exceptions.RequestParameterMissingException( 'You have to specify "source" parameter. Possible values are "userdir_file" and "userdir_folder". ')
+        if source not in [ 'userdir_file', 'userdir_folder', 'admin_path' ]:
+            raise exceptions.RequestParameterMissingException( 'You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder" and "admin_path". ')
 
-        user_login = trans.user.email
-        user_base_dir = trans.app.config.user_library_import_dir
-        if user_base_dir is None:
-            raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from user directories.' )
-        full_dir = os.path.join( user_base_dir, user_login )
-        # path_to_root_import_folder = None
-        if not path.lower().startswith( full_dir.lower() ):
-            # path_to_root_import_folder = path
-            path = os.path.join( full_dir, path )
-        if not os.path.exists( path ):
-            raise exceptions.RequestParameterInvalidException( 'Given path does not exist on the host.' )
-        if not self.folder_manager.can_add_item( trans, folder ):
-            raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to add items to the given folder.' )
+        if source in [ 'userdir_file', 'userdir_folder' ]:
+            user_login = trans.user.email
+            user_base_dir = trans.app.config.user_library_import_dir
+            if user_base_dir is None:
+                raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from user directories.' )
+            full_dir = os.path.join( user_base_dir, user_login )
+            # path_to_root_import_folder = None
+            if not path.lower().startswith( full_dir.lower() ):
+                # path_to_root_import_folder = path
+                path = os.path.join( full_dir, path )
+            if not os.path.exists( path ):
+                raise exceptions.RequestParameterInvalidException( 'Given path does not exist on the host.' )
+            if not self.folder_manager.can_add_item( trans, folder ):
+                raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to add items to the given folder.' )
+        if source == 'admin_path':
+            if not trans.app.config.allow_library_path_paste:
+                raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to import into library from path.' )
+            if not trans.user_is_admin:
+                raise exceptions.AdminRequiredException( 'Only admins can import from path.' )
 
         # Set up the traditional tool state/params
         tool_id = 'upload1'
@@ -466,24 +472,32 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         abspath_datasets = []
         kwd[ 'filesystem_paths' ] = path
         params = util.Params( kwd )
-        # file only
+        # user wants to import one file only
         if source == "userdir_file":
             file = os.path.abspath( path )
             abspath_datasets.append( trans.webapp.controllers[ 'library_common' ].make_library_uploaded_dataset(
                 trans, 'api', params, os.path.basename( file ), file, 'server_dir', library_bunch ) )
-        # whole folder
+        # user wants to import whole folder
         if source == "userdir_folder":
             # import_folder_root = [next(part for part in path.split(os.path.sep) if part) for path in [os.path.splitdrive(path_to_root_import_folder)[1]]]
             # new_folder = self.folder_manager.create( trans, folder_id, import_folder_root[0] )
 
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets( 
                 trans, 'api', params, library_bunch, 200, '' )
-
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
-                #  TODO no files found - only create folders
-                return False
-
+                raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
+            for ud in uploaded_datasets:
+                ud.path = os.path.abspath( ud.path )
+                abspath_datasets.append( ud )
+        #  user wants to import from path (admins only)
+        if source == "admin_path":
+            # validate the path is within root
+            uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets( 
+                trans, 'api', params, library_bunch, 200, '' )
+            uploaded_datasets = uploaded_datasets_bunch[0]
+            if uploaded_datasets is None:
+                raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
             for ud in uploaded_datasets:
                 ud.path = os.path.abspath( ud.path )
                 abspath_datasets.append( ud )

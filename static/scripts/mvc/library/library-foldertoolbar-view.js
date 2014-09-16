@@ -199,10 +199,9 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   /**
-   * import all selected datasets into history
+   * Import all selected datasets into history.
    */
   importAllIntoHistory : function (){
-      // disable the button to prevent multiple submission
       this.modal.disableButton('Import');
 
       // init the control counters
@@ -288,7 +287,11 @@ var FolderToolbarView = Backbone.View.extend({
       $('.completion_span').text(txt_representation);
   },
 
-  // download selected datasets
+  /**
+   * download selected datasets
+   * @param  {str} folder_id id of the current folder
+   * @param  {str} format    requested archive format
+   */
   download : function(folder_id, format){
     var dataset_ids = [];
         $('#folder_table').find(':checked').each(function(){
@@ -296,29 +299,34 @@ var FolderToolbarView = Backbone.View.extend({
                 dataset_ids.push(this.parentElement.parentElement.id);
             }
         });
-
     var url = '/api/libraries/datasets/download/' + format;
     var data = {'ldda_ids' : dataset_ids};
     this.processDownload(url, data, 'get');
   },
 
-  // create hidden form and submit through POST to initialize download
+  /**
+   * Create hidden form and submit it through POST
+   * to initialize the download.
+   * @param  {str} url    url to call
+   * @param  {obj} data   data to include in the request
+   * @param  {str} method method of the request
+   */
   processDownload: function(url, data, method){
-    //url and data options required
-    if( url && data ){
-            //data can be string of parameters or array/object
-            data = typeof data === 'string' ? data : $.param(data);
-            //split params into form inputs
-            var inputs = '';
-            $.each(data.split('&'), function(){
-                    var pair = this.split('=');
-                    inputs+='<input type="hidden" name="'+ pair[0] +'" value="'+ pair[1] +'" />';
-            });
-            //send request
-            $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
-            .appendTo('body').submit().remove();
-            
-            mod_toastr.info('Your download will begin soon');
+    if ( url && data ){
+      // data can be string of parameters or array/object
+      data = typeof data === 'string' ? data : $.param(data);
+      // split params into form inputs
+      var inputs = '';
+      $.each(data.split('&'), function(){
+              var pair = this.split('=');
+              inputs+='<input type="hidden" name="'+ pair[0] +'" value="'+ pair[1] +'" />';
+      });
+      // send request
+      $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
+      .appendTo('body').submit().remove();
+      mod_toastr.info('Your download will begin soon');
+    } else {
+      mod_toastr.error('An error occurred :(');
     }
   },
 
@@ -352,6 +360,33 @@ var FolderToolbarView = Backbone.View.extend({
     });
   },
 
+  /**
+   * Create modal for importing from Galaxy path.
+   * This feature is admin-only.
+   */
+  importFilesFromPathModal: function(){
+    var that = this;
+    this.modal = Galaxy.modal;
+    var template_modal = this.templateImportPathModal();
+    this.modal.show({
+          closing_events  : true,
+          title           : 'Enter paths relative to Galaxy root',
+          body            : template_modal({}),
+          buttons         : {
+              'Import'    : function() {that.importFromPathsClicked(that);},
+              'Close'     : function() {Galaxy.modal.hide();}
+          },
+          closing_callback: function(){
+            //  TODO: should not trigger routes outside of the router
+            Galaxy.libraries.library_router.navigate('folders/' + that.id, {trigger: true});
+          }
+      });  
+  },
+
+  /**
+   * Create modal for importing form user's directory
+   * on Galaxy. Bind jQuery events.
+   */
   importFilesFromUserdirModal: function(){
     var that = this;
     this.modal = Galaxy.modal;
@@ -373,23 +408,28 @@ var FolderToolbarView = Backbone.View.extend({
 
     $('input[type=radio]').change(function(event){
         if (event.target.value ==='jstree-disable-folders') {
+          that.renderJstree({disabled_jstree_element: 'folders'});
           $('.jstree-folders-message').hide();
           $('.jstree-preserve-structure').hide();
           $('.jstree-link-files').hide();
           $('.jstree-files-message').show();
-
-          that.renderJstree({disabled_jstree_element: 'folders'});
         } else if (event.target.value ==='jstree-disable-files'){
-          that.renderJstree({disabled_jstree_element: 'files'});
           $('.jstree-files-message').hide();
           $('.jstree-folders-message').show();
           $('.jstree-link-files').show();
           $('.jstree-preserve-structure').show();
+          that.renderJstree({disabled_jstree_element: 'files'});
         }
       }
     );     
   },
 
+  /**
+   * Fetch the contents of user directory on Galaxy
+   * and render jstree component based on received
+   * data.
+   * @param  {[type]} options [description]
+   */
   renderJstree: function(options){
     var that = this;
     this.options = _.extend(this.options, options);
@@ -427,13 +467,51 @@ var FolderToolbarView = Backbone.View.extend({
     })
   },
 
-  importFoldersFromUserdir: function(){
-
+  /**
+   * Take the paths from the textarea, split it, create
+   * a request queue and call a function that starts sending
+   * one by one to be imported on the server.
+   */
+  importFromPathsClicked: function(){
+    var preserve_dirs = this.modal.$el.find('.preserve-checkbox').is(':checked');
+    var link_data = this.modal.$el.find('.link-checkbox').is(':checked');
+    var paths = $('textarea#import_paths').val();
+    if (!paths){
+      mod_toastr.info('Please enter a path relative to Galaxy root');
+    } else {
+      this.modal.disableButton('Import');
+      paths = paths.split('\n');
+      var valid_paths = [];
+      for (var i = paths.length - 1; i >= 0; i--) {
+        trimmed = paths[i].trim();
+        if (trimmed.length!==0){
+          valid_paths.push(trimmed);
+        }
+      };
+      this.initChainCallControl(valid_paths.length);
+      this.chainCallImportingFolders(valid_paths, preserve_dirs, link_data, 'admin_path');
+    }
   },
 
+  /**
+   * Initialize the control of chaining requests
+   * in the current modal.
+   */
+  initChainCallControl: function(length){
+    var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
+    this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : this.options.folder_name }));
+    this.progress = 0;
+    this.progressStep = 100 / length;
+    this.options.chain_call_control.total_number = length;
+    this.options.chain_call_control.failed_number = 0;
+  },
 
-  // add all selected datasets from user directory into current folder
-  importFromUserdirClicked : function (that){
+  /**
+   * Take the selected items from the jstree, create a request queue
+   * and send them one by one to the server for importing into 
+   * the current folder.
+   */
+  importFromUserdirClicked: function (that){
     var selected_nodes = $('#jstree_browser').jstree().get_selected(true);
     var preserve_dirs = this.modal.$el.find('.preserve-checkbox').is(':checked');
     var link_data = this.modal.$el.find('.link-checkbox').is(':checked');
@@ -443,7 +521,7 @@ var FolderToolbarView = Backbone.View.extend({
     } else {
       // disable the button to prevent multiple submission
       this.modal.disableButton('Import');
-      // init the control counters
+      // init the chain control counters
       this.options.chain_call_control.total_number = 0;
       this.options.chain_call_control.failed_number = 0;
 
@@ -452,9 +530,8 @@ var FolderToolbarView = Backbone.View.extend({
           paths.push(selected_nodes[i].li_attr.full_path);
         }
       }
-      var folder_name = this.options.folder_name;
       var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
-      this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : folder_name }));
+      this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : this.options.folder_name }));
 
       // init the progress bar
       this.progressStep = 100 / paths.length;
@@ -464,13 +541,18 @@ var FolderToolbarView = Backbone.View.extend({
       var selection_type = selected_nodes[0].type;
       // call the recursive function to call ajax one after each other (request FIFO queue)
       if (selection_type === 'folder'){
-        this.chainCallImportingUserdirFolders(paths, preserve_dirs, link_data);
+        this.chainCallImportingFolders(paths, preserve_dirs, link_data, 'userdir_folder');
       } else if (selection_type === 'file'){
         this.chainCallImportingUserdirFiles(paths);
       }
     }
   },
 
+  /**
+   * Take the array of paths and createa request for each of them
+   * calling them in chain. Update the progress bar in between each.
+   * @param  {array} paths           paths relative to user folder on Galaxy
+   */
   chainCallImportingUserdirFiles: function(paths){
     var that = this;
     var popped_item = paths.pop();
@@ -483,21 +565,30 @@ var FolderToolbarView = Backbone.View.extend({
       }
       return true;
     }
-    var promise = $.when($.post('/api/libraries/datasets?encoded_folder_id=' + that.id + '&source=userdir_file&path=' + popped_item))
+    var promise = $.when($.post('/api/libraries/datasets?encoded_folder_id=' + that.id + 
+                                                       '&source=userdir_file' +
+                                                       '&path=' + popped_item))
     promise.done(function(response){
-              // we are fine
               that.updateProgress();
               that.chainCallImportingUserdirFiles(paths);
             })
             .fail(function(){
-              // we have a problem
               that.options.chain_call_control.failed_number += 1;
               that.updateProgress();
               that.chainCallImportingUserdirFiles(paths);
             });
   },
 
-  chainCallImportingUserdirFolders: function(paths, preserve_dirs, link_data){
+  /**
+   * Take the array of paths and createa request for each of them
+   * calling them in chain. Update the progress bar in between each.
+   * @param  {array} paths           paths relative to Galaxy root folder
+   * @param  {boolean} preserve_dirs indicates whether to preserve folder structure
+   * @param  {boolean} link_data     copy files to Galaxy or link instead
+   * @param  {str} source            string representing what type of folder 
+   *                                 is the source of import
+   */
+  chainCallImportingFolders: function(paths, preserve_dirs, link_data, source){
     // need to check which paths to call
     var that = this;
     var popped_item = paths.pop();
@@ -508,23 +599,20 @@ var FolderToolbarView = Backbone.View.extend({
       } else {
         mod_toastr.error('Something went wrong :(');
       }
-      return true;
     }
     var promise = $.when($.post('/api/libraries/datasets?encoded_folder_id=' + that.id +
-                                                      '&source=userdir_folder' +
+                                                      '&source=' + source +
                                                       '&path=' + popped_item +
                                                       '&preserve_dirs=' + preserve_dirs +
-                                                      '&link_data=' + link_data ))
+                                                      '&link_data=' + link_data))
     promise.done(function(response){
-              // we are fine
               that.updateProgress();
-              that.chainCallImportingUserdirFolders(paths);
+              that.chainCallImportingFolders(paths, preserve_dirs, link_data, source);
             })
             .fail(function(){
-              // we have a problem
               that.options.chain_call_control.failed_number += 1;
               that.updateProgress();
-              that.chainCallImportingUserdirFolders(paths);
+              that.chainCallImportingFolders(paths, preserve_dirs, link_data, source);
             });
   },
 
@@ -566,9 +654,8 @@ var FolderToolbarView = Backbone.View.extend({
                 history_dataset_ids.push(hid);
             }
         });
-        var folder_name = this.options.folder_name;
         var progress_bar_tmpl = this.templateAddingDatasetsProgressBar();
-        this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : folder_name }));
+        this.modal.$el.find('.modal-body').html(progress_bar_tmpl({ folder_name : this.options.folder_name }));
 
         // init the progress bar
         this.progressStep = 100 / history_dataset_ids.length;
@@ -759,7 +846,7 @@ var FolderToolbarView = Backbone.View.extend({
       case "importdir":
         break;
       case "path": 
-        mod_toastr.info('Coming soon.');
+        this.importFilesFromPathModal();
         break;
       case "userdir":
         this.importFilesFromUserdirModal();
@@ -956,6 +1043,30 @@ var FolderToolbarView = Backbone.View.extend({
 
     tmpl_array.push('<div id="jstree_browser">');
     tmpl_array.push('</div>');
+    tmpl_array.push('</div>');
+
+    return _.template(tmpl_array.join(''));
+  },
+
+  templateImportPathModal: function(){
+    var tmpl_array = [];
+
+    tmpl_array.push('<div id="file_browser_modal">');
+
+    tmpl_array.push('<label class="checkbox-inline jstree-preserve-structure">');
+    tmpl_array.push('   <input class="preserve-checkbox" type="checkbox" value="preserve_directory_structure">');
+    tmpl_array.push('Preserve directory structure');
+    tmpl_array.push(' </label>');
+
+    tmpl_array.push('<label class="checkbox-inline jstree-link-files">');
+    tmpl_array.push('   <input class="link-checkbox" type="checkbox" value="link_files">');
+    tmpl_array.push('Link files instead of copying');
+    tmpl_array.push(' </label>');
+    tmpl_array.push('</div>');
+
+    tmpl_array.push('<div class="alert alert-info jstree-folders-message">All files within the given folders and their subfolders will be imported into the current folder.</div>');
+
+    tmpl_array.push('<textarea id="import_paths" class="form-control" rows="5" placeholder="Paths separated by newline"></textarea>');
     tmpl_array.push('</div>');
 
     return _.template(tmpl_array.join(''));
