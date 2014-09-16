@@ -14,8 +14,7 @@ var LibraryRowView = Backbone.View.extend({
     'click .cancel_library_btn'         : 'cancel_library_modification',
     'click .save_library_btn'           : 'save_library_modification',
     'click .delete_library_btn'         : 'delete_library',
-    'click .undelete_library_btn'       : 'undelete_library',
-    'click .permission_library_btn'     : 'permissions_on_library'
+    'click .undelete_library_btn'       : 'undelete_library'
   },
 
   edit_mode: false,
@@ -101,12 +100,6 @@ var LibraryRowView = Backbone.View.extend({
     }
 
     this.element_visibility_config = vis_config;
-  },
-
-  permissions_on_library: function(options){
-    this.options = _.extend(this.options, options);
-    $(".tooltip").remove();
-
   },
 
   /* User clicked the 'edit' button on row so we render a new row
@@ -270,10 +263,6 @@ var LibraryRowView = Backbone.View.extend({
     tmpl_array.push('                     <span data-toggle="tooltip" data-placement="top" title="Unrestricted library" style="color:grey;" class="fa fa-globe fa-lg public_lib_ico"> </span>');
     tmpl_array.push('                   <% }%>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Modify <%- library.get("name") %>" class="primary-button btn-xs edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span></button>');
-
-    // tmpl_array.push('    <% if (content_item.get("can_manage")) { %><a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>/permissions"><button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permissions-dataset-btn show_on_hover" title="Manage permissions" style="display:none;"><span class="fa fa-group"></span></button></a><% } %>');
-
-
     tmpl_array.push('                   <a href="#library/<%- library.get("id") %>/permissions"> <button data-toggle="tooltip" data-placement="top" title="Modify permissions" class="primary-button btn-xs permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span></button></a>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_library_btn" type="button" style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"> Save</span></button>');
     tmpl_array.push('                   <button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_library_btn" type="button" style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>"><span class="fa fa-times"> Cancel</span></button>');

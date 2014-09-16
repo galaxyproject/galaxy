@@ -1,5 +1,5 @@
 """
-API operations on the datasets from library.
+API operations on the library datasets.
 """
 import glob
 import operator
@@ -15,6 +15,7 @@ import zipfile
 from galaxy import web
 from galaxy import util
 from galaxy import exceptions
+from galaxy.managers import folders, roles
 from galaxy.exceptions import ObjectNotFound
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from galaxy.web import _future_expose_api as expose_api
@@ -24,12 +25,20 @@ from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
+from galaxy.tools.actions import upload_common
+from galaxy.util.json import to_json_string, from_json_string
+
 
 import logging
 log = logging.getLogger( __name__ )
 
 
 class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
+
+    def __init__( self, app ):
+        super( LibraryDatasetsController, self ).__init__( app )
+        self.folder_manager = folders.FolderManager()
+        self.role_manager = roles.RoleManager()
 
     @expose_api_anonymous
     def show( self, trans, id, **kwd ):
@@ -41,8 +50,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :param  id:      the encoded id of the dataset to query
         :type   id:      an encoded id string
 
-        :rtype:     dictionary
         :returns:   detailed dataset information from base controller
+        :rtype:     dictionary
 
         .. seealso:: :attr:`galaxy.web.base.controller.UsesLibraryMixinItems.get_library_dataset`
         """
@@ -144,7 +153,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to access permissions.' )
 
         scope = kwd.get( 'scope', None )
-
         if scope == 'current' or scope is None:
             return self._get_current_roles( trans, library_dataset )
 
@@ -393,6 +401,118 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         rval[ 'deleted' ] = dataset.deleted
         rval[ 'folder_id' ] = 'F' + rval[ 'folder_id' ]
         return rval
+
+    @expose_api
+    def load( self, trans, **kwd ):
+        """
+        Load dataset from the given source into the library.
+
+        :param  encoded_folder_id:      the encoded id of the folder to import dataset to
+        :type   encoded_folder_id:      an encoded id string
+        :param  source:                 source of the dataset to be loaded
+        :type   source:                 str
+        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy
+        :type   link_data:              bool
+        :param  preserve_dirs:          flag whether to preserver directory structure when importing dir
+        :type   preserve_dirs:          bool
+        """
+
+        kwd[ 'space_to_tab' ] = 'False'
+        kwd[ 'to_posix_lines' ] = 'True'
+        kwd[ 'dbkey' ] = '?'
+        kwd[ 'file_type' ] = 'auto'
+
+        kwd[' link_data_only' ] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
+        encoded_folder_id = kwd.get( 'encoded_folder_id', None )
+        if encoded_folder_id is not None:
+            folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
+        else:
+            raise exceptions.RequestParameterMissingException( 'The required atribute encoded_folder_id is missing.' )
+        path = kwd.get( 'path', None)
+        if path is None:
+            raise exceptions.RequestParameterMissingException( 'The required atribute path is missing.' )
+        folder = self.folder_manager.get( trans, folder_id )
+        link_data = util.string_as_bool( kwd.get( 'link_data', False ) )
+
+        source = kwd.get( 'source', None )
+        if source not in [ 'userdir_file', 'userdir_folder', 'admin_path' ]:
+            raise exceptions.RequestParameterMissingException( 'You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder" and "admin_path". ')
+
+        if source in [ 'userdir_file', 'userdir_folder' ]:
+            user_login = trans.user.email
+            user_base_dir = trans.app.config.user_library_import_dir
+            if user_base_dir is None:
+                raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from user directories.' )
+            full_dir = os.path.join( user_base_dir, user_login )
+            # path_to_root_import_folder = None
+            if not path.lower().startswith( full_dir.lower() ):
+                # path_to_root_import_folder = path
+                path = os.path.join( full_dir, path )
+            if not os.path.exists( path ):
+                raise exceptions.RequestParameterInvalidException( 'Given path does not exist on the host.' )
+            if not self.folder_manager.can_add_item( trans, folder ):
+                raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to add items to the given folder.' )
+        if source == 'admin_path':
+            if not trans.app.config.allow_library_path_paste:
+                raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to import into library from path.' )
+            if not trans.user_is_admin:
+                raise exceptions.AdminRequiredException( 'Only admins can import from path.' )
+
+        # Set up the traditional tool state/params
+        tool_id = 'upload1'
+        tool = trans.app.toolbox.get_tool( tool_id )
+        state = tool.new_state( trans )
+        errors = tool.update_state( trans, tool.inputs_by_page[ 0 ], state.inputs, kwd )
+        tool_params = state.inputs
+        dataset_upload_inputs = []
+        for input_name, input in tool.inputs.iteritems():
+            if input.type == "upload_dataset":
+                dataset_upload_inputs.append( input )
+        library_bunch = upload_common.handle_library_params( trans, {}, trans.security.encode_id( folder.id ) )
+        abspath_datasets = []
+        kwd[ 'filesystem_paths' ] = path
+        params = util.Params( kwd )
+        # user wants to import one file only
+        if source == "userdir_file":
+            file = os.path.abspath( path )
+            abspath_datasets.append( trans.webapp.controllers[ 'library_common' ].make_library_uploaded_dataset(
+                trans, 'api', params, os.path.basename( file ), file, 'server_dir', library_bunch ) )
+        # user wants to import whole folder
+        if source == "userdir_folder":
+            # import_folder_root = [next(part for part in path.split(os.path.sep) if part) for path in [os.path.splitdrive(path_to_root_import_folder)[1]]]
+            # new_folder = self.folder_manager.create( trans, folder_id, import_folder_root[0] )
+
+            uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets( 
+                trans, 'api', params, library_bunch, 200, '' )
+            uploaded_datasets = uploaded_datasets_bunch[0]
+            if uploaded_datasets is None:
+                raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
+            for ud in uploaded_datasets:
+                ud.path = os.path.abspath( ud.path )
+                abspath_datasets.append( ud )
+        #  user wants to import from path (admins only)
+        if source == "admin_path":
+            # validate the path is within root
+            uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets( 
+                trans, 'api', params, library_bunch, 200, '' )
+            uploaded_datasets = uploaded_datasets_bunch[0]
+            if uploaded_datasets is None:
+                raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
+            for ud in uploaded_datasets:
+                ud.path = os.path.abspath( ud.path )
+                abspath_datasets.append( ud )
+
+        json_file_path = upload_common.create_paramfile( trans, abspath_datasets )
+        data_list = [ ud.data for ud in abspath_datasets ]
+        job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder )
+        # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
+        job.add_parameter( 'link_data_only', to_json_string( kwd.get( 'link_data_only', 'copy_files' ) ) )
+        job.add_parameter( 'uuid', to_json_string( kwd.get( 'uuid', None ) ) )
+        trans.sa_session.add( job )
+        trans.sa_session.flush()
+        job_dict = job.to_dict()
+        job_dict[ 'id' ] = trans.security.encode_id( job_dict[ 'id' ] )
+        return job_dict
 
     @web.expose
     def download( self, trans, format, **kwd ):

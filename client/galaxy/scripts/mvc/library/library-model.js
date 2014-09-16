@@ -192,6 +192,16 @@ define([], function() {
       model : GalaxyHistory
     });
 
+// ============================================================================
+// JSTREE MODEL
+    /** Represents folder structure parsable by the jstree component.
+     * 
+     */
+    
+    var Jstree = Backbone.Model.extend({
+      urlRoot: '/api/ftp_files'
+    });
+
 return {
     Library: Library,
     FolderAsModel : FolderAsModel,
@@ -203,7 +213,8 @@ return {
     HistoryItem : HistoryItem,
     HistoryContents : HistoryContents,
     GalaxyHistory : GalaxyHistory,
-    GalaxyHistories : GalaxyHistories
+    GalaxyHistories : GalaxyHistories,
+    Jstree: Jstree
 };
 
 });

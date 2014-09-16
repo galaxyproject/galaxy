@@ -14,7 +14,8 @@ module.exports = function(grunt) {
     'masthead',
     'library',
     'trackster',
-    'circster'
+    'circster',
+    'jstree'
   ];
 
   var _ = grunt.util._;
