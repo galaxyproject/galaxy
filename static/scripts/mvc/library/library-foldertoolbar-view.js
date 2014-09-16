@@ -592,13 +592,14 @@ var FolderToolbarView = Backbone.View.extend({
     // need to check which paths to call
     var that = this;
     var popped_item = paths.pop();
-    if (typeof popped_item === "undefined") {
+    if (typeof popped_item == "undefined") {
       if (this.options.chain_call_control.failed_number === 0){
         mod_toastr.success('Selected folders and their contents imported into the current folder');
         Galaxy.modal.hide();
       } else {
         mod_toastr.error('Something went wrong :(');
       }
+      return true;
     }
     var promise = $.when($.post('/api/libraries/datasets?encoded_folder_id=' + that.id +
                                                       '&source=' + source +
