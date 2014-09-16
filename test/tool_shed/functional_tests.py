@@ -94,7 +94,7 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from universe_wsgi.ini
+    #TODO: these should be copied from galaxy.ini
     return dict(
         #TODO: static_enabled needed here?
         static_enabled      = True,
@@ -356,7 +356,7 @@ def main():
         if not os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF' ):
             open( galaxy_shed_data_manager_conf_file, 'wb' ).write( shed_data_manager_conf_xml_template )
         galaxy_global_conf = get_webapp_global_conf()
-        galaxy_global_conf[ '__file__' ] = 'universe_wsgi.ini.sample'
+        galaxy_global_conf[ '__file__' ] = 'config/galaxy.ini.sample'
 
         kwargs = dict( allow_user_creation = True,
                        allow_user_deletion = True,

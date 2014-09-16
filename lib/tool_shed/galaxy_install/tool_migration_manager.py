@@ -50,7 +50,7 @@ class ToolMigrationManager( object ):
         # to install but print informative error message.
         if install_dependencies and app.config.tool_dependency_dir is None:
             message = 'You are attempting to install tool dependencies but do not have a value '
-            message += 'for "tool_dependency_dir" set in your universe_wsgi.ini file.  Set this '
+            message += 'for "tool_dependency_dir" set in your galaxy.ini file.  Set this '
             message += 'location value to the path where you want tool dependencies installed and '
             message += 'rerun the migration script.'
             raise Exception( message )

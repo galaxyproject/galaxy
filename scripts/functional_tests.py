@@ -100,7 +100,7 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from universe_wsgi.ini
+    #TODO: these should be copied from config/galaxy.ini
     return dict(
         #TODO: static_enabled needed here?
         static_enabled=True,
@@ -398,8 +398,8 @@ def main():
             for label in kwargs:
                 config_tuple = label, kwargs[ label ]
                 config_items.append( config_tuple )
-            # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
-            generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+            # Write a temporary file, based on config/galaxy.ini.sample, using the configuration options defined above.
+            generate_config_file( 'config/galaxy.ini.sample', galaxy_config_file, config_items )
         # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
         kwargs[ 'global_conf' ] = get_webapp_global_conf()
         kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file

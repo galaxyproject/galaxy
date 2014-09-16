@@ -9,10 +9,10 @@ import os, sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
-default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'universe_wsgi.ini') )
+default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'config/galaxy.ini') )
 
 parser = OptionParser()
-parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default=default_config )
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config )
 parser.add_option( '-e', '--encode-id', dest='encode_id', help='Encode an ID' )
 parser.add_option( '-d', '--decode-id', dest='decode_id', help='Decode an ID' )
 parser.add_option( '--hda', dest='hda_id', help='Display HistoryDatasetAssociation info' )
@@ -26,8 +26,7 @@ except:
     sys.exit( 1 )
 
 options.config = os.path.abspath( options.config )
-os.chdir( os.path.dirname( options.config ) )
-sys.path.append( 'lib' )
+sys.path.append( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
 
 from galaxy import eggs
 import pkg_resources
@@ -35,7 +34,7 @@ import pkg_resources
 config = ConfigParser( dict( file_path = 'database/files',
                              id_secret = 'USING THE DEFAULT IS NOT SECURE!',
                              database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
-config.read( os.path.basename( options.config ) )
+config.read( options.config )
 
 from galaxy.web import security
 from galaxy.model import mapping

@@ -616,7 +616,7 @@ class AdminToolshed( AdminGalaxy ):
             if includes_tool_dependencies:
                 message = "Tool dependencies defined in this repository can be automatically installed if you set "
                 message += "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
-                message += "(universe_wsgi.ini) and restart your Galaxy server."
+                message += "(galaxy.ini) and restart your Galaxy server."
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:
@@ -865,7 +865,7 @@ class AdminToolshed( AdminGalaxy ):
                         message = 'All selected tool dependencies are already installed.'
                         status = 'error'
                 else:
-                        message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (universe_wsgi.ini) '
+                        message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (galaxy.ini) '
                         message += ' and restart your Galaxy server to install tool dependencies.'
                         status = 'error'
         installed_tool_dependencies_select_field = \
@@ -934,7 +934,7 @@ class AdminToolshed( AdminGalaxy ):
                         kwd[ 'message' ] = 'All selected tool dependencies are already installed.'
                         kwd[ 'status' ] = 'error'
                 else:
-                        message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (universe_wsgi.ini) '
+                        message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (galaxy.ini) '
                         message += ' and restart your Galaxy server to install tool dependencies.'
                         kwd[ 'message' ] = message
                         kwd[ 'status' ] = 'error'
@@ -969,7 +969,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def prepare_for_install( self, trans, **kwd ):
         if not suc.have_shed_tool_conf_for_install( trans.app ):
-            message = 'The <b>tool_config_file</b> setting in <b>universe_wsgi.ini</b> must include at least one '
+            message = 'The <b>tool_config_file</b> setting in <b>galaxy.ini</b> must include at least one '
             message += 'shed tool configuration file name with a <b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> '
             message += 'attribute value which is a directory relative to the Galaxy installation directory in order '
             message += 'to automatically install tools from a Galaxy Tool Shed (e.g., the file name <b>shed_tool_conf.xml</b> '
@@ -1213,7 +1213,7 @@ class AdminToolshed( AdminGalaxy ):
             if includes_tool_dependencies:
                 message = "Tool dependencies defined in this repository can be automatically installed if you set "
                 message += "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
-                message += "(universe_wsgi.ini) and restart your Galaxy server before installing the repository."
+                message += "(galaxy.ini) and restart your Galaxy server before installing the repository."
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:
@@ -1681,7 +1681,7 @@ class AdminToolshed( AdminGalaxy ):
         if trans.app.config.tool_dependency_dir is None:
             if includes_tool_dependencies:
                 message += "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
-                message += "setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository.  "
+                message += "setting in your Galaxy config file (galaxy.ini) and restart your Galaxy server before installing the repository.  "
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:

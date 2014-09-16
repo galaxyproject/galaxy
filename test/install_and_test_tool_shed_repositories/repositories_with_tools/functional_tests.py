@@ -495,8 +495,8 @@ def main():
         for label in kwargs:
             config_tuple = label, kwargs[ label ]
             config_items.append( config_tuple )
-        # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
-        generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+        # Write a temporary file, based on galaxy.ini.sample, using the configuration options defined above.
+        generate_config_file( 'config/galaxy.ini.sample', galaxy_config_file, config_items )
     # kwargs must be a list when passed to the Galaxy webapp (i.e., UniverseApplication).
     # The following is used to set metadata externally.
     kwargs[ 'tool_config_file' ] = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ]

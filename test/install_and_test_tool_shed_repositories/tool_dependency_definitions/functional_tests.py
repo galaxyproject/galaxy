@@ -347,8 +347,8 @@ def main():
         for label in kwargs:
             config_tuple = label, kwargs[ label ]
             config_items.append( config_tuple )
-        # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
-        generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+        # Write a temporary file, based on galaxy.ini.sample, using the configuration options defined above.
+        generate_config_file( 'config/galaxy.ini.sample', galaxy_config_file, config_items )
     kwargs[ 'tool_config_file' ] = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ]
     # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
     kwargs[ 'global_conf' ] = install_and_test_base_util.get_webapp_global_conf()

@@ -9,7 +9,7 @@ import os, sys, logging
 from optparse import OptionParser
 
 parser = OptionParser()
-parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)', default='universe_wsgi.ini' )
+parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default='config/galaxy.ini' )
 parser.add_option( '-e', '--egg-name', dest='egg_name', help='Egg name (as defined in eggs.ini) to fetch, or "all" for all eggs, even those not needed by your configuration' )
 parser.add_option( '-p', '--platform', dest='platform', help='Fetch for a specific platform (by default, eggs are fetched for *this* platform' )
 ( options, args ) = parser.parse_args()
@@ -49,7 +49,7 @@ try:
         print "%s %s is installed at %s" % ( dist.project_name, dist.version, dist.location )
 except EggNotFetchable, e:
     config_arg = ''
-    if options.config != 'universe_wsgi.ini':
+    if options.config != 'config/galaxy.ini':
         config_arg = '-c %s ' % options.config
     try:
         assert options.egg_name != 'all'

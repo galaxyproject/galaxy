@@ -220,13 +220,13 @@ User.prototype.loginOrRegisterUser = function loginOrRegisterUser( email, passwo
 };
 
 // ------------------------------------------------------------------- Admin
-/** Gets the admin user data from spaceghost if set and checks the universe_wsgi.ini file for the email.
+/** Gets the admin user data from spaceghost if set and checks the galaxy.ini file for the email.
  *  @returns {Object|null} the admin data object (email, pasword, username)
- *      or null if no admin is set in both the universe_wsgi.ini and spaceghost.
+ *      or null if no admin is set in both the galaxy.ini and spaceghost.
  */
 User.prototype.getAdminData = function getAdminData(){
     //TODO: this might be better inside sg
-    // check for the setting in sg and the universe_wsgi.ini file
+    // check for the setting in sg and the galaxy.ini file
     var adminData = this.spaceghost.options.adminUser,
         iniAdminEmails = this.spaceghost.getUniverseSetting( 'admin_users' );
     iniAdminEmails = ( iniAdminEmails )?
