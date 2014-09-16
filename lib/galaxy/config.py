@@ -137,7 +137,6 @@ class Configuration( object ):
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
-        self.dependency_resolvers_config_file = resolve_path( kwargs.get( 'dependency_resolvers_config_file', 'dependency_resolvers_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
@@ -384,6 +383,7 @@ class Configuration( object ):
             external_service_type_config_file = [ 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample', 'config/external_service_types_conf.xml.sample' ],
             job_config_file = [ 'job_conf.xml', 'config/job_conf.xml' ],
             job_metrics_config_file = [ 'job_metrics_conf.xml', 'config/job_metrics_conf.xml' ],
+            dependency_resolvers_config_file = [ 'dependency_resolvers_conf.xml', 'config/dependency_resolvers_conf.xml' ],
             job_resource_params_file = [ 'job_resource_params_conf.xml', 'config/job_resource_params_conf.xml' ],
             migrated_tools_config = [ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
             object_store_config_file = [ 'object_store_conf.xml', 'config/object_store_conf.xml' ],
