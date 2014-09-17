@@ -14,7 +14,7 @@ from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import folders, roles
 from galaxy.tools.actions import upload_common
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -500,8 +500,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         data_list = [ ud.data for ud in abspath_datasets ]
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder )
         # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
-        job.add_parameter( 'link_data_only', to_json_string( kwd.get( 'link_data_only', 'copy_files' ) ) )
-        job.add_parameter( 'uuid', to_json_string( kwd.get( 'uuid', None ) ) )
+        job.add_parameter( 'link_data_only', dumps( kwd.get( 'link_data_only', 'copy_files' ) ) )
+        job.add_parameter( 'uuid', dumps( kwd.get( 'uuid', None ) ) )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         job_dict = job.to_dict()
