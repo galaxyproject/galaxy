@@ -7,12 +7,20 @@ import logging
 import random
 import string
 
-to_json_string = json.dumps  # deprecated
-from_json_string = json.loads  # deprecated
 dumps = json.dumps
 loads = json.loads
 
 log = logging.getLogger( __name__ )
+
+
+def to_json_string(*args, **kwargs):
+    log.warning("Using deprecated function to_json_string.")
+    return json.dumps(*args, **kwargs)
+
+
+def from_json_string(*args, **kwargs):
+    log.warning("Using deprecated function from_json_string.")
+    return json.loads(*args, **kwargs)
 
 
 def json_fix( val ):
