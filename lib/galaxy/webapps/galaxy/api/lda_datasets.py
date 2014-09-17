@@ -2,31 +2,26 @@
 API operations on the library datasets.
 """
 import glob
-import operator
 import os
 import os.path
 import string
 import sys
-import tarfile
 import tempfile
-import urllib
-import urllib2
 import zipfile
-from galaxy import web
-from galaxy import util
 from galaxy import exceptions
-from galaxy.managers import folders, roles
+from galaxy import util
+from galaxy import web
 from galaxy.exceptions import ObjectNotFound
-from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
+from galaxy.managers import folders, roles
+from galaxy.tools.actions import upload_common
+from galaxy.util.json import to_json_string
+from galaxy.util.streamball import StreamBall
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.security import Action
-from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
+from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
-from galaxy.tools.actions import upload_common
-from galaxy.util.json import to_json_string, from_json_string
 
 
 import logging
@@ -183,7 +178,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
     def _get_current_roles( self, trans, library_dataset):
         """
-        Find all roles currently connected to relevant permissions 
+        Find all roles currently connected to relevant permissions
         on the library dataset and the underlying dataset.
 
         :param  library_dataset:      the model object
@@ -194,7 +189,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         dataset = library_dataset.library_dataset_dataset_association.dataset
 
-        # Omit duplicated roles by converting to set 
+        # Omit duplicated roles by converting to set
         access_roles = set( dataset.get_access_roles( trans ) )
         modify_roles = set( trans.app.security_agent.get_roles_for_action( library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY ) )
         manage_roles = set( dataset.get_manage_permissions_roles( trans ) )
@@ -212,18 +207,18 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             *POST /api/libraries/datasets/{encoded_dataset_id}/permissions
 
         :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
-        :type   encoded_dataset_id:      an encoded id string      
+        :type   encoded_dataset_id:      an encoded id string
 
         :param  action:     (required) describes what action should be performed
                             available actions: make_private, remove_restrictions, set_permissions
-        :type   action:     string        
+        :type   action:     string
 
         :param  access_ids[]:      list of Role.name defining roles that should have access permission on the dataset
-        :type   access_ids[]:      string or list  
+        :type   access_ids[]:      string or list
         :param  manage_ids[]:      list of Role.name defining roles that should have manage permission on the dataset
-        :type   manage_ids[]:      string or list  
+        :type   manage_ids[]:      string or list
         :param  modify_ids[]:      list of Role.name defining roles that should have modify permission on the library dataset item
-        :type   modify_ids[]:      string or list          
+        :type   modify_ids[]:      string or list
 
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
@@ -275,7 +270,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     new_access_roles_ids = [ new_access_roles_ids ]
                 for role_id in new_access_roles_ids:
                     role = self._load_role( trans, role_id )
-                    
+
                     #  Check whether role is in the set of allowed roles
                     valid_roles, total_roles = trans.app.security_agent.get_valid_roles( trans, dataset )
                     if role in valid_roles:
@@ -283,7 +278,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     else:
                         invalid_access_roles_names.append( role_id )
                 if len( invalid_access_roles_names ) > 0:
-                    log.warning( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_names ) )                
+                    log.warning( "The following roles could not be added to the dataset access permission: " + str( invalid_access_roles_names ) )
 
                 access_permission = dict( access=valid_access_roles )
                 trans.app.security_agent.set_dataset_permission( dataset, access_permission )
@@ -292,8 +287,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             valid_manage_roles = []
             invalid_manage_roles_names = []
             new_manage_roles_ids = util.listify( new_manage_roles_ids )
-            
-            #  Load all access roles to check 
+
+            #  Load all access roles to check
             active_access_roles = dataset.get_access_roles( trans )
 
             for role_id in new_manage_roles_ids:
@@ -306,7 +301,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     invalid_manage_roles_names.append( role_id )
 
             if len( invalid_manage_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_names ) )                
+                log.warning( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_names ) )
 
             manage_permission = { trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS : valid_manage_roles }
             trans.app.security_agent.set_dataset_permission( dataset, manage_permission )
@@ -315,8 +310,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             valid_modify_roles = []
             invalid_modify_roles_names = []
             new_modify_roles_ids = util.listify( new_modify_roles_ids )
-            
-            #  Load all access roles to check 
+
+            #  Load all access roles to check
             active_access_roles = dataset.get_access_roles( trans )
 
             for role_id in new_modify_roles_ids:
@@ -329,13 +324,13 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     invalid_modify_roles_names.append( role_id )
 
             if len( invalid_modify_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the dataset modify permission: " + str( invalid_modify_roles_names ) )                
+                log.warning( "The following roles could not be added to the dataset modify permission: " + str( invalid_modify_roles_names ) )
 
             modify_permission = { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY : valid_modify_roles }
             trans.app.security_agent.set_library_item_permission( library_dataset, modify_permission )
 
         else:
-            raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
+            raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.'
                                 'Allowed values are: "remove_restrictions", "make_private", "set_permissions"' )
 
         return self._get_current_roles( trans, library_dataset )
@@ -345,7 +340,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         Method loads the role from the DB based on the given role name.
 
         :param  role_name:      name of the role to load from the DB
-        :type   role_name:      string 
+        :type   role_name:      string
 
         :rtype:     Role
         :returns:   the loaded Role object
@@ -368,12 +363,12 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         delete( self, trans, encoded_dataset_id, **kwd ):
         * DELETE /api/libraries/datasets/{encoded_dataset_id}
             Marks the dataset deleted or undeleted based on the value
-            of the undelete flag. 
+            of the undelete flag.
             If the flag is not present it is considered False and the
             item is marked deleted.
 
         :param  encoded_dataset_id:      the encoded id of the dataset to change
-        :type   encoded_dataset_id:      an encoded id string    
+        :type   encoded_dataset_id:      an encoded id string
 
         :rtype:     dictionary
         :returns:   dict containing information about the dataset
@@ -482,7 +477,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             # import_folder_root = [next(part for part in path.split(os.path.sep) if part) for path in [os.path.splitdrive(path_to_root_import_folder)[1]]]
             # new_folder = self.folder_manager.create( trans, folder_id, import_folder_root[0] )
 
-            uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets( 
+            uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
                 trans, 'api', params, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
@@ -493,7 +488,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         #  user wants to import from path (admins only)
         if source == "admin_path":
             # validate the path is within root
-            uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets( 
+            uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
                 trans, 'api', params, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[0]
             if uploaded_datasets is None:
