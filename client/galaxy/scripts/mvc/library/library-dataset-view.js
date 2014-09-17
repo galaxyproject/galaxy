@@ -185,11 +185,6 @@ var LibraryDatasetView = Backbone.View.extend({
 
       // set the used history as current so user will see the last one 
       // that he imported into in the history panel on the 'analysis' page
-      //var set_current_url =  '/api/histories/' + history_id + '/set_as_current';
-      //$.ajax({
-      //  url: set_current_url,
-      //  type: 'PUT'
-      //});
       jQuery.getJSON( galaxy_config.root + 'history/set_as_current?id=' + history_id  );
 
       // save the dataset into selected history

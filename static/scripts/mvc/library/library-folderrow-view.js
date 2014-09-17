@@ -10,9 +10,8 @@ function(mod_masthead,
          mod_library_model,
          mod_library_dataset_view) {
 
-// galaxy library row view
 var FolderRowView = Backbone.View.extend({
-  // last selected history in modal for UX
+
   lastSelectedHistory: '',
 
   events: {
@@ -24,6 +23,7 @@ var FolderRowView = Backbone.View.extend({
   },
 
   initialize : function(folder_item){
+    this.model = folder_item;
     this.render(folder_item);
   },
 
@@ -50,7 +50,7 @@ var FolderRowView = Backbone.View.extend({
   },
 
   /**
-   * Undeletes the dataset on server and renders it again.
+   * Undeletes the dataset on server and renders the row again.
    */
   undelete_dataset : function(event){
     $(".tooltip").hide();
@@ -63,7 +63,10 @@ var FolderRowView = Backbone.View.extend({
           Galaxy.libraries.folderListView.collection.remove(dataset_id);
           var updated_dataset = new mod_library_model.Item(response);
           Galaxy.libraries.folderListView.collection.add(updated_dataset);
-          mod_toastr.success('Dataset undeleted. Click this to see it.', '', {onclick: function() {that.showDatasetDetails();}});
+          mod_toastr.success('Dataset undeleted. Click this to see it.', '', {onclick: function() {
+            var folder_id = that.model.get('folder_id');
+            window.location='#folders/' + folder_id + '/datasets/' + that.id;
+          }});
         }, 
         error : function(model, response){
           if (typeof response.responseJSON !== "undefined"){
@@ -123,7 +126,7 @@ var FolderRowView = Backbone.View.extend({
   templateRowDeletedFile: function(){
     tmpl_array = [];
 
-    tmpl_array.push('<tr class="active deleted_dataset" id="<%- content_item.id %>">');
+    tmpl_array.push('<tr class="active deleted_dataset library-row" id="<%- content_item.id %>">');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Dataset" class="fa fa-file-o"></span>');
     tmpl_array.push('  </td>');
