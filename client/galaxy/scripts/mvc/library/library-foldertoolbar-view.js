@@ -124,7 +124,7 @@ var FolderToolbarView = Backbone.View.extend({
           folder.save(folderDetails, {
             success: function (folder) {
               Galaxy.modal.hide();
-              mod_toastr.success('Folder created');
+              mod_toastr.success('Folder created.');
               folder.set({'type' : 'folder'});
               Galaxy.libraries.folderListView.collection.add(folder);
             },
@@ -133,12 +133,12 @@ var FolderToolbarView = Backbone.View.extend({
               if (typeof response.responseJSON !== "undefined"){
                 mod_toastr.error(response.responseJSON.err_msg);
               } else {
-                mod_toastr.error('An error ocurred :(');
+                mod_toastr.error('An error ocurred.');
               }
             }
           });
       } else {
-          mod_toastr.error('Folder\'s name is missing');
+          mod_toastr.error('Folder\'s name is missing.');
       }
       return false;
   },
@@ -161,7 +161,7 @@ var FolderToolbarView = Backbone.View.extend({
   modalBulkImport : function(){
       var checkedValues = $('#folder_table').find(':checked');
       if(checkedValues.length === 0){
-          mod_toastr.info('You have to select some datasets first');
+          mod_toastr.info('You must select some datasets first.');
       } else {
           this.refreshUserHistoriesList(function(that){
             var template = that.templateBulkImportInModal();
@@ -190,7 +190,7 @@ var FolderToolbarView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred :(');
+          mod_toastr.error('An error ocurred.');
         }
       }
     });
@@ -275,9 +275,9 @@ var FolderToolbarView = Backbone.View.extend({
       // send request
       $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
       .appendTo( 'body' ).submit().remove();
-      mod_toastr.info( 'Your download will begin soon' );
+      mod_toastr.info( 'Your download will begin soon.' );
     } else {
-      mod_toastr.error( 'An error occurred :(' );
+      mod_toastr.error( 'An error occurred.' );
     }
   },
 
@@ -306,7 +306,7 @@ var FolderToolbarView = Backbone.View.extend({
           self.fetchAndDisplayHistoryContents(event.target.value);
         });
       } else {
-        mod_toastr.error( 'An error ocurred :(' );
+        mod_toastr.error( 'An error ocurred.' );
       }
     });
   },
@@ -417,7 +417,7 @@ var FolderToolbarView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred :(');
+          mod_toastr.error('An error ocurred.');
         }
       }
     })
@@ -434,7 +434,7 @@ var FolderToolbarView = Backbone.View.extend({
     var paths = $('textarea#import_paths').val();
     var valid_paths = [];
     if (!paths){
-      mod_toastr.info('Please enter a path relative to Galaxy root');
+      mod_toastr.info('Please enter a path relative to Galaxy root.');
     } else {
       this.modal.disableButton('Import');
       paths = paths.split('\n');
@@ -497,7 +497,7 @@ var FolderToolbarView = Backbone.View.extend({
     var selection_type = selected_nodes[0].type;
     var paths = [];
     if ( selected_nodes.length < 1 ){
-      mod_toastr.info( 'You have to select some items first' );
+      mod_toastr.info( 'You must select some items first.' );
     } else {
       this.modal.disableButton( 'Import' );
       for ( var i = selected_nodes.length - 1; i >= 0; i-- ){
@@ -527,7 +527,7 @@ var FolderToolbarView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred :(');
+          mod_toastr.error('An error ocurred.');
         }
       }
     });
@@ -541,7 +541,7 @@ var FolderToolbarView = Backbone.View.extend({
     var history_dataset_ids = [];
     var hdas_to_add = [];
     if ( checked_hdas.length < 1 ){
-      mod_toastr.info( 'You have to select some datasets first' );
+      mod_toastr.info( 'You must select some datasets first.' );
     } else {
       this.modal.disableButton( 'Add' );
       checked_hdas.each(function(){
@@ -608,7 +608,7 @@ var FolderToolbarView = Backbone.View.extend({
         mod_toastr.success( 'Selected files imported into the current folder' );
         Galaxy.modal.hide();
       } else {
-        mod_toastr.error( 'Something went wrong :(' );
+        mod_toastr.error( 'An error occured.' );
       }
       return true;
     }
@@ -641,11 +641,11 @@ var FolderToolbarView = Backbone.View.extend({
     var popped_item = paths.pop();
     if (typeof popped_item == "undefined") {
       if (this.options.chain_call_control.failed_number === 0){
-        mod_toastr.success('Selected folders and their contents imported into the current folder');
+        mod_toastr.success('Selected folders and their contents imported into the current folder.');
         Galaxy.modal.hide();
       } else {
         // TODO better error report
-        mod_toastr.error('Something went wrong :(');
+        mod_toastr.error('An error occured.');
       }
       return true;
     }
@@ -755,7 +755,7 @@ var FolderToolbarView = Backbone.View.extend({
   deleteSelectedDatasets: function(){
     var checkedValues = $('#folder_table').find(':checked');
     if(checkedValues.length === 0){
-        mod_toastr.info('You have to select some datasets first');
+        mod_toastr.info('You must select at least one dataset for deletion.');
     } else {
       var template = this.templateDeletingDatasetsProgressBar();
       this.modal = Galaxy.modal;
@@ -812,7 +812,7 @@ var FolderToolbarView = Backbone.View.extend({
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error(response.responseJSON.err_msg);
           } else {
-            mod_toastr.error('An error ocurred :(');
+            mod_toastr.error('An error ocurred.');
           }
         }
       })

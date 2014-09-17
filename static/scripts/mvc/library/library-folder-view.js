@@ -45,7 +45,7 @@ var FolderView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg + ' Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         } else {
-          mod_toastr.error('An error ocurred :(. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
+          mod_toastr.error('An error ocurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         }
       }
     });
@@ -84,7 +84,7 @@ var FolderView = Backbone.View.extend({
       $.get( "/api/folders/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
       }).fail(function(){
-          mod_toastr.error('An error occurred while fetching folder permissions. :(');
+          mod_toastr.error('An error occurred while attempting to fetch folder permissions.');
       });
     } else {
       this.prepareSelectBoxes({});
@@ -170,7 +170,7 @@ var FolderView = Backbone.View.extend({
   },
 
   comingSoon: function(){
-    mod_toastr.warning('Feature coming soon');
+    mod_toastr.warning('Feature coming soon.');
   },
 
   copyToClipboard: function(){
@@ -199,10 +199,10 @@ var FolderView = Backbone.View.extend({
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('Permissions saved');
+      mod_toastr.success('Permissions saved.');
     })
     .fail(function(){
-      mod_toastr.error('An error occurred while setting folder permissions :(');
+      mod_toastr.error('An error occurred while attempting to set folder permissions.');
     })
   },
 

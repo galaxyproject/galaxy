@@ -61,7 +61,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg + ' Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         } else {
-          mod_toastr.error('An error ocurred :(. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
+          mod_toastr.error('An error ocurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         }
       }
     });
@@ -93,7 +93,7 @@ var LibraryDatasetView = Backbone.View.extend({
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error(response.responseJSON.err_msg);
           } else {
-            mod_toastr.error('An error ocurred :(');
+            mod_toastr.error('An error ocurred.');
           }
         }
       });
@@ -136,7 +136,7 @@ var LibraryDatasetView = Backbone.View.extend({
           $('<form action="'+ url +'" method="'+ (method||'post') +'">'+inputs+'</form>')
           .appendTo('body').submit().remove();
           
-          mod_toastr.info('Your download will begin soon');
+          mod_toastr.info('Your download will begin soon.');
         }
    },
 
@@ -171,7 +171,7 @@ var LibraryDatasetView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg);
         } else {
-          mod_toastr.error('An error ocurred :(');
+          mod_toastr.error('An error ocurred.');
         }
       }
     });
@@ -197,7 +197,7 @@ var LibraryDatasetView = Backbone.View.extend({
           if (typeof response.responseJSON !== "undefined"){
             mod_toastr.error('Dataset not imported. ' + response.responseJSON.err_msg);
           } else {
-            mod_toastr.error('An error occured! Dataset not imported. Please try again.');
+            mod_toastr.error('An error occured. Dataset not imported. Please try again.');
           }
         }
         });
@@ -235,7 +235,7 @@ var LibraryDatasetView = Backbone.View.extend({
       $.get( "/api/libraries/datasets/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions, is_admin:is_admin});
       }).fail(function(){
-          mod_toastr.error('An error occurred while fetching dataset permissions. :(');
+          mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
       });
     } else {
       this.prepareSelectBoxes({is_admin:is_admin});
@@ -417,13 +417,13 @@ var LibraryDatasetView = Backbone.View.extend({
                 $('.access_perm').html(template({options:data.roles}));
                 self.accessSelectObject = $('#access_select').select2();
             }).fail(function() {
-                mod_toastr.error('An error occurred while fetching data with permissions. :(');
+                mod_toastr.error('An error occurred while attempting to fetch dataset permissions.');
             });
         }
   },
 
   comingSoon: function(){
-    mod_toastr.warning('Feature coming soon');
+    mod_toastr.warning('Feature coming soon.');
   },
 
   copyToClipboard: function(){
@@ -439,9 +439,9 @@ var LibraryDatasetView = Backbone.View.extend({
     $.post("/api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
       self.model.set({is_unrestricted:false});
       self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('The dataset is now private to you');
+      mod_toastr.success('The dataset is now private to you.');
     }).fail(function(){
-      mod_toastr.error('An error occurred while making dataset private :(');
+      mod_toastr.error('An error occurred while attempting to make dataset private.');
     });
   },
 
@@ -451,10 +451,10 @@ var LibraryDatasetView = Backbone.View.extend({
     .done(function(fetched_permissions) {
       self.model.set({is_unrestricted:true});
       self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('Access to this dataset is now unrestricted');
+      mod_toastr.success('Access to this dataset is now unrestricted.');
     })
     .fail(function(){
-      mod_toastr.error('An error occurred while making dataset unrestricted :(');
+      mod_toastr.error('An error occurred while attempting to make dataset unrestricted.');
     });
   },
 
@@ -482,10 +482,10 @@ var LibraryDatasetView = Backbone.View.extend({
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('Permissions saved');
+      mod_toastr.success('Permissions saved.');
     })
     .fail(function(){
-      mod_toastr.error('An error occurred while setting dataset permissions :(');
+      mod_toastr.error('An error occurred while attempting to set dataset permissions.');
     })
   },
 

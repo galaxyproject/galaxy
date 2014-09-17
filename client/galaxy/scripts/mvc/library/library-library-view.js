@@ -45,7 +45,7 @@ var LibraryView = Backbone.View.extend({
         if (typeof response.responseJSON !== "undefined"){
           mod_toastr.error(response.responseJSON.err_msg + ' Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         } else {
-          mod_toastr.error('An error ocurred :(. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
+          mod_toastr.error('An error ocurred. Click this to go back.', '', {onclick: function() {Galaxy.libraries.library_router.back();}});
         }
       }
     });
@@ -90,7 +90,7 @@ var LibraryView = Backbone.View.extend({
       $.get( "/api/libraries/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
       }).fail(function(){
-          mod_toastr.error('An error occurred while fetching library permissions. :(');
+          mod_toastr.error('An error occurred while attempting to fetch library permissions.');
       });
     } else {
       this.prepareSelectBoxes({});
@@ -180,7 +180,7 @@ var LibraryView = Backbone.View.extend({
   },
 
   comingSoon: function(){
-    mod_toastr.warning('Feature coming soon');
+    mod_toastr.warning('Feature coming soon.');
   },
 
   copyToClipboard: function(){
@@ -196,9 +196,9 @@ var LibraryView = Backbone.View.extend({
     $.post("/api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
       self.model.set({is_unrestricted:false});
       self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('The dataset is now private to you');
+      mod_toastr.success('The dataset is now private to you.');
     }).fail(function(){
-      mod_toastr.error('An error occurred while making dataset private :(');
+      mod_toastr.error('An error occurred while attempting to make dataset private.');
     });
   },
 
@@ -208,10 +208,10 @@ var LibraryView = Backbone.View.extend({
     .done(function(fetched_permissions) {
       self.model.set({is_unrestricted:true});
       self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('Access to this dataset is now unrestricted');
+      mod_toastr.success('Access to this dataset is now unrestricted.');
     })
     .fail(function(){
-      mod_toastr.error('An error occurred while making dataset unrestricted :(');
+      mod_toastr.error('An error occurred while attempting to make dataset unrestricted.');
     });
   },
 
@@ -234,10 +234,10 @@ var LibraryView = Backbone.View.extend({
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
-      mod_toastr.success('Permissions saved');
+      mod_toastr.success('Permissions saved.');
     })
     .fail(function(){
-      mod_toastr.error('An error occurred while setting library permissions :(');
+      mod_toastr.error('An error occurred while attempting to set library permissions.');
     })
   },
 

@@ -62,18 +62,18 @@ var LibraryToolbarView = Backbone.View.extend({
               self.modal.hide();
               self.clear_library_modal();
               Galaxy.libraries.libraryListView.render();
-              mod_toastr.success('Library created');
+              mod_toastr.success('Library created.');
             },
             error: function(model, response){
               if (typeof response.responseJSON !== "undefined"){
                 mod_toastr.error(response.responseJSON.err_msg);
               } else {
-                mod_toastr.error('An error occured :(');
+                mod_toastr.error('An error occured.');
               }
             }
           });
       } else {
-          mod_toastr.error('Library\'s name is missing');
+          mod_toastr.error('Library\'s name is missing.');
       }
       return false;
   },
