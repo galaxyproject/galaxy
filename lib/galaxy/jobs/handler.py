@@ -355,8 +355,13 @@ class JobHandlerQueue( object ):
         """
         job_destination = None
         try:
+            assert job_wrapper.tool is not None, 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.'
             # Cause the job_destination to be set and cached by the mapper
             job_destination = job_wrapper.job_destination
+        except AssertionError as e:
+            log.warning( "(%s) Tool '%s' removed from tool config, unable to run job" % ( job.id, job.tool_id ) )
+            job_wrapper.fail( e )
+            return JOB_ERROR, job_destination
         except JobNotReadyException as e:
             job_state = e.job_state or JOB_WAIT
             return job_state, None
