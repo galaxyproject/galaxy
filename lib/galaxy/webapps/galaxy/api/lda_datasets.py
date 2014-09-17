@@ -303,7 +303,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             if len( invalid_manage_roles_names ) > 0:
                 log.warning( "The following roles could not be added to the dataset manage permission: " + str( invalid_manage_roles_names ) )
 
-            manage_permission = { trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS : valid_manage_roles }
+            manage_permission = { trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: valid_manage_roles }
             trans.app.security_agent.set_dataset_permission( dataset, manage_permission )
 
             # MODIFY LIBRARY ITEM ROLES
@@ -326,12 +326,12 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             if len( invalid_modify_roles_names ) > 0:
                 log.warning( "The following roles could not be added to the dataset modify permission: " + str( invalid_modify_roles_names ) )
 
-            modify_permission = { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY : valid_modify_roles }
+            modify_permission = { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles }
             trans.app.security_agent.set_library_item_permission( library_dataset, modify_permission )
 
         else:
-            raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.'
-                                'Allowed values are: "remove_restrictions", "make_private", "set_permissions"' )
+            raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value. '
+                                                               'Allowed values are: "remove_restrictions", "make_private", "set_permissions"' )
 
         return self._get_current_roles( trans, library_dataset )
 
@@ -427,7 +427,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if path is None:
             raise exceptions.RequestParameterMissingException( 'The required atribute path is missing.' )
         folder = self.folder_manager.get( trans, folder_id )
-        link_data = util.string_as_bool( kwd.get( 'link_data', False ) )
 
         source = kwd.get( 'source', None )
         if source not in [ 'userdir_file', 'userdir_folder', 'admin_path' ]:
@@ -457,7 +456,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
-        errors = tool.update_state( trans, tool.inputs_by_page[ 0 ], state.inputs, kwd )
+        tool.update_state( trans, tool.inputs_by_page[ 0 ], state.inputs, kwd )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
@@ -708,7 +707,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if folder.parent_id is None:
             path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
         else:
-        # We add the current folder and traverse up one folder.
+            # We add the current folder and traverse up one folder.
             path_to_root.append( ( 'F' + trans.security.encode_id( folder.id ), folder.name ) )
             upper_folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( folder.parent_id )
             path_to_root.extend( self._build_path( trans, upper_folder ) )
