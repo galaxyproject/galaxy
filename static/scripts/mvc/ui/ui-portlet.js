@@ -15,7 +15,8 @@ var View = Backbone.View.extend({
         scrollable  : true,
         nopadding   : false,
         operations  : null,
-        placement   : 'bottom'
+        placement   : 'bottom',
+        cls         : 'ui-portlet'
     },
     
     // elements
@@ -36,7 +37,7 @@ var View = Backbone.View.extend({
         this.$content = this.$el.find('#content');
         
         // link title
-        this.$title = this.$el.find('#portlet-header-text');
+        this.$title = this.$el.find('#portlet-title-text');
         
         // set content format
         var $portlet_content = this.$el.find('#portlet-content');
@@ -152,17 +153,17 @@ var View = Backbone.View.extend({
     
     // fill regular modal template
     _template: function(options) {
-        var tmpl =  '<div class="ui-portlet">';
+        var tmpl =  '<div class="' + options.cls + '">';
         
         if (options.title) {
             tmpl +=     '<div id="portlet-header" class="portlet-header">' +
                             '<div id="operations" style="float: right;"></div>' +
-                            '<h3>';
+                            '<h3 class="portlet-title">';
                             
             if (options.icon)
                 tmpl +=         '<i class="icon fa ' + options.icon + '">&nbsp;</i>';
         
-            tmpl +=             '<span id="portlet-header-text">' + options.title + '</span>' +
+            tmpl +=             '<span id="portlet-title-text" class="portlet-title-text">' + options.title + '</span>' +
                             '</h3>' +
                         '</div>';
         }

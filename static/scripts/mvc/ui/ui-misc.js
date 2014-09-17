@@ -115,7 +115,15 @@ var Button = Backbone.View.extend({
         this.setElement(this._template(this.options));
         
         // add event
-        $(this.el).on('click', options.onclick);
+        $(this.el).on('click', function() {
+            // hide all tooltips
+            $('.tooltip').hide();
+            
+            // execute onclick callback
+            if (options.onclick) {
+                options.onclick();
+            }
+        });
         
         // add tooltip
         $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
@@ -140,7 +148,7 @@ var ButtonIcon = Backbone.View.extend({
         id          : null,
         title       : '',
         floating    : 'right',
-        cls         : 'icon-btn',
+        cls         : 'ui-button-icon',
         icon        : '',
         tooltip     : '',
         onclick     : null
@@ -154,14 +162,38 @@ var ButtonIcon = Backbone.View.extend({
         // create new element
         this.setElement(this._template(this.options));
         
+        // link button element
+        this.$button = this.$el.find('.button');
+        
         // add event
-        $(this.el).on('click', options.onclick);
+        var self = this;
+        $(this.el).on('click', function() {
+            // hide all tooltips
+            $('.tooltip').hide();
+            
+            // execute onclick callback
+            if (options.onclick && !self.disabled) {
+                options.onclick();
+            }
+        });
         
         // add tooltip
         $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
     },
     
-    // element
+    // disable
+    disable: function() {
+        this.$button.addClass('disabled');
+        this.disabled = true;
+    },
+    
+    // enable
+    enable: function() {
+        this.$button.removeClass('disabled');
+        this.disabled = false;
+    },
+    
+    // template
     _template: function(options) {
         // width
         var width = '';
@@ -170,7 +202,7 @@ var ButtonIcon = Backbone.View.extend({
         }
         
         // string
-        var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="ui-button-icon ' + options.cls + '">';
+        var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="' + options.cls + '">';
     
         // title
         if (options.title) {

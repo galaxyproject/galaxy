@@ -181,7 +181,8 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     
                     // create tool form section
                     self.section = new ToolSection.View(self, {
-                        inputs : self.model.get('inputs')
+                        inputs : self.model.get('inputs'),
+                        cls    : 'ui-table-plain'
                     });
                     
                     // append tool section

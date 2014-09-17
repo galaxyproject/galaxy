@@ -1,8 +1,8 @@
 /*
     This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _addRow() function.
 */
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-select-dataset'],
-    function(Utils, Table, Ui, Tabs, SelectDataset) {
+define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-dataset'],
+    function(Utils, Table, Ui, Repeat, SelectDataset) {
 
     // input field element wrapper
     var InputElement = Backbone.View.extend({
@@ -165,8 +165,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
             //
             // create tab field
             //
-            var tabs = new Tabs.View({
-                title_new       : 'Add ' + input_def.title,
+            var repeat = new Repeat.View({
+                title_new       : input_def.title,
                 max             : input_def.max,
                 onnew           : function() {
                     // create id tag
@@ -179,35 +179,32 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
                     });
                     
                     // add new tab
-                    tabs.add({
+                    repeat.add({
                         id              : sub_section_id,
                         title           : input_def.title,
                         $el             : sub_section.$el,
                         ondel           : function() {
-                            // delete tab
-                            tabs.del(sub_section_id);
+                            // delete repeat block
+                            repeat.del(sub_section_id);
                             
-                            // retitle tabs
-                            tabs.retitle(input_def.title);
+                            // retitle repeat block
+                            repeat.retitle(input_def.title);
                             
                             // trigger refresh
                             self.app.refresh();
                         }
                     });
                     
-                    // retitle tabs
-                    tabs.retitle(input_def.title);
+                    // retitle repeat blocks
+                    repeat.retitle(input_def.title);
                             
-                    // show tab
-                    tabs.show(sub_section_id);
-            
                     // trigger refresh
                     self.app.refresh();
                 }
             });
             
             //
-            // add min number of tabs
+            // add min number of repeat blocks
             //
             for (var i = 0; i < input_def.min; i++) {
                 // create id tag
@@ -220,21 +217,21 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'm
                 });
                 
                 // add tab
-                tabs.add({
+                repeat.add({
                     id      : sub_section_id,
                     title   : input_def.title,
                     $el     : sub_section.$el
                 });
             }
             
-            // retitle tabs
-            tabs.retitle(input_def.title);
+            // retitle repeat block
+            repeat.retitle(input_def.title);
             
             // create input field wrapper
             var input_element = new InputElement({
                 label       : input_def.title,
                 help        : input_def.help,
-                $el         : tabs.$el,
+                $el         : repeat.$el,
                 highlight   : true
             });
                 

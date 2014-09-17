@@ -8,7 +8,6 @@ var View = Backbone.View.extend({
         title_new       : '',
         operations      : null,
         onnew           : null,
-        min             : null,
         max             : null,
         onchange        : null
     },

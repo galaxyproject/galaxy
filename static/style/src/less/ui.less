@@ -1,3 +1,10 @@
+.no-highlight {
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
+}
+
 .ui-error {
     -moz-border-radius: @border-radius-base;
     border-radius: @border-radius-base;
@@ -98,24 +105,37 @@
 }
 
 .ui-button-icon {
+    &:extend(.icon-btn);
+    &:extend(.no-highlight);
+
     margin-right: 5px;
     ul {
         i {
             font-size: 1.2em; margin-right: 5px; position: relative; top: 1px;
         }
     }
+    
+    .button {
+        margin-right: 5px;
+        margin-left: 5px;
+    
+        .title {
+            position: relative;
+            font-size: 0.8em;
+            font-weight: normal;
+            top: -1px;
+        }
+    }
+    
+    .button.disabled {
+        .opacity(.65);
+    }
 }
 
-.ui-button-icon .button {
-    margin-right: 5px;
-    margin-left: 5px;
-}
-
-.ui-button-icon .title {
-    position: relative;
-    font-size: 0.8em;
-    font-weight: normal;
-    top: -1px;
+.ui-button-icon-plain {
+    &:extend(.icon-btn);
+    border: none !important;
+    background: none !important;
 }
 
 .ui-input {
@@ -140,14 +160,8 @@
     }
 }
 
-.no-highlight {
-    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
-    -moz-user-select: none; /* mozilla browsers */
-    -khtml-user-select: none; /* webkit (konqueror) browsers */
-    -ms-user-select: none; /* IE10+ */
-}
-
 .ui-portlet {
+    &:extend(.no-highlight);
     border: solid @form-border 1px;
     .border-radius(@panel-border-radius);
 
@@ -157,7 +171,6 @@
     height: 100%;
 
     .portlet-header {
-        padding: 5px 10px;
         background: @form-heading-bg;
         border-bottom: solid @form-border 1px;
         padding: 2px 8px;
@@ -203,6 +216,31 @@
 
     .no-scroll {
         height: ~'calc(100% - 80px)';
+    }
+}
+
+.ui-portlet-repeat {
+    &:extend(.ui-portlet);
+    border: none;
+    border-left: solid 3px @form-heading-bg;
+    border-radius: 5px;
+    .portlet-header {
+        background: @form-heading-bg;
+        border-top-right-radius: 3px;
+        border-bottom-right-radius: 3px;
+        padding: 1px 0px 0px 2px;
+    }
+
+    .portlet-title {
+        padding-top: 1px;
+    }
+
+    .portlet-content {
+        padding: 0px;
+        .content {
+            padding     : 0px;
+            padding-left: 5px;
+        }
     }
 }
 
