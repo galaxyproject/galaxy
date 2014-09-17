@@ -139,12 +139,12 @@ class Configuration( object ):
 
     def __parse_config_file_options( self, kwargs ):
         defaults = dict(
-            datatypes_config_file = [ 'datatypes_conf.xml', 'config/datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
+            datatypes_config_file = [ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             shed_tool_data_table_config = [ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
         )
 
         listify_defaults = dict(
-            tool_data_table_config_path = [ 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
+            tool_data_table_config_path = [ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
         )
 
         for var, defaults in defaults.items():
