@@ -2,10 +2,11 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from io import StringIO
+curl_available = True
 try:
     from pycurl import Curl
 except ImportError:
-    pass
+    curl_available = False
 from os.path import getsize
 
 

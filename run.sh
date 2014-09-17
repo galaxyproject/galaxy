@@ -22,7 +22,7 @@ if [ -z "$GALAXY_CONFIG_FILE" ]; then
     if [ -f universe_wsgi.ini ]; then
         GALAXY_CONFIG_FILE=universe_wsgi.ini
     elif [ -f config/galaxy.ini ]; then
-        GALAXY_CONFIG_FILE=universe_wsgi.ini
+        GALAXY_CONFIG_FILE=config/galaxy.ini
     else
         GALAXY_CONFIG_FILE=config/galaxy.ini.sample
     fi

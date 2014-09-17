@@ -26,9 +26,9 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
         self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
 
-    def test_show_invalid_is_404( self ):
-        show_response = self._get( "workflow/%s" % self._random_key() )
-        self._assert_status_code_is( show_response, 404 )
+    def test_show_invalid_key_is_400( self ):
+        show_response = self._get( "workflows/%s" % self._random_key() )
+        self._assert_status_code_is( show_response, 400 )
 
     def test_cannot_show_private_workflow( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_not_importportable" )
@@ -134,12 +134,12 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             run_workflow_response = self._post( "workflows", data=workflow_request )
             self._assert_status_code_is( run_workflow_response, 403 )
 
-    def test_404_on_invalid_workflow( self ):
+    def test_400_on_invalid_workflow_id( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run_does_not_exist" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
         workflow_request[ "workflow_id" ] = self._random_key()
         run_workflow_response = self._post( "workflows", data=workflow_request )
-        self._assert_status_code_is( run_workflow_response, 404 )
+        self._assert_status_code_is( run_workflow_response, 400 )
 
     def test_cannot_run_against_other_users_history( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run_does_not_exist" )
@@ -557,21 +557,6 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         self._assert_has_keys( usage_details, "inputs", "steps" )
         for step in usage_details[ "steps" ]:
             self._assert_has_keys( step, "workflow_step_id", "order_index", "id" )
-
-    @skip_without_tool( "cat1" )
-    def test_post_job_action( self ):
-        """ Tests both import and execution of post job actions.
-        """
-        workflow = self.workflow_populator.load_workflow( name="test_for_pja_run", add_pja=True )
-        workflow_request, history_id = self._setup_workflow_run( workflow )
-        run_workflow_response = self._post( "workflows", data=workflow_request )
-        self._assert_status_code_is( run_workflow_response, 200 )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        time.sleep(.1)  # Give another little bit of time for rename (needed?)
-        contents = self._get( "histories/%s/contents" % history_id ).json()
-        # loading workflow with add_pja=True causes workflow output to be
-        # renamed to 'the_new_name'.
-        assert "the_new_name" in map( lambda hda: hda[ "name" ], contents )
 
     def _invocation_details( self, workflow_id, invocation_id ):
         invocation_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, invocation_id ) )

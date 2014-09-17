@@ -43,7 +43,7 @@ class LibrariesApiTestCase( api.ApiTestCase, TestsDatasets ):
         library_dataset = show().json()
         self._assert_has_keys( library_dataset, "peek", "data_type" )
         assert library_dataset[ "peek" ].find("create_test") >= 0
-        assert library_dataset[ "data_type" ] == "txt"
+        assert library_dataset[ "file_ext" ] == "txt", library_dataset[ "file_ext" ]
 
     def _create_folder( self, library ):
         create_data = dict(

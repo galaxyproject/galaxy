@@ -85,18 +85,27 @@ class PulsarExchange(object):
                 if heartbeat_thread:
                     heartbeat_thread.join()
                 sleep(DEFAULT_RECONNECT_CONSUMER_WAIT)
+            except BaseException:
+                log.exception("Problem consuming queue, consumer quitting in problematic fashion!")
+                raise
 
     def heartbeat(self, connection):
         log.debug('AMQP heartbeat thread alive')
-        while connection.connected:
-            connection.heartbeat_check()
-            sleep(DEFAULT_HEARTBEAT_WAIT)
+        try:
+            while connection.connected:
+                connection.heartbeat_check()
+                sleep(DEFAULT_HEARTBEAT_WAIT)
+        except BaseException:
+            log.exception("Problem with heartbeat, leaving heartbeat method in problematic state!")
+            raise
         log.debug('AMQP heartbeat thread exiting')
 
     def publish(self, name, payload):
+        key = self.__queue_name(name)
+        log.debug("Begin publishing to key %s" % key)
         with self.connection(self.__url) as connection:
             with pools.producers[connection].acquire() as producer:
-                key = self.__queue_name(name)
+                log.debug("Have producer for publishing to key %s" % key)
                 producer.publish(
                     payload,
                     serializer='json',
@@ -105,6 +114,7 @@ class PulsarExchange(object):
                     routing_key=key,
                     **self.__publish_kwds
                 )
+                log.debug("Published to key %s" % key)
 
     def __publish_errback(self, exc, interval):
         log.error("Connection error while publishing: %r", exc, exc_info=1)

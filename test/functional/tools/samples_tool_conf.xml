@@ -22,6 +22,8 @@
   <tool file="multi_data_param.xml" />
   <tool file="special_params.xml" />
   <tool file="validation_default.xml" />
+  <tool file="validation_sanitizer.xml" />
+  <tool file="validation_repeat.xml" />
   <tool file="collection_paired_test.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
