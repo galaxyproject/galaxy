@@ -2538,6 +2538,14 @@ class Tool( object, Dictifiable ):
                     try:
                         current_case = input.get_current_case( value, trans )
                     except ValueError, e:
+                        if input.is_job_resource_conditional:
+                            # Unless explicitly given job resource parameters
+                            # (e.g. from the run tool form) don't populate the
+                            # state. Along with other hacks prevents workflow
+                            # saving from populating resource defaults - which
+                            # are meant to be much more transient than the rest
+                            # of tool state.
+                            continue
                         #load default initial value
                         if not test_param_error:
                             test_param_error = str( e )
