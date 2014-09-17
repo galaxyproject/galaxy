@@ -22,7 +22,7 @@ from galaxy.model.orm.scripts import read_config_file_arg
 
 log = logging.getLogger( __name__ )
 
-config_file = read_config_file_arg( sys.argv, 'config/galaxy.ini' )
+config_file = read_config_file_arg( sys.argv, 'config/galaxy.ini', 'universe_wsgi.ini' )
 if not os.path.exists( config_file ):
     print "Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % config_file
     sys.exit( 1 )
