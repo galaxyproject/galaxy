@@ -20,11 +20,11 @@ TODO:
  *                + '&columns=[10,14]' ),
  *      total   : hda.metadata_data_lines,
  *      size    : 500,
- *      
+ *
  *      initialize : function( config ){
  *          // ... do some stuff
  *      },
- *      
+ *
  *      buildUrl : function( start, size ){
  *          // change the formation of start, size in query string
  *          return loader.url + '&' + jQuery.param({
@@ -64,19 +64,19 @@ function LazyDataLoader( config ){
         LOADED_ALL_EVENT  = 'complete';
         //  error from ajax
         ERROR_EVENT       = 'error';
-    
+
     jQuery.extend( loader, LoggableMixin );
     jQuery.extend( loader, {
-    
+
         //NOTE: the next two need to be sent in config (required)
         // total size of data on server
         total   : undefined,
         // url of service to get the data
         url     : undefined,
-        
+
         // holds the interval id for the current load delay
         currentIntervalId   : undefined,
-        
+
         // each load call will add an element to this array
         //  it's the responsibility of the code using this to combine them properly
         data    : [],
@@ -86,12 +86,12 @@ function LazyDataLoader( config ){
         start   : 0,
         // size to fetch per load
         size    : 4000,
-        
+
         // loader init func: extends loader with config and calls config.init if there
         //@param {object} config : object containing variables to override (or additional)
         initialize : function( config ){
             jQuery.extend( loader, config );
-            
+
             // call the custom initialize function if any
             //  only dangerous if the user tries LazyDataLoader.prototype.init
             if( config.hasOwnProperty( 'initialize' ) ){
@@ -99,7 +99,7 @@ function LazyDataLoader( config ){
             }
             this.log( this + ' initialized:', loader );
         },
-        
+
         // returns query string formatted start and size (for the next fetch) appended to the loader.url
         //OVERRIDE: to change how params are passed, param names, etc.
         //@param {int} start : the line/row/datum indicating where in the dataset the next load begins
@@ -111,7 +111,7 @@ function LazyDataLoader( config ){
                 max_vals:  size
             });
         },
-        
+
         //OVERRIDE: to handle ajax errors differently
         ajaxErrorFn : function( xhr, status, error ){
             console.error( 'ERROR fetching data:', error );
@@ -127,7 +127,7 @@ function LazyDataLoader( config ){
         },
 
         // interface to begin load (and first recursive call)
-        //@param {Function} callback : function to execute when all data is loaded. callback is passed loader.data 
+        //@param {Function} callback : function to execute when all data is loaded. callback is passed loader.data
         load : function( callback ){
             this.log( this + '.load' );
 
@@ -140,7 +140,7 @@ function LazyDataLoader( config ){
                 this.log( '\t total:', this.total );
             }
             //if( !loader.total ){ throw( loader + ' requires a total (total size of the data)' ); }
-            
+
             //FIRST RECURSION: start
             var startingSize = loader.size;
             if( ( loader.total !== null ) && ( loader.total < loader.size ) ){
@@ -148,13 +148,13 @@ function LazyDataLoader( config ){
             }
             loader.log( loader + '\t beginning recursion' );
             loadHelper( loader.start, startingSize );
-            
+
             //FIRST, SUBSEQUENT RECURSION function
             function loadHelper( start, size ){
                 loader.log( loader + '.loadHelper, start:', start, 'size:', size );
                 var url = loader.buildUrl( start, size );
                 loader.log( '\t url:', url );
-                
+
                 jQuery.ajax({
                     url         : loader.buildUrl( start, size ),
                     converters  : loader.converters,
@@ -168,19 +168,19 @@ function LazyDataLoader( config ){
                         $( loader ).trigger( ERROR_EVENT, [ status, error ] );
                         loader.ajaxErrorFn( xhr, status, error );
                     },
-                    
+
                     success     : function( response ){
                         loader.log( '\t ajax success, response:', response, 'next:', next, 'remainder:', remainder );
-                            
+
                         if( response !== null ){
                             // store the response as is in a new element
                             //TODO:?? store start, size as well?
                             loader.data.push( response );
-                            
+
                             //TODO: these might not be the best way to split this up
                             // fire the first load event (if this is the first batch) AND partial
                             $( loader ).trigger( LOADED_NEW_EVENT, [ response, start, size ] );
-                            
+
                             //RECURSION:
                             var next = start + size,
                                 remainder = loader.size;
@@ -197,12 +197,12 @@ function LazyDataLoader( config ){
                                     loader.delay
                                 );
                                 loader.log( '\t currentIntervalId:', loader.currentIntervalId );
-                                
+
                             // otherwise (base-case), don't do anything
                             } else {
                                 loadFinished();
                             }
-                        
+
                         } else { //response === null --> base-case, server sez nuthin left
                             loadFinished();
                         }
@@ -217,10 +217,10 @@ function LazyDataLoader( config ){
                 if( callback ){ callback( loader.data ); }
             }
         },
-    
+
         toString : function(){ return 'LazyDataLoader'; }
     });
-    
+
     loader.initialize( config );
     return loader;
 }
