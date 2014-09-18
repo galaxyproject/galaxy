@@ -237,7 +237,8 @@ function naturalSort(a, b) {
 $.fn.refresh_select2 = function() {
     var select_elt = $(this);
     var options = { width: "resolve",
-                    closeOnSelect: !select_elt.is("[MULTIPLE]")
+                    closeOnSelect: !select_elt.is("[MULTIPLE]"),
+                    dropdownAutoWidth   : true
                   };
     return select_elt.select2( options );
 }
