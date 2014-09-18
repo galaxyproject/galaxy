@@ -143,8 +143,7 @@ function LazyDataLoader( config ){
             
             //FIRST RECURSION: start
             var startingSize = loader.size;
-            if( ( loader.total !== null )
-            &&  ( loader.total < loader.size ) ){
+            if( ( loader.total !== null ) && ( loader.total < loader.size ) ){
                 startingSize = loader.total;
             }
             loader.log( loader + '\t beginning recursion' );
