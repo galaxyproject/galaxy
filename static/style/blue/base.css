@@ -1232,8 +1232,7 @@ label{font-weight:normal}
 .select2-offscreen,.select2-offscreen:focus{clip:rect(0 0 0 0) !important;width:1px !important;height:1px !important;border:0 !important;margin:0 !important;padding:0 !important;overflow:hidden !important;position:absolute !important;outline:0 !important;left:0px !important;top:0px !important}
 .select2-display-none{display:none}
 .select2-measure-scrollbar{position:absolute;top:-10000px;left:-10000px;width:100px;height:100px;overflow:scroll}
-@media only screen and (-webkit-min-device-pixel-ratio:1.5),only screen and (min-resolution:144dpi){.select2-search input,.select2-search-choice-close,.select2-container .select2-choice abbr,.select2-container .select2-choice .select2-arrow b{background-image:url('../images/select2x2.png') !important;background-repeat:no-repeat !important;background-size:60px 40px !important} .select2-search input{background-position:100% -21px !important}}.select2-container{min-width:256px}
-.galaxy-frame{}.galaxy-frame .corner{-moz-border-radius:5px;border-radius:5px}
+@media only screen and (-webkit-min-device-pixel-ratio:1.5),only screen and (min-resolution:144dpi){.select2-search input,.select2-search-choice-close,.select2-container .select2-choice abbr,.select2-container .select2-choice .select2-arrow b{background-image:url('../images/select2x2.png') !important;background-repeat:no-repeat !important;background-size:60px 40px !important} .select2-search input{background-position:100% -21px !important}}.galaxy-frame{}.galaxy-frame .corner{-moz-border-radius:5px;border-radius:5px}
 .galaxy-frame .toggle{color:gold}
 .galaxy-frame .frame-background{z-index:1000;position:absolute;display:none;top:0px;left:0px;height:100%;width:100%;opacity:0.6;background:#000;overflow:auto}
 .galaxy-frame .frame-shadow{z-index:1001;position:absolute;display:none;top:0px;left:0px;opacity:0.5;background:#2c3143;border:1px solid #888}

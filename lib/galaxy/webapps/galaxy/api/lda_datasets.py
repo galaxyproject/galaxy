@@ -414,9 +414,9 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         kwd[ 'space_to_tab' ] = 'False'
         kwd[ 'to_posix_lines' ] = 'True'
-        kwd[ 'dbkey' ] = '?'
-        kwd[ 'file_type' ] = 'auto'
-
+        
+        kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
+        kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
         kwd[' link_data_only' ] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
         encoded_folder_id = kwd.get( 'encoded_folder_id', None )
         if encoded_folder_id is not None:
@@ -473,9 +473,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 trans, 'api', params, os.path.basename( file ), file, 'server_dir', library_bunch ) )
         # user wants to import whole folder
         if source == "userdir_folder":
-            # import_folder_root = [next(part for part in path.split(os.path.sep) if part) for path in [os.path.splitdrive(path_to_root_import_folder)[1]]]
-            # new_folder = self.folder_manager.create( trans, folder_id, import_folder_root[0] )
-
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
                 trans, 'api', params, library_bunch, 200, '' )
             uploaded_datasets = uploaded_datasets_bunch[0]
@@ -495,7 +492,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             for ud in uploaded_datasets:
                 ud.path = os.path.abspath( ud.path )
                 abspath_datasets.append( ud )
-
         json_file_path = upload_common.create_paramfile( trans, abspath_datasets )
         data_list = [ ud.data for ud in abspath_datasets ]
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=folder )
