@@ -105,6 +105,17 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         assert len( downloaded_workflow[ "steps" ] ) == 3
         first_input = downloaded_workflow[ "steps" ][ "0" ][ "inputs" ][ 0 ]
         assert first_input[ "name" ] == "WorkflowInput1"
+        assert first_input[ "description" ] == "input1 description"
+
+    def test_import_export_with_runtime_inputs( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( name="test_workflow_with_runtime_input" )
+        workflow_id = self.workflow_populator.create_workflow( workflow )
+        download_response = self._get( "workflows/%s/download" % workflow_id )
+        downloaded_workflow = download_response.json()
+        assert len( downloaded_workflow[ "steps" ] ) == 2
+        runtime_input = downloaded_workflow[ "steps" ][ "1" ][ "inputs" ][ 0 ]
+        assert runtime_input[ "description" ].startswith( "runtime parameter for tool" )
+        assert runtime_input[ "name" ] == "num_lines"
 
     @skip_without_tool( "cat1" )
     def test_run_workflow_by_index( self ):
