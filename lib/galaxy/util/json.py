@@ -51,8 +51,10 @@ def swap_inf_nan( val ):
     elif isinstance(val, float):
         if math.isnan(val):
             return "__NaN__"
-        elif math.isinf(val):
+        elif val == float("inf"):
             return "__Infinity__"
+        elif val == float("-inf"):
+            return "__-Infinity__"
     else:
         return val
 
