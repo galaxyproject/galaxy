@@ -14,7 +14,13 @@ var HistoryPanelPrefs = BASE_MVC.SessionStorageModel.extend(
         /** should the tags editor be shown or hidden initially? */
         tagsEditorShown : false,
         /** should the annotation editor be shown or hidden initially? */
-        annotationEditorShown : false
+        annotationEditorShown : false,
+        ///** what is the currently focused content (dataset or collection) in the current history?
+        // *      (the history panel will highlight and scroll to the focused content view)
+        // */
+        //focusedContentId : null
+        /** Current scroll position */
+        scrollPosition : 0
     },
     toString : function(){
         return 'HistoryPanelPrefs(' + JSON.stringify( this.toJSON() ) + ')';
@@ -70,6 +76,20 @@ var CurrentHistoryPanel = _super.extend(
 
         /** sub-views that will overlay this panel (collections) */
         this.panelStack = [];
+
+        /** id of currently focused content */
+        this.currentContentId = attributes.currentContentId || null;
+        //NOTE: purposely not sent to localstorage since panel recreation roughly lines up with a reset of this value
+    },
+
+    /** Override to cache the current scroll position with a listener */
+    _setUpListeners : function(){
+        _super.prototype._setUpListeners.call( this );
+
+        var panel = this;
+        this.$scrollContainer().on( 'scroll', function( ev ){
+            panel.preferences.set( 'scrollPosition', $( this ).scrollTop() );
+        });
     },
 
     // ------------------------------------------------------------------------ loading history/item models
@@ -243,11 +263,34 @@ var CurrentHistoryPanel = _super.extend(
             });
     },
 
+    /** Override to scroll to cached position (in prefs) after swapping */
+    _swapNewRender : function( $newRender ){
+        _super.prototype._swapNewRender.call( this, $newRender );
+        var panel = this;
+
+        _.delay( function(){
+            var pos = panel.preferences.get( 'scrollPosition' );
+            if( pos ){
+                panel.scrollTo( pos );
+            }
+        }, 10 );
+        //TODO: is this enough of a delay on larger histories?
+
+        return this;
+    },
+
     // ------------------------------------------------------------------------ sub-views
     // reverse HID order
-    /** Override to reverse order of views - newest contents on top */
+    /** Override to reverse order of views - newest contents on top
+     *      and add the current-content highlight class to currentContentId's view
+     */
     _attachItems : function( $whereTo ){
+        var panel = this;
         this.$list( $whereTo ).append( this.views.reverse().map( function( view ){
+            // add current content
+            if( panel.currentContentId && view.model.id === panel.currentContentId ){
+                view.$el.addClass( 'current-content' );
+            }
             return view.$el;
         }));
         return this;
@@ -298,7 +341,24 @@ var CurrentHistoryPanel = _super.extend(
         view.on( 'collapsed:drilldown', function( v, drilldown ){
             this._collapseDrilldownPanel( drilldown );
         }, this );
+
+        // when content is manipulated, make it the current-content
+        view.on( 'display edit params rerun report-err visualize', function( v, ev ){
+            this.setCurrentContent( v );
+        }, this );
+
         return this;
+    },
+
+    /** display 'current content': add a visible highlight and store the id of a content item */
+    setCurrentContent : function( view ){
+        this.$( '.history-content.current-content' ).removeClass( 'current-content' );
+        if( view ){
+            view.$el.addClass( 'current-content' );
+            this.currentContentId = view.model.id;
+        } else {
+            this.currentContentId = null;
+        }
     },
 
     /** Handle drill down by hiding this panels list and controls and showing the sub-panel */

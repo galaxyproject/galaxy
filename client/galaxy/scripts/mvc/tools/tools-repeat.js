@@ -85,7 +85,7 @@ var View = Backbone.View.extend({
         // append content
         portlet.append(options.$el);
         
-        // append section row class
+        // tag as section row
         portlet.$el.addClass('section-row');
         
         // append to dom
