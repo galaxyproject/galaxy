@@ -1,9 +1,12 @@
 from __future__ import absolute_import
 
-__all__ = [ "dumps", "loads", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
+__all__ = [ "dumps", "loads", "safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response" ]
 
+import copy
+import collections
 import json
 import logging
+import math
 import random
 import string
 
@@ -32,6 +35,41 @@ def json_fix( val ):
         return val.encode( "utf8" )
     else:
         return val
+
+
+def swap_inf_nan( val ):
+    """
+    This takes an arbitrary object and preps it for jsonifying safely, templating Inf/NaN.
+    """
+    if isinstance(val, basestring):
+        # basestring first, because it's a sequence and would otherwise get caught below.
+        return val
+    elif isinstance( val, collections.Sequence ):
+        return [ swap_inf_nan( v ) for v in val ]
+    elif isinstance( val, collections.Mapping ):
+        return dict( [ ( swap_inf_nan( k ), swap_inf_nan( v ) ) for ( k, v ) in val.iteritems() ] )
+    elif isinstance(val, float):
+        if math.isnan(val):
+            return "__NaN__"
+        elif math.isinf(val):
+            return "__Infinity__"
+    else:
+        return val
+
+
+def safe_dumps(*args, **kwargs):
+    """
+    This is a wrapper around dumps that encodes Infinity and NaN values.  It's a
+    fairly rare case (which will be low in request volume).  Basically, we tell
+    json.dumps to blow up if it encounters Infinity/NaN, and we 'fix' it before
+    re-encoding.
+    """
+    try:
+        dumped = json.dumps(*args, allow_nan=False, **kwargs)
+    except ValueError:
+        obj = swap_inf_nan(copy.deepcopy(args[0]))
+        dumped = json.dumps(obj, allow_nan=False, **kwargs)
+    return dumped
 
 
 # Methods for handling JSON-RPC
