@@ -125,6 +125,9 @@ function LazyDataLoader( config ){
             'text xml'  : jQuery.parseXML,
 
             // add NaN, inf, -inf handling to jquery json parser (by default)
+            // TODO: This functionality shouldn't be required as of
+            // 2006c39aea16, and we should probably assume correct JSON instead
+            // of stripping out these strings.
             'text json' : function( json ){
                 json = json.replace( /NaN/g, 'null' );
                 json = json.replace( /-Infinity/g, 'null' );
