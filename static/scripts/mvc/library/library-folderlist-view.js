@@ -1,4 +1,3 @@
-// dependencies
 define([
     "galaxy.masthead",
     "utils/utils",
