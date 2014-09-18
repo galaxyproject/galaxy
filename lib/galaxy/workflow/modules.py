@@ -98,9 +98,14 @@ class WorkflowModule( object ):
         return None
 
     def get_data_inputs( self ):
+        """ Get configure time data input descriptions. """
         return []
 
     def get_data_outputs( self ):
+        return []
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        """ Get runtime inputs (inputs and parameters) as simple dictionary. """
         return []
 
     def get_config_form( self ):
@@ -193,6 +198,10 @@ class InputModule( WorkflowModule ):
         configuration property and its default value.
         """
         raise TypeError( "Abstract method" )
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        name = self.state.get( "name", self.default_name )
+        return [ dict( name=name, description=step_annotation ) ]
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -528,6 +537,20 @@ class ToolModule( WorkflowModule ):
                         formats.append( format )
             data_outputs.append( dict( name=name, extensions=formats ) )
         return data_outputs
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        # Step is a tool and may have runtime inputs.
+        input_dicts = []
+        for name, val in self.state.inputs.items():
+            input_type = type( val )
+            if input_type == RuntimeValue:
+                input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
+            elif input_type == dict:
+                # Input type is described by a dict, e.g. indexed parameters.
+                for partval in val.values():
+                    if type( partval ) == RuntimeValue:
+                        input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
+        return input_dicts
 
     def get_post_job_actions( self ):
         return self.post_job_actions
