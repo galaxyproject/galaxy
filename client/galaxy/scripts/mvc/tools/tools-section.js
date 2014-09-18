@@ -141,16 +141,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     cls     : 'ui-table-plain'
                 });
                 
-                // create input field wrapper
-                var input_element = new InputElement({
-                    label       : '',
-                    help        : input_def.help,
-                    $el         : sub_section.$el,
-                    highlight   : true
-                });
+                // displays as grouped subsection
+                sub_section.$el.addClass('ui-table-form-section');
                 
                 // create table row
-                this.table.add(input_element.$el);
+                this.table.add(sub_section.$el);
                 
                 // append to table
                 this.table.append(sub_section_id);
@@ -234,7 +229,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 $el         : repeat.$el,
                 highlight   : true
             });
-                
+            
             // create table row
             this.table.add(input_element.$el);
             
