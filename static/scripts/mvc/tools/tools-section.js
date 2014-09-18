@@ -25,12 +25,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         
         // template
         _template: function(options) {
-            var $input;
-            if (options.highlight) {
-                $input = $('<div class="ui-table-element ui-table-form-section"/>');
-            } else {
-                $input = $('<div class="ui-table-element"/>');
-            }
+            // create table element
+            var $input = $('<div class="ui-table-element"/>');
             
             // add error
             $input.append('<div class="ui-table-form-error ui-error"><span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"></div>');
@@ -226,10 +222,12 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             var input_element = new InputElement({
                 label       : input_def.title,
                 help        : input_def.help,
-                $el         : repeat.$el,
-                highlight   : true
+                $el         : repeat.$el
             });
             
+            // displays as grouped subsection
+            input_element.$el.addClass('ui-table-form-section');
+                
             // create table row
             this.table.add(input_element.$el);
             
