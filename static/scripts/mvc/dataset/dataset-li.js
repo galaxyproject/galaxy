@@ -314,6 +314,13 @@ var DatasetListItemView = _super.extend(
     },
 
     // ......................................................................... misc
+    events : _.extend( _.clone( _super.prototype.events ), {
+        'click .display-btn'    : function( ev ){ this.trigger( 'display', this, ev ); },
+        'click .params-btn'     : function( ev ){ this.trigger( 'params', this, ev ); },
+        'click .download-btn'   : function( ev ){ this.trigger( 'download', this, ev ); }
+    }),
+
+    // ......................................................................... misc
     /** String representation */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );

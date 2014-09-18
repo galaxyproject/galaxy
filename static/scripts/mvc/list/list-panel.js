@@ -679,28 +679,28 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     },
 
     /** set the current scroll position of the panel in its parent */
-    scrollTo : function( pos ){
-        this.$scrollContainer().scrollTop( pos );
+    scrollTo : function( pos, speed ){
+        speed = speed || 0;
+        this.$scrollContainer().animate({ scrollTop: pos }, speed );
         return this;
     },
 
     /** Scrolls the panel to the top. */
-    scrollToTop : function(){
-        this.$scrollContainer().scrollTop( 0 );
-        return this;
+    scrollToTop : function( speed ){
+        return this.scrollTo( 0, speed );
     },
 
     /**  */
-    scrollToItem : function( view ){
+    scrollToItem : function( view, speed ){
         if( !view ){ return this; }
-        var itemTop = view.$el.offset().top;
-        this.$scrollContainer().scrollTop( itemTop );
-        return this;
+        //var itemTop = view.$el.offset().top;
+        var itemTop = view.$el.position().top;
+        return this.scrollTo( itemTop, speed );
     },
 
     /** Scrolls the panel to show the content with the given id. */
-    scrollToId : function( id ){
-        return this.scrollToItem( this.viewFromModelId( id ) );
+    scrollToId : function( id, speed ){
+        return this.scrollToItem( this.viewFromModelId( id ), speed );
     },
 
     // ------------------------------------------------------------------------ panel events

@@ -257,12 +257,26 @@ var DatasetListItemEdit = _super.extend(
     // ......................................................................... events
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
-        'click .undelete-link'       : function( ev ){ this.model.undelete(); return false; },
-        'click .purge-link'          : '_confirmPurge'
+        'click .undelete-link'  : '_clickUndeleteLink',
+        'click .purge-link'     : '_clickPurgeLink',
+
+        'click .edit-btn'       : function( ev ){ this.trigger( 'edit', this, ev ); },
+        'click .delete-btn'     : function( ev ){ this.trigger( 'delete', this, ev ); },
+        'click .rerun-btn'      : function( ev ){ this.trigger( 'rerun', this, ev ); },
+        'click .report-err-btn' : function( ev ){ this.trigger( 'report-err', this, ev ); },
+        'click .visualization-btn' : function( ev ){ this.trigger( 'visualize', this, ev ); },
+        'click .dbkey a'        : function( ev ){ this.trigger( 'edit', this, ev ); }
     }),
 
-    /** listener for item purge */
-    _confirmPurge : function _confirmPurge( ev ){
+
+    /** listener for item undelete (in the messages section) */
+    _clickUndeleteLink : function( ev ){
+        this.model.undelete();
+        return false;
+    },
+
+    /** listener for item purge (in the messages section) */
+    _clickPurgeLink : function( ev ){
 //TODO: confirm dialog
         this.model.purge();
         return false;

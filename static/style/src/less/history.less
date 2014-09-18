@@ -488,6 +488,27 @@
     }
 }
 
+
+// ---------------------------------------------------------------------------- collections nested in histories
+.history-panel {
+    .dataset-collection {
+        .subtitle {
+            margin-top: 2px;
+            font-size: 90%;
+            color: #777;
+        }
+    }
+    .dataset-collection-panel {
+        .controls {
+            padding: 0px;
+        }
+        .list-items {
+            margin-top: 0px;
+        }
+    }
+}
+
+
 // ---------------------------------------------------------------------------- annotated-history-panel
 .annotated-history-panel {
     .controls {
@@ -566,21 +587,31 @@
 }
 
 
-// ---------------------------------------------------------------------------- collections nested in histories
-.history-panel {
-    .dataset-collection {
-        .subtitle {
-            margin-top: 2px;
-            font-size: 90%;
-            color: #777;
+// ---------------------------------------------------------------------------- current-history-panel
+.current-history-panel {
+    .list-item.history-content.current-content {
+        //border-top: 2px solid black;
+        //border-right: 1px solid black;
+        //border-bottom: 2px solid black;
+        //border-left: 1px solid black;
+
+        //.title-bar {
+        //    border-color: black;
+        //    background: black;
+        //    color: white;
+        //}
+
+        //position: relative;
+        //margin-left: -24px;
+        //z-index: 1000;
+
+        border: 2px solid black;
+        border-bottom-width: 2px;
+        .title-bar {
+            padding: 5px 8px 6px 6px;
         }
-    }
-    .dataset-collection-panel {
-        .controls {
-            padding: 0px;
-        }
-        .list-items {
-            margin-top: 0px;
+        .details {
+            padding: 0px 8px 5px 6px;
         }
     }
 }
