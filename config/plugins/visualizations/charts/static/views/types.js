@@ -53,6 +53,7 @@ return Backbone.View.extend({
         
         // set
         this.library.value('small');
+        this.library.trigger('change');
     },
     
     // value
