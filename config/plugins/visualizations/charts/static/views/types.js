@@ -133,10 +133,10 @@ return Backbone.View.extend({
             var $el = $('<div style="clear: both;"/>')
             
             // add header label
-            $el.append(Utils.wrap(this._template_header({
+            $el.append(this._template_header({
                 id      : 'types-header-' + this.categories_index[category],
                 title   : category
-            })));
+            }));
             
             // add chart types
             for (var id in this.categories[category]) {
@@ -150,15 +150,15 @@ return Backbone.View.extend({
                 }
             
                 // append type to screen
-                $el.append(Utils.wrap(this._template_item({
+                $el.append(this._template_item({
                     id      : id,
                     title   : title,
                     url     : config.app_root + 'charts/' + this.app.chartPath(id) + '/logo.png'
-                })));
+                }));
             }
             
             // add to view
-            this.$el.append(Utils.wrap($el));
+            this.$el.append($el);
         }
     },
     

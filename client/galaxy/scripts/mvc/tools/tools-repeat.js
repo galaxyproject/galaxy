@@ -93,7 +93,7 @@ var View = Backbone.View.extend({
         
         // append to dom
         this.table.add(portlet.$el);
-        this.table.prepend('row_' + options.id);
+        this.table.prepend('row_' + options.id, true);
         
         // validate maximum
         if (this.options.max > 0 && this.size() >= this.options.max) {

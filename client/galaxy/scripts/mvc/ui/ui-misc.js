@@ -437,6 +437,7 @@ return {
     Modal       : Modal,
     RadioButton : Options.RadioButton,
     Checkbox    : Options.Checkbox,
+    Radio       : Options.Radio,
     Searchbox   : Searchbox,
     Select      : Select,
     Hidden      : Hidden,

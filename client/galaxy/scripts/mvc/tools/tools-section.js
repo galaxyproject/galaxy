@@ -411,66 +411,69 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     // find selected dataset
                     var dataset = self.app.datasets.filter(value);
         
+                    // meta data
+                    var meta = null;
+        
                     // check dataset
                     if (dataset && column_list.length > 0) {
                         // log selection
                         console.debug('tool-form::field_data() - Selected dataset ' + value + '.');
                     
                         // get meta data
-                        var meta = dataset.get('metadata_column_types');
+                        meta = dataset.get('metadata_column_types');
                     
                         // check meta data
                         if (!meta) {
                             console.debug('tool-form::field_data() - FAILED: Could not find metadata for dataset ' + value + '.');
                         }
-                        
-                        // update referenced columns
-                        for (var i in column_list) {
-                            // get column input/field
-                            var column_input = self.app.input_list[column_list[i]];
-                            var column_field = self.app.field_list[column_list[i]];
-                            if (!column_input || !column_field) {
-                                console.debug('tool-form::field_data() - FAILED: Column not found.');
-                            }
-                        
-                            // is numerical?
-                            var numerical = column_input.numerical;
-                            
-                            // identify column options
-                            var columns = [];
-                            for (var key in meta) {
-                                // get column type
-                                var column_type = meta[key];
-                                
-                                // column index
-                                var column_index = (parseInt(key) + 1);
-                                
-                                // column type label
-                                var column_label = 'Text';
-                                if (column_type == 'int' || column_type == 'float') {
-                                    column_label = 'Number';
-                                }
-                                
-                                // add to selection
-                                if (column_type == 'int' || column_type == 'float' || !numerical) {
-                                    columns.push({
-                                        'label' : 'Column: ' + column_index + ' [' + column_label + ']',
-                                        'value' : column_index
-                                    });
-                                }
-                            }
-                            
-                            // update field
-                            if (column_field) {
-                                column_field.update(columns);
-                                if (!column_field.exists(column_field.value())) {
-                                    column_field.value(column_field.first());
-                                }
-                            }
-                        }
                     } else {
                         // log failure
                         console.debug('tool-form::field_data() - FAILED: Could not find dataset ' + value + '.');
+                    }
+                    
+                    // update referenced columns
+                    for (var i in column_list) {
+                        // get column input/field
+                        var column_input = self.app.input_list[column_list[i]];
+                        var column_field = self.app.field_list[column_list[i]];
+                        if (!column_input || !column_field) {
+                            console.debug('tool-form::field_data() - FAILED: Column not found.');
+                        }
+                    
+                        // is numerical?
+                        var numerical = column_input.numerical;
+                        
+                        // identify column options
+                        var columns = [];
+                        for (var key in meta) {
+                            // get column type
+                            var column_type = meta[key];
+                            
+                            // column index
+                            var column_index = (parseInt(key) + 1);
+                            
+                            // column type label
+                            var column_label = 'Text';
+                            if (column_type == 'int' || column_type == 'float') {
+                                column_label = 'Number';
+                            }
+                            
+                            // add to selection
+                            if (column_type == 'int' || column_type == 'float' || !numerical) {
+                                columns.push({
+                                    'label' : 'Column: ' + column_index + ' [' + column_label + ']',
+                                    'value' : column_index
+                                });
+                            }
+                        }
+                        
+                        // update field
+                        if (column_field) {
+                            column_field.update(columns);
+                            if (!column_field.exists(column_field.value())) {
+                                column_field.value(column_field.first());
+                            }
+                        }
                     }
                 }
             });
@@ -495,7 +498,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     SelectClass = Ui.Checkbox;
                     break;
                 case 'radio':
-                    SelectClass = Ui.RadioButton;
+                    SelectClass = Ui.Radio;
                     break;
             }
             
@@ -503,14 +506,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             return new SelectClass.View({
                 id      : 'field-' + input_def.id,
                 data    : options,
-                multiple: input_def.multiple
-            });
-        },
-
-        // column field
-        _field_data_colum : function (input_def) {
-            return new Ui.Select.View({
-                id      : 'field-' + input_def.id,
                 multiple: input_def.multiple
             });
         },

@@ -77,13 +77,13 @@ var View = Backbone.View.extend({
     },
     
     // append
-    append: function(id) {
-        this._commit(id);
+    append: function(id, fade) {
+        this._commit(id, fade, false);
     },
     
     // prepend
-    prepend: function(id) {
-        this._commit(id, true);
+    prepend: function(id, fade) {
+        this._commit(id, fade, true);
     },
     
     // get element
@@ -142,18 +142,24 @@ var View = Backbone.View.extend({
     },
     
     // commit
-    _commit: function(id, prepend) {
+    _commit: function(id, fade, prepend) {
         // remove previous item with same id
         this.del(id);
         
         // add
         this.row.attr('id', id);
-       
+        
         // add row
         if (prepend) {
             this.$tbody.prepend(this.row);
         } else {
             this.$tbody.append(this.row);
+        }
+        
+        // fade mode
+        if (fade) {
+            this.row.hide();
+            this.row.fadeIn();
         }
         
         // row

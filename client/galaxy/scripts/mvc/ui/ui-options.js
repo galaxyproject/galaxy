@@ -18,7 +18,15 @@ var OptionsBase = Backbone.View.extend({
         this.options = Utils.merge(options, this.optionsDefault);
     
         // create new element
-        this.setElement(this._template(this.options));
+        this.setElement('<div/>');
+        
+        // create elements
+        this.$error = $(this._templateError(options));
+        this.$options = $(this._template(options));
+        
+        // append
+        this.$el.append(this.$error);
+        this.$el.append(this.$options);
         
         // hide input field
         if (!this.options.visible) {
@@ -50,7 +58,12 @@ var OptionsBase = Backbone.View.extend({
 
         // add new options
         for (var key in options) {
-            this.$el.append(this._templateOption(options[key]));
+            // load option template
+            var $option = $(this._templateOption(options[key]));
+            $option.addClass('ui-option');
+            
+            // append to dom
+            this.$options.append($option);
         }
         
         // add change events
@@ -99,13 +112,14 @@ var OptionsBase = Backbone.View.extend({
     
     // refresh
     _refresh: function() {
-        // remove placeholder
-        this.$el.find('.ui-error').remove();
-        
         // count remaining options
-        var remaining = this.$el.find('input').length;
+        var remaining = this.$el.find('.ui-option').length;
         if (remaining == 0) {
-            this.$el.append(this._templateEmpty());
+            this.$error.show();
+            this.$options.hide();
+        } else {
+            this.$error.hide();
+            this.$options.css('display', 'inline-block');
         }
     },
             
@@ -129,18 +143,16 @@ var OptionsBase = Backbone.View.extend({
         }
     },
 
-    // template for options
-    _templateEmpty: function() {
-        return  '<div class="ui-error">' + this.options.empty + '</div>';
+    _templateError: function(options) {
+        return '<div class="ui-error" style="display: none;">' + options.empty + '</div>';
     }
 });
 
-/** checkbox options field **/
-var Checkbox = {};
-Checkbox.View = OptionsBase.extend({
+/** radio button field **/
+var Radio = {};
+Radio.View = OptionsBase.extend({
     // initialize
     initialize: function(options) {
-        options.multiple = true;
         OptionsBase.prototype.initialize.call(this, options);
     },
     
@@ -168,18 +180,35 @@ Checkbox.View = OptionsBase.extend({
     
     // template for options
     _templateOption: function(pair) {
-        return  '<div class="ui-option">' +
-                    '<input type="checkbox" name="' + this.options.id + '" value="' + pair.value + '"/>' + pair.label + '<br>' +
+        return  '<div>' +
+                    '<input type="radio" name="' + this.options.id + '" value="' + pair.value + '"/>' + pair.label + '<br>' +
                 '</div>';
     },
     
     // template
     _template: function() {
-        return '<div class="ui-checkbox"/>';
+        return '<div class="ui-options"/>';
     }
 });
 
-/** radio button options field **/
+/** checkbox options field **/
+var Checkbox = {};
+Checkbox.View = Radio.View.extend({
+    // initialize
+    initialize: function(options) {
+        options.multiple = true;
+        Radio.View.prototype.initialize.call(this, options);
+    },
+    
+    // template for options
+    _templateOption: function(pair) {
+        return  '<div>' +
+                    '<input type="checkbox" name="' + this.options.id + '" value="' + pair.value + '"/>' + pair.label + '<br>' +
+                '</div>';
+    }
+});
+
+/** radio button options field styled as classic buttons **/
 var RadioButton = {};
 RadioButton.View = OptionsBase.extend({
     // initialize
@@ -202,9 +231,13 @@ RadioButton.View = OptionsBase.extend({
     
     // template for options
     _templateOption: function(pair) {
-        return  '<label class="ui-option btn btn-default">' +
-                    '<input type="radio" name="' + this.options.id + '" value="' + pair.value + '">' + pair.label +
-                '</label>';
+        var tmpl =  '<label class="btn btn-default">';
+        if (pair.icon) {
+            tmpl +=     '<i class="fa ' + pair.icon + '"/>';
+        }
+        tmpl +=         '<input type="radio" name="' + this.options.id + '" value="' + pair.value + '">' + pair.label +
+                    '</label>';
+        return tmpl;
     },
     
     // template
@@ -214,8 +247,9 @@ RadioButton.View = OptionsBase.extend({
 });
 
 return {
-    Checkbox    : Checkbox,
-    RadioButton : RadioButton
+    Radio       : Radio,
+    RadioButton : RadioButton,
+    Checkbox    : Checkbox
 };
 
 });

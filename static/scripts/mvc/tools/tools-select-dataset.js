@@ -7,9 +7,20 @@ var View = Backbone.View.extend({
         // link this
         var self = this;
         
-        // tabs
-        this.tabs = new Tabs.View({
-            onchange: function() {
+        // add element
+        this.setElement('<div/>');
+        
+        // current selection
+        this.current = 'dataset';
+        
+        // create button
+        this.button_new = new Ui.RadioButton.View({
+            value   : this.current,
+            data    : [ { icon: 'fa-file-o', label : 'Select datasets', value : 'dataset'  },
+                        { icon: 'fa-files-o', label : 'Select a collection',  value : 'collection' }],
+            onchange: function(value) {
+                self.current = value;
+                self.refresh();
                 self.trigger('change');
             }
         });
@@ -41,13 +52,6 @@ var View = Backbone.View.extend({
             }
         });
         
-        // add tab
-        this.tabs.add({
-            id      : 'datasets',
-            title   : 'Select datasets',
-            $el     : this.select_datasets.$el
-        });
-        
         //
         // collections
         //
@@ -74,15 +78,13 @@ var View = Backbone.View.extend({
             }
         });
         
-        // add tab
-        this.tabs.add({
-            id      : 'collection',
-            title   : 'Select a dataset collection',
-            $el     : this.select_collection.$el
-        });
+        // add elements to dom
+        this.$el.append(Utils.wrap(this.button_new.$el));
+        this.$el.append(this.select_datasets.$el);
+        this.$el.append(this.select_collection.$el);
         
-        // add element
-        this.setElement(this.tabs.$el);
+        // refresh view
+        this.refresh();
         
         // add change event. fires on trigger
         this.on('change', function() {
@@ -93,10 +95,9 @@ var View = Backbone.View.extend({
     },
     
     // value
-    value : function (new_value) {
-        var current_tab = this.tabs.current();
-        switch(current_tab) {
-            case 'datasets':
+    value : function () {
+        switch(this.current) {
+            case 'dataset':
                 return this.select_datasets.value();
             case 'collection':
                 return this.select_collection.value();
@@ -106,6 +107,20 @@ var View = Backbone.View.extend({
     // render
     update: function(options) {
         this.select.update(options);
+    },
+    
+    // refresh
+    refresh: function() {
+        switch (this.current) {
+            case 'dataset':
+                this.select_datasets.$el.fadeIn();
+                this.select_collection.$el.hide();
+                break;
+            case 'collection':
+                this.select_datasets.$el.hide();
+                this.select_collection.$el.fadeIn();
+                break;
+        }
     }
 });
 
