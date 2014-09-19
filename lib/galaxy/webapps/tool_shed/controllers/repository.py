@@ -123,7 +123,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   **kwd ) )
         title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
                                                                          trailing_string='by Category',
-                                                                         default='Categories' )
+                                                                         default='Repositories' )
         self.category_grid.title = title
         return self.category_grid( trans, **kwd )
 
