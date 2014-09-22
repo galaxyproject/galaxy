@@ -13,15 +13,13 @@ import logging.config
 import ConfigParser
 from datetime import timedelta
 from galaxy.web.formatting import expand_pretty_datetime_format
+from galaxy.util.properties import load_app_properties
 from galaxy.util import string_as_bool
 from galaxy.util import listify
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy import eggs
 
 log = logging.getLogger( __name__ )
-
-CONFIG_DEFAULT_PREFIX = "GALAXY_CONFIG_"
-CONFIG_OVERRIDE_PREFIX = "GALAXY_CONFIG_OVERRIDE_"
 
 
 def resolve_path( path, root ):
@@ -39,15 +37,9 @@ class Configuration( object ):
     deprecated_options = ( 'database_file', )
 
     def __init__( self, **kwargs ):
-        for key in os.environ:
-            if key.startswith( CONFIG_OVERRIDE_PREFIX ):
-                config_key = key[ len( CONFIG_OVERRIDE_PREFIX ): ].lower()
-                kwargs[ config_key ] = os.environ[ key ]
-            elif key.startswith( CONFIG_DEFAULT_PREFIX ):
-                config_key = key[ len( CONFIG_DEFAULT_PREFIX ): ].lower()
-                if config_key not in kwargs:
-                    kwargs[ config_key ] = os.environ[ key ]
-
+        kwargs = load_app_properties(
+            kwds=kwargs
+        )
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
 
