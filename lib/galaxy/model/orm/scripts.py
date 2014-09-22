@@ -3,7 +3,6 @@ Code to support database helper scripts (create_db.py, manage_db.py, etc...).
 """
 import logging
 import os.path
-from ConfigParser import SafeConfigParser
 
 from galaxy import eggs
 
@@ -12,6 +11,7 @@ eggs.require( "Tempita" )
 eggs.require( "SQLAlchemy" )
 eggs.require( "sqlalchemy_migrate" )
 
+from galaxy.util.properties import load_app_properties
 from galaxy.model.orm import dialect_to_egg
 
 import pkg_resources
@@ -112,13 +112,13 @@ def get_config( argv, cwd=None ):
     if cwd:
         config_file = os.path.join( cwd, config_file )
 
-    cp = SafeConfigParser()
-    cp.read( config_file )
+    properties = load_app_properties( ini_file=config_file )
 
-    if cp.has_option( "app:main", "%sdatabase_connection" % config_prefix):
-        db_url = cp.get( "app:main", "%sdatabase_connection" % config_prefix )
-    elif cp.has_option( "app:main", "%sdatabase_file" % config_prefix ):
-        db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % cp.get( "app:main", "database_file" )
+    if ("%sdatabase_connection" % config_prefix) in properties:
+        db_url = properties[ "%sdatabase_connection" % config_prefix ]
+    elif ("%sdatabase_file" % config_prefix) in properties:
+        database_file = properties[ "%sdatabase_file" % config_prefix ]
+        db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % database_file
     else:
         db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % default_sqlite_file
 
