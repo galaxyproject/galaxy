@@ -157,8 +157,10 @@ def __main__():
         #create a temp output name, ending in .bam due to required naming conventions? unkown if required
         output_bam_filename = os.path.join( tmp_dir, "%s.bam" % os.path.split( options.output )[-1] )
         # generate commandline
-        cmd = 'java -Xmx2048m -jar %s I=%s O=%s R=%s %s' % ( os.path.join( options.jarBin, options.jarFile ), input_bam_filename, output_bam_filename, reference_filepath_name, srma_cmds )
-
+        java_opts = ''
+        if '_JAVA_OPTIONS' not in os.environ:
+            java_opts = '-Xmx2048m'
+        cmd = 'java %s -jar %s I=%s O=%s R=%s %s' % ( java_opts, os.path.join( options.jarBin, options.jarFile ), input_bam_filename, output_bam_filename, reference_filepath_name, srma_cmds )
         # need to nest try-except in try-finally to handle 2.4
         try:
             try:
