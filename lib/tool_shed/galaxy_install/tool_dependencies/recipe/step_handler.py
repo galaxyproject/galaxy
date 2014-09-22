@@ -1105,6 +1105,8 @@ class SetupPerlEnvironment( Download, RecipeStep ):
                     # If set to a true value then MakeMaker's prompt function will always
                     # return the default without waiting for user input.
                     cmd = '''PERL_MM_USE_DEFAULT=1; export PERL_MM_USE_DEFAULT; '''
+                    cmd += 'export PERL5LIB=$INSTALL_DIR/lib/perl5:$PERL5LIB;'
+                    cmd += 'export PATH=$INSTALL_DIR/bin:$PATH;'
                     if perl_package.find( '://' ) != -1:
                         # We assume a URL to a gem file.
                         url = perl_package
