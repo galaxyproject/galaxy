@@ -3,7 +3,7 @@ import os
 
 from xml.etree import ElementTree
 
-from galaxy.util.submodules import submodules
+from galaxy.util import plugin_config
 from galaxy import util
 
 from ..metrics import formatting
@@ -49,17 +49,8 @@ class JobMetrics( object ):
         return self.job_instrumenters[ destination_id ].collect_properties( job_id, job_directory )
 
     def __plugins_dict( self ):
-        plugin_dict = {}
-        for plugin_module in self.__plugin_modules():
-            for clazz in plugin_module.__all__:
-                plugin_type = getattr( clazz, 'plugin_type', None )
-                if plugin_type:
-                    plugin_dict[ plugin_type ] = clazz
-        return plugin_dict
-
-    def __plugin_modules( self ):
         import galaxy.jobs.metrics.instrumenters
-        return submodules( galaxy.jobs.metrics.instrumenters )
+        return plugin_config.plugins_dict( galaxy.jobs.metrics.instrumenters, 'plugin_type' )
 
 
 class NullJobInstrumenter( object ):
@@ -117,14 +108,7 @@ class JobInstrumenter( object ):
         return per_plugin_properites
 
     def __plugins_for_element( self, plugins_element ):
-        plugins = []
-        for plugin_element in plugins_element.getchildren():
-            plugin_type = plugin_element.tag
-            plugin_kwds = dict( plugin_element.items() )
-            plugin_kwds.update( self.extra_kwargs )
-            plugin = self.plugin_classes[ plugin_type ]( **plugin_kwds )
-            plugins.append( plugin )
-        return plugins
+        return plugin_config.load_plugins_from_element(self.plugin_classes, plugins_element, self.extra_kwargs)
 
     @staticmethod
     def from_file( plugin_classes, conf_file, **kwargs ):
