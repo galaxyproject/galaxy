@@ -20,6 +20,9 @@ from galaxy import eggs
 
 log = logging.getLogger( __name__ )
 
+CONFIG_DEFAULT_PREFIX = "GALAXY_CONFIG_"
+CONFIG_OVERRIDE_PREFIX = "GALAXY_CONFIG_OVERRIDE_"
+
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
@@ -36,6 +39,15 @@ class Configuration( object ):
     deprecated_options = ( 'database_file', )
 
     def __init__( self, **kwargs ):
+        for key in os.environ:
+            if key.startswith( CONFIG_OVERRIDE_PREFIX ):
+                config_key = key[ len( CONFIG_OVERRIDE_PREFIX ): ].lower()
+                kwargs[ config_key ] = os.environ[ key ]
+            elif key.startswith( CONFIG_DEFAULT_PREFIX ):
+                config_key = key[ len( CONFIG_DEFAULT_PREFIX ): ].lower()
+                if config_key not in kwargs:
+                    kwargs[ config_key ] = os.environ[ key ]
+
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
 
