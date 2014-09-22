@@ -63,7 +63,8 @@ var View = Backbone.View.extend({
         });
     },
     
-    // value
+    /** Return/Set current selection
+    */
     value : function (new_value) {
         if (new_value !== undefined) {
             this.$select.val(new_value);
@@ -71,7 +72,8 @@ var View = Backbone.View.extend({
         return this.$select.val();
     },
     
-    // first
+    /** Return the first select option
+    */
     first: function() {
         var options = this.$select.find('option');
         if (options.length > 0) {
@@ -81,12 +83,29 @@ var View = Backbone.View.extend({
         }
     },
     
-    // label
+    /** Validate the current selection
+    */
+    validate: function() {
+        var current = this.value();
+        if (!(current instanceof Array)) {
+            current = [current];
+        }
+        for (var i in current) {
+            if (current[i] === 'null' || !current[i]) {
+                return false;
+            }
+        }
+        return true;
+    },
+    
+    /** Return the label/text of the current selection
+    */
     text : function () {
         return this.$select.find('option:selected').text();
     },
     
-    // show
+    /** Show the select field
+    */
     show: function() {
         this.$icon.removeClass();
         this.$icon.addClass('fa fa-caret-down');
@@ -94,34 +113,40 @@ var View = Backbone.View.extend({
         this.$el.show();
     },
     
-    // hide
+    /** Hide the select field
+    */
     hide: function() {
         this.$el.hide();
     },
     
-    // wait
+    /** Show a spinner indicating that the select options are currently loaded
+    */
     wait: function() {
         this.$icon.removeClass();
         this.$icon.addClass('fa fa-spinner fa-spin');
         this.$select.hide();
     },
     
-    // disabled
+    /** Returns true if the field is disabled
+    */
     disabled: function() {
         return this.$select.is(':disabled');
     },
 
-    // enable
+    /** Enable the select field
+    */
     enable: function() {
         this.$select.prop('disabled', false);
     },
         
-    // disable
+    /** Disable the select field
+    */
     disable: function() {
         this.$select.prop('disabled', true);
     },
     
-    // add
+    /** Add a select option
+    */
     add: function(options) {
         // add options
         this.$select.append(this._templateOption(options));
@@ -130,7 +155,8 @@ var View = Backbone.View.extend({
         this._refresh();
     },
     
-    // remove
+    /** Delete a select option
+    */
     del: function(value) {
         // remove option
         this.$select.find('option[value=' + value + ']').remove();
@@ -140,7 +166,8 @@ var View = Backbone.View.extend({
         this._refresh();
     },
     
-    // render
+    /** Update select options
+    */
     update: function(options) {
         // backup current value
         var current = this.$select.val();
@@ -165,24 +192,28 @@ var View = Backbone.View.extend({
         }
     },
     
-    // set on change event
+    /** Set the custom onchange callback function
+    */
     setOnChange: function(callback) {
         this.options.onchange = callback;
     },
     
-    // check if selected value exists
+    /** Check if a value is an existing option
+    */
     exists: function(value) {
         return this.$select.find('option[value="' + value + '"]').length > 0;
     },
     
-    // change
+    /** Trigger custom onchange callback
+    */
     _change: function() {
         if (this.options.onchange) {
             this.options.onchange(this.$select.val());
         }
     },
     
-    // refresh
+    /** Refresh the select view
+    */
     _refresh: function() {
         // remove placeholder
         this.$select.find('option[value=null]').remove();
@@ -201,12 +232,14 @@ var View = Backbone.View.extend({
         }
     },
     
-    // template option
+    /** Template for select options
+    */
     _templateOption: function(options) {
         return '<option value="' + options.value + '">' + options.label + '</option>';
     },
     
-    // template
+    /** Template for select view
+    */
     _template: function(options) {
         return  '<div id="' + options.id + '">' +
                     '<div class="button">' +

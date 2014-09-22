@@ -1,4 +1,4 @@
-/*
+/**
     This class handles job submissions and the error handling.
 */
 define(['utils/utils'], function(Utils) {
@@ -12,7 +12,8 @@ return Backbone.Model.extend({
         this.options = Utils.merge(options, this.optionsDefault);
     },
     
-    // create job
+    /** Creates and submits a job request to the api
+    */
     submit: function() {
         // link this
         var self = this;
@@ -25,6 +26,12 @@ return Backbone.Model.extend({
         
         // reset
         this.app.reset();
+        
+        // validate job definition
+        if (!this._validation(job_def)) {
+            console.debug('tools-jobs::submit - Submission canceled. Validation failed.');
+            return;
+        }
         
         // post job
         Utils.request('POST', galaxy_config.root + 'api/tools', job_def,
@@ -42,7 +49,7 @@ return Backbone.Model.extend({
             function(response) {
                 console.debug(response);
                 if (response && response.message && response.message.data) {
-                    var error_messages = self.app.tree.match(response.message.data);
+                    var error_messages = self.app.tree.matchResponse(response.message.data);
                     for (var id in error_messages) {
                         var error_text = error_messages[id];
                         if (!error_text) {
@@ -55,7 +62,35 @@ return Backbone.Model.extend({
         );
     },
     
-    // refresh history panel
+    /** Validate job definition
+    */
+    _validation: function(job_def) {
+        // get input parameters
+        var job_inputs = job_def.inputs;
+        
+        // validation flag
+        var valid = true;
+        
+        // check inputs
+        for (var job_input_id in job_inputs) {
+            // collect input field properties
+            var input = job_inputs[job_input_id];
+            var input_id = this.app.tree.match(job_input_id);
+            var input_field = this.app.field_list[input_id];
+            
+            // check field validation
+            //if (input_field && input_field.validate && !input_field.validate()) {
+                this.app.element_list[input_id].error('Please verify this parameter.');
+                valid = false;
+            //}
+        }
+        
+        // return result
+        return false;
+    },
+    
+    /** Refreshes the history panel
+    */
     _refreshHdas: function() {
         if (parent.Galaxy && parent.Galaxy.currHistoryPanel) {
             parent.Galaxy.currHistoryPanel.refreshContents();

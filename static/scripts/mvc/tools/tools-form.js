@@ -1,4 +1,4 @@
-/*
+/**
     This is the main class of the tool form plugin. It is referenced as 'app' in all lower level modules.
 */
 define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
@@ -37,14 +37,14 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // creates the job handler
             this.job_handler = new ToolJobs(this);
-            
-            // reset field list
+
+            // reset field list, which contains the input field elements
             this.field_list = {};
             
-            // reset sequential input definition list
+            // reset sequential input definition list, which contains the input definitions as provided from the api
             this.input_list = {};
             
-            // reset input element definition list
+            // reset input element list, which contains the dom elements of each input element (includes also the input field)
             this.element_list = {};
             
             // initialize datasets
@@ -190,8 +190,6 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     
                     // trigger refresh
                     self.refresh();
-                    //self.job_handler.submit();
-                    self.tree.finalize();
                 }
             });
         }

@@ -11,13 +11,13 @@ var View = Backbone.View.extend({
         this.setElement('<div/>');
         
         // current selection
-        this.current = 'dataset';
+        this.current = 'hda';
         
         // create button
         this.button_new = new Ui.RadioButton.View({
             value   : this.current,
-            data    : [ { icon: 'fa-file-o', label : 'Select datasets', value : 'dataset'  },
-                        { icon: 'fa-files-o', label : 'Select a collection',  value : 'collection' }],
+            data    : [ { icon: 'fa-file-o', label : 'Select datasets', value : 'hda'  },
+                        { icon: 'fa-files-o', label : 'Select a collection',  value : 'hdca' }],
             onchange: function(value) {
                 self.current = value;
                 self.refresh();
@@ -94,29 +94,62 @@ var View = Backbone.View.extend({
         });
     },
     
-    // value
+    /** Return the currently selected dataset values */
     value : function () {
+        // identify select element
+        var select = null;
         switch(this.current) {
-            case 'dataset':
-                return this.select_datasets.value();
-            case 'collection':
-                return this.select_collection.value();
+            case 'hda':
+                select = this.select_datasets;
+                break;
+            case 'hdca':
+                select = this.select_collection;
+                break;
+        }
+        
+        // transform into an array
+        var id_list = select.value();
+        if (!(id_list instanceof Array)) {
+            id_list = [id_list];
+        }
+        
+        // prepare result dict
+        var result = {
+            batch   : !this.options.multiple,
+            values  : []
+        }
+        
+        // append to dataset ids
+        for (var i in id_list) {
+            result.values.push({
+                id  : id_list[i],
+                src : this.current
+            });
+        }
+        
+        // return
+        return result;
+    },
+    
+    /** Validate current selection
+    */
+    validate: function() {
+        switch(this.current) {
+            case 'hda':
+                return this.select_datasets.validate();
+            case 'hdca':
+                return this.select_collection.validate();
         }
     },
     
-    // render
-    update: function(options) {
-        this.select.update(options);
-    },
-    
-    // refresh
+    /** Refreshes data selection view */
     refresh: function() {
         switch (this.current) {
-            case 'dataset':
+            case 'hda':
                 this.select_datasets.$el.fadeIn();
                 this.select_collection.$el.hide();
                 break;
-            case 'collection':
+            case 'hdca':
                 this.select_datasets.$el.hide();
                 this.select_collection.$el.fadeIn();
                 break;

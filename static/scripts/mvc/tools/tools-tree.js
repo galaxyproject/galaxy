@@ -67,11 +67,30 @@ return Backbone.Model.extend({
                     switch (input.type) {
                         // handle repeats
                         case 'repeat':
-                            var index = 0;
-                            for (var i in node) {
-                                if (i.indexOf('section') != -1) {
-                                    convert(job_input_id + '_' + index++, node[i]);
+                            // section identifier
+                            var section_label = 'section-';
+                            
+                            // collect repeat block identifiers
+                            var block_indices = [];
+                            var block_prefix = null;
+                            for (var block_label in node) {
+                                var pos = block_label.indexOf(section_label);
+                                if (pos != -1) {
+                                    pos += section_label.length;
+                                    block_indices.push(parseInt(block_label.substr(pos)));
+                                    if (!block_prefix) {
+                                        block_prefix = block_label.substr(0, pos);
+                                    }
                                 }
+                            }
+                            
+                            // sort repeat blocks
+                            block_indices.sort(function(a,b) { return a - b; });
+                            
+                            // add to response dictionary in created order
+                            var index = 0;
+                            for (var i in block_indices) {
+                                convert(job_input_id + '_' + index++, node[block_prefix + block_indices[i]]);
                             }
                             break;
                         // handle conditionals
@@ -89,32 +108,6 @@ return Backbone.Model.extend({
                                     break;
                                 }
                             }
-                            break;
-                        // handle data inputs
-                        case 'data':
-                            // create array for dataset ids
-                            var dataset_selection = null;
-                            
-                            // collect dataset ids from input field
-                            var value = self.app.field_list[input.id].value();
-                            if (typeof value === 'string') {
-                                dataset_selection = {
-                                        id  : value,
-                                        src : 'hda'
-                                };
-                            } else {
-                                // create array of dataset dictionaries for api submission
-                                dataset_selection = [];
-                                for (var i in value) {
-                                    dataset_selection.push({
-                                        id  : value[i],
-                                        src : 'hda'
-                                    });
-                                }
-                            }
-                            
-                            // add final array to job definition
-                            add(job_input_id, input.id, dataset_selection);
                             break;
                         // handle boolean input
                         case 'boolean':
@@ -136,14 +129,20 @@ return Backbone.Model.extend({
         
         // start conversion
         convert('', this.dict);
-        console.log(this.job_def);
+        
         // return result
         return this.job_def;
     },
     
+    /** Match job definition identifier to input element identifier
+    */
+    match: function (job_input_id) {
+        return this.job_ids && this.job_ids[job_input_id];
+    },
+    
     /** Matches identifier from api response to input element
     */
-    match: function(response) {
+    matchResponse: function(response) {
         // final result dictionary
         var result = {};
         
@@ -263,7 +262,7 @@ return Backbone.Model.extend({
             var id = $(child).attr('id');
             
             // create new branch
-            if ($(child).hasClass('section-row') || $(child).hasClass('tab-pane')) {
+            if ($(child).hasClass('section-row')) {
                 // create sub dictionary
                 dict[id] = {};
                 

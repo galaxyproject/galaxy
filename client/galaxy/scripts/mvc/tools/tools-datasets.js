@@ -24,7 +24,8 @@ define([ 'mvc/history/history-contents' ], function( HISTORY_CONTENTS ){
                 });
         },
         
-        // filter datasets by data type
+        /** Filters datasets by data type.
+        */
         filterType: function(options) {
             options = options || {};
             return this.currHistoryContents.filter(function(content){
@@ -43,7 +44,8 @@ define([ 'mvc/history/history-contents' ], function( HISTORY_CONTENTS ){
             });
         },
         
-        // filter datasets by id
+        /** Filter datasets by id.
+        */
         filter: function(filter_id) {
             return _.first( this.currHistoryContents.filter( function( content ){ return content.get( 'id' ) === filter_id; }) );
         }

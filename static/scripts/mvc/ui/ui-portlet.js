@@ -153,7 +153,7 @@ var View = Backbone.View.extend({
     
     // fill regular modal template
     _template: function(options) {
-        var tmpl =  '<div class="' + options.cls + '">';
+        var tmpl =  '<div id="' + options.id + '" class="' + options.cls + '">';
         
         if (options.title) {
             tmpl +=     '<div id="portlet-header" class="portlet-header">' +

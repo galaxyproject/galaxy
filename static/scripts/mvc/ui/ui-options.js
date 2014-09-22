@@ -1,7 +1,7 @@
 // dependencies
 define(['utils/utils'], function(Utils) {
 
-/** base class for options based ui elements **/
+/** Base class for options based ui elements **/
 var OptionsBase = Backbone.View.extend({
     // initialize
     initialize: function(options) {
@@ -48,7 +48,8 @@ var OptionsBase = Backbone.View.extend({
         });
     },
     
-    // update options
+    /** Update options
+    */
     update: function(options) {
         // backup current value
         var current = this._getValue();
@@ -80,7 +81,8 @@ var OptionsBase = Backbone.View.extend({
         this.value(current);
     },
     
-    // check if selected value exists (or any if multiple)
+    /** Check if selected value exists (or any if multiple)
+    */
     exists: function(value) {
         if (typeof value === 'string') {
             value = [value];
@@ -93,7 +95,8 @@ var OptionsBase = Backbone.View.extend({
         return false;
     },
     
-    // first
+    /** Return first available option
+    */
     first: function() {
         var options = this.$el.find('input');
         if (options.length > 0) {
@@ -103,14 +106,31 @@ var OptionsBase = Backbone.View.extend({
         }
     },
     
-    // change
+    /** Validate the selected option/options
+    */
+    validate: function() {
+        var current = this.value();
+        if (!(current instanceof Array)) {
+            current = [current];
+        }
+        for (var i in current) {
+            if (current[i] === 'null' || !current[i]) {
+                return false;
+            }
+        }
+        return true;
+    },
+    
+    /** Trigger custom onchange callback function
+    */
     _change: function() {
         if (this.options.onchange) {
             this.options.onchange(this._getValue());
         }
     },
     
-    // refresh
+    /** Refresh options view
+    */
     _refresh: function() {
         // count remaining options
         var remaining = this.$el.find('.ui-option').length;
@@ -123,7 +143,8 @@ var OptionsBase = Backbone.View.extend({
         }
     },
             
-    // get value
+    /** Return current selection
+    */
     _getValue: function() {
         // get selected values
         var selected = this.$el.find(':checked');
@@ -148,7 +169,7 @@ var OptionsBase = Backbone.View.extend({
     }
 });
 
-/** radio button field **/
+/** Radio button field **/
 var Radio = {};
 Radio.View = OptionsBase.extend({
     // initialize
@@ -156,7 +177,8 @@ Radio.View = OptionsBase.extend({
         OptionsBase.prototype.initialize.call(this, options);
     },
     
-    // value
+    /** Return/Set current value
+    */
     value: function (new_val) {
         // check if its an array
         if (typeof new_val === 'string') {
@@ -178,20 +200,22 @@ Radio.View = OptionsBase.extend({
         return this._getValue();
     },
     
-    // template for options
+    /** Template for options
+    */
     _templateOption: function(pair) {
         return  '<div>' +
                     '<input type="radio" name="' + this.options.id + '" value="' + pair.value + '"/>' + pair.label + '<br>' +
                 '</div>';
     },
     
-    // template
+    /** Main template function
+    */
     _template: function() {
         return '<div class="ui-options"/>';
     }
 });
 
-/** checkbox options field **/
+/** Checkbox options field **/
 var Checkbox = {};
 Checkbox.View = Radio.View.extend({
     // initialize
@@ -200,7 +224,8 @@ Checkbox.View = Radio.View.extend({
         Radio.View.prototype.initialize.call(this, options);
     },
     
-    // template for options
+    /** Template for options
+    */
     _templateOption: function(pair) {
         return  '<div>' +
                     '<input type="checkbox" name="' + this.options.id + '" value="' + pair.value + '"/>' + pair.label + '<br>' +
@@ -208,7 +233,7 @@ Checkbox.View = Radio.View.extend({
     }
 });
 
-/** radio button options field styled as classic buttons **/
+/** Radio button options field styled as classic buttons **/
 var RadioButton = {};
 RadioButton.View = OptionsBase.extend({
     // initialize
@@ -216,7 +241,8 @@ RadioButton.View = OptionsBase.extend({
         OptionsBase.prototype.initialize.call(this, options);
     },
     
-    // value
+    /** Return/Set current value
+    */
     value: function (new_val) {
         // set new value
         if (new_val !== undefined) {
@@ -229,7 +255,8 @@ RadioButton.View = OptionsBase.extend({
         return this._getValue();
     },
     
-    // template for options
+    /** Template for options
+    */
     _templateOption: function(pair) {
         var tmpl =  '<label class="btn btn-default">';
         if (pair.icon) {
@@ -240,7 +267,8 @@ RadioButton.View = OptionsBase.extend({
         return tmpl;
     },
     
-    // template
+    /** Main template function
+    */
     _template: function() {
         return '<div class="btn-group ui-radiobutton" data-toggle="buttons"/>';
     }
