@@ -12,42 +12,10 @@
     padding: 5px;
 }
 
-.ui-options {
-    &:extend(.form-control);
-    height: 100% !important;
-}
-
 .ui-table-form-error {
     display: none;
     .ui-table-form-error-text  {
         padding-left: 5px;
-    }
-}
-
-.ui-form-slider {
-    .ui-form-slider-text {
-        &:extend(.form-control);
-        width: 100px;
-        float: left;
-    }
-
-    .ui-form-slider-element {
-        width: ~'calc(100% - 110px)';
-        float: left;
-        top: 8px;
-        left: 10px;
-    }
-}
-
-.ui-radiobutton {
-    width: 100%;
-    label {
-        height: 23px;
-        line-height: 1em;
-    }
-    
-    i {
-        padding-right: 5px;
     }
 }
 
@@ -141,15 +109,6 @@
     &:extend(.icon-btn);
     border: none !important;
     background: none !important;
-}
-
-.ui-input {
-    &:extend(.form-control);
-}
-
-.ui-textarea {
-    &:extend(.form-control);
-    height: 100px !important;
 }
 
 .ui-tabs {
@@ -266,6 +225,51 @@
     }
 }
 
+.ui-input {
+    &:extend(.form-control);
+    background: transparent;
+}
+
+.ui-textarea {
+    &:extend(.ui-input);
+    height: 100px !important;
+}
+
+.ui-options {
+    &:extend(.ui-input);
+    height: 100% !important;
+}
+
+
+.ui-form-slider {
+    display: inline-block;
+    width: 100%;
+    .ui-form-slider-text {
+        &:extend(.ui-input);
+        width: 100px;
+        float: left;
+    }
+
+    .ui-form-slider-element {
+        width: ~'calc(100% - 110px)';
+        float: left;
+        top: 8px;
+        left: 10px;
+    }
+}
+
+.ui-radiobutton {
+    width: 100%;
+    label {
+        height: 23px;
+        line-height: 1em;
+    }
+    
+    i {
+        padding-right: 5px;
+    }
+}
+
 .ui-select {
     position: relative;
     height: 27px;
@@ -300,7 +304,7 @@
 }
 
 .ui-select-multiple {
-    &:extend(.ui-select);
+    &:extend(.ui-input);
     height: 100% !important;
     width: 100% !important;
 }
