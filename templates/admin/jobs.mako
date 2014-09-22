@@ -22,9 +22,11 @@
 %endif
 
 <p>
-    All unfinished jobs are displayed here.  To display only jobs that have not
-    had their job state updated recently, set a cutoff value in the 'cutoff'
-    box below.
+    Unfinished and recently finished jobs are displayed on this page.  The
+    'cutoff' input box will do two things -- it will limit the display of
+    unfinished jobs to only those jobs that have not had their job state
+    updated recently, and it will limit the recently finished jobs list to only
+    displaying jobs that have finished since the cutoff.
 </p>
 <p>
     If any jobs are displayed, you may choose to stop them.  Your stop message
@@ -33,11 +35,11 @@
     report this error".
 </p>
 
-
-<p/>
-
 %if jobs:
 <form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
+    <h4>
+        Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous ${cutoff} seconds.
+    </h4>
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <td><input type="checkbox" onClick="toggle_all(this)"/></td>
@@ -109,6 +111,52 @@
     <div class="infomessage">There are no unfinished jobs to show with current cutoff time.</div>
     <p/>
 %endif
+
+%if recent_jobs:
+    <h4>
+        Recent Jobs: These jobs have completed in the previous ${cutoff} seconds.
+    </h4>
+    <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+        <tr class="header">
+            <td>Job ID</td>
+            <td>User</td>
+            <td>Finished</td>
+            <td>Tool</td>
+            <td>State</td>
+            <td>Inputs</td>
+            <td>Command Line</td>
+            <td>Job Runner</td>
+            <td>PID/Cluster ID</td>
+        </tr>
+        %for job in recent_jobs:
+                <td><a href="${h.url_for( controller="admin", action="job_info" )}?jobid=${job.id}">${job.id}</a></td>
+                %if job.history and job.history.user:
+                    <td>${job.history.user.email}</td>
+                %else:
+                    <td>anonymous</td>
+                %endif
+                <td>${finished[job.id]} ago</td>
+                <td>${job.tool_id}</td>
+                <td>${job.state}</td>
+                <%
+                    try:
+                        inputs = ", ".join( [ '%s&nbsp;%s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
+                    except:
+                        inputs = 'Unable to determine inputs'
+                %>
+                <td>${inputs}</td>
+                <td>${job.command_line}</td>
+                <td>${job.job_runner_name}</td>
+                <td>${job.job_runner_external_id}</td>
+            </tr>
+        %endfor
+    </table>
+    <p/>
+%else:
+    <div class="infomessage">There are no recently finished jobs to show with current cutoff time.</div>
+    <p/>
+%endif
+
 <form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
     <div class="toolForm">
         <div class="toolFormTitle">
@@ -129,6 +177,36 @@
             </div>
             <div class="form-row">
                 <input type="submit" class="primary-button" name="submit" value="Refresh">
+            </div>
+        </div>
+    </div>
+</form>
+
+<form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">
+            Administrative Job Lock
+        </div>
+        <div class="toolFormBody">
+            <div class="form-row">
+                <input type="hidden" name="ajl_submit" value="True"/>
+    %if job_lock==True:
+                <p>Job dispatching is currently <strong>locked</strong>.</p>
+                <label>
+                    <input type='checkbox' name='job_lock' checked='checked' />
+                    Prevent jobs from dispatching.
+                </label>
+    %else:
+                <p>Job dispatching is currently <strong>unlocked</strong>.</p>
+                <label>
+                    <input type='checkbox' name='job_lock' />
+                    Prevent jobs from dispatching.
+                </label>
+    %endif
+            </div>
+            <div class="form-row">
+                <input type="submit" class="primary-button" name="submit" value="Update">
             </div>
         </div>
     </div>

@@ -12,6 +12,7 @@ import tarfile
 import tempfile
 import urllib2
 import math
+from base64 import b64decode
 
 # Set max size of archive/file that will be handled to be 100 GB. This is
 # arbitrary and should be adjusted as needed.
@@ -55,10 +56,15 @@ if __name__ == "__main__":
     parser = optparse.OptionParser()
     parser.add_option( '-U', '--url', dest='is_url', action="store_true", help='Source is a URL.' )
     parser.add_option( '-F', '--file', dest='is_file', action="store_true", help='Source is a URL.' )
+    parser.add_option( '-e', '--encoded', dest='is_b64encoded', action="store_true", default=False, help='Source and destination dir values are base64 encoded.' )
     (options, args) = parser.parse_args()
     is_url = bool( options.is_url )
     is_file = bool( options.is_file )
     archive_source, dest_dir = args
+
+    if options.is_b64encoded:
+        archive_source = b64decode( archive_source )
+        dest_dir = b64decode( dest_dir )
 
     try:
         # Get archive from URL.

@@ -50,7 +50,7 @@
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
     });
-    require([ 'mvc/history/annotated-history-panel' ], function( panelMod ){
+    require([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
 
         function toggleExpanded( ev ){
             var $embeddedHistory = $( thisScript ).prev();
@@ -62,14 +62,12 @@
         }
 
         $(function(){
-            var debugging = JSON.parse( sessionStorage.getItem( 'debugging' ) ) || false,
-                historyModel = require( 'mvc/history/history-model' ),
+            var historyModel = require( 'mvc/history/history-model' ),
                 panel = new panelMod.AnnotatedHistoryPanel({
                     el      : $embeddedHistory.find( ".history-panel" ),
                     model   : new historyModel.History(
-                        ${h.to_json_string( history_dict )},
-                        ${h.to_json_string( hda_dicts )},
-                        { logger: ( debugging )?( console ):( null ) }
+                        ${h.dumps( history_dict )},
+                        ${h.dumps( hda_dicts )}
                     )
                 }).render();
 

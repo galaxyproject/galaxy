@@ -1,5 +1,5 @@
 // dependencies
-define(['mvc/ui/ui-tabs', 'plugin/library/ui', 'mvc/ui/ui-portlet', 'utils/utils',
+define(['mvc/ui/ui-tabs', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'utils/utils',
         'plugin/models/chart', 'plugin/models/group',
         'plugin/views/group', 'plugin/views/settings', 'plugin/views/types'],
     function(Tabs, Ui, Portlet, Utils, Chart, Group, GroupView, SettingsView, TypesView) {

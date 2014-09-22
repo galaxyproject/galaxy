@@ -20,7 +20,7 @@ class CorePluginFormatter( formatting.JobMetricFormatter ):
         elif key == RUNTIME_SECONDS_KEY:
             return ( "Job Runtime (Wall Clock)", formatting.seconds_to_str( value ) )
         else:
-            # TODO: Use localized version of this from universe_wsgi.ini
+            # TODO: Use localized version of this from galaxy.ini
             title = "Job Start Time" if key == START_EPOCH_KEY else "Job End Time"
             return (title, time.strftime( '%Y-%m-%d %H:%M:%S', time.localtime( value ) ) )
 

@@ -12,15 +12,32 @@
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
   <tool file="output_order.xml" />
+  <tool file="output_format.xml" />
+  <tool file="output_filter.xml" />
   <tool file="disambiguate_repeats.xml" />
   <tool file="min_repeat.xml" />
   <tool file="parallelism.xml" />
   <tool file="parallelism_optional.xml" />
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
+  <tool file="special_params.xml" />
+  <tool file="validation_default.xml" />
+  <tool file="validation_sanitizer.xml" />
+  <tool file="validation_repeat.xml" />
   <tool file="collection_paired_test.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
   <tool file="collection_optional_param.xml" />
+
+  <!-- Tools interesting only for building up test workflows. -->
+
+  <!-- Next three tools demonstrate concatenating multiple datasets
+       with a repeat, multiple datasets with a multiple input data
+       parameter, and multiple datasets from a collection. -->
+  <tool file="for_workflows/cat.xml" />
+  <tool file="for_workflows/cat_list.xml" />
+  <tool file="for_workflows/cat_collection.xml" />
+  <tool file="for_workflows/head.xml" />
+
 </toolbox>

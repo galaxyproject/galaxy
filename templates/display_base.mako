@@ -93,9 +93,6 @@
                 });
             });
             
-            // Init history boxes.
-            //init_history_items( $("div.historyItemWrapper"), false, "nochanges" );
-            
             // Init user item rating.
             $('.user_rating_star').rating({
                 callback: function(rating, link) {

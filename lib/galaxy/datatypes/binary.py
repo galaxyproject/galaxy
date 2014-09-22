@@ -11,18 +11,14 @@ import shutil
 import struct
 import subprocess
 import tempfile
-import zipfile
-import sqlite3
 
-from urllib import urlencode, quote_plus
 from galaxy import eggs
 eggs.require( "bx-python" )
 
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.metadata import MetadataElement,ListParameter,DictParameter
 from galaxy.datatypes import metadata
-from galaxy.datatypes.sniff import *
 import dataproviders
 
 log = logging.getLogger(__name__)
@@ -550,16 +546,42 @@ Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 
 @dataproviders.decorators.has_dataproviders
 class SQlite ( Binary ):
+    """Class describing a Sqlite database """
+    MetadataElement( name="tables", default=[], param=ListParameter, desc="Database Tables", readonly=True, visible=True, no_value=[] )
+    MetadataElement( name="table_columns", default={}, param=DictParameter, desc="Database Table Columns", readonly=True, visible=True, no_value={} )
+    MetadataElement( name="table_row_count", default={}, param=DictParameter, desc="Database Table Row Count", readonly=True, visible=True, no_value={} )
     file_ext = "sqlite"
 
-    # Connects and runs a query that should work on any real database 
-    # If the file is not sqlite, an exception will be thrown and the sniffer will return false
-    def sniff( self, filename ):
+    def init_meta( self, dataset, copy_from=None ):
+        Binary.init_meta( self, dataset, copy_from=copy_from )
+
+    def set_meta( self, dataset, overwrite = True, **kwd ):
         try:
-            conn = sqlite3.connect(filename)
-            schema_version=conn.cursor().execute("pragma schema_version").fetchone()
-            conn.close()
-            if schema_version is not None:
+            tables = []
+            columns = dict()
+            rowcounts = dict()
+            conn = sqlite3.connect(dataset.file_name)
+            c = conn.cursor()
+            tables_query = "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name"
+            rslt = c.execute(tables_query).fetchall()
+            for table,sql in rslt:
+                tables.append(table)
+                columns[table] = re.sub('^.*\((.*)\)$','\\1',sql).split(',')
+            for table in tables:
+                row_query = "SELECT count(*) FROM %s" % table
+                rowcounts[table] = c.execute(row_query).fetchone()[0]
+            dataset.metadata.tables = tables
+            dataset.metadata.table_columns = columns
+            dataset.metadata.table_row_count = rowcounts
+        except Exception, exc:
+            pass
+
+    def sniff( self, filename ):
+        # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
+        # about the format, see http://www.sqlite.org/fileformat.html
+        try:
+            header = open(filename).read(16)
+            if binascii.b2a_hex(header) == binascii.hexlify('SQLite format 3\0'):
                 return True
             return False
         except:
@@ -568,6 +590,14 @@ class SQlite ( Binary ):
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek  = "SQLite Database"
+            lines = ['SQLite Database']
+            if dataset.metadata.tables:
+                for table in dataset.metadata.tables:
+                    try:
+                        lines.append('%s [%s]' % (table,dataset.metadata.table_row_count[table]))
+                    except:
+                        continue
+            dataset.peek = '\n'.join(lines)
             dataset.blurb = data.nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
@@ -586,5 +616,5 @@ class SQlite ( Binary ):
         return dataproviders.dataset.SQliteDataProvider( dataset_source, **settings )
 
 
-Binary.register_sniffable_binary_format("sqlite","sqlite",SQlite)
+Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
 

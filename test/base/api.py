@@ -41,8 +41,8 @@ class ApiTestCase( TwillTestCase ):
             url = "%s?%s" % ( url, query )
         return url
 
-    def _setup_user( self, email ):
-        self.galaxy_interactor.ensure_user_with_email(email)
+    def _setup_user( self, email, password=None ):
+        self.galaxy_interactor.ensure_user_with_email( email, password=password )
         users = self._get( "users", admin=True ).json()
         user = [ user for user in users if user["email"] == email ][0]
         return user

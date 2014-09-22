@@ -9,10 +9,9 @@ from galaxy import exceptions
 from galaxy.model import orm
 
 from galaxy.managers import base as manager_base
-import galaxy.managers.hdas
+import galaxy.managers.collections_util
 
 import galaxy.web
-import galaxy.dataset_collections.util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -140,8 +139,10 @@ class HistoryManager( manager_base.ModelManager ):
         Returns a dictionary containing ``history`` and ``contents``, serialized
         history and an array of serialized history contents respectively.
         """
+        # import here prevents problems related to circular dependecy between histories and hdas managers.
+        import galaxy.managers.hdas
         hda_mgr = galaxy.managers.hdas.HDAManager()
-        collection_dictifier = galaxy.dataset_collections.util.dictify_dataset_collection_instance
+        collection_dictifier = galaxy.managers.collections_util.dictify_dataset_collection_instance
 
         history_dictionary = {}
         contents_dictionaries = []
@@ -220,6 +221,19 @@ class HistoryManager( manager_base.ModelManager ):
 
         return history_dict
 
+    def most_recent( self, trans, user=None, deleted=False ):
+        user = user or trans.user
+        if not user:
+            return None if trans.history.deleted else trans.history
+
+        #TODO: dup with by_user - should return query from there and call first and not all
+        history_model = trans.model.History
+        query = ( trans.sa_session.query( history_model )
+                  .filter( history_model.user == user )
+                  .order_by( orm.desc( history_model.table.c.update_time ) ) )
+        if not deleted:
+            query = query.filter( history_model.deleted == False )
+        return query.first()
 
 # =============================================================================
 class HistorySerializer( manager_base.ModelSerializer ):

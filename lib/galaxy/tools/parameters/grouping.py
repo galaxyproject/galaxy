@@ -278,6 +278,7 @@ class UploadDataset( Group ):
             ftp_files = context['ftp_files']
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
+            uuid = context.get( 'uuid', None ) or None  # Turn '' to None
             warnings = []
             to_posix_lines = False
             if context.get( 'to_posix_lines', None ) not in [ "None", None, False ]:
@@ -316,12 +317,14 @@ class UploadDataset( Group ):
                         break
             file_bunch.to_posix_lines = to_posix_lines
             file_bunch.space_to_tab = space_to_tab
+            file_bunch.uuid = uuid
             return file_bunch, warnings
         def get_filenames( context ):
             rval = []
             data_file = context['file_data']
             url_paste = context['url_paste']
             ftp_files = context['ftp_files']
+            uuid = context.get( 'uuid', None ) or None  # Turn '' to None
             name = context.get( 'NAME', None )
             info = context.get( 'INFO', None )
             to_posix_lines = False
@@ -332,12 +335,14 @@ class UploadDataset( Group ):
                 space_to_tab = True
             warnings = []
             file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
+            file_bunch.uuid = uuid
             if file_bunch.path:
                 file_bunch.to_posix_lines = to_posix_lines
                 file_bunch.space_to_tab = space_to_tab
                 rval.append( file_bunch )
             for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
                 if file_bunch.path:
+                    file_bunch.uuid = uuid
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
                     rval.append( file_bunch )

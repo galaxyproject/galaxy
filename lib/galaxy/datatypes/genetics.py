@@ -83,29 +83,31 @@ class GenomeGraphs( Tabular ):
         ret_val = []
         ggtail = 'hgGenome_doSubmitUpload=submit'
         if not dataset.dbkey:
-              dataset.dbkey = 'hg18' # punt!
+            dataset.dbkey = 'hg18' # punt!
         if dataset.has_data():
-              for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
-                    if site_name in app.config.ucsc_display_sites:
-                        site_url = site_url.replace('/hgTracks?','/hgGenome?') # for genome graphs
-                        internal_url = "%s" % url_for( controller='dataset',
-                                dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
-                        display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type)
-                        display_url = urllib.quote_plus( display_url )
-                        # was display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
-                        #redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
-                        sl = ["%sdb=%s" % (site_url,dataset.dbkey ),]
-                        #sl.append("&hgt.customText=%s")
-                        sl.append("&hgGenome_dataSetName=%s&hgGenome_dataSetDescription=%s" % (dataset.name, 'GalaxyGG_data'))
-                        sl.append("&hgGenome_formatType=best guess&hgGenome_markerType=best guess")
-                        sl.append("&hgGenome_columnLabels=first row&hgGenome_maxVal=&hgGenome_labelVals=")
-                        sl.append("&hgGenome_doSubmitUpload=submit")
-                        sl.append("&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=%s" % display_url)
-                        s = ''.join(sl)
-                        s = urllib.quote_plus(s)
-                        redirect_url = s
-                        link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
-                        ret_val.append( (site_name, link) )
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
+                if site_name in datatypes_registry.get_display_sites('ucsc'):
+                    site_url = site_url.replace('/hgTracks?','/hgGenome?') # for genome graphs
+                    internal_url = "%s" % url_for( controller='dataset',
+                                                   dataset_id=dataset.id,
+                                                   action='display_at',
+                                                   filename='ucsc_' + site_name )
+                    display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type)
+                    display_url = urllib.quote_plus( display_url )
+                    # was display_url = urllib.quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
+                    #redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
+                    sl = ["%sdb=%s" % (site_url,dataset.dbkey ),]
+                    #sl.append("&hgt.customText=%s")
+                    sl.append("&hgGenome_dataSetName=%s&hgGenome_dataSetDescription=%s" % (dataset.name, 'GalaxyGG_data'))
+                    sl.append("&hgGenome_formatType=best guess&hgGenome_markerType=best guess")
+                    sl.append("&hgGenome_columnLabels=first row&hgGenome_maxVal=&hgGenome_labelVals=")
+                    sl.append("&hgGenome_doSubmitUpload=submit")
+                    sl.append("&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=%s" % display_url)
+                    s = ''.join(sl)
+                    s = urllib.quote_plus(s)
+                    redirect_url = s
+                    link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
+                    ret_val.append( (site_name, link) )
         return ret_val
 
     def make_html_table( self, dataset, skipchars=[] ):

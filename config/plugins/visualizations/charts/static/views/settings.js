@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/library/ui', 'plugin/library/ui-table-form', 'utils/utils'],
+define(['mvc/ui/ui-misc', 'plugin/library/ui-table-form', 'utils/utils'],
         function(Ui, TableForm, Utils) {
 
 /**

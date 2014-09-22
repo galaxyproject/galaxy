@@ -10,7 +10,7 @@ from migrate.changeset import *
 from sqlalchemy.exc import *
 
 from galaxy.model.custom_types import *
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 
 import datetime
 now = datetime.datetime.utcnow
@@ -62,7 +62,7 @@ def upgrade(migrate_engine):
     for r in result:
         sample_id = r[0]
         if r[1]:
-            dataset_files = from_json_string(r[1])
+            dataset_files = loads(r[1])
             for df in dataset_files:
                 if type(df) == type(dict()):
                     cmd = "INSERT INTO sample_dataset VALUES (%s, %s, %s, %s, '%s', '%s', '%s', '%s', '%s')"

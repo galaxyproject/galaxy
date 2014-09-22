@@ -83,8 +83,8 @@ ${parent.javascripts()}
     show_hidden  = context.get( 'show_hidden',  None )
 
     user_is_owner_json = 'true' if user_is_owner else 'false'
-    show_deleted_json  = h.to_json_string( show_deleted )
-    show_hidden_json   = h.to_json_string( show_hidden )
+    show_deleted_json  = h.dumps( show_deleted )
+    show_hidden_json   = h.dumps( show_hidden )
 %>
 
 <div id="header" class="clear">
@@ -164,11 +164,12 @@ ${parent.javascripts()}
     }
 
     var userIsOwner  = ${'true' if user_is_owner else 'false'},
-        historyJSON  = ${h.to_json_string( history )},
-        hdaJSON      = ${h.to_json_string( hdas )};
+        historyJSON  = ${h.dumps( history )},
+        hdaJSON      = ${h.dumps( hdas )};
         panelToUse   = ( userIsOwner )?
-            ({ location: 'mvc/history/history-panel',           className: 'HistoryPanel' }):
-            ({ location: 'mvc/history/readonly-history-panel',  className: 'ReadOnlyHistoryPanel' });
+//TODO: change class names
+            ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanelEdit' }):
+            ({ location: 'mvc/history/history-panel',       className: 'HistoryPanel' });
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}"
@@ -186,17 +187,14 @@ ${parent.javascripts()}
                 show_hidden     : ${show_hidden_json},
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 el              : $( "#history-" + historyJSON.id ),
-                model           : history,
-                onready         : function(){
-                    var panel = this;
-                    $( '#toggle-deleted' ).on( 'click', function(){
-                        panel.toggleShowDeleted();
-                    });
-                    $( '#toggle-hidden' ).on( 'click', function(){
-                        panel.toggleShowHidden();
-                    });
-                    this.render();
-                }
+                model           : history
+            }).render();
+
+            $( '#toggle-deleted' ).on( 'click', function(){
+                historyPanel.toggleShowDeleted();
+            });
+            $( '#toggle-hidden' ).on( 'click', function(){
+                historyPanel.toggleShowHidden();
             });
         });
     });

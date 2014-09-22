@@ -1,5 +1,5 @@
 // dependencies
-define(['plugin/library/ui-table', 'plugin/library/ui', 'utils/utils'],
+define(['mvc/ui/ui-table', 'mvc/ui/ui-misc', 'utils/utils'],
         function(Table, Ui, Utils) {
 
 /**
@@ -88,7 +88,7 @@ var View = Backbone.View.extend({
                 break;
             // radiobox field
             case 'radiobutton' :
-                field = new Ui.RadioButton({
+                field = new Ui.RadioButton.View({
                     id          : 'field-' + id,
                     data        : settings_def.data,
                     value       : model.get(id),
@@ -230,10 +230,10 @@ var View = Backbone.View.extend({
         // add to table
         this.table.append(id);
         
-         // show/hide
-         if (settings_def.hide) {
-             this.table.get(id).hide();
-         }
+        // show/hide
+        if (settings_def.hide) {
+            this.table.get(id).hide();
+        }
     }
 });
 

@@ -1,9 +1,7 @@
 import collections
 import os
 
-from xml.etree import ElementTree
-
-from galaxy.util.submodules import submodules
+from galaxy.util import plugin_config
 from galaxy import util
 
 from ..metrics import formatting
@@ -37,7 +35,7 @@ class JobMetrics( object ):
         self.set_destination_instrumenter( destination_id, instrumenter )
 
     def set_destination_conf_element( self, destination_id, element ):
-        instrumenter = JobInstrumenter( self.plugin_classes, element )
+        instrumenter = JobInstrumenter( self.plugin_classes, ('xml', element) )
         self.set_destination_instrumenter( destination_id, instrumenter )
 
     def set_destination_instrumenter( self, destination_id, job_instrumenter=None ):
@@ -49,17 +47,8 @@ class JobMetrics( object ):
         return self.job_instrumenters[ destination_id ].collect_properties( job_id, job_directory )
 
     def __plugins_dict( self ):
-        plugin_dict = {}
-        for plugin_module in self.__plugin_modules():
-            for clazz in plugin_module.__all__:
-                plugin_type = getattr( clazz, 'plugin_type', None )
-                if plugin_type:
-                    plugin_dict[ plugin_type ] = clazz
-        return plugin_dict
-
-    def __plugin_modules( self ):
         import galaxy.jobs.metrics.instrumenters
-        return submodules( galaxy.jobs.metrics.instrumenters )
+        return plugin_config.plugins_dict( galaxy.jobs.metrics.instrumenters, 'plugin_type' )
 
 
 class NullJobInstrumenter( object ):
@@ -78,10 +67,10 @@ NULL_JOB_INSTRUMENTER = NullJobInstrumenter()
 
 class JobInstrumenter( object ):
 
-    def __init__( self, plugin_classes, metrics_element, **kwargs ):
+    def __init__( self, plugin_classes, plugins_source, **kwargs ):
         self.extra_kwargs = kwargs
         self.plugin_classes = plugin_classes
-        self.plugins = self.__plugins_for_element( metrics_element )
+        self.plugins = self.__plugins_from_source( plugins_source )
 
     def pre_execute_commands( self, job_directory ):
         commands = []
@@ -116,19 +105,12 @@ class JobInstrumenter( object ):
                 log.exception( "Failed to collect job properties for plugin %s" % plugin )
         return per_plugin_properites
 
-    def __plugins_for_element( self, plugins_element ):
-        plugins = []
-        for plugin_element in plugins_element.getchildren():
-            plugin_type = plugin_element.tag
-            plugin_kwds = dict( plugin_element.items() )
-            plugin_kwds.update( self.extra_kwargs )
-            plugin = self.plugin_classes[ plugin_type ]( **plugin_kwds )
-            plugins.append( plugin )
-        return plugins
+    def __plugins_from_source( self, plugins_source ):
+        return plugin_config.load_plugins(self.plugin_classes, plugins_source, self.extra_kwargs)
 
     @staticmethod
     def from_file( plugin_classes, conf_file, **kwargs ):
         if not conf_file or not os.path.exists( conf_file ):
             return NULL_JOB_INSTRUMENTER
-        plugins_element = ElementTree.parse( conf_file ).getroot()
-        return JobInstrumenter( plugin_classes, plugins_element, **kwargs )
+        plugins_source = plugin_config.plugin_source_from_path( conf_file )
+        return JobInstrumenter( plugin_classes, plugins_source, **kwargs )

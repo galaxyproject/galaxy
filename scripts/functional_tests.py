@@ -48,7 +48,7 @@ from galaxy.web import buildapp
 from galaxy import tools
 from galaxy.util import bunch
 from galaxy import util
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 
 from functional import database_contexts
 from base.api_util import get_master_api_key
@@ -100,7 +100,7 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from universe_wsgi.ini
+    #TODO: these should be copied from config/galaxy.ini
     return dict(
         #TODO: static_enabled needed here?
         static_enabled=True,
@@ -398,8 +398,8 @@ def main():
             for label in kwargs:
                 config_tuple = label, kwargs[ label ]
                 config_items.append( config_tuple )
-            # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
-            generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+            # Write a temporary file, based on config/galaxy.ini.sample, using the configuration options defined above.
+            generate_config_file( 'config/galaxy.ini.sample', galaxy_config_file, config_items )
         # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
         kwargs[ 'global_conf' ] = get_webapp_global_conf()
         kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file
@@ -520,7 +520,7 @@ def main():
                     has_test_data, shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
             # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
             shed_tools_file = open( galaxy_tool_shed_test_file, 'w' )
-            shed_tools_file.write( to_json_string( shed_tools_dict ) )
+            shed_tools_file.write( dumps( shed_tools_dict ) )
             shed_tools_file.close()
             if not os.path.isabs( galaxy_tool_shed_test_file ):
                 galaxy_tool_shed_test_file = os.path.join( os.getcwd(), galaxy_tool_shed_test_file )

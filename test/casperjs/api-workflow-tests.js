@@ -17,7 +17,7 @@ if( spaceghost.fixtureData.testUser ){
 spaceghost.user.loginOrRegisterUser( email, password );
 
 // =================================================================== TESTS
-var workflowJSONFilepath = 'test-data/Bed_interval_lengths.ga',
+var workflowJSONFilepath = 'test-data/simple_test.ga',
     workflowModelClass = 'StoredWorkflow',
     workflowSummaryKeys = [
         'id', 'model_class', 'name', 'published', 'tags', 'url'
@@ -28,7 +28,7 @@ var workflowJSONFilepath = 'test-data/Bed_interval_lengths.ga',
     stepKeys = [
         'id', 'input_steps', 'tool_id', 'type'
     ],
-    simpleBedFilepath = 'test-data/simple.bed',
+    simpleBedFilepath = '../../test-data/2.bed',
     uploadedFile = null,
     workflowCreateKeys = [ 'history', 'outputs' ];
 
@@ -105,13 +105,9 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 
     this.test.comment( 'inputs from show should be an object (and, in this case, empty)' );
     var inputs = workflowShow.inputs;
-    //this.debug( 'inputs:\n' + this.jsonStr( inputs ) );
+    this.debug( 'inputs:\n' + this.jsonStr( inputs ) );
     this.test.assert( utils.isObject( workflowShow.inputs ), "inputs is an object" );
-    //for( var inputKey in inputs ){
-    //    if( inputs.hasOwnProperty( inputKey ) ){
-    //    }
-    //}
-    this.test.assert( this.countKeys( workflowShow.inputs ) === 0, "inputs is empty" );
+    this.test.assert( this.countKeys( workflowShow.inputs ) !== 0, "inputs has keys" );
 
     this.test.comment( 'steps from show should be an object containing each tool defined as a step' );
     var steps = workflowShow.steps;
@@ -141,17 +137,14 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
                 this.test.assert( this.hasKeys( step.input_steps, [ 'input' ] ), "input_steps has the proper keys" );
             }
 
-            this.test.assert( step.type === 'tool',
-                "step type is a tool: " + step.type );
-
-            // check for tools in this wf with the api
-            this.test.assert( utils.isString( step.tool_id ),
-                "step tool_id is a string: " + step.tool_id );
-            var tool_used = this.api.tools.show( step.tool_id );
-            //this.debug( this.jsonStr( tool_used ) )
-            this.test.assert( this.countKeys( step.input_steps ) !== 0, "found tool in api.tools for: " + step.tool_id );
-
-            // trace the path through input_steps, source_steps
+            if( step.type === 'tool' ){
+                // check for tools in this wf with the api
+                this.test.assert( utils.isString( step.tool_id ),
+                    "step tool_id is a string: " + step.tool_id );
+                var tool_used = this.api.tools.show( step.tool_id.replace( / /g, '+' ) );
+                this.debug( this.jsonStr( tool_used ) );
+                this.test.assert( this.countKeys( tool_used ) !== 0, "found tool in api.tools for: " + step.tool_id );
+            }
         }
     }
 
@@ -181,7 +174,7 @@ spaceghost.then( function(){
             var step = firstWorkflow.steps[ stepKey ];
             if( this.countKeys( step.input_steps ) === 0 ){
                 input_step = stepKey;
-                this.debug( 'input step: ' + this.jsonStr( step ) )
+                this.debug( 'input step: ' + this.jsonStr( step ) );
                 break;
             }
         }

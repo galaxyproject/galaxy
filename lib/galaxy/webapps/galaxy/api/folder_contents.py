@@ -4,6 +4,7 @@ API operations on the contents of a library folder.
 from galaxy import web
 from galaxy import util
 from galaxy import exceptions
+from galaxy.managers import folders
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from sqlalchemy.orm.exc import MultipleResultsFound
@@ -18,6 +19,10 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     """
     Class controls retrieval, creation and updating of folder contents.
     """
+
+    def __init__( self, app ):
+        super( FolderContentsController, self ).__init__( app )
+        self.folder_manager = folders.FolderManager()
 
     @expose_api_anonymous
     def index( self, trans, folder_id, **kwd ):
@@ -44,33 +49,19 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
              InternalServerError
         """
+        is_admin = trans.user_is_admin()
         deleted = kwd.get( 'include_deleted', 'missing' )
+        current_user_roles = trans.get_current_user_roles()
         try:
             deleted = util.asbool( deleted )
         except ValueError:
             deleted = False
 
-        if ( len( folder_id ) == 17 and folder_id.startswith( 'F' ) ):
-            try:
-                decoded_folder_id = trans.security.decode_id( folder_id[ 1: ] )
-            except TypeError:
-                raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( folder_id ) )
-        else:
-            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( folder_id ) )
-
-        try:
-            folder = trans.sa_session.query( trans.app.model.LibraryFolder ).filter( trans.app.model.LibraryFolder.table.c.id == decoded_folder_id ).one()
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase( 'Multiple folders with same id found.' )
-        except NoResultFound:
-            raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
-        except Exception:
-            raise exceptions.InternalServerError( 'Error loading from the database.' )
-
-        current_user_roles = trans.get_current_user_roles()
+        decoded_folder_id = self.folder_manager.cut_and_decode( trans, folder_id )
+        folder = self.folder_manager.get( trans, decoded_folder_id )
 
         # Special level of security on top of libraries.
-        if trans.app.security_agent.can_access_library( current_user_roles, folder.parent_library ):
+        if trans.app.security_agent.can_access_library( current_user_roles, folder.parent_library ) or is_admin:
             pass
         else:
             if trans.user:
@@ -79,33 +70,10 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
                 log.warning( "SECURITY: Anonymous user is trying to load restricted folder with ID of %s" % ( decoded_folder_id ) )
             raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
 
-        # if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
-        #     log.debug('folder parent id:   ' + str(folder.parent_id))
-        #     if folder.parent_id is None:
-        #         try:
-        #             library = trans.sa_session.query( trans.app.model.Library ).filter( trans.app.model.Library.table.c.root_folder_id == decoded_folder_id ).one()
-        #         except Exception:
-        #             raise exceptions.InternalServerError( 'Error loading from the database.' )
-        #         if trans.app.security_agent.library_is_unrestricted( library ):
-        #             pass
-        #         else:
-        #             if trans.user:
-        #                 log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
-        #             else:
-        #                 log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
-        #             raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
-            # else:
-            #     if trans.user:
-            #         log.warning( "SECURITY: User (id: %s) without proper access rights is trying to load folder with ID of %s" % ( trans.user.id, decoded_folder_id ) )
-            #     else:
-            #         log.debug('PARENT ID IS NOT NONE')
-            #         log.warning( "SECURITY: Anonymous user without proper access rights is trying to load folder with ID of %s" % ( decoded_folder_id ) )
-            #     raise exceptions.ObjectNotFound( 'Folder with the id provided ( %s ) was not found' % str( folder_id ) )
-
         folder_contents = []
         update_time = ''
         create_time = ''
-        # Go through every accessible item (folders, datasets) in the folder and include its meta-data.
+        #  Go through every accessible item (folders, datasets) in the folder and include its metadata.
         for content_item in self._load_folder_contents( trans, folder, deleted ):
             return_item = {}
             encoded_id = trans.security.encode_id( content_item.id )
@@ -114,44 +82,35 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
             if content_item.api_type == 'folder':
                 encoded_id = 'F' + encoded_id
-                # Check whether user can modify current folder
-                can_modify = False
-                if trans.user_is_admin():
-                    can_modify = True
-                elif trans.user:
-                    can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
-                return_item.update( dict( can_modify=can_modify ) )
+                can_modify = is_admin or ( trans.user and trans.app.security_agent.can_modify_library_item( current_user_roles, folder ) )
+                can_manage = is_admin or ( trans.user and trans.app.security_agent.can_manage_library_item( current_user_roles, folder ) )
+                return_item.update( dict( can_modify=can_modify, can_manage=can_manage ) )
 
             if content_item.api_type == 'file':
-                # Is the dataset public or private?
-                # When both are False the dataset is 'restricted'
-                is_private = False
-                is_unrestricted = False
-                if trans.app.security_agent.dataset_is_public( content_item.library_dataset_dataset_association.dataset ):
-                    is_unrestricted = True
+                #  Is the dataset public or private?
+                #  When both are False the dataset is 'restricted'
+                #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
+                is_unrestricted = trans.app.security_agent.dataset_is_public( content_item.library_dataset_dataset_association.dataset )
+                if trans.user and trans.app.security_agent.dataset_is_private_to_user( trans, content_item ):
+                    is_private = True
                 else:
-                    is_unrestricted = False
-                    if trans.user:
-                        is_private = trans.app.security_agent.dataset_is_private_to_user( trans, content_item )
+                    is_private = False
 
                 # Can user manage the permissions on the dataset?
-                can_manage = False
-                if trans.user_is_admin():
-                    can_manage = True
-                elif trans.user:
-                    can_manage = trans.app.security_agent.can_manage_dataset( current_user_roles, content_item.library_dataset_dataset_association.dataset )
+                can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset( current_user_roles, content_item.library_dataset_dataset_association.dataset ) )
 
                 nice_size = util.nice_size( int( content_item.library_dataset_dataset_association.get_size() ) )
 
                 library_dataset_dict = content_item.to_dict()
-                return_item.update( dict( data_type=library_dataset_dict[ 'data_type' ],
+
+                return_item.update( dict( file_ext=library_dataset_dict[ 'file_ext' ],
                                           date_uploaded=library_dataset_dict[ 'date_uploaded' ],
                                           is_unrestricted=is_unrestricted,
                                           is_private=is_private,
                                           can_manage=can_manage,
                                           file_size=nice_size ) )
 
-            # For every item include the default meta-data
+            # For every item include the default metadata
             return_item.update( dict( id=encoded_id,
                                       type=content_item.api_type,
                                       name=content_item.name,
@@ -165,14 +124,19 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         full_path = self.build_path( trans, folder )[ ::-1 ]
 
         # Check whether user can add items to the current folder
-        can_add_library_item = trans.user_is_admin() or trans.app.security_agent.can_add_library_item( current_user_roles, folder )
+        can_add_library_item = is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, folder )
 
-        # Check whether user can modify current folder
-        can_modify_folder = trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
+        # Check whether user can modify the current folder
+        can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
+        
+        parent_library_id = None
+        if folder.parent_library is not None:
+            parent_library_id = trans.security.encode_id( folder.parent_library.id )
 
         metadata = dict( full_path=full_path,
                          can_add_library_item=can_add_library_item,
-                         can_modify_folder=can_modify_folder )
+                         can_modify_folder=can_modify_folder,
+                         parent_library_id=parent_library_id )
         folder_container = dict( metadata=metadata, folder_contents=folder_contents )
         return folder_container
 

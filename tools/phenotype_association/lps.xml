@@ -301,4 +301,23 @@ Technical Report. University of Wisconsin. August 10, 2010.
 -->
 
   </help>
+  <citations>
+    <citation type="bibtex">@ARTICLE{Kim07aninterior-point,
+    author = {Seung-jean Kim and Kwangmoo Koh and Michael Lustig and Stephen Boyd and Dimitry Gorinevsky},
+    title = {An interior-point method for large-scale l1-regularized logistic regression},
+    journal = {Journal of Machine Learning Research},
+    year = {2007},
+    volume = {8},
+    pages = {1519--1555},
+}</citation>
+    <citation type="bibtex">@ARTICLE{Shi08lasso-patternsearchalgorithm,
+    author = {Weiliang Shi and Grace Wahba and Stephen Wright and Kristine Lee and Ronald Klein and Barbara Klein},
+    title = {LASSO-Patternsearch Algorithm with Application to Ophthalmology and Genomic Data},
+    journal= {Stat Interface},
+    year = {2008},
+    volume = {1},
+    number = {1},
+    pages = {137--153}
+}</citation>
+  </citations>
 </tool>

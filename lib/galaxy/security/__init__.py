@@ -95,6 +95,9 @@ class RBACAgent:
     def set_all_library_permissions( self, trans, dataset, permissions ):
         raise "Unimplemented Method"
 
+    def set_library_item_permission( self, library_item, permission ):
+        raise "Unimplemented Method"
+
     def library_is_public( self, library ):
         raise "Unimplemented Method"
 
@@ -208,74 +211,115 @@ class GalaxyRBACAgent( RBACAgent ):
                 roles.add( role )
         return self.sort_by_attr( [ role for role in roles ], 'name' )
 
-    def get_valid_dataset_roles( self, trans, dataset, query, page, page_limit ):
+    def get_roles_for_action( self, item, action ):
+        """
+        Return a list containing the roles associated with given action on given item
+        where item is one of Library, LibraryFolder, LibraryDatasetDatasetAssociation,
+        LibraryDataset, Dataset.
+        """
+        roles = []
+        for item_permission in item.actions:
+                permission_action = self.get_action( item_permission.action )
+                if permission_action == action:
+                    roles.append( item_permission.role )
+        return roles
+
+    def get_valid_roles( self, trans, item, query=None, page=None, page_limit=None, is_library_access=False ):
         """
         This method retrieves the list of possible roles that user can select
-        in the dataset permissions form. Admins can select any role so the
+        in the item permissions form. Admins can select any role so the
         results are paginated in order to save the bandwidth and to speed
         things up.
-        Standard users can select their own private role, any  fo their
+        Standard users can select their own private role, any of their
         sharing roles and any public role (not private and not sharing).
         """
         roles = []
         if query is not None:
             query = query.replace( '_', '/_' ).replace( '%', '/%' ).replace( '/', '//' )
             search_query = query + '%'
-        # Limit the query only to get the page needed
-        limit = page * page_limit
+            log.debug('search_query: ' + str(search_query))
 
-        # Admins see it all
-        if trans.user_is_admin():
-            # Add all roles that fit the query
+        # Limit the query only to get the page needed
+        if page is not None and page_limit is not None:
+            paginated = True
+            limit = page * page_limit
+        else:
+            paginated = False
+        
+        total_count = None
+
+        if isinstance( item, self.model.Library ) and self.library_is_public( item ):
+            is_public_item = True
+        elif isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ):
+            is_public_item = True
+        elif isinstance( item, self.model.LibraryFolder ):
+            is_public_item = True
+        else:
+            is_public_item = False
+
+        # For public items and for library access admins can choose from all roles
+        if trans.user_is_admin() and ( is_public_item or is_library_access ):
+            # Add all non-deleted roles that fit the query
             db_query = trans.sa_session.query( trans.app.model.Role ).filter( self.model.Role.table.c.deleted == False )
             if query is not None:
                 db_query = db_query.filter( self.model.Role.table.c.name.like( search_query, escape='/' ) )
-            for role in ( db_query.order_by( self.model.Role.table.c.name ).limit( limit ) ):
-                roles.append( role )
-            # Take last page of the selection
-            roles = roles[ ( -page_limit ): ]
-
-        # Non-admins see the list of relevant roles
-        else:
-            if self.dataset_is_public( dataset ):
-                # Add the current user's private role
-                roles.append( self.get_private_user_role( trans.user ) )
-                # Add the current user's sharing roles
-                for role in self.get_sharing_roles( trans.user ):
-                    roles.append( role )
-                # Add all remaining non-private, non-sharing roles
-                for role in trans.sa_session.query( trans.app.model.Role ) \
-                                            .filter( and_( self.model.Role.table.c.deleted == False,
-                                                           self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
-                                                           self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
-                                            .order_by( self.model.Role.table.c.name ):
-                    roles.append( role )
-
+            total_count = db_query.count()
+            if paginated:
+                # Takes the least number of results from beginning that includes the requested page
+                roles = db_query.order_by( self.model.Role.table.c.name ).limit( limit ).all()
+                page_start = ( page * page_limit ) - page_limit
+                page_end = page_start + page_limit
+                if total_count < page_start:
+                    # Return empty list if there are less results than the requested position
+                    roles = []
+                else:
+                    roles = roles[ page_start:page_end ]
             else:
-                # If item has roles associated with the access permission, we need to start with them.
-                access_roles = dataset.get_access_roles( trans )
-                for role in access_roles:
-                    if trans.user_is_admin() or self.ok_to_display( trans.user, role ):
-                        roles.append( role )
-                        # Each role potentially has users.  We need to find all roles that each of those users have.
-                        for ura in role.users:
-                            user = ura.user
-                            for ura2 in user.roles:
-                                if trans.user_is_admin() or self.ok_to_display( trans.user, ura2.role ):
-                                    roles.append( ura2.role )
-                        # Each role also potentially has groups which, in turn, have members ( users ).  We need to
-                        # find all roles that each group's members have.
-                        for gra in role.groups:
-                            group = gra.group
-                            for uga in group.users:
-                                user = uga.user
-                                for ura in user.roles:
-                                    if trans.user_is_admin() or self.ok_to_display( trans.user, ura.role ):
-                                        roles.append( ura.role )
+                roles = db_query.order_by( self.model.Role.table.c.name )
+
+        # Non-admin and public item
+        elif is_public_item:
+            # Add the current user's private role
+            roles.append( self.get_private_user_role( trans.user ) )
+            # Add the current user's sharing roles
+            for role in self.get_sharing_roles( trans.user ):
+                roles.append( role )
+            # Add all remaining non-private, non-sharing roles
+            for role in trans.sa_session.query( trans.app.model.Role ) \
+                                        .filter( and_( self.model.Role.table.c.deleted == False,
+                                                       self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
+                                                       self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
+                                        .order_by( self.model.Role.table.c.name ):
+                roles.append( role )
+        #  User is not admin and item is not public
+        #  User will see all the roles derived from the access roles on the item
+        else:
+            # If item has roles associated with the access permission, we need to start with them.
+            access_roles = item.get_access_roles( trans )
+            for role in access_roles:
+                if trans.user_is_admin() or self.ok_to_display( trans.user, role ):
+                    roles.append( role )
+                    # Each role potentially has users.  We need to find all roles that each of those users have.
+                    for ura in role.users:
+                        user = ura.user
+                        for ura2 in user.roles:
+                            if trans.user_is_admin() or self.ok_to_display( trans.user, ura2.role ):
+                                roles.append( ura2.role )
+                    # Each role also potentially has groups which, in turn, have members ( users ).  We need to
+                    # find all roles that each group's members have.
+                    for gra in role.groups:
+                        group = gra.group
+                        for uga in group.users:
+                            user = uga.user
+                            for ura in user.roles:
+                                if trans.user_is_admin() or self.ok_to_display( trans.user, ura.role ):
+                                    roles.append( ura.role )
 
         # Omit duplicated roles by converting to set
         return_roles = set( roles )
-        return self.sort_by_attr( [ role for role in return_roles ], 'name' )
+        if total_count is None:
+            total_count = len( return_roles )
+        return self.sort_by_attr( [ role for role in return_roles ], 'name' ), total_count
 
     def get_legitimate_roles( self, trans, item, cntrller ):
         """
@@ -828,8 +872,8 @@ class GalaxyRBACAgent( RBACAgent ):
 
     def set_all_dataset_permissions( self, dataset, permissions={} ):
         """
-        Set new permissions on a dataset, eliminating all current permissions
-        permissions looks like: { Action : [ Role, Role ] }
+        Set new full permissions on a dataset, eliminating all current permissions.
+        Permission looks like: { Action : [ Role, Role ] }
         """
         # Make sure that DATASET_MANAGE_PERMISSIONS is associated with at least 1 role
         has_dataset_manage_permissions = False
@@ -861,8 +905,8 @@ class GalaxyRBACAgent( RBACAgent ):
 
     def set_dataset_permission( self, dataset, permission={} ):
         """
-        Set a specific permission on a dataset, leaving all other current permissions on the dataset alone
-        permissions looks like: { Action : [ Role, Role ] }
+        Set a specific permission on a dataset, leaving all other current permissions on the dataset alone.
+        Permission looks like: { Action.action : [ Role, Role ] }
         """
         flush_needed = False
         for action, roles in permission.items():
@@ -984,6 +1028,32 @@ class GalaxyRBACAgent( RBACAgent ):
                             permissions = {}
                             permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = roles
                             self.set_dataset_permission( library_item.dataset, permissions )
+        if flush_needed:
+            self.sa_session.flush()
+
+    def set_library_item_permission( self, library_item, permission={} ):
+        """
+        Set a specific permission on a library item, leaving all other current permissions on the item alone.
+        Permission looks like: { Action.action : [ Role, Role ] }
+        """
+        flush_needed = False
+        for action, roles in permission.items():
+            if isinstance( action, Action ):
+                action = action.action
+            # Delete the current specific permission on the library item if one exists
+            for item_permission in library_item.actions:
+                if item_permission.action == action:
+                    self.sa_session.delete( item_permission )
+                    flush_needed = True
+            # Add the new specific permission on the library item
+            if isinstance( library_item, self.model.LibraryDataset ):
+                for item_permission in [ self.model.LibraryDatasetPermissions( action, library_item, role ) for role in roles ]:
+                    self.sa_session.add( item_permission )
+                    flush_needed = True
+            elif isinstance ( library_item, self.model.LibraryPermissions):
+                for item_permission in [ self.model.LibraryPermissions( action, library_item, role ) for role in roles ]:
+                    self.sa_session.add( item_permission )
+                    flush_needed = True
         if flush_needed:
             self.sa_session.flush()
 

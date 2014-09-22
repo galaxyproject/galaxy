@@ -416,8 +416,9 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
     def stop_job( self, job ):
         #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        client = self.get_client( job.destination_params, job.job_runner_external_id )
         job_ext_output_metadata = job.get_external_output_metadata()
-        if job_ext_output_metadata:
+        if not PulsarJobRunner.__remote_metadata( client ) and job_ext_output_metadata:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             if pid in [ None, '' ]:
                 log.warning( "stop_job(): %s: no PID in database for job, unable to stop" % job.id )
@@ -557,7 +558,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             metadata_kwds['output_fnames'] = outputs
             metadata_kwds['compute_tmp_dir'] = working_directory
             metadata_kwds['config_root'] = remote_galaxy_home
-            default_config_file = os.path.join(remote_galaxy_home, 'universe_wsgi.ini')
+            default_config_file = os.path.join(remote_galaxy_home, 'config/galaxy.ini')
             metadata_kwds['config_file'] = remote_system_properties.get('galaxy_config_file', default_config_file)
             metadata_kwds['dataset_files_path'] = remote_system_properties.get('galaxy_dataset_files_path', None)
             if PulsarJobRunner.__use_remote_datatypes_conf( client ):

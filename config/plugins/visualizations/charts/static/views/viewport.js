@@ -1,5 +1,5 @@
 // dependencies
-define(['mvc/ui/ui-portlet', 'plugin/library/ui', 'utils/utils'],
+define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils'],
         function(Portlet, Ui, Utils) {
 
 /**

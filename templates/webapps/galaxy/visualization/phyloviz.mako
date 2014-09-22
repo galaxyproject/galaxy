@@ -168,8 +168,8 @@
             };
 
             $(function firstVizLoad(){       // calls when viz is loaded for the first time
-                var config = ${ h.to_json_string( config )};
-                var data = ${h.to_json_string(data['data'])};
+                var config = ${ h.dumps( config )};
+                var data = ${h.dumps(data['data'])};
                 initPhyloViz(data, config);
             });
         });

@@ -143,12 +143,11 @@
     ## load edit views for each of the hdas
     <script type="text/javascript">
         define( 'display-structured', function(){
-            require([ 'mvc/dataset/hda-edit' ], function( hdaEdit ){
-                var hdaModel = require( 'mvc/dataset/hda-model' ),
-                    hdaJSON = ${ h.to_json_string( hda_dicts, indent=( 2 if trans.debug else 0 ) ) };
+            require([ 'mvc/history/hda-li-edit', 'mvc/history/hda-model' ], function( hdaEdit, hdaModel ){
+                var hdaJSON = ${ h.dumps( hda_dicts, indent=( 2 if trans.debug else 0 ) ) };
 
                 window.hdas = hdaJSON.map( function( hda ){
-                    return new hdaEdit.HDAEditView({
+                    return new hdaEdit.HDAListItemEdit({
                         model           : new hdaModel.HistoryDatasetAssociation( hda ),
                         el              : $( '#hda-' + hda.id ),
                         linkTarget      : '_self',

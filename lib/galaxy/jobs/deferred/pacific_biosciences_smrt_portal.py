@@ -83,7 +83,7 @@ class SMRTPortalPlugin( DataTransfer ):
                 return self.job_states.INVALID
             url = 'http://' + job.params[ 'smrt_host' ] + self.api_path + '/Jobs/' + job.params[ 'smrt_job_id' ] + '/Status'
             r = urllib2.urlopen( url )
-            status = json.from_json_string( r.read() )
+            status = json.loads( r.read() )
             # TODO: error handling: unexpected json or bad response, bad url, etc.
             if status[ 'Code' ] == 'Completed':
                 log.debug( "SMRT Portal job '%s' is Completed.  Initiating transfer." % job.params[ 'smrt_job_id' ] )

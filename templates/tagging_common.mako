@@ -198,7 +198,7 @@
         %>
         var options =
         {
-            tags : ${h.to_json_string(tag_names_and_values)},
+            tags : ${h.dumps(tag_names_and_values)},
             editable : ${iff( editable, 'true', 'false' )},
             get_toggle_link_text_fn: ${get_toggle_link_text_fn},
             tag_click_fn: ${tag_click_fn},

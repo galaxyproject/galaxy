@@ -20,13 +20,13 @@ from tool_shed.dependencies.repository import relation_builder
 
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
+from tool_shed.utility_containers import ToolShedUtilityContainerManager
 
 from tool_shed.tools import tool_validator
 from tool_shed.tools import tool_version_manager
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
-from tool_shed.util import container_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
@@ -123,7 +123,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   **kwd ) )
         title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
                                                                          trailing_string='by Category',
-                                                                         default='Categories' )
+                                                                         default='Repositories' )
         self.category_grid.title = title
         return self.category_grid( trans, **kwd )
 
@@ -1273,12 +1273,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Only display repository dependencies if they exist.
             exclude = [ 'datatypes', 'invalid_repository_dependencies', 'invalid_tool_dependencies', 'invalid_tools',
                         'readme_files', 'tool_dependencies', 'tools', 'tool_test_results', 'workflows', 'data_manager' ]
-            containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
-                                                                                        repository,
-                                                                                        changeset_revision,
-                                                                                        repository_dependencies,
-                                                                                        repository_metadata,
-                                                                                        exclude=exclude )
+            tsucm = ToolShedUtilityContainerManager( trans.app )
+            containers_dict = tsucm.build_repository_containers( repository,
+                                                                 changeset_revision,
+                                                                 repository_dependencies,
+                                                                 repository_metadata,
+                                                                 exclude=exclude )
             export_repository_dependencies_check_box = CheckboxField( 'export_repository_dependencies', checked=True )
         else:
             containers_dict = None
@@ -1865,7 +1865,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
                 changeset_revisions.append( changeset_revision )
             if encoded_repository_ids and changeset_revisions:
-                repo_info_dict = json.from_json_string( self.get_repository_information( trans, encoded_repository_ids, changeset_revisions ) )
+                repo_info_dict = json.loads( self.get_repository_information( trans, encoded_repository_ids, changeset_revisions ) )
         return repo_info_dict
 
     @web.expose
@@ -1933,7 +1933,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if current_changeset_revision == changeset_revision:
                     break
         if tool_version_dicts:
-            return json.to_json_string( tool_version_dicts )
+            return json.dumps( tool_version_dicts )
         return ''
 
     @web.json
@@ -2253,7 +2253,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         skip_tool_tests_comment = kwd.get( 'skip_tool_tests_comment', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
         if repository.email_alerts:
-            email_alerts = json.from_json_string( repository.email_alerts )
+            email_alerts = json.loads( repository.email_alerts )
         else:
             email_alerts = []
         allow_push = kwd.get( 'allow_push', '' )
@@ -2365,12 +2365,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if alerts_checked:
                 if user.email not in email_alerts:
                     email_alerts.append( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     flush_needed = True
             else:
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
@@ -2458,11 +2458,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         skip_tool_tests_check_box = CheckboxField( 'skip_tool_tests', checked=skip_tool_tests_checked )
         categories = suc.get_categories( trans.app )
         selected_categories = [ rca.category_id for rca in repository.categories ]
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
-                                                                                    repository,
-                                                                                    changeset_revision,
-                                                                                    repository_dependencies,
-                                                                                    repository_metadata )
+        tsucm = ToolShedUtilityContainerManager( trans.app )
+        containers_dict = tsucm.build_repository_containers( repository,
+                                                             changeset_revision,
+                                                             repository_dependencies,
+                                                             repository_metadata )
         heads = hg_util.get_repository_heads( repo )
         deprecated_repository_dependency_tups = \
             metadata_util.get_repository_dependency_tups_from_repository_metadata( trans.app,
@@ -2653,11 +2653,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
-                                                                                    repository,
-                                                                                    changeset_revision,
-                                                                                    repository_dependencies,
-                                                                                    repository_metadata )
+        tsucm = ToolShedUtilityContainerManager( trans.app )
+        containers_dict = tsucm.build_repository_containers( repository,
+                                                             changeset_revision,
+                                                             repository_dependencies,
+                                                             repository_metadata )
         return trans.fill_template( '/webapps/tool_shed/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     containers_dict=containers_dict,
@@ -2759,15 +2759,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def reset_all_metadata( self, trans, id, **kwd ):
         """Reset all metadata on the complete changelog for a single repository in the tool shed."""
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
-        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
-        invalid_file_tups, metadata_dict = \
-            rmm.reset_all_metadata_on_repository_in_tool_shed( id )
-        if invalid_file_tups:
-            repository = suc.get_repository_in_tool_shed( trans.app, id )
+        repository = suc.get_repository_in_tool_shed( trans.app, id )
+        rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                     user=trans.user,
+                                                                     repository=repository )
+        rmm.reset_all_metadata_on_repository_in_tool_shed()
+        rmm_metadata_dict = rmm.get_metadata_dict()
+        rmm_invalid_file_tups = rmm.get_invalid_file_tups()
+        if rmm_invalid_file_tups:
             message = tool_util.generate_message_for_invalid_tools( trans.app,
-                                                                    invalid_file_tups,
+                                                                    rmm_invalid_file_tups,
                                                                     repository,
-                                                                    metadata_dict )
+                                                                    rmm_metadata_dict )
             status = 'error'
         else:
             message = "All repository metadata has been reset.  "
@@ -2849,10 +2852,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if tip == repository.tip( trans.app ):
                     message += 'No changes to repository.  '
                 else:
-                    rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
-                    status, error_message = rmm.set_repository_metadata_due_to_new_tip( trans.request.host,
-                                                                                        repository,
-                                                                                        **kwd )
+                    rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                                 user=trans.user,
+                                                                                 repository=repository )
+                    status, error_message = rmm.set_repository_metadata_due_to_new_tip( trans.request.host, **kwd )
                     if error_message:
                         message = error_message
                     else:
@@ -2930,18 +2933,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             for repository_id in repository_ids:
                 repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
                 if repository.email_alerts:
-                    email_alerts = json.from_json_string( repository.email_alerts )
+                    email_alerts = json.loads( repository.email_alerts )
                 else:
                     email_alerts = []
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     trans.sa_session.add( repository )
                     flush_needed = True
                     total_alerts_removed += 1
                 else:
                     email_alerts.append( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     trans.sa_session.add( repository )
                     flush_needed = True
                     total_alerts_added += 1
@@ -3309,7 +3312,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         alerts = kwd.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
         if repository.email_alerts:
-            email_alerts = json.from_json_string( repository.email_alerts )
+            email_alerts = json.loads( repository.email_alerts )
         else:
             email_alerts = []
         repository_dependencies = None
@@ -3319,12 +3322,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if alerts_checked:
                 if user.email not in email_alerts:
                     email_alerts.append( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     flush_needed = True
             else:
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = json.to_json_string( email_alerts )
+                    repository.email_alerts = json.dumps( email_alerts )
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
@@ -3360,11 +3363,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             else:
                 message += malicious_error
             status = 'error'
-        containers_dict = container_util.build_repository_containers_for_tool_shed( trans.app,
-                                                                                    repository,
-                                                                                    changeset_revision,
-                                                                                    repository_dependencies,
-                                                                                    repository_metadata )
+        tsucm = ToolShedUtilityContainerManager( trans.app )
+        containers_dict = tsucm.build_repository_containers( repository,
+                                                             changeset_revision,
+                                                             repository_dependencies,
+                                                             repository_metadata )
         repository_type_select_field = rt_util.build_repository_type_select_field( trans, repository=repository )
         heads = hg_util.get_repository_heads( repo )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',

@@ -1,0 +1,114 @@
+# ---- HTTP Server ----------------------------------------------------------
+
+[server:main]
+
+use = egg:Paste#http
+port = 9009
+
+# The address on which to listen.  By default, only listen to localhost (the tool shed will not
+# be accessible over the network).  Use '0.0.0.0' to listen on all available network interfaces.
+#host = 0.0.0.0
+host = 127.0.0.1
+
+use_threadpool = true
+threadpool_workers = 10
+# Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
+threadpool_kill_thread_limit = 10800
+
+# ---- Galaxy Webapps Community Interface -------------------------------------------------
+
+[app:main]
+
+# Specifies the factory for the universe WSGI application
+paste.app_factory = galaxy.webapps.tool_shed.buildapp:app_factory
+log_level = DEBUG
+
+# Database connection
+database_file = database/community.sqlite
+# You may use a SQLAlchemy connection string to specify an external database instead
+#database_connection = postgres:///community_test?host=/var/run/postgresql
+
+# Where the hgweb.config file is stored.  The default is the Galaxy installation directory.
+#hgweb_config_dir = None
+
+# Where tool shed repositories are stored.
+file_path = database/community_files
+# Temporary storage for additional datasets, this should be shared through the cluster
+new_file_path = database/tmp
+
+# File containing old-style genome builds
+#builds_file_path = tool-data/shared/ucsc/builds.txt
+
+# Session support (beaker)
+use_beaker_session = True
+session_type = memory
+session_data_dir = %(here)s/database/beaker_sessions
+session_key = galaxysessions
+session_secret = changethisinproduction
+
+# -- Users and Security
+
+# Galaxy encodes various internal values when these values will be output in
+# some format (for example, in a URL or cookie).  You should set a key to be
+# used by the algorithm that encodes and decodes these values.  It can be any
+# string.  If left unchanged, anyone could construct a cookie that would grant
+# them access to others' sessions.
+id_secret = changethisinproductiontoo
+
+# User authentication can be delegated to an upstream proxy server (usually
+# Apache).  The upstream proxy should set a REMOTE_USER header in the request.
+# Enabling remote user disables regular logins.  For more information, see:
+# https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
+#use_remote_user = False
+
+# Configuration for debugging middleware
+debug = true
+use_lint = false
+
+# NEVER enable this on a public site (even test or QA)
+# use_interactive = true
+
+# this should be a comma-separated list of valid Galaxy users
+#admin_users = user1@example.org,user2@example.org
+
+# Force everyone to log in (disable anonymous access)
+require_login = False
+
+# path to sendmail
+sendmail_path = /usr/sbin/sendmail
+
+# Number of saved tool test results produced by the install and test framework for each repository.
+#num_tool_test_results_saved = 5
+
+# For use by email messages sent from the tool shed
+#smtp_server = smtp.your_tool_shed_server
+#email_from = your_tool_shed_email@server
+
+# The URL linked by the "Support" link in the "Help" menu.
+#support_url = https://wiki.galaxyproject.org/Support
+
+# Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
+## use_heartbeat = True
+
+# Profiling middleware (cProfile based)
+## use_profile = True
+
+# Enable creation of Galaxy flavor Docker Image
+#enable_galaxy_flavor_docker_image = False
+
+# Use the new iframe / javascript based layout
+use_new_layout = true
+
+# Show a message box under the masthead.
+#message_box_visible = False
+#message_box_content = None
+#message_box_class = info
+
+# Serving static files (needed if running standalone)
+#static_enabled = True
+#static_cache_time = 360
+#static_dir = static/
+#static_images_dir = static/images
+#static_favicon_dir = static/favicon.ico
+#static_scripts_dir = static/scripts/
+#static_style_dir = static/style/blue

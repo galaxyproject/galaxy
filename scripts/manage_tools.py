@@ -22,7 +22,7 @@ from galaxy.model.orm.scripts import read_config_file_arg
 
 log = logging.getLogger( __name__ )
 
-config_file = read_config_file_arg( sys.argv, 'universe_wsgi.ini' )
+config_file = read_config_file_arg( sys.argv, 'config/galaxy.ini', 'universe_wsgi.ini' )
 if not os.path.exists( config_file ):
     print "Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % config_file
     sys.exit( 1 )
@@ -31,7 +31,7 @@ repo = 'lib/tool_shed/galaxy_install/migrate'
 cp = SafeConfigParser()
 cp.read( config_file )
 
-if config_file == 'universe_wsgi.ini.sample' and 'GALAXY_TEST_DBURI' in os.environ:
+if config_file == 'config/galaxy.ini.sample' and 'GALAXY_TEST_DBURI' in os.environ:
     # Running functional tests.
     db_url = os.environ[ 'GALAXY_TEST_DBURI' ]
 elif cp.has_option( "app:main", "install_database_connection" ):

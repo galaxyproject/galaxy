@@ -85,7 +85,7 @@ def params_to_strings( params, param_values, app ):
     for key, value in param_values.iteritems():
         if key in params:
             value = params[ key ].value_to_basic( value, app )
-        rval[ key ] = str( to_json_string( value ) )
+        rval[ key ] = str( dumps( value ) )
     return rval
 
 
@@ -98,7 +98,7 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     """
     rval = dict()
     for key, value in param_values.iteritems():
-        value = json_fix( from_json_string( value ) )
+        value = json_fix( loads( value ) )
         if key in params:
             value = params[key].value_from_basic( value, app, ignore_errors )
         rval[ key ] = value

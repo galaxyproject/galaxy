@@ -3,8 +3,8 @@
 Build index for full-text lucene search of files in data libraries.
 
 Requires a full text search server and configuration settings in
-universe_wsgi.ini. See the lucene settings in the data library
-search section for more details.
+galaxy.ini. See the lucene settings in the data library search section for more
+details.
 
 Run from the ~/scripts/data_libraries directory:
 %sh build_lucene_index.sh
@@ -32,7 +32,7 @@ def main( ini_file ):
     ignore_exts = gconfig.get( "fulltext_noindex_filetypes", "" ).split( "," )
     search_url = gconfig.get( "fulltext_url", None )
     if not search_url:
-        raise ValueError( "Need to specify search functionality in universe_wsgi.ini" )
+        raise ValueError( "Need to specify search functionality in galaxy.ini" )
     dataset_file = create_dataset_file( get_lddas( sa_session, max_size, ignore_exts ) )
     try:
         build_index( search_url, dataset_file )

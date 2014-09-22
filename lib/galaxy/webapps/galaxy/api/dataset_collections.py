@@ -4,8 +4,7 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 
-from galaxy.dataset_collections.util import api_payload_to_create_params
-from galaxy.dataset_collections.util import dictify_dataset_collection_instance
+from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
 
 from logging import getLogger
 log = getLogger( __name__ )

@@ -4,6 +4,7 @@ from sqlalchemy.orm.collections import InstrumentedList
 import galaxy
 import logging
 import datetime
+import uuid
 
 log = logging.getLogger( __name__ )
 
@@ -186,6 +187,8 @@ class Dictifiable:
                     return value_mapper.get( key )( item )
                 if type(item) == datetime.datetime:
                     return item.isoformat()
+                elif type(item) == uuid.UUID:
+                    return str(item)
                 # Leaving this for future reference, though we may want a more
                 # generic way to handle special type mappings going forward.
                 # If the item is of a class that needs to be 'stringified' before being put into a JSON data structure

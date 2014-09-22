@@ -1,7 +1,7 @@
 <tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.3">
   <description>using coordinates from assembled/unassembled genomes</description>
   <command interpreter="python">
-      extract_genomic_dna.py $input $out_file1 -o $out_format -d $dbkey 
+      extract_genomic_dna.py "${input}" "${out_file1}" -o "${out_format}" -d "${dbkey}" 
       
       #if str( $interpret_features ) == "yes":
         -I
@@ -9,17 +9,17 @@
       
       ## Columns to use in input file.
       #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
-        -1 1,4,5,7 --gff
+        -1 "1,4,5,7" --gff
       #else:
-        -1 ${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol},${input.metadata.nameCol}
+        -1 "${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol},${input.metadata.nameCol}"
       #end if
 
       #if $seq_source.index_source == "cached":
         ## Genomic data from cache.
-        -g ${GALAXY_DATA_INDEX_DIR}
+        -g "${GALAXY_DATA_INDEX_DIR}"
       #else:
         ## Genomic data from history.
-        -F $seq_source.ref_file
+        -F "${seq_source.ref_file}"
       #end if
   </command>
   <inputs>

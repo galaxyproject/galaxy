@@ -16,7 +16,7 @@ import zipfile
 
 from base.asserts import verify_assertions
 from galaxy.util import asbool
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from galaxy.web import security
 from galaxy.web.framework.helpers import iff
 from urlparse import urlparse
@@ -56,7 +56,7 @@ class TwillTestCase( unittest.TestCase ):
             f = open( self.tool_shed_test_file, 'r' )
             text = f.read()
             f.close()
-            self.shed_tools_dict = from_json_string( text )
+            self.shed_tools_dict = loads( text )
         else:
             self.shed_tools_dict = {}
         self.keepOutdir = os.environ.get( 'GALAXY_TEST_SAVE', '' )
@@ -1293,12 +1293,12 @@ class TwillTestCase( unittest.TestCase ):
 
     def get_running_datasets( self ):
         self.visit_url( '/api/histories' )
-        history_id = from_json_string( self.last_page() )[0][ 'id' ]
+        history_id = loads( self.last_page() )[0][ 'id' ]
         self.visit_url( '/api/histories/%s/contents' % history_id )
-        jsondata = from_json_string( self.last_page() )
+        jsondata = loads( self.last_page() )
         for history_item in jsondata:
             self.visit_url( history_item[ 'url' ] )
-            item_json = from_json_string( self.last_page() )
+            item_json = loads( self.last_page() )
             if item_json[ 'state' ] in [ 'queued', 'running', 'paused' ]:
                 return True
         return False
@@ -1394,7 +1394,7 @@ class TwillTestCase( unittest.TestCase ):
 
     def json_from_url( self, url, params={} ):
         self.visit_url( url, params )
-        return from_json_string( self.last_page() )
+        return loads( self.last_page() )
 
     def last_page( self ):
         return tc.browser.get_html()

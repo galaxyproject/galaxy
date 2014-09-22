@@ -1,14 +1,13 @@
 // This file isn't really testing anything useful yet, it is just testing
 // (or demonstrating) qunit+backbone interactions.
 define([
-    "mvc/dataset/hda-model",
-    "mvc/dataset/hda-base",
+    "mvc/history/hda-model",
+    "mvc/history/hda-li",
     "jquery",
-    "sinon-qunit",
-    "utils/localization"
+    "sinon-qunit"
 ], function(
-    hdaModel,
-    hdaBase,
+    HDA_MODEL,
+    HDA_BASE,
     $,
     sinon
 ){
@@ -18,10 +17,10 @@ define([
     module( "HDA base backbone view tests" );
 
     test( "Base HDA view default construction, initialize", function() {
-        var hda = new hdaModel.HistoryDatasetAssociation({
+        var hda = new HDA_MODEL.HistoryDatasetAssociation({
                     id          : '123'
                 }),
-            view = new hdaBase.HDABaseView({ model: hda });
+            view = new HDA_BASE.HDAListItemView({ model: hda });
 
         strictEqual( view.model, hda );
 
@@ -30,6 +29,6 @@ define([
         equal( view.selected,   false );
         equal( view.expanded,   false );
         equal( view.draggable,  false );
-        equal( view.id(), 'hda-123' );
+        equal( view.id(), 'dataset-123' );
     });
 });

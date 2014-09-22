@@ -6,7 +6,17 @@ module.exports = function(grunt) {
   var theme = grunt.option( 'theme', 'blue' );
 
   var out = 'blue';
-  var lessFiles = [ 'base', 'autocomplete_tagging', 'embed_item', 'iphone', 'masthead', 'library', 'trackster', 'circster' ];
+  var lessFiles = [
+    'base',
+    'autocomplete_tagging',
+    'embed_item',
+    'iphone',
+    'masthead',
+    'library',
+    'trackster',
+    'circster',
+    'jstree'
+  ];
 
   var _ = grunt.util._;
   var fmt = _.sprintf;
@@ -46,23 +56,29 @@ module.exports = function(grunt) {
         paths: [ out ]
       },
       dist: {
-        files: _.reduce( lessFiles, function( d, s ) { 
-          d[ fmt( '%s/%s.css', out, s ) ] = [ fmt( 'src/less/%s.less', s ) ]; return d 
+        files: _.reduce( lessFiles, function( d, s ) {
+          d[ fmt( '%s/%s.css', out, s ) ] = [ fmt( 'src/less/%s.less', s ) ]; return d;
         }, {} )
       }
     },
+
+    // remove tmp files
+    clean: {
+      clean : [ fmt('%s/tmp-site-config.less', out) ]
+    }
   });
 
   // Write theme variable for less
   grunt.registerTask('less-site-config', 'Write site configuration for less', function() {
-    grunt.file.write( fmt('%s/tmp-site-config.less', out), fmt( "@theme-name: %s;", theme ) )
+    grunt.file.write( fmt('%s/tmp-site-config.less', out), fmt( "@theme-name: %s;", theme ) );
   });
 
   // These plugins provide necessary tasks.
   grunt.loadNpmTasks('grunt-contrib-less');
   grunt.loadNpmTasks('grunt-spritesmith');
+  grunt.loadNpmTasks('grunt-contrib-clean');
 
   // Default task.
-  grunt.registerTask('default', ['sprite', 'less-site-config', 'less']);
+  grunt.registerTask('default', ['sprite', 'less-site-config', 'less', 'clean']);
 
 };

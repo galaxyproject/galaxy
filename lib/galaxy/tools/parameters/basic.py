@@ -248,6 +248,10 @@ class TextToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context, history=None ):
         return self.value
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super(TextToolParameter, self).to_dict(trans)
+        d['area'] = self.area
+        return d
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -459,6 +463,13 @@ class BooleanToolParameter( ToolParameter ):
         else:
             return self.falsevalue
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super(BooleanToolParameter, self).to_dict(trans)
+        d['value'] = self.checked
+        d['truevalue'] = self.truevalue
+        d['falsevalue'] = self.falsevalue
+        return d
+    
     @property
     def legal_values( self ):
         return [ self.truevalue, self.falsevalue ]
@@ -783,6 +794,8 @@ class SelectToolParameter( ToolParameter ):
         if value is not None:
             if not isinstance( value, list ):
                 value = [ value ]
+            # We could have an unvalidated value here when e.g. running a workflow.
+            value = [ val.value if isinstance( val, UnvalidatedValue ) else val for val in value ]
         field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
         options = self.get_options( trans, context )
         for text, optval, selected in options:
@@ -991,6 +1004,9 @@ class SelectToolParameter( ToolParameter ):
                     # Found selected option.
                     value = option[1]
             d[ 'value' ] = value
+            
+        d['display'] = self.display
+        d['multiple'] = self.multiple
 
         return d
 
@@ -1002,7 +1018,7 @@ class GenomeBuildParameter( SelectToolParameter ):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.dbnames )
+    >>> trans = Bunch( history=Bunch( genome_build='hg17' ), db_builds=util.read_dbnames( None ) )
 
     >>> p = GenomeBuildParameter( None, XML(
     ... '''
@@ -1071,7 +1087,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     def _get_dbkey_names( self, trans=None ):
         if not self.tool:
             # Hack for unit tests, since we have no tool
-            return util.dbnames
+            return util.read_dbnames( None )
         return self.tool.app.genome_builds.get_genome_build_names( trans=trans )
 
 
@@ -1230,6 +1246,8 @@ class ColumnListParameter( SelectToolParameter ):
     def need_late_validation( self, trans, context ):
         if super( ColumnListParameter, self ).need_late_validation( trans, context ):
             return True
+        if self.data_ref not in context:
+            return False
         # Get the selected dataset if selected
         dataset = context[ self.data_ref ]
         if dataset:
@@ -1241,6 +1259,19 @@ class ColumnListParameter( SelectToolParameter ):
                     return True
         # No late validation
         return False
+
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        # call parent to_dict
+        d = super( ColumnListParameter, self ).to_dict( trans )
+
+        # add data reference
+        d['data_ref'] = self.data_ref
+        
+        # add numerical flag
+        d['numerical'] = self.numerical
+        
+        # return
+        return d
 
 
 class DrillDownSelectToolParameter( SelectToolParameter ):
@@ -1856,6 +1887,11 @@ class DataToolParameter( BaseDataToolParameter ):
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
+            elif value['src'] == 'hdca':
+                decoded_id = trans.app.security.decode_id( value[ 'id' ] )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+            else:
+                raise ValueError("Unknown input source %s passed to job submission API." % value['src'])
         elif str( value ).startswith( "__collection_reduce__|" ):
             encoded_id = str( value )[ len( "__collection_reduce__|" ): ]
             decoded_id = trans.app.security.decode_id( encoded_id )
@@ -1872,6 +1908,10 @@ class DataToolParameter( BaseDataToolParameter ):
                     raise ValueError( "The previously selected dataset has been previously deleted" )
                 if hasattr( v, "dataset" ) and v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
+        if not self.multiple:
+            if len( values ) > 1:
+                raise ValueError( "More than one dataset supplied to single input dataset parameter.")
+            rval = values[ 0 ]
         return rval
 
     def to_string( self, value, app ):
@@ -1994,6 +2034,11 @@ class DataToolParameter( BaseDataToolParameter ):
             ref = ref()
         return ref
 
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super( DataToolParameter, self ).to_dict( trans )
+        d['extensions'] = self.extensions
+        d['multiple'] = self.multiple
+        return d
 
 class DataCollectionToolParameter( BaseDataToolParameter ):
     """
@@ -2096,6 +2141,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         elif isinstance( value, basestring ):
             if value.startswith( "dce:" ):
                 rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
+            elif value.startswith( "hdca:" ):
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value[ len( "hdca:"): ] )
             else:
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( value )
         if rval and isinstance( rval, trans.app.model.HistoryDatasetCollectionAssociation ):
@@ -2107,6 +2154,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def to_string( self, value, app ):
         if value is None or isinstance( value, basestring ):
             return value
+        elif isinstance( value, DummyDataset ):
+            return None
         try:
             if isinstance( value, galaxy.model.DatasetCollectionElement ):
                 return "dce:%s" % value.id

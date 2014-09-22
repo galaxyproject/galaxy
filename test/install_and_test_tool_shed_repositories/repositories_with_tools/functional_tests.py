@@ -42,7 +42,7 @@ import install_and_test_tool_shed_repositories.base.util as install_and_test_bas
 from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy.app import UniverseApplication
-from galaxy.util.json import from_json_string
+from galaxy.util.json import loads
 from galaxy.util import asbool
 from galaxy.util import unicodify
 from galaxy.web import buildapp
@@ -312,7 +312,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                                 # Find the path to the test-data directory within the installed repository.
                                 has_test_data, shed_tools_dict = \
                                     parse_tool_panel_config( galaxy_shed_tool_conf_file,
-                                                             from_json_string( file( galaxy_shed_tools_dict_file, 'r' ).read() ) )
+                                                             loads( file( galaxy_shed_tools_dict_file, 'r' ).read() ) )
                                 # If the repository has a test-data directory we write the generated shed_tools_dict to a temporary
                                 # file so the functional test framework can find it.
                                 install_and_test_base_util.populate_galaxy_shed_tools_dict_file( galaxy_shed_tools_dict_file,
@@ -495,8 +495,8 @@ def main():
         for label in kwargs:
             config_tuple = label, kwargs[ label ]
             config_items.append( config_tuple )
-        # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
-        generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+        # Write a temporary file, based on galaxy.ini.sample, using the configuration options defined above.
+        generate_config_file( 'config/galaxy.ini.sample', galaxy_config_file, config_items )
     # kwargs must be a list when passed to the Galaxy webapp (i.e., UniverseApplication).
     # The following is used to set metadata externally.
     kwargs[ 'tool_config_file' ] = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ]

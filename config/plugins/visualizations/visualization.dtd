@@ -33,7 +33,8 @@
           Currently, all tests are OR'd and there is no logical grouping. Tests are run in order.
         (text): the text of this element is what the given target will be compared to (REQUIRED)
         type: what type of test to run (e.g. when the target is an HDA the test will often be of type 'isinstance'
-                and test whether the HDA's datatype isinstace of a class)
+                and test whether the HDA's datatype isinstace of a class).
+                See lib/galaxy/visualizations/registry.py, DataSourceParser.parse_tests for test type options.
                 DEFAULT: string comparison.
         test_attr: what attribute of the target object should be used in the test. For instance, 'datatype'
                 will attempt to get the HDA.datatype from a target HDA. If the given object doesn't have

@@ -1,5 +1,8 @@
 <tool id="maf_by_block_number1" name="Extract MAF by block number" version="1.0.1">
   <description>given a set of block numbers and a MAF file</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
   <command interpreter="python">maf_by_block_number.py $input1 $input2 $out_file1 $block_col $species</command>
   <inputs>
     <param format="txt" name="input1" type="data" label="Block Numbers"/>
@@ -29,12 +32,7 @@
 
 This tool takes a list of block numbers, one per line, and extracts the corresponding MAF blocks from the provided file. Block numbers start at 0.
 
-------
-
-**Citation**
-
-If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
-
-
-  </help>
+@HELP_CITATIONS@
+    </help>
+    <expand macro="citations" />
 </tool>

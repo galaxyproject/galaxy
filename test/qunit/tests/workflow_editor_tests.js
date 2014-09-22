@@ -91,7 +91,9 @@ define([
         },
         test_accept: function( other ) {
             other = other || { node: {}, datatypes: [ "txt" ] };
-            other.mapOver = function() { return NULL_COLLECTION_TYPE_DESCRIPTION; };
+            if( ! other.mapOver ) {
+                other.mapOver = function() { return NULL_COLLECTION_TYPE_DESCRIPTION; };
+            }
             return this.input_terminal.canAccept( other );
         },
         pja_change_datatype_node: function( output_name, newtype ) {
@@ -228,6 +230,22 @@ define([
         var self = this;
         this.multiple();
         ok( self.test_accept() );
+    } );
+
+    test( "can accept list collection for empty multiple inputs", function() {
+        var other = { node: {}, datatypes: [ "tabular" ], mapOver: function() { return new CollectionTypeDescription( "list" ) } };
+        var self = this;
+        this.multiple();
+        ok( self.test_accept( other ) );
+    } );
+
+    test( "cannot accept list collection for multiple input if collection already connected", function() {
+        var other = { node: {}, datatypes: [ "tabular" ], mapOver: function() { return new CollectionTypeDescription( "list" ) } };
+        var self = this;
+        this.multiple();
+        this.with_test_connector( function() {
+            ok( ! self.test_accept( other ) );
+        } );
     } );
 
     module( "Connector test", {
@@ -483,6 +501,17 @@ define([
 
             return c;
         },
+        connectAttachedMultiInputTerminal: function( inputType, outputType ) {
+            this.view.addDataInput( { name: "TestName", extensions: [ inputType ], multiple: true } );
+            var terminal = this.view.node.input_terminals[ "TestName" ];
+
+            var outputTerminal = new OutputTerminal( { name: "TestOuptut", datatypes: [ "txt" ] } );
+            outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: new CollectionTypeDescription( "list" ) };
+            var c = new Connector( outputTerminal, terminal );
+
+            return c;
+        },
         connectAttachedMappedOutput: function( ) {
             this.view.addDataInput( { name: "TestName", extensions: [ "txt" ], input_type: "dataset_collection" } );
             var terminal = this.view.node.input_terminals[ "TestName" ];
@@ -528,6 +557,14 @@ define([
         this.view.addDataInput( { name: "TestName", extensions: ["txt"] }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
         ok( connector.handle2 === terminal );
+    } );
+
+    test( "replacing terminal on data multiple input update preserves collection connections", function() {
+        var connector = this.connectAttachedMultiInputTerminal( "txt", "txt" );
+        var connector_destroy_spy = sinon.spy( connector, "destroy" );
+        var newElement = $("<div class='inputs'></div>");
+        this.view.addDataInput( { name: "TestName", extensions: ["txt"], multiple: true }, newElement );
+        ok( ! connector_destroy_spy.called );
     } );
 
     test( "replacing mapped terminal on data collection input update preserves connections", function() {
@@ -766,11 +803,12 @@ define([
             return node;
         },
         addOutput: function( terminal, connected ) {
+            var self = this;
             var connectedOutput = this.newOutputTerminal();
-            var inputTerminal = this.newInputTerminal();
             var node = terminal.node;
             if( connected ) {
                 with_workflow_global( function() {
+                    var inputTerminal = self.newInputTerminal();
                     new Connector( inputTerminal, connectedOutput );
                 } );
             }
@@ -781,10 +819,11 @@ define([
             return this.addOutput( terminal, true );
         },
         addConnectedInput: function( terminal ) {
+            var self = this;
             var connectedInput = this.newInputTerminal();
-            var outputTerminal = this.newOutputTerminal();
             var node = terminal.node;
             with_workflow_global( function() {
+                var outputTerminal = self.newOutputTerminal();
                 new Connector( connectedInput, outputTerminal );
             } );
             this._addTerminalTo( connectedInput, node.input_terminals );
@@ -922,12 +961,11 @@ define([
         this.verifyAttachable( inputTerminal1, "list" );
     } );
 
-    test( "connected multiple input cannot be connected to collections", function() {
+    test( "multiple input attachable by collections", function() {
         var inputTerminal1 = this.newInputTerminal( null, { multiple: true } );
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         this.addConnectedOutput( connectedInput1 );
-        // Normally could do this reduction, but cannot because input already connected.
-        this.verifyNotAttachable( connectedInput1, "list" );
+        this.verifyAttachable( inputTerminal1, "list" );
     } );
 
     test( "unconnected multiple inputs cannot be connected to rank > 1 collections (yet...)", function() {

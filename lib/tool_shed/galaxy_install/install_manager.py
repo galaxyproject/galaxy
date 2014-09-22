@@ -510,31 +510,33 @@ class InstallRepositoryManager( object ):
         """
         shed_config_dict = self.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
         tdtm = data_table_manager.ToolDataTableManager( self.app )
-        irmm = InstalledRepositoryMetadataManager( self.app, self.tpm )
-        metadata_dict, invalid_file_tups = \
-            irmm.generate_metadata_for_changeset_revision( repository=tool_shed_repository,
-                                                           changeset_revision=tool_shed_repository.changeset_revision,
-                                                           repository_clone_url=repository_clone_url,
-                                                           shed_config_dict=shed_config_dict,
-                                                           relative_install_dir=relative_install_dir,
-                                                           repository_files_dir=None,
-                                                           resetting_all_metadata_on_repository=False,
-                                                           updating_installed_repository=False,
-                                                           persist=True )
-        tool_shed_repository.metadata = metadata_dict
+        irmm = InstalledRepositoryMetadataManager( app=self.app,
+                                                   tpm=self.tpm,
+                                                   repository=tool_shed_repository,
+                                                   changeset_revision=tool_shed_repository.changeset_revision,
+                                                   repository_clone_url=repository_clone_url,
+                                                   shed_config_dict=shed_config_dict,
+                                                   relative_install_dir=relative_install_dir,
+                                                   repository_files_dir=None,
+                                                   resetting_all_metadata_on_repository=False,
+                                                   updating_installed_repository=False,
+                                                   persist=True )
+        irmm.generate_metadata_for_changeset_revision()
+        irmm_metadata_dict = irmm.get_metadata_dict()
+        tool_shed_repository.metadata = irmm_metadata_dict
         # Update the tool_shed_repository.tool_shed_status column in the database.
         tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, tool_shed_repository )
         if tool_shed_status_dict:
             tool_shed_repository.tool_shed_status = tool_shed_status_dict
         self.install_model.context.add( tool_shed_repository )
         self.install_model.context.flush()
-        if 'tool_dependencies' in metadata_dict and not reinstalling:
+        if 'tool_dependencies' in irmm_metadata_dict and not reinstalling:
             tool_dependencies = tool_dependency_util.create_tool_dependency_objects( self.app,
                                                                                      tool_shed_repository,
                                                                                      relative_install_dir,
                                                                                      set_status=True )
-        if 'sample_files' in metadata_dict:
-            sample_files = metadata_dict.get( 'sample_files', [] )
+        if 'sample_files' in irmm_metadata_dict:
+            sample_files = irmm_metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = tdtm.get_tool_index_sample_files( sample_files )
             tool_data_table_conf_filename, tool_data_table_elems = \
                 tdtm.install_tool_data_tables( tool_shed_repository, tool_index_sample_files )
@@ -543,13 +545,13 @@ class InstallRepositoryManager( object ):
                                                                             None,
                                                                             self.app.config.shed_tool_data_table_config,
                                                                             persist=True )
-        if 'tools' in metadata_dict:
-            tool_panel_dict = self.tpm.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
-            sample_files = metadata_dict.get( 'sample_files', [] )
+        if 'tools' in irmm_metadata_dict:
+            tool_panel_dict = self.tpm.generate_tool_panel_dict_for_new_install( irmm_metadata_dict[ 'tools' ], tool_section )
+            sample_files = irmm_metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = tdtm.get_tool_index_sample_files( sample_files )
             tool_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
             sample_files_copied = [ str( s ) for s in tool_index_sample_files ]
-            repository_tools_tups = irmm.get_repository_tools_tups( metadata_dict )
+            repository_tools_tups = irmm.get_repository_tools_tups()
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
                 repository_tools_tups = tdtm.handle_missing_data_table_entry( relative_install_dir,
@@ -575,15 +577,15 @@ class InstallRepositoryManager( object ):
                                             shed_tool_conf=shed_tool_conf,
                                             tool_panel_dict=tool_panel_dict,
                                             new_install=True )
-        if 'data_manager' in metadata_dict:
+        if 'data_manager' in irmm_metadata_dict:
             dmh = data_manager.DataManagerHandler( self.app )
             new_data_managers = dmh.install_data_managers( self.app.config.shed_data_manager_config_file,
-                                                           metadata_dict,
+                                                           irmm_metadata_dict,
                                                            shed_config_dict,
                                                            relative_install_dir,
                                                            tool_shed_repository,
                                                            repository_tools_tups )
-        if 'datatypes' in metadata_dict:
+        if 'datatypes' in irmm_metadata_dict:
             tool_shed_repository.status = self.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
                 tool_shed_repository.includes_datatypes = True
@@ -604,7 +606,7 @@ class InstallRepositoryManager( object ):
                                                                           name=tool_shed_repository.name,
                                                                           owner=tool_shed_repository.owner,
                                                                           installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                          tool_dicts=metadata_dict.get( 'tools', [] ),
+                                                                          tool_dicts=irmm_metadata_dict.get( 'tools', [] ),
                                                                           converter_path=converter_path,
                                                                           display_path=display_path )
             if converter_path:
@@ -694,7 +696,8 @@ class InstallRepositoryManager( object ):
                                                                                             name,
                                                                                             owner,
                                                                                             changeset_revision )
-        installed_tool_shed_repositories = self.__install_repositories( repository_revision_dict,
+        installed_tool_shed_repositories = self.__install_repositories( tool_shed_url,
+                                                                        repository_revision_dict,
                                                                         repo_info_dicts,
                                                                         install_options )
         return installed_tool_shed_repositories
@@ -725,7 +728,7 @@ class InstallRepositoryManager( object ):
             if self.app.config.tool_dependency_dir is None:
                 no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set "
                 no_tool_dependency_dir_message += "the value of your 'tool_dependency_dir' setting in your Galaxy "
-                no_tool_dependency_dir_message += "configuration file (universe_wsgi.ini) and restart your Galaxy server.  "
+                no_tool_dependency_dir_message += "configuration file (galaxy.ini) and restart your Galaxy server.  "
                 raise exceptions.ConfigDoesNotAllowException( no_tool_dependency_dir_message )
         new_tool_panel_section_label = install_options.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = install_options.get( 'shed_tool_conf', None )
@@ -788,7 +791,7 @@ class InstallRepositoryManager( object ):
             # at this point because repository dependencies may have added additional repositories for installation
             # along with the single specified repository.
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
-                initiate_repository_installation( self.app, installation_dict )
+                self.initiate_repository_installation( installation_dict )
             # Some repositories may have repository dependencies that are required to be installed before the
             # dependent repository, so we'll order the list of tsr_ids to ensure all repositories install in
             # the required order.

@@ -1,0 +1,33 @@
+{
+    "a_galaxy_workflow": "true", 
+    "annotation": "", 
+    "format-version": "0.1", 
+    "name": "test_validation_1", 
+    "steps": {
+        "0": {
+            "annotation": "", 
+            "id": 0, 
+            "input_connections": {}, 
+            "inputs": [], 
+            "name": "Validation (default)", 
+            "outputs": [
+                {
+                    "name": "out_file1", 
+                    "type": "data"
+                }
+            ], 
+            "position": {
+                "left": 10, 
+                "top": 10
+            }, 
+            "post_job_actions": {}, 
+            "tool_errors": null, 
+            "tool_id": "validation_default", 
+            "tool_state": "{\"__page__\": 0, \"__rerun_remap_job_id__\": null, \"input1\": \"\\\"cow\\\"\", \"float_param\": \"8.0\", \"select_param\": \"\\\"opt1\\\"\", \"chromInfo\": \"\\\"/home/john/workspace/galaxy-central/tool-data/shared/ucsc/chrom/?.len\\\"\"}", 
+            "tool_version": null, 
+            "type": "tool", 
+            "user_outputs": []
+        }
+    }, 
+    "uuid": "d058c6a0-6d70-44f4-a177-01859fc6aa37"
+}

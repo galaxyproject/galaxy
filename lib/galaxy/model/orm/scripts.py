@@ -18,7 +18,7 @@ import pkg_resources
 
 log = logging.getLogger( __name__ )
 
-DEFAULT_CONFIG_FILE = 'universe_wsgi.ini'
+DEFAULT_CONFIG_FILE = 'config/galaxy.ini'
 DEFAULT_CONFIG_PREFIX = ''
 DEFAULT_DATABASE = 'galaxy'
 
@@ -26,17 +26,20 @@ DATABASE = {
     "galaxy":
         {
             'repo': 'lib/galaxy/model/migrate',
+            'old_config_file': 'universe_wsgi.ini',
             'default_sqlite_file': './database/universe.sqlite',
         },
     "tool_shed":
         {
             'repo':  'lib/galaxy/webapps/tool_shed/model/migrate',
-            'config_file': 'tool_shed_wsgi.ini',
+            'config_file': 'config/tool_shed.ini',
+            'old_config_file': 'tool_shed_wsgi.ini',
             'default_sqlite_file': './database/community.sqlite',
         },
     "install":
         {
             'repo': 'lib/galaxy/model/tool_shed_install/migrate',
+            'old_config_file': 'universe_wsgi.ini',
             'config_prefix': 'install_',
             'default_sqlite_file': './database/install.sqlite',
         },
@@ -58,13 +61,16 @@ def require_dialect_egg( db_url ):
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
 
-def read_config_file_arg( argv, default ):
+def read_config_file_arg( argv, default, old_default ):
     if '-c' in argv:
         pos = argv.index( '-c' )
         argv.pop(pos)
         config_file = argv.pop( pos )
     else:
-        config_file = default
+        if not os.path.exists( default ) and os.path.exists( old_default ):
+            config_file = old_default
+        else:
+            config_file = default
     return config_file
 
 
@@ -74,18 +80,19 @@ def get_config( argv, cwd=None ):
 
     >>> from tempfile import mkdtemp
     >>> config_dir = mkdtemp()
+    >>> os.makedirs(os.path.join(config_dir, 'config'))
     >>> def write_ini(path, property, value):
     ...     p = SafeConfigParser()
     ...     p.add_section('app:main')
     ...     p.set('app:main', property, value)
-    ...     with open(os.path.join(config_dir, path), 'w') as f: p.write(f)
-    >>> write_ini('tool_shed_wsgi.ini', 'database_connection', 'sqlite:///pg/testdb1')
+    ...     with open(os.path.join(config_dir, 'config', path), 'w') as f: p.write(f)
+    >>> write_ini('tool_shed.ini', 'database_connection', 'sqlite:///pg/testdb1')
     >>> config = get_config(['manage_db.py', 'tool_shed'], cwd=config_dir)
     >>> config['repo']
     'lib/galaxy/webapps/tool_shed/model/migrate'
     >>> config['db_url']
     'sqlite:///pg/testdb1'
-    >>> write_ini('universe_wsgi.ini', 'database_file', 'moo.sqlite')
+    >>> write_ini('galaxy.ini', 'database_file', 'moo.sqlite')
     >>> config = get_config(['manage_db.py'], cwd=config_dir)
     >>> config['db_url']
     'sqlite:///moo.sqlite?isolation_level=IMMEDIATE'
@@ -98,7 +105,7 @@ def get_config( argv, cwd=None ):
         database = 'galaxy'
     database_defaults = DATABASE[ database ]
 
-    config_file = read_config_file_arg( argv, database_defaults.get( 'config_file', DEFAULT_CONFIG_FILE ) )
+    config_file = read_config_file_arg( argv, database_defaults.get( 'config_file', DEFAULT_CONFIG_FILE ), database_defaults.get( 'old_config_file' ) )
     repo = database_defaults[ 'repo' ]
     config_prefix = database_defaults.get( 'config_prefix', DEFAULT_CONFIG_PREFIX )
     default_sqlite_file = database_defaults[ 'default_sqlite_file' ]

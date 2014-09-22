@@ -10,13 +10,19 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None ):
+def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None ):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
     execution_tracker = ToolExecutionTracker( tool, param_combinations, collection_info )
     for params in execution_tracker.param_combinations:
+        if workflow_invocation_uuid:
+            params[ '__workflow_invocation_uuid__' ] = workflow_invocation_uuid
+        elif '__workflow_invocation_uuid__' in params:
+            # Only workflow invocation code gets to set this, ignore user supplied
+            # values or rerun parameters.
+            del params[ '__workflow_invocation_uuid__' ]
         job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history )
         if job:
             execution_tracker.record_success( job, result )
@@ -40,14 +46,14 @@ class ToolExecutionTracker( object ):
         self.failed_jobs = 0
         self.execution_errors = []
         self.output_datasets = []
-        self.output_datasets_by_output_name = collections.defaultdict(list)
+        self.outputs_by_output_name = collections.defaultdict(list)
         self.created_collections = {}
 
     def record_success( self, job, outputs ):
         self.successful_jobs.append( job )
         self.output_datasets.extend( outputs )
         for output_name, output_dataset in outputs:
-            self.output_datasets_by_output_name[ output_name ].append( output_dataset )
+            self.outputs_by_output_name[ output_name ].append( output_dataset )
 
     def record_error( self, error ):
         self.failed_jobs += 1
@@ -76,19 +82,19 @@ class ToolExecutionTracker( object ):
         collections = {}
 
         implicit_inputs = list(self.collection_info.collections.iteritems())
-        for output_name, outputs_datasets in self.output_datasets_by_output_name.iteritems():
-            if not len( structure ) == len( outputs_datasets ):
+        for output_name, outputs in self.outputs_by_output_name.iteritems():
+            if not len( structure ) == len( outputs ):
                 # Output does not have the same structure, if all jobs were
                 # successfully submitted this shouldn't have happened.
                 log.warn( "Problem matching up datasets while attempting to create implicit dataset collections")
                 continue
             output = self.tool.outputs[ output_name ]
-            element_identifiers_for_datasets = structure.element_identifiers_for_datasets( trans, outputs_datasets )
+            element_identifiers = structure.element_identifiers_for_outputs( trans, outputs )
 
             implicit_collection_info = dict(
                 implicit_inputs=implicit_inputs,
                 implicit_output_name=output_name,
-                outputs_datasets=outputs_datasets
+                outputs=outputs
             )
             try:
                 output_collection_name = self.tool_action.get_output_name(
@@ -104,12 +110,14 @@ class ToolExecutionTracker( object ):
             except Exception:
                 output_collection_name = "%s across %s" % ( self.tool.name, on_text )
 
+            child_element_identifiers = element_identifiers[ "element_identifiers" ]
+            collection_type = element_identifiers[ "collection_type" ]
             collection = trans.app.dataset_collections_service.create(
                 trans=trans,
                 parent=history,
                 name=output_collection_name,
-                element_identifiers=element_identifiers_for_datasets[ "element_identifiers" ],
-                collection_type=structure.collection_type_description.collection_type,
+                element_identifiers=child_element_identifiers,
+                collection_type=collection_type,
                 implicit_collection_info=implicit_collection_info,
             )
             collections[ output_name ] = collection

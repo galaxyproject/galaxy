@@ -238,9 +238,9 @@ Credentials section of the AWS Console</a>.  </div>
                         <div class="form-row">
                             <label for="id_instance_type">Instance Type</label>
                             <select name="instance_type" id="id_instance_type">
-                                <option value="m1.large">Large</option>
-                                <option value="m1.xlarge">Extra Large</option>
-                                <option value="m2.4xlarge">High-Memory Quadruple Extra Large</option>
+                            %for (itype, description) in instance_types:
+                                <option value="${itype}">${description}</option>
+                            %endfor
                             </select>
                         </div>
                         <div class="form-row">

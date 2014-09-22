@@ -48,6 +48,7 @@
 .charts-grid .header {
 	font-size: 0.9em;
 	font-weight: bold;
+	padding-bottom: 10px;
 }
 
 .charts-viewport {

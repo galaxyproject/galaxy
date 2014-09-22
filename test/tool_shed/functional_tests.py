@@ -57,7 +57,7 @@ from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.web import buildapp as galaxybuildapp
 from galaxy.util import asbool
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 
 import nose.core
 import nose.config
@@ -94,7 +94,7 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from universe_wsgi.ini
+    #TODO: these should be copied from galaxy.ini
     return dict(
         #TODO: static_enabled needed here?
         static_enabled      = True,
@@ -182,7 +182,7 @@ def main():
     galaxy_test_proxy_port = None
     if 'TOOL_SHED_TEST_DBPATH' in os.environ:
         shed_db_path = os.environ[ 'TOOL_SHED_TEST_DBPATH' ]
-    else: 
+    else:
         tempdir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
         shed_db_path = os.path.join( tempdir, 'database' )
     shed_tool_data_table_conf_file = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'shed_tool_data_table_conf.xml' ) )
@@ -199,7 +199,7 @@ def main():
         os.environ[ 'GALAXY_TEST_TOOL_DATA_PATH' ] = tool_data_path
     if 'GALAXY_TEST_DBPATH' in os.environ:
         galaxy_db_path = os.environ[ 'GALAXY_TEST_DBPATH' ]
-    else: 
+    else:
         tempdir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
         galaxy_db_path = os.path.join( tempdir, 'database' )
     shed_file_path = os.path.join( shed_db_path, 'files' )
@@ -207,9 +207,9 @@ def main():
     hgweb_config_file_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     new_repos_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_tempfiles = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
-    galaxy_shed_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
-    galaxy_migrated_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
-    galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
+    galaxy_shed_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
+    galaxy_migrated_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
+    galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     os.environ[ 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' ] = galaxy_tool_dependency_dir
     hgweb_config_dir = hgweb_config_file_path
     os.environ[ 'TEST_HG_WEB_CONFIG_DIR' ] = hgweb_config_dir
@@ -276,8 +276,8 @@ def main():
     # Generate the shed_tool_data_table_conf.xml file.
     file( shed_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
     os.environ[ 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
-    # ---- Build Tool Shed Application -------------------------------------------------- 
-    toolshedapp = None 
+    # ---- Build Tool Shed Application --------------------------------------------------
+    toolshedapp = None
 #    if not toolshed_database_connection.startswith( 'sqlite://' ):
 #        kwargs[ 'database_engine_option_max_overflow' ] = '20'
     if tool_dependency_dir is not None:
@@ -335,7 +335,7 @@ def main():
     else:
         raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
     log.info( "Embedded web server started" )
-    
+
     # ---- Optionally start up a Galaxy instance ------------------------------------------------------
     if 'TOOL_SHED_TEST_OMIT_GALAXY' not in os.environ:
         # Generate the tool_conf.xml file.
@@ -356,8 +356,8 @@ def main():
         if not os.environ.get( 'GALAXY_SHED_DATA_MANAGER_CONF' ):
             open( galaxy_shed_data_manager_conf_file, 'wb' ).write( shed_data_manager_conf_xml_template )
         galaxy_global_conf = get_webapp_global_conf()
-        galaxy_global_conf[ '__file__' ] = 'universe_wsgi.ini.sample'
-        
+        galaxy_global_conf[ '__file__' ] = 'config/galaxy.ini.sample'
+
         kwargs = dict( allow_user_creation = True,
                        allow_user_deletion = True,
                        admin_users = 'test@bx.psu.edu',
@@ -389,15 +389,15 @@ def main():
                        tool_data_table_config_path = galaxy_tool_data_table_conf_file,
                        update_integrated_tool_panel = False,
                        use_heartbeat = False )
-    
-        # ---- Build Galaxy Application -------------------------------------------------- 
+
+        # ---- Build Galaxy Application --------------------------------------------------
         if not galaxy_database_connection.startswith( 'sqlite://' ) and not install_galaxy_database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_pool_size' ] = '10'
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
         galaxyapp = GalaxyUniverseApplication( **kwargs )
 
         log.info( "Embedded Galaxy application started" )
-    
+
         # ---- Run galaxy webserver ------------------------------------------------------
         galaxy_server = None
         galaxy_global_conf[ 'database_file' ] = galaxy_database_connection
@@ -464,11 +464,11 @@ def main():
         test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
         test_config.configure( sys.argv )
         # Run the tests.
-        result = run_tests( test_config )    
+        result = run_tests( test_config )
         success = result.wasSuccessful()
     except:
         log.exception( "Failure running tests" )
-        
+
     log.info( "Shutting down" )
     # ---- Tear down -----------------------------------------------------------
     if tool_shed_server:

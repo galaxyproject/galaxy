@@ -1,0 +1,482 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins workers="4">
+        <!-- "workers" is the number of threads for the runner's work queue.
+             The default from <plugins> is used if not defined for a <plugin>.
+          -->
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
+        <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
+        <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
+            <!-- Different DRMs handle successfully completed jobs differently,
+                 these options can be changed to handle such differences and
+                 are explained in detail on the Galaxy wiki. Defaults are shown -->
+            <param id="invalidjobexception_state">ok</param>
+            <param id="invalidjobexception_retries">0</param>
+            <param id="internalexception_state">ok</param>
+            <param id="internalexception_retries">0</param>
+        </plugin>
+        <plugin id="sge" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
+            <!-- Override the $DRMAA_LIBRARY_PATH environment variable -->
+            <param id="drmaa_library_path">/sge/lib/libdrmaa.so</param>
+        </plugin>
+        <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
+        <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
+        <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner" />
+        <plugin id="dynamic" type="runner">
+            <!-- The dynamic runner is not a real job running plugin and is
+                 always loaded, so it does not need to be explicitly stated in
+                 <plugins>. However, if you wish to change the base module
+                 containing your dynamic rules, you can do so.
+
+                 The `load` attribute is not required (and ignored if
+                 included).
+            -->
+            <param id="rules_module">galaxy.jobs.rules</param>
+        </plugin>
+        <!-- Pulsar runners (see more at https://pulsar.readthedocs.org) -->
+        <plugin id="pulsar_rest" type="runner" load="galaxy.jobs.runners.pulsar:PulsarRESTJobRunner">
+          <!-- Allow optimized HTTP calls with libcurl (defaults to urllib) -->
+          <!-- <param id="transport">curl</param> -->
+
+          <!-- *Experimental Caching*: Next parameter enables caching.
+                Likely will not work with newer features such as MQ support.
+
+                If this is enabled be sure to specify a `file_cache_dir` in
+                the remote Pulsar's servers main configuration file.
+          -->
+          <!-- <param id="cache">True</param> -->
+        </plugin>
+        <plugin id="pulsar_mq" type="runner" load="galaxy.jobs.runners.pulsar:PulsarMQJobRunner">
+          <!-- AMQP URL to connect to. -->
+          <param id="amqp_url">amqp://guest:guest@localhost:5672//</param>
+          <!-- URL remote Pulsar apps should transfer files to this Galaxy
+               instance to/from. -->
+          <param id="galaxy_url">http://localhost:8080</param>
+          <!-- Pulsar job manager to communicate with (see Pulsar
+               docs for information on job managers). -->
+          <!-- <param id="manager">_default_</param> -->
+          <!-- The AMQP client can provide an SSL client certificate (e.g. for
+               validation), the following options configure that certificate
+               (see for reference:
+                 http://kombu.readthedocs.org/en/latest/reference/kombu.connection.html
+               ). If you simply want to use SSL but not use/validate a client
+               cert, just use the ?ssl=1 query on the amqp URL instead. -->
+          <!-- <param id="amqp_connect_ssl_ca_certs">/path/to/cacert.pem</param> -->
+          <!-- <param id="amqp_connect_ssl_keyfile">/path/to/key.pem</param> -->
+          <!-- <param id="amqp_connect_ssl_certfile">/path/to/cert.pem</param> -->
+          <!-- <param id="amqp_connect_ssl_cert_reqs">cert_required</param> -->
+          <!-- By default, the AMQP consumer uses a nonblocking connection with
+               a 0.2 second timeout. In testing, this works fine for
+               unencrypted AMQP connections, but with SSL it will cause the
+               client to reconnect to the server after each timeout. Set to a
+               higher value (in seconds) (or `None` to use blocking connections). -->
+          <!-- <param id="amqp_consumer_timeout">None</param> -->
+        </plugin>
+        <plugin id="pulsar_legacy" type="runner" load="galaxy.jobs.runners.pulsar:PulsarLegacyJobRunner">
+          <!-- Pulsar job runner with default parameters matching those
+               of old LWR job runner. If your Pulsar server is running on a
+               Windows machine for instance this runner should still be used.
+
+               These destinations still needs to target a Pulsar server, 
+               older LWR plugins and destinations still work in Galaxy can
+               target LWR servers, but this support should be considered
+               deprecated and will disappear with a future release of Galaxy.
+          -->
+        </plugin>
+    </plugins>
+    <handlers default="handlers">
+        <!-- Additional job handlers - the id should match the name of a
+             [server:<id>] in galaxy.ini.
+         -->
+        <handler id="handler0" tags="handlers"/>
+        <handler id="handler1" tags="handlers"/>
+        <!-- Handlers will load all plugins defined in the <plugins> collection
+             above by default, but can be limited to a subset using <plugin>
+             tags. This is useful for heterogenous environments where the DRMAA
+             plugin would need to be loaded more than once with different
+             configs.
+         -->
+        <handler id="sge_handler">
+            <plugin id="sge"/>
+        </handler>
+        <handler id="special_handler0" tags="special_handlers"/>
+        <handler id="special_handler1" tags="special_handlers"/>
+        <handler id="trackster_handler"/>
+    </handlers>
+    <destinations default="local">
+        <!-- Destinations define details about remote resources and how jobs
+             should be executed on those remote resources.
+         -->
+        <destination id="local" runner="local"/>
+        <destination id="multicore_local" runner="local">
+          <param id="local_slots">4</param> <!-- Specify GALAXY_SLOTS for local jobs. -->
+          <!-- Warning: Local slot count doesn't tie up additional worker threads, to prevent over 
+               allocating machine define a second local runner with different name and fewer workers
+               to run this destination. -->
+          <param id="embed_metadata_in_job">True</param>
+          <!-- Above parameter will be default (with no option to set
+               to False) in an upcoming release of Galaxy, but you can
+               try it early - it will slightly speed up local jobs by
+               embedding metadata calculation in job script itself.
+          -->
+          <job_metrics /> 
+          <!-- Above element demonstrates embedded job metrics definition - see
+               job_metrics_conf.xml.sample for full documentation on possible nested
+               elements. This empty block will simply disable job metrics for the
+               corresponding destination. -->
+        </destination>
+        <destination id="docker_local" runner="local">
+          <param id="docker_enabled">true</param>
+          <!-- docker_volumes can be used to configure volumes to expose to docker,
+               For added isolation append :ro to the path to mount it read only.
+               Galaxy will attempt to infer a reasonable set of defaults which
+               volumes should be exposed how based on Galaxy's settings and the
+               destination - but be sure to add any library paths or data incides
+               that may be needed read-only.
+          -->
+          <!-- 
+          <param id="docker_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+          -->
+          <!-- For a stock Galaxy instance and traditional job runner $defaults will
+               expand out as:
+               
+               $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw
+
+               This assumes most of what is needed is available under Galaxy's root directory,
+               the tool directory, and the Galaxy's file_path (if using object store creatively
+               you will definitely need to expand defaults).
+
+               This configuration allows any docker instance to write to any Galaxy
+               file - for greater isolation set outputs_to_working_directory in
+               galaxy.ini. This will cause $defaults to allow writing to much
+               less. It will then expand as follows:
+
+               $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro
+
+               If using the Pulsar, defaults will be even further restricted because the 
+               Pulsar will (by default) stage all needed inputs into the job's job_directory
+               (so there is not need to allow the docker container to read all the
+               files - let alone write over them). Defaults in this case becomes:
+
+               $job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw
+
+               Python string.Template is used to expand volumes and values $defaults,
+               $galaxy_root, $default_file_path, $tool_directory, $working_directory,
+               are available to all jobs and $job_directory is also available for
+               Pulsar jobs.
+          -->
+          <!-- One can run docker using volumes-from tag by setting the following
+               parameter. For more information on volumes-from check out the following
+               docker tutorial. https://docs.docker.com/userguide/dockervolumes/
+          -->
+          <!-- <param id="docker_volumes_from">parent_container_name</param> -->
+          <!-- Control memory allocatable by docker container with following option:
+          -->
+          <!-- <param id="docker_memory">24G</param> -->
+          <!-- By default Docker will need to runnable by Galaxy using 
+               password-less sudo - this can be configured by adding the
+               following line to the sudoers file of all compute nodes
+               with docker enabled:
+               
+               galaxy  ALL = (root) NOPASSWD: SETENV: /usr/bin/docker
+
+               The follow option is set to false to disable sudo (docker 
+               must likewise be configured to allow this).               
+          -->
+          <!-- <param id="docker_sudo">false</param> -->
+          <!-- Following option can be used to tweak sudo command used by
+               default. -->
+          <!-- <param id="docker_sudo_cmd">/usr/bin/sudo -extra_param</param> -->
+          <!-- By default, docker container will not have any networking
+               enabled. host networking can be bridged by uncommenting next option
+               http://docs.docker.io/reference/run/#network-settings
+          -->
+          <!-- <param id="docker_net">bridge</param> -->
+          <!-- Following command can be used to tweak docker command. -->
+          <!-- <param id="docker_cmd">/usr/local/custom_docker/docker</param> -->
+          <!-- Following can be used to connect to docke server in different
+               ways (translated as -H argument to docker client). -->
+          <!-- <param id="docker_host">unix:///var/run/docker.sock</param> -->
+          <!-- <param id="docker_host">:5555</param> -->
+          <!-- <param id="docker_host">:5555</param> -->
+          <!-- <param id="docker_host">tcp://127.0.0.1:4243</param> -->
+
+          <!-- If deployer wants to use docker for isolation, but does not
+               trust tool's specified container - a destination wide override
+               can be set. This will cause all jobs on this destination to use
+               that docker image. -->
+          <!-- <param id="docker_container_id_override">busybox:ubuntu-14.04</param> -->
+
+          <!-- Likewise, if deployer wants to use docker for isolation and
+               does trust tool's specified container - but also wants tool's not
+               configured to run in a container the following option can provide
+               a fallback. -->
+          <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
+
+        </destination>
+        <destination id="pbs" runner="pbs" tags="mycluster"/>
+        <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
+            <!-- Define parameters that are native to the job runner plugin. -->
+            <param id="Resource_List">walltime=72:00:00</param>
+        </destination>
+        <destination id="remote_cluster" runner="drmaa" tags="longjobs"/>
+        <destination id="java_cluster" runner="drmaa">
+          <!-- set arbitrary environment variables at runtime. General
+               dependencies for tools should be configured via
+               tool_dependency_dir and package options and these
+               options should be reserved for defining cluster
+               specific options.
+          -->
+          <env id="_JAVA_OPTIONS">-Xmx=6GB</env>
+          <env id="ANOTHER_OPTION" raw="true">'5'</env> <!-- raw disables auto quoting -->
+          <env file="/mnt/java_cluster/environment_setup.sh" /> <!-- will be sourced -->
+          <env exec="module load javastuff/2.10" /> <!-- will be sourced -->
+          <!-- files to source and exec statements will be handled on remote
+               clusters. These don't need to be available on the Galaxy server
+               itself.
+          -->
+        </destination>
+        <destination id="real_user_cluster" runner="drmaa">
+            <!-- TODO: The real user options should maybe not be considered runner params. -->
+            <param id="galaxy_external_runjob_script">scripts/drmaa_external_runner.py</param>
+            <param id="galaxy_external_killjob_script">scripts/drmaa_external_killer.py</param>
+            <param id="galaxy_external_chown_script">scripts/external_chown_script.py</param>
+        </destination>
+        <destination id="dynamic" runner="dynamic">
+            <!-- A destination that represents a method in the dynamic runner. -->
+            <param id="function">foo</param>
+        </destination>
+        <destination id="load_balance" runner="dynamic">
+            <param id="type">choose_one</param>
+            <!-- Randomly assign jobs to various static destination ids -->
+            <param id="destination_ids">cluster1,cluster2,cluster3</param>
+        </destination>
+        <destination id="load_balance_with_data_locality" runner="dynamic">
+            <!-- Randomly assign jobs to various static destination ids,
+                 but keep jobs in the same workflow invocation together and
+                 for those jobs ran outside of workflows keep jobs in same
+                 history together.
+            -->
+            <param id="type">choose_one</param>
+            <param id="destination_ids">cluster1,cluster2,cluster3</param>
+            <param id="hash_by">workflow_invocation,history</param>
+        </destination>
+        <destination id="burst_out" runner="dynamic">
+            <!-- Burst out from static destination local_cluster_8_core to
+            static destination shared_cluster_8_core when there are about
+            50 Galaxy jobs assigned to any of the local_cluster_XXX
+            destinations (either running or queued). If there are fewer 
+            than 50 jobs, just use local_cluster_8_core destination.
+
+            Uncomment job_state parameter to make this bursting happen when
+            roughly 50 jobs are queued instead.
+            -->
+            <param id="type">burst</param>
+            <param id="from_destination_ids">local_cluster_8_core,local_cluster_1_core,local_cluster_16_core</param>
+            <param id="to_destination_id">shared_cluster_8_core</param>
+            <param id="num_jobs">50</param>
+            <!-- <param id="job_states">queued</param> -->
+        </destination>
+        <destination id="docker_dispatch" runner="dynamic">
+            <!-- Follow dynamic destination type will send all tool's that
+            support docker to static destination defined by
+            docker_destination_id (docker_cluster in this example) and all
+            other tools to default_destination_id (normal_cluster in this
+            example).
+            -->
+            <param id="type">docker_dispatch</param>
+            <param id="docker_destination_id">docker_cluster</param>
+            <param id="default_destination_id">normal_cluster</param>
+        </destination>
+        <destination id="secure_pulsar_rest_dest" runner="pulsar_rest">
+            <param id="url">https://examle.com:8913/</param>
+            <!-- If set, private_token must match token in remote Pulsar's
+                 configuration. -->
+            <param id="private_token">123456789changeme</param>
+            <!-- Uncomment the following statement to disable file staging (e.g.
+                 if there is a shared file system between Galaxy and the Pulsar 
+                 server). Alternatively action can be set to 'copy' - to replace 
+                 http transfers with file system copies, 'remote_transfer' to cause
+                 the Pulsar to initiate HTTP transfers instead of Galaxy, or
+                 'remote_copy' to cause Pulsar to initiate file system copies.
+                 If setting this to 'remote_transfer' be sure to specify a
+                 'galaxy_url' attribute on the runner plugin above. -->
+            <!-- <param id="default_file_action">none</param> -->
+            <!-- The above option is just the default, the transfer behavior
+                 none|copy|http can be configured on a per path basis via the
+                 following file. See Pulsar documentation for more details and
+                 examples.
+            -->
+            <!-- <param id="file_action_config">file_actions.yaml</param> -->
+            <!-- The non-legacy Pulsar runners will attempt to resolve Galaxy
+                 dependencies remotely - to enable this set a tool_dependency_dir
+                 in Pulsar's configuration (can work with all the same dependency
+                 resolutions mechanisms as Galaxy - tool Shed installs, Galaxy
+                 packages, etc...). To disable this behavior, set the follow parameter
+                 to none. To generate the dependency resolution command locally
+                 set the following parameter local.
+            -->
+            <!-- <param id="dependency_resolution">none</params> -->
+            <!-- Uncomment following option to enable setting metadata on remote
+                 Pulsar server. The 'use_remote_datatypes' option is available for
+                 determining whether to use remotely configured datatypes or local
+                 ones (both alternatives are a little brittle). -->
+            <!-- <param id="remote_metadata">true</param> -->
+            <!-- <param id="use_remote_datatypes">false</param> -->
+            <!-- <param id="remote_property_galaxy_home">/path/to/remote/galaxy-central</param> -->
+            <!-- If remote Pulsar server is configured to run jobs as the real user,
+                 uncomment the following line to pass the current Galaxy user
+                 along. -->
+            <!-- <param id="submit_user">$__user_name__</param> -->
+            <!-- Various other submission parameters can be passed along to the Pulsar
+                 whose use will depend on the remote Pulsar's configured job manager.
+                 For instance:
+            -->
+            <!-- <param id="submit_native_specification">-P bignodes -R y -pe threads 8</param> -->
+            <!-- Disable parameter rewriting and rewrite generated commands
+                 instead. This may be required if remote host is Windows machine
+                 but probably not otherwise.
+            -->
+            <!-- <param id="rewrite_parameters">false</params> -->           
+        </destination>
+        <destination id="pulsar_mq_dest" runner="amqp_pulsar" >
+            <!-- The RESTful Pulsar client sends a request to Pulsar
+                 to populate various system properties. This
+                 extra step can be disabled and these calculated here
+                 on client by uncommenting jobs_directory and
+                 specifying any additional remote_property_ of
+                 interest, this is not optional when using message
+                 queues.
+            -->
+            <param id="jobs_directory">/path/to/remote/pulsar/files/staging/</param>
+            <!-- Otherwise MQ and Legacy pulsar destinations can be supplied
+                 all the same destination parameters as the RESTful client documented
+                 above (though url and private_token are ignored when using a MQ).
+            -->
+        </destination>
+        <destination id="ssh_torque" runner="cli">
+            <param id="shell_plugin">SecureShell</param>
+            <param id="job_plugin">Torque</param>
+            <param id="shell_username">foo</param>
+            <param id="shell_hostname">foo.example.org</param>
+            <param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>
+        </destination>
+
+        <!-- Example CLI Slurm runner. -->
+        <destination id="ssh_slurm" runner="cli">
+            <param id="shell_plugin">SecureShell</param>
+            <param id="job_plugin">Slurm</param>
+            <param id="shell_username">foo</param>
+            <param id="shell_hostname">my_host</param>
+            <param id="job_time">2:00:00</param>
+            <param id="job_ncpus">4</param>
+            <param id="job_partition">my_partition</param>
+        </destination>
+
+        <destination id="condor" runner="condor">
+            <!-- With no params, jobs are submitted to the 'vanilla' universe with:
+                    notification = NEVER
+                    getenv = true
+                 Additional/override query ClassAd params can be specified with
+                 <param> tags.
+            -->
+            <param id="request_cpus">8</param>
+        </destination>
+
+        <!-- Jobs that hit the walltime on one destination can be automatically
+             resubmitted to another destination. Walltime detection is
+             currently only implemented in the slurm runner.
+
+             Multiple resubmit tags can be defined, the first resubmit matching
+             the terminal condition of a job will be used.
+
+             The 'condition' attribute is optional, if not present, the
+             resubmit destination will be used for all conditions. Currently,
+             only the "walltime_reached" condition is implemented.
+
+             The 'handler' tag is optional, if not present, the job's original
+             handler will be reused for the resubmitted job.
+        -->
+        <destination id="short_fast" runner="slurm">
+            <param id="nativeSpecification">--time=00:05:00 --nodes=1</param>
+            <resubmit condition="walltime_reached" destination="long_slow" handler="sge_handler" />
+        </destination>
+        <destination id="long_slow" runner="sge">
+            <!-- The destination that you resubmit jobs to can be any runner type -->
+            <param id="nativeSpecification">-l h_rt=96:00:00</param>
+        </destination>
+
+    </destinations>
+    <resources default="default">
+      <!-- Group different parameters defined in job_resource_params_conf.xml
+           together and assign these groups ids. Tool section below can map
+           tools to different groups. This is experimental functionality!
+      -->
+      <group id="default"></group>
+      <group id="memoryonly">memory</group>
+      <group id="all">processors,memory,time,project</group>
+    </resources>
+    <tools>
+        <!-- Tools can be configured to use specific destinations or handlers,
+             identified by either the "id" or "tags" attribute.  If assigned to
+             a tag, a handler or destination that matches that tag will be
+             chosen at random.
+         -->
+        <tool id="foo" handler="trackster_handler">
+            <param id="source">trackster</param>
+        </tool>
+        <tool id="bar" destination="dynamic"/>
+        <!-- Next example defines resource group to insert into tool interface
+             and pass to dynamic destination (as resource_params argument). -->
+        <tool id="longbar" destination="dynamic" resources="all" />
+        <tool id="baz" handler="special_handlers" destination="bigmem"/>
+    </tools>
+    <limits>
+        <!-- Certain limits can be defined. The 'concurrent_jobs' limits all
+             control the number of jobs that can be "active" at a time, that
+             is, dispatched to a runner and in the 'queued' or 'running'
+             states.
+
+             A race condition exists that will allow destination_* concurrency
+             limits to be surpassed when multiple handlers are allowed to
+             handle jobs for the same destination. To prevent this, assign all
+             jobs for a specific destination to a single handler.
+        -->
+        <!-- registered_user_concurrent_jobs:
+                Limit on the number of jobs a user with a registered Galaxy
+                account can have active across all destinations.
+        -->
+        <limit type="registered_user_concurrent_jobs">2</limit>
+        <!-- anonymous_user_concurrent_jobs:
+                Likewise, but for unregistered/anonymous users.
+        -->
+        <limit type="anonymous_user_concurrent_jobs">1</limit>
+        <!-- destination_user_concurrent_jobs:
+                The number of jobs a user can have active in the specified
+                destination, or across all destinations identified by the
+                specified tag. (formerly: concurrent_jobs)
+        -->
+        <limit type="destination_user_concurrent_jobs" id="local">1</limit>
+        <limit type="destination_user_concurrent_jobs" tag="mycluster">2</limit>
+        <limit type="destination_user_concurrent_jobs" tag="longjobs">1</limit>
+        <!-- destination_total_concurrent_jobs:
+                The number of jobs that can be active in the specified
+                destination (or across all destinations identified by the
+                specified tag) by any/all users.
+        -->
+        <limit type="destination_total_concurrent_jobs" id="local">16</limit>
+        <limit type="destination_total_concurrent_jobs" tag="longjobs">100</limit>
+        <!-- walltime:
+                Amount of time a job can run (in any destination) before it
+                will be terminated by Galaxy.
+         -->
+        <limit type="walltime">24:00:00</limit>
+        <!-- output_size:
+                Size that any defined tool output can grow to before the job
+                will be terminated. This does not include temporary files
+                created by the job. Format is flexible, e.g.:
+                '10GB' = '10g' = '10240 Mb' = '10737418240'
+        -->
+        <limit type="output_size">10GB</limit>
+    </limits>
+</job_conf>

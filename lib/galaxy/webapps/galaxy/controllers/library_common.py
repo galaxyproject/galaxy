@@ -16,7 +16,7 @@ from galaxy.eggs import require
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
-from galaxy.util.json import to_json_string, from_json_string
+from galaxy.util.json import dumps, loads
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
@@ -558,7 +558,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if len(em_string):
                 payload = None
                 try:
-                    payload = from_json_string(em_string)
+                    payload = loads(em_string)
                 except Exception, e:
                     message = 'Invalid JSON input'
                     status = 'error'
@@ -1127,8 +1127,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         data_list = [ ud.data for ud in uploaded_datasets ]
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
         # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
-        job.add_parameter( 'link_data_only', to_json_string( kwd.get( 'link_data_only', 'copy_files' ) ) )
-        job.add_parameter( 'uuid', to_json_string( kwd.get( 'uuid', None ) ) )
+        job.add_parameter( 'link_data_only', dumps( kwd.get( 'link_data_only', 'copy_files' ) ) )
+        job.add_parameter( 'uuid', dumps( kwd.get( 'uuid', None ) ) )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output
@@ -2745,7 +2745,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     status = params.get( 'status', 'done' )
     full_url = "%s/find?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
     response = urllib2.urlopen( full_url )
-    ldda_ids = util.json.from_json_string( response.read() )[ "ids" ]
+    ldda_ids = util.json.loads( response.read() )[ "ids" ]
     response.close()
     lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )

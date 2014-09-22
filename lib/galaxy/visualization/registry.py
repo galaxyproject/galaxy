@@ -13,6 +13,7 @@ import galaxy.model
 from galaxy.web import url_for
 
 from galaxy.web.base import pluginframework
+from galaxy.managers import api_keys
 
 import logging
 log = logging.getLogger( __name__ )
@@ -158,7 +159,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         # config file is required, otherwise skip this visualization
         plugin[ 'config_file' ] = os.path.join( plugin_path, 'config', ( plugin.name + '.xml' ) )
         config = self.config_parser.parse_file( plugin.config_file )
-            
+
         if not config:
             return None
         plugin[ 'config' ] = config
@@ -202,6 +203,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             #log.debug( '\t passed model_class' )
 
             # tests are optional - default is the above class test
+#TODO: not true: must have test currently
             tests = data_source[ 'tests' ]
             if tests and not self.is_object_applicable( trans, target_object, tests ):
                 continue
@@ -338,6 +340,19 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         config = self.resource_parser.parse_config( trans, controller, param_confs, query_dict )
         return config
 
+    def fill_template( self, trans, plugin, template_filename, **kwargs ):
+        # TODO: As part of a future note plugin registry effort - move this
+        # override and let VisualizationsRegistry just revert to using parent's
+        # fill_template.
+        if 'get_api_key' not in kwargs:
+
+            def get_api_key():
+                return api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
+
+            kwargs[ 'get_api_key' ] = get_api_key
+
+        return super( VisualizationsRegistry, self ).fill_template( trans, plugin, template_filename, **kwargs )
+
 
 # ------------------------------------------------------------------- parsing the config file
 class ParsingException( ValueError ):
@@ -375,14 +390,9 @@ class VisualizationsConfigParser( object ):
         Parse the given XML file for visualizations data.
         :returns: visualization config dictionary
         """
-        try:
-            xml_tree = galaxy.util.parse_xml( xml_filepath )
-            visualization = self.parse_visualization( xml_tree.getroot() )
-            return visualization
-        # skip vis' with parsing errors - don't shutdown the startup
-        except ParsingException, parse_exc:
-            log.exception( 'Skipped visualization config "%s" due to parsing errors', xml_filepath )
-            return None
+        xml_tree = galaxy.util.parse_xml( xml_filepath )
+        visualization = self.parse_visualization( xml_tree.getroot() )
+        return visualization
 
     def parse_visualization( self, xml_tree ):
         """
@@ -391,14 +401,15 @@ class VisualizationsConfigParser( object ):
         """
         returned = {}
 
-        # allow manually turning off a vis by checking for a disabled property
-        if 'disabled' in xml_tree.attrib:
-            return None
-
         # a text display name for end user links
         returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
         if not returned[ 'name' ]:
             raise ParsingException( 'visualization needs a name attribute' )
+
+        # allow manually turning off a vis by checking for a disabled property
+        if 'disabled' in xml_tree.attrib:
+            log.info( '%s, plugin disabled: %s. Skipping...', self, returned[ 'name' ] )
+            return None
 
         # record the embeddable flag - defaults to false
         #   this is a design by contract promise that the visualization can be rendered inside another page
@@ -613,6 +624,13 @@ class DataSourceParser( object ):
                 test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
                                               and getter( o ).has_dataprovider( result ) )
 
+            elif test_type == 'has_attribute':
+                # does the object itself have attr in 'result' (no equivalence checking)
+                test_fn = lambda o, result: hasattr( getter( o ), result )
+
+            elif test_type == 'not_eq':
+                test_fn = lambda o, result: str( getter( o ) ) != result
+
             else:
                 # default to simple (string) equilavance (coercing the test_attr to a string)
                 test_fn = lambda o, result: str( getter( o ) ) == result
@@ -768,7 +786,7 @@ class ResourceParser( object ):
         'int'   : lambda param: int( param ),
         'float' : lambda param: float( param ),
         #'date'  : lambda param: ,
-        'json'  : ( lambda param: galaxy.util.json.from_json_string(
+        'json'  : ( lambda param: galaxy.util.json.loads(
                         galaxy.util.sanitize_html.sanitize_html( param ) ) ),
     }
 
