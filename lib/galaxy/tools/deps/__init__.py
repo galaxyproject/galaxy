@@ -7,8 +7,6 @@ import os.path
 import logging
 log = logging.getLogger( __name__ )
 
-from xml.etree import ElementTree
-
 from .resolvers import INDETERMINATE_DEPENDENCY
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
@@ -94,8 +92,8 @@ class DependencyManager( object ):
     def __build_dependency_resolvers( self, conf_file ):
         if not conf_file or not os.path.exists( conf_file ):
             return self.__default_dependency_resolvers()
-        root = ElementTree.parse( conf_file ).getroot()
-        return self.__parse_resolver_conf_xml( root )
+        plugin_source = plugin_config.plugin_source_from_path( conf_file )
+        return self.__parse_resolver_conf_xml( plugin_source )
 
     def __default_dependency_resolvers( self ):
         return [
@@ -104,14 +102,11 @@ class DependencyManager( object ):
             GalaxyPackageDependencyResolver(self, versionless=True),
         ]
 
-    def __parse_resolver_conf_xml(self, root):
+    def __parse_resolver_conf_xml(self, plugin_source):
         """
-
-        :param root: Object representing the root ``<dependency_resolvers>`` object in the file.
-        :type root: ``xml.etree.ElementTree.Element``
         """
         extra_kwds = dict( dependency_manager=self )
-        return plugin_config.load_plugins_from_element( self.resolver_classes, root, extra_kwds )
+        return plugin_config.load_plugins( self.resolver_classes, plugin_source, extra_kwds )
 
     def __resolvers_dict( self ):
         import galaxy.tools.deps.resolvers

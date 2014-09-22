@@ -1,8 +1,6 @@
 import collections
 import os
 
-from xml.etree import ElementTree
-
 from galaxy.util import plugin_config
 from galaxy import util
 
@@ -37,7 +35,7 @@ class JobMetrics( object ):
         self.set_destination_instrumenter( destination_id, instrumenter )
 
     def set_destination_conf_element( self, destination_id, element ):
-        instrumenter = JobInstrumenter( self.plugin_classes, element )
+        instrumenter = JobInstrumenter( self.plugin_classes, ('xml', element) )
         self.set_destination_instrumenter( destination_id, instrumenter )
 
     def set_destination_instrumenter( self, destination_id, job_instrumenter=None ):
@@ -69,10 +67,10 @@ NULL_JOB_INSTRUMENTER = NullJobInstrumenter()
 
 class JobInstrumenter( object ):
 
-    def __init__( self, plugin_classes, metrics_element, **kwargs ):
+    def __init__( self, plugin_classes, plugins_source, **kwargs ):
         self.extra_kwargs = kwargs
         self.plugin_classes = plugin_classes
-        self.plugins = self.__plugins_for_element( metrics_element )
+        self.plugins = self.__plugins_from_source( plugins_source )
 
     def pre_execute_commands( self, job_directory ):
         commands = []
@@ -107,12 +105,12 @@ class JobInstrumenter( object ):
                 log.exception( "Failed to collect job properties for plugin %s" % plugin )
         return per_plugin_properites
 
-    def __plugins_for_element( self, plugins_element ):
-        return plugin_config.load_plugins_from_element(self.plugin_classes, plugins_element, self.extra_kwargs)
+    def __plugins_from_source( self, plugins_source ):
+        return plugin_config.load_plugins(self.plugin_classes, plugins_source, self.extra_kwargs)
 
     @staticmethod
     def from_file( plugin_classes, conf_file, **kwargs ):
         if not conf_file or not os.path.exists( conf_file ):
             return NULL_JOB_INSTRUMENTER
-        plugins_element = ElementTree.parse( conf_file ).getroot()
-        return JobInstrumenter( plugin_classes, plugins_element, **kwargs )
+        plugins_source = plugin_config.plugin_source_from_path( conf_file )
+        return JobInstrumenter( plugin_classes, plugins_source, **kwargs )
