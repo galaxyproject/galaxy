@@ -194,11 +194,11 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     library_dataset = self.get_library_dataset( trans, id=dataset_id, check_ownership=False, check_accessible=True )
                     library_datasets.append( library_dataset )
                 except HTTPBadRequest, e:
-                    raise exceptions.RequestParameterInvalidException( 'Bad Request.' )
+                    raise exceptions.RequestParameterInvalidException( 'Bad Request. ' + str( e ) )
                 except HTTPInternalServerError, e:
-                    raise exceptions.InternalServerError( 'Internal error.' )
+                    raise exceptions.InternalServerError( 'Internal error. ' + str( e )  )
                 except Exception, e:
-                    raise exceptions.InternalServerError( 'Unknown error.' )
+                    raise exceptions.InternalServerError( 'Unknown error. ' + str( e )  )
         else:
             raise exceptions.RequestParameterMissingException( 'Request has to contain a list of dataset ids to download.' )
 
