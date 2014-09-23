@@ -42,17 +42,6 @@ LINKS="
 /galaxy/software/tool-data/gatk
 "
 
-SAMPLES="
-config/galaxy.ini.sample
-config/shed_tool_data_table_conf.xml.sample
-config/migrated_tools_conf.xml.sample
-config/shed_data_manager_conf.xml.sample
-tool-data/shared/igv/igv_build_sites.txt.sample
-tool-data/shared/rviewer/rviewer_build_sites.txt.sample
-tool-data/shared/ucsc/builds.txt.sample
-tool-data/shared/ucsc/ucsc_build_sites.txt.sample
-"
-
 DIRS="
 database
 database/files
@@ -100,11 +89,8 @@ case $type in
 		;;
 esac
 
-for sample in $SAMPLES; do
-    file=${sample%.sample}
-    echo "Copying $sample to $file"
-    cp $sample $file
-done
+# set up configs from samples.
+./scripts/common_startup.sh
 
 echo "Copying job_conf.xml.sample_basic to job_conf.xml"
 cp config/job_conf.xml.sample_basic config/job_conf.xml
