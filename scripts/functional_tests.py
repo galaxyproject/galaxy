@@ -66,8 +66,8 @@ default_galaxy_test_port_min = 8000
 default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
-migrated_tool_panel_config = 'migrated_tools_conf.xml'
-installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
+migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
+installed_tool_panel_configs = [ 'config/shed_tool_conf.xml' ]
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
@@ -224,7 +224,7 @@ def main():
             datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
         else:
             # Use tool_conf.xml toolbox.
-            tool_conf = 'tool_conf.xml'
+            tool_conf = None
             if __check_arg( '-with_framework_test_tools' ):
                 # Some of these tools will not work without swapping
                 # default interactor to point to test.
@@ -239,11 +239,10 @@ def main():
         ignore_files = ()
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
+    tool_data_table_config_path = None
     if os.path.exists( 'tool_data_table_conf.test.xml' ):
         tool_data_table_config_path = 'tool_data_table_conf.test.xml'
-    else:
-        tool_data_table_config_path = 'tool_data_table_conf.xml'
-    shed_tool_data_table_config = 'shed_tool_data_table_conf.xml'
+    shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
     tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
     galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
