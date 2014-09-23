@@ -158,13 +158,13 @@ var View = Backbone.View.extend({
         if (options.title) {
             tmpl +=     '<div id="portlet-header" class="portlet-header">' +
                             '<div id="operations" style="float: right;"></div>' +
-                            '<h3 class="portlet-title">';
+                            '<div class="portlet-title">';
                             
             if (options.icon)
                 tmpl +=         '<i class="icon fa ' + options.icon + '">&nbsp;</i>';
         
             tmpl +=             '<span id="portlet-title-text" class="portlet-title-text">' + options.title + '</span>' +
-                            '</h3>' +
+                            '</div>' +
                         '</div>';
         }
         tmpl +=         '<div id="portlet-content" class="portlet-content">';

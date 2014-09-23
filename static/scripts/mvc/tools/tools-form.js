@@ -17,7 +17,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
     // create form view
     var View = Backbone.View.extend({
         // base element
-        main_el: 'body',
+        container: 'body',
         
         // initialize
         initialize: function(options) {
@@ -26,6 +26,12 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // link options
             this.options = options;
+            
+            // set element
+            this.setElement('<div/>');
+            
+            // add to main element
+            $(this.container).append(this.$el);
             
             // load tool model
             this.model = new Model({
@@ -57,9 +63,9 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         },
         
         // message
-        message: function(options) {
-            $(this.main_el).empty();
-            $(this.main_el).append(ToolTemplate.message(options));
+        message: function($el) {
+            $(this.container).empty();
+            $(this.container).append($el);
         },
         
         // reset form
@@ -156,17 +162,17 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     }
                     
                     // append form
-                    $(self.main_el).append(self.portlet.$el);
+                    self.$el.append(self.portlet.$el);
                     
                     // append help
                     if (self.options.help != '') {
-                        $(self.main_el).append(ToolTemplate.help(self.options.help));
+                        self.$el.append(ToolTemplate.help(self.options.help));
                     }
                     
                     // append citations
                     if (self.options.citations) {
                         // append html
-                        $(self.main_el).append(ToolTemplate.citations());
+                        self.$el.append(ToolTemplate.citations());
             
                         // fetch citations
                         var citations = new CitationModel.ToolCitationCollection();

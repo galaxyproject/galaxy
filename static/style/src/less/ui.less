@@ -142,16 +142,13 @@
         float: right;
         width:100%;
 
-        h1, h2, h3, h4, h5, h6 {
-            float: left;
-            font-weight: normal;
-            display: inline-block;
-            vertical-align: middle;
-            font-size: 1em;
-            margin: 3px;
-            
+        .portlet-title {
+            .portlet-title-text {
+                vertical-align: middle;
+            }
             .icon {
                 font-size: 1.2em;
+                vertical-align: middle;
             }
         }
     }
@@ -192,11 +189,7 @@
         background: @form-heading-bg;
         border-radius: 3px;
         border-bottom-left-radius: 0px;
-        padding: 1px 0px 0px 2px;
-    }
-
-    .portlet-title {
-        padding-top: 1px;
+        padding: 0px 2px;
     }
 
     .portlet-content {

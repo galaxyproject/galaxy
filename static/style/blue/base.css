@@ -1296,12 +1296,12 @@ label{font-weight:normal}
 .ui-button-icon-plain{border:none !important;background:none !important}
 .ui-tabs .ui-tabs-add{font-size:0.8em;margin-right:5px}
 .ui-tabs .ui-tabs-delete{font-size:0.8em;margin-left:5px;cursor:pointer}
-.ui-portlet,.ui-portlet-repeat,.ui-portlet-repeat{border:solid #d6b161 1px;-webkit-border-radius:3px;-moz-border-radius:3px;border-radius:3px;position:relative;clear:both;width:auto;height:100%}.ui-portlet .portlet-header{background:#ebd9b2;border-bottom:solid #d6b161 1px;padding:2px 8px;overflow:visible;float:right;width:100%}.ui-portlet .portlet-header h1,.ui-portlet .portlet-header h2,.ui-portlet .portlet-header h3,.ui-portlet .portlet-header h4,.ui-portlet .portlet-header h5,.ui-portlet .portlet-header h6{float:left;font-weight:normal;display:inline-block;vertical-align:middle;font-size:1em;margin:3px}.ui-portlet .portlet-header h1 .icon,.ui-portlet .portlet-header h2 .icon,.ui-portlet .portlet-header h3 .icon,.ui-portlet .portlet-header h4 .icon,.ui-portlet .portlet-header h5 .icon,.ui-portlet .portlet-header h6 .icon{font-size:1.2em}
+.ui-portlet,.ui-portlet-repeat,.ui-portlet-repeat{border:solid #d6b161 1px;-webkit-border-radius:3px;-moz-border-radius:3px;border-radius:3px;position:relative;clear:both;width:auto;height:100%}.ui-portlet .portlet-header{background:#ebd9b2;border-bottom:solid #d6b161 1px;padding:2px 8px;overflow:visible;float:right;width:100%}.ui-portlet .portlet-header .portlet-title .portlet-title-text{vertical-align:middle}
+.ui-portlet .portlet-header .portlet-title .icon{font-size:1.2em;vertical-align:middle}
 .ui-portlet .portlet-buttons{height:50px;padding:10px}
 .ui-portlet .portlet-content{height:inherit;padding:10px;clear:both}.ui-portlet .portlet-content .content{padding:10px;height:100%;width:100%}.ui-portlet .portlet-content .content .buttons{height:50px;padding:10px}
 .ui-portlet .no-scroll{height:calc(100% - 80px)}
-.ui-portlet-repeat{border:none;border-left:solid 3px #ebd9b2;border-radius:5px}.ui-portlet-repeat .portlet-header{background:#ebd9b2;border-radius:3px;border-bottom-left-radius:0px;padding:1px 0px 0px 2px}
-.ui-portlet-repeat .portlet-title{padding-top:1px}
+.ui-portlet-repeat{border:none;border-left:solid 3px #ebd9b2;border-radius:5px}.ui-portlet-repeat .portlet-header{background:#ebd9b2;border-radius:3px;border-bottom-left-radius:0px;padding:0px 2px}
 .ui-portlet-repeat .portlet-content{padding:0px}.ui-portlet-repeat .portlet-content .content{padding:0px;padding-left:10px}
 .ui-popover{max-width:700px;display:none}.ui-popover .popover-close{position:absolute;right:10px;top:7px;font-size:1.2em;cursor:pointer}
 .ui-popover .popover-title{padding:4px 10px}

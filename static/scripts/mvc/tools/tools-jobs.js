@@ -1,7 +1,7 @@
 /**
     This class handles job submissions and the error handling.
 */
-define(['utils/utils'], function(Utils) {
+define(['utils/utils', 'mvc/tools/tools-template'], function(Utils, ToolTemplate) {
 return Backbone.Model.extend({
     // initialize
     initialize: function(app, options) {
@@ -37,12 +37,7 @@ return Backbone.Model.extend({
         Utils.request('POST', galaxy_config.root + 'api/tools', job_def,
             // success handler
             function(response) {
-                if (!response.outputs || response.outputs.length == 0) {
-                    console.debug(response);
-                }
-                self.app.message({
-                    text : 'A job has been successfully added to the queue. You can check the status of queued jobs and view the resulting data by refreshing the History pane. When the job has been run the status will change from \'running\' to \'finished\' if completed successfully or \'error\' if problems were encountered.'
-                });
+                self.app.message(ToolTemplate.success(response));
                 self._refreshHdas();
             },
             // error handler
@@ -77,16 +72,25 @@ return Backbone.Model.extend({
             var input = job_inputs[job_input_id];
             var input_id = this.app.tree.match(job_input_id);
             var input_field = this.app.field_list[input_id];
+            var input_element = this.app.element_list[input_id];
             
             // check field validation
-            //if (input_field && input_field.validate && !input_field.validate()) {
+            if (input && !input.optional && input_field && input_field.validate && !input_field.validate()) {
                 this.app.element_list[input_id].error('Please verify this parameter.');
-                valid = false;
-            //}
+                if (valid) {
+                    // scroll to first input element
+                    $(this.app.container).animate({
+                        scrollTop: input_element.$el.offset().top - 20
+                    }, 500);
+                    
+                    // validation failed
+                    valid = false;
+                }
+            }
         }
         
         // return result
-        return false;
+        return valid;
     },
     
     /** Refreshes the history panel
