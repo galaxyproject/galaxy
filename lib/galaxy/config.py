@@ -518,9 +518,9 @@ class Configuration( object ):
             tool_configs.append( self.migrated_tools_config )
         for path in tool_configs:
             if not os.path.exists( path ):
-                raise ConfigurationError("File not found: %s" % path )
+                raise ConfigurationError("Tool config file not found: %s" % path )
         if not os.path.isfile( self.datatypes_config ):
-            raise ConfigurationError("File not found: %s" % self.datatypes_config )
+            raise ConfigurationError("Datatypes config file not found: %s" % self.datatypes_config )
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
