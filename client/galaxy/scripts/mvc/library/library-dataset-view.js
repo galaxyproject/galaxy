@@ -117,7 +117,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
   downloadDataset: function(){
     var url = '/api/libraries/datasets/download/uncompressed';
-    var data = {'ldda_ids' : this.id};
+    var data = {'ld_ids' : this.id};
     this.processDownload(url, data);
   },
 

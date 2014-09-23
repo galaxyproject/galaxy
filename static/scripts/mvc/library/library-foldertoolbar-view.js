@@ -275,7 +275,7 @@ var FolderToolbarView = Backbone.View.extend({
             }
         } );
     var url = '/api/libraries/datasets/download/' + format;
-    var data = { 'ldda_ids' : dataset_ids };
+    var data = { 'ld_ids' : dataset_ids };
     this.processDownload( url, data, 'get' );
   },
 
