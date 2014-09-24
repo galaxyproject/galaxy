@@ -27,13 +27,21 @@ print docker_cmd
 
 time.sleep(5)
 
+pub_key = os.path.join(temp_dir, 'rserver_pub_key')
+
+while True:
+    if os.path.isfile(pub_key):
+        print "Pubkey exists!"
+        break
+    else:
+        print "Pubkey doesn't exist yet"
+        time.sleep(1)
+
 try:
     # Get n, e from public key file
     with open(os.path.join(temp_dir, 'rserver_pub_key'), 'r') as pub_key_handle:
         n, e = pub_key_handle.read().split(':')
 except:
-    n = 0
-    e = 0
     pass
 
 
