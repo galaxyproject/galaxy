@@ -73,8 +73,59 @@ var GalaxyFrame = Backbone.View.extend(
         });
         this._refresh();
     },
+
+    /**
+     * Add a dataset to the frames.
+     */
+    add_dataset: function(dataset_id) {
+        var self = this;
+        require(['mvc/data'], function(DATA) {
+            var dataset = new DATA.Dataset({ id: dataset_id });
+            $.when( dataset.fetch() ).then( function() {
+                // Construct frame config based on dataset's type.
+                var frame_config = {
+                        title: dataset.get('name')
+                    },
+                    // HACK: For now, assume 'tabular' and 'interval' are the only 
+                    // modules that contain tabular files. This needs to be replaced
+                    // will a is_datatype() function.
+                    is_tabular = _.find(['tabular', 'interval'], function(data_type) { 
+                        return dataset.get('data_type').indexOf(data_type) !== -1;
+                    });
+
+                // Use tabular chunked display if dataset is tabular; otherwise load via URL.
+                if (is_tabular) {
+                    var tabular_dataset = new DATA.TabularDataset(dataset.toJSON());
+                    _.extend(frame_config, {
+                        type: 'other',
+                        content: function( parent_elt ) {
+                            DATA.createTabularDatasetChunkedView({
+                                model: tabular_dataset,
+                                parent_elt: parent_elt,
+                                embedded: true,
+                                height: '100%'
+                            });
+                        }
+                    });
+                }
+                else {
+                    _.extend(frame_config, {
+                        type: 'url',
+                        content: galaxy_config.root + 'datasets/' + 
+                                 dataset.id + '/display/?preview=True'
+                    });
+                }
+
+                self.add(frame_config);
+
+            });
+        });
+
+    },
     
-    // adds and displays a new frame/window
+    /**
+     * Add and display a new frame/window based on options.
+     */
     add: function(options)
     {
         // open new tab
