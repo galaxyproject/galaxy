@@ -52,7 +52,9 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
             url: notebook_login_url,
             // With our password
             data: {
-                'password': password
+                'package': password,
+                'persist': 1,
+                'clientPath': window.location.pathname,
             },
             xhrFields: {
                 withCredentials: true
@@ -63,8 +65,9 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
             },
             error: function(jqxhr, status, error){
                 if(ie_password_auth && !ie_apache_urls){
-                    // Failure happens due to CORS
-                    message_failed_auth(password);
+                    // Failure happens due to CORS, can't use `password` because that's actually
+                    // encrypted for rstudio
+                    message_failed_auth(ie_password);
                     append_notebook(notebook_access_url);
                 }else{
                     message_failed_connection();

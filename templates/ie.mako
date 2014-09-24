@@ -39,7 +39,7 @@ import ConfigParser
 %>
 </%def>
 
-<%def name="write_conf_file(output_directory)">
+<%def name="write_conf_file(output_directory, extra={})">
 <%
     """
         Build up a configuration file that is standard for ALL IEs.
@@ -58,15 +58,15 @@ import ConfigParser
     }
 
     if self.attr.PASSWORD_AUTH:
-        # Generate a random password + salt
-        notebook_pw_salt = self.generate_password(length=12)
         notebook_pw = self.generate_password(length=24)
-        m = hashlib.sha1()
-        m.update( notebook_pw + notebook_pw_salt )
-        conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
+        conf_file['notebook_password'] = notebook_pw
         # Should we use password based connection or "default" connection style in galaxy
     else:
         notebook_pw = "None"
+
+    # Some will need to pass extra data
+    for extra_key in extra:
+        conf_file[extra_key] = extra[extra_key]
 
     self.attr.notebook_pw = notebook_pw
     # Write conf
@@ -188,9 +188,9 @@ import ConfigParser
     """
         Generate and return the docker command to execute
     """
-    return '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
-        (self.attr.viz_config.get("docker", "command"), self.attr.PORT, temp_dir,
-         self.attr.viz_config.get("docker", "image"))
+    return '%s run -d --sig-proxy=true -p %s:%s -v "%s:/import/" %s' % \
+        (self.attr.viz_config.get("docker", "command"), self.attr.PORT, self.attr.docker_port,
+         temp_dir, self.attr.viz_config.get("docker", "image"))
 %>
 </%def>
 
@@ -200,7 +200,6 @@ import ConfigParser
 ie_password_auth = ${ self.javascript_boolean(self.attr.PASSWORD_AUTH) };
 ie_apache_urls = ${ self.javascript_boolean(self.attr.APACHE_URLS) };
 ie_password = '${ self.attr.notebook_pw }';
-// Do these need to be global as well??
 var galaxy_root = '${ self.attr.root }';
 var app_root = '${ self.attr.app_root }';
 </%def>
