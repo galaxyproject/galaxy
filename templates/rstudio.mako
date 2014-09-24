@@ -3,19 +3,21 @@
 import os
 import shutil
 import tempfile
+import time
 import subprocess
 
 # Sets ID and sets up a lot of other variables
-ie.set_id("ipython")
+ie.set_id("rstudio")
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 # Write out conf file...needs work
 ie.write_conf_file(temp_dir)
+USERNAME = "galaxy"
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.
-notebook_access_url = ie.url_template('${PROTO}://${HOST}:${PORT}/rstudio/')
-notebook_login_url = ie.url_template('${PROTO}://${HOST}:${PORT}/auth-sign-in')
+notebook_access_url = ie.url_template('${PROTO}://${HOST}/rstudio/')
+notebook_login_url = ie.url_template('${PROTO}://${HOST}/auth-sign-in')
 
 docker_cmd = ie.docker_cmd(temp_dir)
 subprocess.call(docker_cmd, shell=True)
@@ -43,17 +45,18 @@ ${ ie.load_default_js() }
 ${ ie.default_javascript_variables() }
 var notebook_login_url = '${ notebook_login_url }';
 var notebook_access_url = '${ notebook_access_url }';
+var notebook_username = '${ USERNAME }';
 // Load notebook
 //<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/rsa.js"></script>
 //<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn.js"></script>
 //<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/rng.js"></script>
 //<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/prng4.js"></script>
 //<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/base64.js"></script>
-//var payload = "${ USERNAME }" + "\n" + "${ PASSWORD }";
-//var rsa = new RSAKey();
-//rsa.setPublic("${ n }", "${ e }");
-//var res = rsa.encrypt(payload);
-//var v = hex2b64(res);
+var payload = "${ USERNAME }" + "\n" + ie_password;
+var rsa = new RSAKey();
+rsa.setPublic("${ n }", "${ e }");
+var res = rsa.encrypt(payload);
+var v = hex2b64(res);
 //
 
 require.config({

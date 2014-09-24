@@ -22,13 +22,13 @@ import ConfigParser
     self.attr.galaxy_config = trans.app.config
     self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
     self.attr.root = h.url_for("/")
-    self.attr.app_root = self.attr.root + "plugins/visualizations/ipython/static/"
+    self.attr.app_root = self.attr.root + "plugins/visualizations/rstudio/static/"
 
     # Store our template and configuration path
     self.attr.our_config_dir = os.path.join(plugin_path, "config")
     self.attr.our_template_dir = os.path.join(plugin_path, "templates")
     self.attr.viz_config = ConfigParser.SafeConfigParser(default_dict)
-    self.attr.viz_config.read( os.path.join( self.attr.our_config_dir, "ipython.conf" ) )
+    self.attr.viz_config.read( os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".conf" ) )
     # Store some variables we want by default
     self.attr.PASSWORD_AUTH = self.attr.viz_config.getboolean("main", "password_auth")
     self.attr.APACHE_URLS = self.attr.viz_config.getboolean("main", "apache_urls")
