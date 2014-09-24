@@ -161,24 +161,8 @@ var DatasetListItemView = _super.extend(
             var self = this;
             displayBtnData.onclick = function( ev ){
                 if( Galaxy.frame && Galaxy.frame.active ){
-                    // Create frame with TabularChunkedView.
-                    Galaxy.frame.add({
-                        title       : "Data Viewer: " + self.model.get( 'name' ),
-                        type        : "other",
-                        content     : function( parent_elt ){
-                            require(['mvc/data'], function(DATA) {
-                                var new_dataset = new DATA.TabularDataset({ id: self.model.get( 'id' ) });
-                                $.when( new_dataset.fetch() ).then( function(){
-                                    DATA.createTabularDatasetChunkedView({
-                                        model: new_dataset,
-                                        parent_elt: parent_elt,
-                                        embedded: true,
-                                        height: '100%'
-                                    });
-                                });
-                            });
-                        }
-                    });
+                    // Add dataset to frames.
+                    Galaxy.frame.add_dataset(self.model.get('id'));
                     ev.preventDefault();
                 }
             };
