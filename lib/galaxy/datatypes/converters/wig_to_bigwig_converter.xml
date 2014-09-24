@@ -3,7 +3,10 @@
   <requirements>
       <requirement type="package">ucsc_tools</requirement>
   </requirements>
-  <command>grep -v "^track" $input | wigToBigWig -clip stdin $chromInfo $output</command>
+  <command>
+      grep -v "^track" $input | wigToBigWig -clip stdin $chromInfo $output 
+      2&gt;&amp;1 || echo "Error running wiggle to bigwig converter." >&amp;2
+  </command>
   <inputs>
     <page>
       <param format="wig" name="input" type="data" label="Choose wiggle"/>
