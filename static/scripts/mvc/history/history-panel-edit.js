@@ -284,7 +284,6 @@ var HistoryPanelEdit = _super.extend(
         view.$el.slideDown( panel.fxSpeed );
     },
 
-
     /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */
     _getItemViewOptions : function( model ){
         var options = _super.prototype._getItemViewOptions.call( this, model );
@@ -301,7 +300,7 @@ var HistoryPanelEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaDeletionChange : function( itemModel ){
-        if( itemModel.get( 'deleted' ) && !this.storage.get( 'show_deleted' ) ){
+        if( itemModel.get( 'deleted' ) && !this.showDeleted ){
             this.removeItemView( itemModel );
         }
     },
@@ -310,7 +309,7 @@ var HistoryPanelEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaVisibleChange : function( itemModel ){
-        if( itemModel.hidden() && !this.storage.get( 'show_hidden' ) ){
+        if( itemModel.hidden() && !this.storage.showHidden ){
             this.removeItemView( itemModel );
         }
     },
