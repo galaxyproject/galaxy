@@ -38,6 +38,13 @@ return {
        
         // return success message element
         return tmpl;
+    },
+    
+    batchMode: function() {
+        return  '<div class="ui-table-form-info">' +
+                    '<i class="fa fa-sitemap" style="font-size: 1.2em; padding: 2px 5px;"/>' +
+                    'This is a batch mode input field. A separate job will be triggered for each dataset.'
+                '</div>';
     }
 };
 

@@ -1,9 +1,12 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs'], function(Utils, Ui, Tabs) {
+define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-template'], function(Utils, Ui, Tabs, ToolTemplate) {
 
 var View = Backbone.View.extend({
     // initialize
     initialize : function(app, options) {
+        // configure options
+        this.options = options;
+        
         // link this
         var self = this;
         
@@ -82,6 +85,11 @@ var View = Backbone.View.extend({
         this.$el.append(Utils.wrap(this.button_new.$el));
         this.$el.append(this.select_datasets.$el);
         this.$el.append(this.select_collection.$el);
+        
+        // check for batch mode
+        if (!this.options.multiple) {
+            this.$el.append(ToolTemplate.batchMode());
+        }
         
         // refresh view
         this.refresh();

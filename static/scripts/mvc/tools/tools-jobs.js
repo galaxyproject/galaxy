@@ -32,6 +32,7 @@ return Backbone.Model.extend({
             console.debug('tools-jobs::submit - Submission canceled. Validation failed.');
             return;
         }
+        console.log(job_def);
         
         // post job
         Utils.request('POST', galaxy_config.root + 'api/tools', job_def,
@@ -66,27 +67,59 @@ return Backbone.Model.extend({
         // validation flag
         var valid = true;
         
-        // check inputs
+        // link this
+        var self = this;
+        
+        /** Highlight and scroll to error */
+        function foundError (input_id, message) {
+            // get input field
+            var input_element = self.app.element_list[input_id];
+            
+            // mark error
+            input_element.error(message || 'Please verify this parameter.');
+            
+            // set flag
+            if (valid) {
+                // scroll to first input element
+                $(self.app.container).animate({
+                    scrollTop: input_element.$el.offset().top - 20
+                }, 500);
+                
+                // set error flag
+                valid = false;
+            }
+        }
+        
+        // counter for values declared in batch mode
+        var n_values = -1;
+        
+        // validation
         for (var job_input_id in job_inputs) {
+            // get current value
+            var input_value = job_inputs[job_input_id];
+            
             // collect input field properties
-            var input = job_inputs[job_input_id];
             var input_id = this.app.tree.match(job_input_id);
             var input_field = this.app.field_list[input_id];
-            var input_element = this.app.element_list[input_id];
+            var input_def = this.app.input_list[input_id];
             
-            // check field validation
-            if (input && !input.optional && input_field && input_field.validate && !input_field.validate()) {
-                this.app.element_list[input_id].error('Please verify this parameter.');
-                if (valid) {
-                    // scroll to first input element
-                    $(this.app.container).animate({
-                        scrollTop: input_element.$el.offset().top - 20
-                    }, 500);
-                    
-                    // validation failed
-                    valid = false;
+            // check basic field validation
+            if (input_def && !input_def.optional && input_field && input_field.validate && !input_field.validate()) {
+                foundError(input_id);
+            }
+            
+            // check if input field is in batch mode
+            if (input_value.batch) {
+                var n = input_value.values.length;
+                if (n_values === -1) {
+                    n_values = n;
+                } else {
+                    if (n_values !== n) {
+                        foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + n_values + '</b>.');
+                    }
                 }
             }
+            
         }
         
         // return result
