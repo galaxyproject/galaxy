@@ -402,6 +402,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 
     /** Attach views in this.views to the model based on $whereTo */
     _attachItems : function( $whereTo ){
+        //ASSUMES: $list has been emptied
         this.$list( $whereTo ).append( this.views.map( function( view ){
             return view.$el;
         }));
@@ -436,21 +437,26 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         var panel = this;
         if( !panel._filterItem( model ) ){ return undefined; }
 
-//TODO: sorted? position?
         var view = panel._createItemView( model );
-        panel.views.push( view );
-
         // hide the empty message if only view
         $( view ).queue( 'fx', [
+            //TODO:? could poss. pubsub this
             function( next ){ panel.$emptyMessage().fadeOut( panel.fxSpeed, next ); },
             function( next ){
-//TODO: auto render?
-// slide down?
-                panel.$list().append( view.render().$el );
+                panel._attachView( view );
                 next();
             }
         ]);
         return view;
+    },
+
+    /** internal fn to add view (to both panel.views and panel.$list) */
+    _attachView : function( view ){
+        var panel = this;
+        // override to control where the view is added, how/whether it's rendered
+        panel.views.push( view );
+        panel.$list().append( view.render( 0 ).$el.hide() );
+        view.$el.slideDown( panel.fxSpeed );
     },
 
     /** Remove a view from the panel (if found) */

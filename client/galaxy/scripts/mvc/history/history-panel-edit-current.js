@@ -288,51 +288,23 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     // ------------------------------------------------------------------------ sub-views
-    // reverse HID order
-    /** Override to reverse order of views - newest contents on top
-     *      and add the current-content highlight class to currentContentId's view
-     */
+    /** Override to add the current-content highlight class to currentContentId's view */
     _attachItems : function( $whereTo ){
-        var panel = this;
-        this.$list( $whereTo ).append( this.views.reverse().map( function( view ){
-            // add current content
-            if( panel.currentContentId && view.model.id === panel.currentContentId ){
-                panel.setCurrentContent( view );
-            }
-            return view.$el;
-        }));
+        _super.prototype._attachItems.call( this, $whereTo );
+        var panel = this,
+            currentContentView;
+        if( panel.currentContentId
+        && ( currentContentView = panel.viewFromModelId( panel.currentContentId ) ) ){
+            panel.setCurrentContent( currentContentView );
+        }
         return this;
     },
 
-    /** Override to add datasets at the top */
+    /** Override to remove any drill down panels */
     addItemView : function( model, collection, options ){
-        this.log( this + '.addItemView:', model );
-        var panel = this;
-        if( !panel._filterItem( model ) ){ return undefined; }
-//TODO: alternately, call collapse drilldown
-        // if this panel is currently hidden, return undefined
-        if( panel.panelStack.length ){ return this._collapseDrilldownPanel(); }
-
-        var view = panel._createItemView( model );
-        // use unshift and prepend to preserve reversed order
-        panel.views.unshift( view );
-
-        panel.scrollToTop();
-        $({}).queue([
-            function fadeOutEmptyMsg( next ){
-                var $emptyMsg = panel.$emptyMessage();
-                if( $emptyMsg.is( ':visible' ) ){
-                    $emptyMsg.fadeOut( panel.fxSpeed, next );
-                } else {
-                    next();
-                }
-            },
-            function createAndPrepend( next ){
-                // render as hidden then slide down
-                panel.$list().prepend( view.render( 0 ).$el.hide() );
-                view.$el.slideDown( panel.fxSpeed );
-            }
-        ]);
+        var view = _super.prototype.addItemView.call( this, model, collection, options );
+        if( !view ){ return view; }
+        if( this.panelStack.length ){ return this._collapseDrilldownPanel(); }
         return view;
     },
 

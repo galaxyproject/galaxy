@@ -69,7 +69,7 @@ var HistoryPanelEdit = _super.extend(
         this.multiselectActions = attributes.multiselectActions || this._getActions();
     },
 
-    // ------------------------------------------------------------------------ panel rendering
+    // ------------------------------------------------------------------------ listeners
     /** listening for collection events */
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
@@ -266,6 +266,25 @@ var HistoryPanelEdit = _super.extend(
     },
 
     // ------------------------------------------------------------------------ sub-views
+    // reverse HID order
+    /** Override to reverse order of views - newest contents on top */
+    _attachItems : function( $whereTo ){
+        this.$list( $whereTo ).append( this.views.reverse().map( function( view ){
+            return view.$el;
+        }));
+        return this;
+    },
+
+    /** Override to add new contents at the top */
+    _attachView : function( view ){
+        var panel = this;
+        // override to control where the view is added, how/whether it's rendered
+        panel.views.unshift( view );
+        panel.$list().prepend( view.render( 0 ).$el.hide() );
+        view.$el.slideDown( panel.fxSpeed );
+    },
+
+
     /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */
     _getItemViewOptions : function( model ){
         var options = _super.prototype._getItemViewOptions.call( this, model );
