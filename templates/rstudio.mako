@@ -70,7 +70,7 @@ viz_plugin_dir = os.path.join(viz_plugin_dir, "rstudio")
 our_config_dir = os.path.join(viz_plugin_dir, "config")
 our_template_dir = os.path.join(viz_plugin_dir, "templates")
 ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
-                                                'erasche/docker-rstudio-notebook'})
+                                                'rstudio-notebook'})
 ipy_viz_config.read( os.path.join( our_config_dir, "rstudio.conf" ) )
 
 PORT = find_free_port()
@@ -79,6 +79,7 @@ HOST = get_host()
 
 PASSWORD = generate_password(24)
 PASSWORD = "password"
+USERNAME = "galaxy"
 salt = generate_password(12)
 
 
@@ -96,7 +97,7 @@ conf_file = {
     #'galaxy_paster_port': galaxy_paster_port,
     'docker_port': PORT,
     'use_auth': True,
-    'notebook_username': 'galaxy',
+    'notebook_username': USERNAME,
     'notebook_password': generate_sha512(salt, PASSWORD)
 }
 
@@ -121,7 +122,16 @@ subprocess.call(docker_cmd, shell=True)
 
 # We need to wait until the Image and IPython in loaded
 # TODO: This can be enhanced later, with some JS spinning if needed.
-time.sleep(1)
+time.sleep(5)
+
+try:
+    # Get n, e from public key file
+    with open(os.path.join(temp_dir, 'rserver_pub_key'), 'r') as pub_key_handle:
+        n, e = pub_key_handle.read().split(':')
+except:
+    n = 0
+    e = 0
+    pass
 
 %>
 <html>
@@ -129,14 +139,51 @@ time.sleep(1)
 ${h.css( 'base' ) }
 ${h.js( 'libs/jquery/jquery' ) }
 ${h.js( 'libs/toastr' ) }
+//<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/rsa.js"></script>
+//<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn.js"></script>
+//<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/rng.js"></script>
+//<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/prng4.js"></script>
+//<script src="http://www-cs-students.stanford.edu/~tjw/jsbn/base64.js"></script>
 </head>
 <body>
 Password: ${ PASSWORD }
 <script type="text/javascript">
+
+
+
 $( document ).ready(function() {
-    $('body').append('<object data="${ notebook_access_url }" height="100%" width="100%">'
-    +'<embed src="${ notebook_access_url }" height="100%" width="100%"/></object>'
-    );
+
+
+//var payload = "${ USERNAME }" + "\n" + "${ PASSWORD }";
+//var rsa = new RSAKey();
+//rsa.setPublic("${ n }", "${ e }");
+//var res = rsa.encrypt(payload);
+//var v = hex2b64(res);
+//
+
+
+
+
+//        // Make an AJAX POST
+//        $.ajax({
+//            type: "POST",
+//            // to the Login URL
+//            url: "${ notebook_login_url }",
+//            // With our password
+//            data: {
+//                'v': v,
+//                'clientPath': '/auth-do-signin',
+//            },
+//            success: function(){
+//                console.log("Success");
+//            }
+//            error: function(jqxhr, status, error){
+//                console.log("Error" + status +"\n" + error);
+//            }
+//        });
+//    $('body').append('<object data="${ notebook_access_url }" height="100%" width="100%">'
+//    +'<embed src="${ notebook_access_url }" height="100%" width="100%"/></object>'
+//    );
 });
 </script>
 </body>
