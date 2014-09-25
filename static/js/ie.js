@@ -30,8 +30,10 @@ function test_ie_availability(url, success_callback){
     display_spinner();
     interval = setInterval(function(){
         $.ajax({
+            url: url,
             type: "GET",
             success: function(){
+                console.log("Connected to IE, returning");
                 clearInterval(interval);
                 success_callback();
             },
