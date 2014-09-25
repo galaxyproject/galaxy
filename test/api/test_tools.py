@@ -95,6 +95,17 @@ class ToolsTestCase( api.ApiTestCase ):
         result_content = self._upload_and_get_content( table )
         self.assertEquals( result_content, table )
 
+    @skip_without_tool( "multi_select" )
+    def test_multi_select_as_list( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            "select_ex": ["--ex1", "ex2"],
+        }
+        response = self._run( "multi_select", history_id, inputs, assert_ok=True )
+        output = response[ "outputs" ][ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output )
+        assert output1_content == "--ex1,ex2"
+
     @skip_without_tool( "cat1" )
     def test_run_cat1( self ):
         # Run simple non-upload tool with an input data parameter.
