@@ -157,6 +157,23 @@ class ToolBox( object, Dictifiable ):
                 self.init_tools( config_filename )
             except:
                 log.exception( "Error loading tools defined in config %s", config_filename )
+        if self.app.config.tool_autoload_dir is not None:
+            log.info("Autoloading tool directory: %s" % (self.app.config.tool_autoload_dir))
+
+            auto_load_section = ToolSection({
+                'id' : "__tool_autoload__",
+                'version' : "1.0.0",
+                'name' : self.app.config.tool_autoload_section})
+
+            for tool_xml_path in glob.glob(os.path.join(self.app.config.tool_autoload_dir, "*", "*.xml")):
+                log.info("AutoLoading: %s" % (tool_xml_path))
+                tool = self.load_tool(tool_xml_path)
+                self.tools_by_id[ tool.id ] = tool
+                self.__add_tool_to_tool_panel( tool, auto_load_section, section=True )
+
+            self.tool_panel[ "__tool_autoload__" ] = auto_load_section
+            #self.__add_tool_to_tool_panel( auto_load_section, self.tool_panel, section=False )
+
         if self.app.name == 'galaxy' and self.integrated_tool_panel_config_has_contents:
             # Load self.tool_panel based on the order in self.integrated_tool_panel.
             self.load_tool_panel()
@@ -816,7 +833,7 @@ class ToolBox( object, Dictifiable ):
                             if len( data_table_definitions ) > 0:
                                 # Put the data table definition XML in a temporary file.
                                 table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
-                                table_definition = table_definition % '\n'.join( data_table_definitions ) 
+                                table_definition = table_definition % '\n'.join( data_table_definitions )
                                 fd, table_conf = tempfile.mkstemp()
                                 os.close( fd )
                                 file( table_conf, 'w' ).write( table_definition )

@@ -88,6 +88,9 @@ class Configuration( object ):
         self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
         self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
 
+        self.tool_autoload_dir = kwargs.get( "tool_autoload_dir", None )
+        self.tool_autoload_section = kwargs.get( "tool_autoload_section", None )
+
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
         self.check_migrate_tools = string_as_bool( kwargs.get( 'check_migrate_tools', True ) )
