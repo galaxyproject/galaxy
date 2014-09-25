@@ -1,3 +1,4 @@
+// ==== File: rsa.js
 // Depends on jsbn.js and rng.js
 
 // Version 1.1: support utf-8 encoding in pkcs1pad2
@@ -110,3 +111,4 @@ RSAKey.prototype.doPublic = RSADoPublic;
 RSAKey.prototype.setPublic = RSASetPublic;
 RSAKey.prototype.encrypt = RSAEncrypt;
 //RSAKey.prototype.encrypt_b64 = RSAEncryptB64;
+

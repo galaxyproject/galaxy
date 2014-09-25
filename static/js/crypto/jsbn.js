@@ -1,3 +1,5 @@
+// Downloaded from http://www-cs-students.stanford.edu/~tjw/ at Tue Nov 30 00:42:57 PST 2010
+// ==== File: jsbn.js
 // Copyright (c) 2005  Tom Wu
 // All Rights Reserved.
 // See "LICENSE" for details.
@@ -118,7 +120,7 @@ function bnpFromInt(x) {
   this.t = 1;
   this.s = (x<0)?-1:0;
   if(x > 0) this[0] = x;
-  else if(x < -1) this[0] = x+this.DV;
+  else if(x < -1) this[0] = x+DV;
   else this.t = 0;
 }
 
@@ -212,7 +214,7 @@ function bnCompareTo(a) {
   if(r != 0) return r;
   var i = this.t;
   r = i-a.t;
-  if(r != 0) return (this.s<0)?-r:r;
+  if(r != 0) return r;
   while(--i >= 0) if((r=this[i]-a[i]) != 0) return r;
   return 0;
 }
@@ -557,3 +559,4 @@ BigInteger.prototype.modPowInt = bnModPowInt;
 // "constants"
 BigInteger.ZERO = nbv(0);
 BigInteger.ONE = nbv(1);
+
