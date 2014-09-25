@@ -394,7 +394,7 @@ class Configuration( object ):
         )
 
         listify_defaults = dict(
-            tool_data_table_config_path = [ 'config/tool_data_table_conf.xml', 'config/tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
+            tool_data_table_config_path = [ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
             # rationale:
             # [0]: user has explicitly created config/tool_conf.xml but did not
             #      move their existing shed_tool_conf.xml, don't use
