@@ -91,7 +91,7 @@ var View = Backbone.View.extend({
             current = [current];
         }
         for (var i in current) {
-            if (current[i] === 'null' || !current[i]) {
+            if (current[i] === 'null') {
                 return false;
             }
         }

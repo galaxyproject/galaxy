@@ -114,7 +114,7 @@ var OptionsBase = Backbone.View.extend({
             current = [current];
         }
         for (var i in current) {
-            if (current[i] === 'null' || !current[i]) {
+            if (current[i] === 'null') {
                 return false;
             }
         }
@@ -149,7 +149,7 @@ var OptionsBase = Backbone.View.extend({
         // get selected values
         var selected = this.$el.find(':checked');
         if (selected.length == 0) {
-            return null;
+            return 'null';
         }
         
         // return multiple or single value

@@ -46,16 +46,33 @@ return Backbone.Model.extend({
                 console.debug(response);
                 if (response && response.message && response.message.data) {
                     var error_messages = self.app.tree.matchResponse(response.message.data);
-                    for (var id in error_messages) {
-                        var error_text = error_messages[id];
-                        if (!error_text) {
-                            error_text = 'Please verify this parameter.';
-                        }
-                        self.app.element_list[id].error(error_text);
+                    for (var input_id in error_messages) {
+                        self._foundError(input_id, error_messages[input_id]);
                     }
                 }
             }
         );
+    },
+    
+    /** Highlight and scroll to error
+    */
+    _foundError: function (input_id, message) {
+        // get input field
+        var input_element = this.app.element_list[input_id];
+        
+        // mark error
+        input_element.error(message || 'Please verify this parameter.');
+        
+        // set flag
+        if (this.valid) {
+            // scroll to first input element
+            $(this.app.container).animate({
+                scrollTop: input_element.$el.offset().top - 20
+            }, 500);
+            
+            // set error flag
+            this.valid = false;
+        }
     },
     
     /** Validate job definition
@@ -65,30 +82,7 @@ return Backbone.Model.extend({
         var job_inputs = job_def.inputs;
         
         // validation flag
-        var valid = true;
-        
-        // link this
-        var self = this;
-        
-        /** Highlight and scroll to error */
-        function foundError (input_id, message) {
-            // get input field
-            var input_element = self.app.element_list[input_id];
-            
-            // mark error
-            input_element.error(message || 'Please verify this parameter.');
-            
-            // set flag
-            if (valid) {
-                // scroll to first input element
-                $(self.app.container).animate({
-                    scrollTop: input_element.$el.offset().top - 20
-                }, 500);
-                
-                // set error flag
-                valid = false;
-            }
-        }
+        this.valid = true;
         
         // counter for values declared in batch mode
         var n_values = -1;
@@ -105,7 +99,7 @@ return Backbone.Model.extend({
             
             // check basic field validation
             if (input_def && !input_def.optional && input_field && input_field.validate && !input_field.validate()) {
-                foundError(input_id);
+                this._foundError(input_id);
             }
             
             // check if input field is in batch mode
@@ -115,15 +109,15 @@ return Backbone.Model.extend({
                     n_values = n;
                 } else {
                     if (n_values !== n) {
-                        foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + n_values + '</b>.');
+                        this._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + n_values + '</b>.');
                     }
                 }
             }
             
         }
         
-        // return result
-        return valid;
+        // return validation result
+        return this.valid;
     },
     
     /** Refreshes the history panel
