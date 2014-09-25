@@ -20,41 +20,13 @@ USERNAME = "galaxy"
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.
-notebook_access_url = ie.url_template('${PROTO}://${HOST}/rstudio/auth-sign-in')
+notebook_pubkey_url = ie.url_template('${PROTO}://${HOST}/rstudio/auth-public-key')
+notebook_access_url = ie.url_template('${PROTO}://${HOST}/rstudio/')
 notebook_login_url = ie.url_template('${PROTO}://${HOST}/rstudio/auth-do-sign-in')
 
 docker_cmd = ie.docker_cmd(temp_dir)
 subprocess.call(docker_cmd, shell=True)
 print docker_cmd
-
-pub_key = os.path.join(temp_dir, 'rserver_pub_key')
-
-# Todo, migrate to JS
-try_count = 0
-while True:
-    try_count += 1
-    if os.path.isfile(pub_key):
-        print "Pubkey exists!"
-        break
-    else:
-        print "Pubkey doesn't exist yet"
-        time.sleep(1)
-
-    if try_count > 30:
-        # Throw an error?
-        break
-
-try:
-    # Get n, e from public key file
-    with open(os.path.join(temp_dir, 'rserver_pub_key'), 'r') as pub_key_handle:
-        n, e = pub_key_handle.read().split(':')
-except:
-    n = 0
-    e = 0
-    # Throw an error?
-    pass
-
-
 %>
 <html>
 <head>
@@ -62,13 +34,13 @@ ${ ie.load_default_js() }
 </head>
 <body>
 
-${ ie.attr.notebook_pw };
+${ ie.attr.notebook_pw }
 <script type="text/javascript">
 ${ ie.default_javascript_variables() }
 var notebook_login_url = '${ notebook_login_url }';
 var notebook_access_url = '${ notebook_access_url }';
+var notebook_pubkey_url = '${ notebook_pubkey_url }';
 var notebook_username = '${ USERNAME }';
-var payload = "${ USERNAME }" + "\n" + ie_password;
 require.config({
     baseUrl: app_root,
     paths: {
@@ -85,11 +57,7 @@ requirejs([
     'crypto/jsbn',
     'crypto/base64'
 ], function(){
-    var rsa = new RSAKey();
-    rsa.setPublic("${ e }", "${ n }");
-    var res = rsa.encrypt(payload);
-    var v = hex2b64(res);
-    load_notebook(v, notebook_login_url, notebook_access_url);
+    load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url, "${ USERNAME }");
 });
 </script>
 <div id="main" width="100%" height="100%">
