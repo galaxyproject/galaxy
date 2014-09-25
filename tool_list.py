@@ -1,9 +1,15 @@
-import os,sys
+import os
+import sys
 
 #--------read tool_conf.xml to get all the tool xml file names-----------
 onoff = 1
 tool_list = []
-for line in open("tool_conf.xml", "r"):
+tool_conf_file =  os.environ.get( 'GALAXY_TEST_TOOL_CONF', 'config/tool_conf.xml' )
+if not os.path.isfile(tool_conf_file):
+    sys.stderr.write( "Tool config file not found: {}\n".format(tool_conf_file) )
+    sys.exit(1)
+
+for line in open(tool_conf_file, "r"):
    if line.find("<!--") != -1:
       onoff = 0
    if line.find("file") != -1 and onoff==1:
