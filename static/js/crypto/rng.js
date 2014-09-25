@@ -1,3 +1,4 @@
+// ==== File: rng.js
 // Random number generator - requires a PRNG backend, e.g. prng4.js
 
 // For best results, put code like
@@ -27,19 +28,12 @@ if(rng_pool == null) {
   rng_pool = new Array();
   rng_pptr = 0;
   var t;
-  if(window.crypto && window.crypto.getRandomValues) {
-    // Use webcrypto if available
-    var ua = new Uint8Array(32);
-    window.crypto.getRandomValues(ua);
-    for(t = 0; t < 32; ++t)
-      rng_pool[rng_pptr++] = ua[t];
-  }
   if(navigator.appName == "Netscape" && navigator.appVersion < "5" && window.crypto) {
     // Extract entropy (256 bits) from NS4 RNG if available
     var z = window.crypto.random(32);
     for(t = 0; t < z.length; ++t)
       rng_pool[rng_pptr++] = z.charCodeAt(t) & 255;
-  }  
+  }
   while(rng_pptr < rng_psize) {  // extract some randomness from Math.random()
     t = Math.floor(65536 * Math.random());
     rng_pool[rng_pptr++] = t >>> 8;
@@ -73,3 +67,4 @@ function rng_get_bytes(ba) {
 function SecureRandom() {}
 
 SecureRandom.prototype.nextBytes = rng_get_bytes;
+

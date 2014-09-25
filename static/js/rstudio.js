@@ -14,14 +14,6 @@ function message_failed_connection(){
     );
 }
 
-function message_no_auth(){
-    toastr.warning(
-        "IPython Notebook was lunched without authentication. This is a security issue. <a href='https://github.com/bgruening/galaxy-ipython/wiki/IPython-Notebook-was-lunched-without-authentication' target='_blank'>More details ...</a>",
-        "Security warning",
-        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
-    );
-}
-
 
 /**
  * Load an interactive environment (IE) from a remote URL
@@ -30,12 +22,30 @@ function message_no_auth(){
  * @param {String} notebook_access_url: the URL embeded in the page and loaded
  *
  */
-function load_notebook(password, notebook_login_url, notebook_access_url){
+function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url, username){
     $( document ).ready(function() {
         // Test notebook_login_url for accessibility, executing the login+load function whenever
         // we've successfully connected to the IE.
-        test_ie_availability(notebook_login_url, function(){
-            _handle_notebook_loading(password, notebook_login_url, notebook_access_url);
+        test_ie_availability(notebook_pubkey_url, function(){
+            var payload = username + "\n" + ie_password;
+            $.ajax({
+                type: 'GET',
+                url: notebook_pubkey_url,
+                success: function(response_text){
+                    var chunks = response_text.split(':', 2);
+                    var exp = chunks[0];
+                    var mod = chunks[1];
+                    console.log("Found " + exp +" and " + mod);
+                    var rsa = new RSAKey();
+                    rsa.setPublic(mod, exp);
+                    console.log("Encrypting '" + username + "', '" + ie_password + "'");
+                    var enc_hex = rsa.encrypt(payload);
+                    var encrypted = hex2b64(enc_hex);
+                    console.log("E: " + encrypted);
+                    _handle_notebook_loading(encrypted, notebook_login_url, notebook_access_url);
+                }
+            });
+
         });
     });
 }
@@ -52,9 +62,10 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
             url: notebook_login_url,
             // With our password
             data: {
-                'package': password,
+                'v': password,
                 'persist': 1,
-                'clientPath': window.location.pathname,
+                'clientPath': '/rstudio/auth-sign-in',
+                'appUri': '',
             },
             xhrFields: {
                 withCredentials: true
