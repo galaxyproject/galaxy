@@ -9,7 +9,7 @@ import subprocess
 # Sets ID and sets up a lot of other variables
 ie.set_id("rstudio")
 # Inform the IE of the remote port on docker's end
-ie.attr.docker_port = 8787
+ie.attr.docker_port = 80
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 # Write out conf file...needs work
@@ -24,12 +24,14 @@ notebook_login_url = ie.url_template('${PROTO}://${HOST}/auth-sign-in')
 docker_cmd = ie.docker_cmd(temp_dir)
 subprocess.call(docker_cmd, shell=True)
 print docker_cmd
-
 time.sleep(5)
 
 pub_key = os.path.join(temp_dir, 'rserver_pub_key')
 
+# Todo, migrate to JS
+try_count = 0
 while True:
+    try_count += 1
     if os.path.isfile(pub_key):
         print "Pubkey exists!"
         break
@@ -37,11 +39,18 @@ while True:
         print "Pubkey doesn't exist yet"
         time.sleep(1)
 
+    if try_count > 30:
+        # Throw an error?
+        break
+
 try:
     # Get n, e from public key file
     with open(os.path.join(temp_dir, 'rserver_pub_key'), 'r') as pub_key_handle:
         n, e = pub_key_handle.read().split(':')
 except:
+    n = 0
+    e = 0
+    # Throw an error?
     pass
 
 

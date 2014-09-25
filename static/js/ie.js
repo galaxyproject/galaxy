@@ -37,7 +37,7 @@ function test_ie_availability(url, success_callback){
                 clearInterval(interval);
                 success_callback();
             },
-            error: function(){
+            error: function(jqxhr, status, error){
                 request_count++;
                 if(request_count > 30){
                     clearInterval(interval);
