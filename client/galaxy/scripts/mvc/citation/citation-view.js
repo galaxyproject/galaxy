@@ -24,11 +24,12 @@ var CitationView = Backbone.View.extend({
         var pages = fields.pages ? ("pp. " + fields.pages) : "";
         var address = fields.address;
         if( entryType == "article" ) {
+            var volume = (fields.volume ? fields.volume : "") +
+                         (fields.number ? ( " (" + fields.number + ")" ) : "") +
+                         (pages ? ", " + pages : "");
             ref = authorsAndYear + this._asSentence(title) +
                     (fields.journal ? ("In <em>" + fields.journal + ", ") : "") +
-                    (fields.volume ? fields.volume : "") +
-                    (fields.number ? ( "(" + fields.number + "), " ) : ", " ) +
-                    this._asSentence(pages) +
+                    this._asSentence(volume) + 
                     this._asSentence(fields.address) +
                     "<\/em>";
         } else if( entryType == "inproceedings" || entryType == "proceedings" ) {
@@ -43,14 +44,14 @@ var CitationView = Backbone.View.extend({
                     (fields.howpublished ? fields.howpublished + ". " : "") +
                     (fields.note ? fields.note + "." : "");
         } else if( entryType == "techreport" ) {
-            ref = authorsAndYear + ". " + this._asSentence(title) +
+            ref = authorsAndYear + this._asSentence(title) +
                     this._asSentence(fields.institution) +
                     this._asSentence(fields.number) +
                     this._asSentence(fields.type);
         } else if( entryType == "book" || entryType == "inbook" || entryType == "incollection" ) {
-            ref = this._asSentence(authorsAndYear) + " " + this._formatBookInfo(fields);
+            ref = authorsAndYear + " " + this._formatBookInfo(fields);
         } else {
-            ref = this._asSentence(authorsAndYear) + " " + this._asSentence(title) +
+            ref = authorsAndYear + " " + this._asSentence(title) +
                     this._asSentence(fields.howpublished) +
                     this._asSentence(fields.note);
         }
