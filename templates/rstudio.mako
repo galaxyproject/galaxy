@@ -8,8 +8,10 @@ import subprocess
 
 # Sets ID and sets up a lot of other variables
 ie.set_id("rstudio")
-# Inform the IE of the remote port on docker's end
-ie.attr.docker_port = 80
+# In order to keep 302 redirects happy, nginx needs to be aware there's a proxy in front of it,
+# which may be using a different port. As a result, we have to start nginx on whichever port it is
+# we plan to use.
+ie.attr.docker_port = ie.attr.PORT
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 # Write out conf file...needs work
@@ -18,13 +20,12 @@ USERNAME = "galaxy"
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.
-notebook_access_url = ie.url_template('${PROTO}://${HOST}/auth-sign-in')
-notebook_login_url = ie.url_template('${PROTO}://${HOST}/auth-sign-in')
+notebook_access_url = ie.url_template('${PROTO}://${HOST}/rstudio/auth-sign-in')
+notebook_login_url = ie.url_template('${PROTO}://${HOST}/rstudio/auth-do-sign-in')
 
 docker_cmd = ie.docker_cmd(temp_dir)
 subprocess.call(docker_cmd, shell=True)
 print docker_cmd
-time.sleep(5)
 
 pub_key = os.path.join(temp_dir, 'rserver_pub_key')
 
@@ -61,6 +62,7 @@ ${ ie.load_default_js() }
 </head>
 <body>
 
+${ ie.attr.notebook_pw };
 <script type="text/javascript">
 ${ ie.default_javascript_variables() }
 var notebook_login_url = '${ notebook_login_url }';
