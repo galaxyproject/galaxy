@@ -34,7 +34,7 @@ function load_notebook(password, notebook_login_url, notebook_access_url){
     $( document ).ready(function() {
         // Test notebook_login_url for accessibility, executing the login+load function whenever
         // we've successfully connected to the IE.
-        test_ie_availability(notebook_login_url, function(){
+        test_ie_availability(notebook_access_url, function(){
             _handle_notebook_loading(password, notebook_login_url, notebook_access_url);
         });
     });
@@ -54,7 +54,8 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
             data: {
                 'package': password,
                 'persist': 1,
-                'clientPath': window.location.pathname,
+                'clientPath': '/rstudio/auth-sign-in',
+                'appUri': '',
             },
             xhrFields: {
                 withCredentials: true
