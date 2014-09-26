@@ -67,6 +67,7 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
                 'clientPath': '/rstudio/auth-sign-in',
                 'appUri': '',
             },
+            contentType: "application/x-www-form-urlencoded",
             xhrFields: {
                 withCredentials: true
             },
