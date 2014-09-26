@@ -155,7 +155,6 @@ var View = Backbone.View.extend(
                 data                : this.select_data,
                 containerCssClass   : this.options.css,
                 placeholder         : this.options.placeholder,
-                width               : 'resolve',
                 dropdownAutoWidth   : true
             };
             this.$el.select2(select_opt);
