@@ -429,8 +429,15 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         folder = self.folder_manager.get( trans, folder_id )
 
         source = kwd.get( 'source', None )
-        if source not in [ 'userdir_file', 'userdir_folder', 'admin_path' ]:
-            raise exceptions.RequestParameterMissingException( 'You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder" and "admin_path". ')
+        if source not in [ 'userdir_file', 'userdir_folder', 'importdir_file', 'importdir_folder', 'admin_path' ]:
+            raise exceptions.RequestParameterMissingException( 'You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder", "admin_path", "importdir_file" and "importdir_folder". ')
+        if source in [ 'importdir_file', 'importdir_folder' ]:
+            if not trans.user_is_admin:
+                raise exceptions.AdminRequiredException( 'Only admins can import from importdir.' )
+            if not trans.app.config.library_import_dir:
+                raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to import into library from importdir.' )
+            user_base_dir = trans.app.config.library_import_dir
+
 
         if source in [ 'userdir_file', 'userdir_folder' ]:
             user_login = trans.user.email
@@ -505,6 +512,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         return job_dict
 
     @web.expose
+    #  TODO convert to expose_api
     def download( self, trans, format, **kwd ):
         """
         download( self, trans, format, **kwd )

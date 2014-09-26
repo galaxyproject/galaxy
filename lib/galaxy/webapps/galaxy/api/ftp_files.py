@@ -49,7 +49,7 @@ class FTPFilesAPIController( BaseAPIController ):
                         userdir_jstree = self.__create_jstree( full_import_dir, disable )
                         response = userdir_jstree.jsonData()
                     except Exception, exception:
-                        log.debug(str(exception))
+                        log.debug( str( exception ) )
                         raise exceptions.InternalServerError( 'Could not create tree representation of the given folder: ' + str( full_import_dir ) )
                 elif format == 'ajax':
                     raise exceptions.NotImplemented( 'Not implemented yet. Sorry.' )
@@ -61,6 +61,26 @@ class FTPFilesAPIController( BaseAPIController ):
                         raise exceptions.InternalServerError( 'Could not get the files from your user directory folder.' )
             else:
                 raise exceptions.InternalServerError( 'Could not get the files from your user directory folder.' )
+        elif target == 'importdir':
+            base_dir = trans.app.config.library_import_dir
+            if base_dir is None:
+                raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow usage of import directory.' )
+            if format == 'jstree':
+                    disable = kwd.get( 'disable', 'folders')
+                    try:
+                        importdir_jstree = self.__create_jstree( base_dir, disable )
+                        response = importdir_jstree.jsonData()
+                    except Exception, exception:
+                        log.debug( str( exception ) )
+                        raise exceptions.InternalServerError( 'Could not create tree representation of the given folder: ' + str( base_dir ) )
+            elif format == 'ajax':
+                raise exceptions.NotImplemented( 'Not implemented yet. Sorry.' )
+            else:
+                try:
+                    response = self.__load_all_filenames( base_dir )
+                except Exception, exception:
+                    log.error( 'Could not get user import files: %s', str( exception ), exc_info=True )
+                    raise exceptions.InternalServerError( 'Could not get the files from your import directory folder.' )
         else:
             user_ftp_base_dir = trans.app.config.ftp_upload_dir
             if user_ftp_base_dir is None:
