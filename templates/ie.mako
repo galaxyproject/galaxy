@@ -22,7 +22,7 @@ import ConfigParser
     self.attr.galaxy_config = trans.app.config
     self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
     self.attr.root = h.url_for("/")
-    self.attr.app_root = self.attr.root + "plugins/visualizations/rstudio/static/"
+    self.attr.app_root = self.attr.root + "plugins/visualizations/" + self.attr.viz_id + "/static/"
 
     # Store our template and configuration path
     self.attr.our_config_dir = os.path.join(plugin_path, "config")
