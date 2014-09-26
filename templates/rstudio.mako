@@ -20,9 +20,9 @@ USERNAME = "galaxy"
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.
-notebook_pubkey_url = ie.url_template('${PROTO}://${HOST}/rstudio/auth-public-key')
-notebook_access_url = ie.url_template('${PROTO}://${HOST}/rstudio/')
-notebook_login_url = ie.url_template('${PROTO}://${HOST}/rstudio/auth-do-sign-in')
+notebook_pubkey_url = ie.url_template('${PROTO}://${HOST}/rstudio/${PORT}/auth-public-key')
+notebook_access_url = ie.url_template('${PROTO}://${HOST}/rstudio/${PORT}/')
+notebook_login_url = ie.url_template('${PROTO}://${HOST}/rstudio/${PORT}/auth-do-sign-in')
 
 docker_cmd = ie.docker_cmd(temp_dir)
 subprocess.call(docker_cmd, shell=True)
