@@ -32,23 +32,41 @@ return Backbone.Model.extend({
             console.debug('tools-jobs::submit - Submission canceled. Validation failed.');
             return;
         }
-        console.log(job_def);
+        
+        // debug
+        console.debug(job_def);
+        
+        // show progress modal
+        this.app.modal.show({title: 'Please wait...', body: 'progress'});
         
         // post job
         Utils.request('POST', galaxy_config.root + 'api/tools', job_def,
             // success handler
             function(response) {
+                self.app.modal.hide();
                 self.app.message(ToolTemplate.success(response));
                 self._refreshHdas();
             },
             // error handler
-            function(response) {
-                console.debug(response);
+            function(response, response_full) {
+                self.app.modal.hide();
                 if (response && response.message && response.message.data) {
                     var error_messages = self.app.tree.matchResponse(response.message.data);
                     for (var input_id in error_messages) {
                         self._foundError(input_id, error_messages[input_id]);
                     }
+                } else {
+                    // show modal with error message
+                    self.app.modal.show({
+                        title: response_full.statusText,
+                        body: ToolTemplate.error(job_def),
+                        closing_events: true,
+                        buttons: {
+                            'Close': function() {
+                                self.app.modal.hide();
+                            }
+                        }
+                    });
                 }
             }
         );

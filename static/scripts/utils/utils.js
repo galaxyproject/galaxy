@@ -13,6 +13,12 @@ function get (url, success, error) {
 
 // generic function to send json to url
 function request (method, url, data, success, error) {
+    // configure
+    var ajaxConfig = {
+        url             : url,
+        type            : method,
+        'contentType'   : 'application/json'
+    }
 
     // encode data into url
     if (method == 'GET' || method == 'DELETE') {
@@ -22,40 +28,25 @@ function request (method, url, data, success, error) {
             url += '&';
         }
         url += $.param(data)
+    } else {
+        ajaxConfig['data'] = JSON.stringify(data);
+        ajaxConfig['dataType'] = 'json';
     }
-    
-    // prepare request
-    var xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
-    xhr.setRequestHeader('Accept', 'application/json');
-    xhr.setRequestHeader('Cache-Control', 'no-cache');
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onloadend = function() {
-        // get status
-        var status = xhr.status;
-       
-        // read response
-        try {
-            response = jQuery.parseJSON(xhr.responseText);
-        } catch (e) {
-            response = xhr.responseText;
-        }
-   
-        // parse response
-        if (status == 200) {
-            success && success(response);
-        } else {
-            error && error(response);
-        }
-    };
     
     // make request
-    if (method == 'GET' || method == 'DELETE') {
-        xhr.send();
-    } else {
-        xhr.send(JSON.stringify(data));
-    }
+    $.ajax(ajaxConfig)
+    .done(function(response) {
+        success && success(response);
+    })
+    .fail(function(response) {
+        var response_text = null;
+        try {
+            response_text = jQuery.parseJSON(response.responseText);
+        } catch (e) {
+            response_text = response.responseText;
+        }
+        error && error(response_text, response);
+    });
 };
 
 // get css value

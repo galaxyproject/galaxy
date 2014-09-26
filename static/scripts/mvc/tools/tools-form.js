@@ -24,6 +24,13 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // link this
             var self = this;
             
+            // link galaxy modal or create one
+            if (parent.Galaxy && parent.Galaxy.modal) {
+                this.modal = parent.Galaxy.modal;
+            } else {
+                this.modal = new Ui.Modal.View();
+            }
+            
             // link options
             this.options = options;
             
