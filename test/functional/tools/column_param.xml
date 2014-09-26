@@ -1,0 +1,23 @@
+<tool id="column_param" name="Column Param">
+  <command>
+    cut -f '$col' '$input1' > 'col_output'
+  </command>
+  <inputs>
+    <param type="data" format="tabular" name="input1" label="Input 1" />
+    <param name="col" type="data_column" data_ref="input1" label="Column to Use" />
+  </inputs>
+  <outputs>
+    <data name="output1" type="tabular" from_work_dir="col_output" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.tabular" />
+      <param name="col" value="2" />
+      <output name="output1">
+        <assert_contents>
+          <has_line line="68" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>
