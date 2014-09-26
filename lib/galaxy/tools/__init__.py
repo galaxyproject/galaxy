@@ -768,7 +768,7 @@ class ToolBox( object, Dictifiable ):
                     tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
                 tarball_files.append( tool_tup )
             # TODO: This feels hacky.
-            tool_command = tool.command.rstrip().split( ' ' )[0]
+            tool_command = tool.command.strip().split( ' ' )[0]
             tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
             # Add the tool XML to the tuple that will be used to populate the tarball.
             if os.path.exists( os.path.join( tool_path, tool_command ) ):
