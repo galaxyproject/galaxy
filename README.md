@@ -24,7 +24,7 @@ git clone https://github.com/erasche/galaxy-rstudio.git config/plugins/visualiza
 
 The RStudio visualisation option should be visible next to the usual Charts or Trackster options in your visualisation menue.
 
-![Starting RStudio in Galaxy](https://raw.githubusercontent.com/erasche/galaxy-ipython/master/static/images/start_rstudio.png)
+![Starting RStudio in Galaxy](https://raw.githubusercontent.com/erasche/galaxy-rstudio/master/static/images/start_rstudio.png)
 
 
 Features
