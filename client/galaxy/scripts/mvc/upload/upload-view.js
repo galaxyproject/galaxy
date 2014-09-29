@@ -96,7 +96,11 @@ return Backbone.View.extend({
             label       : 'Load Data',
             onclick     : function(e) {
                 if (e) {
-                    self._eventShow(e)
+                    // prevent default
+                    e.preventDefault();
+        
+                    // show
+                    self.show()
                 }
             },
             onunload    : function() {
@@ -168,10 +172,7 @@ return Backbone.View.extend({
     //
     
     // show/hide upload frame
-    _eventShow : function (e) {
-        // prevent default
-        e.preventDefault();
-        
+    show: function () {
         // create modal
         if (!this.modal) {
             // make modal
@@ -437,8 +438,7 @@ return Backbone.View.extend({
     },
 
     // create a new file
-    _eventCreate : function ()
-    {
+    _eventCreate : function (){
         this.uploadbox.add([{
             name    : 'New File',
             size    : 0,
@@ -497,8 +497,7 @@ return Backbone.View.extend({
     // remove all
     _eventReset : function() {
         // make sure queue is not running
-        if (this.counter.running == 0)
-        {
+        if (this.counter.running == 0){
             // reset collection
             this.collection.reset();
             
@@ -533,8 +532,7 @@ return Backbone.View.extend({
         */
         
         // check default message
-        if(this.counter.announce == 0)
-        {
+        if(this.counter.announce == 0){
             if (this.uploadbox.compatible())
                 message = 'You can Drag & Drop files into this box.';
             else
@@ -572,8 +570,7 @@ return Backbone.View.extend({
             this.modal.disableButton('Pause');
         
         // select upload button
-        if (this.counter.running == 0)
-        {
+        if (this.counter.running == 0){
             this.modal.enableButton('Choose local file');
             this.modal.enableButton('Choose FTP file');
             this.modal.enableButton('Paste/Fetch data');
@@ -591,10 +588,11 @@ return Backbone.View.extend({
         }
         
         // table visibility
-        if (this.counter.announce + this.counter.success + this.counter.error > 0)
+        if (this.counter.announce + this.counter.success + this.counter.error > 0) {
             $(this.el).find('#upload-table').show();
-        else
+        } else {
             $(this.el).find('#upload-table').hide();
+        }
     },
 
     // calculate percentage of all queued uploads
