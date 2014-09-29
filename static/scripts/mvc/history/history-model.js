@@ -14,7 +14,7 @@ define([
  *  @constructs
  */
 var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
-/** @lends History.prototype */{
+        BASE_MVC.mixin( BASE_MVC.SearchableModelMixin, /** @lends History.prototype */{
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
@@ -115,6 +115,18 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     /**  */
     contentsCount : function(){
         return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
+    },
+
+    // ........................................................................ search
+    /** What model fields to search with */
+    searchAttributes : [
+        'name', 'annotation', 'tags'
+    ],
+
+    /** Adding title and singular tag */
+    searchAliases : {
+        title       : 'name',
+        tag         : 'tags'
     },
 
     // ........................................................................ updates
@@ -252,7 +264,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     toString : function(){
         return 'History(' + this.get( 'id' ) + ',' + this.get( 'name' ) + ')';
     }
-});
+}));
 
 //------------------------------------------------------------------------------ CLASS VARS
 /** When the history has running hdas,

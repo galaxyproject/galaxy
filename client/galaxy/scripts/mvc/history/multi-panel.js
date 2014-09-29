@@ -69,13 +69,14 @@ function historyCopyDialog( history, options ){
 
 /* ==============================================================================
 TODO:
+    rendering/delayed rendering is a mess
+        may not need to render columns in renderColumns (just moving them/attaching them may be enough)
     copy places old current in wrong location
     sort by size is confusing (but correct) - nice_size shows actual disk usage, !== size
     handle delete current
         currently manual by user - delete then create new - make one step
     render
         move all columns over as one (agg. then html())
-    loading indicator on startup
     performance
         rendering columns could be better
         lazy load history list (for large numbers)
@@ -808,7 +809,11 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** Render a single column using the non-blocking setTimeout( 0 ) pattern */
     renderColumn : function( column, speed ){
         speed = speed !== undefined? speed: this.fxSpeed;
-        return _.delay( function(){ return column.render( speed ); }, 0 );
+        return column.render( speed );
+        //TODO: causes weirdness
+        //return _.delay( function(){
+        //    return column.render( speed );
+        //}, 0 );
     },
 
 //TODO: combine the following two more sensibly
@@ -922,12 +927,13 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             onsearch    : function( searchFor ){
                 multipanel.searchFor = searchFor;
                 multipanel.filters = [ function(){
-                    return this.model.get( 'name' ).indexOf( multipanel.searchFor ) !== -1;
+                    return this.model.matchesAll( multipanel.searchFor );
                 }];
                 multipanel.renderColumns( 0 );
             },
             onclear     : function( searchFor ){
                 multipanel.searchFor = null;
+//TODO: remove specifically not just reset
                 multipanel.filters = [];
                 multipanel.renderColumns( 0 );
             }
@@ -949,7 +955,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 });
                 multipanel.hdaQueue.progress( function( progress ){
                     multipanel.renderInfo([
-                        _l( 'loading' ), ( progress.curr + 1 ), _l( 'of' ), progress.total
+                        _l( 'searching' ), ( progress.curr + 1 ), _l( 'of' ), progress.total
                     ].join( ' ' ));
                 });
                 multipanel.hdaQueue.deferred.done( function(){
