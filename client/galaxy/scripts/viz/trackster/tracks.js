@@ -1152,9 +1152,9 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         
         // Update location. Only update when there is a valid chrom; when loading vis, there may 
         // not be a valid chrom.
-        var chrom = view.chrom_select.val();
+        var chrom = this.chrom_select.val();
         if (chrom !== "") {
-            this.trigger_navigate(chrom, view.low, view.high, true);
+            this.trigger_navigate(chrom, this.low, this.high, true);
         }
     },
 
