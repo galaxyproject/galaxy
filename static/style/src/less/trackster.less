@@ -13,8 +13,12 @@
 
 .trackster-nav-container {
     width: 100%;
-    /* Used to push nav into title bar: */
-    height: 0;
+
+    &.stand-alone {
+        /* Used to push nav into title bar: */
+        height: 0;
+    }
+    
     text-align: center;
 }
 
@@ -23,12 +27,15 @@
     color:#333;
     font-weight:bold;
     background:#cccccc;
-    /* Push nav up into title bar */
-    position: relative;
     display: inline-block;
     top: -2em;
     background: transparent;
     border: none;
+
+    &.stand-alone {
+        /* Push nav up into title bar */
+        position: relative;
+    }
 }
 
 .chrom-nav {

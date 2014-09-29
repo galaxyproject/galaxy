@@ -118,6 +118,54 @@ var GalaxyFrame = Backbone.View.extend({
         });
 
     },
+
+    /**
+     * Add a trackster visualization to the frames.
+     */
+    add_trackster_viz: function(viz_id) {
+        var self = this;
+        require(['viz/visualization', 'viz/trackster'], function(visualization, trackster) {
+            var viz = new visualization.Visualization({id: viz_id});
+            $.when( viz.fetch() ).then( function() {
+                var ui = new trackster.TracksterUI(galaxy_config.root);
+
+                // Construct frame config based on dataset's type.
+                var frame_config = {
+                        title: viz.get('name'),
+                        type: 'other',
+                        content: function(parent_elt) {
+                            // Create view config.
+                            var view_config = {
+                                container: parent_elt,
+                                name: viz.get('title'),
+                                id: viz.id,
+                                // FIXME: this will not work with custom builds b/c the dbkey needed to be encoded.
+                                dbkey: viz.get('dbkey'),
+                                stand_alone: false
+                            },
+                            latest_revision = viz.get('latest_revision'),
+                            drawables = latest_revision.config.view.drawables;
+
+                            // Set up datasets in drawables.
+                            _.each(drawables, function(d) {
+                                d.dataset = {
+                                    hda_ldda: d.hda_ldda,
+                                    id: d.dataset_id
+                                };
+                            });
+
+                            view = ui.create_visualization(view_config,
+                                                           latest_revision.config.viewport,
+                                                           latest_revision.config.view.drawables,
+                                                           latest_revision.config.bookmarks,
+                                                           false);
+                        }
+                    };
+
+                self.add(frame_config);
+            });
+        });
+    },
     
     /**
      * Add and display a new frame/window based on options.

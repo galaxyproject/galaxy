@@ -148,7 +148,7 @@ var View = Backbone.View.extend({
             content: null,
             target: '',
             type: null
-        }
+        };
         
         // read in defaults
         if (options) {
