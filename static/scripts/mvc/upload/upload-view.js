@@ -83,12 +83,6 @@ return Backbone.View.extend({
             this.options = _.defaults(options, this.options);
         }
         
-        // wait for galaxy history panel (workaround due to the use of iframes)
-        if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
-            window.setTimeout(function() { self.initialize() }, 500)
-            return;
-        }
-        
         // create model
         this.ui_button = new UploadButton.Model({
             icon        : 'fa-upload',
@@ -173,6 +167,13 @@ return Backbone.View.extend({
     
     // show/hide upload frame
     show: function () {
+        // wait for galaxy history panel
+        var self = this;
+        if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
+            window.setTimeout(function() { self.show() }, 500)
+            return;
+        }
+        
         // create modal
         if (!this.modal) {
             // make modal
