@@ -191,6 +191,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
                 if( lastSelectedView ){
                     this.selectRange( view, lastSelectedView );
                 }
+            } else if( ev && ev.altKey && !this.selecting ){
+                this.showSelectors();
             }
             this.selected.push( view.model.id );
             this.lastSelected = view.model.id;
