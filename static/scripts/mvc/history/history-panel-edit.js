@@ -115,6 +115,42 @@ var HistoryPanelEdit = _super.extend(
         return $newRender;
     },
 
+    /** override to render counts when the items are rendered */
+    renderItems : function( $whereTo ){
+        var views = _super.prototype.renderItems.call( this, $whereTo );
+        this._renderCounts( $whereTo );
+        return views;
+    },
+
+    /** override to show counts, what's deleted/hidden, and links to toggle those */
+    _renderCounts : function( $whereTo ){
+//TODO: too complicated
+        function toggleLink( _class, text ){
+            return [ '<a class="', _class, '" href="javascript:void(0);">', text, '</a>' ].join( '' );
+        }
+        $whereTo = $whereTo || this.$el;
+        var deleted  = this.collection.where({ deleted: true }),
+            hidden   = this.collection.where({ visible: false }),
+            msgs = [];
+
+        if( this.views.length ){
+            msgs.push( [ this.views.length, _l( 'shown' ) ].join( ' ' ) );
+        }
+        if( deleted.length ){
+            msgs.push( ( !this.showDeleted )?
+                 ([ deleted.length, toggleLink( 'toggle-deleted-link', _l( 'deleted' ) ) ].join( ' ' ))
+                :( toggleLink( 'toggle-deleted-link', _l( 'hide deleted' ) ) )
+            );
+        }
+        if( hidden.length ){
+            msgs.push( ( !this.showHidden )?
+                 ([ hidden.length, toggleLink( 'toggle-hidden-link', _l( 'hidden' ) ) ].join( ' ' ))
+                :( toggleLink( 'toggle-hidden-link', _l( 'hide hidden' ) ) )
+            );
+        }
+        return $whereTo.find( '.subtitle' ).html( msgs.join( ', ' ) );
+    },
+
     /** render the tags sub-view controller */
     _renderTags : function( $where ){
         var panel = this;
@@ -318,6 +354,7 @@ var HistoryPanelEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaDeletionChange : function( itemModel ){
+        this._renderCounts();
         if( itemModel.get( 'deleted' ) && !this.showDeleted ){
             this.removeItemView( itemModel );
         }
@@ -327,6 +364,7 @@ var HistoryPanelEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaVisibleChange : function( itemModel ){
+        this._renderCounts();
         if( itemModel.hidden() && !this.storage.showHidden ){
             this.removeItemView( itemModel );
         }
@@ -355,7 +393,9 @@ var HistoryPanelEdit = _super.extend(
     // ------------------------------------------------------------------------ panel events
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
-        'click .show-selectors-btn'                 : 'toggleSelectors'
+        'click .show-selectors-btn'                 : 'toggleSelectors',
+        'click .toggle-deleted-link'                : function( ev ){ this.toggleShowDeleted(); },
+        'click .toggle-hidden-link'                 : function( ev ){ this.toggleShowHidden(); }
     }),
 
     /** Update the history size display (curr. upper right of panel).

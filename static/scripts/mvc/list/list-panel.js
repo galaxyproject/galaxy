@@ -484,13 +484,13 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         var panel = this,
             view = panel.viewFromModel( model );
         if( !view ){ return undefined; }
+        panel.views = _.without( panel.views, view );
 
         // potentially show the empty message if no views left
         // use anonymous queue here - since remove can happen multiple times
         $({}).queue( 'fx', [
             function( next ){ view.$el.fadeOut( panel.fxSpeed, next ); },
             function( next ){
-                panel.views = _.without( panel.views, view );
                 view.remove();
                 if( !panel.views.length ){
                     panel._renderEmptyMessage().fadeIn( panel.fxSpeed, next );

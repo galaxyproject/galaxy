@@ -373,11 +373,17 @@
 .history-panel {
 
     .controls {
-        margin: 10px;
+        margin: 10px 10px 0px 10px;
         padding: 0px;
 
-        .messages > * {
-            cursor: pointer;
+        .messages {
+            margin-bottom: 0px;
+            & > * {
+                cursor: pointer;
+                &:last-child {
+                    margin-bottom: 8px;
+                }
+            }
         }
 
         .title {
@@ -391,7 +397,7 @@
         }
         .subtitle:not(:empty){
             margin-top: -4px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .editable-text {
             border: solid transparent 1px;
@@ -403,6 +409,7 @@
 
         .history-size {
             display: inline-block;
+            margin-top: 4px;
             color: black;
         }
         .actions {
@@ -442,6 +449,7 @@
         }
         .annotation-display {
             .annotation {
+                //display: inline-block;
                 border-radius: 3px;
                 border: 1px solid fadeout( @layout-border-color, 50% );
                 padding: 4px;
@@ -461,7 +469,7 @@
             }
             textarea {
                 margin: 0px 0px 2px 0px;
-                display: block;
+                //display: block;
                 border-radius: 3px;
                 width: 100%;
             }
@@ -494,8 +502,6 @@
     .dataset-collection {
         .subtitle {
             margin-top: 2px;
-            font-size: 90%;
-            color: #777;
         }
     }
     .dataset-collection-panel {
