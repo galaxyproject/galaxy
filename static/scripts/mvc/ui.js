@@ -691,6 +691,10 @@ function LoadingIndicator( $where, options ){
                         }
                     }
                 })
+                .on( 'change', function( event ){
+                    console.info( 'changed', $( this ), event );
+                    search.call( this, event, $( this ).val() );
+                })
                 .val( options.initialVal );
         }
 

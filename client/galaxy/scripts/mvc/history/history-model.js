@@ -117,7 +117,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         return _.reduce( _.values( this.get( 'state_details' ) ), function( memo, num ){ return memo + num; }, 0 );
     },
 
-    // ........................................................................ ajax
+    // ........................................................................ updates
     /** does the contents collection indicate they're still running and need to be updated later?
      *      delay + update if needed
      *  @param {Function} onReadyCallback   function to run when all contents are in the ready state
@@ -187,6 +187,18 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         return xhr;
     },
 
+    // ........................................................................ ajax
+    /** save this history, _Mark_ing it as deleted (just a flag) */
+    _delete : function( options ){
+        if( this.get( 'deleted' ) ){ return jQuery.when(); }
+        return this.save( { deleted: true }, options );
+    },
+    /** save this history, _Mark_ing it as undeleted */
+    undelete : function( options ){
+        if( !this.get( 'deleted' ) ){ return jQuery.when(); }
+        return this.save( { deleted: false }, options );
+    },
+
     /** Make a copy of this history on the server
      *  @param {Boolean} current    if true, set the copy as the new current history (default: true)
      *  @param {String} name        name of new history (default: none - server sets to: Copy of <current name>)
@@ -210,9 +222,28 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         //TODO:?? all datasets?
 
         var history = this,
-            xhr = jQuery.post( this.urlRoot, postData );
-        xhr.done( function( newData ){
-            history.trigger( 'copied', history, newData );
+            copy = jQuery.post( this.urlRoot, postData );
+        // if current - queue to setAsCurrent before firing 'copied'
+        if( current ){
+            return copy.then( function( response ){
+                var newHistory = new History( response );
+                return newHistory.setAsCurrent()
+                    .done( function(){
+                        history.trigger( 'copied', history, response );
+                    });
+            });
+        }
+        return copy.done( function( response ){
+            history.trigger( 'copied', history, response );
+        });
+    },
+
+    setAsCurrent : function(){
+        var history = this,
+            xhr = jQuery.getJSON( '/history/set_as_current?id=' + this.id );
+
+        xhr.done( function(){
+            history.trigger( 'set-as-current', history );
         });
         return xhr;
     },
@@ -351,12 +382,15 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
 
     create : function create( data, hdas, historyOptions, xhrOptions ){
         var collection = this,
-            history = new History( data || {}, hdas || [], historyOptions || {} );
-        return history.save( xhrOptions ).done( function( newData ){
+            xhr = jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
+        return xhr.done( function( newData ){
+            var history = new History( newData, [], historyOptions || {} );
             // new histories go in the front
 //TODO:  (implicit ordering by update time...)
             collection.unshift( history );
+            collection.trigger( 'new-current' );
         });
+//TODO: move back to using history.save (via Deferred.then w/ set_as_current)
     },
 
     toString: function toString(){

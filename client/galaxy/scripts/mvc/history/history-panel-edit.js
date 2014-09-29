@@ -69,6 +69,17 @@ var HistoryPanelEdit = _super.extend(
         this.multiselectActions = attributes.multiselectActions || this._getActions();
     },
 
+    /** Override to handle history as drag-drop target */
+    _setUpListeners : function(){
+        _super.prototype._setUpListeners.call( this );
+
+        this.on( 'drop', function( ev, data ){
+            this.dataDropped( data );
+            // remove the drop target
+            this.dropTargetOff();
+        });
+    },
+
     // ------------------------------------------------------------------------ listeners
     /** listening for collection events */
     _setUpCollectionListeners : function(){
@@ -296,6 +307,13 @@ var HistoryPanelEdit = _super.extend(
         return options;
     },
 
+    ///** Override to alter data in drag based on multiselection */
+    //_setUpItemViewListeners : function( view ){
+    //    var panel = this;
+    //    _super.prototype._setUpItemViewListeners.call( panel, view );
+    //
+    //},
+
     /** If this item is deleted and we're not showing deleted items, remove the view
      *  @param {Model} the item model to check
      */
@@ -344,6 +362,132 @@ var HistoryPanelEdit = _super.extend(
      */
     updateHistoryDiskSize : function(){
         this.$el.find( '.history-size' ).text( this.model.get( 'nice_size' ) );
+    },
+
+    // ------------------------------------------------------------------------ as drop target
+    /**  */
+    dropTargetOn : function(){
+        if( this.dropTarget ){ return this; }
+        this.dropTarget = true;
+
+        //TODO: to init
+        var dropHandlers = {
+            'dragenter' : _.bind( this.dragenter, this ),
+            'dragover'  : _.bind( this.dragover,  this ),
+            'dragleave' : _.bind( this.dragleave, this ),
+            'drop'      : _.bind( this.drop, this )
+        };
+//TODO: scroll to top
+        var $dropTarget = this._renderDropTarget();
+        this.$list().before([ this._renderDropTargetHelp(), $dropTarget ]);
+        for( var evName in dropHandlers ){
+            if( dropHandlers.hasOwnProperty( evName ) ){
+                //console.debug( evName, dropHandlers[ evName ] );
+                $dropTarget.on( evName, dropHandlers[ evName ] );
+            }
+        }
+        return this;
+    },
+
+    /**  */
+    _renderDropTarget : function(){
+        return $( '<div/>' ).addClass( 'history-drop-target' )
+            .css({
+                'height': '64px',
+                'margin': '0px 10px 10px 10px',
+                'border': '1px dashed black',
+                'border-radius' : '3px'
+            });
+    },
+
+    /**  */
+    _renderDropTargetHelp : function(){
+        return $( '<div/>' ).addClass( 'history-drop-target-help' )
+            .css({
+                'margin'        : '10px 10px 4px 10px',
+                'color'         : 'grey',
+                'font-size'     : '80%',
+                'font-style'    : 'italic'
+            })
+            .text( _l( 'Drag datasets here to copy them to the current history' ) );
+    },
+
+    /**  */
+    dropTargetOff : function(){
+        if( !this.dropTarget ){ return this; }
+        //this.log( 'dropTargetOff' );
+        this.dropTarget = false;
+        //
+        //var dropTarget = this.$( '.history-drop-target' ).get(0);
+        //for( var evName in this._dropHandlers ){
+        //    if( this._dropHandlers.hasOwnProperty( evName ) ){
+        //        console.debug( evName, this._dropHandlers[ evName ] );
+        //        dropTarget.off( evName, this._dropHandlers[ evName ] );
+        //    }
+        //}
+        this.$( '.history-drop-target' ).remove();
+        this.$( '.history-drop-target-help' ).remove();
+        return this;
+    },
+    /**  */
+    dropTargetToggle : function(){
+        if( this.dropTarget ){
+            this.dropTargetOff();
+        } else {
+            this.dropTargetOn();
+        }
+        return this;
+    },
+
+    /**  */
+    dragenter : function( ev ){
+        //console.debug( 'dragenter:', this, ev );
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.$( '.history-drop-target' ).css( 'border', '2px solid black' );
+    },
+    /**  */
+    dragover : function( ev ){
+        ev.preventDefault();
+        ev.stopPropagation();
+    },
+    /**  */
+    dragleave : function( ev ){
+        //console.debug( 'dragleave:', this, ev );
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.$( '.history-drop-target' ).css( 'border', '1px dashed black' );
+    },
+    /**  */
+    drop : function( ev ){
+        //console.warn( 'dataTransfer:', ev.dataTransfer.getData( 'text' ) );
+        //console.warn( 'dataTransfer:', ev.originalEvent.dataTransfer.getData( 'text' ) );
+        ev.preventDefault();
+        //ev.stopPropagation();
+        ev.dataTransfer.dropEffect = 'move';
+
+        //console.debug( 'ev.dataTransfer:', ev.dataTransfer );
+
+        var panel = this,
+            data = ev.dataTransfer.getData( "text" );
+        try {
+            data = JSON.parse( data );
+
+        } catch( err ){
+            this.warn( 'error parsing JSON from drop:', data );
+        }
+        this.trigger( 'droptarget:drop', ev, data, panel );
+        return false;
+    },
+
+    /**  */
+    dataDropped : function( data ){
+        var panel = this;
+        // HDA: dropping will copy it to the history
+        if( _.isObject( data ) && data.model_class === 'HistoryDatasetAssociation' && data.id ){
+            return panel.model.contents.copy( data.id );
+        }
+        return jQuery.when();
     },
 
     // ........................................................................ misc

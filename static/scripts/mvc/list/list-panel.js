@@ -80,6 +80,9 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         /** the last selected item.model.id */
         this.lastSelected = null;
 
+        /** are sub-views draggable */
+        this.dragItems = attributes.dragItems || false;
+
         /** list item view class (when passed models) */
         this.viewClass = attributes.viewClass || this.viewClass;
 
@@ -317,6 +320,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 //TODO: free prev. views?
         panel.views = panel._filterCollection().map( function( itemModel ){
 //TODO: creates views each time - not neccessarily good
+//TODO: pass speed here
                 return panel._createItemView( itemModel ).render( 0 );
             });
         //panel.debug( item$els );
@@ -377,7 +381,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             expanded    : false,
             selectable  : this.selecting,
             selected    : _.contains( this.selected, model.id ),
-            draggable   : this.dragging
+            draggable   : this.dragItems
         };
     },
 
@@ -390,6 +394,19 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             args[0] = 'view:' + args[0];
             panel.trigger.apply( panel, args );
         });
+
+        // drag multiple - hijack ev.setData to add all selected datasets
+        view.on( 'draggable:dragstart', function( ev, v ){
+            //TODO: set multiple drag data here
+            var json = {},
+                selected = this.getSelectedModels();
+            if( selected.length ){
+                json = selected.toJSON();
+            } else {
+                json = [ v.model.toJSON() ];
+            }
+            ev.dataTransfer.setData( 'text', JSON.stringify( json ) );
+        }, this );
 
         // debugging
         //if( this.logger ){
@@ -567,6 +584,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.searchFor = searchFor;
         this.trigger( 'search:searching', searchFor, this );
         this.renderItems();
+        this.$( '> .controls .search-query' ).val( searchFor );
         return this;
     },
 
@@ -576,6 +594,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.searchFor = '';
         this.trigger( 'search:clear', this );
         this.renderItems();
+        this.$( '> .controls .search-query' ).val( '' );
         return this;
     },
 
