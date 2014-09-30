@@ -337,7 +337,7 @@
                 </div>
         %endif
             <div class="icon-btn-group">
-                <a href="#" data-link="${h.url_for( controller='root', action='index', tool_id=tool.id )}"
+                <a href="#" data-link="${h.url_for( controller='root', action='index', tool_id=tool.id, qualified=True )}"
                     class="icon-btn tool-share-link" title="Share this tool" data-toggle="tooltip" data-placement="bottom"><span class="fa fa-share"></span></a>
             </div>
         </span>
