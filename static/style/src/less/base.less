@@ -15,20 +15,26 @@
 }
 
 @import "select2.less";
-/* fix for zero width select2 - remove when fixed there */
-.select2-container {
-    min-width: 256px;
-}
 
+ /* fix for zero width select2 - remove when fixed there */
+.select2-minwidth {
+     min-width: 256px;
+}
 // galaxy sub-components
 @import "frame.less";
 @import "upload.less";
 @import "ui.less";
 @import "library.less";
 @import "toastr.less";
+@import "jstree.less";
 
 
 // Mixins
+
+/* fix for zero width select2 - remove when fixed there */
+.select2-minwidth {
+    min-width: 256px;
+}
 
 .unselectable {
     .user-select(none);
@@ -458,16 +464,14 @@ div.unified-panel-body {
 
 
 
-.quota-meter-container
-{
+.quota-meter-container {
     position: absolute;
     top: 0;
     right: 0;
     height: 32px;
 }
 
-.quota-meter
-{
+.quota-meter {
     position: absolute;
     top: 8px;
     right: 8px;
@@ -476,8 +480,7 @@ div.unified-panel-body {
     background-color: @progress-bg;
 }
 
-.quota-meter-bar
-{
+.quota-meter-bar {
     position: absolute;
     top: 0;
     left: 0;
@@ -485,18 +488,15 @@ div.unified-panel-body {
     background-color: @brand-primary;
 }
 
-.quota-meter-bar-warn
-{
+.quota-meter-bar-warn {
     background-color: @brand-warning;
 }
 
-.quota-meter-bar-error
-{
+.quota-meter-bar-error {
     background-color: @brand-danger;
 }
 
-.quota-meter-text
-{
+.quota-meter-text {
     position: absolute;
     top: 50%;
     left: 0;

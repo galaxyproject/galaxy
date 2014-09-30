@@ -91,7 +91,7 @@ browse the contents of that history, and then look at detailed information
 about a particular dataset.
 
 For a more comprehensive Data Library example, set the following option in your
-universe_wsgi.ini as well, and restart galaxy again::
+galaxy.ini as well, and restart galaxy again::
 
         admin_users = you@example.org
         library_import_dir = /path/to/some/directory

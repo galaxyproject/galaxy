@@ -112,7 +112,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         if self.config.enable_openid:
             from galaxy.web.framework import openid_manager
             self.openid_manager = openid_manager.OpenIDManager( self.config.openid_consumer_cache_path )
-            self.openid_providers = OpenIDProviders.from_file( self.config.openid_config )
+            self.openid_providers = OpenIDProviders.from_file( self.config.openid_config_file )
         else:
             self.openid_providers = OpenIDProviders()
         # Start the heartbeat process if configured and available

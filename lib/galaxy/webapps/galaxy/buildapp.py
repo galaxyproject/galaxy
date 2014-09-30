@@ -19,6 +19,7 @@ import galaxy.web.framework
 import galaxy.web.framework.webapp
 from galaxy import util
 from galaxy.util import asbool
+from galaxy.util.properties import load_app_properties
 
 import logging
 log = logging.getLogger( __name__ )
@@ -31,6 +32,9 @@ def app_factory( global_conf, **kwargs ):
     """
     Return a wsgi application serving the root object
     """
+    kwargs = load_app_properties(
+        kwds=kwargs
+    )
     # Create the Galaxy application unless passed in
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
@@ -188,7 +192,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping' : 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
@@ -257,6 +261,12 @@ def populate_api_routes( webapp, app ):
                            controller='lda_datasets',
                            action='show',
                            conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'load_ld',
+                           '/api/libraries/datasets/',
+                           controller='lda_datasets',
+                           action='load',
+                           conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.connect( 'show_version_of_ld_item',
                            '/api/libraries/datasets/:encoded_dataset_id/versions/:encoded_ldda_id',

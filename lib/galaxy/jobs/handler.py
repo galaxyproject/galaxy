@@ -101,19 +101,22 @@ class JobHandlerQueue( object ):
         In case the activation is enforced it will filter out the jobs of inactive users.
         """
         jobs_at_startup = []
+        if self.track_jobs_in_database:
+            in_list = ( model.Job.states.QUEUED,
+                        model.Job.states.RUNNING )
+        else:
+            in_list = ( model.Job.states.NEW,
+                        model.Job.states.QUEUED,
+                        model.Job.states.RUNNING )
         if self.app.config.user_activation_on:
                 jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
                                   .outerjoin( model.User ) \
-                                  .filter( ( ( model.Job.state == model.Job.states.NEW ) \
-                                             | ( model.Job.state == model.Job.states.RUNNING ) \
-                                             | ( model.Job.state == model.Job.states.QUEUED ) ) \
+                                  .filter( model.Job.state.in_( in_list ) \
                                            & ( model.Job.handler == self.app.config.server_name ) \
                                            & or_( ( model.Job.user_id == None ), ( model.User.active == True ) ) ).all()
         else:
             jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                              .filter( ( ( model.Job.state == model.Job.states.NEW ) \
-                                         | ( model.Job.state == model.Job.states.RUNNING ) \
-                                         | ( model.Job.state == model.Job.states.QUEUED ) ) \
+                              .filter( model.Job.state.in_( in_list ) \
                                        & ( model.Job.handler == self.app.config.server_name ) ).all()
 
         for job in jobs_at_startup:
@@ -352,8 +355,13 @@ class JobHandlerQueue( object ):
         """
         job_destination = None
         try:
+            assert job_wrapper.tool is not None, 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.'
             # Cause the job_destination to be set and cached by the mapper
             job_destination = job_wrapper.job_destination
+        except AssertionError as e:
+            log.warning( "(%s) Tool '%s' removed from tool config, unable to run job" % ( job.id, job.tool_id ) )
+            job_wrapper.fail( e )
+            return JOB_ERROR, job_destination
         except JobNotReadyException as e:
             job_state = e.job_state or JOB_WAIT
             return job_state, None

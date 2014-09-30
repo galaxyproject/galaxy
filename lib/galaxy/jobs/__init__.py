@@ -267,7 +267,7 @@ class JobConfiguration( object ):
         log.debug('Done loading job configuration')
 
     def __parse_job_conf_legacy(self):
-        """Loads the old-style job configuration from options in the galaxy config file (by default, universe_wsgi.ini).
+        """Loads the old-style job configuration from options in the galaxy config file (by default, config/galaxy.ini).
         """
         log.debug('Loading job configuration from %s' % self.app.config.config_file)
 
@@ -1035,7 +1035,7 @@ class JobWrapper( object ):
         else:
             final_job_state = job.states.ERROR
 
-        if self.write_version_cmd:
+        if self.tool.version_string_cmd:
             version_filename = self.get_version_string_path()
             if os.path.exists(version_filename):
                 self.version_string = open(version_filename).read()

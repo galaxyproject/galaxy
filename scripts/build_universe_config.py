@@ -20,7 +20,7 @@ def merge():
     ## TODO: Expand enviroment variables here, that would
     ## also make Galaxy much easier to configure. 
 
-    destination= "universe_wsgi.ini"
+    destination= "config/galaxy.ini"
     if len(argv) > 2:
         destination = argv[2]
 

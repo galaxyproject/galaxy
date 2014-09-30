@@ -123,7 +123,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   **kwd ) )
         title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
                                                                          trailing_string='by Category',
-                                                                         default='Categories' )
+                                                                         default='Repositories' )
         self.category_grid.title = title
         return self.category_grid( trans, **kwd )
 
@@ -2759,15 +2759,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def reset_all_metadata( self, trans, id, **kwd ):
         """Reset all metadata on the complete changelog for a single repository in the tool shed."""
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
-        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
-        invalid_file_tups, metadata_dict = \
-            rmm.reset_all_metadata_on_repository_in_tool_shed( id )
-        if invalid_file_tups:
-            repository = suc.get_repository_in_tool_shed( trans.app, id )
+        repository = suc.get_repository_in_tool_shed( trans.app, id )
+        rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                     user=trans.user,
+                                                                     repository=repository )
+        rmm.reset_all_metadata_on_repository_in_tool_shed()
+        rmm_metadata_dict = rmm.get_metadata_dict()
+        rmm_invalid_file_tups = rmm.get_invalid_file_tups()
+        if rmm_invalid_file_tups:
             message = tool_util.generate_message_for_invalid_tools( trans.app,
-                                                                    invalid_file_tups,
+                                                                    rmm_invalid_file_tups,
                                                                     repository,
-                                                                    metadata_dict )
+                                                                    rmm_metadata_dict )
             status = 'error'
         else:
             message = "All repository metadata has been reset.  "
@@ -2849,10 +2852,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 if tip == repository.tip( trans.app ):
                     message += 'No changes to repository.  '
                 else:
-                    rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
-                    status, error_message = rmm.set_repository_metadata_due_to_new_tip( trans.request.host,
-                                                                                        repository,
-                                                                                        **kwd )
+                    rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                                 user=trans.user,
+                                                                                 repository=repository )
+                    status, error_message = rmm.set_repository_metadata_due_to_new_tip( trans.request.host, **kwd )
                     if error_message:
                         message = error_message
                     else:

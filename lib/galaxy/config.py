@@ -38,6 +38,10 @@ class Configuration( object ):
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
         self.root = kwargs.get( 'root_dir', '.' )
+
+        # Resolve paths of other config files
+        self.__parse_config_file_options( kwargs )
+
         # Collect the umask and primary gid from the environment
         self.umask = os.umask( 077 )  # get the current umask
         os.umask( self.umask )  # can't get w/o set, so set it back
@@ -66,9 +70,7 @@ class Configuration( object ):
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # Galaxy OpenID settings
         self.enable_openid = string_as_bool( kwargs.get( 'enable_openid', False ) )
-        self.openid_config = kwargs.get( 'openid_config_file', 'openid_conf.xml' )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )
-        self.tool_sheds_config = kwargs.get( 'tool_sheds_config_file', 'tool_sheds_conf.xml' )
         self.enable_unique_workflow_defaults = string_as_bool( kwargs.get( 'enable_unique_workflow_defaults', False ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "tool-data" ), os.getcwd() )
@@ -77,13 +79,6 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
-        self.migrated_tools_config = resolve_path( kwargs.get( 'migrated_tools_config', 'migrated_tools_conf.xml' ), self.root )
-        if 'tool_config_file' in kwargs:
-            tcf = kwargs[ 'tool_config_file' ]
-        elif 'tool_config_files' in kwargs:
-            tcf = kwargs[ 'tool_config_files' ]
-        else:
-            tcf = 'tool_conf.xml,shed_tool_conf.xml'
         self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
@@ -93,7 +88,6 @@ class Configuration( object ):
         self.user_label_filters = listify( kwargs.get( "user_tool_label_filters", [] ), do_strip=True )
         self.user_section_filters = listify( kwargs.get( "user_tool_section_filters", [] ), do_strip=True )
 
-        self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
         self.check_migrate_tools = string_as_bool( kwargs.get( 'check_migrate_tools', True ) )
@@ -102,8 +96,6 @@ class Configuration( object ):
             self.shed_tool_data_path = resolve_path( self.shed_tool_data_path, self.root )
         else:
             self.shed_tool_data_path = self.tool_data_path
-        self.tool_data_table_config_path = [ resolve_path( x, self.root ) for x in kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ).split( ',' ) ]
-        self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', False ) )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
@@ -127,8 +119,6 @@ class Configuration( object ):
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
         self.enable_data_manager_user_view = string_as_bool( kwargs.get( "enable_data_manager_user_view", "False" ) )
-        self.data_manager_config_file = resolve_path( kwargs.get('data_manager_config_file', 'data_manager_conf.xml' ), self.root )
-        self.shed_data_manager_config_file = resolve_path( kwargs.get('shed_data_manager_config_file', 'shed_data_manager_conf.xml' ), self.root )
         self.galaxy_data_manager_data_path = kwargs.get( 'galaxy_data_manager_data_path',  self.tool_data_path )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
@@ -147,10 +137,6 @@ class Configuration( object ):
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
-        self.dependency_resolvers_config_file = resolve_path( kwargs.get( 'dependency_resolvers_config_file', 'dependency_resolvers_conf.xml' ), self.root )
-        self.job_metrics_config_file = resolve_path( kwargs.get( 'job_metrics_config_file', 'job_metrics_conf.xml' ), self.root )
-        self.job_config_file = resolve_path( kwargs.get( 'job_config_file', 'job_conf.xml' ), self.root )
-        self.job_resource_params_file = resolve_path( kwargs.get( 'job_resource_params_file', 'job_resource_params_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
@@ -195,7 +181,6 @@ class Configuration( object ):
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
         # External Service types used in sample tracking
-        self.external_service_type_config_file = resolve_path( kwargs.get( 'external_service_type_config_file', 'external_service_types_conf.xml' ), self.root )
         self.external_service_type_path = resolve_path( kwargs.get( 'external_service_type_path', 'external_service_types' ), self.root )
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
@@ -244,6 +229,7 @@ class Configuration( object ):
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
+        self.watch_tools = kwargs.get( 'watch_tools', False )
         # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
@@ -282,9 +268,6 @@ class Configuration( object ):
         self.os_is_secure = string_as_bool( kwargs.get( 'os_is_secure', True ) )
         self.os_conn_path = kwargs.get( 'os_conn_path', '/' )
         self.object_store_cache_size = float(kwargs.get( 'object_store_cache_size', -1 ))
-        self.object_store_config_file = kwargs.get( 'object_store_config_file', None )
-        if self.object_store_config_file is not None:
-            self.object_store_config_file = resolve_path( self.object_store_config_file, self.root )
         self.distributed_object_store_config_file = kwargs.get( 'distributed_object_store_config_file', None )
         if self.distributed_object_store_config_file is not None:
             self.distributed_object_store_config_file = resolve_path( self.distributed_object_store_config_file, self.root )
@@ -326,7 +309,6 @@ class Configuration( object ):
         # Store per-tool runner configs
         self.tool_handlers = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_handlers', 'name' )
         self.tool_runners = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_runners', 'url' )
-        self.datatypes_config = kwargs.get( 'datatypes_config_file', 'datatypes_conf.xml' )
         # Cloud configuration options
         self.enable_cloud_launch = string_as_bool( kwargs.get( 'enable_cloud_launch', False ) )
         self.cloudlaunch_default_ami = kwargs.get( 'cloudlaunch_default_ami', 'ami-a7dbf6ce' )
@@ -391,6 +373,73 @@ class Configuration( object ):
             return re.sub( r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn )
         else:
             return None
+
+    def __parse_config_file_options( self, kwargs ):
+        """
+        Backwards compatibility for config files moved to the config/ dir.
+        """
+        defaults = dict(
+            data_manager_config_file = [ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
+            datatypes_config_file = [ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
+            external_service_type_config_file = [ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
+            job_config_file = [ 'config/job_conf.xml', 'job_conf.xml' ],
+            job_metrics_config_file = [ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml' ],
+            dependency_resolvers_config_file = [ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
+            job_resource_params_file = [ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
+            migrated_tools_config = [ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
+            object_store_config_file = [ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
+            openid_config_file = [ 'config/openid_conf.xml', 'openid_conf.xml' 'config/openid_conf.xml.sample' ],
+            shed_data_manager_config_file = [ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
+            shed_tool_data_table_config = [ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
+            tool_sheds_config_file = [ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
+        )
+
+        listify_defaults = dict(
+            tool_data_table_config_path = [ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
+            # rationale:
+            # [0]: user has explicitly created config/tool_conf.xml but did not
+            #      move their existing shed_tool_conf.xml, don't use
+            #      config/shed_tool_conf.xml, which is probably the empty
+            #      version copied from the sample, or else their shed tools
+            #      will disappear
+            # [1]: user has created config/tool_conf.xml and, having passed
+            #      [0], probably moved their shed_tool_conf.xml as well
+            # [2]: user has done nothing, use the old files
+            # [3]: fresh install
+            tool_config_file = [ 'config/tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml,config/shed_tool_conf.xml', 'tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
+        )
+
+        for var, defaults in defaults.items():
+            if kwargs.get( var, None ) is not None:
+                path = kwargs.get( var )
+            else:
+                for default in defaults:
+                    if os.path.exists( resolve_path( default, self.root ) ):
+                        path = default
+                        break
+                else:
+                    path = defaults[-1]
+            setattr( self, var, resolve_path( path, self.root ) )
+
+        for var, defaults in listify_defaults.items():
+            paths = []
+            if kwargs.get( var, None ) is not None:
+                paths = listify( kwargs.get( var ) )
+            else:
+                for default in defaults:
+                    for path in listify( default ):
+                        if not os.path.exists( resolve_path( path, self.root ) ):
+                            break
+                    else:
+                        paths = listify( default )
+                        break
+                else:
+                    paths = listify( defaults[-1] )
+            setattr( self, var, [ resolve_path( x, self.root ) for x in paths ] )
+
+        # Backwards compatibility for names used in too many places to fix
+        self.datatypes_config = self.datatypes_config_file
+        self.tool_configs = self.tool_config_file
 
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:
@@ -470,9 +519,9 @@ class Configuration( object ):
             tool_configs.append( self.migrated_tools_config )
         for path in tool_configs:
             if not os.path.exists( path ):
-                raise ConfigurationError("File not found: %s" % path )
+                raise ConfigurationError("Tool config file not found: %s" % path )
         if not os.path.isfile( self.datatypes_config ):
-            raise ConfigurationError("File not found: %s" % self.datatypes_config )
+            raise ConfigurationError("Datatypes config file not found: %s" % self.datatypes_config )
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
@@ -633,8 +682,8 @@ class ConfiguresGalaxyMixin:
         import tool_shed.tool_shed_registry
 
         # Set up the tool sheds registry
-        if os.path.isfile( self.config.tool_sheds_config ):
-            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+        if os.path.isfile( self.config.tool_sheds_config_file ):
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config_file )
         else:
             self.tool_shed_registry = None
 

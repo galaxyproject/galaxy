@@ -10,7 +10,8 @@ from galaxy.web.framework import url_for
 from galaxy import util
 from galaxy.exceptions import error_codes
 from galaxy.exceptions import MessageException
-from galaxy.util.json import loads, dumps
+from galaxy.util.json import loads
+from galaxy.util.json import safe_dumps as dumps
 
 import logging
 log = logging.getLogger( __name__ )

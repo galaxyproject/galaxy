@@ -10,6 +10,6 @@ tool, and workflow subsystems. Pass the arugment
 to ensure these tools get loaded during the testing process.
 
 Finally, to play around witht these tools interactively - simply
-replace the 'universe_wsgi.ini' option 'tool_config_file' with:
+replace the 'galaxy.ini' option 'tool_config_file' with:
 
 tool_config_file = test/functional/tools/samples_tool_conf.xml

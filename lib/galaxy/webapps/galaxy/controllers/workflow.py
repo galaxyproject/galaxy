@@ -1179,28 +1179,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     use_panels=True,
                                     myexperiment_target_url=myexperiment_target_url )
 
-    @web.json
-    def get_datatypes( self, trans ):
-        ext_to_class_name = dict()
-        classes = []
-        for k, v in trans.app.datatypes_registry.datatypes_by_extension.iteritems():
-            c = v.__class__
-            ext_to_class_name[k] = c.__module__ + "." + c.__name__
-            classes.append( c )
-        class_to_classes = dict()
-
-        def visit_bases( types, cls ):
-            for base in cls.__bases__:
-                if issubclass( base, Data ):
-                    types.add( base.__module__ + "." + base.__name__ )
-                visit_bases( types, base )
-        for c in classes:
-            n = c.__module__ + "." + c.__name__
-            types = set( [ n ] )
-            visit_bases( types, c )
-            class_to_classes[ n ] = dict( ( t, True ) for t in types )
-        return dict( ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes )
-
     @web.expose
     def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
         user = trans.get_user()

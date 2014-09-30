@@ -373,11 +373,17 @@
 .history-panel {
 
     .controls {
-        margin: 10px;
+        margin: 10px 10px 0px 10px;
         padding: 0px;
 
-        .messages > * {
-            cursor: pointer;
+        .messages {
+            margin-bottom: 0px;
+            & > * {
+                cursor: pointer;
+                &:last-child {
+                    margin-bottom: 8px;
+                }
+            }
         }
 
         .title {
@@ -391,7 +397,7 @@
         }
         .subtitle:not(:empty){
             margin-top: -4px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .editable-text {
             border: solid transparent 1px;
@@ -403,6 +409,7 @@
 
         .history-size {
             display: inline-block;
+            margin-top: 4px;
             color: black;
         }
         .actions {
@@ -442,6 +449,7 @@
         }
         .annotation-display {
             .annotation {
+                //display: inline-block;
                 border-radius: 3px;
                 border: 1px solid fadeout( @layout-border-color, 50% );
                 padding: 4px;
@@ -461,7 +469,7 @@
             }
             textarea {
                 margin: 0px 0px 2px 0px;
-                display: block;
+                //display: block;
                 border-radius: 3px;
                 width: 100%;
             }
@@ -487,6 +495,25 @@
         margin: 0px 10px 0px 10px;
     }
 }
+
+
+// ---------------------------------------------------------------------------- collections nested in histories
+.history-panel {
+    .dataset-collection {
+        .subtitle {
+            margin-top: 2px;
+        }
+    }
+    .dataset-collection-panel {
+        .controls {
+            padding: 0px;
+        }
+        .list-items {
+            margin-top: 0px;
+        }
+    }
+}
+
 
 // ---------------------------------------------------------------------------- annotated-history-panel
 .annotated-history-panel {
@@ -566,21 +593,20 @@
 }
 
 
-// ---------------------------------------------------------------------------- collections nested in histories
-.history-panel {
-    .dataset-collection {
-        .subtitle {
-            margin-top: 2px;
-            font-size: 90%;
-            color: #777;
+// ---------------------------------------------------------------------------- current-history-panel
+.current-history-panel {
+    .list-item.history-content.current-content {
+
+        border: 2px solid #333;
+        border-bottom-width: 2px;
+        .primary-actions {
+            margin: 5px 8px 0px 0px;
         }
-    }
-    .dataset-collection-panel {
-        .controls {
-            padding: 0px;
+        .title-bar {
+            padding: 5px 8px 5px 6px;
         }
-        .list-items {
-            margin-top: 0px;
+        .details {
+            padding: 0px 8px 5px 6px;
         }
     }
 }

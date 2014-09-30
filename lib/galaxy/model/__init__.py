@@ -877,7 +877,8 @@ class UserGroupAssociation( object ):
 class History( object, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
-    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged', 'importable', 'slug', 'empty' )
+    dict_element_visible_keys = ( 'id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
+                                  'published', 'importable', 'slug', 'empty' )
     default_name = 'Unnamed history'
 
     def __init__( self, id=None, name=None, user=None ):
@@ -1026,6 +1027,9 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
         rval[ 'tags' ] = tags_str_list
+
+        if view == 'element':
+            rval[ 'size' ] = int( self.get_disk_size() )
 
         return rval
 

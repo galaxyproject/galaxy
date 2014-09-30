@@ -82,9 +82,12 @@ class InstalledRepositoryManager( object ):
         repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
             tpm = tool_panel_manager.ToolPanelManager( self.app )
-            irmm = InstalledRepositoryMetadataManager( self.app, tpm )
-            metadata = repository.metadata
-            repository_tools_tups = irmm.get_repository_tools_tups( metadata )
+            irmm = InstalledRepositoryMetadataManager( app=self.app,
+                                                       tpm=tpm,
+                                                       repository=repository,
+                                                       changeset_revision=repository.changeset_revision,
+                                                       metadata_dict=repository.metadata )
+            repository_tools_tups = irmm.get_repository_tools_tups()
             # Reload tools into the appropriate tool panel section.
             tool_panel_dict = repository.metadata[ 'tool_panel_section' ]
             tpm.add_to_tool_panel( repository.name,
@@ -101,7 +104,7 @@ class InstalledRepositoryManager( object ):
                 data_manager_relative_install_dir = os.path.join( data_manager_relative_install_dir, repository.name )
                 dmh = data_manager.DataManagerHandler( self.app )
                 new_data_managers = dmh.install_data_managers( self.app.config.shed_data_manager_config_file,
-                                                               metadata,
+                                                               repository.metadata,
                                                                repository.get_shed_config_dict( self.app ),
                                                                data_manager_relative_install_dir,
                                                                repository,

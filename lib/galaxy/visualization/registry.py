@@ -159,7 +159,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         # config file is required, otherwise skip this visualization
         plugin[ 'config_file' ] = os.path.join( plugin_path, 'config', ( plugin.name + '.xml' ) )
         config = self.config_parser.parse_file( plugin.config_file )
-            
+
         if not config:
             return None
         plugin[ 'config' ] = config
@@ -390,14 +390,9 @@ class VisualizationsConfigParser( object ):
         Parse the given XML file for visualizations data.
         :returns: visualization config dictionary
         """
-        try:
-            xml_tree = galaxy.util.parse_xml( xml_filepath )
-            visualization = self.parse_visualization( xml_tree.getroot() )
-            return visualization
-        # skip vis' with parsing errors - don't shutdown the startup
-        except ParsingException, parse_exc:
-            log.exception( 'Skipped visualization config "%s" due to parsing errors', xml_filepath )
-            return None
+        xml_tree = galaxy.util.parse_xml( xml_filepath )
+        visualization = self.parse_visualization( xml_tree.getroot() )
+        return visualization
 
     def parse_visualization( self, xml_tree ):
         """
@@ -406,15 +401,15 @@ class VisualizationsConfigParser( object ):
         """
         returned = {}
 
-        # allow manually turning off a vis by checking for a disabled property
-        if 'disabled' in xml_tree.attrib:
-#TODO: differentiate between disabled and failed to parse, log.warn only on failure, log.info otherwise
-            return None
-
         # a text display name for end user links
         returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
         if not returned[ 'name' ]:
             raise ParsingException( 'visualization needs a name attribute' )
+
+        # allow manually turning off a vis by checking for a disabled property
+        if 'disabled' in xml_tree.attrib:
+            log.info( '%s, plugin disabled: %s. Skipping...', self, returned[ 'name' ] )
+            return None
 
         # record the embeddable flag - defaults to false
         #   this is a design by contract promise that the visualization can be rendered inside another page

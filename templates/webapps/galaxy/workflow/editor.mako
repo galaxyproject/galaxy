@@ -41,7 +41,7 @@
 
         // URLs used by galaxy.workflows.js
         var tool_search_url = "${h.url_for( controller='root', action='tool_search' )}",
-            get_datatypes_url = "${h.url_for( controller='workflow', action='get_datatypes' )}",
+            get_datatypes_url = "${h.url_for( '/api/datatypes/mapping' )}",
             load_workflow_url = "${h.url_for( controller='workflow', action='load_workflow' )}",
             run_workflow_url = "${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id))}",
             rename_async_url = "${h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) )}",

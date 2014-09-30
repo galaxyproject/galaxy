@@ -429,13 +429,13 @@ class RepositoriesController( BaseAPIController ):
 
         def handle_repository( trans, rmm, repository, results ):
             log.debug( "Resetting metadata on repository %s" % str( repository.name ) )
-            repository_id = trans.security.encode_id( repository.id )
             try:
-                invalid_file_tups, metadata_dict = \
-                    rmm.reset_all_metadata_on_repository_in_tool_shed( repository_id )
-                if invalid_file_tups:
+                rmm.set_repository( repository )
+                rmm.reset_all_metadata_on_repository_in_tool_shed()
+                rmm_invalid_file_tups = rmm.get_invalid_file_tups()
+                if rmm_invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
-                                                                            invalid_file_tups,
+                                                                            rmm_invalid_file_tups,
                                                                             repository,
                                                                             None,
                                                                             as_html=False )
@@ -451,7 +451,11 @@ class RepositoriesController( BaseAPIController ):
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
             return results
-        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
+        rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                     user=trans.user,
+                                                                     resetting_all_metadata_on_repository=True,
+                                                                     updating_installed_repository=False,
+                                                                     persist=False )
         start_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results = dict( start_time=start_time,
                         repository_status=[],
@@ -511,12 +515,17 @@ class RepositoriesController( BaseAPIController ):
             results = dict( start_time=start_time,
                             repository_status=[] )
             try:
-                rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
-                invalid_file_tups, metadata_dict = \
-                    rmm.reset_all_metadata_on_repository_in_tool_shed( trans.security.encode_id( repository.id ) )
-                if invalid_file_tups:
+                rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                             user=trans.user,
+                                                                             repository=repository,
+                                                                             resetting_all_metadata_on_repository=True,
+                                                                             updating_installed_repository=False,
+                                                                             persist=False )
+                rmm.reset_all_metadata_on_repository_in_tool_shed()
+                rmm_invalid_file_tups = rmm.get_invalid_file_tups()
+                if rmm_invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
-                                                                            invalid_file_tups,
+                                                                            rmm_invalid_file_tups,
                                                                             repository,
                                                                             None,
                                                                             as_html=False )

@@ -42,22 +42,6 @@ LINKS="
 /galaxy/software/tool-data/gatk
 "
 
-SAMPLES="
-tool_conf.xml.sample
-datatypes_conf.xml.sample
-universe_wsgi.ini.sample
-tool_data_table_conf.xml.sample
-tool_sheds_conf.xml.sample
-shed_tool_data_table_conf.xml.sample
-migrated_tools_conf.xml.sample
-data_manager_conf.xml.sample
-shed_data_manager_conf.xml.sample
-tool-data/shared/igv/igv_build_sites.txt.sample
-tool-data/shared/rviewer/rviewer_build_sites.txt.sample
-tool-data/shared/ucsc/builds.txt.sample
-tool-data/shared/ucsc/ucsc_build_sites.txt.sample
-"
-
 DIRS="
 database
 database/files
@@ -105,14 +89,11 @@ case $type in
 		;;
 esac
 
-for sample in $SAMPLES; do
-    file=${sample%.sample}
-    echo "Copying $sample to $file"
-    cp $sample $file
-done
+# set up configs from samples.
+./scripts/common_startup.sh
 
 echo "Copying job_conf.xml.sample_basic to job_conf.xml"
-cp job_conf.xml.sample_basic job_conf.xml
+cp config/job_conf.xml.sample_basic config/job_conf.xml
 
 for dir in $DIRS; do
     if [ ! -d $dir ]; then
@@ -145,5 +126,3 @@ python test-data-repo/location/make_location.py
 
 echo "Appending tool-data/shared/ucsc/builds.txt.buildbot to tool-data/shared/ucsc/builds.txt"
 cat tool-data/shared/ucsc/builds.txt.buildbot >> tool-data/shared/ucsc/builds.txt
-
-python ./scripts/fetch_eggs.py all

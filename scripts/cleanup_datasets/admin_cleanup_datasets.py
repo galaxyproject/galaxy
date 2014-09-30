@@ -9,11 +9,11 @@ leave many old datasets around.  It was modeled after the cleanup_datasets.py
 script originally distributed with Galaxy.
 
 Basic Usage:
-    admin_cleanup_datasets.py universe_wsgi.ini -d 60 \
+    admin_cleanup_datasets.py galaxy.ini -d 60 \
         --template=email_template.txt
 
 Required Arguments:
-    config_file - the Galaxy configuration file (universe_wsgi.ini)
+    config_file - the Galaxy configuration file (galaxy.ini)
 
 Optional Arguments:
     -d --days - number of days old the dataset must be (default: 60)

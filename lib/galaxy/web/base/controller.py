@@ -41,7 +41,7 @@ from galaxy.managers import api_keys
 from galaxy.managers import tags
 from galaxy.managers import base as managers_base
 from galaxy.datatypes.metadata import FileParameter
-from galaxy.tools.parameters import RuntimeValue, visit_input_values
+from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.util.json import dumps
@@ -1738,25 +1738,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
                                                                       action_arguments = pja.action_arguments )
                 step_dict[ 'post_job_actions' ] = pja_dict
             # Data inputs
-            step_dict['inputs'] = []
-            if module.type == "data_input":
-                # Get input dataset name; default to 'Input Dataset'
-                name = module.state.get( 'name', 'Input Dataset')
-                step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
-            elif module.type == "data_collection_input":
-                name = module.state.get( 'name', 'Input Dataset Collection' )
-                step_dict['inputs'].append( { "name" : name, "description" : annotation_str } )
-            else:
-                # Step is a tool and may have runtime inputs.
-                for name, val in module.state.inputs.items():
-                    input_type = type( val )
-                    if input_type == RuntimeValue:
-                        step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
-                    elif input_type == dict:
-                        # Input type is described by a dict, e.g. indexed parameters.
-                        for partval in val.values():
-                            if type( partval ) == RuntimeValue:
-                                step_dict['inputs'].append( { "name" : name, "description" : "runtime parameter for tool %s" % module.get_name() } )
+            step_dict['inputs'] = module.get_runtime_input_dicts( annotation_str )
             # User outputs
             step_dict['user_outputs'] = []
             """

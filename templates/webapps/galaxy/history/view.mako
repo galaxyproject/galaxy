@@ -134,8 +134,8 @@ ${parent.javascripts()}
         });
 
         $( '#switch' ).click( function( ev ){
-            ##HACK:ity hack hack
-            ##TODO: remove when out of iframe
+            //##HACK:ity hack hack
+            //##TODO: remove when out of iframe
             var hpanel = Galaxy.currHistoryPanel
                       || ( top.Galaxy && top.Galaxy.currHistoryPanel )? top.Galaxy.currHistoryPanel : null;
             if( hpanel ){
@@ -163,9 +163,12 @@ ${parent.javascripts()}
         });
     }
 
-    var userIsOwner  = ${'true' if user_is_owner else 'false'},
+    // use_panels effects where the the center_panel() is rendered:
+    //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
+    var hasMasthead  = ${ 'true' if use_panels else 'false' },
+        userIsOwner  = ${'true' if user_is_owner else 'false'},
         historyJSON  = ${h.dumps( history )},
-        hdaJSON      = ${h.dumps( hdas )};
+        hdaJSON      = ${h.dumps( hdas )},
         panelToUse   = ( userIsOwner )?
 //TODO: change class names
             ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanelEdit' }):
@@ -176,6 +179,9 @@ ${parent.javascripts()}
     })([ 'mvc/user/user-model', panelToUse.location, 'utils/localization' ], function( user, panelMod, _l ){
         $(function(){
             setUpBehaviors();
+            if( hasMasthead ){
+                $( '#center' ).css( 'overflow', 'auto' );
+            }
      
             var panelClass = panelMod[ panelToUse.className ],
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
@@ -187,6 +193,7 @@ ${parent.javascripts()}
                 show_hidden     : ${show_hidden_json},
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 el              : $( "#history-" + historyJSON.id ),
+                $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
                 model           : history
             }).render();
 

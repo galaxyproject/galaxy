@@ -142,9 +142,14 @@ class DatasetPopulator( object ):
         elif "dataset" in kwds:
             dataset_id = kwds[ "dataset" ][ "id" ]
         else:
-            hid = kwds.get( "hid", -1 )  # If not hid, just grab last dataset
+            hid = kwds.get( "hid", None )  # If not hid, just grab last dataset
+            if hid:
+                index = hid - 1
+            else:
+                # No hid specified - just grab most recent element.
+                index = -1
             dataset_contents = self.__get_contents_request( history_id ).json()
-            dataset_id = dataset_contents[ hid - 1 ][ "id" ]
+            dataset_id = dataset_contents[ index ][ "id" ]
         return dataset_id
 
     def __get_contents_request( self, history_id, suffix=""):

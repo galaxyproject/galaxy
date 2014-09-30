@@ -25,7 +25,7 @@ def check_db( config_parser ):
         db_file = config_parser.get( 'app:main', 'database_file' )
         dburi = "sqlite:///%s?isolation_level=IMMEDIATE" % db_file
     else:
-        print 'The database configuration setting is missing from the tool_shed_wsgi.ini file.  Add this setting before attempting to bootstrap.'
+        print 'The database configuration setting is missing from the tool_shed.ini file.  Add this setting before attempting to bootstrap.'
         exit(1)
     
     sa_session = None
@@ -122,7 +122,7 @@ def main( args ):
         return 1
     
 parser = argparse.ArgumentParser()
-parser.add_argument( '-c', '--config_file', dest='config', action='store', default='tool_shed_wsgi.ini' )
+parser.add_argument( '-c', '--config_file', dest='config', action='store', default='config/tool_shed.ini.sample' )
 parser.add_argument( '-e', '--execute', dest='method', action='store', default='check_db' )
 args = parser.parse_args()
 

@@ -1027,7 +1027,7 @@ class Admin( object ):
     @web.require_admin
     def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):
         if self.app.memdump is None:
-            return trans.show_error_message( "Memdump is not enabled (set <code>use_memdump = True</code> in universe_wsgi.ini)" )
+            return trans.show_error_message( "Memdump is not enabled (set <code>use_memdump = True</code> in galaxy.ini)" )
         heap = self.app.memdump.get()
         p = util.Params( kwd )
         msg = None

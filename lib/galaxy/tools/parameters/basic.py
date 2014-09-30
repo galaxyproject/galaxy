@@ -1170,34 +1170,47 @@ class ColumnListParameter( SelectToolParameter ):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        column_list = []
         # No value indicates a configuration error, the named DataToolParameter
         # must preceed this parameter in the config
         assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
         # Get the value of the associated DataToolParameter (a dataset)
         dataset = other_values[ self.data_ref ]
         # Check if a dataset is selected
-        if dataset is None or dataset == '':
+        if dataset is None or dataset == '' or dataset == []:
             # NOTE: Both of these values indicate that no dataset is selected.
             #       However, 'None' indicates that the dataset is optional
             #       while '' indicates that it is not. Currently column
             #       parameters do not work well with optional datasets
-            return column_list
-        # Generate options
-        if not dataset.metadata.columns:
-            if self.accept_default:
-                column_list.append( self.default_value or '1' )
-            return column_list
-        if not self.force_select:
+            return []
+        column_list = None
+        for dataset in util.listify( dataset ):
+            # Handle columns not available.
+            if not dataset.metadata.columns:
+                default_column_list = []
+                if self.accept_default:
+                    default_column_list.append( self.default_value or '1' )
+                return default_column_list
+
+            # Build up possible columns for this dataset
+            this_column_list = []
+            if self.numerical:
+                # If numerical was requested, filter columns based on metadata
+                for i, col in enumerate( dataset.metadata.column_types ):
+                    if col == 'int' or col == 'float':
+                        this_column_list.append( str( i + 1 ) )
+            else:
+                for i in range(0, dataset.metadata.columns):
+                    this_column_list.append( str( i + 1 ) )
+
+            # Take the intersection of these columns with the other columns.
+            if column_list is None:
+                column_list = this_column_list
+            else:
+                column_list = filter(lambda c: c in this_column_list, column_list)
+
+        if not self.force_select and 'None' not in column_list:
             column_list.append( 'None' )
-        if self.numerical:
-            # If numerical was requested, filter columns based on metadata
-            for i, col in enumerate( dataset.metadata.column_types ):
-                if col == 'int' or col == 'float':
-                    column_list.append( str( i + 1 ) )
-        else:
-            for i in range(0, dataset.metadata.columns):
-                column_list.append( str( i + 1 ) )
+
         return column_list
 
     def get_options( self, trans, other_values ):
@@ -1249,14 +1262,15 @@ class ColumnListParameter( SelectToolParameter ):
         if self.data_ref not in context:
             return False
         # Get the selected dataset if selected
-        dataset = context[ self.data_ref ]
-        if dataset:
-            # Check if the dataset does not have the expected metadata for columns
-            if not dataset.metadata.columns:
-                # Only allow late validation if the dataset is not yet ready
-                # (since we have reason to expect the metadata to be ready eventually)
-                if dataset.is_pending or not dataset.datatype.matches_any( self.ref_input.formats ):
-                    return True
+        datasets = util.listify( context[ self.data_ref ] )
+        for dataset in datasets:
+            if dataset:
+                # Check if the dataset does not have the expected metadata for columns
+                if not dataset.metadata.columns:
+                    # Only allow late validation if the dataset is not yet ready
+                    # (since we have reason to expect the metadata to be ready eventually)
+                    if dataset.is_pending or not dataset.datatype.matches_any( self.ref_input.formats ):
+                        return True
         # No late validation
         return False
 
@@ -1887,6 +1901,11 @@ class DataToolParameter( BaseDataToolParameter ):
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(value['id']) )
+            elif value['src'] == 'hdca':
+                decoded_id = trans.app.security.decode_id( value[ 'id' ] )
+                rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+            else:
+                raise ValueError("Unknown input source %s passed to job submission API." % value['src'])
         elif str( value ).startswith( "__collection_reduce__|" ):
             encoded_id = str( value )[ len( "__collection_reduce__|" ): ]
             decoded_id = trans.app.security.decode_id( encoded_id )
@@ -1903,6 +1922,10 @@ class DataToolParameter( BaseDataToolParameter ):
                     raise ValueError( "The previously selected dataset has been previously deleted" )
                 if hasattr( v, "dataset" ) and v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
+        if not self.multiple:
+            if len( values ) > 1:
+                raise ValueError( "More than one dataset supplied to single input dataset parameter.")
+            rval = values[ 0 ]
         return rval
 
     def to_string( self, value, app ):

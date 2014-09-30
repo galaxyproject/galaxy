@@ -33,7 +33,7 @@ if [ -z $GALAXY_INSTALL_TEST_TOOL_SHED_URL ] ; then
 fi
 
 if [ -z "$GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF" ] ; then
-	if grep --quiet $GALAXY_INSTALL_TEST_TOOL_SHED_URL tool_sheds_conf.xml; then
+	if grep --quiet $GALAXY_INSTALL_TEST_TOOL_SHED_URL config/tool_sheds_conf.xml.sample; then
 		echo "Tool sheds configuration tool_sheds_conf.xml ok, proceeding."
 	else
 		echo "ERROR: Tool sheds configuration tool_sheds_conf.xml does not have an entry for $GALAXY_INSTALL_TEST_TOOL_SHED_URL."

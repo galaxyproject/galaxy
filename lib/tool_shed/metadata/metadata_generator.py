@@ -27,31 +27,89 @@ log = logging.getLogger( __name__ )
 
 class MetadataGenerator( object ):
 
-    def __init__( self, app ):
+    def __init__( self, app, repository=None, changeset_revision=None, repository_clone_url=None,
+                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
+                  resetting_all_metadata_on_repository=False, updating_installed_repository=False,
+                  persist=False, metadata_dict=None, user=None ):
         self.app = app
+        self.user = user
+        self.repository = repository
+        if self.app.name == 'galaxy':
+            if changeset_revision is None and self.repository is not None:
+                self.changeset_revision = self.repository.changeset_revision
+            else:
+                self.changeset_revision = changeset_revision
+                
+            if repository_clone_url is None and self.repository is not None:
+                self.repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, self.repository )
+            else:
+                self.repository_clone_url = repository_clone_url
+            if shed_config_dict is None:
+                if self.repository is not None:
+                    self.shed_config_dict = self.repository.get_shed_config_dict( self.app )
+                else:
+                    self.shed_config_dict = {}
+            else:
+                self.shed_config_dict = shed_config_dict
+            if relative_install_dir is None and self.repository is not None:
+                tool_path, relative_install_dir = self.repository.get_tool_relative_path( self.app )
+            if repository_files_dir is None and self.repository is not None:
+                repository_files_dir = self.repository.repo_files_directory( self.app )
+            if metadata_dict is None:
+                # Shed related tool panel configs are only relevant to Galaxy.
+                self.metadata_dict = { 'shed_config_filename' : self.shed_config_dict.get( 'config_filename', None ) }
+            else:
+                self.metadata_dict = metadata_dict
+        else:
+            # We're in the Tool Shed.
+            if changeset_revision is None and self.repository is not None:
+                self.changeset_revision = self.repository.tip( self.app )
+            else:
+                self.changeset_revision = changeset_revision
+            if repository_clone_url is None and self.repository is not None:
+                self.repository_clone_url = \
+                    common_util.generate_clone_url_for_repository_in_tool_shed( self.user, self.repository )
+            else:
+                self.repository_clone_url = repository_clone_url
+            if shed_config_dict is None:
+                self.shed_config_dict = {}
+            else:
+                self.shed_config_dict = shed_config_dict
+            if relative_install_dir is None and self.repository is not None:
+                relative_install_dir = self.repository.repo_path( self.app )
+            if repository_files_dir is None and self.repository is not None:
+                repository_files_dir = self.repository.repo_path( self.app )
+            if metadata_dict is None:
+                self.metadata_dict = {}
+            else:
+                self.metadata_dict = metadata_dict
+        self.relative_install_dir = relative_install_dir
+        self.repository_files_dir = repository_files_dir
+        self.resetting_all_metadata_on_repository = resetting_all_metadata_on_repository
+        self.updating_installed_repository = updating_installed_repository
+        self.persist = persist
+        self.invalid_file_tups = []
         self.sa_session = app.model.context.current
         self.NOT_TOOL_CONFIGS = [ suc.DATATYPES_CONFIG_FILENAME,
-                                 rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
-                                 rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
-                                 suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
+                                  rt_util.REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
+                                  rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME,
+                                  suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
 
-    def generate_data_manager_metadata( self, repository, repo_dir, data_manager_config_filename, metadata_dict,
+    def generate_data_manager_metadata( self, repo_dir, data_manager_config_filename, metadata_dict,
                                         shed_config_dict=None ):
         """
         Update the received metadata_dict with information from the parsed data_manager_config_filename.
         """
         if data_manager_config_filename is None:
             return metadata_dict
-        repo_path = repository.repo_path( self.app )
+        repo_path = self.repository.repo_path( self.app )
         try:
             # Galaxy Side.
-            repo_files_directory = repository.repo_files_directory( self.app )
+            repo_files_directory = self.repository.repo_files_directory( self.app )
             repo_dir = repo_files_directory
-            repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, repository )
         except AttributeError:
             # Tool Shed side.
             repo_files_directory = repo_path
-            repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed( None, repository )
         relative_data_manager_dir = util.relpath( os.path.split( data_manager_config_filename )[0], repo_dir )
         rel_data_manager_config_filename = os.path.join( relative_data_manager_dir,
                                                          os.path.split( data_manager_config_filename )[1] )
@@ -91,7 +149,7 @@ class MetadataGenerator( object ):
             # FIXME: default behavior is to fall back to tool.name.
             data_manager_name = data_manager_elem.get( 'name', data_manager_id )
             version = data_manager_elem.get( 'version', DataManager.DEFAULT_VERSION )
-            guid = self.generate_guid_for_object( repository_clone_url, DataManager.GUID_TYPE, data_manager_id, version )
+            guid = self.generate_guid_for_object( DataManager.GUID_TYPE, data_manager_id, version )
             data_tables = []
             if tool_file is None:
                 log.error( 'Data Manager entry is missing tool_file attribute in "%s".' % ( data_manager_config_filename ) )
@@ -130,8 +188,7 @@ class MetadataGenerator( object ):
             log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
         return metadata_dict
 
-    def generate_datatypes_metadata( self, tv, repository, repository_clone_url, repository_files_dir, datatypes_config,
-                                     metadata_dict ):
+    def generate_datatypes_metadata( self, tv, repository_files_dir, datatypes_config, metadata_dict ):
         """Update the received metadata_dict with information from the parsed datatypes_config."""
         tree, error_message = xml_util.parse_xml( datatypes_config )
         if tree is None:
@@ -180,11 +237,11 @@ class MetadataGenerator( object ):
                         tool_config_path = hg_util.get_config_from_disk( tool_config, repository_files_dir )
                         full_path = os.path.abspath( tool_config_path )
                         tool, valid, error_message = \
-                            tv.load_tool_from_config( self.app.security.encode_id( repository.id ), full_path )
+                            tv.load_tool_from_config( self.app.security.encode_id( self.repository.id ), full_path )
                         if tool is None:
                             guid = None
                         else:
-                            guid = suc.generate_tool_guid( repository_clone_url, tool )
+                            guid = suc.generate_tool_guid( self.repository_clone_url, tool )
                         converter_dict = dict( tool_config=tool_config,
                                                guid=guid,
                                                target_datatype=target_datatype )
@@ -226,76 +283,70 @@ class MetadataGenerator( object ):
                     valid_tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
         return valid_tool_dependencies_dict
 
-    def generate_guid_for_object( self, repository_clone_url, guid_type, obj_id, version ):
-        tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
+    def generate_guid_for_object( self, guid_type, obj_id, version ):
+        tmp_url = common_util.remove_protocol_and_user_from_clone_url( self.repository_clone_url )
         return '%s/%s/%s/%s' % ( tmp_url, guid_type, obj_id, version )
 
-    def generate_metadata_for_changeset_revision( self, repository, changeset_revision, repository_clone_url,
-                                                  shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
-                                                  resetting_all_metadata_on_repository=False, updating_installed_repository=False,
-                                                  persist=False ):
+    def generate_metadata_for_changeset_revision( self ):
         """
         Generate metadata for a repository using its files on disk.  To generate metadata
         for changeset revisions older than the repository tip, the repository will have been
         cloned to a temporary location and updated to a specified changeset revision to access
-        that changeset revision's disk files, so the value of repository_files_dir will not
-        always be repository.repo_path( self.app ) (it could be an absolute path to a temporary
-        directory containing a clone).  If it is an absolute path, the value of relative_install_dir
+        that changeset revision's disk files, so the value of self.repository_files_dir will not
+        always be self.repository.repo_path( self.app ) (it could be an absolute path to a temporary
+        directory containing a clone).  If it is an absolute path, the value of self.relative_install_dir
         must contain repository.repo_path( self.app ).
     
-        The value of persist will be True when the installed repository contains a valid
+        The value of self.persist will be True when the installed repository contains a valid
         tool_data_table_conf.xml.sample file, in which case the entries should ultimately be
         persisted to the file referred to by self.app.config.shed_tool_data_table_config.
         """
         tv = tool_validator.ToolValidator( self.app )
-        if shed_config_dict is None:
-            shed_config_dict = {}
-        if updating_installed_repository:
+        if self.shed_config_dict is None:
+            self.shed_config_dict = {}
+        if self.updating_installed_repository:
             # Keep the original tool shed repository metadata if setting metadata on a repository
             # installed into a local Galaxy instance for which we have pulled updates.
-            original_repository_metadata = repository.metadata
+            original_repository_metadata = self.repository.metadata
         else:
             original_repository_metadata = None
-        readme_file_names = readme_util.get_readme_file_names( str( repository.name ) )
+        readme_file_names = readme_util.get_readme_file_names( str( self.repository.name ) )
         if self.app.name == 'galaxy':
             # Shed related tool panel configs are only relevant to Galaxy.
-            metadata_dict = { 'shed_config_filename' : shed_config_dict.get( 'config_filename' ) }
+            metadata_dict = { 'shed_config_filename' : self.shed_config_dict.get( 'config_filename' ) }
         else:
             metadata_dict = {}
         readme_files = []
-        invalid_file_tups = []
         invalid_tool_configs = []
         tool_dependencies_config = None
         original_tool_data_path = self.app.config.tool_data_path
         original_tool_data_table_config_path = self.app.config.tool_data_table_config_path
-        if resetting_all_metadata_on_repository:
-            if not relative_install_dir:
-                raise Exception( "The value of repository.repo_path must be sent when resetting all metadata on a repository." )
+        if self.resetting_all_metadata_on_repository:
+            if not self.relative_install_dir:
+                raise Exception( "The value of self.repository.repo_path must be set when resetting all metadata on a repository." )
             # Keep track of the location where the repository is temporarily cloned so that we can
-            # strip the path when setting metadata.  The value of repository_files_dir is the full
-            # path to the temporary directory to which the repository was cloned.
-            work_dir = repository_files_dir
-            files_dir = repository_files_dir
+            # strip the path when setting metadata.  The value of self.repository_files_dir is the
+            # full path to the temporary directory to which self.repository was cloned.
+            work_dir = self.repository_files_dir
+            files_dir = self.repository_files_dir
             # Since we're working from a temporary directory, we can safely copy sample files included
             # in the repository to the repository root.
-            self.app.config.tool_data_path = repository_files_dir
-            self.app.config.tool_data_table_config_path = repository_files_dir
+            self.app.config.tool_data_path = self.repository_files_dir
+            self.app.config.tool_data_table_config_path = self.repository_files_dir
         else:
             # Use a temporary working directory to copy all sample files.
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-gmfcr" )
             # All other files are on disk in the repository's repo_path, which is the value of
-            # relative_install_dir.
-            files_dir = relative_install_dir
-            if shed_config_dict.get( 'tool_path' ):
-                files_dir = os.path.join( shed_config_dict[ 'tool_path' ], files_dir )
+            # self.relative_install_dir.
+            files_dir = self.relative_install_dir
+            if self.shed_config_dict.get( 'tool_path' ):
+                files_dir = os.path.join( self.shed_config_dict[ 'tool_path' ], files_dir )
             self.app.config.tool_data_path = work_dir #FIXME: Thread safe?
             self.app.config.tool_data_table_config_path = work_dir
         # Handle proprietary datatypes, if any.
         datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
         if datatypes_config:
             metadata_dict = self.generate_datatypes_metadata( tv,
-                                                              repository,
-                                                              repository_clone_url,
                                                               files_dir,
                                                               datatypes_config,
                                                               metadata_dict )
@@ -303,9 +354,8 @@ class MetadataGenerator( object ):
         # the repository's metadata.
         sample_file_metadata_paths, sample_file_copy_paths = \
             self.get_sample_files_from_disk( repository_files_dir=files_dir,
-                                             tool_path=shed_config_dict.get( 'tool_path' ),
-                                             relative_install_dir=relative_install_dir,
-                                             resetting_all_metadata_on_repository=resetting_all_metadata_on_repository )
+                                             tool_path=self.shed_config_dict.get( 'tool_path' ),
+                                             relative_install_dir=self.relative_install_dir )
         if sample_file_metadata_paths:
             metadata_dict[ 'sample_files' ] = sample_file_metadata_paths
         # Copy all sample files included in the repository to a single directory location so we
@@ -322,7 +372,7 @@ class MetadataGenerator( object ):
                                                                                 shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
                                                                                 persist=False )
                 if error_message:
-                    invalid_file_tups.append( ( filename, error_message ) )
+                    self.invalid_file_tups.append( ( filename, error_message ) )
         for root, dirs, files in os.walk( files_dir ):
             if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
                 if '.hg' in dirs:
@@ -333,18 +383,16 @@ class MetadataGenerator( object ):
                         path_to_repository_dependencies_config = os.path.join( root, name )
                         metadata_dict, error_message = \
                             self.generate_repository_dependency_metadata( path_to_repository_dependencies_config,
-                                                                          metadata_dict,
-                                                                          updating_installed_repository=updating_installed_repository )
+                                                                          metadata_dict )
                         if error_message:
-                            invalid_file_tups.append( ( name, error_message ) )
+                            self.invalid_file_tups.append( ( name, error_message ) )
                     # See if we have one or more READ_ME files.
                     elif name.lower() in readme_file_names:
                         relative_path_to_readme = self.get_relative_path_to_repository_file( root,
                                                                                              name,
-                                                                                             relative_install_dir,
+                                                                                             self.relative_install_dir,
                                                                                              work_dir,
-                                                                                             shed_config_dict,
-                                                                                             resetting_all_metadata_on_repository )
+                                                                                             self.shed_config_dict )
                         readme_files.append( relative_path_to_readme )
                     # See if we have a tool config.
                     elif name not in self.NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
@@ -365,12 +413,12 @@ class MetadataGenerator( object ):
                                     is_tool = element_tree_root.tag == 'tool'
                                 if is_tool:
                                     tool, valid, error_message = \
-                                        tv.load_tool_from_config( self.app.security.encode_id( repository.id ),
+                                        tv.load_tool_from_config( self.app.security.encode_id( self.repository.id ),
                                                                   full_path )
                                     if tool is None:
                                         if not valid:
                                             invalid_tool_configs.append( name )
-                                            invalid_file_tups.append( ( name, error_message ) )
+                                            self.invalid_file_tups.append( ( name, error_message ) )
                                     else:
                                         invalid_files_and_errors_tups = \
                                             tv.check_tool_input_params( files_dir,
@@ -387,17 +435,15 @@ class MetadataGenerator( object ):
                                             relative_path_to_tool_config = \
                                                 self.get_relative_path_to_repository_file( root,
                                                                                            name,
-                                                                                           relative_install_dir,
+                                                                                           self.relative_install_dir,
                                                                                            work_dir,
-                                                                                           shed_config_dict,
-                                                                                           resetting_all_metadata_on_repository )
+                                                                                           self.shed_config_dict )
                                             metadata_dict = self.generate_tool_metadata( relative_path_to_tool_config,
                                                                                          tool,
-                                                                                         repository_clone_url,
                                                                                          metadata_dict )
                                         else:
                                             for tup in invalid_files_and_errors_tups:
-                                                invalid_file_tups.append( tup )
+                                                self.invalid_file_tups.append( tup )
                     # Find all exported workflows.
                     elif name.endswith( '.ga' ):
                         relative_path = os.path.join( root, name )
@@ -421,11 +467,10 @@ class MetadataGenerator( object ):
                                                                                  metadata_dict )
         # Handle any data manager entries
         data_manager_config = hg_util.get_config_from_disk( suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir )
-        metadata_dict = self.generate_data_manager_metadata( repository,
-                                                             files_dir,
+        metadata_dict = self.generate_data_manager_metadata( files_dir,
                                                              data_manager_config,
                                                              metadata_dict,
-                                                             shed_config_dict=shed_config_dict )
+                                                             shed_config_dict=self.shed_config_dict )
     
         if readme_files:
             metadata_dict[ 'readme_files' ] = readme_files
@@ -433,21 +478,18 @@ class MetadataGenerator( object ):
         tool_dependencies_config = hg_util.get_config_from_disk( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, files_dir )
         if tool_dependencies_config:
             metadata_dict, error_message = \
-                self.generate_tool_dependency_metadata( repository,
-                                                        changeset_revision,
-                                                        repository_clone_url,
-                                                        tool_dependencies_config,
+                self.generate_tool_dependency_metadata( tool_dependencies_config,
                                                         metadata_dict,
                                                         original_repository_metadata=original_repository_metadata )
             if error_message:
-                invalid_file_tups.append( ( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message ) )
+                self.invalid_file_tups.append( ( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message ) )
         if invalid_tool_configs:
             metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
+        self.metadata_dict = metadata_dict
         # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
         self.app.config.tool_data_path = original_tool_data_path
         self.app.config.tool_data_table_config_path = original_tool_data_table_config_path
         basic_util.remove_dir( work_dir )
-        return metadata_dict, invalid_file_tups
 
     def generate_package_dependency_metadata( self, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict ):
         """
@@ -475,8 +517,7 @@ class MetadataGenerator( object ):
                     # where a tool dependency definition is considered invalid.
                     repository_dependency_tup, repository_dependency_is_valid, error_message = \
                         self.handle_repository_elem( repository_elem=sub_elem,
-                                                     only_if_compiling_contained_td=False,
-                                                     updating_installed_repository=False )
+                                                     only_if_compiling_contained_td=False )
                 elif sub_elem.tag == 'install':
                     package_install_version = sub_elem.get( 'version', '1.0' )
                     if package_install_version == '1.0':
@@ -509,8 +550,7 @@ class MetadataGenerator( object ):
                                                     # We have a complex repository dependency.
                                                     repository_dependency_tup, repository_dependency_is_valid, error_message = \
                                                         self.handle_repository_elem( repository_elem=sub_action_elem,
-                                                                                     only_if_compiling_contained_td=True,
-                                                                                     updating_installed_repository=False )
+                                                                                     only_if_compiling_contained_td=True )
                                     elif action_elem.tag == 'action':
                                         # <action type="set_environment_for_install">
                                         #    <repository changeset_revision="b107b91b3574" name="package_readline_6_2" owner="devteam" prior_installation_required="True" toolshed="http://localhost:9009">
@@ -522,8 +562,7 @@ class MetadataGenerator( object ):
                                                 # We have a complex repository dependency.
                                                 repository_dependency_tup, repository_dependency_is_valid, error_message = \
                                                     self.handle_repository_elem( repository_elem=sub_action_elem,
-                                                                                 only_if_compiling_contained_td=True,
-                                                                                 updating_installed_repository=False )
+                                                                                 only_if_compiling_contained_td=True )
         if requirements_dict:
             dependency_key = '%s/%s' % ( package_name, package_version )
             if repository_dependency_is_valid:
@@ -538,8 +577,7 @@ class MetadataGenerator( object ):
             repository_dependency_is_valid, \
             error_message
 
-    def generate_repository_dependency_metadata( self, repository_dependencies_config, metadata_dict,
-                                                 updating_installed_repository=False ):
+    def generate_repository_dependency_metadata( self, repository_dependencies_config, metadata_dict ):
         """
         Generate a repository dependencies dictionary based on valid information defined in the received
         repository_dependencies_config.  This method is called from the tool shed as well as from Galaxy.
@@ -560,8 +598,7 @@ class MetadataGenerator( object ):
             for repository_elem in root.findall( 'repository' ):
                 repository_dependency_tup, repository_dependency_is_valid, err_msg = \
                     self.handle_repository_elem( repository_elem,
-                                                 only_if_compiling_contained_td=False,
-                                                 updating_installed_repository=updating_installed_repository )
+                                                 only_if_compiling_contained_td=False )
                 if repository_dependency_is_valid:
                     valid_repository_dependency_tups.append( repository_dependency_tup )
                 else:
@@ -585,10 +622,10 @@ class MetadataGenerator( object ):
                 metadata_dict[ 'repository_dependencies' ] = valid_repository_dependencies_dict
         return metadata_dict, error_message
 
-    def generate_tool_metadata( self, tool_config, tool, repository_clone_url, metadata_dict ):
+    def generate_tool_metadata( self, tool_config, tool, metadata_dict ):
         """Update the received metadata_dict with changes that have been applied to the received tool."""
         # Generate the guid.
-        guid = suc.generate_tool_guid( repository_clone_url, tool )
+        guid = suc.generate_tool_guid( self.repository_clone_url, tool )
         # Handle tool.requirements.
         tool_requirements = []
         for tool_requirement in tool.requirements:
@@ -667,11 +704,10 @@ class MetadataGenerator( object ):
             metadata_dict[ 'tools' ] = [ tool_dict ]
         return metadata_dict
 
-    def generate_tool_dependency_metadata( self, repository, changeset_revision, repository_clone_url, tool_dependencies_config,
-                                           metadata_dict, original_repository_metadata=None ):
+    def generate_tool_dependency_metadata( self, tool_dependencies_config, metadata_dict, original_repository_metadata=None ):
         """
         If the combination of name, version and type of each element is defined in the <requirement> tag for
-        at least one tool in the repository, then update the received metadata_dict with information from the
+        at least one tool in self.repository, then update the received metadata_dict with information from the
         parsed tool_dependencies_config.
         """
         error_message = ''
@@ -738,7 +774,7 @@ class MetadataGenerator( object ):
                 # into a Galaxy instance, so handle changes to tool dependencies appropriately.
                 irm = self.app.installed_repository_manager
                 updated_tool_dependency_names, deleted_tool_dependency_names = \
-                    irm.handle_existing_tool_dependencies_that_changed_in_update( repository,
+                    irm.handle_existing_tool_dependencies_that_changed_in_update( self.repository,
                                                                                   original_valid_tool_dependencies_dict,
                                                                                   valid_tool_dependencies_dict )
             metadata_dict[ 'tool_dependencies' ] = valid_tool_dependencies_dict
@@ -769,9 +805,14 @@ class MetadataGenerator( object ):
             metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
         return metadata_dict
 
-    def get_relative_path_to_repository_file( self, root, name, relative_install_dir, work_dir, shed_config_dict,
-                                              resetting_all_metadata_on_repository ):
-        if resetting_all_metadata_on_repository:
+    def get_invalid_file_tups( self ):
+        return self.invalid_file_tups
+
+    def get_metadata_dict( self ):
+        return self.metadata_dict
+
+    def get_relative_path_to_repository_file( self, root, name, relative_install_dir, work_dir, shed_config_dict ):
+        if self.resetting_all_metadata_on_repository:
             full_path_to_file = os.path.join( root, name )
             stripped_path_to_file = full_path_to_file.replace( work_dir, '' )
             if stripped_path_to_file.startswith( '/' ):
@@ -785,9 +826,8 @@ class MetadataGenerator( object ):
                 relative_path_to_file = relative_path_to_file[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
         return relative_path_to_file
 
-    def get_sample_files_from_disk( self, repository_files_dir, tool_path=None, relative_install_dir=None,
-                                    resetting_all_metadata_on_repository=False ):
-        if resetting_all_metadata_on_repository:
+    def get_sample_files_from_disk( self, repository_files_dir, tool_path=None, relative_install_dir=None ):
+        if self.resetting_all_metadata_on_repository:
             # Keep track of the location where the repository is temporarily cloned so that we can strip
             # it when setting metadata.
             work_dir = repository_files_dir
@@ -797,7 +837,7 @@ class MetadataGenerator( object ):
             if root.find( '.hg' ) < 0:
                 for name in files:
                     if name.endswith( '.sample' ):
-                        if resetting_all_metadata_on_repository:
+                        if self.resetting_all_metadata_on_repository:
                             full_path_to_sample_file = os.path.join( root, name )
                             stripped_path_to_sample_file = full_path_to_sample_file.replace( work_dir, '' )
                             if stripped_path_to_sample_file.startswith( '/' ):
@@ -816,7 +856,7 @@ class MetadataGenerator( object ):
                             sample_file_metadata_paths.append( relative_path_to_sample_file )
         return sample_file_metadata_paths, sample_file_copy_paths
 
-    def handle_repository_elem( self, repository_elem, only_if_compiling_contained_td=False, updating_installed_repository=False ):
+    def handle_repository_elem( self, repository_elem, only_if_compiling_contained_td=False ):
         """
         Process the received repository_elem which is a <repository> tag either from a
         repository_dependencies.xml file or a tool_dependencies.xml file.  If the former,
@@ -832,7 +872,7 @@ class MetadataGenerator( object ):
         changeset_revision = repository_elem.get( 'changeset_revision', None )
         prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
         if self.app.name == 'galaxy':
-            if updating_installed_repository:
+            if self.updating_installed_repository:
                 pass
             else:
                 # We're installing a repository into Galaxy, so make sure its contained repository
@@ -889,12 +929,12 @@ class MetadataGenerator( object ):
                                                                                      updated_changeset_revision )
                         if repository:
                             return repository_dependency_tup, is_valid, error_message
-                        if updating_installed_repository:
+                        if self.updating_installed_repository:
                             # The repository dependency was included in an update to the installed
                             # repository, so it will not yet be installed.  Return the tuple for later
                             # installation.
                             return repository_dependency_tup, is_valid, error_message
-                if updating_installed_repository:
+                if self.updating_installed_repository:
                     # The repository dependency was included in an update to the installed repository,
                     # so it will not yet be installed.  Return the tuple for later installation.
                     return repository_dependency_tup, is_valid, error_message
@@ -1005,6 +1045,46 @@ class MetadataGenerator( object ):
                                 # We have a datatypes converter.
                                 return False
         return True
+
+    def set_changeset_revision( self, changeset_revision ):
+        self.changeset_revision = changeset_revision
+
+    def set_relative_install_dir( self, relative_install_dir ):
+        self.relative_install_dir = relative_install_dir
+
+    def set_repository( self, repository, relative_install_dir=None, changeset_revision=None ):
+        self.repository = repository
+        # Shed related tool panel configs are only relevant to Galaxy.
+        if self.app.name == 'galaxy':
+            if relative_install_dir is None and self.repository is not None:
+                tool_path, relative_install_dir = self.repository.get_tool_relative_path( self.app )
+            if changeset_revision is None and self.repository is not None:
+                self.set_changeset_revision( self.repository.changeset_revision )
+            else:
+                self.set_changeset_revision( changeset_revision )
+            self.shed_config_dict = repository.get_shed_config_dict( self.app )
+            self.metadata_dict = { 'shed_config_filename' : self.shed_config_dict.get( 'config_filename', None ) }
+        else:
+            if relative_install_dir is None and self.repository is not None:
+                relative_install_dir = repository.repo_path( self.app )
+            if changeset_revision is None and self.repository is not None:
+                self.set_changeset_revision( self.repository.tip( self.app ) )
+            else:
+                self.set_changeset_revision( changeset_revision )
+            self.shed_config_dict = {}
+            self.metadata_dict = {}
+        self.set_relative_install_dir( relative_install_dir )
+        self.set_repository_files_dir()
+        self.resetting_all_metadata_on_repository = False
+        self.updating_installed_repository = False
+        self.persist = False
+        self.invalid_file_tups = []
+
+    def set_repository_clone_url( self, repository_clone_url ):
+        self.repository_clone_url = repository_clone_url
+
+    def set_repository_files_dir( self, repository_files_dir=None ):
+        self.repository_files_dir = repository_files_dir
 
     def update_repository_dependencies_metadata( self, metadata, repository_dependency_tups, is_valid, description ):
         if is_valid:
