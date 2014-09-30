@@ -15,9 +15,10 @@ define([ 'mvc/history/history-contents', 'utils/utils' ], function( HistoryConte
             var self = this;
             
             // request datatypes
-            Utils.get(galaxy_config.root + 'api/datatypes/mapping',
-                // success
-                function(typedict) {
+            Utils.get({
+                url     : galaxy_config.root + 'api/datatypes/mapping',
+                cache   : true,
+                success : function(typedict) {
                     // backup datatype dictionary
                     self.typedict = typedict;
                     
@@ -35,12 +36,11 @@ define([ 'mvc/history/history-contents', 'utils/utils' ], function( HistoryConte
                             console.debug('tools-datasets::initialize() - Ajax request for history datasets failed.');
                         });
                 },
-                // error
-                function(response) {
+                error   : function(response) {
                     // log request failure
                     console.debug('tools-datasets::initialize() - Ajax request for datatype dictionary failed.');
                 }
-            );
+            });
         },
         
         /** Filters datasets by data type.

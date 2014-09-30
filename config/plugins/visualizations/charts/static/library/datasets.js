@@ -124,16 +124,20 @@ return Backbone.Collection.extend(
     
         // request dataset
         var self = this;
-        Utils.request('GET', config.root + 'api/datasets/' + id, {}, function(dataset) {
-            switch (dataset.state) {
-                case 'error':
-                    if (error) {
-                        error(dataset);
-                    }
-                    break;
-                default:
-                    self.list[id] = dataset;
-                    success(dataset);
+        Utils.request({
+            type    : 'GET',
+            url     : config.root + 'api/datasets/' + id,
+            success : function(dataset) {
+                switch (dataset.state) {
+                    case 'error':
+                        if (error) {
+                            error(dataset);
+                        }
+                        break;
+                    default:
+                        self.list[id] = dataset;
+                        success(dataset);
+                }
             }
         });
     },
@@ -335,13 +339,17 @@ return Backbone.Collection.extend(
         
         // make request
         var self = this;
-        Utils.request('GET', config.root + 'api/datasets/' + dataset_request.dataset_id, {
+        Utils.request({
+            type    : 'GET',
+            url     : config.root + 'api/datasets/' + dataset_request.dataset_id,
+            data    : {
                 data_type   : 'raw_data',
                 provider    : 'dataset-column',
                 limit       : limit,
                 offset      : offset,
                 indeces     : column_string
-            }, function(response) {
+            },
+            success : function(response) {
                 // initialize result dictionary
                 var result = new Array(n_columns);
                 for (var i = 0; i < n_columns; i++) {
@@ -370,7 +378,7 @@ return Backbone.Collection.extend(
                 // callback
                 callback(result);
             }
-        );
+        });
     }
 });
 

@@ -40,15 +40,16 @@ return Backbone.Model.extend({
         this.app.modal.show({title: 'Please wait...', body: 'progress'});
         
         // post job
-        Utils.request('POST', galaxy_config.root + 'api/tools', job_def,
-            // success handler
-            function(response) {
+        Utils.request({
+            type    : 'POST',
+            url     : galaxy_config.root + 'api/tools',
+            data    : job_def,
+            success : function(response) {
                 self.app.modal.hide();
                 self.app.message(ToolTemplate.success(response));
                 self._refreshHdas();
             },
-            // error handler
-            function(response, response_full) {
+            error   : function(response, response_full) {
                 self.app.modal.hide();
                 if (response && response.message && response.message.data) {
                     var error_messages = self.app.tree.matchResponse(response.message.data);
@@ -69,7 +70,7 @@ return Backbone.Model.extend({
                     });
                 }
             }
-        );
+        });
     },
     
     /** Highlight and scroll to error

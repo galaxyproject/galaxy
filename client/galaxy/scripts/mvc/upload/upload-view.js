@@ -109,8 +109,9 @@ return Backbone.View.extend({
         
         // load extension
         var self = this;
-        Utils.get(galaxy_config.root + "api/datatypes?extension_only=False",
-            function(datatypes) {
+        Utils.get({
+            url     : galaxy_config.root + "api/datatypes?extension_only=False",
+            success : function(datatypes) {
                 for (key in datatypes) {
                     self.list_extensions.push({
                         id              : datatypes[key].extension,
@@ -129,11 +130,13 @@ return Backbone.View.extend({
                 if (!self.options.datatypes_disable_auto) {
                     self.list_extensions.unshift(self.auto);
                 }
-            });
+            }
+        });
             
         // load genomes
-        Utils.get(galaxy_config.root + "api/genomes",
-            function(genomes) {
+        Utils.get({
+            url     : galaxy_config.root + "api/genomes",
+            success : function(genomes) {
                 for (key in genomes) {
                     self.list_genomes.push({
                         id      : genomes[key][1],
@@ -145,7 +148,8 @@ return Backbone.View.extend({
                 self.list_genomes.sort(function(a, b) {
                     return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                 });
-            });
+            }
+        });
             
         // events
         this.collection.on('remove', function(item) {

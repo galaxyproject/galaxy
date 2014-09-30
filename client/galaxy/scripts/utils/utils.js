@@ -6,37 +6,67 @@
 // dependencies
 define(["libs/underscore"], function(_) {
 
-// generic function to recieve json from url
-function get (url, success, error) {
-    request('GET', url, {}, success, error);
+/* request handler for GET
+    param{string}   url
+    param{function} success
+    param{function} error
+    param{boolean}  cache
+*/
+function get (options) {
+    top.__utils__get__ = top.__utils__get__ || {};
+    if (options.cache && top.__utils__get__[options.url]) {
+        options.success && options.success(top.__utils__get__[options.url]);
+        console.debug('utils.js::get() - Fetching from cache [' + options.url + '].');
+    } else {
+        request({
+            url     : options.url,
+            data    : options.data,
+            success : function(response) {
+                top.__utils__get__[options.url] = response;
+                options.success && options.success(response);
+            },
+            error : function(response) {
+                options.error && options.error(response);
+            }
+        });
+    }
 };
 
-// generic function to send json to url
-function request (method, url, data, success, error) {
-    // configure
+/* request handler
+    param{string}   method
+    param{string}   url
+    param{object}   data
+    param{function} success
+    param{function} error
+*/
+function request (options) {
+    // prepare ajax
     var ajaxConfig = {
-        url             : url,
-        type            : method,
-        'contentType'   : 'application/json'
-    }
-
-    // encode data into url
-    if (method == 'GET' || method == 'DELETE') {
-        if (url.indexOf('?') == -1) {
-            url += '?';
-        } else {
-            url += '&';
-        }
-        url += $.param(data)
-    } else {
-        ajaxConfig['data'] = JSON.stringify(data);
-        ajaxConfig['dataType'] = 'json';
+        contentType : 'application/json',
+        type        : options.type || 'GET',
+        data        : options.data || {},
+        url         : options.url
     }
     
+    // encode data into url
+    if (ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE') {
+        if (ajaxConfig.url.indexOf('?') == -1) {
+            ajaxConfig.url += '?';
+        } else {
+            ajaxConfig.url += '&';
+        }
+        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data);
+        ajaxConfig.data     = null;
+    } else {
+        ajaxConfig.dataType = 'json';
+        ajaxConfig.url      = ajaxConfig.url;
+        ajaxConfig.data     = JSON.stringify(ajaxConfig.data);
+    }
+
     // make request
     $.ajax(ajaxConfig)
     .done(function(response) {
-        success && success(response);
+        options.success && options.success(response);
     })
     .fail(function(response) {
         var response_text = null;
@@ -45,7 +75,7 @@ function request (method, url, data, success, error) {
         } catch (e) {
             response_text = response.responseText;
         }
-        error && error(response_text, response);
+        options.error && options.error(response_text, response);
     });
 };
 
