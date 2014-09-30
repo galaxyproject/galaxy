@@ -507,11 +507,12 @@ var ToolLinkView = BaseView.extend({
 
     render: function() {
         // create element
-        var $link = $(Handlebars.templates.tool_link(this.model.toJSON()));
+        var $link = $('<div/>');
+        $link.append(Handlebars.templates.tool_link(this.model.toJSON()));
         
         // open upload dialog for upload tool
         if (this.model.id === 'upload1') {
-            $link.on('click', function(e) {
+            $link.find('a').on('click', function(e) {
                 e.preventDefault();
                 Galaxy.upload.show();
             });
