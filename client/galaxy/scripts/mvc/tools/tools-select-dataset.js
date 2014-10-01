@@ -40,8 +40,8 @@ var View = Backbone.View.extend({
         var dataset_options = [];
         for (var i in datasets) {
             dataset_options.push({
-                label: datasets[i].get('name'),
-                value: datasets[i].get('id')
+                label: datasets[i].name,
+                value: datasets[i].id
             });
         }
         
@@ -67,8 +67,8 @@ var View = Backbone.View.extend({
         var collection_options = [];
         for (var i in collections) {
             collection_options.push({
-                label: collections[i].get('name'),
-                value: collections[i].get('id')
+                label: collections[i].name,
+                value: collections[i].id
             });
         }
         

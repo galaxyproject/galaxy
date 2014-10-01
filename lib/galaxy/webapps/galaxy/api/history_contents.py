@@ -139,6 +139,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'type'  : api_type,
             'state'  : hda.dataset.state,
             'deleted': hda.deleted,
+            'extension': hda.extension,
             'visible': hda.visible,
             'purged': hda.purged,
             'resubmitted': hda._state == trans.app.model.Dataset.states.RESUBMITTED,

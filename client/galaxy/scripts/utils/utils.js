@@ -6,12 +6,13 @@
 // dependencies
 define(["libs/underscore"], function(_) {
 
-/* request handler for GET
-    param{string}   url
-    param{function} success
-    param{function} error
-    param{boolean}  cache
-*/
+/**
+ * Request handler for GET
+ * @param{String}   url     - Url request is made to
+ * @param{Function} success - Callback on success
+ * @param{Function} error   - Callback on error
+ * @param{Boolean}  cache   - Use cached data if available
+ */
 function get (options) {
     top.__utils__get__ = top.__utils__get__ || {};
     if (options.cache && top.__utils__get__[options.url]) {
@@ -32,13 +33,14 @@ function get (options) {
     }
 };
 
-/* request handler
-    param{string}   method
-    param{string}   url
-    param{object}   data
-    param{function} success
-    param{function} error
-*/
+/**
+ * Request handler
+ * @param{String}   method  - Request method ['GET', 'POST', 'DELETE', 'PUT']
+ * @param{String}   url     - Url request is made to
+ * @param{Object}   data    - Data send to url
+ * @param{Function} success - Callback on success
+ * @param{Function} error   - Callback on error
+ */
 function request (options) {
     // prepare ajax
     var ajaxConfig = {
@@ -79,7 +81,11 @@ function request (options) {
     });
 };
 
-// get css value
+/** 
+ * Read a property value from CSS
+ * @param{String}   classname   - CSS class
+ * @param{String}   name        - CSS property
+ */
 function cssGetAttribute (classname, name) {
     // place dummy element
     var el = $('<div class="' + classname + '"></div>');
@@ -97,14 +103,21 @@ function cssGetAttribute (classname, name) {
     return value;
 };
     
-// load css
+/**
+ * Load a CSS file
+ * @param{String}   url - Url of CSS file
+ */
 function cssLoadFile (url) {
     // check if css is already available
     if (!$('link[href^="' + url + '"]').length)
         $('<link href="' + galaxy_config.root + url + '" rel="stylesheet">').appendTo('head');
 };
 
-// merge
+/**
+ * Safely merge to dictionaries
+ * @param{Object}   options         - Target dictionary
+ * @param{Object}   optionsDefault  - Source dictionary
+ */
 function merge (options, optionsDefault) {
     if (options)
         return _.defaults(options, optionsDefault);
@@ -112,7 +125,11 @@ function merge (options, optionsDefault) {
         return optionsDefault;
 };
 
-// to string
+/**
+ * Format byte size to string with units
+ * @param{Integer}   size           - Size in bytes
+ * @param{Boolean}   normal_font    - Switches font between normal and bold
+ */
 function bytesToString (size, normal_font) {
     // identify unit
     var unit = "";
@@ -132,19 +149,26 @@ function bytesToString (size, normal_font) {
     }
 };
 
-// unique ide
+/**
+ * Create a unique id
+ */
 function uuid(){
     return 'x' + Math.random().toString(36).substring(2, 9);
 };
 
-// wrap
+/**
+ * Wrap an dom element into a paragraph
+ * @param{Element}  $el - DOM element to be wrapped
+ */
 function wrap($el) {
     var wrapper = $('<p></p>');
     wrapper.append($el);
     return wrapper;
 };
 
-// time
+/**
+ * Create a time stamp
+ */
 function time() {
     // get date object
     var d = new Date();
@@ -162,7 +186,6 @@ function time() {
     return datetime;
 };
 
-// return
 return {
     cssLoadFile   : cssLoadFile,
     cssGetAttribute : cssGetAttribute,

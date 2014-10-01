@@ -1313,7 +1313,7 @@ label{font-weight:normal}
 .ui-form-slider .ui-form-slider-element{width:calc(100% - 110px);float:left;top:8px;left:10px}
 .ui-radiobutton{width:100%}.ui-radiobutton label{height:23px;line-height:1em}
 .ui-radiobutton i{padding-right:5px}
-.ui-select{position:relative;height:27px;overflow:hidden;border:1px solid #bfbfbf;-moz-border-radius:3px;border-radius:3px}.ui-select .button{position:relative;width:25px;height:100%;float:right;border-left:1px solid #bfbfbf;padding-left:9px;padding-top:4px;background:#f2f2f2}
+.ui-select{position:relative;height:27px;overflow:hidden;border:1px solid #bfbfbf;-moz-border-radius:3px;border-radius:3px}.ui-select .button{position:relative;width:25px;height:100%;float:right;border-left:1px solid #bfbfbf;background:#f2f2f2;text-align:center;line-height:25px}
 .ui-select select{position:absolute;top:0px;height:100%;width:100%;padding-left:5px;cursor:pointer;background:transparent;border:0;border-radius:0;-webkit-appearance:none}
 .ui-select-multiple{height:100% !important;width:100% !important}
 .libraryRow{background-color:#ebd9b2}

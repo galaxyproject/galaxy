@@ -124,7 +124,6 @@ var View = Backbone.View.extend({
     wait: function() {
         this.$icon.removeClass();
         this.$icon.addClass('fa fa-spinner fa-spin');
-        this.$select.hide();
     },
     
     /** Returns true if the field is disabled
