@@ -120,7 +120,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # tool shed install data. There are many situtations in which it is
 # valuable to seperate these - for instance bootstrapping fresh Galaxy
 # instances with pretested installs. The following optin can be used to
-# separate the tool shed install database (all other options listed above
+# separate the tool shed install database (all other options listed above 
 # but prefixed with install_ are also available).
 #install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
@@ -160,14 +160,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
 #tool_path = tools
 
-# Path to autoload tools from.
-# Every directory inside the autoload directory will be scanned for *.xml files
-# and those will be loaded as tool descriptors
-#tool_autoload_dir = ./tool-autoload
-
-# Autoload Panel, for all tools that are autoloaded, they are placed in this tool section
-#tool_autoload_section = Development
-
 # Path to the directory in which tool dependencies are placed.  This is used by
 # the tool shed to install dependencies and can also be used by administrators
 # to manually install or link to dependencies.  For details, see:
@@ -187,7 +179,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #watch_tools = False
 
 # Enable automatic polling of relative tool sheds to see if any updates
-# are available for installed repositories.  Ideally only one Galaxy
+# are available for installed repositories.  Ideally only one Galaxy 
 # server process should be able to check for repository updates.  The
 # setting for hours_between_check should be an integer between 1 and 24.
 #enable_tool_shed_check = False
@@ -252,7 +244,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #citation_cache_data_dir = database/citations/data
 #citation_cache_lock_dir = database/citations/lock
 
-# External service types config file, defines what types of external_services configurations
+# External service types config file, defines what types of external_services configurations 
 # are available in Galaxy (.sample is used if default does not exist).
 #external_service_type_config_file = config/external_service_types_conf.xml
 
@@ -361,15 +353,15 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # -- Account activation
 
-# This is user account activation feature global flag. If set to "False" the rest of the Account
+# This is user account activation feature global flag. If set to "False" the rest of the Account 
 # activation configuration is ignored and user activation is disabled (a.k.a. accounts are active since registration).
 # Note the activation is also not working in case the smtp server is not defined.
 #user_activation_on = False
 
-# Activation grace period. Activation is not forced (login is not disabled) until
+# Activation grace period. Activation is not forced (login is not disabled) until 
 # grace period has passed. Users under grace period can't run jobs (see inactivity_box_content).
-# In hours. Default is 3. Enter 0 to disable grace period.
-# Users with OpenID logins have grace period forever.
+# In hours. Default is 3. Enter 0 to disable grace period. 
+# Users with OpenID logins have grace period forever. 
 #activation_grace_period = 0
 
 # Used for warning box for inactive accounts (unable to run jobs).
@@ -429,7 +421,7 @@ nglims_config_file = tool-data/nglims.yaml
 # - $iso8601 (complete format string as specified by ISO 8601 international standard).
 # pretty_datetime_format = $locale (UTC)
 
-# The URL of the page to display in Galaxy's middle pane when loaded. This can be
+# The URL of the page to display in Galaxy's middle pane when loaded. This can be 
 # an absolute or relative URL.
 #welcome_url = /static/welcome.html
 
@@ -461,7 +453,7 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Galaxy Q&A" link in the "Help" menu
 # The Galaxy Q&A site is under development; when the site is done, this URL
 # will be set and uncommented.
-#qa_url =
+#qa_url = 
 
 # Serve static content, which must be enabled if you're not serving it via a
 # proxy server.  These options should be self explanatory and so are not
@@ -614,7 +606,7 @@ use_interactive = True
 # if testing shows that Galaxy is able to create files using these formats.
 # Specific formats can be disabled with this option, separate more than one
 # format with commas.  Available formats are currently 'zip', 'gz', and 'bz2'.
-#disable_library_comptypes =
+#disable_library_comptypes = 
 
 # Some sequencer integration features in beta allow you to automatically
 # transfer datasets.  This is done using a lightweight transfer manager which
@@ -764,7 +756,7 @@ use_interactive = True
 # File where Data Managers are configured (.sample used if default does not
 # exist)
 #data_manager_config_file = config/data_manager_conf.xml
-# File where Tool Shed based Data Managers are configured
+# File where Tool Shed based Data Managers are configured 
 #shed_data_manager_config_file = config/shed_data_manager_conf.xml
 # Directory to store Data Manager based tool-data; defaults to tool_data_path
 #galaxy_data_manager_data_path = tool-data
@@ -883,11 +875,11 @@ use_interactive = True
 
 # ---- Galaxy External Message Queue -------------------------------------------------
 
-# Galaxy uses AMQ protocol to receive messages from external sources like
+# Galaxy uses AMQ protocol to receive messages from external sources like 
 # bar code scanners. Galaxy has been tested against RabbitMQ AMQP implementation.
-# For Galaxy to receive messages from a message queue the RabbitMQ server has
+# For Galaxy to receive messages from a message queue the RabbitMQ server has 
 # to be set up with a user account and other parameters listed below. The 'host'
-# and 'port' fields should point to where the RabbitMQ server is running.
+# and 'port' fields should point to where the RabbitMQ server is running. 
 
 [galaxy_amqp]
 
@@ -900,3 +892,4 @@ use_interactive = True
 #exchange = galaxy_exchange
 #routing_key = bar_code_scanner
 #rabbitmqctl_path = /path/to/rabbitmqctl
+
