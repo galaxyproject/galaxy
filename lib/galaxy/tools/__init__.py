@@ -236,6 +236,8 @@ class ToolBox( object, Dictifiable ):
                 self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
             elif elem.tag == 'tool_dir':
                 self.__watch_directory( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
+            elif elem.tag == 'tool_library_dir':
+                self.__watch_directory_children( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
@@ -688,6 +690,8 @@ class ToolBox( object, Dictifiable ):
                 self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
             elif sub_elem.tag == 'tool_dir':
                 self.__watch_directory( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
+            elif sub_elem.tag == 'tool_library_dir':
+                self.__watch_directory_children( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
@@ -696,8 +700,16 @@ class ToolBox( object, Dictifiable ):
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
 
-    def __watch_directory( self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict ):
+    def __watch_directory_children( self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict ):
         directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
+        for sub in os.listdir( directory ):
+            child = os.path.join(directory, sub)
+            if os.path.isdir(child):
+                self.__watch_directory(None, elems, tool_path, integrated_elems, load_panel_dict, child)
+
+    def __watch_directory( self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict, directory=None ):
+        if directory is None:
+            directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
 
         def quick_load( tool_file, async=True ):
             try:
@@ -863,7 +875,7 @@ class ToolBox( object, Dictifiable ):
                             if len( data_table_definitions ) > 0:
                                 # Put the data table definition XML in a temporary file.
                                 table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
-                                table_definition = table_definition % '\n'.join( data_table_definitions ) 
+                                table_definition = table_definition % '\n'.join( data_table_definitions )
                                 fd, table_conf = tempfile.mkstemp()
                                 os.close( fd )
                                 file( table_conf, 'w' ).write( table_definition )
