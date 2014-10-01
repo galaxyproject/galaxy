@@ -40,6 +40,17 @@ return {
         return tmpl;
     },
     
+    error: function(job_def) {
+        return  '<div>' +
+                    '<p>' +
+                        'Sorry, the server could not complete the request. Please contact the Galaxy Team if this error is persistent.' +
+                    '</p>' +
+                    '<textarea class="ui-textarea" disabled style="color: black;" rows="6">' +
+                        JSON.stringify(job_def, undefined, 4) +
+                    '</textarea>' +
+                '</div>';
+    },
+    
     batchMode: function() {
         return  '<div class="ui-table-form-info">' +
                     '<i class="fa fa-sitemap" style="font-size: 1.2em; padding: 2px 5px;"/>' +

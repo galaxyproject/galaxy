@@ -106,6 +106,23 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output )
         assert output1_content == "--ex1,ex2"
 
+    @skip_without_tool( "multi_data_param" )
+    def test_multidata_param( self ):
+        history_id = self.dataset_populator.new_history()
+        hda1 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='1\t2\t3' ) )
+        hda2 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='4\t5\t6' ) )
+        inputs = {
+            "f1": { 'batch': False, 'values': [ hda1, hda2 ] },
+            "f2": { 'batch': False, 'values': [ hda2, hda1 ] },
+        }
+        response = self._run( "multi_data_param", history_id, inputs, assert_ok=True )
+        output1 = response[ "outputs" ][ 0 ]
+        output2 = response[ "outputs" ][ 1 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
+        assert output1_content == "1\t2\t3\n4\t5\t6\n", output1_content
+        assert output2_content == "4\t5\t6\n1\t2\t3\n", output2_content
+
     @skip_without_tool( "cat1" )
     def test_run_cat1( self ):
         # Run simple non-upload tool with an input data parameter.

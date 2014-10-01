@@ -540,6 +540,10 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Slider field
         */
         _field_slider: function(input_def) {
+            // set min/max
+            input_def.min = input_def.min || 0;
+            input_def.max = input_def.max || 100000;
+            
             // calculate step size
             var step = 1;
             if (input_def.type == 'float') {
@@ -549,8 +553,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             // create slider
             return new Ui.Slider.View({
                 id      : 'field-' + input_def.id,
-                min     : input_def.min || 0,
-                max     : input_def.max || 1000,
+                min     : input_def.min,
+                max     : input_def.max,
                 step    : step
             });
         },

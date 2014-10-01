@@ -109,16 +109,6 @@ return Backbone.Model.extend({
                                 }
                             }
                             break;
-                        // handle boolean input
-                        case 'boolean':
-                            var value = self.app.field_list[input.id].value();
-                            if (value === 'true') {
-                                value = input.truevalue;
-                            } else {
-                                value = input.falsevalue;
-                            }
-                            add (job_input_id, input.id, value);
-                            break;
                         default:
                             // handle default value
                             add (job_input_id, input.id, self.app.field_list[input.id].value());

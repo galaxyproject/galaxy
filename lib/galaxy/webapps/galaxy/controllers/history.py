@@ -575,6 +575,26 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
+    def view_multiple( self, trans, include_deleted_histories=False, order='update' ):
+        """
+        """
+        #TODO: allow specifying user_id for admin?
+        include_deleted_histories = galaxy.util.string_as_bool( include_deleted_histories )
+        order = order if order in ( 'update', 'name', 'size' ) else 'update'
+
+        current_history = trans.get_history()
+        current_history_id = trans.security.encode_id( current_history.id ) if current_history else None
+
+        history_dictionaries = []
+        for history in self.get_user_histories( trans, user=trans.user, include_deleted=include_deleted_histories ):
+            history_dictionary = self.get_history_dict( trans, history )
+            history_dictionaries.append( history_dictionary )
+
+        return trans.fill_template_mako( "history/view_multiple.mako",
+            current_history_id=current_history_id, histories=history_dictionaries,
+            include_deleted_histories=include_deleted_histories, order=order )
+
+    @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
         """
         Display history based on a username and slug.

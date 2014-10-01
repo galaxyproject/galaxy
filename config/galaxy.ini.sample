@@ -180,6 +180,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # install from in the admin interface (.sample used if default does not exist).
 #tool_sheds_config_file = config/tool_sheds_conf.xml
 
+# If the following option is set to True - Galaxy will monitor individual tools
+# and tool directories specified in tool_conf.xml for changes and reload these
+# tools. Watchdog must be installed and available to Galaxy to use this option.
+# See https://pypi.python.org/pypi/watchdog.
+#watch_tools = False
+
 # Enable automatic polling of relative tool sheds to see if any updates
 # are available for installed repositories.  Ideally only one Galaxy
 # server process should be able to check for repository updates.  The

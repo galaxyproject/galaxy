@@ -395,6 +395,7 @@ var HistoryPanel = _super.extend(
         if( store ){
             this.storage.set( 'show_deleted', show );
         }
+        this.trigger( 'show-hidden', show );
         //TODO:?? to events on storage('change:show_deleted')
         this.renderItems();
         return this.showDeleted;
@@ -412,6 +413,7 @@ var HistoryPanel = _super.extend(
         if( store ){
             this.storage.set( 'show_hidden', show );
         }
+        this.trigger( 'show-hidden', show );
         //TODO:?? to events on storage('change:show_deleted')
         this.renderItems();
         return this.showHidden;
@@ -606,9 +608,7 @@ HistoryPanel.prototype.templates = (function(){
             '<div class="title">',
                 '<div class="name"><%= history.name %></div>',
             '</div>',
-            '<div class="subtitle">',
-                //'<%= view.collection.length %>', _l( ' items' ),
-            '</div>',
+            '<div class="subtitle"></div>',
             '<div class="history-size"><%= history.nice_size %></div>',
 
             '<div class="actions"></div>',
