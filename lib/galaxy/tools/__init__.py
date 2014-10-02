@@ -699,7 +699,7 @@ class ToolBox( object, Dictifiable ):
 
     def load_tooldir_tag_set(self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict):
         directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
-        recursive = string_as_bool( sub_elem.attrib.get("recursive", False) )        
+        recursive = string_as_bool( sub_elem.attrib.get("recursive", True) )        
         self.__watch_directory( directory, elems, integrated_elems, load_panel_dict, recursive )
 
     def __watch_directory( self, directory, elems, integrated_elems, load_panel_dict, recursive):
