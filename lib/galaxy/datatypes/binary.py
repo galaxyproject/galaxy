@@ -11,12 +11,14 @@ import shutil
 import struct
 import subprocess
 import tempfile
+import re
 
 from galaxy import eggs
 eggs.require( "bx-python" )
 
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
+from galaxy.util import sqlite
 from galaxy.datatypes.metadata import MetadataElement,ListParameter,DictParameter
 from galaxy.datatypes import metadata
 import dataproviders
@@ -560,7 +562,7 @@ class SQlite ( Binary ):
             tables = []
             columns = dict()
             rowcounts = dict()
-            conn = sqlite3.connect(dataset.file_name)
+            conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
             tables_query = "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name"
             rslt = c.execute(tables_query).fetchall()
@@ -574,7 +576,7 @@ class SQlite ( Binary ):
             dataset.metadata.table_columns = columns
             dataset.metadata.table_row_count = rowcounts
         except Exception, exc:
-            pass
+            log.warn( '%s, set_meta Exception: %s', self, exc )
 
     def sniff( self, filename ):
         # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
