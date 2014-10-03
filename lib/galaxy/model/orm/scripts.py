@@ -78,6 +78,7 @@ def get_config( argv, cwd=None ):
     """
     Read sys.argv and parse out repository of migrations and database url.
 
+    >>> from ConfigParser import SafeConfigParser
     >>> from tempfile import mkdtemp
     >>> config_dir = mkdtemp()
     >>> os.makedirs(os.path.join(config_dir, 'config'))
@@ -105,7 +106,12 @@ def get_config( argv, cwd=None ):
         database = 'galaxy'
     database_defaults = DATABASE[ database ]
 
-    config_file = read_config_file_arg( argv, database_defaults.get( 'config_file', DEFAULT_CONFIG_FILE ), database_defaults.get( 'old_config_file' ) )
+    default = database_defaults.get( 'config_file', DEFAULT_CONFIG_FILE )
+    old_default = database_defaults.get( 'old_config_file' )
+    if cwd is not None:
+        default = os.path.join( cwd, default )
+        old_default = os.path.join( cwd, old_default )
+    config_file = read_config_file_arg( argv, default, old_default )
     repo = database_defaults[ 'repo' ]
     config_prefix = database_defaults.get( 'config_prefix', DEFAULT_CONFIG_PREFIX )
     default_sqlite_file = database_defaults[ 'default_sqlite_file' ]
