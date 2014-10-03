@@ -2499,7 +2499,7 @@ extend(Track.prototype, Drawable.prototype, {
             var data = result.data;
             
             // Tracks may not have stat data either because there is no data or data is not yet ready.
-            if (data && data.min && data.max) {
+            if (data !== undefined && data.min !== undefined && data.max !== undefined) {
                 // Compute default minimum and maximum values
                 var min_value = data.min,
                     max_value = data.max;
