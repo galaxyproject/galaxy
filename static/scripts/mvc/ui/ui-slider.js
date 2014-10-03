@@ -39,7 +39,8 @@ var View = Backbone.View.extend({
         // add text field event
         this.$text.on('keydown', function (event) {
             var v = event.which;
-            if (!(v == 13 || v == 8 || v == 37 || v == 39 || v == 189 || (v >= 48 && v <= 57)
+            console.log(v);
+            if (!(v == 8 || v == 9 || v == 13 || v == 37 || v == 39 || v == 189 || (v >= 48 && v <= 57)
                 || (self.options.step != 1 && $(this).val().indexOf('.') == -1) && v == 190)) {
                 event.preventDefault();
             }

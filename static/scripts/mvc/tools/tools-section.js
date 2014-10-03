@@ -260,62 +260,70 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             switch(field_type) {
                 // text input field
                 case 'text' :
-                    field = this._field_text(input_def);
+                    field = this._fieldText(input_def);
                     break;
                     
                 // select field
                 case 'select' :
-                    field = this._field_select(input_def);
+                    field = this._fieldSelect(input_def);
                     break;
                     
                 // dataset
                 case 'data':
-                    field = this._field_data(input_def);
+                    field = this._fieldData(input_def);
                     break;
                 
                 // dataset column
                 case 'data_column':
-                    field = this._field_select(input_def);
+                    field = this._fieldSelect(input_def);
                     break;
                     
                 // conditional select field
                 case 'conditional':
-                    field = this._field_conditional(input_def);
+                    field = this._fieldConditional(input_def);
                     break;
                 
                 // hidden field
                 case 'hidden':
-                    field = this._field_hidden(input_def);
+                    field = this._fieldHidden(input_def);
                     break;
                 
                 // integer field
                 case 'integer':
-                    field = this._field_slider(input_def);
+                    field = this._fieldSlider(input_def);
                     break;
                 
                 // float field
                 case 'float':
-                    field = this._field_slider(input_def);
+                    field = this._fieldSlider(input_def);
                     break;
                                     
                 // boolean field
                 case 'boolean':
-                    field = this._field_boolean(input_def);
+                    field = this._fieldBoolean(input_def);
                     break;
-            }
-            
-            // pick a generic field if specific mapping failed
-            if (!field) {
-                if (input_def.options) {
-                    // assign select field
-                    field = this._field_select(input_def);
-                } else {
-                    // assign text field
-                    field = this._field_text(input_def);
-                }
-                
-                // log
-                console.debug('tools-form::_addRow() : Auto matched field type (' + field_type + ').');
+                    
+                // genome field
+                case 'genomebuild':
+                    field = this._fieldSelect(input_def);
+                    break;
+                    
+                // flag as incompatible
+                default:
+                    // flag
+                    this.app.incompatible = true;
+                    
+                    // with or without options
+                    if (input_def.options) {
+                        // assign select field
+                        field = this._fieldSelect(input_def);
+                    } else {
+                        // assign text field
+                        field = this._fieldText(input_def);
+                    }
+                    
+                    // log
+                    console.debug('tools-form::_addRow() : Auto matched field type (' + field_type + ').');
             }
             
             // set field value
@@ -348,7 +356,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         
         /** Conditional input field selector
         */
-        _field_conditional : function(input_def) {
+        _fieldConditional : function(input_def) {
             // link this
             var self = this;
 
@@ -401,7 +409,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         
         /** Data input field
         */
-        _field_data : function(input_def) {
+        _fieldData : function(input_def) {
             // link this
             var self = this;
             
@@ -505,7 +513,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         
         /** Select/Checkbox/Radio options field
         */
-        _field_select : function (input_def) {
+        _fieldSelect : function (input_def) {
             // configure options fields
             var options = [];
             for (var i in input_def.options) {
@@ -537,7 +545,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         
         /** Text input field
         */
-        _field_text : function(input_def) {
+        _fieldText : function(input_def) {
             return new Ui.Input({
                 id      : 'field-' + input_def.id,
                 area    : input_def.area
@@ -546,7 +554,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         
         /** Slider field
         */
-        _field_slider: function(input_def) {
+        _fieldSlider: function(input_def) {
             // set min/max
             input_def.min = input_def.min || 0;
             input_def.max = input_def.max || 100000;
@@ -568,7 +576,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         
         /** Hidden field
         */
-        _field_hidden : function(input_def) {
+        _fieldHidden : function(input_def) {
             return new Ui.Hidden({
                 id      : 'field-' + input_def.id
             });
@@ -576,7 +584,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         
         /** Boolean field
         */
-        _field_boolean : function(input_def) {
+        _fieldBoolean : function(input_def) {
             return new Ui.RadioButton.View({
                 id      : 'field-' + input_def.id,
                 data    : [ { label : 'Yes', value : 'true'  },

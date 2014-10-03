@@ -137,9 +137,20 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     console.debug('tools-form::_initializeToolForm() : Attempt to fetch tool model failed.');
                 },
                 success: function() {
-                    // inputs
-                    self.inputs = self.model.get('inputs');
-            
+                    // create tool form section
+                    self.section = new ToolSection.View(self, {
+                        inputs : self.model.get('inputs'),
+                        cls    : 'ui-table-plain'
+                    });
+                    
+                    // TEMPORARY SWITCH
+                    // switch to classic tool form mako if the form definition is incompatible
+                    if (self.incompatible) {
+                        self.$el.hide();
+                        $('#tool-form-classic').show();
+                        return;
+                    }
+                    
                     // create portlet
                     self.portlet = new Portlet.View({
                         icon : 'fa-wrench',
@@ -191,12 +202,6 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     
                     // configure portlet and form table
                     self.setElement(self.portlet.content());
-                    
-                    // create tool form section
-                    self.section = new ToolSection.View(self, {
-                        inputs : self.model.get('inputs'),
-                        cls    : 'ui-table-plain'
-                    });
                     
                     // append tool section
                     self.portlet.append(self.section.$el);
