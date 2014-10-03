@@ -113,12 +113,6 @@ class JSTree(dictobj.DictionaryObject):
     kwargs may be standard jsTree options used at all levels in the tree.  These will be outputted
     in the JSON.
 
-    Example (basic usage):
-      >>> import jstree
-      >>> paths = [jstree.Path("editor/2012-07/31/.classpath", 1), jstree.Path("editor/2012-07/31/.project", 2)]
-      >>> t1 = jstree.JSTree(paths)
-      >>> print t1.jsonData()
-      [{'text': 'editor/2012-07/31/.classpath', 'id': 1, 'li_attr': {'id': 1}}, {'text': 'editor/2012-07/31/.project', 'id': 2, 'li_attr': {'id': 2}}]
     """
     if len(filter(lambda p: not isinstance(p, Path), paths)):
       raise TypeError(
@@ -148,17 +142,6 @@ class JSTree(dictobj.DictionaryObject):
     """
     Create a "pretty print" represenation of the tree with customized indentation at each
     level of the tree.
-
-    Example:
-    >>> import jstree
-    >>> paths = [jstree.Path("editor/2012-07/31/.classpath", 1), jstree.Path("editor/2012-07/31/.project", 2)]
-    >>> print jstree.JSTree(paths).pretty()
-    /
-      editor/
-      2012-07/
-        31/
-        .classpath
-        .project
     """
     if root is None:
       root = self._root
@@ -175,18 +158,5 @@ class JSTree(dictobj.DictionaryObject):
     ready for consumption by jsTree.  The data is represented as a
     list of dictionaries, each of which are our internal nodes.
 
-    Examples:
-    >>> import jstree
-    >>> paths = [jstree.Path("editor/2012-07/31/.classpath", 1), jstree.Path("editor/2012-07/31/.project", 2)]
-    >>> t = jstree.JSTree(paths)
-    >>> d = t.jsonData()
-    >>> print d
-    [{'data': 'editor', 'children': [{'data': '2012-07', 'children': [{'data': '31', 'children': [{'data': '.classpath', 'metadata': {'id': 1}}, {'data': '.project', 'metadata': {'id': 2}}]}]}]}]
-    >>> print d[0]['children'][0]['children'][0]['children'][1]
-    {'data': '.project', 'metadata': {'id': 2}}
-    >>> print d[0]['children'][0]['children'][0]['children'][1]['data']
-    .project
-    >>> print d[0]['children'][0]['children'][0]['children'][1]['metadata']['id']
-    2
     """
     return [self._root.children[k].jsonData() for k in sorted(self._root.children)]
