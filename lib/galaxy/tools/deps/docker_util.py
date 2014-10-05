@@ -59,7 +59,6 @@ def build_docker_cache_command(
 ):
     inspect_command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
     inspect_command_parts.extend(["inspect", image])
-    print inspect_command_parts
     inspect_image_command = " ".join(inspect_command_parts)
 
     pull_command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
