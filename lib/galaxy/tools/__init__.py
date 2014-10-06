@@ -789,9 +789,9 @@ class ToolBox( object, Dictifiable ):
             tool_xml = file( os.path.abspath( tool.config_file ), 'r' ).read()
             # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
             # modified to be relative to the repository root.
+            image_found = False
             if tool.help is not None:
                 tool_help = tool.help._source
-                image_found = False
                 # Check each line of the rendered tool help for an image tag that points to a location under static/
                 for help_line in tool_help.split( '\n' ):
                     image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
@@ -804,16 +804,16 @@ class ToolBox( object, Dictifiable ):
                             tarball_files.append( ( filesystem_path, tarball_path ) )
                             image_found = True
                             tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
-                # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
-                if image_found:
-                    fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
-                    os.close( fd )
-                    file( new_tool_config, 'w' ).write( tool_xml )
-                    tool_tup = ( os.path.abspath( new_tool_config ), os.path.split( tool.config_file )[-1]  )
-                    temp_files.append( os.path.abspath( new_tool_config ) )
-                else:
-                    tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
-                tarball_files.append( tool_tup )
+            # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
+            if image_found:
+                fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
+                os.close( fd )
+                file( new_tool_config, 'w' ).write( tool_xml )
+                tool_tup = ( os.path.abspath( new_tool_config ), os.path.split( tool.config_file )[-1]  )
+                temp_files.append( os.path.abspath( new_tool_config ) )
+            else:
+                tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
+            tarball_files.append( tool_tup )
             # TODO: This feels hacky.
             tool_command = tool.command.strip().split( ' ' )[0]
             tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
