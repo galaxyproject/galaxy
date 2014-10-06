@@ -8,6 +8,7 @@ DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_NET = None
 DEFAULT_MEMORY = None
 DEFAULT_VOLUMES_FROM = None
+DEFAULT_AUTO_REMOVE = True
 
 
 class DockerVolume(object):
@@ -82,6 +83,7 @@ def build_docker_run_command(
     docker_cmd=DEFAULT_DOCKER_COMMAND,
     sudo=DEFAULT_SUDO,
     sudo_cmd=DEFAULT_SUDO_COMMAND,
+    auto_rm=DEFAULT_AUTO_REMOVE,
     host=DEFAULT_HOST,
 ):
     command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
@@ -100,6 +102,8 @@ def build_docker_run_command(
         command_parts.extend(["-w", working_directory])
     if net:
         command_parts.extend(["--net", net])
+    if auto_rm:
+        command_parts.append("--rm")
     full_image = image
     if tag:
         full_image = "%s:%s" % (full_image, tag)
