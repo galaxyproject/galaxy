@@ -742,20 +742,21 @@ class ToolBox( object, Dictifiable ):
             tool_xml = file( os.path.abspath( tool.config_file ), 'r' ).read()
             # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
             # modified to be relative to the repository root.
-            tool_help = tool.help._source
             image_found = False
-            # Check each line of the rendered tool help for an image tag that points to a location under static/
-            for help_line in tool_help.split( '\n' ):
-                image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
-                matches = re.search( image_regex, help_line )
-                if matches is not None:
-                    tool_help_image = matches.group(1)
-                    tarball_path = tool_help_image
-                    filesystem_path = os.path.abspath( os.path.join( trans.app.config.root, 'static', tool_help_image ) )
-                    if os.path.exists( filesystem_path ):
-                        tarball_files.append( ( filesystem_path, tarball_path ) )
-                        image_found = True
-                        tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
+            if tool.help is not None:
+                tool_help = tool.help._source
+                # Check each line of the rendered tool help for an image tag that points to a location under static/
+                for help_line in tool_help.split( '\n' ):
+                    image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
+                    matches = re.search( image_regex, help_line )
+                    if matches is not None:
+                        tool_help_image = matches.group(1)
+                        tarball_path = tool_help_image
+                        filesystem_path = os.path.abspath( os.path.join( trans.app.config.root, 'static', tool_help_image ) )
+                        if os.path.exists( filesystem_path ):
+                            tarball_files.append( ( filesystem_path, tarball_path ) )
+                            image_found = True
+                            tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
             # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
             if image_found:
                 fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
@@ -767,7 +768,7 @@ class ToolBox( object, Dictifiable ):
                 tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
             tarball_files.append( tool_tup )
             # TODO: This feels hacky.
-            tool_command = tool.command.split( ' ' )[0]
+            tool_command = tool.command.strip().split( ' ' )[0]
             tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
             # Add the tool XML to the tuple that will be used to populate the tarball.
             if os.path.exists( os.path.join( tool_path, tool_command ) ):
