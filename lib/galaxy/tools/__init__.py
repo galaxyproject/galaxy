@@ -235,7 +235,8 @@ class ToolBox( object, Dictifiable ):
             elif elem.tag == 'label':
                 self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
             elif elem.tag == 'tool_dir':
-                self.__watch_directory( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
+                self.load_tooldir_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
+
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
@@ -687,7 +688,7 @@ class ToolBox( object, Dictifiable ):
             elif sub_elem.tag == 'label':
                 self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
             elif sub_elem.tag == 'tool_dir':
-                self.__watch_directory( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
+                self.load_tooldir_tag_set( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
@@ -696,8 +697,12 @@ class ToolBox( object, Dictifiable ):
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
 
-    def __watch_directory( self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict ):
+    def load_tooldir_tag_set(self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict):
         directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
+        recursive = string_as_bool( sub_elem.attrib.get("recursive", True) )        
+        self.__watch_directory( directory, elems, integrated_elems, load_panel_dict, recursive )
+
+    def __watch_directory( self, directory, elems, integrated_elems, load_panel_dict, recursive):
 
         def quick_load( tool_file, async=True ):
             try:
@@ -717,16 +722,21 @@ class ToolBox( object, Dictifiable ):
                         # will be False when things like functional tests are the caller.
                         self.fix_integrated_tool_panel_dict()
                         self.write_integrated_tool_panel_config_file()
-
                 return tool.id
             except Exception:
                 log.exception("Failed to load potential tool %s." % tool_file)
                 return None
 
+        tool_loaded = False
         for name in os.listdir( directory ):
-            if name.endswith( ".xml" ):
-                quick_load( os.path.join( directory, name), async=False )
-        self.tool_watcher.watch_directory( directory, quick_load )
+            child_path = os.path.join(directory, name)
+            if os.path.isdir(child_path) and recursive:
+                self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
+            elif name.endswith( ".xml" ):
+                quick_load( child_path, async=False )
+                tool_loaded = True
+        if tool_loaded:
+            self.tool_watcher.watch_directory( directory, quick_load )
 
     def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
