@@ -116,5 +116,5 @@ def __docker_prefix(docker_cmd, sudo, sudo_cmd, host):
         command_parts.append(sudo_cmd)
     command_parts.append(docker_cmd)
     if host:
-        command_parts.append(["-H", host])
+        command_parts.extend(["-H", host])
     return command_parts
