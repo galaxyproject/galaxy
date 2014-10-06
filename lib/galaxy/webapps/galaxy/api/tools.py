@@ -3,6 +3,7 @@ import urllib
 from galaxy import exceptions
 from galaxy import web, util
 from galaxy.web import _future_expose_api_anonymous
+from galaxy.web import _future_expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.web.base.controller import UsesHistoryMixin
@@ -11,6 +12,8 @@ from galaxy.util.json import dumps
 from galaxy.visualization.data_providers.genome import *
 
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+
+import galaxy.queue_worker
 
 import logging
 log = logging.getLogger( __name__ )
@@ -57,6 +60,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         link_details = util.string_as_bool( kwd.get( 'link_details', False ) )
         tool = self._get_tool( id )
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
+
+    @_future_expose_api
+    @web.require_admin
+    def reload( self, trans, tool_id, **kwd ):
+        """
+        GET /api/tools/{tool_id}/reload
+        Reload specified tool.
+        """
+        toolbox = trans.app.toolbox
+        galaxy.queue_worker.send_control_task( trans, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
+        message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
+        return { status: message }
 
     @_future_expose_api_anonymous
     def citations( self, trans, id, **kwds ):
