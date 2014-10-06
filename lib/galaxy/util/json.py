@@ -17,12 +17,10 @@ log = logging.getLogger( __name__ )
 
 
 def to_json_string(*args, **kwargs):
-    log.warning("Using deprecated function to_json_string.")
     return json.dumps(*args, **kwargs)
 
 
 def from_json_string(*args, **kwargs):
-    log.warning("Using deprecated function from_json_string.")
     return json.loads(*args, **kwargs)
 
 
