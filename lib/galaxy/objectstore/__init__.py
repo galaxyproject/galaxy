@@ -596,7 +596,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     Depending on the configuration setting, invoke the appropriate object store
     """
 
-    if config_xml is None and config.object_store_config_file:
+    if config_xml is None and os.path.exists( config.object_store_config_file ):
         # This is a top level invocation of build_object_store_from_config, and
         # we have an object_store_conf.xml -- read the .xml and build
         # accordingly

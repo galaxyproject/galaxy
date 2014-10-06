@@ -63,7 +63,7 @@ var require = patchRequire( require ),
  *  @returns {Object|null} ElementInfo of the historyItemWrapper found, null if not found
  */
 HistoryPanel.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( title ){
-    var wrapperXpath = xpath( '//span[@class="dataset-name" and contains(text(),"' + title + '")]/../../..' );
+    var wrapperXpath = xpath( '//span[@class="name" and contains(text(),"' + title + '")]/../../..' );
     return this.spaceghost.elementInfoOrNull( wrapperXpath );
 };
 
@@ -138,9 +138,13 @@ HistoryPanel.prototype.waitForHda = function waitForHda( hdaName, then, timeout,
                 if( state !== 'ok' ){ return false; }
 
                 var hdaOpacity = this.evaluate( function( name ){
-                    return $( '.dataset-name:contains("' + name + '")' ).parents( '.hda' ).css( 'opacity' );
+                    // locate the hda by name and return its opacity
+                    console.debug( name );
+                    console.debug( $( '.name:contains("' + name + '")' ) );
+                    console.debug( $( '.name:contains("' + name + '")' ).parents( '.hda' ) );
+                    return $( '.name:contains("' + name + '")' ).parents( '.dataset' ).css( 'opacity' );
                 }, hdaName );
-                this.debug( 'fading in: ' + hdaOpacity );
+                //this.debug( 'fading in: ' + hdaOpacity );
                 return hdaOpacity >= 1;
             },
             function _then(){ then.call( this, hdaElement ); },
@@ -310,19 +314,19 @@ HistoryPanel.prototype.data = {
     hdaTitleButtons : {
         // mixing text and selectors here
         display : {
-            selector : '.icon-btn.dataset-display',
+            selector : '.icon-btn.display-btn',
             tooltip  : 'View data',
             hrefTpl  : '/datasets/%s/display',
             nodeName : 'a'
         },
         edit : {
-            selector : '.icon-btn.dataset-edit',
+            selector : '.icon-btn.edit-btn',
             tooltip  : 'Edit attributes',
             hrefTpl  : '/datasets/%s/edit',
             nodeName : 'a'
         },
         'delete' : {
-            selector : '.icon-btn.dataset-delete',
+            selector : '.icon-btn.delete-btn',
             tooltip  : 'Delete',
             hrefTpl  : 'javascript:void(0);',
             nodeName : 'a'
@@ -330,19 +334,19 @@ HistoryPanel.prototype.data = {
     },
     hdaPrimaryActionButtons : {
         download : {
-            selector : '.icon-btn.dataset-download-btn',
+            selector : '.icon-btn.download-btn',
             tooltip  : 'Download',
             hrefTpl  : '/datasets/%s/display?to_ext=',
             nodeName : 'a'
         },
         info : {
-            selector : '.icon-btn.dataset-params-btn',
+            selector : '.icon-btn.params-btn',
             tooltip  : 'View details',
             hrefTpl  : '/datasets/%s/show_params',
             nodeName : 'a'
         },
         rerun : {
-            selector : '.icon-btn.dataset-rerun-btn',
+            selector : '.icon-btn.rerun-btn',
             tooltip  : 'Run this job again',
             hrefTpl  : '/tool_runner/rerun?id=%s',
             nodeName : 'a'
@@ -352,20 +356,21 @@ HistoryPanel.prototype.data = {
     },
     selectors : {
         history : {
-            title       : '.history-title',
-            name        : '.history-title .history-name',
-            nameEditableTextInput : '.history-name input',
-            subtitle    : '.history-subtitle',
-            tagIcon     : '.history-secondary-actions .history-tag-btn',
-            tagArea     : '.history-controls .tags-display',
-            annoIcon    : '.history-secondary-actions .history-annotate-btn',
-            annoArea    : '.history-controls .annotation-display',
-            emptyMsg    : '.empty-history-message',
+            title       : '.controls .title',
+            name        : '.title .name',
+            nameEditableTextInput : '.name input',
+            subtitle    : '.subtitle',
+            size        : '.history-size',
+            tagIcon     : '.actions .history-tag-btn',
+            tagArea     : '.controls .tags-display',
+            annoIcon    : '.actions .history-annotate-btn',
+            annoArea    : '.controls .annotation-display',
+            emptyMsg    : '.empty-message',
             hdaContainer: '.datasets-list'
         },
         hda : {
             wrapper : {
-                itemClass   : '.hda',
+                itemClass   : '.history-content.dataset',
                 stateClasses : {
                     prefix  : 'state-',
                     ok      : 'state-ok',
@@ -374,18 +379,18 @@ HistoryPanel.prototype.data = {
             },
             errorMessage    : '.errormessagesmall',
 
-            title           : '.dataset-title',
-            titleButtonArea : '.dataset-primary-actions',
-            summary         : '.dataset-summary',
-            dbkey           : '.dataset-dbkey .value',
-            info            : '.dataset-info',
-            body            : '.dataset-body',
+            title           : '.title',
+            titleButtonArea : '.primary-actions',
+            summary         : '.summary',
+            dbkey           : '.dbkey .value',
+            info            : '.info',
+            body            : '.details',
             
-            primaryActionButtons    : '.dataset-actions .left',
-            secondaryActionButtons  : '.dataset-actions .right',
+            primaryActionButtons    : '.actions .left',
+            secondaryActionButtons  : '.actions .right',
 
-            undeleteLink    : '.dataset-undelete',
-            purgeLink       : '.dataset-purge',
+            undeleteLink    : '.undelete-link',
+            purgeLink       : '.purge-link',
 
             peek            : '.dataset-peek'
         }

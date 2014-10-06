@@ -18,7 +18,7 @@ spaceghost.user.loginOrRegisterUser( email, password );
 
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
     this.test.comment( '(logged in as ' + this.user.loggedInAs() + ')' );
-    this.api.tools.thenUpload( spaceghost.api.histories.show( 'current' ).id, {
+    this.api.tools.thenUpload( spaceghost.api.histories.index()[0].id, {
         filepath: '../../test-data/1.sam'
     });
 });

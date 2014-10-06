@@ -174,7 +174,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
             latest_config = visualization.latest_revision.config
             if( ( title != visualization.latest_revision.title )
             or  ( dbkey != visualization.latest_revision.dbkey )
-            or  ( util.json.to_json_string( config ) != util.json.to_json_string( latest_config ) ) ):
+            or  ( util.json.dumps( config ) != util.json.dumps( latest_config ) ) ):
                 revision = self.add_visualization_revision( trans, visualization, config, title, dbkey )
                 rval = { 'id' : id, 'revision' : revision.id }
 

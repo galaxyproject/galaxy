@@ -1,0 +1,36 @@
+<tool id="special_params" name="special_params" version="1.0.0">
+  <command>echo $__root_dir__ > out_root_dir;
+    echo $__datatypes_config__ > out_datatypes_config;
+    echo $__admin_users__ > out_admin_users;
+    echo $__user_email__ > out_user_email
+  </command>
+  <inputs>
+    <param name="ignored" type="integer" value="0" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out_root_dir" from_work_dir="out_root_dir" />
+    <data format="txt" name="out_datatypes_config" from_work_dir="out_datatypes_config" />
+    <data format="txt" name="out_admin_users" from_work_dir="out_admin_users" />
+    <data format="txt" name="out_user_email" from_work_dir="out_user_email" />
+  </outputs>
+  <tests>
+    <test>
+      <output name="out_root_dir">
+        <!-- Is an absolute path. -->
+        <assert_contents><has_line_matching expression="^\/.*$" /></assert_contents>
+      </output>
+      <output name="out_datatypes_config">
+        <!-- Is an absolute path. -->
+        <assert_contents><has_line_matching expression="^\/.*$" /></assert_contents>
+      </output>
+      <output name="out_admin_users">
+        <!-- Has at least on e-mail address. -->
+        <assert_contents><has_text text="@" /></assert_contents>
+      </output>
+      <output name="out_user_email">
+        <!-- Looks like an e-mail address. -->
+        <assert_contents><has_line_matching expression="[^@]+@[^@]+\.[^@]+" /></assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

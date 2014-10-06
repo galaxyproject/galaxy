@@ -48,7 +48,7 @@ from galaxy.web import buildapp
 from galaxy import tools
 from galaxy.util import bunch
 from galaxy import util
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 
 from functional import database_contexts
 from base.api_util import get_master_api_key
@@ -66,8 +66,8 @@ default_galaxy_test_port_min = 8000
 default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
-migrated_tool_panel_config = 'migrated_tools_conf.xml'
-installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
+migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
+installed_tool_panel_configs = [ 'config/shed_tool_conf.xml' ]
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
@@ -100,7 +100,7 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from universe_wsgi.ini
+    #TODO: these should be copied from config/galaxy.ini
     return dict(
         #TODO: static_enabled needed here?
         static_enabled=True,
@@ -224,11 +224,9 @@ def main():
             datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
         else:
             # Use tool_conf.xml toolbox.
-            tool_conf = 'tool_conf.xml'
+            tool_conf = None
             if __check_arg( '-with_framework_test_tools' ):
-                # Some of these tools will not work without swapping
-                # default interactor to point to test.
-                tool_conf = "%s,%s" % ( tool_conf, os.path.join( framework_tool_dir, 'samples_tool_conf.xml' ) )
+                tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', os.path.join( framework_tool_dir, 'samples_tool_conf.xml' ) )
         test_dir = default_galaxy_test_file_dir
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
@@ -239,11 +237,10 @@ def main():
         ignore_files = ()
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ
+    tool_data_table_config_path = None
     if os.path.exists( 'tool_data_table_conf.test.xml' ):
         tool_data_table_config_path = 'tool_data_table_conf.test.xml'
-    else:
-        tool_data_table_config_path = 'tool_data_table_conf.xml'
-    shed_tool_data_table_config = 'shed_tool_data_table_conf.xml'
+    shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
     tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
     galaxy_test_tmp_dir = os.environ.get( 'GALAXY_TEST_TMP_DIR', None )
@@ -398,8 +395,8 @@ def main():
             for label in kwargs:
                 config_tuple = label, kwargs[ label ]
                 config_items.append( config_tuple )
-            # Write a temporary file, based on universe_wsgi.ini.sample, using the configuration options defined above.
-            generate_config_file( 'universe_wsgi.ini.sample', galaxy_config_file, config_items )
+            # Write a temporary file, based on config/galaxy.ini.sample, using the configuration options defined above.
+            generate_config_file( 'config/galaxy.ini.sample', galaxy_config_file, config_items )
         # Set the global_conf[ '__file__' ] option to the location of the temporary .ini file, which gets passed to set_metadata.sh.
         kwargs[ 'global_conf' ] = get_webapp_global_conf()
         kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file
@@ -520,7 +517,7 @@ def main():
                     has_test_data, shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
             # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
             shed_tools_file = open( galaxy_tool_shed_test_file, 'w' )
-            shed_tools_file.write( to_json_string( shed_tools_dict ) )
+            shed_tools_file.write( dumps( shed_tools_dict ) )
             shed_tools_file.close()
             if not os.path.isabs( galaxy_tool_shed_test_file ):
                 galaxy_tool_shed_test_file = os.path.join( os.getcwd(), galaxy_tool_shed_test_file )

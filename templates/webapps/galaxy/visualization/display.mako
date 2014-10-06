@@ -89,9 +89,9 @@
                                                 vis_id: "${config.get('vis_id')}", 
                                                 dbkey: "${config.get('dbkey')}"
                                              }, 
-                                             ${ h.to_json_string( config.get( 'viewport', dict() ) ) },
-                                             ${ h.to_json_string( config['tracks'] ) },
-                                             ${ h.to_json_string( config.get('bookmarks') ) }
+                                             ${ h.dumps( config.get( 'viewport', dict() ) ) },
+                                             ${ h.dumps( config['tracks'] ) },
+                                             ${ h.dumps( config.get('bookmarks') ) }
                                              );
                 
                 // Set up keyboard navigation.

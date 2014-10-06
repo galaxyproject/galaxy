@@ -215,7 +215,6 @@ HistoriesAPI.prototype.urlTpls = {
     delete_ : 'api/histories/%s',
     undelete: 'api/histories/deleted/%s/undelete',
     update  : 'api/histories/%s',
-    set_as_current : 'api/histories/%s/set_as_current'
 };
 
 HistoriesAPI.prototype.index = function index( deleted ){
@@ -279,15 +278,6 @@ HistoriesAPI.prototype.update = function update( id, payload ){
     return this.api._ajax( url, {
         type : 'PUT',
         data : payload
-    });
-};
-
-HistoriesAPI.prototype.set_as_current = function set_as_current( id ){
-    this.api.spaceghost.info( 'histories.set_as_current: ' + id );
-    id = this.api.ensureId( id );
-
-    return this.api._ajax( utils.format( this.urlTpls.set_as_current, id ), {
-        type : 'PUT'
     });
 };
 

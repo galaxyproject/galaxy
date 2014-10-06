@@ -792,9 +792,10 @@ class ImportRepositoryManager( object ):
                 results_dict[ 'ok' ] = False
                 results_dict[ 'error_message' ] += error_message
             try:
-                rmm = repository_metadata_manager.RepositoryMetadataManager( self.app, self.user )
+                rmm = repository_metadata_manager.RepositoryMetadataManager( app=self.app,
+                                                                             user=self.user,
+                                                                             repository=repository )
                 status, error_message = rmm.set_repository_metadata_due_to_new_tip( self.host,
-                                                                                    repository,
                                                                                     content_alert_str=content_alert_str )
                 if error_message:
                     results_dict[ 'ok' ] = False

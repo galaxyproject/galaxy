@@ -8,7 +8,7 @@ spaceghost.test.begin( 'Test API functions for histories with an anonymous user'
     spaceghost.start();
 
 // =================================================================== TESTS
-spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( '.history-name' );
+spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( spaceghost.historypanel.data.selectors.history.name );
 spaceghost.then( function(){
 
     // ------------------------------------------------------------------------------------------- anon allowed
@@ -23,12 +23,6 @@ spaceghost.then( function(){
     this.test.assert( historyShow.id === index[0].id, 'Is the first history' );
     this.test.assert( this.hasKeys( historyShow, [ 'id', 'name', 'user_id' ] ) );
 
-    this.test.comment( 'Calling show with "current" should return the current history' );
-    var current = this.api.histories.show( 'current' );
-    //this.debug( this.jsonStr( current ) );
-    this.test.assert( current.id === index[0].id, 'Is the first history' );
-    this.test.assert( current.id === historyShow.id, 'current returned same id' );
-
 
     // ------------------------------------------------------------------------------------------- anon forbidden
     //TODO: why not return the current history?
@@ -36,35 +30,30 @@ spaceghost.then( function(){
     var recent = this.api.histories.show( 'most_recently_used' );
     this.test.assert( recent === null, 'most_recently_used returned None' );
 
-    this.test.comment( 'Calling set_as_current should fail for an anonymous user' );
-    this.api.assertRaises( function(){
-        this.api.histories.set_as_current( current.id );
-    }, 403, 'API authentication required for this request', 'set_as_current failed with error' );
-
     this.test.comment( 'Calling create should fail for an anonymous user' );
     this.api.assertRaises( function(){
-        this.api.histories.create({ current: true });
+        this.api.histories.create({ name: 'new' });
     }, 403, 'API authentication required for this request', 'create failed with error' );
 
     this.test.comment( 'Calling delete should fail for an anonymous user' );
     this.api.assertRaises( function(){
-        this.api.histories.delete_( current.id );
+        this.api.histories.delete_( historyShow.id );
     }, 403, 'API authentication required for this request', 'create failed with error' );
 
     this.test.comment( 'Calling update should fail for an anonymous user' );
     this.api.assertRaises( function(){
-        this.api.histories.update( current.id, {} );
+        this.api.histories.update( historyShow.id, {} );
     }, 403, 'API authentication required for this request', 'update failed with error' );
 
     //TODO: need these two in api.js
     //this.test.comment( 'Calling archive_import should fail for an anonymous user' );
     //this.api.assertRaises( function(){
-    //    this.api.histories.archive_import( current.id, {} );
+    //    this.api.histories.archive_import( historyShow.id, {} );
     //}, 403, 'API authentication required for this request', 'archive_import failed with error' );
 
     //this.test.comment( 'Calling archive_download should fail for an anonymous user' );
     //this.api.assertRaises( function(){
-    //    this.api.histories.archive_download( current.id, {} );
+    //    this.api.histories.archive_download( historyShow.id, {} );
     //}, 403, 'API authentication required for this request', 'archive_download failed with error' );
 
     // test server bad id protection
@@ -76,13 +65,7 @@ spaceghost.then( function(){
 });
 
 // ------------------------------------------------------------------------------------------- hdas
-spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( '.history-name' );
-//TODO: can't use this - get a 400 when tools checks for history: 'logged in to manage'
-//spaceghost.then( function(){
-//    this.api.tools.thenUpload( spaceghost.api.histories.show( 'current' ).id, {
-//        filepath: '../../test-data/1.sam'
-//    });
-//});
+spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( spaceghost.historypanel.data.selectors.history.name );
 spaceghost.then( function(){
     spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
         this.test.assert( uploadInfo.hdaElement !== null, "Convenience function produced hda" );
@@ -92,7 +75,7 @@ spaceghost.then( function(){
 });
 
 spaceghost.then( function(){
-    var current = this.api.histories.show( 'current' );
+    var current = this.api.histories.index()[0];
 
     // ------------------------------------------------------------------------------------------- anon allowed
     this.test.comment( 'anonymous users can index hdas in their current history' );

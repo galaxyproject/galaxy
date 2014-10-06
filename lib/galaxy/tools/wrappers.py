@@ -194,12 +194,17 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         else:
             self.dataset = dataset
             self.metadata = self.MetadataWrapper( dataset.metadata )
+        self.datatypes_registry = datatypes_registry
         self.false_path = getattr( dataset_path, "false_path", None )
         self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
 
     @property
     def is_collection( self ):
         return False
+
+    def is_of_type( self, *exts ):
+        datatypes = [ self.datatypes_registry.get_datatype_by_extension( e ) for e in exts ]
+        return self.dataset.datatype.matches_any( datatypes )
 
     def __str__( self ):
         if self.false_path is not None:

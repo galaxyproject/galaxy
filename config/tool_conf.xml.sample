@@ -1,0 +1,185 @@
+<?xml version='1.0' encoding='utf-8'?>
+<toolbox>
+  <section id="getext" name="Get Data">
+    <tool file="data_source/upload.xml" />
+    <tool file="data_source/ucsc_tablebrowser.xml" />
+    <tool file="data_source/ucsc_tablebrowser_test.xml" />
+    <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
+    <tool file="data_source/ebi_sra.xml" />
+    <tool file="data_source/microbial_import.xml" />
+    <tool file="data_source/biomart.xml" />
+    <tool file="data_source/biomart_test.xml" />
+    <tool file="data_source/cbi_rice_mart.xml" />
+    <tool file="data_source/gramene_mart.xml" />
+    <tool file="data_source/fly_modencode.xml" />
+    <tool file="data_source/flymine.xml" />
+    <tool file="data_source/flymine_test.xml" />
+    <tool file="data_source/modmine.xml" />
+    <tool file="data_source/mousemine.xml" />
+    <tool file="data_source/ratmine.xml" />
+    <tool file="data_source/yeastmine.xml" />
+    <tool file="data_source/metabolicmine.xml" />
+    <tool file="data_source/worm_modencode.xml" />
+    <tool file="data_source/wormbase.xml" />
+    <tool file="data_source/wormbase_test.xml" />
+    <tool file="data_source/eupathdb.xml" />
+    <tool file="data_source/hbvar.xml" />
+    <tool file="genomespace/genomespace_file_browser_prod.xml" />
+    <tool file="genomespace/genomespace_importer.xml" />
+    <tool file="validation/fix_errors.xml" />
+  </section>
+  <section id="send" name="Send Data">
+    <tool file="genomespace/genomespace_exporter.xml" />
+  </section>
+  <section id="liftOver" name="Lift-Over">
+    <tool file="extract/liftOver_wrapper.xml" />
+  </section>
+  <section id="textutil" name="Text Manipulation">
+    <tool file="filters/fixedValueColumn.xml" />
+    <tool file="filters/catWrapper.xml" />
+    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/mergeCols.xml" />
+    <tool file="filters/convert_characters.xml" />
+    <tool file="filters/CreateInterval.xml" />
+    <tool file="filters/cutWrapper.xml" />
+    <tool file="filters/changeCase.xml" />
+    <tool file="filters/pasteWrapper.xml" />
+    <tool file="filters/remove_beginning.xml" />
+    <tool file="filters/randomlines.xml" />
+    <tool file="filters/headWrapper.xml" />
+    <tool file="filters/tailWrapper.xml" />
+    <tool file="filters/trimmer.xml" />
+    <tool file="filters/wc_gnu.xml" />
+    <tool file="filters/secure_hash_message_digest.xml" />
+  </section>
+  <section id="filter" name="Filter and Sort">
+    <tool file="stats/filtering.xml" />
+    <tool file="filters/sorter.xml" />
+    <tool file="filters/grep.xml" />
+    
+    <label id="gff" text="GFF" />
+    <tool file="filters/gff/extract_GFF_Features.xml" />
+    <tool file="filters/gff/gff_filter_by_attribute.xml" />
+    <tool file="filters/gff/gff_filter_by_feature_count.xml" />
+    <tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
+  </section>
+  <section id="group" name="Join, Subtract and Group">
+    <tool file="filters/joiner.xml" />
+    <tool file="filters/compare.xml" />
+    <tool file="stats/grouping.xml" />
+  </section>
+  <section id="convert" name="Convert Formats">
+    <tool file="filters/axt_to_concat_fasta.xml" />
+    <tool file="filters/axt_to_fasta.xml" />
+    <tool file="filters/axt_to_lav.xml" />
+    <tool file="filters/bed2gff.xml" />
+    <tool file="filters/gff2bed.xml" />
+    <tool file="filters/lav_to_bed.xml" />
+    <tool file="maf/maf_to_bed.xml" />
+    <tool file="maf/maf_to_interval.xml" />
+    <tool file="maf/maf_to_fasta.xml" />
+    <tool file="filters/wiggle_to_simple.xml" />
+    <tool file="filters/sff_extractor.xml" />
+    <tool file="filters/gtf2bedgraph.xml" />
+    <tool file="filters/wig_to_bigwig.xml" />
+    <tool file="filters/bed_to_bigbed.xml" />
+  </section>
+  <section id="features" name="Extract Features">
+    <tool file="filters/ucsc_gene_bed_to_exon_bed.xml" />
+  </section>
+  <section id="fetchSeq" name="Fetch Sequences">
+    <tool file="extract/extract_genomic_dna.xml" />
+  </section>
+  <section id="fetchAlign" name="Fetch Alignments">
+    <tool file="maf/interval2maf_pairwise.xml" />
+    <tool file="maf/interval2maf.xml" />
+    <tool file="maf/maf_split_by_species.xml" />
+    <tool file="maf/interval_maf_to_merged_fasta.xml" />
+    <tool file="maf/genebed_maf_to_fasta.xml" />
+    <tool file="maf/maf_stats.xml" />
+    <tool file="maf/maf_thread_for_species.xml" />
+    <tool file="maf/maf_limit_to_species.xml" />
+    <tool file="maf/maf_limit_size.xml" />
+    <tool file="maf/maf_by_block_number.xml" />
+    <tool file="maf/maf_reverse_complement.xml" />
+    <tool file="maf/maf_filter.xml" />
+  </section>
+  <section id="scores" name="Get Genomic Scores">
+    <tool file="filters/wiggle_to_simple.xml" />
+    <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
+  </section>
+  <section id="stats" name="Statistics">
+    <tool file="stats/gsummary.xml" />
+    <tool file="filters/uniq.xml" />
+  </section>
+  <section id="plots" name="Graph/Display Data">
+    <tool file="plotting/bar_chart.xml" />
+    <tool file="plotting/boxplot.xml" />
+    <tool file="visualization/LAJ.xml" />
+    <tool file="maf/vcf_to_maf_customtrack.xml" />
+  </section>
+  <section id="hyphy" name="Evolution">
+    <tool file="evolution/codingSnps.xml" />
+    <tool file="evolution/add_scores.xml" />
+  </section>
+  <section id="motifs" name="Motif Tools">
+    <tool file="meme/meme.xml" />
+    <tool file="meme/fimo.xml" />
+  </section>
+  <section id="NGS_QC" name="NGS: QC and manipulation">
+    
+    <label id="fastqcsambam" text="FastQC: fastq/sam/bam" />
+    
+    <label id="illumina" text="Illumina fastq" />
+    
+    <label id="454" text="Roche-454 data" />
+    <label id="solid" text="AB-SOLiD data" />
+    <tool file="next_gen_conversion/solid2fastq.xml" />
+    <tool file="solid_tools/solid_qual_stats.xml" />
+    <tool file="solid_tools/solid_qual_boxplot.xml" />
+    
+    <label id="generic_fastq" text="Generic FASTQ manipulation" />
+    
+    <label id="fastx_toolkit" text="FASTX-Toolkit for FASTQ data" />
+  </section>
+  <!--
+  Keep this section commented until it includes tools that
+  will be hosted on test/main.  The velvet wrappers have been
+  included in the distribution but will not be hosted on our
+  public servers for the current time.
+  <section name="NGS: Assembly" id="ngs_assembly">
+  <label text="Velvet" id="velvet"/>
+  <tool file="sr_assembly/velvetg.xml" />
+  <tool file="sr_assembly/velveth.xml" />
+  </section>
+  -->
+  <section id="solexa_tools" name="NGS: Mapping">
+    <tool file="sr_mapping/bfast_wrapper.xml" />
+    <tool file="sr_mapping/PerM.xml" />
+    <tool file="sr_mapping/srma_wrapper.xml" />
+    <tool file="sr_mapping/mosaik.xml" />
+  </section>
+  <section id="ngs-rna-tools" name="NGS: RNA Analysis">
+    
+    <label id="rna_seq" text="RNA-seq" />
+    <label id="filtering" text="Filtering" />
+  </section>
+  <section id="samtools" name="NGS: SAM Tools">
+  </section>
+  <section id="ngs-simulation" name="NGS: Simulation">
+    <tool file="ngs_simulation/ngs_simulation.xml" />
+  </section>
+  <section id="hgv" name="Phenotype Association">
+    <tool file="evolution/codingSnps.xml" />
+    <tool file="evolution/add_scores.xml" />
+    <tool file="phenotype_association/sift.xml" />
+    <tool file="phenotype_association/linkToGProfile.xml" />
+    <tool file="phenotype_association/linkToDavid.xml" />
+    <tool file="phenotype_association/ldtools.xml" />
+    <tool file="phenotype_association/pass.xml" />
+    <tool file="phenotype_association/gpass.xml" />
+    <tool file="phenotype_association/beam.xml" />
+    <tool file="phenotype_association/lps.xml" />
+    <tool file="phenotype_association/master2pg.xml" />
+  </section>
+</toolbox>

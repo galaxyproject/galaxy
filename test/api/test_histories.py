@@ -1,13 +1,15 @@
-import time
 from base import api
-# requests.{post,put,get} or something like it if unavailable
-from base.interactor import post_request
-from base.interactor import put_request
-from base.interactor import get_request
-from .helpers import TestsDatasets
+from requests import post
+from requests import put
+from requests import get
+from .helpers import DatasetPopulator, wait_on
 
 
-class HistoriesApiTestCase( api.ApiTestCase, TestsDatasets ):
+class HistoriesApiTestCase( api.ApiTestCase ):
+
+    def setUp( self ):
+        super( HistoriesApiTestCase, self ).setUp( )
+        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
 
     def test_create_history( self ):
         # Create a history.
@@ -26,34 +28,21 @@ class HistoriesApiTestCase( api.ApiTestCase, TestsDatasets ):
         post_data = dict( name="CannotCreate" )
         # Using lower-level _api_url will cause key to not be injected.
         histories_url = self._api_url( "histories" )
-        create_response = post_request( url=histories_url, data=post_data )
+        create_response = post( url=histories_url, data=post_data )
         self._assert_status_code_is( create_response, 403 )
 
-    def test_export( self ):
-        history_id = self._new_history( name="for_export" )
-        self._new_dataset( history_id, content="1 2 3" )
-        self._wait_for_history( history_id, assert_ok=True )
-        export_url = self._api_url( "histories/%s/exports" % history_id , use_key=True )
-        put_response = put_request( export_url )
-        self._assert_status_code_is( put_response, 202 )
-        # TODO: Break after some period of time.
-        while True:
-            put_response = put_request( export_url )
-            if put_response.status_code == 202:
-                time.sleep( .1 )
-            else:
-                break
-        self._assert_status_code_is( put_response, 200 )
-        response = put_response.json()
-        self._assert_has_keys( response, "download_url" )
-        download_path = response[ "download_url" ]
+    def test_import_export( self ):
+        history_id = self.dataset_populator.new_history( name="for_export" )
+        self.dataset_populator.new_dataset( history_id, content="1 2 3" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        download_path = self._export( history_id )
         full_download_url = "%s%s?key=%s" % ( self.url, download_path, self.galaxy_interactor.api_key )
-        download_response = get_request( full_download_url )
+        download_response = get( full_download_url )
         self._assert_status_code_is( download_response, 200 )
 
         def history_names():
             history_index = self._get( "histories" )
-            return map( lambda h: h[ "name" ], history_index.json() )
+            return dict( map( lambda h: ( h[ "name" ], h ), history_index.json() ) )
 
         import_name = "imported from archive: for_export"
         assert import_name not in history_names()
@@ -62,11 +51,40 @@ class HistoriesApiTestCase( api.ApiTestCase, TestsDatasets ):
         import_response = self._post( "histories", data=import_data )
 
         self._assert_status_code_is( import_response, 200 )
-        found = False
-        while not found:
-            time.sleep( .1 )
-            if import_name in history_names():
-                found = True
-        assert found, "%s not in history names %s" % ( import_name, history_names() )
+
+        def has_history_with_name():
+            histories = history_names()
+            return histories.get( import_name, None )
+
+        imported_history = wait_on( has_history_with_name, desc="import history" )
+        imported_history_id = imported_history[ "id" ]
+        self.dataset_populator.wait_for_history( imported_history_id )
+        contents_response = self._get( "histories/%s/contents" % imported_history_id )
+        self._assert_status_code_is( contents_response, 200 )
+        contents = contents_response.json()
+        assert len( contents ) == 1
+        imported_content = self.dataset_populator.get_history_dataset_content(
+            history_id=imported_history_id,
+            dataset_id=contents[ 0 ][ "id" ]
+        )
+        assert imported_content == "1 2 3\n"
+
+    def _export(self, history_id):
+        export_url = self._api_url( "histories/%s/exports" % history_id, use_key=True )
+        put_response = put( export_url )
+        self._assert_status_code_is( put_response, 202 )
+
+        def export_ready_response():
+            put_response = put( export_url )
+            if put_response.status_code == 202:
+                return None
+            return put_response
+
+        put_response = wait_on( export_ready_response, desc="export ready" )
+        self._assert_status_code_is( put_response, 200 )
+        response = put_response.json()
+        self._assert_has_keys( response, "download_url" )
+        download_path = response[ "download_url" ]
+        return download_path
 
     #TODO: (CE) test_create_from_copy

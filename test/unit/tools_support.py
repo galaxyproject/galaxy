@@ -99,10 +99,13 @@ class MockApp( object ):
             root=os.path.join(test_directory, "galaxy"),
             admin_users="mary@example.com",
             len_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' ),
+            builds_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' ),
         )
 
         # Setup some attributes for downstream extension by specific tests.
-        self.job_config = Bunch()
+        self.job_config = Bunch(
+            dynamic_params=None,
+        )
 
         # Two ways to handle model layer, one is to stub out some objects that
         # have an interface similar to real model (mock_model) and can keep

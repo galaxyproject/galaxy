@@ -3,7 +3,7 @@
     cat $f1.forward $f1['reverse'] >> $out1;
   </command>
   <inputs>
-    <param name="f1" type="data_collection" collection_type="paired" />
+    <param name="f1" type="data_collection" collection_type="paired" label="Input pair" />
   </inputs>
   <outputs>
     <data format="txt" name="out1" />

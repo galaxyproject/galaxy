@@ -39,26 +39,29 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
         except OverflowError:
             pass
         datasets_attr_in.close()
-        datasets_attrs = from_json_string( datasets_attr_str )
+        datasets_attrs = loads( datasets_attr_str )
 
         # Add datasets to archive and update dataset attributes.
         # TODO: security check to ensure that files added are in Galaxy dataset directory?
         for dataset_attrs in datasets_attrs:
-            dataset_file_name = dataset_attrs[ 'file_name' ] # Full file name.
-            dataset_archive_name = os.path.join( 'datasets',
-                                                 get_dataset_filename( dataset_attrs[ 'name' ], dataset_attrs[ 'extension' ] ) )
-            history_archive.add( dataset_file_name, arcname=dataset_archive_name )
-            # Update dataset filename to be archive name.
-            dataset_attrs[ 'file_name' ] = dataset_archive_name
+            if dataset_attrs['exported']:
+                dataset_file_name = dataset_attrs[ 'file_name' ] # Full file name.
+                dataset_archive_name = os.path.join( 'datasets',
+                                                     get_dataset_filename( dataset_attrs[ 'name' ], dataset_attrs[ 'extension' ] ) )
+                history_archive.add( dataset_file_name, arcname=dataset_archive_name )
+                # Update dataset filename to be archive name.
+                dataset_attrs[ 'file_name' ] = dataset_archive_name
 
         # Rewrite dataset attributes file.
         datasets_attrs_out = open( datasets_attrs_file, 'w' )
-        datasets_attrs_out.write( to_json_string( datasets_attrs ) )
+        datasets_attrs_out.write( dumps( datasets_attrs ) )
         datasets_attrs_out.close()
 
         # Finish archive.
         history_archive.add( history_attrs_file, arcname="history_attrs.txt" )
         history_archive.add( datasets_attrs_file, arcname="datasets_attrs.txt" )
+        if os.path.exists( datasets_attrs_file + ".provenance" ):
+            history_archive.add( datasets_attrs_file + ".provenance", arcname="datasets_attrs.txt.provenance" )            
         history_archive.add( jobs_attrs_file, arcname="jobs_attrs.txt" )
         history_archive.close()
 

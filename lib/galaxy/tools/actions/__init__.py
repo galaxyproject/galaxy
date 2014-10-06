@@ -1,18 +1,13 @@
-import os
-
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
 from galaxy import model
 from galaxy.tools.parameters import DataToolParameter
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
-from galaxy.util.json import from_json_string
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
-from galaxy.util import listify
-from galaxy.util.json import to_json_string
 from galaxy.web import url_for
 
 import logging
@@ -133,7 +128,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_datasets
 
-    def collect_input_dataset_collections( self, tool, param_values, trans ):
+    def collect_input_dataset_collections( self, tool, param_values ):
         input_dataset_collections = dict()
 
         def visitor( prefix, input, value, parent=None ):
@@ -167,7 +162,7 @@ class DefaultToolAction( object ):
         out_data = odict()
         # Track input dataset collections - but replace with simply lists so collect
         # input datasets can process these normally.
-        inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming, trans )
+        inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming )
         # Collect any input datasets from the incoming parameters
         inp_data = self.collect_input_datasets( tool, incoming, trans )
 
@@ -194,8 +189,7 @@ class DefaultToolAction( object ):
                 input_dbkey = data.dbkey
 
         # Collect chromInfo dataset and add as parameters to incoming
-        db_datasets = {}
-        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id!='CONVERTER_fasta_to_len' )
+        ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
         if db_dataset:
             inp_data.update( { "chromInfo": db_dataset } )
         incoming[ "chromInfo" ] = chrom_info
@@ -219,101 +213,61 @@ class DefaultToolAction( object ):
         # datasets first, then create the associations
         parent_to_child_pairs = []
         child_dataset_names = set()
-        object_store_id = None
-        for name, output in tool.outputs.items():
-            for filter in output.filters:
-                try:
-                    if not eval( filter.text.strip(), globals(), incoming ):
-                        break  # do not create this dataset
-                except Exception, e:
-                    log.debug( 'Dataset output filter failed: %s' % e )
-            else:  # all filters passed
-                if output.parent:
-                    parent_to_child_pairs.append( ( output.parent, name ) )
-                    child_dataset_names.add( name )
-                ## What is the following hack for? Need to document under what
-                ## conditions can the following occur? (james@bx.psu.edu)
-                # HACK: the output data has already been created
-                #      this happens i.e. as a result of the async controller
-                if name in incoming:
-                    dataid = incoming[name]
-                    data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataid )
-                    assert data != None
-                    out_data[name] = data
-                else:
-                    # the type should match the input
-                    ext = output.format
-                    if ext == "input":
-                        ext = input_ext
-                    if output.format_source is not None and output.format_source in inp_data:
-                        try:
-                            input_dataset = inp_data[output.format_source]
-                            input_extension = input_dataset.ext
-                            ext = input_extension
-                        except Exception, e:
-                            pass
+        object_store_populator = ObjectStorePopulator( trans.app )
 
-                    #process change_format tags
-                    if output.change_format:
-                        for change_elem in output.change_format:
-                            for when_elem in change_elem.findall( 'when' ):
-                                check = when_elem.get( 'input', None )
-                                if check is not None:
-                                    try:
-                                        if '$' not in check:
-                                            #allow a simple name or more complex specifications
-                                            check = '${%s}' % check
-                                        if str( fill_template( check, context=wrapped_params.params ) ) == when_elem.get( 'value', None ):
-                                            ext = when_elem.get( 'format', ext )
-                                    except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
-                                        continue
-                                else:
-                                    check = when_elem.get( 'input_dataset', None )
-                                    if check is not None:
-                                        check = inp_data.get( check, None )
-                                        if check is not None:
-                                            if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
-                                                ext = when_elem.get( 'format', ext )
-                    data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
-                    if output.hidden:
-                        data.visible = False
-                    # Commit the dataset immediately so it gets database assigned unique id
-                    trans.sa_session.add( data )
-                    trans.sa_session.flush()
-                    trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
-                # Create an empty file immediately.  The first dataset will be
-                # created in the "default" store, all others will be created in
-                # the same store as the first.
-                data.dataset.object_store_id = object_store_id
-                try:
-                    trans.app.object_store.create( data.dataset )
-                except ObjectInvalid:
-                    raise Exception('Unable to create output dataset: object store is full')
-                object_store_id = data.dataset.object_store_id      # these will be the same thing after the first output
-                # This may not be neccesary with the new parent/child associations
-                data.designation = name
-                # Copy metadata from one of the inputs if requested.
-                if output.metadata_source:
-                    data.init_meta( copy_from=inp_data[output.metadata_source] )
-                else:
-                    data.init_meta()
-                # Take dbkey from LAST input
-                data.dbkey = str(input_dbkey)
-                # Set state
-                # FIXME: shouldn't this be NEW until the job runner changes it?
-                data.state = data.states.QUEUED
-                data.blurb = "queued"
-                # Set output label
-                data.name = self.get_output_name( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
-                # Store output
-                out_data[ name ] = data
-                if output.actions:
-                    #Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
-                    output_action_params = dict( out_data )
-                    output_action_params.update( incoming )
-                    output.actions.apply_action( data, output_action_params )
-                # Store all changes to database
+        def handle_output( name, output ):
+            if output.parent:
+                parent_to_child_pairs.append( ( output.parent, name ) )
+                child_dataset_names.add( name )
+            ## What is the following hack for? Need to document under what
+            ## conditions can the following occur? (james@bx.psu.edu)
+            # HACK: the output data has already been created
+            #      this happens i.e. as a result of the async controller
+            if name in incoming:
+                dataid = incoming[name]
+                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataid )
+                assert data is not None
+                out_data[name] = data
+            else:
+                ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
+                data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                if output.hidden:
+                    data.visible = False
+                # Commit the dataset immediately so it gets database assigned unique id
+                trans.sa_session.add( data )
                 trans.sa_session.flush()
+                trans.app.security_agent.set_all_dataset_permissions( data.dataset, output_permissions )
+
+            object_store_populator.set_object_store_id( data )
+
+            # This may not be neccesary with the new parent/child associations
+            data.designation = name
+            # Copy metadata from one of the inputs if requested.
+            if output.metadata_source:
+                data.init_meta( copy_from=inp_data[output.metadata_source] )
+            else:
+                data.init_meta()
+            # Take dbkey from LAST input
+            data.dbkey = str(input_dbkey)
+            # Set state
+            # FIXME: shouldn't this be NEW until the job runner changes it?
+            data.state = data.states.QUEUED
+            data.blurb = "queued"
+            # Set output label
+            data.name = self.get_output_name( output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
+            # Store output
+            out_data[ name ] = data
+            if output.actions:
+                #Apply pre-job tool-output-dataset actions; e.g. setting metadata, changing format
+                output_action_params = dict( out_data )
+                output_action_params.update( incoming )
+                output.actions.apply_action( data, output_action_params )
+            # Store all changes to database
+            trans.sa_session.flush()
+
+        for name, output in tool.outputs.items():
+            if not filter_output(output, incoming):
+                handle_output( name, output )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
@@ -331,10 +285,12 @@ class DefaultToolAction( object ):
         trans.sa_session.flush()
         # Create the job object
         job = trans.app.model.Job()
-        galaxy_session = trans.get_galaxy_session()
-        # If we're submitting from the API, there won't be a session.
-        if type( galaxy_session ) == trans.model.GalaxySession:
-            job.session_id = galaxy_session.id
+
+        if hasattr( trans, "get_galaxy_session" ):
+            galaxy_session = trans.get_galaxy_session()
+            # If we're submitting from the API, there won't be a session.
+            if type( galaxy_session ) == trans.model.GalaxySession:
+                job.session_id = galaxy_session.id
         if trans.user is not None:
             job.user_id = trans.user.id
         job.history_id = history.id
@@ -366,9 +322,9 @@ class DefaultToolAction( object ):
                 job.add_input_dataset( name, None )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
-        job.object_store_id = object_store_id
+        job.object_store_id = object_store_populator.object_store_id
         if job_params:
-            job.params = to_json_string( job_params )
+            job.params = dumps( job_params )
         job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
         # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
@@ -447,6 +403,27 @@ class DefaultToolAction( object ):
         return name
 
 
+class ObjectStorePopulator( object ):
+    """ Small helper for interacting with the object store and making sure all
+    datasets from a job end up with the same object_store_id.
+    """
+
+    def __init__( self, app ):
+        self.object_store = app.object_store
+        self.object_store_id = None
+
+    def set_object_store_id( self, data ):
+        # Create an empty file immediately.  The first dataset will be
+        # created in the "default" store, all others will be created in
+        # the same store as the first.
+        data.dataset.object_store_id = self.object_store_id
+        try:
+            self.object_store.create( data.dataset )
+        except ObjectInvalid:
+            raise Exception('Unable to create output dataset: object store is full')
+        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
+
+
 def on_text_for_names( input_names ):
     # input_names may contain duplicates... this is because the first value in
     # multiple input dataset parameters will appear twice once as param_name
@@ -469,3 +446,61 @@ def on_text_for_names( input_names ):
     else:
         on_text = ""
     return on_text
+
+
+def filter_output(output, incoming):
+    for filter in output.filters:
+        try:
+            if not eval( filter.text.strip(), globals(), incoming ):
+                return True  # do not create this dataset
+        except Exception, e:
+            log.debug( 'Dataset output filter failed: %s' % e )
+    return False
+
+
+def determine_output_format(output, parameter_context, input_datasets, random_input_ext):
+    """ Determines the output format for a dataset based on an abstract
+    description of the output (galaxy.tools.ToolOutput), the parameter
+    wrappers, a map of the input datasets (name => HDA), and the last input
+    extensions in the tool form.
+
+    TODO: Don't deal with XML here - move this logic into ToolOutput.
+    TODO: Make the input extension used deterministic instead of random.
+    """
+    # the type should match the input
+    ext = output.format
+    if ext == "input":
+        ext = random_input_ext
+    if output.format_source is not None and output.format_source in input_datasets:
+        try:
+            input_dataset = input_datasets[output.format_source]
+            input_extension = input_dataset.ext
+            ext = input_extension
+        except Exception:
+            pass
+
+    #process change_format tags
+    if output.change_format:
+        for change_elem in output.change_format:
+            print change_elem
+            for when_elem in change_elem.findall( 'when' ):
+                check = when_elem.get( 'input', None )
+                print check
+                if check is not None:
+                    try:
+                        if '$' not in check:
+                            #allow a simple name or more complex specifications
+                            check = '${%s}' % check
+                        if str( fill_template( check, context=parameter_context ) ) == when_elem.get( 'value', None ):
+                            ext = when_elem.get( 'format', ext )
+                    except:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                        continue
+                else:
+                    check = when_elem.get( 'input_dataset', None )
+                    if check is not None:
+                        check = input_datasets.get( check, None )
+                        if check is not None:
+                            if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
+                                ext = when_elem.get( 'format', ext )
+
+    return ext

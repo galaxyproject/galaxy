@@ -5,12 +5,12 @@
     "name": "TestWorkflow1", 
     "steps": {
         "0": {
-            "annotation": "", 
+            "annotation": "input1 description", 
             "id": 0, 
             "input_connections": {}, 
             "inputs": [
                 {
-                    "description": "", 
+                    "description": "input1 description", 
                     "name": "WorkflowInput1"
                 }
             ], 

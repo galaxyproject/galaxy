@@ -23,7 +23,7 @@ var tooltipSelector     = spaceghost.data.selectors.tooltipBalloon,
 
     unnamedName         = spaceghost.historypanel.data.text.history.newName,
     nameSelector        = spaceghost.historypanel.data.selectors.history.name,
-    subtitleSelector    = spaceghost.historypanel.data.selectors.history.subtitle,
+    sizeSelector        = spaceghost.historypanel.data.selectors.history.size,
     initialSizeStr      = spaceghost.historypanel.data.text.history.newSize,
     tagIconSelector     = spaceghost.historypanel.data.selectors.history.tagIcon,
     annoIconSelector    = spaceghost.historypanel.data.selectors.history.annoIcon,
@@ -47,11 +47,11 @@ spaceghost.openHomePage().historypanel.waitForHdas( function testPanelStructure(
     this.test.assertVisible( nameSelector, 'History name is visible' );
     this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
 
-    this.test.comment( "history subtitle should display size and size should be 0 bytes" );
-    this.test.assertExists( subtitleSelector, 'Found ' + subtitleSelector );
-    this.test.assertVisible( subtitleSelector, 'History subtitle is visible' );
-    this.test.assertSelectorHasText( subtitleSelector, initialSizeStr,
-        'History subtitle has "' + initialSizeStr + '"' );
+    this.test.comment( "history should display size and size should be 0 bytes" );
+    this.test.assertExists( sizeSelector, 'Found ' + sizeSelector );
+    this.test.assertVisible( sizeSelector, 'History size is visible' );
+    this.test.assertSelectorHasText( sizeSelector, initialSizeStr,
+        'History size has "' + initialSizeStr + '"' );
 
     this.test.comment( "NO tags or annotations icons should be available for an anonymous user" );
     this.test.assertDoesntExist( tagIconSelector,  'Tag icon button not found' );

@@ -16,20 +16,25 @@ import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
+import galaxy.web.framework.webapp
 from galaxy import util
 from galaxy.util import asbool
+from galaxy.util.properties import load_app_properties
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class GalaxyWebApplication( galaxy.web.framework.WebApplication ):
+class GalaxyWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
 
 def app_factory( global_conf, **kwargs ):
     """
     Return a wsgi application serving the root object
     """
+    kwargs = load_app_properties(
+        kwds=kwargs
+    )
     # Create the Galaxy application unless passed in
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
@@ -197,10 +202,6 @@ def populate_api_routes( webapp, app ):
                                 controller='page_revisions',
                                 parent_resources=dict( member_name='page', collection_name='pages' ) )
 
-    # add as a non-ATOM API call to support the notion of a 'current/working' history unique to the history resource
-    webapp.mapper.connect( "set_as_current", "/api/histories/{id}/set_as_current",
-        controller="histories", action="set_as_current", conditions=dict( method=["PUT"] ) )
-
     webapp.mapper.connect( "history_archive_export", "/api/histories/{id}/exports",
         controller="histories", action="archive_export", conditions=dict( method=[ "PUT" ] ) )
     webapp.mapper.connect( "history_archive_download", "/api/histories/{id}/exports/{jeha_id}",
@@ -213,13 +214,13 @@ def populate_api_routes( webapp, app ):
     webapp.add_route( '/visualization/show/:visualization_name',
         controller='visualization', action='render', visualization_name=None )
 
-    # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
-    # Defines a named route "import_workflow".
-    webapp.mapper.connect( 'import_workflow', '/api/workflows/upload', controller='workflows', action='import_new_workflow', conditions=dict( method=['POST'] ) )
+    # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
+    webapp.mapper.connect( 'import_workflow_deprecated', '/api/workflows/upload', controller='workflows', action='import_new_workflow_deprecated', conditions=dict( method=['POST'] ) )
     webapp.mapper.connect( 'workflow_dict', '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict( method=['GET'] ) )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.mapper.connect( 'workflow_dict', '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict( method=['GET'] ) )
-    webapp.mapper.connect( 'import_shared_workflow', '/api/workflows/import', controller='workflows', action='import_shared_workflow', conditions=dict( method=['POST'] ) )
+    # Deprecated in favor of POST /api/workflows with shared_workflow_id in payload.
+    webapp.mapper.connect( 'import_shared_workflow_deprecated', '/api/workflows/import', controller='workflows', action='import_shared_workflow_deprecated', conditions=dict( method=['POST'] ) )
     webapp.mapper.connect( 'workflow_usage', '/api/workflows/{workflow_id}/usage', controller='workflows', action='workflow_usage', conditions=dict(method=['GET']))
     webapp.mapper.connect( 'workflow_usage_contents', '/api/workflows/{workflow_id}/usage/{usage_id}', controller='workflows', action='workflow_usage_contents', conditions=dict(method=['GET']))
 
@@ -241,12 +242,36 @@ def populate_api_routes( webapp, app ):
                            '/api/libraries/:id',
                            controller='libraries',
                            action='update',
-                           conditions=dict( method=[ "PATCH", 'PUT' ] ) )
+                           conditions=dict( method=[ "PATCH", "PUT" ] ) )
 
-    webapp.mapper.connect( 'show_lda_item',
+    webapp.mapper.connect( 'show_library_permissions',
+                           '/api/libraries/:encoded_library_id/permissions',
+                           controller='libraries',
+                           action='get_permissions',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'set_library_permissions',
+                           '/api/libraries/:encoded_library_id/permissions',
+                           controller='libraries',
+                           action='set_permissions',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.connect( 'show_ld_item',
                            '/api/libraries/datasets/:id',
                            controller='lda_datasets',
                            action='show',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'load_ld',
+                           '/api/libraries/datasets/',
+                           controller='lda_datasets',
+                           action='load',
+                           conditions=dict( method=[ "POST" ] ) )
+
+    webapp.mapper.connect( 'show_version_of_ld_item',
+                           '/api/libraries/datasets/:encoded_dataset_id/versions/:encoded_ldda_id',
+                           controller='lda_datasets',
+                           action='show_version',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'show_legitimate_lda_roles',
@@ -255,11 +280,11 @@ def populate_api_routes( webapp, app ):
                            action='show_roles',
                            conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( 'show_legitimate_lda_roles',
-                           '/api/libraries/datasets/:encoded_dataset_id/permissions/current',
+    webapp.mapper.connect( 'update_lda_permissions',
+                           '/api/libraries/datasets/:encoded_dataset_id/permissions',
                            controller='lda_datasets',
-                           action='get_roles',
-                           conditions=dict( method=[ "GET" ] ) )
+                           action='update_permissions',
+                           conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.connect( 'delete_lda_item',
                            '/api/libraries/datasets/:encoded_dataset_id',
@@ -281,11 +306,6 @@ def populate_api_routes( webapp, app ):
                             'contents',
                             controller='library_contents',
                             name_prefix='library_',
-                            path_prefix='/api/libraries/:library_id',
-                            parent_resources=dict( member_name='library', collection_name='libraries' ) )
-
-    webapp.mapper.resource( 'permission',
-                            'permissions',
                             path_prefix='/api/libraries/:library_id',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
 
@@ -312,6 +332,18 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'folder',
                             'folders',
                             path_prefix='/api' )
+
+    webapp.mapper.connect( 'show_folder_permissions',
+                           '/api/folders/:encoded_folder_id/permissions',
+                           controller='folders',
+                           action='get_permissions',
+                           conditions=dict( method=[ "GET" ] ) )
+
+    webapp.mapper.connect( 'set_folder_permissions',
+                           '/api/folders/:encoded_folder_id/permissions',
+                           controller='folders',
+                           action='set_permissions',
+                           conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.resource( 'content',
                             'contents',
@@ -531,12 +563,12 @@ def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
     # Send to dynamic app by default
     urlmap["/"] = app
     # Define static mappings from config
-    urlmap["/static"] = Static( conf.get( "static_dir" ), cache_time )
-    urlmap["/images"] = Static( conf.get( "static_images_dir" ), cache_time )
-    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir" ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
-    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
-    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", 'static/robots.txt'), cache_time )
+    urlmap["/static"] = Static( conf.get( "static_dir", "./static/" ), cache_time )
+    urlmap["/images"] = Static( conf.get( "static_images_dir", "./static/images" ), cache_time )
+    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", "./static/scripts/" ), cache_time )
+    urlmap["/static/style"] = Static( conf.get( "static_style_dir", "./static/style/blue" ), cache_time )
+    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", "./static/favicon.ico" ), cache_time )
+    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", "./static/robots.txt" ), cache_time )
 
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []

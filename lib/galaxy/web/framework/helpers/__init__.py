@@ -7,7 +7,7 @@ from cgi import escape
 from datetime import datetime, timedelta
 from galaxy import eggs
 from galaxy.util import hash_util
-from galaxy.util.json import to_json_string
+from galaxy.util.json import dumps
 eggs.require( "MarkupSafe" ) #required by WebHelpers
 eggs.require( "WebHelpers" )
 from webhelpers import date

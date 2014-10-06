@@ -1,13 +1,16 @@
+""" Tool shed helper methods for dealing with workflows - only two methods are
+utilized outside of this modules - generate_workflow_image and import_workflow.
+"""
 import logging
 import os
 
 import galaxy.tools
 import galaxy.tools.parameters
 import galaxy.webapps.galaxy.controllers.workflow
-from galaxy import eggs
 from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.modules import InputDataModule
+from galaxy.workflow.render import WorkflowCanvas
+from galaxy.workflow.modules import module_types
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
 
@@ -17,37 +20,7 @@ from tool_shed.util import encoding_util
 from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
 
-eggs.require( "SVGFig" )
-import svgfig
-
 log = logging.getLogger( __name__ )
-
-
-class RepoInputDataModule( InputDataModule ):
-
-    type = "data_input"
-    name = "Input dataset"
-
-    @classmethod
-    def new( Class, trans, tools_metadata=None, tool_id=None ):
-        module = Class( trans )
-        module.state = dict( name="Input Dataset" )
-        return module
-
-    @classmethod
-    def from_dict( Class, trans, repository_id, changeset_revision, step_dict, tools_metadata=None, secure=True ):
-        module = Class( trans )
-        state = json.from_json_string( step_dict[ "tool_state" ] )
-        module.state = dict( name=state.get( "name", "Input Dataset" ) )
-        return module
-
-    @classmethod
-    def from_workflow_step( Class, trans, repository_id, changeset_revision, tools_metadata, step ):
-        module = Class( trans )
-        module.state = dict( name="Input Dataset" )
-        if step.tool_inputs and "name" in step.tool_inputs:
-            module.state[ 'name' ] = step.tool_inputs[ 'name' ]
-        return module
 
 
 class RepoToolModule( ToolModule ):
@@ -81,13 +54,7 @@ class RepoToolModule( ToolModule ):
         self.state = None
 
     @classmethod
-    def new( Class, trans, repository_id, changeset_revision, tools_metadata, tool_id=None ):
-        module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
-        module.state = module.tool.new_state( trans, all_pages=True )
-        return module
-
-    @classmethod
-    def from_dict( Class, trans, repository_id, changeset_revision, step_dict, tools_metadata, secure=True ):
+    def from_dict( Class, trans, step_dict, repository_id, changeset_revision, tools_metadata, secure=True ):
         tool_id = step_dict[ 'tool_id' ]
         module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
         module.state = galaxy.tools.DefaultToolState()
@@ -97,7 +64,7 @@ class RepoToolModule( ToolModule ):
         return module
 
     @classmethod
-    def from_workflow_step( Class, trans, repository_id, changeset_revision, tools_metadata, step ):
+    def from_workflow_step( Class, trans, step, repository_id, changeset_revision, tools_metadata ):
         module = Class( trans, repository_id, changeset_revision, tools_metadata, step.tool_id )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool:
@@ -109,6 +76,7 @@ class RepoToolModule( ToolModule ):
 
     def get_data_inputs( self ):
         data_inputs = []
+
         def callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( input, galaxy.tools.parameters.DataToolParameter ):
                 data_inputs.append( dict( name=prefixed_name,
@@ -128,16 +96,16 @@ class RepoToolModule( ToolModule ):
         if self.tool:
             data_inputs = None
             for name, tool_output in self.tool.outputs.iteritems():
-                if tool_output.format_source != None:
+                if tool_output.format_source is not None:
                     # Default to special name "input" which remove restrictions on connections
                     formats = [ 'input' ]
-                    if data_inputs == None:
+                    if data_inputs is None:
                         data_inputs = self.get_data_inputs()
                     # Find the input parameter referenced by format_source
                     for di in data_inputs:
                         # Input names come prefixed with conditional and repeat names separated by '|',
                         # so remove prefixes when comparing with format_source.
-                        if di[ 'name' ] != None and di[ 'name' ].split( '|' )[ -1 ] == tool_output.format_source:
+                        if di[ 'name' ] is not None and di[ 'name' ].split( '|' )[ -1 ] == tool_output.format_source:
                             formats = di[ 'extensions' ]
                 else:
                     formats = [ tool_output.format ]
@@ -155,23 +123,31 @@ class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
     def __init__( self, module_types ):
         self.module_types = module_types
 
-    def new( self, trans, type, tools_metadata=None, tool_id=None ):
-        """Return module for type and (optional) tool_id initialized with new / default state."""
-        assert type in self.module_types
-        return self.module_types[ type ].new( trans, tool_id )
-
-    def from_dict( self, trans, repository_id, changeset_revision, step_dict, **kwd ):
+    def from_dict( self, trans, repository_id, changeset_revision, step_dict, tools_metadata, **kwd ):
         """Return module initialized from the data in dictionary `step_dict`."""
         type = step_dict[ 'type' ]
         assert type in self.module_types
-        return self.module_types[ type ].from_dict( trans, repository_id, changeset_revision, step_dict, **kwd )
+        module_method_kwds = dict( **kwd )
+        if type == "tool":
+            module_method_kwds[ 'repository_id' ] = repository_id
+            module_method_kwds[ 'changeset_revision' ] = changeset_revision
+            module_method_kwds[ 'tools_metadata' ] = tools_metadata
+        return self.module_types[ type ].from_dict( trans, step_dict, **module_method_kwds )
 
     def from_workflow_step( self, trans, repository_id, changeset_revision, tools_metadata, step ):
         """Return module initialized from the WorkflowStep object `step`."""
         type = step.type
-        return self.module_types[ type ].from_workflow_step( trans, repository_id, changeset_revision, tools_metadata, step )
+        module_method_kwds = dict( )
+        if type == "tool":
+            module_method_kwds[ 'repository_id' ] = repository_id
+            module_method_kwds[ 'changeset_revision' ] = changeset_revision
+            module_method_kwds[ 'tools_metadata' ] = tools_metadata
+        return self.module_types[ type ].from_workflow_step( trans, step, **module_method_kwds )
 
-module_factory = RepoWorkflowModuleFactory( dict( data_input=RepoInputDataModule, tool=RepoToolModule ) )
+tool_shed_module_types = module_types.copy()
+tool_shed_module_types[ 'tool' ] = RepoToolModule
+module_factory = RepoWorkflowModuleFactory( tool_shed_module_types )
+
 
 def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, repository_id=None ):
     """
@@ -206,120 +182,28 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
                                                           tools_metadata=tools_metadata,
                                                           repository_id=repository_id,
                                                           changeset_revision=changeset_revision )
-    data = []
-    canvas = svgfig.canvas( style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left" )
-    text = svgfig.SVG( "g" )
-    connectors = svgfig.SVG( "g" )
-    boxes = svgfig.SVG( "g" )
-    svgfig.Text.defaults[ "font-size" ] = "10px"
-    in_pos = {}
-    out_pos = {}
-    margin = 5
-    # Spacing between input/outputs.
-    line_px = 16
+    workflow_canvas = WorkflowCanvas()
+    canvas = workflow_canvas.canvas
     # Store px width for boxes of each step.
-    widths = {}
-    max_width, max_x, max_y = 0, 0, 0
     for step in workflow.steps:
         step.upgrade_messages = {}
         module = module_factory.from_workflow_step( trans, repository_id, changeset_revision, tools_metadata, step )
         tool_errors = module.type == 'tool' and not module.tool
         module_data_inputs = get_workflow_data_inputs( step, module )
         module_data_outputs = get_workflow_data_outputs( step, module, workflow.steps )
-        step_dict = { 'id' : step.order_index,
-                      'data_inputs' : module_data_inputs,
-                      'data_outputs' : module_data_outputs,
-                      'position' : step.position,
-                      'tool_errors' : tool_errors }
-        input_conn_dict = {}
-        for conn in step.input_connections:
-            input_conn_dict[ conn.input_name ] = dict( id=conn.output_step.order_index, output_name=conn.output_name )
-        step_dict[ 'input_connections' ] = input_conn_dict
-        data.append( step_dict )
-        x, y = step.position[ 'left' ], step.position[ 'top' ]
-        count = 0
         module_name = get_workflow_module_name( module, missing_tool_tups )
-        max_len = len( module_name ) * 1.5
-        text.append( svgfig.Text( x, y + 20, module_name, **{ "font-size": "14px" } ).SVG() )
-        y += 45
-        for di in module_data_inputs:
-            cur_y = y + count * line_px
-            if step.order_index not in in_pos:
-                in_pos[ step.order_index ] = {}
-            in_pos[ step.order_index ][ di[ 'name' ] ] = ( x, cur_y )
-            text.append( svgfig.Text( x, cur_y, di[ 'label' ] ).SVG() )
-            count += 1
-            max_len = max( max_len, len( di[ 'label' ] ) )
-        if len( module.get_data_inputs() ) > 0:
-            y += 15
-        for do in module_data_outputs:
-            cur_y = y + count * line_px
-            if step.order_index not in out_pos:
-                out_pos[ step.order_index ] = {}
-            out_pos[ step.order_index ][ do[ 'name' ] ] = ( x, cur_y )
-            text.append( svgfig.Text( x, cur_y, do[ 'name' ] ).SVG() )
-            count += 1
-            max_len = max( max_len, len( do['name' ] ) )
-        widths[ step.order_index ] = max_len * 5.5
-        max_x = max( max_x, step.position[ 'left' ] )
-        max_y = max( max_y, step.position[ 'top' ] )
-        max_width = max( max_width, widths[ step.order_index ] )
-    for step_dict in data:
-        tool_unavailable = step_dict[ 'tool_errors' ]
-        width = widths[ step_dict[ 'id' ] ]
-        x, y = step_dict[ 'position' ][ 'left' ], step_dict[ 'position' ][ 'top' ]
-        # Only highlight missing tools if displaying in the tool shed.
-        if trans.webapp.name == 'tool_shed' and tool_unavailable:
-            fill = "#EBBCB2"
-        else:
-            fill = "#EBD9B2"
-        boxes.append( svgfig.Rect( x - margin, y, x + width - margin, y + 30, fill=fill ).SVG() )
-        box_height = ( len( step_dict[ 'data_inputs' ] ) + len( step_dict[ 'data_outputs' ] ) ) * line_px + margin
-        # Draw separator line.
-        if len( step_dict[ 'data_inputs' ] ) > 0:
-            box_height += 15
-            sep_y = y + len( step_dict[ 'data_inputs' ] ) * line_px + 40
-            text.append( svgfig.Line( x - margin, sep_y, x + width - margin, sep_y ).SVG() )
-        # Define an input/output box.
-        boxes.append( svgfig.Rect( x - margin, y + 30, x + width - margin, y + 30 + box_height, fill="#ffffff" ).SVG() )
-        for conn, output_dict in step_dict[ 'input_connections' ].iteritems():
-            in_coords = in_pos[ step_dict[ 'id' ] ][ conn ]
-            # out_pos_index will be a step number like 1, 2, 3...
-            out_pos_index = output_dict[ 'id' ]
-            # out_pos_name will be a string like 'o', 'o2', etc.
-            out_pos_name = output_dict[ 'output_name' ]
-            if out_pos_index in out_pos:
-                # out_conn_index_dict will be something like:
-                # 7: {'o': (824.5, 618)}
-                out_conn_index_dict = out_pos[ out_pos_index ]
-                if out_pos_name in out_conn_index_dict:
-                    out_conn_pos = out_pos[ out_pos_index ][ out_pos_name ]
-                else:
-                    # Take any key / value pair available in out_conn_index_dict.
-                    # A problem will result if the dictionary is empty.
-                    if out_conn_index_dict.keys():
-                        key = out_conn_index_dict.keys()[0]
-                        out_conn_pos = out_pos[ out_pos_index ][ key ]
-            adjusted = ( out_conn_pos[ 0 ] + widths[ output_dict[ 'id' ] ], out_conn_pos[ 1 ] )
-            text.append( svgfig.SVG( "circle",
-                                     cx=out_conn_pos[ 0 ] + widths[ output_dict[ 'id' ] ] - margin,
-                                     cy=out_conn_pos[ 1 ] - margin,
-                                     r = 5,
-                                     fill="#ffffff" ) )
-            connectors.append( svgfig.Line( adjusted[ 0 ],
-                                            adjusted[ 1 ] - margin,
-                                            in_coords[ 0 ] - 10,
-                                            in_coords[ 1 ],
-                                            arrow_end = "true" ).SVG() )
-    canvas.append( connectors )
-    canvas.append( boxes )
-    canvas.append( text )
-    width, height = ( max_x + max_width + 50 ), max_y + 300
-    canvas[ 'width' ] = "%s px" % width
-    canvas[ 'height' ] = "%s px" % height
-    canvas[ 'viewBox' ] = "0 0 %s %s" % ( width, height )
+        workflow_canvas.populate_data_for_step(
+            step,
+            module_name,
+            module_data_inputs,
+            module_data_outputs,
+            tool_errors=tool_errors
+        )
+    workflow_canvas.add_steps( highlight_errors=True )
+    workflow_canvas.finish( )
     trans.response.set_content_type( "image/svg+xml" )
     return canvas.standalone_xml()
+
 
 def get_workflow_data_inputs( step, module ):
     if module.type == 'tool':
@@ -335,6 +219,7 @@ def get_workflow_data_inputs( step, module ):
                 data_inputs.append( data_inputs_dict )
             return data_inputs
     return module.get_data_inputs()
+
 
 def get_workflow_data_outputs( step, module, steps ):
     if module.type == 'tool':
@@ -359,6 +244,7 @@ def get_workflow_data_outputs( step, module, steps ):
             data_outputs.append( data_outputs_dict )
             return data_outputs
     return module.get_data_outputs()
+
 
 def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id, changeset_revision ):
     """
@@ -430,6 +316,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     # Return the in-memory Workflow object for display or later persistence to the Galaxy database.
     return workflow, missing_tool_tups
 
+
 def get_workflow_module_name( module, missing_tool_tups ):
     module_name = module.get_name()
     if module.type == 'tool' and module_name == 'unavailable':
@@ -439,6 +326,7 @@ def get_workflow_module_name( module, missing_tool_tups ):
                 module_name = '%s' % missing_tool_name
                 break
     return module_name
+
 
 def import_workflow( trans, repository, workflow_name ):
     """Import a workflow contained in an installed tool shed repository into Galaxy (this method is called only from Galaxy)."""
@@ -458,7 +346,7 @@ def import_workflow( trans, repository, workflow_name ):
                 workflow_file = open( relative_path_to_workflow_file, 'rb' )
                 workflow_data = workflow_file.read()
                 workflow_file.close()
-                workflow_dict = json.from_json_string( workflow_data )
+                workflow_dict = json.loads( workflow_data )
             else:
                 # Use the current exported_workflow_dict.
                 workflow_dict = exported_workflow_dict
@@ -498,14 +386,15 @@ def import_workflow( trans, repository, workflow_name ):
         status = 'error'
     return workflow, status, message
 
-def save_workflow( trans, workflow, workflow_dict = None):
+
+def save_workflow( trans, workflow, workflow_dict=None):
     """Use the received in-memory Workflow object for saving to the Galaxy database."""
     stored = trans.model.StoredWorkflow()
     stored.name = workflow.name
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     stored.user = trans.user
-    if workflow_dict and workflow_dict.get('annotation',''):
+    if workflow_dict and workflow_dict.get('annotation', ''):
         annotation = sanitize_html( workflow_dict['annotation'], 'utf-8', 'text/html' )
         new_annotation = trans.model.StoredWorkflowAnnotationAssociation()
         new_annotation.annotation = annotation

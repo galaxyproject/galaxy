@@ -12,4 +12,15 @@ if [ $? -eq 0 ] ; then
 	args=`echo $@ | sed "s#-\?-bootstrap_from_tool_shed $tool_shed##"`
 fi
 
-python ./scripts/paster.py serve tool_shed_wsgi.ini --pid-file=tool_shed_webapp.pid --log-file=tool_shed_webapp.log $args
+if [ -z "$TOOL_SHED_CONFIG_FILE" ]; then
+    if [ -f tool_shed_wsgi.ini ]; then
+        TOOL_SHED_CONFIG_FILE=tool_shed_wsgi.ini
+    elif [ -f config/tool_shed.ini ]; then
+        TOOL_SHED_CONFIG_FILE=config/tool_shed.ini
+    else
+        TOOL_SHED_CONFIG_FILE=config/tool_shed.ini.sample
+    fi
+    export TOOL_SHED_CONFIG_FILE
+fi
+
+python ./scripts/paster.py serve $TOOL_SHED_CONFIG_FILE --pid-file=tool_shed_webapp.pid --log-file=tool_shed_webapp.log $args

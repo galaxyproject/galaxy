@@ -4,10 +4,8 @@ import json
 from .helpers import TestsDatasets
 from .helpers import LibraryPopulator
 from .helpers import DatasetCollectionPopulator
-from base.interactor import (
-    put_request,
-    delete_request,
-)
+from requests import delete
+from requests import put
 
 
 # TODO: Test anonymous access.
@@ -72,7 +70,7 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         update_url = self._api_url( "histories/%s/contents/%s" % ( self.history_id, hda1[ "id" ] ), use_key=True )
         # Awkward json.dumps required here because of https://trello.com/c/CQwmCeG6
         body = json.dumps( dict( deleted=True ) )
-        update_response = put_request( update_url, data=body )
+        update_response = put( update_url, data=body )
         self._assert_status_code_is( update_response, 200 )
         show_response = self.__show( hda1 )
         assert str( show_response.json()[ "deleted" ] ).lower() == "true"
@@ -82,7 +80,7 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         self._wait_for_history( self.history_id )
         assert str( self.__show( hda1 ).json()[ "deleted" ] ).lower() == "false"
         url = self._api_url( "histories/%s/contents/%s" % ( self.history_id, hda1["id" ] ), use_key=True )
-        delete_response = delete_request( url )
+        delete_response = delete( url )
         assert delete_response.status_code < 300  # Something in the 200s :).
         assert str( self.__show( hda1 ).json()[ "deleted" ] ).lower() == "true"
 
@@ -119,7 +117,7 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
         assert not dataset_collection[ "deleted" ]
 
-        delete_response = delete_request( self._api_url( collection_url, use_key=True ) )
+        delete_response = delete( self._api_url( collection_url, use_key=True ) )
         self._assert_status_code_is( delete_response, 200 )
 
         show_response = self._get( collection_url )
@@ -137,7 +135,7 @@ class HistoryContentsApiTestCase( api.ApiTestCase, TestsDatasets ):
         update_url = self._api_url( "histories/%s/contents/dataset_collections/%s" % ( self.history_id, hdca[ "id" ] ), use_key=True )
         # Awkward json.dumps required here because of https://trello.com/c/CQwmCeG6
         body = json.dumps( dict( name="newnameforpair" ) )
-        update_response = put_request( update_url, data=body )
+        update_response = put( update_url, data=body )
         self._assert_status_code_is( update_response, 200 )
         show_response = self.__show( hdca )
         assert str( show_response.json()[ "name" ] ) == "newnameforpair"

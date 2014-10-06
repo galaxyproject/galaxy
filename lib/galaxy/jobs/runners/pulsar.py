@@ -558,7 +558,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             metadata_kwds['output_fnames'] = outputs
             metadata_kwds['compute_tmp_dir'] = working_directory
             metadata_kwds['config_root'] = remote_galaxy_home
-            default_config_file = os.path.join(remote_galaxy_home, 'universe_wsgi.ini')
+            default_config_file = os.path.join(remote_galaxy_home, 'config/galaxy.ini')
             metadata_kwds['config_file'] = remote_system_properties.get('galaxy_config_file', default_config_file)
             metadata_kwds['dataset_files_path'] = remote_system_properties.get('galaxy_dataset_files_path', None)
             if PulsarJobRunner.__use_remote_datatypes_conf( client ):

@@ -5,7 +5,7 @@ import os
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
-from galaxy import dataset_collections
+from galaxy.managers.collections import DatasetCollectionManager
 import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.visualization.genomes import Genomes
@@ -57,7 +57,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Tag handler
         self.tag_handler = GalaxyTagHandler()
         # Dataset Collection Plugins
-        self.dataset_collections_service = dataset_collections.DatasetCollectionsService(self)
+        self.dataset_collections_service = DatasetCollectionManager(self)
 
         # Tool Data Tables
         self._configure_tool_data_tables( from_shed_config=False )
@@ -93,11 +93,9 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load history import/export tools.
         load_history_imp_exp_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = None
-        if self.config.visualization_plugins_directory:
-            self.visualizations_registry = VisualizationsRegistry( self,
-                directories_setting=self.config.visualization_plugins_directory,
-                template_cache_dir=self.config.template_cache )
+        self.visualizations_registry = VisualizationsRegistry( self,
+            directories_setting=self.config.visualization_plugins_directory,
+            template_cache_dir=self.config.template_cache )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
@@ -114,7 +112,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         if self.config.enable_openid:
             from galaxy.web.framework import openid_manager
             self.openid_manager = openid_manager.OpenIDManager( self.config.openid_consumer_cache_path )
-            self.openid_providers = OpenIDProviders.from_file( self.config.openid_config )
+            self.openid_providers = OpenIDProviders.from_file( self.config.openid_config_file )
         else:
             self.openid_providers = OpenIDProviders()
         # Start the heartbeat process if configured and available

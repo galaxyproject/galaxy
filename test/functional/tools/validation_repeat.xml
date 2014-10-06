@@ -1,0 +1,56 @@
+<tool id="validation_repeat" name="Validation (default)">
+  <command>
+    #for $r in $r1
+    echo "${r.text}" >> out1;
+    #end for
+    #for $r in $r2
+    echo "${r.text}" >> out2;
+    #end for
+  </command>
+  <inputs>
+    <repeat name="r1" label="Repeat 1">
+      <param name="text" type="text" label="text input" />
+    </repeat>
+    <repeat name="r2" label="Repeat 2">
+      <param name="text" type="text" label="text input">
+        <sanitizer>
+          <valid initial="none">
+            <add value="a"/>
+            <add value="b"/>
+            <add value="d"/>
+            <add value="e"/>
+          </valid>
+          <mapping initial="none">
+            <add source="@" target="c"/>
+          </mapping>
+        </sanitizer>
+      </param>
+    </repeat>
+  </inputs>
+  <outputs>
+    <data name="out_file1" from_work_dir="out1" />
+    <data name="out_file2" from_work_dir="out2" />
+  </outputs>
+  <tests>
+    <test>
+      <repeat name="r1">
+        <param name="text" value="&quot; ; echo &quot;moo" />
+      </repeat>
+      <repeat name="r2">
+        <param name="text" value="ab@de" />
+      </repeat>
+      <output name="out_file1">
+         <assert_contents>
+            <has_line line="__dq__ X echo __dq__moo" />
+         </assert_contents>
+      </output>
+      <output name="out_file2">
+         <assert_contents>
+            <has_line line="abcde" />
+         </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help>
+  </help>
+</tool>

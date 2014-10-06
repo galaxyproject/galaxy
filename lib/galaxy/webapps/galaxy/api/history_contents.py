@@ -16,12 +16,9 @@ from galaxy.web.base.controller import UsesLibraryMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesTagsMixin
 
-from galaxy.dataset_collections.util import api_payload_to_create_params
-from galaxy.dataset_collections.util import dictify_dataset_collection_instance
-
-
 from galaxy.managers import histories
 from galaxy.managers import hdas
+from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
 
 import logging
 log = logging.getLogger( __name__ )
@@ -134,15 +131,17 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         api_type = "file"
         encoded_id = trans.security.encode_id( hda.id )
+        # TODO: handle failed_metadata here as well
         return {
             'id'    : encoded_id,
             'history_id' : encoded_history_id,
             'name'  : hda.name,
             'type'  : api_type,
-            'state'  : hda.state,
+            'state'  : hda.dataset.state,
             'deleted': hda.deleted,
             'visible': hda.visible,
             'purged': hda.purged,
+            'resubmitted': hda._state == trans.app.model.Dataset.states.RESUBMITTED,
             'hid'   : hda.hid,
             'history_content_type' : hda.history_content_type,
             'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),

@@ -21,9 +21,12 @@ browser at:
 
 http://localhost:8080
 
-You may wish to make changes from the default configuration.  This can be done
-in the universe_wsgi.ini file.  Tools are configured in tool_conf.xml.  Details
-on adding tools can be found on the Galaxy website (linked above).
+You may wish to make changes from the default configuration. This can be done
+in the config/galaxy.ini file. Tools can be either installed from the Tool Shed
+or added manually. For details please see the Galaxy wiki: 
+
+https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial
+
 
 Not all dependencies are included for the tools provided in the sample
 tool_conf.xml. A full list of external dependencies is available at:

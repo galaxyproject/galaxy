@@ -31,6 +31,19 @@ show_list() {
     echo "'${0##*/} -sid ccc'              for testing one section with sid 'ccc' ('ccc' is the string after 'section::')"
 }
 
+exists() {
+    type "$1" >/dev/null 2>/dev/null
+}
+
+ensure_grunt() {
+    if ! exists "grunt";
+    then
+        echo "Grunt not on path, cannot run these tests."
+        exit 1
+    fi
+}
+
+
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 with_framework_test_tools_arg=""
@@ -109,6 +122,12 @@ do
       -d|-data_managers|--data_managers)
           data_managers_test=1;
           shift 1
+          ;;
+      -j|-casperjs|--casperjs)
+          # TODO: Support running casper tests against existing
+          # Galaxy instances.
+          casperjs_test=1;
+          shift
           ;;
       -m|-migrated|--migrated)
           migrated_test=1;
@@ -196,6 +215,11 @@ elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
+elif [ -n "$casperjs_test" ]; then
+    # TODO: Ensure specific versions of casperjs and phantomjs are
+    # available. Some option for leveraging npm to automatically
+    # install these dependencies would be nice as well.
+    extra_args="test/casperjs/casperjs_runner.py"
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id` 
 elif [ -n "$test_id" ]; then
@@ -212,6 +236,7 @@ fi
 if [ "$driver" = "python" ]; then
     python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $with_framework_test_tools_arg $extra_args
 else
+    ensure_grunt
     if [ -n "$watch" ]; then
         grunt_task="watch"
     else

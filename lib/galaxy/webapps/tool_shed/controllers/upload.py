@@ -263,10 +263,11 @@ class UploadController( BaseUIController ):
                                     ( len( files_to_remove ), upload_point )
                             else:
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
-                        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
+                        rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                                     user=trans.user,
+                                                                                     repository=repository )
                         status, error_message = \
                             rmm.set_repository_metadata_due_to_new_tip( trans.request.host,
-                                                                        repository,
                                                                         content_alert_str=content_alert_str,
                                                                         **kwd )
                         if error_message:

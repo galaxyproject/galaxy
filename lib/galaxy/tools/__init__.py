@@ -12,6 +12,7 @@ import re
 import shutil
 import sys
 import string
+import tarfile
 import tempfile
 import threading
 import traceback
@@ -132,7 +133,7 @@ class ToolBox( object, Dictifiable ):
         # File that contains the XML section and tool tags from all tool panel config files integrated into a
         # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
         # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
-        self.integrated_tool_panel_config = os.path.join( app.config.root, 'integrated_tool_panel.xml' )
+        self.integrated_tool_panel_config = app.config.integrated_tool_panel_config
         # In-memory dictionary that defines the layout of the tool_panel.xml file on disk.
         self.integrated_tool_panel = odict()
         self.integrated_tool_panel_config_has_contents = os.path.exists( self.integrated_tool_panel_config ) and os.stat( self.integrated_tool_panel_config ).st_size > 0
@@ -722,6 +723,120 @@ class ToolBox( object, Dictifiable ):
             ToolClass = Tool
         return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
 
+    def package_tool( self, trans, tool_id ):
+        """
+        Create a tarball with the tool's xml, help images, and test data.
+        :param trans: the web transaction
+        :param tool_id: the tool ID from app.toolbox
+        :returns: tuple of tarball filename, success True/False, message/None
+        """
+        message = ''
+        success = True
+        # Make sure the tool is actually loaded.
+        if tool_id not in self.tools_by_id:
+            return None, False, "No tool with id %s" % tool_id
+        else:
+            tool = self.tools_by_id[ tool_id ]
+            tarball_files = []
+            temp_files = []
+            tool_xml = file( os.path.abspath( tool.config_file ), 'r' ).read()
+            # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
+            # modified to be relative to the repository root.
+            image_found = False
+            if tool.help is not None:
+                tool_help = tool.help._source
+                # Check each line of the rendered tool help for an image tag that points to a location under static/
+                for help_line in tool_help.split( '\n' ):
+                    image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
+                    matches = re.search( image_regex, help_line )
+                    if matches is not None:
+                        tool_help_image = matches.group(1)
+                        tarball_path = tool_help_image
+                        filesystem_path = os.path.abspath( os.path.join( trans.app.config.root, 'static', tool_help_image ) )
+                        if os.path.exists( filesystem_path ):
+                            tarball_files.append( ( filesystem_path, tarball_path ) )
+                            image_found = True
+                            tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
+            # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
+            if image_found:
+                fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
+                os.close( fd )
+                file( new_tool_config, 'w' ).write( tool_xml )
+                tool_tup = ( os.path.abspath( new_tool_config ), os.path.split( tool.config_file )[-1]  )
+                temp_files.append( os.path.abspath( new_tool_config ) )
+            else:
+                tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
+            tarball_files.append( tool_tup )
+            # TODO: This feels hacky.
+            tool_command = tool.command.strip().split( ' ' )[0]
+            tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
+            # Add the tool XML to the tuple that will be used to populate the tarball.
+            if os.path.exists( os.path.join( tool_path, tool_command ) ):
+                tarball_files.append( ( os.path.join( tool_path, tool_command ), tool_command ) )
+            # Find and add macros and code files.
+            for external_file in tool.get_externally_referenced_paths( os.path.abspath( tool.config_file ) ):
+                external_file_abspath = os.path.abspath( os.path.join( tool_path, external_file ) )
+                tarball_files.append( ( external_file_abspath, external_file ) )
+            # Find tests, and check them for test data.
+            tests = tool.tests
+            if tests is not None:
+                for test in tests:
+                    # Add input file tuples to the list.
+                    for input in test.inputs:
+                        for input_value in test.inputs[ input ]:
+                            input_path = os.path.abspath( os.path.join( 'test-data', input_value ) )
+                            if os.path.exists( input_path ):
+                                td_tup = ( input_path, os.path.join( 'test-data', input_value ) )
+                                tarball_files.append( td_tup )
+                    # And add output file tuples to the list.
+                    for label, filename, _ in test.outputs:
+                        output_filepath = os.path.abspath( os.path.join( 'test-data', filename ) )
+                        if os.path.exists( output_filepath ):
+                            td_tup = ( output_filepath, os.path.join( 'test-data', filename ) )
+                            tarball_files.append( td_tup )
+            for param in tool.input_params:
+                # Check for tool data table definitions.
+                if hasattr( param, 'options' ):
+                    if hasattr( param.options, 'tool_data_table' ):
+                        data_table = param.options.tool_data_table
+                        if hasattr( data_table, 'filenames' ):
+                            data_table_definitions = []
+                            for data_table_filename in data_table.filenames:
+                                # FIXME: from_shed_config seems to always be False.
+                                if not data_table.filenames[ data_table_filename ][ 'from_shed_config' ]:
+                                    tar_file = data_table.filenames[ data_table_filename ][ 'filename' ] + '.sample'
+                                    sample_file = os.path.join( data_table.filenames[ data_table_filename ][ 'tool_data_path' ],
+                                                                tar_file )
+                                    # Use the .sample file, if one exists. If not, skip this data table.
+                                    if os.path.exists( sample_file ):
+                                        tarfile_path, tarfile_name = os.path.split( tar_file )
+                                        tarfile_path = os.path.join( 'tool-data', tarfile_name )
+                                        sample_name = tarfile_path + '.sample'
+                                        tarball_files.append( ( sample_file, tarfile_path ) )
+                                    data_table_definitions.append( data_table.xml_string )
+                            if len( data_table_definitions ) > 0:
+                                # Put the data table definition XML in a temporary file.
+                                table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
+                                table_definition = table_definition % '\n'.join( data_table_definitions ) 
+                                fd, table_conf = tempfile.mkstemp()
+                                os.close( fd )
+                                file( table_conf, 'w' ).write( table_definition )
+                                tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
+                                temp_files.append( table_conf )
+            # Create the tarball.
+            fd, tarball_archive = tempfile.mkstemp( suffix='.tgz' )
+            os.close( fd )
+            tarball = tarfile.open( name=tarball_archive, mode='w:gz' )
+            # Add the files from the previously generated list.
+            for fspath, tarpath in tarball_files:
+                tarball.add( fspath, arcname=tarpath )
+            tarball.close()
+            # Delete any temporary files that were generated.
+            for temp_file in temp_files:
+                os.remove( temp_file )
+            return tarball_archive, True, None
+        return None, False, "An unknown error occurred."
+
     def reload_tool_by_id( self, tool_id ):
         """
         Attempt to reload the tool identified by 'tool_id', if successful
@@ -1061,6 +1176,7 @@ class Tool( object, Dictifiable ):
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
+    default_template = 'tool_form.mako'
 
     def __init__( self, config_file, root, app, guid=None, repository_id=None ):
         """Load a tool from the config named by `config_file`"""
@@ -1482,10 +1598,10 @@ class Tool( object, Dictifiable ):
                     help_footer = help_footer + help_page.tail
         # Each page has to rendered all-together because of backreferences allowed by rst
         try:
-            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer,
+            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer ),
                                             input_encoding='utf-8', output_encoding='utf-8',
                                             default_filters=[ 'decode.utf8' ],
-                                            encoding_errors='replace' ) )
+                                            encoding_errors='replace' )
                                   for x in self.help_by_page ]
         except:
             log.exception( "error in multi-page help for tool %s" % self.name )
@@ -2011,7 +2127,7 @@ class Tool( object, Dictifiable ):
                     return self.__no_display_interface_response()
                 if len(incoming):
                     self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
-                return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
+                return self.default_template, dict( errors={}, tool_state=state, param_values={}, incoming={} )
 
         all_errors = []
         all_params = []
@@ -2029,7 +2145,7 @@ class Tool( object, Dictifiable ):
             # error messages
             if any( all_errors ):
                 error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
-                template = "tool_form.mako"
+                template = self.default_template
                 template_vars = dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif all_pages or state.page == self.last_page:
@@ -2091,7 +2207,7 @@ class Tool( object, Dictifiable ):
             # Just a refresh, render the form with updated state and errors.
             if not self.display_interface:
                 return self.__no_display_interface_response()
-            return 'tool_form.mako', dict( errors=errors, tool_state=state )
+            return self.default_template, dict( errors=errors, tool_state=state )
 
     def __handle_page_advance( self, trans, state, errors ):
         state.page += 1
@@ -2099,7 +2215,7 @@ class Tool( object, Dictifiable ):
         self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
         if not self.display_interface:
             return self.__no_display_interface_response()
-        return 'tool_form.mako', dict( errors=errors, tool_state=state )
+        return self.default_template, dict( errors=errors, tool_state=state )
 
     def __no_display_interface_response( self ):
         return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )

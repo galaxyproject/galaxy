@@ -137,7 +137,9 @@ class MockApp(object):
                 integrated_datatypes_configs=os.path.join(test_directory, "datatypes_conf.xml"),
             ),
         )
-        self.job_config = Bunch()
+        self.job_config = Bunch(
+            dynamic_params=None,
+        )
         self.model = Bunch(context=MockContext(model_objects))
 
 

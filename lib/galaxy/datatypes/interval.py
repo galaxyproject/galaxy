@@ -234,8 +234,8 @@ class Interval( Tabular ):
         # Filter UCSC sites to only those that are supported by this build and
         # enabled.
         valid_sites = [ ( name, url )
-                        for name, url in util.get_ucsc_by_build( dataset.dbkey )
-                        if name in app.config.ucsc_display_sites ]
+                        for name, url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey )
+                        if name in app.datatypes_registry.get_display_sites('ucsc') ]
         if not valid_sites:
             return []
         # If there are any valid sites, we need to generate the estimated
@@ -750,8 +750,8 @@ class Gff( Tabular, _RemoteCallMixin ):
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport( dataset )
         if seqid is not None:
-            for site_name, site_url in util.get_ucsc_by_build( dataset.dbkey ):
-                if site_name in app.config.ucsc_display_sites:
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey ):
+                if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     redirect_url = urllib.quote_plus(
                             "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
                             ( site_url, dataset.dbkey, seqid, start, stop ) )
@@ -762,8 +762,8 @@ class Gff( Tabular, _RemoteCallMixin ):
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport( dataset )
         if seqid is not None:
-            for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
-                if site_name in app.config.gbrowse_display_sites:
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('gbrowse', dataset.dbkey ):
+                if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
                     if seqid.startswith( 'chr' ) and len ( seqid ) > 3:
                         seqid = seqid[3:]
                     redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, seqid, start, stop ) )
@@ -1091,8 +1091,8 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport( dataset )
         if chrom is not None:
-            for site_name, site_url in util.get_gbrowse_sites_by_build( dataset.dbkey ):
-                if site_name in app.config.gbrowse_display_sites:
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('gbrowse', dataset.dbkey ):
+                if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
                     if chrom.startswith( 'chr' ) and len ( chrom ) > 3:
                         chrom = chrom[3:]
                     redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, chrom, start, stop ) )
@@ -1103,8 +1103,8 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport( dataset )
         if chrom is not None:
-            for site_name, site_url in util.get_ucsc_by_build( dataset.dbkey ):
-                if site_name in app.config.ucsc_display_sites:
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey ):
+                if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % ( site_url, dataset.dbkey, chrom, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
@@ -1285,8 +1285,8 @@ class CustomTrack ( Tabular ):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
-            for site_name, site_url in util.get_ucsc_by_build(dataset.dbkey):
-                if site_name in app.config.ucsc_display_sites:
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc',dataset.dbkey):
+                if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
                     display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
                     redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop ) )

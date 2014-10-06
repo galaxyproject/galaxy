@@ -118,15 +118,14 @@ class PluginManager( object ):
         for plugin_path in self.find_plugins():
             try:
                 plugin = self.load_plugin( plugin_path )
-                if not plugin:
-                    log.warn( '%s, plugin load failed or disabled: %s. Skipping...', self, plugin_path )
-                #NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
-                #TODO: overwriting may be desired
-                elif plugin.name in self.plugins:
-                    log.warn( '%s, plugin with name already exists: %s. Skipping...', self, plugin.name )
-                else:
+
+                if plugin and plugin.name not in self.plugins:
                     self.plugins[ plugin.name ] = plugin
                     log.info( '%s, loaded plugin: %s', self, plugin.name )
+                #NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
+                #TODO: overwriting may be desired
+                elif plugin and plugin.name in self.plugins:
+                    log.warn( '%s, plugin with name already exists: %s. Skipping...', self, plugin.name )
 
             except Exception, exc:
                 if not self.skip_bad_plugins:
@@ -579,7 +578,7 @@ class PageServingPluginManager( PluginManager ):
         """
         Pass control over to trans and render ``template_filename``.
 
-        :type   trans:              ``galaxy.web.framework.GalaxyWebTransaction``
+        :type   trans:              ``galaxy.web.framework.webapp.GalaxyWebTransaction``
         :param  trans:              transaction doing the rendering
         :type   plugin:             ``util.bunch.Bunch``
         :param  plugin:             the plugin containing the template to render
@@ -588,6 +587,9 @@ class PageServingPluginManager( PluginManager ):
             ``plugin.template_path``
         :returns:       rendered template
         """
+        if 'plugin_path' not in kwargs:
+            kwargs[ 'plugin_path'] = os.path.abspath( plugin.path )
+
         # defined here to be overridden
         return trans.fill_template( template_filename, template_lookup=plugin.template_lookup, **kwargs )
 

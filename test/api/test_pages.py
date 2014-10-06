@@ -1,6 +1,6 @@
 from galaxy.exceptions import error_codes
 from base import api
-from base.interactor import delete_request
+from requests import delete
 
 from operator import itemgetter
 
@@ -68,17 +68,17 @@ class PageApiTestCase( BasePageApiTestCase ):
 
     def test_delete( self ):
         response_json = self._create_valid_page_with_slug( "testdelete" )
-        delete_response = delete_request( self._api_url( "pages/%s" % response_json[ 'id' ], use_key=True ) )
+        delete_response = delete( self._api_url( "pages/%s" % response_json[ 'id' ], use_key=True ) )
         self._assert_status_code_is( delete_response, 200 )
 
     def test_404_on_delete_unknown_page( self ):
-        delete_response = delete_request( self._api_url( "pages/%s" % self._random_key(), use_key=True ) )
+        delete_response = delete( self._api_url( "pages/%s" % self._random_key(), use_key=True ) )
         self._assert_status_code_is( delete_response, 404 )
         self._assert_error_code_is( delete_response, error_codes.USER_OBJECT_NOT_FOUND )
 
     def test_403_on_delete_unowned_page( self ):
         page_response = self._create_valid_page_as( "others_page@bx.psu.edu", "otherspage" )
-        delete_response = delete_request( self._api_url( "pages/%s" % page_response[ "id" ], use_key=True ) )
+        delete_response = delete( self._api_url( "pages/%s" % page_response[ "id" ], use_key=True ) )
         self._assert_status_code_is( delete_response, 403 )
         self._assert_error_code_is( delete_response, error_codes.USER_DOES_NOT_OWN_ITEM )
 

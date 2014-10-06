@@ -25,9 +25,9 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     // create three histories: make the 2nd importable (via the API), and the third published
 
     // make the current the inaccessible one
-    inaccessibleHistory = this.api.histories.show( 'current' );
+    inaccessibleHistory = this.api.histories.index()[0];
     this.api.histories.update( inaccessibleHistory.id, { name: 'inaccessible' });
-    inaccessibleHistory = this.api.histories.show( 'current' );
+    inaccessibleHistory = this.api.histories.index()[0];
 
     accessibleHistory = this.api.histories.create({ name: 'accessible' });
     var returned = this.api.histories.update( accessibleHistory.id, {
@@ -83,7 +83,7 @@ function testAnonReadFunctionsOnAccessible( history, hdas ){
 
     this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
                      + ' should work from accessible history: ' + history.name );
-    this.api.hdas.create( this.api.histories.show( 'current' ).id, {
+    this.api.hdas.create( this.api.histories.index()[0].id, {
         source  : 'hda',
         content : hdas[0].id
     });
@@ -114,7 +114,7 @@ function testAnonReadFunctionsOnInaccessible( history, hdas ){
     this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
                      + ' from an inaccessible history should fail for: ' + history.name );
     this.api.assertRaises( function(){
-        var returned = this.api.hdas.create( this.api.histories.show( 'current' ).id, {
+        var returned = this.api.hdas.create( this.api.histories.index()[0].id, {
             source  : 'hda',
             content : hdas[0].id
         });
@@ -134,10 +134,6 @@ function testAnonWriteFunctions( history, hdas ){
     this.api.assertRaises( function(){
         this.api.histories.delete_( history.id );
     }, 403, 'API authentication required for this request', 'delete authentication required' );
-    this.test.comment( 'set_as_current should fail for history: ' + history.name );
-    this.api.assertRaises( function(){
-        this.api.histories.set_as_current( history.id );
-    }, 403, 'API authentication required for this request', 'set_as_current failed with error' );
 
     this.test.comment( 'hda updating should fail for history: ' + history.name );
     this.api.assertRaises( function(){

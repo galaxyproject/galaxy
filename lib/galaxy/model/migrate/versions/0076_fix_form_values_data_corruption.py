@@ -9,7 +9,7 @@ from migrate.changeset import *
 from sqlalchemy.exc import *
 import binascii
 
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 
 import logging
 log = logging.getLogger( __name__ )
@@ -42,11 +42,11 @@ def upgrade(migrate_engine):
         # first check if loading the dict from the json succeeds
         # if that fails, it means that the content field is corrupted.
         try:
-            field_values_dict = from_json_string( _sniffnfix_pg9_hex( str( row['field_values'] ) ) )
+            field_values_dict = loads( _sniffnfix_pg9_hex( str( row['field_values'] ) ) )
         except Exception, e:
             corrupted_rows = corrupted_rows + 1
             # content field is corrupted
-            fields_list = from_json_string( _sniffnfix_pg9_hex( str( row['fdfields'] ) ) )
+            fields_list = loads( _sniffnfix_pg9_hex( str( row['fdfields'] ) ) )
             field_values_str = _sniffnfix_pg9_hex( str( row['field_values'] ) )
             try:
                 #Encoding errors?  Just to be safe.
@@ -85,7 +85,7 @@ def upgrade(migrate_engine):
                     # add to the new values dict
                     field_values_dict[ field['name'] ] = value
             # update the db
-            json_values = to_json_string(field_values_dict)
+            json_values = dumps(field_values_dict)
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( json_values, int( row['id'] ) )
             migrate_engine.execute( cmd )
             try:

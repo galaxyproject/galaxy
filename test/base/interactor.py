@@ -10,7 +10,9 @@ from galaxy.util.odict import odict
 import galaxy.model
 from galaxy.model.orm import and_, desc
 from functional import database_contexts
-from json import dumps, loads
+from requests import get
+from requests import post
+from json import dumps
 
 from logging import getLogger
 log = getLogger( __name__ )
@@ -236,6 +238,9 @@ class GalaxyInteractorApi( object ):
         for output in datasets_object[ 'outputs' ]:
             outputs_dict[ index ] = outputs_dict[ output.get("output_name") ] = output
             index += 1
+        # Adding each item twice (once with index for backward compat),
+        # overiding length to reflect the real number of outputs.
+        outputs_dict.__len__ = lambda: index
         return outputs_dict
 
     def output_hid( self, output_data ):
@@ -325,16 +330,17 @@ class GalaxyInteractorApi( object ):
         )
         return self._post( "tools", files=files, data=data )
 
-    def ensure_user_with_email( self, email ):
+    def ensure_user_with_email( self, email, password=None ):
         admin_key = self.master_api_key
         all_users = self._get( 'users', key=admin_key ).json()
         try:
             test_user = [ user for user in all_users if user["email"] == email ][0]
         except IndexError:
             username = re.sub('[^a-z-]', '--', email.lower())
+            password = password or 'testpass'
             data = dict(
                 email=email,
-                password='testuser',
+                password=password,
                 username=username,
             )
             test_user = self._post( 'users', data, key=admin_key ).json()
@@ -362,7 +368,7 @@ class GalaxyInteractorApi( object ):
             key = self.api_key if not admin else self.master_api_key
         data = data.copy()
         data['key'] = key
-        return post_request( "%s/%s" % (self.api_url, path), data=data, files=files )
+        return post( "%s/%s" % (self.api_url, path), data=data, files=files )
 
     def _get( self, path, data={}, key=None, admin=False ):
         if not key:
@@ -372,7 +378,7 @@ class GalaxyInteractorApi( object ):
         if path.startswith("/api"):
             path = path[ len("/api"): ]
         url = "%s/%s" % (self.api_url, path)
-        return get_request( url, params=data )
+        return get( url, params=data )
 
 
 class GalaxyInteractorTwill( object ):
@@ -492,9 +498,3 @@ GALAXY_INTERACTORS = {
     'api': GalaxyInteractorApi,
     'twill': GalaxyInteractorTwill,
 }
-
-
-from requests import get as get_request
-from requests import post as post_request
-from requests import put as put_request
-from requests import delete as delete_request

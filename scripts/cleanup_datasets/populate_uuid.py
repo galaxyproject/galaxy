@@ -33,6 +33,12 @@ def main():
             row.uuid = uuid.uuid4()
             print "Setting dataset:", row.id, " UUID to ", row.uuid
     model.context.flush()
+    
+    for row in model.context.query( model.Workflow ):
+        if row.uuid is None:
+            row.uuid = uuid.uuid4()
+            print "Setting Workflow:", row.id, " UUID to ", row.uuid
+    model.context.flush()
 
 
 if __name__ == "__main__":

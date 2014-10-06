@@ -27,7 +27,7 @@ log = logging.getLogger( __name__ )
 
 def get_message_for_no_shed_tool_config():
     # This Galaxy instance is not configured with a shed-related tool panel configuration file.
-    message = 'The tool_config_file setting in universe_wsgi.ini must include at least one shed tool configuration file name with a <toolbox> '
+    message = 'The tool_config_file setting in galaxy.ini must include at least one shed tool configuration file name with a <toolbox> '
     message += 'tag that includes a tool_path attribute value which is a directory relative to the Galaxy installation directory in order to '
     message += 'automatically install tools from a tool shed into Galaxy (e.g., the file name shed_tool_conf.xml whose <toolbox> tag is '
     message += '<toolbox tool_path="../shed_tools">).  For details, see the "Installation of Galaxy tool shed repository tools into a local '
@@ -113,7 +113,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if raw_text:
             # If successful, the response from get_ordered_installable_revisions will be a list of
             # changeset_revision hash strings.
-            changeset_revisions = json.from_json_string( raw_text )
+            changeset_revisions = json.loads( raw_text )
             if len( changeset_revisions ) >= 1:
                 return changeset_revisions[ -1 ]
         return hg_util.INITIAL_CHANGELOG_HASH
@@ -146,7 +146,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if index is None:
             raise HTTPBadRequest( detail="Missing required parameter 'index'." )
         repository = suc.get_tool_shed_repository_by_id( trans.app, tool_shed_repository_id )
-        exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
+        exported_workflows = json.loads( self.exported_workflows( trans, tool_shed_repository_id ) )
         # Since we don't have an in-memory object with an id, we'll identify the exported workflow via its location (i.e., index) in the list.
         exported_workflow = exported_workflows[ int( index ) ]
         workflow_name = exported_workflow[ 'workflow_name' ]
@@ -173,7 +173,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if not tool_shed_repository_id:
             raise HTTPBadRequest( detail="Missing required parameter 'id'." )
         repository = suc.get_tool_shed_repository_by_id( trans.app, tool_shed_repository_id )
-        exported_workflows = json.from_json_string( self.exported_workflows( trans, tool_shed_repository_id ) )
+        exported_workflows = json.loads( self.exported_workflows( trans, tool_shed_repository_id ) )
         imported_workflow_dicts = []
         for exported_workflow_dict in exported_workflows:
             workflow_name = exported_workflow_dict[ 'workflow_name' ]
@@ -229,7 +229,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param install_tool_dependencies (optional): Set to True if you want to install tool dependencies defined for the specified repository being
                                                      installed.  The default setting is False.
         :param shed_tool_conf (optional): The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
-                                          (e.g., universe_wsgi.ini).  At least one shed-related tool panel config file is required to be configured. Setting
+                                          (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
                                           this parameter to a specific file enables you to choose where the specified repository will be installed because
                                           the tool_path attribute of the <toolbox> from the specified file is used as the installation location
                                           (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
@@ -283,7 +283,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         :param install_tool_dependencies (optional): Set to True if you want to install tool dependencies defined for the specified repository being
                                                      installed.  The default setting is False.
         :param shed_tool_conf (optional): The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
-                                          (e.g., universe_wsgi.ini).  At least one shed-related tool panel config file is required to be configured. Setting
+                                          (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
                                           this parameter to a specific file enables you to choose where the specified repository will be installed because
                                           the tool_path attribute of the <toolbox> from the specified file is used as the installation location
                                           (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
@@ -417,12 +417,13 @@ class ToolShedRepositoriesController( BaseAPIController ):
         query = irmm.get_query_for_setting_metadata_on_repositories( order=False )
         # Now reset metadata on all remaining repositories.
         for repository in query:
-            repository_id = trans.security.encode_id( repository.id )
             try:
-                invalid_file_tups, metadata_dict = irmm.reset_all_metadata_on_installed_repository( repository_id )
-                if invalid_file_tups:
+                irmm.set_repository( repository )
+                irmm.reset_all_metadata_on_installed_repository()
+                irmm_invalid_file_tups = irmm.get_invalid_file_tups()
+                if irmm_invalid_file_tups:
                     message = tool_util.generate_message_for_invalid_tools( trans.app,
-                                                                            invalid_file_tups,
+                                                                            irmm_invalid_file_tups,
                                                                             repository,
                                                                             None,
                                                                             as_html=False )
@@ -438,7 +439,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             results[ 'repository_status' ].append( message )
         stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
         results[ 'stop_time' ] = stop_time
-        return json.to_json_string( results, sort_keys=True, indent=4 )
+        return json.dumps( results, sort_keys=True, indent=4 )
 
     @expose_api
     def show( self, trans, id, **kwd ):

@@ -15,7 +15,7 @@
         //TODO: global...
         %for key in kwargs:
             ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (
-                ${ h.to_json_string( kwargs[ key ], indent=( 2 if trans.debug else 0 ) )} );
+                ${ h.dumps( kwargs[ key ], indent=( 2 if trans.debug else 0 ) )} );
         %endfor
         define( 'bootstrapped-data', function(){
             return window.bootstrapped;
@@ -45,7 +45,7 @@
 
 ## ----------------------------------------------------------------------------
 <%def name="get_config_dict()">
-    ## Return a dictionary of universe_wsgi.ini settings
+    ## Return a dictionary of galaxy.ini settings
     <%
         config_dict = {}
         try:
@@ -61,7 +61,7 @@
 
 <%def name="get_config_json()">
     ## Conv. fn to write as JSON
-${ h.to_json_string( get_config_dict() )}
+${ h.dumps( get_config_dict() )}
 </%def>
 
 
@@ -106,5 +106,5 @@ ${ h.to_json_string( get_config_dict() )}
 
 <%def name="get_user_json()">
     ## Conv. fn to write as JSON
-${ h.to_json_string( get_user_dict() )}
+${ h.dumps( get_user_dict() )}
 </%def>

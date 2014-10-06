@@ -690,7 +690,8 @@ model.Workflow.table = Table( "workflow", metadata,
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True, nullable=False ),
     Column( "name", TEXT ),
     Column( "has_cycles", Boolean ),
-    Column( "has_errors", Boolean )
+    Column( "has_errors", Boolean ),
+    Column( "uuid", UUIDType, nullable=True )
     )
 
 model.WorkflowStep.table = Table( "workflow_step", metadata,

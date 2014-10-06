@@ -76,6 +76,7 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='view_datatypes_registry' )}" target="galaxy_main">View data types registry</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='view_tool_data_tables' )}" target="galaxy_main">View data tables registry</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='tool_versions' )}" target="galaxy_main">View tool lineage</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='package_tool' )}" target="galaxy_main">Download tool tarball</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='reload_tool' )}" target="galaxy_main">Reload a tool's configuration</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='memdump' )}" target="galaxy_main">Profile memory usage</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='jobs' )}" target="galaxy_main">Manage jobs</a></div>

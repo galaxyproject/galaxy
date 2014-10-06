@@ -41,8 +41,8 @@ class ArgHandler( object ):
     """
     def __init__( self ):
         self.parser = optparse.OptionParser()
-        self.parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (universe_wsgi.ini)',
-                                                  default=os.path.abspath( os.path.join( galaxy_root, 'universe_wsgi.ini' ) ) )
+        self.parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)',
+                                                  default=os.path.abspath( os.path.join( galaxy_root, 'config/galaxy.ini' ) ) )
         self.parser.add_option( '-d', '--debug', action='store_true', dest='debug', help="Debug (don't detach)" )
         self.parser.add_option( '-s', '--slow', action='store_true', dest='slow', help="Transfer slowly (for debugging)" )
         self.opts = None
@@ -122,7 +122,7 @@ class ListenerRequestHandler( SocketServer.BaseRequestHandler ):
         response = {}
         valid, request, response = json.validate_jsonrpc_request( request, ( 'get_state', ), () )
         if valid:
-            self.request.send( json.to_json_string( json.jsonrpc_response( request=request, result=self.server.state_result.result ) ) )
+            self.request.send( json.dumps( json.jsonrpc_response( request=request, result=self.server.state_result.result ) ) )
         else:
             error_msg = 'Unable to serve request: %s' % response['error']['message']
             if 'data' in response['error']:

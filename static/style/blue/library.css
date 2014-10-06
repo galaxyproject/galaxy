@@ -7,6 +7,8 @@ div.libraryItemBody{padding:4px 4px 2px 4px}
 li.folderRow,li.datasetRow{border-top:solid 1px #c6bfa8}
 li.folderRow:hover,li.datasetRow:hover{background-color:#f9f9f9}
 td.right-center{vertical-align:middle !important;text-align:right}
+.library-genome-select{max-width:350px}
+.library-extension-select{max-width:140px}
 .library_table td{border-top:1px solid #5f6990 !important}
 .library_table th{border-bottom:2px solid #5f6990 !important}
 .library_table a{color:#0A143D}.library_table a:hover{color:maroon}
@@ -32,6 +34,7 @@ ul{list-style:none}
 .libraryTitle th{text-align:left}
 pre.peek{background:white;color:black;overflow:auto}
 pre.peek th{color:white;background:#ebd9b2}
+.help-button{float:right}
 span.expandLink{padding-left:12px;display:inline-block;vertical-align:middle;background:url(../images/silk/resultset_next.png) no-repeat}
 .folderRow.expanded span.expandLink{background:url(../images/silk/resultset_bottom.png) no-repeat}
 .folderRow span.rowIcon{float:left;margin-right:5px;width:16px;height:16px;display:inline-block;vertical-align:middle;background:url(../images/silk/folder.png)}

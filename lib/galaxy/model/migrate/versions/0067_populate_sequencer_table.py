@@ -13,7 +13,7 @@ from sqlalchemy.exc import *
 
 from galaxy.model.custom_types import *
 
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util.json import loads, dumps
 
 import datetime
 now = datetime.datetime.utcnow
@@ -104,7 +104,7 @@ def create_sequencer_form_definition():
                                      'layout': 'none',
                                      'default': '' } )
     form_definition_type = 'Sequencer Information Form'
-    form_definition_layout = to_json_string('[]')
+    form_definition_layout = dumps('[]')
     cmd = "INSERT INTO form_definition VALUES ( %s, %s, %s, '%s', '%s', %s, '%s', '%s', '%s' )"
     cmd = cmd % ( nextval( 'form_definition' ),
                   localtimestamp(),
@@ -112,7 +112,7 @@ def create_sequencer_form_definition():
                   form_definition_name,
                   form_definition_desc,
                   form_definition_current_id,
-                  to_json_string( form_definition_fields ),
+                  dumps( form_definition_fields ),
                   form_definition_type,
                   form_definition_layout )
     migrate_engine.execute( cmd )
@@ -134,7 +134,7 @@ def get_sequencer_id( sequencer_info ):
         values = str( row[1] )
         if not values.strip():
             continue
-        values = from_json_string( values )
+        values = loads( values )
         # proceed only if sequencer_info is a valid list
         if values and type( values ) == type( dict() ):
             if sequencer_info.get( 'host', '' ) == values.get( 'field_0', '' ) \
@@ -148,7 +148,7 @@ def get_sequencer_id( sequencer_info ):
 def add_sequencer( sequencer_index, sequencer_form_definition_id, sequencer_info ):
     '''Adds a new sequencer to the sequencer table along with its form values.'''
     # Create a new form values record with the supplied sequencer information
-    values = to_json_string( { 'field_0': sequencer_info.get( 'host', '' ),
+    values = dumps( { 'field_0': sequencer_info.get( 'host', '' ),
                                'field_1': sequencer_info.get( 'username', '' ),
                                'field_2': sequencer_info.get( 'password', '' ),
                                'field_3': sequencer_info.get( 'data_dir', '' ),
@@ -233,7 +233,7 @@ def upgrade(migrate_engine):
             # skip if sequencer_info is empty
             if not sequencer_info.strip() or sequencer_info in ['None', 'null']:
                 continue
-            sequencer_info = from_json_string( sequencer_info.strip() )
+            sequencer_info = loads( sequencer_info.strip() )
             # proceed only if sequencer_info is a valid dict
             if sequencer_info and type( sequencer_info ) == type( dict() ):
                 # check if this sequencer has already been added to the sequencer table
@@ -277,9 +277,9 @@ def downgrade(migrate_engine):
         result = migrate_engine.execute( cmd )
         for row in result:
             request_type_id = row[0]
-            seq_values = from_json_string( str( row[1] ) )
+            seq_values = loads( str( row[1] ) )
             # create the datatx_info json dict
-            datatx_info = to_json_string( dict( host = seq_values.get( 'field_0', '' ),
+            datatx_info = dumps( dict( host = seq_values.get( 'field_0', '' ),
                                                 username = seq_values.get( 'field_1', '' ),
                                                 password = seq_values.get( 'field_2', '' ),
                                                 data_dir = seq_values.get( 'field_3', '' ),

@@ -1,5 +1,8 @@
 <tool id="MAF_Thread_For_Species1" name="Join MAF blocks">
   <description>by Species</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
   <command interpreter="python">maf_thread_for_species.py $input1 $out_file1 $species</command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file"/>
@@ -48,13 +51,9 @@ results in::
   s hg17.chr7    127471195 389 + 158628139 gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTAAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCATTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG 
   s panTro1.chr6 129885076 389 + 161576975 gtttgccatcttttgctgctcttgggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTGAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCGTTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG 
 
-------
+@HELP_CITATIONS@
+    </help>
+    <expand macro="citations" />
 
-**Citation**
-
-If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
-
-
-  </help>
 </tool>
 

@@ -67,19 +67,13 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( this.api.histories.show( this.api.histories.index()[0].id ).id === firstHistory.id,
         'combining function calls works' );
 
-    this.test.comment( 'Calling show with "current" should return the current history' );
-    this.test.assert( this.api.histories.show( 'current' ).id === historyShow.id, 'current returned same id' );
-
-
     // ------------------------------------------------------------------------------------------- CREATE
-    this.test.comment( 'Calling create should create a new history and allow setting the name and making it current' );
+    this.test.comment( 'Calling create should create a new history and allow setting the name' );
     var newHistoryName = 'Created History',
-        createdHistory = this.api.histories.create({ name: newHistoryName, current: true });
+        createdHistory = this.api.histories.create({ name: newHistoryName });
     //this.debug( 'returned from create:\n' + this.jsonStr( createdHistory ) );
     this.test.assert( createdHistory.name === newHistoryName,
         "Name of created history (from create) is correct: " + createdHistory.name );
-    this.test.assert( this.api.histories.show( 'current' ).id === createdHistory.id,
-        "was made current" );
 
     // check the index
     var newFirstHistory = this.api.histories.index()[0];
@@ -123,19 +117,8 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( newFirstHistory.id === createdHistory.id,
         "Id of last history (from index) DOES appear after undeletion: " + newFirstHistory.id );
 
-
     //TODO: show, deleted flag
     //TODO: delete, purge flag
-
-
-    // ------------------------------------------------------------------------------------------- set_as_current
-    this.test.comment( 'calling set_as_current on a non-current history will make it current' );
-    this.test.assert( this.api.histories.show( 'current' ).id !== historyShow.id, historyShow.id + ' is not current' );
-    var returned = this.api.histories.set_as_current( historyShow.id );
-    this.debug( this.jsonStr( returned ) );
-    this.test.assert( this.api.histories.show( 'current' ).id === historyShow.id, 'made current' );
-    this.api.histories.set_as_current( newFirstHistory.id );
-
 
     // ------------------------------------------------------------------------------------------- UPDATE
     // ........................................................................................... name
@@ -300,10 +283,6 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.api.assertRaises( function(){
         this.api.histories.update( '1234123412341234', {} );
     }, 400, 'unable to decode', 'Bad Request with invalid id: update' );
-    spaceghost.test.comment( 'A bad id should throw an error when using set_as_current' );
-    this.api.assertRaises( function(){
-        this.api.histories.set_as_current( '1234123412341234' );
-    }, 400, 'unable to decode', 'Bad Request with invalid id: set_as_current' );
     spaceghost.test.comment( 'A bad id should throw an error when using delete' );
     this.api.assertRaises( function(){
         this.api.histories.delete_( '1234123412341234' );

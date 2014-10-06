@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # This tool takes a gff file as input and creates filters on attributes based on certain properties.
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
-# TODO: much of this code is copied from the Filter1 tool (filtering.py in tools/stats/). The commonalities should be 
+# TODO: much of this code is copied from the Filter1 tool (filtering.py in tools/stats/). The commonalities should be
 # abstracted and leveraged in each filtering tool.
 
 from __future__ import division
 import sys
 from galaxy import eggs
-from galaxy.util.json import to_json_string, from_json_string
+from galaxy.util.json import dumps, loads
 
 # Older py compatibility
 try:
@@ -44,7 +44,7 @@ def check_for_executable( text, description='' ):
         except:
             if operand in secured:
                 stop_err( "Illegal value '%s' in %s '%s'" % ( operand, description, text ) )
-                
+
 #
 # Process inputs.
 #
@@ -52,13 +52,13 @@ def check_for_executable( text, description='' ):
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
 cond_text = sys.argv[3]
-attribute_types = from_json_string( sys.argv[4] )
+attribute_types = loads( sys.argv[4] )
 
 # Convert types from str to type objects.
 for name, a_type in attribute_types.items():
     check_for_executable(a_type)
     attribute_types[ name ] = eval( a_type )
-    
+
 # Unescape if input has been escaped
 mapped_str = {
     '__lt__': '<',
@@ -72,23 +72,23 @@ mapped_str = {
 }
 for key, value in mapped_str.items():
     cond_text = cond_text.replace( key, value )
-        
+
 # Attempt to determine if the condition includes executable stuff and, if so, exit.
 check_for_executable( cond_text, 'condition')
 
-# Prepare the column variable names and wrappers for column data types. Only 
+# Prepare the column variable names and wrappers for column data types. Only
 # prepare columns up to largest column in condition.
 attrs, type_casts = [], []
 for name, attr_type in attribute_types.items():
     attrs.append( name )
     type_cast = "get_value('%(name)s', attribute_types['%(name)s'], attribute_values)" % ( {'name': name} )
     type_casts.append( type_cast )
-    
+
 attr_str = ', '.join( attrs )    # 'c1, c2, c3, c4'
 type_cast_str = ', '.join( type_casts )  # 'str(c1), int(c2), int(c3), str(c4)'
 wrap = "%s = %s" % ( attr_str, type_cast_str )
-    
-# Stats 
+
+# Stats
 skipped_lines = 0
 first_invalid_line = 0
 invalid_line = None
@@ -102,7 +102,7 @@ def get_value(name, a_type, values_dict):
         return (a_type)(values_dict[ name ])
     else:
         return None
-    
+
 # Read and filter input file, skipping invalid lines
 code = '''
 for i, line in enumerate( file( in_fname ) ):

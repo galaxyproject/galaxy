@@ -105,4 +105,7 @@ If you use this tool, please cite `Blankenberg D, Gordon A, Von Kuster G, Coraor
 
 
   </help>
+  <citations>
+    <citation type="doi">10.1093/bioinformatics/btq281</citation>
+  </citations>
 </tool>

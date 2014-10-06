@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils', 'plugin/library/ui'], function(Utils, Ui) {
+define(['utils/utils', 'mvc/ui/ui-misc'], function(Utils, Ui) {
 
 /**
  *  This class renders the chart type selection grid.
@@ -35,7 +35,7 @@ return Backbone.View.extend({
         $el.append(Utils.wrap((new Ui.Label({ title : 'How many data points would you like to analyze?'})).$el));
         
         // construct chart type subset selection buttons
-        this.library = new Ui.RadioButton({
+        this.library = new Ui.RadioButton.View({
             data    : [ { label: 'Few (<500)', value: 'small' },
                         { label: 'Some (<10k)', value: 'medium' },
                         { label: 'Many (>10k)', value: 'large' }],
@@ -53,6 +53,7 @@ return Backbone.View.extend({
         
         // set
         this.library.value('small');
+        this.library.trigger('change');
     },
     
     // value
@@ -133,10 +134,10 @@ return Backbone.View.extend({
             var $el = $('<div style="clear: both;"/>')
             
             // add header label
-            $el.append(Utils.wrap(this._template_header({
+            $el.append(this._template_header({
                 id      : 'types-header-' + this.categories_index[category],
                 title   : category
-            })));
+            }));
             
             // add chart types
             for (var id in this.categories[category]) {
@@ -150,15 +151,15 @@ return Backbone.View.extend({
                 }
             
                 // append type to screen
-                $el.append(Utils.wrap(this._template_item({
+                $el.append(this._template_item({
                     id      : id,
                     title   : title,
                     url     : config.app_root + 'charts/' + this.app.chartPath(id) + '/logo.png'
-                })));
+                }));
             }
             
             // add to view
-            this.$el.append(Utils.wrap($el));
+            this.$el.append($el);
         }
     },
     

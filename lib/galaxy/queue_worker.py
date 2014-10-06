@@ -54,7 +54,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
-                    log.debug("Instance recieved '%s' task, executing now." % body['task'])
+                    log.info("Instance recieved '%s' task, executing now." % body['task'])
                     f(self.app, **body['kwargs'])
                 except Exception:
                     # this shouldn't ever throw an exception, but...
@@ -105,5 +105,15 @@ def reload_tool_data_tables(app, **kwargs):
     table_names = app.tool_data_tables.reload_tables( table_names=params.get('table_name', None))
     log.debug("Finished data table reload for %s" % table_names)
 
+
+def admin_job_lock(app, **kwargs):
+    job_lock = kwargs.get('job_lock', False)
+    # job_queue is exposed in the root app, but this will be 'fixed' at some
+    # point, so we're using the reference from the handler.
+    app.job_manager.job_handler.job_queue.job_lock = job_lock
+    log.info("Administrative Job Lock is now set to %s. Jobs will %s dispatch."
+             % (job_lock, "not" if job_lock else "now"))
+
 control_message_to_task = { 'reload_tool': reload_tool,
-                            'reload_tool_data_tables': reload_tool_data_tables}
+                            'reload_tool_data_tables': reload_tool_data_tables,
+                            'admin_job_lock': admin_job_lock}

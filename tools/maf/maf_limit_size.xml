@@ -1,5 +1,8 @@
 <tool id="maf_limit_size1" name="Filter MAF blocks" version="1.0.1">
   <description>by Size</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
   <command interpreter="python">maf_limit_size.py $input1 $out_file1 $min_size $max_size</command>
   <inputs>
     <page>
@@ -25,12 +28,7 @@
 
 This tool takes a MAF file and a size range and extracts the MAF blocks which fall within the specified range.
 
-------
-
-**Citation**
-
-If you use this tool, please cite `Blankenberg D, Taylor J, Nekrutenko A; The Galaxy Team. Making whole genome multiple alignments usable for biologists. Bioinformatics. 2011 Sep 1;27(17):2426-2428. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21775304&gt;`_
-
-
-  </help>
+@HELP_CITATIONS@
+    </help>
+    <expand macro="citations" />
 </tool>
