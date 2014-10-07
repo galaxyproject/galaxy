@@ -1,3 +1,4 @@
+import os
 
 DEFAULT_DOCKER_COMMAND = "docker"
 DEFAULT_SUDO = True
@@ -51,6 +52,34 @@ class DockerVolume(object):
         return ":".join([self.from_path, self.to_path, self.how])
 
 
+def build_command(
+    image,
+    docker_build_path,
+    docker_cmd=DEFAULT_DOCKER_COMMAND,
+    sudo=DEFAULT_SUDO,
+    sudo_cmd=DEFAULT_SUDO_COMMAND,
+    host=DEFAULT_HOST,
+):
+    if os.path.isfile(docker_build_path):
+        docker_build_path = os.path.dirname(os.path.abspath(docker_build_path))
+    build_command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
+    build_command_parts.extend(["build", "-t", image, docker_build_path])
+    return build_command_parts
+
+
+def build_save_image_command(
+    image,
+    destination,
+    docker_cmd=DEFAULT_DOCKER_COMMAND,
+    sudo=DEFAULT_SUDO,
+    sudo_cmd=DEFAULT_SUDO_COMMAND,
+    host=DEFAULT_HOST,
+):
+    build_command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
+    build_command_parts.extend(["save", "-o", destination, image])
+    return build_command_parts
+
+
 def build_docker_cache_command(
     image,
     docker_cmd=DEFAULT_DOCKER_COMMAND,
@@ -72,6 +101,7 @@ def build_docker_cache_command(
 def build_docker_run_command(
     container_command,
     image,
+    interactive=False,
     tag=None,
     volumes=[],
     volumes_from=DEFAULT_VOLUMES_FROM,
@@ -88,6 +118,8 @@ def build_docker_run_command(
 ):
     command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
     command_parts.append("run")
+    if interactive:
+        command_parts.append("-i")
     for env_directive in env_directives:
         command_parts.extend(["-e", env_directive])
     for volume in volumes:
