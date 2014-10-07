@@ -217,9 +217,6 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         citations.fetch();
                     }
                     
-                    // configure portlet and form table
-                    self.setElement(self.portlet.content());
-                    
                     // append tool section
                     self.portlet.append(self.section.$el);
                     
