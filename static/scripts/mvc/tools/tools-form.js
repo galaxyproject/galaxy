@@ -42,7 +42,8 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // load tool model
             this.model = new Model({
-                id : options.id
+                id      : options.id,
+                job_id  : options.job_id
             });
             
             // creates a tree/json structure from the input form
@@ -93,7 +94,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
             
             // log
-            console.debug('tools-form::refresh() - Recreated tree structure. Refresh.');
+            console.debug('tools-form::refresh() - Recreated data structure. Refresh.');
         },
         
         // initialize tool form
@@ -131,6 +132,26 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 }
             });
             
+            // default operations
+            var operations = {
+                button_question: button_question,
+                button_search: button_search,
+                button_share: button_share
+            }
+            
+            // add admin operations
+            if (Galaxy.currUser.get('is_admin')) {
+                // create download button
+                operations['button_download'] = new Ui.ButtonIcon({
+                    icon    : 'fa-download',
+                    title   : 'Download',
+                    tooltip : 'Download this tool',
+                    onclick : function() {
+                        window.location.href = galaxy_config.root + 'api/tools/' + self.options.id + '/download';
+                    }
+                });
+            }
+            
             // fetch model and render form
             this.model.fetch({
                 error: function(response) {
@@ -155,6 +176,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     self.portlet = new Portlet.View({
                         icon : 'fa-wrench',
                         title: '<b>' + self.model.get('name') + '</b> ' + self.model.get('description'),
+                        operations: operations,
                         buttons: {
                             execute: new Ui.ButtonIcon({
                                 icon     : 'fa-check',
@@ -165,11 +187,6 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                                     self.job_handler.submit();
                                 }
                             })
-                        },
-                        operations: {
-                            button_question: button_question,
-                            button_search: button_search,
-                            button_share: button_share
                         }
                     });
                     

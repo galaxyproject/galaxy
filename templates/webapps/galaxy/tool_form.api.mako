@@ -27,7 +27,8 @@
         'help'          : tool_help,
         'citations'     : tool_citations,
         'biostar_url'   : trans.app.config.biostar_url,
-        'history_id'    : trans.security.encode_id( trans.history.id )
+        'history_id'    : trans.security.encode_id( trans.history.id ),
+        'job_id'        : trans.security.encode_id( job.id ) if job else None
     }
 %>
 ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
@@ -39,14 +40,6 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
         });
     });
 </script>
-
-##%if tool.tool_shed_repository:
-##    <% tool_url = tool.tool_shed_repository.get_sharable_url( tool.app ) %>
-##    %if tool_url:
-##        <br/>
-##        ${ render_msg( 'This tool was installed from a ToolShed, you may be able to find additional information by following this link: <a href="%s" target="_blank">%s</a>' % ( tool_url, tool_url ), 'info' ) }
-##    %endif
-##%endif
 
 ## classic tool form
 <div id="tool-form-classic" style="display: none;">
