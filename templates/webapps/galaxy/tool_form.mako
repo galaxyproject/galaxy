@@ -1,4 +1,4 @@
-<%inherit file="/base.mako"/>
+##<%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/base_panels.mako" import="overlay" />
 
