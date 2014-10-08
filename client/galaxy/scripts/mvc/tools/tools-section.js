@@ -1,8 +1,8 @@
 /**
     This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _addRow() function.
 */
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-dataset'],
-    function(Utils, Table, Ui, Repeat, SelectDataset) {
+define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content'],
+    function(Utils, Table, Ui, Repeat, SelectContent) {
 
     // input field element wrapper
     var InputElement = Backbone.View.extend({
@@ -268,12 +268,12 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldSelect(input_def);
                     break;
                     
-                // dataset
+                // data selector
                 case 'data':
                     field = this._fieldData(input_def);
                     break;
                 
-                // dataset column
+                // data column
                 case 'data_column':
                     field = this._fieldSelect(input_def);
                     break;
@@ -417,13 +417,15 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             var id = input_def.id;
             
             // select field
-            return new SelectDataset.View(this.app, {
+            return new SelectContent.View(this.app, {
                 id          : 'field-' + id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
                 onchange    : function(dict) {
-                    // pick the first dataset only (todo: maybe collect multiple meta information)
-                    var value = dict.values[0].id;
+                    // pick the first content only (todo: maybe collect multiple meta information)
+                    var content_def     = dict.values[0];
+                    var content_id      = content_def.id;
+                    var content_src     = content_def.src;
                     
                     // get referenced columns
                     var column_list = self.app.tree.references(id, 'data_column');
@@ -440,70 +442,79 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                         column_field.wait && column_field.wait();
                     }
                     
-                    // find selected dataset
-                    self.app.datasets.getDetails(value,  function(dataset) {
-                        // meta data
-                        var meta = null;
-            
-                        // check dataset
-                        if (dataset) {
-                            // log selection
-                            console.debug('tool-form::field_data() - Selected dataset ' + value + '.');
-                        
-                            // get meta data
-                            meta = dataset.metadata_column_types;
-                        
-                            // check meta data
-                            if (!meta) {
-                                console.debug('tool-form::field_data() - FAILED: Could not find metadata for dataset ' + value + '.');
-                            }
-                        } else {
-                            console.debug('tool-form::field_data() - FAILED: Could not find dataset ' + value + '.');
-                        }
-                        
-                        // update referenced columns
-                        for (var i in column_list) {
-                            // get column input/field
-                            var column_input = self.app.input_list[column_list[i]];
-                            var column_field = self.app.field_list[column_list[i]];
-                            if (!column_input || !column_field) {
-                                console.debug('tool-form::field_data() - FAILED: Column not found.');
-                            }
-                        
-                            // is numerical?
-                            var numerical = column_input.numerical;
-                            
-                            // identify column options
-                            var columns = [];
-                            for (var key in meta) {
-                                // get column type
-                                var column_type = meta[key];
-                                
-                                // column index
-                                var column_index = (parseInt(key) + 1);
-                                
-                                // column type label
-                                var column_label = 'Text';
-                                if (column_type == 'int' || column_type == 'float') {
-                                    column_label = 'Number';
-                                }
-                                
-                                // add to selection
-                                if (column_type == 'int' || column_type == 'float' || !numerical) {
-                                    columns.push({
-                                        'label' : 'Column: ' + column_index + ' [' + column_label + ']',
-                                        'value' : column_index
-                                    });
-                                }
+                    // find selected content
+                    self.app.content.getDetails({
+                        id      : content_id,
+                        src     : content_src,
+                        success : function(content) {
+                            // select the first dataset to represent collections
+                            if (content_src == 'hdca' && content.elements && content.elements.length > 0) {
+                                content = content.elements[0].object;
                             }
                             
-                            // update field
-                            if (column_field) {
-                                column_field.update(columns);
-                                if (!column_field.exists(column_field.value())) {
-                                    column_field.value(column_field.first());
+                            // meta data
+                            var meta = null;
+                            
+                            // check content
+                            if (content) {
+                                // log selection
+                                console.debug('tool-form::field_data() - Selected content ' + content_id + '.');
+                            
+                                // get meta data
+                                meta = content.metadata_column_types;
+                            
+                                // check meta data
+                                if (!meta) {
+                                    console.debug('tool-form::field_data() - FAILED: Could not find metadata for content ' + content_id + '.');
                                 }
-                                column_field.show();
+                            } else {
+                                console.debug('tool-form::field_data() - FAILED: Could not find content ' + content_id + '.');
+                            }
+                            
+                            // update referenced columns
+                            for (var i in column_list) {
+                                // get column input/field
+                                var column_input = self.app.input_list[column_list[i]];
+                                var column_field = self.app.field_list[column_list[i]];
+                                if (!column_input || !column_field) {
+                                    console.debug('tool-form::field_data() - FAILED: Column not found.');
+                                }
+                            
+                                // is numerical?
+                                var numerical = column_input.numerical;
+                                
+                                // identify column options
+                                var columns = [];
+                                for (var key in meta) {
+                                    // get column type
+                                    var column_type = meta[key];
+                                    
+                                    // column index
+                                    var column_index = (parseInt(key) + 1);
+                                    
+                                    // column type label
+                                    var column_label = 'Text';
+                                    if (column_type == 'int' || column_type == 'float') {
+                                        column_label = 'Number';
+                                    }
+                                    
+                                    // add to selection
+                                    if (column_type == 'int' || column_type == 'float' || !numerical) {
+                                        columns.push({
+                                            'label' : 'Column: ' + column_index + ' [' + column_label + ']',
+                                            'value' : column_index
+                                        });
+                                    }
+                                }
+                                
+                                // update field
+                                if (column_field) {
+                                    column_field.update(columns);
+                                    if (!column_field.exists(column_field.value())) {
+                                        column_field.value(column_field.first());
+                                    }
+                                    column_field.show();
+                                }
                             }
                         }
                     });

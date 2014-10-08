@@ -3,9 +3,9 @@
 */
 define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         'mvc/citation/citation-model', 'mvc/citation/citation-view',
-        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets', 'mvc/tools/tools-section', 'mvc/tools/tools-tree', 'mvc/tools/tools-jobs'],
+        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-content', 'mvc/tools/tools-section', 'mvc/tools/tools-tree', 'mvc/tools/tools-jobs'],
     function(Portlet, Ui, CitationModel, CitationView,
-             Tools, ToolTemplate, ToolDatasets, ToolSection, ToolTree, ToolJobs) {
+             Tools, ToolTemplate, ToolContent, ToolSection, ToolTree, ToolJobs) {
 
     // create tool model
     var Model = Backbone.Model.extend({
@@ -61,8 +61,8 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // reset input element list, which contains the dom elements of each input element (includes also the input field)
             this.element_list = {};
             
-            // initialize datasets
-            this.datasets = new ToolDatasets({
+            // initialize contents
+            this.content = new ToolContent({
                 history_id  : this.options.history_id,
                 success     : function() {
                     self._initializeToolForm();
