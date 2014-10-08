@@ -447,11 +447,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                         id      : content_id,
                         src     : content_src,
                         success : function(content) {
-                            // select the first dataset to represent collections
-                            if (content_src == 'hdca' && content.elements && content.elements.length > 0) {
-                                content = content.elements[0].object;
-                            }
-                            
                             // meta data
                             var meta = null;
                             
@@ -459,6 +454,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                             if (content) {
                                 // log selection
                                 console.debug('tool-form::field_data() - Selected content ' + content_id + '.');
+                            
+                                // select the first dataset to represent collections
+                                if (content_src == 'hdca' && content.elements && content.elements.length > 0) {
+                                    content = content.elements[0].object;
+                                }
                             
                                 // get meta data
                                 meta = content.metadata_column_types;
