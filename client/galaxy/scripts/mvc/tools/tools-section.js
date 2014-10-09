@@ -275,6 +275,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 
                 // data column
                 case 'data_column':
+                    input_def.is_dynamic = false;
                     field = this._fieldSelect(input_def);
                     break;
                     
@@ -308,7 +309,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldSelect(input_def);
                     break;
                     
-                // flag as incompatible
+                // field not found
                 default:
                     // flag
                     this.app.incompatible = true;
@@ -525,6 +526,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Select/Checkbox/Radio options field
         */
         _fieldSelect : function (input_def) {
+            // check compatibility
+            if (input_def.is_dynamic) {
+                this.app.incompatible = true;
+            }
+            
             // configure options fields
             var options = [];
             for (var i in input_def.options) {

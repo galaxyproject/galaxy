@@ -1007,6 +1007,7 @@ class SelectToolParameter( ToolParameter ):
             
         d['display'] = self.display
         d['multiple'] = self.multiple
+        d['is_dynamic'] = self.is_dynamic
 
         return d
 
