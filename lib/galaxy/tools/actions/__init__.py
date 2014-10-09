@@ -482,10 +482,8 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
     #process change_format tags
     if output.change_format:
         for change_elem in output.change_format:
-            print change_elem
             for when_elem in change_elem.findall( 'when' ):
                 check = when_elem.get( 'input', None )
-                print check
                 if check is not None:
                     try:
                         if '$' not in check:
