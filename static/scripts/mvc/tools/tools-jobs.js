@@ -37,7 +37,7 @@ return Backbone.Model.extend({
         console.debug(job_def);
         
         // show progress modal
-        this.app.modal.show({title: 'Please wait...', body: 'progress'});
+        this.app.modal.show({title: 'Please wait...', body: 'progress', buttons: { 'Close' : function () {self.app.modal.hide();} }});
         
         // post job
         Utils.request({
