@@ -178,10 +178,11 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         title: '<b>' + self.model.get('name') + '</b> ' + self.model.get('description'),
                         operations: operations,
                         buttons: {
-                            execute: new Ui.ButtonIcon({
+                            execute: new Ui.Button({
                                 icon     : 'fa-check',
                                 tooltip  : 'Execute the tool',
                                 title    : 'Execute',
+                                cls      : 'btn btn-primary',
                                 floating : 'clear',
                                 onclick  : function() {
                                     self.job_handler.submit();

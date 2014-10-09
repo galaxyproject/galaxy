@@ -102,7 +102,7 @@ var Button = Backbone.View.extend({
         id          : null,
         title       : '',
         floating    : 'right',
-        cls         : 'btn btn-default',
+        cls         : 'ui-button btn btn-default',
         icon        : ''
     },
     
@@ -131,7 +131,7 @@ var Button = Backbone.View.extend({
     
     // element
     _template: function(options) {
-        var str =   '<button id="' + options.id + '" type="submit" style="float: ' + options.floating + ';" type="button" class="ui-button ' + options.cls + '">';
+        var str =   '<button id="' + options.id + '" type="submit" style="float: ' + options.floating + ';" type="button" class="' + options.cls + '">';
         if (options.icon) {
             str +=      '<i class="icon fa ' + options.icon + '"></i>&nbsp;' ;
         }
