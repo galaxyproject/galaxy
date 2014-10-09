@@ -57,17 +57,9 @@ return Backbone.Model.extend({
                         self._foundError(input_id, error_messages[input_id]);
                     }
                 } else {
-                    // show modal with error message
-                    self.app.modal.show({
-                        title: response_full.statusText,
-                        body: ToolTemplate.error(job_def),
-                        closing_events: true,
-                        buttons: {
-                            'Close': function() {
-                                self.app.modal.hide();
-                            }
-                        }
-                    });
+                    // show error message with details
+                    console.debug(job_def);
+                    console.debug(response);
                 }
             }
         });
