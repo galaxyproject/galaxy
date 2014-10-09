@@ -91,6 +91,15 @@ class JobToolConfiguration( Bunch ):
         return self.get( "resources", None )
 
 
+def config_exception(e, file):
+    abs_path = os.path.abspath(file)
+    message = 'Problem parsing the XML in file %s, ' % abs_path
+    message += 'please correct the indicated portion of the file and restart Galaxy.'
+    message += str(e)
+    log.exception(message)
+    return Exception(message)
+
+
 class JobConfiguration( object ):
     """A parser and interface to advanced job management features.
 
@@ -118,12 +127,15 @@ class JobConfiguration( object ):
 
         self.__parse_resource_parameters()
         # Initialize the config
+        job_config_file = self.app.config.job_config_file
         try:
-            tree = util.parse_xml(self.app.config.job_config_file)
+            tree = util.parse_xml(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
             log.warning( 'Job configuration "%s" does not exist, using legacy job configuration from Galaxy config file "%s" instead' % ( self.app.config.job_config_file, self.app.config.config_file ) )
             self.__parse_job_conf_legacy()
+        except Exception as e:
+            raise config_exception(e, job_config_file)
 
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
@@ -358,7 +370,12 @@ class JobConfiguration( object ):
         if not os.path.exists( self.app.config.job_resource_params_file ):
             return
 
-        resource_definitions = util.parse_xml( self.app.config.job_resource_params_file )
+        resource_param_file = self.app.config.job_resource_params_file
+        try:
+            resource_definitions = util.parse_xml( resource_param_file )
+        except Exception as e:
+            raise config_exception(e, resource_param_file)
+
         resource_definitions_root = resource_definitions.getroot()
         # TODO: Also handling conditionals would be awesome!
         for parameter_elem in resource_definitions_root.findall( "param" ):
