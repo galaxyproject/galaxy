@@ -73,17 +73,11 @@ return Backbone.Model.extend({
         
         // mark error
         input_element.error(message || 'Please verify this parameter.');
-        
-        // set flag
-        if (this.valid) {
-            // scroll to first input element
-            $(this.app.container).animate({
-                scrollTop: input_element.$el.offset().top - 20
-            }, 500);
-            
-            // set error flag
-            this.valid = false;
-        }
+    
+        // scroll to first input element
+        $(this.app.container).animate({
+            scrollTop: input_element.$el.offset().top - 20
+        }, 500);
     },
     
     /** Validate job definition
@@ -91,9 +85,6 @@ return Backbone.Model.extend({
     _validation: function(job_def) {
         // get input parameters
         var job_inputs = job_def.inputs;
-        
-        // validation flag
-        this.valid = true;
         
         // counter for values declared in batch mode
         var n_values = -1;
@@ -111,6 +102,7 @@ return Backbone.Model.extend({
             // check basic field validation
             if (input_def && !input_def.optional && input_field && input_field.validate && !input_field.validate()) {
                 this._foundError(input_id);
+                return false;
             }
             
             // check if input field is in batch mode
@@ -121,6 +113,7 @@ return Backbone.Model.extend({
                 } else {
                     if (n_values !== n) {
                         this._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + n_values + '</b>.');
+                        return false;
                     }
                 }
             }
@@ -128,7 +121,7 @@ return Backbone.Model.extend({
         }
         
         // return validation result
-        return this.valid;
+        return true;
     },
     
     /** Refreshes the history panel
