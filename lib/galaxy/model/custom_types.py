@@ -47,9 +47,12 @@ class JSONType( TypeDecorator ):
         return json_encoder.encode( value )
 
     def process_result_value( self, value, dialect ):
-        if value is None:
-            return None
-        return json_decoder.decode( str( _sniffnfix_pg9_hex(value) ) )
+        if value is not None:
+            try:
+                return json_decoder.decode( str( _sniffnfix_pg9_hex( value ) ) )
+            except Exception, e:
+                log.error( 'Failed to decode JSON (%s): %s', value, e )
+        return None
 
     def copy_value( self, value ):
         # return json_decoder.decode( json_encoder.encode( value ) )
