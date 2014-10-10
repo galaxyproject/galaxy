@@ -194,7 +194,7 @@ var LibraryToolbarView = Backbone.View.extend({
     tmpl_array.push('       <% } %>');
     tmpl_array.push('   </ul>');
     tmpl_array.push('   <span>');
-    tmpl_array.push('       showing <a id="page_size_prompt"><%- libraries_shown %></a> of <%- total_libraries_count %> libraries');
+    tmpl_array.push('       showing <a data-toggle="tooltip" data-placement="top" title="Click to change the number of libraries on page" id="page_size_prompt"><%- libraries_shown %></a> of <%- total_libraries_count %> libraries');
     tmpl_array.push('   </span>');
 
     return _.template(tmpl_array.join(''));
