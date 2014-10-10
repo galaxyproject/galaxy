@@ -158,7 +158,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 title   : 'Share',
                 tooltip : 'Share this tool',
                 onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', galaxy_config.root + 'root?tool_id=' + self.options.id);
+                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + galaxy_config.root + 'root?tool_id=' + self.options.id);
                 }
             });
             
