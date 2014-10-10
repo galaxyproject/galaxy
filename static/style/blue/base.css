@@ -757,6 +757,7 @@ pre{overflow:auto;word-wrap:normal;white-space:pre}
 .dropdown-menu{max-width:auto}
 input[type="checkbox"],input[type="radio"]{margin-left:0.5ex;margin-right:0.5ex}
 .modal-dialog{width:690px}
+.pagination>.active>a{background-color:#ebd9b2;color:black}.pagination>.active>a:hover{color:black;background-color:#ebd9b2}
 .modal-body{overflow:auto}
 .nav-tabs{margin-bottom:15px}
 a{text-decoration:underline}
@@ -1360,6 +1361,8 @@ span.expandLink{padding-left:12px;display:inline-block;vertical-align:middle;bac
 .libraryItem-queued{margin-right:2px;padding:0 2px 0 2px;border:1px solid #bfbfbf;background:#eee}
 .libraryItem-running{margin-right:2px;padding:0 2px 0 2px;border:1px solid #aa6;background:#ffc}
 .libraryItem-upload{margin-right:2px;padding:0 2px 0 2px;border:1px solid #1197c0;background:#a6e4f7}
+.pagination-sm{height:15px}
+.library-paginator{margin-left:2em}
 .toast-title{font-weight:bold}
 .toast-message{-ms-word-wrap:break-word;word-wrap:break-word}.toast-message a,.toast-message label{color:#fff}
 .toast-message a:hover{color:#ccc;text-decoration:none}
