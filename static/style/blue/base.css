@@ -1284,8 +1284,10 @@ label{font-weight:normal}
 .ui-table tbody{cursor:pointer}
 .ui-table-plain tbody td{padding:5px 0px 5px 0px !important;border:none !important}
 .ui-table-plain tbody{cursor:auto !important}
+.ui-table-form-element .ui-table-form-title-optional{font-weight:bold;text-decoration:underline;cursor:pointer}
+.ui-table-form-element .ui-table-form-field{margin-top:5px}
 .ui-table-form-section{border-left:solid 3px #ebd9b2;border-radius:5px !important;padding-left:10px}
-.ui-table-form-title-strong{font-weight:bold;padding-bottom:5px}
+.ui-table-form-title-strong{font-weight:bold}
 .ui-table-form-info{clear:both !important}
 .ui-table-form-separator{font-weight:bold;font-size:0.9em}
 .ui-label{font-weight:bold}

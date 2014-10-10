@@ -98,9 +98,9 @@ return Backbone.Model.extend({
             var input_id = this.app.tree.match(job_input_id);
             var input_field = this.app.field_list[input_id];
             var input_def = this.app.input_list[input_id];
-            
+                
             // check basic field validation
-            if (input_def && !input_def.optional && input_field && input_field.validate && !input_field.validate()) {
+            if (input_def && input_field && input_field.validate && !input_field.validate()) {
                 this._foundError(input_id);
                 return false;
             }

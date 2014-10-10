@@ -1,58 +1,8 @@
 /**
     This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _addRow() function.
 */
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content'],
-    function(Utils, Table, Ui, Repeat, SelectContent) {
-
-    // input field element wrapper
-    var InputElement = Backbone.View.extend({
-        // initialize input wrapper
-        initialize: function(options) {
-            this.setElement(this._template(options));
-        },
-        
-        /** Set error text
-        */
-        error: function(text) {
-            // set text
-            this.$el.find('.ui-table-form-error-text').html(text);
-            this.$el.find('.ui-table-form-error').fadeIn();
-            this.$el.addClass('ui-error');
-        },
-        
-        /** Reset this view
-        */
-        reset: function() {
-            this.$el.find('.ui-table-form-error').hide();
-            this.$el.removeClass('ui-error');
-        },
-        
-        /** Main Template
-        */
-        _template: function(options) {
-            // create table element
-            var $input = $('<div class="ui-table-element"/>');
-            
-            // add error
-            $input.append('<div class="ui-table-form-error ui-error"><span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"></div>');
-            
-            // add label
-            if (options.label) {
-                $input.append('<div class="ui-table-form-title-strong">' + options.label + '</div>');
-            }
-            
-            // add input element
-            $input.append(options.$el);
-            
-            // add help
-            if (options.help) {
-                $input.append('<div class="ui-table-form-info">' + options.help + '</div>');
-            }
-            
-            // return input element
-            return $input;
-        }
-    });
+define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content', 'mvc/tools/tools-input'],
+    function(Utils, Table, Ui, Repeat, SelectContent, InputElement) {
 
     // create form view
     var View = Backbone.View.extend({
@@ -234,7 +184,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             var input_element = new InputElement({
                 label       : input_def.title,
                 help        : input_def.help,
-                $el         : repeat.$el
+                field       : repeat
             });
             
             // displays as grouped subsection
@@ -337,9 +287,10 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             
             // create input field wrapper
             var input_element = new InputElement({
-                label : input_def.label,
-                help  : input_def.help,
-                $el   : field.$el
+                label       : input_def.label,
+                optional    : input_def.optional,
+                help        : input_def.help,
+                field       : field
             });
             
             // add to element list
