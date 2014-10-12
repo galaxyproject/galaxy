@@ -1,4 +1,6 @@
 
+import os
+
 DEFAULT_DOCKER_COMMAND = "docker"
 DEFAULT_SUDO = True
 DEFAULT_SUDO_COMMAND = "sudo"
@@ -9,6 +11,7 @@ DEFAULT_NET = None
 DEFAULT_MEMORY = None
 DEFAULT_VOLUMES_FROM = None
 DEFAULT_AUTO_REMOVE = True
+DEFAULT_SET_USER = True
 
 
 class DockerVolume(object):
@@ -84,6 +87,7 @@ def build_docker_run_command(
     sudo=DEFAULT_SUDO,
     sudo_cmd=DEFAULT_SUDO_COMMAND,
     auto_rm=DEFAULT_AUTO_REMOVE,
+    set_user=DEFAULT_SET_USER,
     host=DEFAULT_HOST,
 ):
     command_parts = __docker_prefix(docker_cmd, sudo, sudo_cmd, host)
@@ -104,6 +108,8 @@ def build_docker_run_command(
         command_parts.extend(["--net", net])
     if auto_rm:
         command_parts.append("--rm")
+    if set_user:
+        command_parts.extend(["-u", str(os.geteuid())])
     full_image = image
     if tag:
         full_image = "%s:%s" % (full_image, tag)
