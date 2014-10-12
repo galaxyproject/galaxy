@@ -757,6 +757,7 @@ pre{overflow:auto;word-wrap:normal;white-space:pre}
 .dropdown-menu{max-width:auto}
 input[type="checkbox"],input[type="radio"]{margin-left:0.5ex;margin-right:0.5ex}
 .modal-dialog{width:690px}
+.pagination>.active>a{background-color:#ebd9b2;color:black}.pagination>.active>a:hover{color:black;background-color:#ebd9b2}
 .modal-body{overflow:auto}
 .nav-tabs{margin-bottom:15px}
 a{text-decoration:underline}
@@ -1284,8 +1285,10 @@ label{font-weight:normal}
 .ui-table tbody{cursor:pointer}
 .ui-table-plain tbody td{padding:5px 0px 5px 0px !important;border:none !important}
 .ui-table-plain tbody{cursor:auto !important}
+.ui-table-form-element .ui-table-form-title-optional{font-weight:bold;text-decoration:underline;cursor:pointer}
+.ui-table-form-element .ui-table-form-field{margin-top:5px}
 .ui-table-form-section{border-left:solid 3px #ebd9b2;border-radius:5px !important;padding-left:10px}
-.ui-table-form-title-strong{font-weight:bold;padding-bottom:5px}
+.ui-table-form-title-strong{font-weight:bold}
 .ui-table-form-info{clear:both !important}
 .ui-table-form-separator{font-weight:bold;font-size:0.9em}
 .ui-label{font-weight:bold}
@@ -1358,6 +1361,8 @@ span.expandLink{padding-left:12px;display:inline-block;vertical-align:middle;bac
 .libraryItem-queued{margin-right:2px;padding:0 2px 0 2px;border:1px solid #bfbfbf;background:#eee}
 .libraryItem-running{margin-right:2px;padding:0 2px 0 2px;border:1px solid #aa6;background:#ffc}
 .libraryItem-upload{margin-right:2px;padding:0 2px 0 2px;border:1px solid #1197c0;background:#a6e4f7}
+.pagination-sm{height:15px}
+.library-paginator{margin-left:2em}
 .toast-title{font-weight:bold}
 .toast-message{-ms-word-wrap:break-word;word-wrap:break-word}.toast-message a,.toast-message label{color:#fff}
 .toast-message a:hover{color:#ccc;text-decoration:none}

@@ -235,7 +235,8 @@ class ToolBox( object, Dictifiable ):
             elif elem.tag == 'label':
                 self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
             elif elem.tag == 'tool_dir':
-                self.__watch_directory( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
+                self.load_tooldir_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
+
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
@@ -687,7 +688,7 @@ class ToolBox( object, Dictifiable ):
             elif sub_elem.tag == 'label':
                 self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
             elif sub_elem.tag == 'tool_dir':
-                self.__watch_directory( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
+                self.load_tooldir_tag_set( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
@@ -696,8 +697,12 @@ class ToolBox( object, Dictifiable ):
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
 
-    def __watch_directory( self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict ):
+    def load_tooldir_tag_set(self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict):
         directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
+        recursive = string_as_bool( sub_elem.attrib.get("recursive", True) )        
+        self.__watch_directory( directory, elems, integrated_elems, load_panel_dict, recursive )
+
+    def __watch_directory( self, directory, elems, integrated_elems, load_panel_dict, recursive):
 
         def quick_load( tool_file, async=True ):
             try:
@@ -717,16 +722,21 @@ class ToolBox( object, Dictifiable ):
                         # will be False when things like functional tests are the caller.
                         self.fix_integrated_tool_panel_dict()
                         self.write_integrated_tool_panel_config_file()
-
                 return tool.id
             except Exception:
                 log.exception("Failed to load potential tool %s." % tool_file)
                 return None
 
+        tool_loaded = False
         for name in os.listdir( directory ):
-            if name.endswith( ".xml" ):
-                quick_load( os.path.join( directory, name), async=False )
-        self.tool_watcher.watch_directory( directory, quick_load )
+            child_path = os.path.join(directory, name)
+            if os.path.isdir(child_path) and recursive:
+                self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
+            elif name.endswith( ".xml" ):
+                quick_load( child_path, async=False )
+                tool_loaded = True
+        if tool_loaded:
+            self.tool_watcher.watch_directory( directory, quick_load )
 
     def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
@@ -789,20 +799,21 @@ class ToolBox( object, Dictifiable ):
             tool_xml = file( os.path.abspath( tool.config_file ), 'r' ).read()
             # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
             # modified to be relative to the repository root.
-            tool_help = tool.help._source
             image_found = False
-            # Check each line of the rendered tool help for an image tag that points to a location under static/
-            for help_line in tool_help.split( '\n' ):
-                image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
-                matches = re.search( image_regex, help_line )
-                if matches is not None:
-                    tool_help_image = matches.group(1)
-                    tarball_path = tool_help_image
-                    filesystem_path = os.path.abspath( os.path.join( trans.app.config.root, 'static', tool_help_image ) )
-                    if os.path.exists( filesystem_path ):
-                        tarball_files.append( ( filesystem_path, tarball_path ) )
-                        image_found = True
-                        tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
+            if tool.help is not None:
+                tool_help = tool.help._source
+                # Check each line of the rendered tool help for an image tag that points to a location under static/
+                for help_line in tool_help.split( '\n' ):
+                    image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
+                    matches = re.search( image_regex, help_line )
+                    if matches is not None:
+                        tool_help_image = matches.group(1)
+                        tarball_path = tool_help_image
+                        filesystem_path = os.path.abspath( os.path.join( trans.app.config.root, 'static', tool_help_image ) )
+                        if os.path.exists( filesystem_path ):
+                            tarball_files.append( ( filesystem_path, tarball_path ) )
+                            image_found = True
+                            tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
             # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
             if image_found:
                 fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
@@ -814,7 +825,7 @@ class ToolBox( object, Dictifiable ):
                 tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
             tarball_files.append( tool_tup )
             # TODO: This feels hacky.
-            tool_command = tool.command.split( ' ' )[0]
+            tool_command = tool.command.strip().split( ' ' )[0]
             tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
             # Add the tool XML to the tuple that will be used to populate the tarball.
             if os.path.exists( os.path.join( tool_path, tool_command ) ):
@@ -823,6 +834,8 @@ class ToolBox( object, Dictifiable ):
             for external_file in tool.get_externally_referenced_paths( os.path.abspath( tool.config_file ) ):
                 external_file_abspath = os.path.abspath( os.path.join( tool_path, external_file ) )
                 tarball_files.append( ( external_file_abspath, external_file ) )
+            if os.path.exists( os.path.join( tool_path, "Dockerfile" ) ):
+                tarball_files.append( ( os.path.join( tool_path, "Dockerfile" ), "Dockerfile" ) )
             # Find tests, and check them for test data.
             tests = tool.tests
             if tests is not None:
@@ -863,7 +876,7 @@ class ToolBox( object, Dictifiable ):
                             if len( data_table_definitions ) > 0:
                                 # Put the data table definition XML in a temporary file.
                                 table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
-                                table_definition = table_definition % '\n'.join( data_table_definitions ) 
+                                table_definition = table_definition % '\n'.join( data_table_definitions )
                                 fd, table_conf = tempfile.mkstemp()
                                 os.close( fd )
                                 file( table_conf, 'w' ).write( table_definition )

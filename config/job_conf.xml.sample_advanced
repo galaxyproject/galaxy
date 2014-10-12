@@ -193,7 +193,7 @@
           -->
           <!-- <param id="docker_net">bridge</param> -->
           <!-- By default, a container will live on past its run. By
-               adding the '--rm' flag to the command line, the container
+               adding the '\-\-rm' flag to the command line, the container
                will be removed automatically after the program is complete.
           -->
           <!-- <param id="docker_auto_rm">true</param> -->
@@ -345,7 +345,7 @@
             -->
             <!-- <param id="rewrite_parameters">false</params> -->
         </destination>
-        <destination id="pulsar_mq_dest" runner="amqp_pulsar" >
+        <destination id="pulsar_mq_dest" runner="pulsar_mq" >
             <!-- The RESTful Pulsar client sends a request to Pulsar
                  to populate various system properties. This
                  extra step can be disabled and these calculated here

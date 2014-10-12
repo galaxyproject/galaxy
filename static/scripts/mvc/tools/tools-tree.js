@@ -110,8 +110,13 @@ return Backbone.Model.extend({
                             }
                             break;
                         default:
+                            // get conditional value
+                            var field = self.app.field_list[input.id];
+                            
                             // handle default value
-                            add (job_input_id, input.id, self.app.field_list[input.id].value());
+                            if (!field.skip) {
+                                add (job_input_id, input.id, field.value());
+                            }
                     }
                 }
             }

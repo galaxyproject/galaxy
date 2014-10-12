@@ -103,6 +103,9 @@ class LibraryManager( object ):
 
         :param  deleted: if True, show only ``deleted`` libraries, if False show only ``non-deleted``
         :type   deleted: boolean (optional)
+
+        :returns: query that will emit all accessible libraries
+        :rtype: sqlalchemy query
         """
         is_admin = trans.user_is_admin()
         query = trans.sa_session.query( trans.app.model.Library )

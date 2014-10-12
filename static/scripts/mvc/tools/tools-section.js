@@ -1,58 +1,8 @@
 /**
     This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _addRow() function.
 */
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-dataset'],
-    function(Utils, Table, Ui, Repeat, SelectDataset) {
-
-    // input field element wrapper
-    var InputElement = Backbone.View.extend({
-        // initialize input wrapper
-        initialize: function(options) {
-            this.setElement(this._template(options));
-        },
-        
-        /** Set error text
-        */
-        error: function(text) {
-            // set text
-            this.$el.find('.ui-table-form-error-text').html(text);
-            this.$el.find('.ui-table-form-error').fadeIn();
-            this.$el.addClass('ui-error');
-        },
-        
-        /** Reset this view
-        */
-        reset: function() {
-            this.$el.find('.ui-table-form-error').hide();
-            this.$el.removeClass('ui-error');
-        },
-        
-        /** Main Template
-        */
-        _template: function(options) {
-            // create table element
-            var $input = $('<div class="ui-table-element"/>');
-            
-            // add error
-            $input.append('<div class="ui-table-form-error ui-error"><span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"></div>');
-            
-            // add label
-            if (options.label) {
-                $input.append('<div class="ui-table-form-title-strong">' + options.label + '</div>');
-            }
-            
-            // add input element
-            $input.append(options.$el);
-            
-            // add help
-            if (options.help) {
-                $input.append('<div class="ui-table-form-info">' + options.help + '</div>');
-            }
-            
-            // return input element
-            return $input;
-        }
-    });
+define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content', 'mvc/tools/tools-input'],
+    function(Utils, Table, Ui, Repeat, SelectContent, InputElement) {
 
     // create form view
     var View = Backbone.View.extend({
@@ -234,7 +184,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             var input_element = new InputElement({
                 label       : input_def.title,
                 help        : input_def.help,
-                $el         : repeat.$el
+                field       : repeat
             });
             
             // displays as grouped subsection
@@ -268,13 +218,14 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldSelect(input_def);
                     break;
                     
-                // dataset
+                // data selector
                 case 'data':
                     field = this._fieldData(input_def);
                     break;
                 
-                // dataset column
+                // data column
                 case 'data_column':
+                    input_def.is_dynamic = false;
                     field = this._fieldSelect(input_def);
                     break;
                     
@@ -308,7 +259,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldSelect(input_def);
                     break;
                     
-                // flag as incompatible
+                // field not found
                 default:
                     // flag
                     this.app.incompatible = true;
@@ -336,9 +287,10 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             
             // create input field wrapper
             var input_element = new InputElement({
-                label : input_def.label,
-                help  : input_def.help,
-                $el   : field.$el
+                label       : input_def.label,
+                optional    : input_def.optional,
+                help        : input_def.help,
+                field       : field
             });
             
             // add to element list
@@ -417,13 +369,15 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             var id = input_def.id;
             
             // select field
-            return new SelectDataset.View(this.app, {
+            return new SelectContent.View(this.app, {
                 id          : 'field-' + id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
                 onchange    : function(dict) {
-                    // pick the first dataset only (todo: maybe collect multiple meta information)
-                    var value = dict.values[0].id;
+                    // pick the first content only (todo: maybe collect multiple meta information)
+                    var content_def     = dict.values[0];
+                    var content_id      = content_def.id;
+                    var content_src     = content_def.src;
                     
                     // get referenced columns
                     var column_list = self.app.tree.references(id, 'data_column');
@@ -440,70 +394,79 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                         column_field.wait && column_field.wait();
                     }
                     
-                    // find selected dataset
-                    self.app.datasets.getDetails(value,  function(dataset) {
-                        // meta data
-                        var meta = null;
-            
-                        // check dataset
-                        if (dataset) {
-                            // log selection
-                            console.debug('tool-form::field_data() - Selected dataset ' + value + '.');
-                        
-                            // get meta data
-                            meta = dataset.metadata_column_types;
-                        
-                            // check meta data
-                            if (!meta) {
-                                console.debug('tool-form::field_data() - FAILED: Could not find metadata for dataset ' + value + '.');
-                            }
-                        } else {
-                            console.debug('tool-form::field_data() - FAILED: Could not find dataset ' + value + '.');
-                        }
-                        
-                        // update referenced columns
-                        for (var i in column_list) {
-                            // get column input/field
-                            var column_input = self.app.input_list[column_list[i]];
-                            var column_field = self.app.field_list[column_list[i]];
-                            if (!column_input || !column_field) {
-                                console.debug('tool-form::field_data() - FAILED: Column not found.');
-                            }
-                        
-                            // is numerical?
-                            var numerical = column_input.numerical;
+                    // find selected content
+                    self.app.content.getDetails({
+                        id      : content_id,
+                        src     : content_src,
+                        success : function(content) {
+                            // meta data
+                            var meta = null;
                             
-                            // identify column options
-                            var columns = [];
-                            for (var key in meta) {
-                                // get column type
-                                var column_type = meta[key];
-                                
-                                // column index
-                                var column_index = (parseInt(key) + 1);
-                                
-                                // column type label
-                                var column_label = 'Text';
-                                if (column_type == 'int' || column_type == 'float') {
-                                    column_label = 'Number';
+                            // check content
+                            if (content) {
+                                // log selection
+                                console.debug('tool-form::field_data() - Selected content ' + content_id + '.');
+                            
+                                // select the first dataset to represent collections
+                                if (content_src == 'hdca' && content.elements && content.elements.length > 0) {
+                                    content = content.elements[0].object;
                                 }
-                                
-                                // add to selection
-                                if (column_type == 'int' || column_type == 'float' || !numerical) {
-                                    columns.push({
-                                        'label' : 'Column: ' + column_index + ' [' + column_label + ']',
-                                        'value' : column_index
-                                    });
+                            
+                                // get meta data
+                                meta = content.metadata_column_types;
+                            
+                                // check meta data
+                                if (!meta) {
+                                    console.debug('tool-form::field_data() - FAILED: Could not find metadata for content ' + content_id + '.');
                                 }
+                            } else {
+                                console.debug('tool-form::field_data() - FAILED: Could not find content ' + content_id + '.');
                             }
                             
-                            // update field
-                            if (column_field) {
-                                column_field.update(columns);
-                                if (!column_field.exists(column_field.value())) {
-                                    column_field.value(column_field.first());
+                            // update referenced columns
+                            for (var i in column_list) {
+                                // get column input/field
+                                var column_input = self.app.input_list[column_list[i]];
+                                var column_field = self.app.field_list[column_list[i]];
+                                if (!column_input || !column_field) {
+                                    console.debug('tool-form::field_data() - FAILED: Column not found.');
                                 }
-                                column_field.show();
+                            
+                                // is numerical?
+                                var numerical = column_input.numerical;
+                                
+                                // identify column options
+                                var columns = [];
+                                for (var key in meta) {
+                                    // get column type
+                                    var column_type = meta[key];
+                                    
+                                    // column index
+                                    var column_index = (parseInt(key) + 1);
+                                    
+                                    // column type label
+                                    var column_label = 'Text';
+                                    if (column_type == 'int' || column_type == 'float') {
+                                        column_label = 'Number';
+                                    }
+                                    
+                                    // add to selection
+                                    if (column_type == 'int' || column_type == 'float' || !numerical) {
+                                        columns.push({
+                                            'label' : 'Column: ' + column_index + ' [' + column_label + ']',
+                                            'value' : column_index
+                                        });
+                                    }
+                                }
+                                
+                                // update field
+                                if (column_field) {
+                                    column_field.update(columns);
+                                    if (!column_field.exists(column_field.value())) {
+                                        column_field.value(column_field.first());
+                                    }
+                                    column_field.show();
+                                }
                             }
                         }
                     });
@@ -514,6 +477,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Select/Checkbox/Radio options field
         */
         _fieldSelect : function (input_def) {
+            // check compatibility
+            if (input_def.is_dynamic) {
+                this.app.incompatible = true;
+            }
+            
             // configure options fields
             var options = [];
             for (var i in input_def.options) {

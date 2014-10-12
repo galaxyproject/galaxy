@@ -3,6 +3,7 @@ import urllib
 from galaxy import exceptions
 from galaxy import web, util
 from galaxy.web import _future_expose_api_anonymous
+from galaxy.web import _future_expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.web.base.controller import UsesHistoryMixin
@@ -11,6 +12,8 @@ from galaxy.util.json import dumps
 from galaxy.visualization.data_providers.genome import *
 
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+
+import galaxy.queue_worker
 
 import logging
 log = logging.getLogger( __name__ )
@@ -58,6 +61,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         tool = self._get_tool( id )
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
+    @_future_expose_api
+    @web.require_admin
+    def reload( self, trans, tool_id, **kwd ):
+        """
+        GET /api/tools/{tool_id}/reload
+        Reload specified tool.
+        """
+        toolbox = trans.app.toolbox
+        galaxy.queue_worker.send_control_task( trans, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
+        message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
+        return { status: message }
+
     @_future_expose_api_anonymous
     def citations( self, trans, id, **kwds ):
         tool = self._get_tool( id )
@@ -65,6 +80,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         for citation in tool.citations:
             rval.append( citation.to_dict( 'bibtex' ) )
         return rval
+
+    @web.expose_api_raw
+    @web.require_admin
+    def download( self, trans, id, **kwds ):
+        tool_tarball, success, message = trans.app.toolbox.package_tool( trans, id )
+        if success:
+            trans.response.set_content_type( 'application/x-gzip' )
+            download_file = open( tool_tarball )
+            os.unlink( tool_tarball )
+            tarball_path, filename = os.path.split( tool_tarball )
+            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( id )
+            return download_file
 
     @web.expose_api_anonymous
     def create( self, trans, payload, **kwd ):

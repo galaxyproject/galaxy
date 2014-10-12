@@ -16,6 +16,7 @@ sys.path = new_path
 from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy import eggs
+from galaxy.util.properties import load_app_properties
 
 eggs.require( "nose" )
 eggs.require( "NoseHTML" )
@@ -401,6 +402,9 @@ def main():
         kwargs[ 'global_conf' ] = get_webapp_global_conf()
         kwargs[ 'global_conf' ][ '__file__' ] = galaxy_config_file
         kwargs[ 'config_file' ] = galaxy_config_file
+        kwargs = load_app_properties(
+            kwds=kwargs
+        )
         # Build the Universe Application
         app = UniverseApplication( **kwargs )
         database_contexts.galaxy_context = app.model.context

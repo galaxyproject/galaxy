@@ -37,7 +37,7 @@ return Backbone.Model.extend({
         console.debug(job_def);
         
         // show progress modal
-        this.app.modal.show({title: 'Please wait...', body: 'progress'});
+        this.app.modal.show({title: 'Please wait...', body: 'progress', buttons: { 'Close' : function () {self.app.modal.hide();} }});
         
         // post job
         Utils.request({
@@ -57,17 +57,9 @@ return Backbone.Model.extend({
                         self._foundError(input_id, error_messages[input_id]);
                     }
                 } else {
-                    // show modal with error message
-                    self.app.modal.show({
-                        title: response_full.statusText,
-                        body: ToolTemplate.error(job_def),
-                        closing_events: true,
-                        buttons: {
-                            'Close': function() {
-                                self.app.modal.hide();
-                            }
-                        }
-                    });
+                    // show error message with details
+                    console.debug(job_def);
+                    console.debug(response);
                 }
             }
         });
@@ -81,17 +73,11 @@ return Backbone.Model.extend({
         
         // mark error
         input_element.error(message || 'Please verify this parameter.');
-        
-        // set flag
-        if (this.valid) {
-            // scroll to first input element
-            $(this.app.container).animate({
-                scrollTop: input_element.$el.offset().top - 20
-            }, 500);
-            
-            // set error flag
-            this.valid = false;
-        }
+    
+        // scroll to first input element
+        $(this.app.container).animate({
+            scrollTop: input_element.$el.offset().top - 20
+        }, 500);
     },
     
     /** Validate job definition
@@ -99,9 +85,6 @@ return Backbone.Model.extend({
     _validation: function(job_def) {
         // get input parameters
         var job_inputs = job_def.inputs;
-        
-        // validation flag
-        this.valid = true;
         
         // counter for values declared in batch mode
         var n_values = -1;
@@ -115,10 +98,11 @@ return Backbone.Model.extend({
             var input_id = this.app.tree.match(job_input_id);
             var input_field = this.app.field_list[input_id];
             var input_def = this.app.input_list[input_id];
-            
+                
             // check basic field validation
-            if (input_def && !input_def.optional && input_field && input_field.validate && !input_field.validate()) {
+            if (input_def && input_field && input_field.validate && !input_field.validate()) {
                 this._foundError(input_id);
+                return false;
             }
             
             // check if input field is in batch mode
@@ -129,6 +113,7 @@ return Backbone.Model.extend({
                 } else {
                     if (n_values !== n) {
                         this._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + n_values + '</b>.');
+                        return false;
                     }
                 }
             }
@@ -136,7 +121,7 @@ return Backbone.Model.extend({
         }
         
         // return validation result
-        return this.valid;
+        return true;
     },
     
     /** Refreshes the history panel

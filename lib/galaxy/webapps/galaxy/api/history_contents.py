@@ -204,7 +204,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         except Exception, e:
             log.exception( "Error in history API at listing dataset collection: %s", e )
             trans.response.status = 500
-            return msg
+            return { 'error': str( e ) }
 
     def __show_dataset( self, trans, id, **kwd ):
         hda = self.mgrs.hdas.get( trans, self._decode_id( trans, id ), check_ownership=False, check_accessible=True )

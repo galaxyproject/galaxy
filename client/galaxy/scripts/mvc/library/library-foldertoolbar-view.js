@@ -72,7 +72,7 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   render: function(options){
-    this.options = _.extend(this.options, options);
+    this.options = _.extend( this.options, options );
     var toolbar_template = this.templateToolBar();
     var template_defaults = {
         id: this.options.id,
@@ -346,18 +346,18 @@ var FolderToolbarView = Backbone.View.extend({
     this.modal = Galaxy.modal;
     var template_modal = this.templateImportPathModal();
     this.modal.show({
-          closing_events  : true,
-          title           : 'Please enter paths to import',
-          body            : template_modal({}),
-          buttons         : {
-              'Import'    : function() {that.importFromPathsClicked(that);},
-              'Close'     : function() {Galaxy.modal.hide();}
-          },
-          closing_callback: function(){
-            //  TODO: should not trigger routes outside of the router
-            Galaxy.libraries.library_router.navigate('folders/' + that.id, {trigger: true});
-          }
-      });  
+        closing_events  : true,
+        title           : 'Please enter paths to import',
+        body            : template_modal({}),
+        buttons         : {
+            'Import'    : function() { that.importFromPathsClicked(that); },
+            'Close'     : function() { Galaxy.modal.hide(); }
+        },
+        closing_callback: function(){
+          //  TODO: should not trigger routes outside of the router
+          Galaxy.libraries.library_router.navigate( 'folders/' + that.id, { trigger: true } );
+        }
+    });  
     this.renderSelectBoxes();
   },
 
@@ -367,34 +367,37 @@ var FolderToolbarView = Backbone.View.extend({
    */
   fetchExtAndGenomes: function(){
     var that = this;
-    mod_utils.get(galaxy_config.root + "api/datatypes?extension_only=False",
-        function(datatypes) {
-            for (key in datatypes) {
-                that.list_extensions.push({
-                    id              : datatypes[key].extension,
-                    text            : datatypes[key].extension,
-                    description     : datatypes[key].description,
-                    description_url : datatypes[key].description_url
-                });
-            }
-            that.list_extensions.sort(function(a, b) {
-                return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-            });
-            that.list_extensions.unshift(that.auto);
-
-        });
-    mod_utils.get(galaxy_config.root + "api/genomes",
-        function(genomes) {
-            for (key in genomes) {
-                that.list_genomes.push({
-                    id      : genomes[key][1],
-                    text    : genomes[key][0]
-                });
-            }
-            that.list_genomes.sort(function(a, b) {
-                return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
-            });
-        });
+    mod_utils.get({
+        url      :  galaxy_config.root + "api/datatypes?extension_only=False",
+        success  :  function( datatypes ) {
+                        for (key in datatypes) {
+                            that.list_extensions.push({
+                                id              : datatypes[key].extension,
+                                text            : datatypes[key].extension,
+                                description     : datatypes[key].description,
+                                description_url : datatypes[key].description_url
+                            });
+                        }
+                        that.list_extensions.sort(function(a, b) {
+                            return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                        });
+                        that.list_extensions.unshift(that.auto);
+                    }
+      });
+    mod_utils.get({
+        url:    galaxy_config.root + "api/genomes",
+        success: function( genomes ) {
+                    for ( key in genomes ) {
+                        that.list_genomes.push({
+                            id      : genomes[key][1],
+                            text    : genomes[key][0]
+                        });
+                    }
+                    that.list_genomes.sort(function(a, b) {
+                        return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                    });
+                }
+    });
   },
 
   renderSelectBoxes: function(){
@@ -1027,7 +1030,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('   </div>');
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
     tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
-    tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button btn-xs" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
+    tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
 
     tmpl_array.push(' </div>');
     // TOOLBAR END

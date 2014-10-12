@@ -143,6 +143,7 @@ class Configuration( object ):
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
+        self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
@@ -640,7 +641,8 @@ class ConfiguresGalaxyMixin:
         app_info = containers.AppInfo(
             galaxy_root_dir,
             default_file_path=file_path,
-            outputs_to_working_directory=self.config.outputs_to_working_directory
+            outputs_to_working_directory=self.config.outputs_to_working_directory,
+            container_image_cache_path=self.config.container_image_cache_path,
         )
         self.container_finder = galaxy.tools.deps.containers.ContainerFinder(app_info)
 

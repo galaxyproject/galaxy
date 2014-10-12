@@ -31,9 +31,9 @@ var View = Backbone.View.extend({
         //
         // datasets
         //
-        var datasets = app.datasets.filterType({
-            content_type    : 'dataset',
-            data_types      : options.extensions
+        var datasets = app.content.filterType({
+            src             : 'hda',
+            extensions      : options.extensions
         });
 
         // configure options fields
@@ -58,9 +58,9 @@ var View = Backbone.View.extend({
         //
         // collections
         //
-        var collections = app.datasets.filterType({
-            content_type    : 'collection',
-            data_types      : options.extensions
+        var collections = app.content.filterType({
+            src             : 'hdca',
+            extensions      : options.extensions
         });
         
         // configure options fields

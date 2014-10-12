@@ -200,6 +200,7 @@ class ToolParameter( object, Dictifiable ):
             pass #HACK for assert trans.history, 'requires a history'
 
         tool_dict[ 'model_class' ] = self.__class__.__name__
+        tool_dict[ 'optional' ] = self.optional
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
         return tool_dict
@@ -1007,6 +1008,7 @@ class SelectToolParameter( ToolParameter ):
             
         d['display'] = self.display
         d['multiple'] = self.multiple
+        d['is_dynamic'] = self.is_dynamic
 
         return d
 

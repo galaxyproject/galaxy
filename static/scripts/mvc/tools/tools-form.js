@@ -1,11 +1,11 @@
 /**
     This is the main class of the tool form plugin. It is referenced as 'app' in all lower level modules.
 */
-define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
+define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         'mvc/citation/citation-model', 'mvc/citation/citation-view',
-        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-datasets', 'mvc/tools/tools-section', 'mvc/tools/tools-tree', 'mvc/tools/tools-jobs'],
-    function(Portlet, Ui, CitationModel, CitationView,
-             Tools, ToolTemplate, ToolDatasets, ToolSection, ToolTree, ToolJobs) {
+        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-content', 'mvc/tools/tools-section', 'mvc/tools/tools-tree', 'mvc/tools/tools-jobs'],
+    function(Utils, Portlet, Ui, CitationModel, CitationView,
+             Tools, ToolTemplate, ToolContent, ToolSection, ToolTree, ToolJobs) {
 
     // create tool model
     var Model = Backbone.Model.extend({
@@ -42,7 +42,7 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // load tool model
             this.model = new Model({
-                id : options.id
+                id      : options.id
             });
             
             // creates a tree/json structure from the input form
@@ -60,8 +60,8 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // reset input element list, which contains the dom elements of each input element (includes also the input field)
             this.element_list = {};
             
-            // initialize datasets
-            this.datasets = new ToolDatasets({
+            // initialize contents
+            this.content = new ToolContent({
                 history_id  : this.options.history_id,
                 success     : function() {
                     self._initializeToolForm();
@@ -93,11 +93,42 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
             
             // log
-            console.debug('tools-form::refresh() - Recreated tree structure. Refresh.');
+            console.debug('tools-form::refresh() - Recreated data structure. Refresh.');
         },
         
         // initialize tool form
         _initializeToolForm: function() {
+            // link this
+            var self = this;
+            
+            // fetch model and render form
+            this.model.fetch({
+                error: function(response) {
+                    console.debug('tools-form::_initializeToolForm() : Attempt to fetch tool model failed.');
+                },
+                success: function() {
+                    // backup inputs
+                    self.inputs = self.model.get('inputs');
+                    
+                    // update inputs with job parameters
+                    if (self.options.job_id) {
+                        Utils.get({
+                            url: galaxy_config.root + 'api/jobs/' + self.options.job_id,
+                            success: function(parameters) {
+                                // TODO: Update input parameters
+                                //self._updateInputs(self.inputs, parameters);
+                                self._buildForm();
+                            }
+                        });
+                    } else {
+                        self._buildForm();
+                    }
+                }
+            });
+        },
+        
+        // builds the tool form
+        _buildForm: function() {
             // link this
             var self = this;
             
@@ -127,89 +158,94 @@ define(['mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 title   : 'Share',
                 tooltip : 'Share this tool',
                 onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', galaxy_config.root + 'root?tool_id=' + self.options.id);
+                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + galaxy_config.root + 'root?tool_id=' + self.options.id);
                 }
             });
             
-            // fetch model and render form
-            this.model.fetch({
-                error: function(response) {
-                    console.debug('tools-form::_initializeToolForm() : Attempt to fetch tool model failed.');
-                },
-                success: function() {
-                    // create tool form section
-                    self.section = new ToolSection.View(self, {
-                        inputs : self.model.get('inputs'),
-                        cls    : 'ui-table-plain'
-                    });
-                    
-                    // TEMPORARY SWITCH
-                    // switch to classic tool form mako if the form definition is incompatible
-                    if (self.incompatible) {
-                        self.$el.hide();
-                        $('#tool-form-classic').show();
-                        return;
+            // default operations
+            var operations = {
+                button_question: button_question,
+                button_search: button_search,
+                button_share: button_share
+            }
+            
+            // add admin operations
+            if (Galaxy.currUser.get('is_admin')) {
+                // create download button
+                operations['button_download'] = new Ui.ButtonIcon({
+                    icon    : 'fa-download',
+                    title   : 'Download',
+                    tooltip : 'Download this tool',
+                    onclick : function() {
+                        window.location.href = galaxy_config.root + 'api/tools/' + self.options.id + '/download';
                     }
-                    
-                    // create portlet
-                    self.portlet = new Portlet.View({
-                        icon : 'fa-wrench',
-                        title: '<b>' + self.model.get('name') + '</b> ' + self.model.get('description'),
-                        buttons: {
-                            execute: new Ui.ButtonIcon({
-                                icon     : 'fa-check',
-                                tooltip  : 'Execute the tool',
-                                title    : 'Execute',
-                                floating : 'clear',
-                                onclick  : function() {
-                                    self.job_handler.submit();
-                                }
-                            })
-                        },
-                        operations: {
-                            button_question: button_question,
-                            button_search: button_search,
-                            button_share: button_share
+                });
+            }
+            
+            // create tool form section
+            this.section = new ToolSection.View(self, {
+                inputs : this.inputs,
+                cls    : 'ui-table-plain'
+            });
+            
+            // switch to classic tool form mako if the form definition is incompatible
+            if (this.incompatible) {
+                this.$el.hide();
+                $('#tool-form-classic').show();
+                return;
+            }
+            
+            // create portlet
+            this.portlet = new Portlet.View({
+                icon : 'fa-wrench',
+                title: '<b>' + this.model.get('name') + '</b> ' + this.model.get('description'),
+                operations: operations,
+                buttons: {
+                    execute: new Ui.Button({
+                        icon     : 'fa-check',
+                        tooltip  : 'Execute the tool',
+                        title    : 'Execute',
+                        cls      : 'btn btn-primary',
+                        floating : 'clear',
+                        onclick  : function() {
+                            self.job_handler.submit();
                         }
-                    });
-                    
-                    // configure button selection
-                    if(!self.options.biostar_url) {
-                        button_question.$el.hide();
-                        button_search.$el.hide();
-                    }
-                    
-                    // append form
-                    self.$el.append(self.portlet.$el);
-                    
-                    // append help
-                    if (self.options.help != '') {
-                        self.$el.append(ToolTemplate.help(self.options.help));
-                    }
-                    
-                    // append citations
-                    if (self.options.citations) {
-                        // append html
-                        self.$el.append(ToolTemplate.citations());
-            
-                        // fetch citations
-                        var citations = new CitationModel.ToolCitationCollection();
-                        citations.tool_id = self.options.id;
-                        var citation_list_view = new CitationView.CitationListView({ collection: citations } );
-                        citation_list_view.render();
-                        citations.fetch();
-                    }
-                    
-                    // configure portlet and form table
-                    self.setElement(self.portlet.content());
-                    
-                    // append tool section
-                    self.portlet.append(self.section.$el);
-                    
-                    // trigger refresh
-                    self.refresh();
+                    })
                 }
             });
+            
+            // configure button selection
+            if(!this.options.biostar_url) {
+                button_question.$el.hide();
+                button_search.$el.hide();
+            }
+            
+            // append form
+            this.$el.append(this.portlet.$el);
+            
+            // append help
+            if (this.options.help != '') {
+                this.$el.append(ToolTemplate.help(this.options.help));
+            }
+            
+            // append citations
+            if (this.options.citations) {
+                // append html
+                this.$el.append(ToolTemplate.citations());
+    
+                // fetch citations
+                var citations = new CitationModel.ToolCitationCollection();
+                citations.tool_id = this.options.id;
+                var citation_list_view = new CitationView.CitationListView({ collection: citations } );
+                citation_list_view.render();
+                citations.fetch();
+            }
+            
+            // append tool section
+            this.portlet.append(this.section.$el);
+            
+            // trigger refresh
+            this.refresh();
         }
     });
 
