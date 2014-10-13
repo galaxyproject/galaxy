@@ -44,13 +44,13 @@ class JobHandler( object ):
 
 class JobHandlerQueue( object ):
     """
-    Job manager, waits for jobs to be runnable and then dispatches to
-    a JobRunner.
+    Job Handler's Internal Queue, this is what actually implements waiting for
+    jobs to be runnable and dispatching to a JobRunner.
     """
     STOP_SIGNAL = object()
 
     def __init__( self, app, dispatcher ):
-        """Start the job manager"""
+        """Initializes the Job Handler Queue, creates (unstarted) monitoring thread"""
         self.app = app
         self.dispatcher = dispatcher
 
@@ -77,7 +77,7 @@ class JobHandlerQueue( object ):
 
     def start( self ):
         """
-        The JobManager should start, and then start its Handler, if it has one.
+        Starts the JobHandler's thread after checking for any unhandled jobs.
         """
         # Recover jobs at startup
         self.__check_jobs_at_startup()
