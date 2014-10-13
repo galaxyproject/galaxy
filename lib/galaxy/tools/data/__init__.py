@@ -514,10 +514,17 @@ class TabularToolDataTable( ToolDataTable ):
                 else:
                     replace = " "
         return map( lambda x: x.replace( separator, replace ), fields )
-    
+
     @property
     def xml_string( self ):
         return util.xml_to_string( self.config_element )
+
+    def to_dict(self):
+        rval = dict(
+            columns=sorted(self.columns.keys(), key=lambda x:self.columns[x]),
+            fields=self.get_fields()
+        )
+        return rval
 
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )

@@ -170,6 +170,7 @@ def populate_api_routes( webapp, app ):
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
+    webapp.mapper.resource( 'tool_data', 'tool_data', path_prefix='/api' )
     webapp.mapper.resource( 'dataset_collection', 'dataset_collections', path_prefix='/api/')
     webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
     webapp.mapper.resource( 'request', 'requests', path_prefix='/api' )
