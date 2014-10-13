@@ -196,7 +196,8 @@
                adding the '\-\-rm' flag to the command line, the container
                will be removed automatically after the program is complete.
           -->
-          <!-- <param id="docker_auto_rm">false</param> -->
+          <!-- <param id="docker_auto_rm">true</param> -->
+          <!-- <param id="docker_set_user">true</param> -->
           <!-- Following command can be used to tweak docker command. -->
           <!-- <param id="docker_cmd">/usr/local/custom_docker/docker</param> -->
           <!-- Following can be used to connect to docke server in different
