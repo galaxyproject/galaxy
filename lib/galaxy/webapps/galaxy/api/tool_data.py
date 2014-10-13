@@ -24,8 +24,8 @@ class ToolData( BaseAPIController ):
         GET /api/tool_data: returns a list tool_data tables::
 
         """
-        return trans.app.tool_data_tables.data_tables.keys()
+        return list( a.to_dict() for a in trans.app.tool_data_tables.data_tables.values() )
 
     @web.expose_api
     def show( self, trans, id, **kwds ):
-        return trans.app.tool_data_tables.data_tables[id].to_dict()
+        return trans.app.tool_data_tables.data_tables[id].to_dict(view='element')
