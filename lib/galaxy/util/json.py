@@ -15,13 +15,8 @@ loads = json.loads
 
 log = logging.getLogger( __name__ )
 
-
-def to_json_string(*args, **kwargs):
-    return json.dumps(*args, **kwargs)
-
-
-def from_json_string(*args, **kwargs):
-    return json.loads(*args, **kwargs)
+to_json_string = dumps
+from_json_string = loads
 
 
 def json_fix( val ):
