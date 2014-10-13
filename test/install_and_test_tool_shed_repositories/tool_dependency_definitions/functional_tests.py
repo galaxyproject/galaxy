@@ -332,13 +332,14 @@ def main():
                    template_path = "templates",
                    tool_config_file = ','.join( [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ] ),
                    tool_data_path = tool_data_path,
-                   tool_data_table_config_path = galaxy_tool_data_table_conf_file,
                    tool_dependency_dir = tool_dependency_dir,
                    tool_path = tool_path,
                    tool_parse_help = False,
                    tool_sheds_config_file = galaxy_tool_sheds_conf_file,
                    update_integrated_tool_panel = False,
                    use_heartbeat = False )
+    if os.path.exists( galaxy_tool_data_table_conf_file ):
+        kwargs[ 'tool_data_table_config_path' ] = galaxy_tool_data_table_conf_file
     galaxy_config_file = os.environ.get( 'GALAXY_INSTALL_TEST_INI_FILE', None )
     # If the user has passed in a path for the .ini file, do not overwrite it.
     if not galaxy_config_file:
