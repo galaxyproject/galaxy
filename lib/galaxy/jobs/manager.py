@@ -26,6 +26,7 @@ class JobManager( object ):
         else:
             self.job_handler = NoopHandler()
             self.job_queue = self.job_stop_queue = NoopQueue()
+        self.job_lock = False
         self.job_handler.start()
 
     def shutdown( self ):

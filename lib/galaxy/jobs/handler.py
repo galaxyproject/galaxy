@@ -53,7 +53,6 @@ class JobHandlerQueue( object ):
         """Start the job manager"""
         self.app = app
         self.dispatcher = dispatcher
-        self.job_lock = False
 
         self.sa_session = app.model.context
         self.track_jobs_in_database = self.app.config.track_jobs_in_database
@@ -174,7 +173,7 @@ class JobHandlerQueue( object ):
             try:
                 # If jobs are locked, there's nothing to monitor and we skip
                 # to the sleep.
-                if not self.job_lock:
+                if not self.app.job_manager.job_lock:
                     self.__monitor_step()
             except:
                 log.exception( "Exception in monitor_step" )
