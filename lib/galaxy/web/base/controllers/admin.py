@@ -1107,7 +1107,7 @@ class Admin( object ):
                                                       kwargs={'job_lock': False } )
                 job_lock = False
         else:
-            job_lock = trans.app.job_manager.job_handler.job_queue.job_lock
+            job_lock = trans.app.job_manager.job_lock
         cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
         jobs = trans.sa_session.query( trans.app.model.Job ) \
                                .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
