@@ -253,6 +253,8 @@
     <datatype extension="xgmml" type="galaxy.datatypes.graph:Xgmml" display_in_upload="true"/>
     <datatype extension="sif" type="galaxy.datatypes.graph:Sif" display_in_upload="true"/>
     <datatype extension="rdf" type="galaxy.datatypes.graph:Rdf" display_in_upload="true"/>
+    <!-- Excel datatypes -->
+    <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--
