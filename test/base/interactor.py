@@ -21,6 +21,7 @@ log = getLogger( __name__ )
 # and result in sqlite errors on larger tests or larger numbers of
 # tests.
 VERBOSE_ERRORS = util.asbool( os.environ.get( "GALAXY_TEST_VERBOSE_ERRORS", False ) )
+UPLOAD_ASYNC = util.asbool( os.environ.get( "GALAXY_TEST_UPLOAD_ASYNC", True ) )
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 
 
@@ -33,10 +34,15 @@ def stage_data_in_history( galaxy_interactor, all_test_data, history, shed_tool_
     # Upload any needed files
     upload_waits = []
 
-    for test_data in all_test_data:
-        upload_waits.append( galaxy_interactor.stage_data_async( test_data, history, shed_tool_id ) )
-    for upload_wait in upload_waits:
-        upload_wait()
+    if UPLOAD_ASYNC:
+        for test_data in all_test_data:
+            upload_waits.append( galaxy_interactor.stage_data_async( test_data, history, shed_tool_id ) )
+        for upload_wait in upload_waits:
+            upload_wait()
+    else:
+        for test_data in all_test_data:
+            upload_wait = galaxy_interactor.stage_data_async( test_data, history, shed_tool_id )
+            upload_wait()
 
 
 class GalaxyInteractorApi( object ):
