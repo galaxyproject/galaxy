@@ -1296,7 +1296,7 @@ class TwillTestCase( unittest.TestCase ):
         history_id = loads( self.last_page() )[0][ 'id' ]
         self.visit_url( '/api/histories/%s' % history_id )
         jsondata = loads( self.last_page() )
-        return jsondata[ 'state' ] in [ 'new', 'queued', 'running' ]
+        return jsondata[ 'state' ] in [ 'queued', 'running' ]
 
     def get_tags( self, item_id, item_class ):
         self.visit_url( "%s/tag/get_tagging_elt_async?item_id=%s&item_class=%s" % \
