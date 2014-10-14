@@ -1,5 +1,5 @@
 
-from galaxy import web, util
+from galaxy import web
 from galaxy.web.base.controller import BaseAPIController
 
 
