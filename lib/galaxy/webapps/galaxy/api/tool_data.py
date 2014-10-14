@@ -1,11 +1,10 @@
-
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController
 
 
 class ToolData( BaseAPIController ):
     """
-    RESTful controller for interactions with tools.
+    RESTful controller for interactions with tool data
     """
 
     @web.require_admin
