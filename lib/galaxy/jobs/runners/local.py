@@ -23,7 +23,7 @@ __all__ = [ 'LocalJobRunner' ]
 DEFAULT_POOL_SLEEP_TIME = 1
 # TODO: Set to false and just get rid of this option. It would simplify this
 # class nicely. -John
-DEFAULT_EMBED_METADATA_IN_JOB = False
+DEFAULT_EMBED_METADATA_IN_JOB = True
 
 
 class LocalJobRunner( BaseJobRunner ):
