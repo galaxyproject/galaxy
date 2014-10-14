@@ -2441,7 +2441,7 @@ class TwillTestCase( unittest.TestCase ):
         return self.wait_for(lambda: self.get_running_datasets(), **kwds)
 
     def wait_for( self, func, **kwd ):
-        sleep_amount = 0.1
+        sleep_amount = 0.2
         slept = 0
         walltime_exceeded = 86400
         while slept <= walltime_exceeded:
