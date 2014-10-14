@@ -119,6 +119,12 @@ def app_factory( global_conf, **kwargs ):
                             name_prefix='user_',
                             path_prefix='/api',
                             parent_resources=dict( member_name='user', collection_name='users' ) )
+    webapp.mapper.connect( 'repository_create_changeset_revision',
+                           '/api/repositories/:id/changeset_revision',
+                           controller='repositories',
+                           action='create_changeset_revision',
+                           conditions=dict( method=[ "POST" ] ) )
+
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
