@@ -16,6 +16,12 @@ return {
     },
     
     success: function(response) {
+        // check
+        if (!response.jobs || !response.jobs.length) {
+            console.debug('tools-template::success() - Failed jobs.');
+            return;
+        }
+       
         // number of jobs
         var njobs = response.jobs.length;
         

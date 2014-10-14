@@ -13,7 +13,7 @@ return Backbone.View.extend({
         floating        : 'right',
         icon            : null,
         onclick         : null,
-        cls             : 'icon-btn',
+        cls             : 'ui-button-icon ui-button-menu',
         tooltip         : '',
         
         // additional options
@@ -121,7 +121,7 @@ return Backbone.View.extend({
     // fill template header
     _templateMenuItem: function (options) {
         var tmpl =  '<li>' +
-                        '<a href="' + options.href + '" target="' + options.target + '">';
+                        '<a class="dropdown-item" href="' + options.href + '" target="' + options.target + '">';
                 
         if (options.icon)
             tmpl +=         '<i class="fa ' + options.icon + '"></i>';
@@ -143,25 +143,28 @@ return Backbone.View.extend({
     
     // element
     _template: function(options) {
-        // width
+        // TODO: width/margin should be set in css
         var width = '';
+        var margin = '';
         if (options.title) {
             width = 'width: auto;';
+        } else {
+            margin = 'margin: 0px;';
         }
         
-        // string
-        var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="ui-button-icon dropdown ' + options.cls + '">';
-    
+        // create base string
+        var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="dropdown ' + options.cls + '">' +
+                        '<div class="root button dropdown-toggle" data-toggle="dropdown" style="' + margin + '">' +
+                            '<i class="icon fa ' + options.icon + '"/>';
+                            
         // title
         if (options.title) {
-            str +=      '<div class="root button dropdown-toggle" data-toggle="dropdown">' +
-                            '<i class="icon fa ' + options.icon + '"/>&nbsp;' +
-                            '<span class="title">' + options.title + '</span>' +
-                        '</div>';
-        } else {
-            str +=      '<i class="icon fa ' + options.icon + '"/>';
+            str +=          '&nbsp;<span class="title">' + options.title + '</span>';
         }
-        str +=      '</div>';
+        
+        // finalize
+        str +=          '</div>' +
+                    '</div>';
         return str;
     }
 });

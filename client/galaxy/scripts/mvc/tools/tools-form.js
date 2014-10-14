@@ -7,13 +7,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
     function(Utils, Portlet, Ui, CitationModel, CitationView,
              Tools, ToolTemplate, ToolContent, ToolSection, ToolTree, ToolJobs) {
 
-    // create tool model
-    var Model = Backbone.Model.extend({
-        initialize: function (options) {
-            this.url = galaxy_config.root + 'api/tools/' + options.id + '?io_details=true';
-        }
-    });
-
     // create form view
     var View = Backbone.View.extend({
         // base element
@@ -21,6 +14,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         
         // initialize
         initialize: function(options) {
+            // log options
+            console.debug(options);
+            
             // link this
             var self = this;
             
@@ -31,19 +27,16 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 this.modal = new Ui.Modal.View();
             }
             
-            // link options
-            this.options = options;
+            // link model/inputs and all options
+            this.options    = options;
+            this.model      = options.model;
+            this.inputs     = options.model.inputs;
             
             // set element
             this.setElement('<div/>');
             
             // add to main element
             $(this.container).append(this.$el);
-            
-            // load tool model
-            this.model = new Model({
-                id      : options.id
-            });
             
             // creates a tree/json structure from the input form
             this.tree = new ToolTree(this);
@@ -64,7 +57,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.content = new ToolContent({
                 history_id  : this.options.history_id,
                 success     : function() {
-                    self._initializeToolForm();
+                    self._buildForm();
                 }
             });
         },
@@ -96,33 +89,37 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             console.debug('tools-form::refresh() - Recreated data structure. Refresh.');
         },
         
-        // initialize tool form
-        _initializeToolForm: function() {
+        // refresh form data
+        _refreshForm: function() {
             // link this
             var self = this;
             
-            // fetch model and render form
-            this.model.fetch({
-                error: function(response) {
-                    console.debug('tools-form::_initializeToolForm() : Attempt to fetch tool model failed.');
-                },
-                success: function() {
-                    // backup inputs
-                    self.inputs = self.model.get('inputs');
-                    
-                    // update inputs with job parameters
-                    if (self.options.job_id) {
-                        Utils.get({
-                            url: galaxy_config.root + 'api/jobs/' + self.options.job_id,
-                            success: function(parameters) {
-                                // TODO: Update input parameters
-                                //self._updateInputs(self.inputs, parameters);
-                                self._buildForm();
-                            }
-                        });
-                    } else {
-                        self._buildForm();
+            // finalize data
+            var current_state = this.tree.finalize({
+                data : function(dict) {
+                    if (dict.values.length > 0 && dict.values[0].src === 'hda') {
+                        return self.content.get({id: dict.values[0].id}).dataset_id;
                     }
+                    return null;
+                }
+            });
+            
+            // log tool state
+            console.debug('tools-form::_refreshForm() - Refreshing inputs/states.');
+            console.debug(current_state);
+            
+            // post job
+            Utils.request({
+                type    : 'GET',
+                url     : galaxy_config.root + 'tool_runner/index?tool_id=' + this.options.id + '&form_refresh=True',
+                data    : current_state,
+                success : function(response) {
+                    console.debug('tools-form::_refreshForm() - Refreshed inputs/states.');
+                    console.debug(response);
+                },
+                error   : function(response) {
+                    console.debug('tools-form::_refreshForm() - Refresh request failed.');
+                    console.debug(response);
                 }
             });
         },
@@ -132,8 +129,14 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // link this
             var self = this;
             
-            // create question button
-            var button_question = new Ui.ButtonIcon({
+            // button menu
+            var menu = new Ui.ButtonMenu({
+                icon    : 'fa-gear',
+                tooltip : 'Click to see a list of available operations.'
+            });
+            
+            // add question option
+            menu.addMenu({
                 icon    : 'fa-question-circle',
                 title   : 'Question?',
                 tooltip : 'Ask a question about this tool (Biostar)',
@@ -143,7 +146,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // create search button
-            var button_search = new Ui.ButtonIcon({
+            menu.addMenu({
                 icon    : 'fa-search',
                 title   : 'Search',
                 tooltip : 'Search help for this tool (Biostar)',
@@ -153,7 +156,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // create share button
-            var button_share = new Ui.ButtonIcon({
+            menu.addMenu({
                 icon    : 'fa-share',
                 title   : 'Share',
                 tooltip : 'Share this tool',
@@ -162,17 +165,10 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 }
             });
             
-            // default operations
-            var operations = {
-                button_question: button_question,
-                button_search: button_search,
-                button_share: button_share
-            }
-            
             // add admin operations
             if (Galaxy.currUser.get('is_admin')) {
                 // create download button
-                operations['button_download'] = new Ui.ButtonIcon({
+                menu.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
                     tooltip : 'Download this tool',
@@ -189,25 +185,28 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // switch to classic tool form mako if the form definition is incompatible
-            if (this.incompatible) {
+            //if (this.incompatible) {
                 this.$el.hide();
                 $('#tool-form-classic').show();
                 return;
-            }
+            //}
             
             // create portlet
             this.portlet = new Portlet.View({
                 icon : 'fa-wrench',
-                title: '<b>' + this.model.get('name') + '</b> ' + this.model.get('description'),
-                operations: operations,
+                title: '<b>' + this.model.name + '</b> ' + this.model.description,
+                operations: {
+                    menu    : menu
+                },
                 buttons: {
-                    execute: new Ui.Button({
+                    execute : new Ui.Button({
                         icon     : 'fa-check',
                         tooltip  : 'Execute the tool',
                         title    : 'Execute',
                         cls      : 'btn btn-primary',
                         floating : 'clear',
                         onclick  : function() {
+                            //self._refreshForm();
                             self.job_handler.submit();
                         }
                     })

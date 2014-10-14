@@ -135,6 +135,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         return {
             'id'    : encoded_id,
             'history_id' : encoded_history_id,
+            'dataset_id' : hda.dataset_id,
             'name'  : hda.name,
             'type'  : api_type,
             'state'  : hda.dataset.state,

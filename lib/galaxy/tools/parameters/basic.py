@@ -984,13 +984,13 @@ class SelectToolParameter( ToolParameter ):
         else:
             return []
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         d = super( SelectToolParameter, self ).to_dict( trans )
 
         # Get options, value.
         options = []
         try:
-            options = self.get_options( trans, {} )
+            options = self.get_options( trans, other_values )
         except AssertionError:
             # we dont/cant set other_values (the {} above), so params that require other params to be filled will error:
             #       required dependency in filter_options
@@ -1276,9 +1276,9 @@ class ColumnListParameter( SelectToolParameter ):
         # No late validation
         return False
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # call parent to_dict
-        d = super( ColumnListParameter, self ).to_dict( trans )
+        d = super( ColumnListParameter, self ).to_dict( trans, other_values )
 
         # add data reference
         d['data_ref'] = self.data_ref

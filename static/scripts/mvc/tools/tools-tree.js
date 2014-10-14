@@ -32,7 +32,10 @@ return Backbone.Model.extend({
 
     /** Convert dictionary representation into tool api specific flat dictionary format.
     */
-    finalize: function() {
+    finalize: function(patch) {
+        // initialize
+        patch = patch || {};
+        
         // link this
         var self = this;
         
@@ -110,12 +113,20 @@ return Backbone.Model.extend({
                             }
                             break;
                         default:
-                            // get conditional value
+                            // get field
                             var field = self.app.field_list[input.id];
+                            
+                            // get value
+                            var value = field.value();
+                            
+                            // patch value
+                            if (patch[input.type]) {
+                                value = patch[input.type](value);
+                            }
                             
                             // handle default value
                             if (!field.skip) {
-                                add (job_input_id, input.id, field.value());
+                                add (job_input_id, input.id, value);
                             }
                     }
                 }

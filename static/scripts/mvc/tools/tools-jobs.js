@@ -58,7 +58,6 @@ return Backbone.Model.extend({
                     }
                 } else {
                     // show error message with details
-                    console.debug(job_def);
                     console.debug(response);
                 }
             }

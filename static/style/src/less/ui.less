@@ -90,14 +90,12 @@
 .ui-button-icon {
     &:extend(.icon-btn);
     &:extend(.no-highlight);
-
     margin-right: 5px;
     ul {
         i {
             font-size: 1.2em; margin-right: 5px; position: relative; top: 1px;
         }
     }
-    
     .button {
         margin-right: 5px;
         margin-left: 5px;
@@ -109,9 +107,17 @@
             top: -1px;
         }
     }
-    
     .button.disabled {
         .opacity(.65);
+    }
+}
+
+.ui-button-menu {
+    .dropdown-menu {
+        min-width: 50px;
+    }
+    .dropdown-item {
+        text-align: left;
     }
 }
 

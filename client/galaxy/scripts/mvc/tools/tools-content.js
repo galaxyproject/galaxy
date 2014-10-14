@@ -83,6 +83,12 @@ define(['utils/utils'], function(Utils){
             return result;
         },
         
+        /** Returns matched content from summary.
+        */
+        get: function(options) {
+            return _.findWhere(this.summary, options) || {};
+        },
+        
         /** Get details of a content by id.
         */
         getDetails: function(options) {

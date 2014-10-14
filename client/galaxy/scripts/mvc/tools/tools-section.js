@@ -115,57 +115,29 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             // block index
             var block_index = 0;
             
-            //
-            // create tab field
-            //
-            var repeat = new Repeat.View({
-                title_new       : input_def.title,
-                max             : input_def.max,
-                onnew           : function() {
-                    // create id tag
-                    var sub_section_id = input_def.id + '-section-' + (block_index++);
-                
-                    // create sub section
-                    var sub_section = new View(self.app, {
-                        inputs  : input_def.inputs,
-                        cls     : 'ui-table-plain'
-                    });
-                    
-                    // add new tab
-                    repeat.add({
-                        id              : sub_section_id,
-                        title           : input_def.title,
-                        $el             : sub_section.$el,
-                        ondel           : function() {
-                            // delete repeat block
-                            repeat.del(sub_section_id);
-                            
-                            // retitle repeat block
-                            repeat.retitle(input_def.title);
-                            
-                            // trigger refresh
-                            self.app.refresh();
-                        }
-                    });
-                    
-                    // retitle repeat blocks
-                    repeat.retitle(input_def.title);
-                            
-                    // trigger refresh
-                    self.app.refresh();
-                }
-            });
-            
-            //
-            // add min number of repeat blocks
-            //
-            for (var i = 0; i < input_def.min; i++) {
+            // helper function to create new repeat blocks
+            function create (inputs, deleteable) {
                 // create id tag
                 var sub_section_id = input_def.id + '-section-' + (block_index++);
             
+                // enable/disable repeat delete button
+                var ondel = null;
+                if (deleteable) {
+                    ondel = function() {
+                        // delete repeat block
+                        repeat.del(sub_section_id);
+                        
+                        // retitle repeat block
+                        repeat.retitle(input_def.title);
+                        
+                        // trigger refresh
+                        self.app.refresh();
+                    }
+                }
+                    
                 // create sub section
                 var sub_section = new View(self.app, {
-                    inputs  : input_def.inputs,
+                    inputs  : inputs,
                     cls     : 'ui-table-plain'
                 });
                 
@@ -173,12 +145,46 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 repeat.add({
                     id      : sub_section_id,
                     title   : input_def.title,
-                    $el     : sub_section.$el
+                    $el     : sub_section.$el,
+                    ondel   : ondel
                 });
+                
+                // retitle repeat block
+                repeat.retitle(input_def.title);
             }
             
-            // retitle repeat block
-            repeat.retitle(input_def.title);
+            //
+            // create repeat block element
+            //
+            var repeat = new Repeat.View({
+                title_new       : input_def.title,
+                max             : input_def.max,
+                onnew           : function() {
+                    // create
+                    create(input_def.inputs, true);
+                            
+                    // trigger refresh
+                    self.app.refresh();
+                }
+            });
+            
+            //
+            // add parsed/minimum number of repeat blocks
+            //
+            var n_min   = input_def.min;
+            var n_cache = _.size(input_def.cache);
+            for (var i = 0; i < Math.max(n_cache, n_min); i++) {
+                // select input source
+                var inputs = null;
+                if (i < n_cache) {
+                    inputs = input_def.cache[i];
+                } else {
+                    inputs = input_def.inputs;
+                }
+                
+                // create repeat block
+                create(inputs, i >= n_min);
+            }
             
             // create input field wrapper
             var input_element = new InputElement({

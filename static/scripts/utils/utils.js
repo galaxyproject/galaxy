@@ -68,6 +68,14 @@ function request (options) {
     // make request
     $.ajax(ajaxConfig)
     .done(function(response) {
+        if (typeof response === 'string') {
+            try {
+                response = response.replace('Infinity,', '"Infinity",');
+                response = jQuery.parseJSON(response);
+            } catch (e) {
+                console.debug(e);
+            }
+        }
         options.success && options.success(response);
     })
     .fail(function(response) {
