@@ -15,6 +15,8 @@ import tempfile
 from galaxy import util
 from galaxy.util.odict import odict
 
+from galaxy.model.item_attrs import Dictifiable
+
 log = logging.getLogger( __name__ )
 
 DEFAULT_TABLE_TYPE = 'tabular'
@@ -223,7 +225,7 @@ class ToolDataTable( object ):
         return self._update_version()
 
 
-class TabularToolDataTable( ToolDataTable ):
+class TabularToolDataTable( ToolDataTable, Dictifiable ):
     """
     Data stored in a tabular / separated value format on disk, allows multiple
     files to be merged but all must have the same column definitions::
@@ -235,6 +237,7 @@ class TabularToolDataTable( ToolDataTable ):
         </table>
 
     """
+    dict_collection_visible_keys = [ 'name' ]
 
     type_key = 'tabular'
 
@@ -514,10 +517,17 @@ class TabularToolDataTable( ToolDataTable ):
                 else:
                     replace = " "
         return map( lambda x: x.replace( separator, replace ), fields )
-    
+
     @property
     def xml_string( self ):
         return util.xml_to_string( self.config_element )
+
+    def to_dict(self, view='collection'):
+        rval = super(TabularToolDataTable, self).to_dict()
+        if view == 'element':
+            rval['columns'] = sorted(self.columns.keys(), key=lambda x:self.columns[x])
+            rval['fields'] = self.get_fields()
+        return rval
 
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )
