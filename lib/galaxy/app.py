@@ -134,6 +134,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Start the job manager
         from galaxy.jobs import manager
         self.job_manager = manager.JobManager( self )
+        self.job_manager.start()
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue
