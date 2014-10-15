@@ -2,11 +2,15 @@ import json
 import logging
 import os
 import tarfile
+import StringIO
 import tempfile
 from time import strftime
 
+from cgi import FieldStorage
+
 from galaxy import util
 from galaxy import web
+from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
@@ -16,10 +20,14 @@ from tool_shed.capsule import capsule_manager
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 
+from tool_shed.dependencies import attribute_handlers
+
 from tool_shed.util import basic_util
+from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
 from tool_shed.util import repository_util
+from tool_shed.util import repository_content_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 
@@ -568,3 +576,108 @@ class RepositoriesController( BaseAPIController ):
                                                 action='show',
                                                 id=trans.security.encode_id( repository.id ) )
         return repository_dict
+
+    @web.expose_api
+    def create_changeset_revision( self, trans, id, payload, **kwd ):
+        """
+        POST /api/repositories/{encoded_repository_id}/changeset_revision
+
+        Create a new tool shed repository commit - leaving PUT on parent
+        resource open for updating meta-attirbutes of the repository (and
+        Galaxy doesn't allow PUT multipart data anyway
+        https://trello.com/c/CQwmCeG6).
+
+        :param id: the encoded id of the Repository object
+
+        The following parameters may be included in the payload.
+        :param commit_message: hg commit message for update.
+        """
+
+        # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
+        rdah = attribute_handlers.RepositoryDependencyAttributeHandler( trans.app, unpopulate=False )
+        tdah = attribute_handlers.ToolDependencyAttributeHandler( trans.app, unpopulate=False )
+
+        repository = suc.get_repository_in_tool_shed( trans.app, id )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
+
+        upload_point = commit_util.get_upload_point( repository, **kwd )
+        tip = repository.tip( trans.app )
+
+        file_data = payload.get('file')
+        # Code stolen from gx's upload_common.py
+        if isinstance( file_data, FieldStorage ):
+            assert not isinstance( file_data.file, StringIO.StringIO )
+            assert file_data.file.name != '<fdopen>'
+            local_filename = util.mkstemp_ln( file_data.file.name, 'upload_file_data_' )
+            file_data.file.close()
+            file_data = dict( filename=file_data.filename,
+                              local_filename=local_filename )
+        elif type( file_data ) == dict and 'local_filename' not in file_data:
+            raise Exception( 'Uploaded file was encoded in a way not understood.' )
+
+        commit_message = kwd.get( 'commit_message', 'Uploaded' )
+
+        uploaded_file = open(file_data['local_filename'], 'rb')
+        uploaded_file_name = file_data['local_filename']
+
+        isgzip = False
+        isbz2 = False
+        isgzip = checkers.is_gzip( uploaded_file_name )
+        if not isgzip:
+            isbz2 = checkers.is_bz2( uploaded_file_name )
+        if ( isgzip or isbz2 ):
+            # Open for reading with transparent compression.
+            tar = tarfile.open( uploaded_file_name, 'r:*' )
+        else:
+            tar = tarfile.open( uploaded_file_name )
+
+        new_repo_alert = False
+        remove_repo_files_not_in_tar = True
+
+        ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
+            repository_content_util.upload_tar(
+                trans,
+                rdah,
+                tdah,
+                repository,
+                tar,
+                uploaded_file,
+                upload_point,
+                remove_repo_files_not_in_tar,
+                commit_message,
+                new_repo_alert
+            )
+        if ok:
+            # Update the repository files for browsing.
+            hg_util.update_repository( repo )
+            # Get the new repository tip.
+            if tip == repository.tip( trans.app ):
+                trans.response.status = 400
+                message = 'No changes to repository.'
+                ok = False
+            else:
+                rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
+                                                                             user=trans.user,
+                                                                             repository=repository )
+                status, error_message = \
+                    rmm.set_repository_metadata_due_to_new_tip( trans.request.host,
+                                                                content_alert_str=content_alert_str,
+                                                                **kwd )
+                if error_message:
+                    ok = False
+                    trans.response.status = 500
+                    message = error_message
+        else:
+            trans.response.status = 500
+
+        if not ok:
+            return {
+                "err_msg": message,
+                "content_alert": content_alert_str
+            }
+        else:
+            return {
+                "message": message,
+                "content_alert": content_alert_str
+            }
