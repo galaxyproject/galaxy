@@ -1,0 +1,50 @@
+// ---------------------------------------------------------------------------- generic panel list items
+.job.list-item {
+    border: 1px solid @border-default-color;
+
+    .title-bar {
+        .subtitle {
+            color: grey;
+            font-size: 80%;
+        }
+    }
+
+    & > .details {
+        padding: 0px;
+
+        .params {
+            padding: 0px 8px 0px 8px;
+            display: table;
+            
+            .param {
+                display: table-row;
+
+                .prompt {
+                    display: table-cell;
+                    margin-right: 8px;
+                    text-align: right;
+                    color: grey;
+                }
+                .value {
+                    display: table-cell;
+                }
+            }
+        }
+
+        .list-panel {
+            padding : 0px;
+            .list-items {
+                border: 0px;
+                border-radius: 0px;
+                .list-item {
+                    border: 0px;
+                    border-radius: 0px;
+                    border-top: 1px solid @border-default-color;
+                    &:last-child {
+
+                    }
+                }
+            }
+        }
+    }
+}

@@ -16,7 +16,7 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
     initialize : function( attributes ){
         /** are the details of this view expanded/shown or not? */
         this.expanded   = attributes.expanded || false;
-        //this.log( '\t expanded:', this.expanded );
+        this.log( '\t expanded:', this.expanded );
         this.fxSpeed = attributes.fxSpeed || this.fxSpeed;
     },
 
@@ -70,7 +70,9 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 
     /** empty out the current el, move the $newRender's children in */
     _swapNewRender : function( $newRender ){
-        return this.$el.empty().attr( 'class', this.className ).append( $newRender.children() );
+        return this.$el.empty()
+            .attr( 'class', _.isFunction( this.className )? this.className(): this.className )
+            .append( $newRender.children() );
     },
 
     /** set up js behaviors, event handlers for elements within the given container
@@ -204,7 +206,7 @@ var ListItemView = ExpandableView.extend(
         $newRender.children( '.warnings' ).replaceWith( this._renderWarnings() );
         $newRender.children( '.title-bar' ).replaceWith( this._renderTitleBar() );
         $newRender.children( '.primary-actions' ).append( this._renderPrimaryActions() );
-        $newRender.find( '.title-bar .subtitle' ).replaceWith( this._renderSubtitle() );
+        $newRender.find( '> .title-bar .subtitle' ).replaceWith( this._renderSubtitle() );
         return $newRender;
     },
 
