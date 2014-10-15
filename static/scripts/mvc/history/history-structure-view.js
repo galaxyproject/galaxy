@@ -52,12 +52,20 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
             //this.debug( job.outputCollection );
 
             // create the bbone view for the job (to be positioned later accrd. to the layout) and cache
-            var li = new JOB_LI.JobListItemView({ model: job, expanded: true });
+            var li = new JOB_LI.JobListItemView({ model: job });
             //var li = new JOB_LI.JobListItemView({ model: job });
-            li.$el.appendTo( view.$el );
+            li.render( 0 ).$el.appendTo( view.$el );
             view._jobLiMap[ job.id ] = li;
+            view._setUpJobListeners( li );
+
         });
         return view.jobs;
+    },
+
+    _setUpJobListeners : function( jobLi ){
+        // update the layout during expansion and collapsing of job and output li's
+        jobLi.on( 'expanding expanded collapsing collapsed', this.render, this );
+        jobLi.foldout.on( 'view:expanding view:expanded view:collapsing view:collapsed', this.render, this );
     },
 
     layoutDefaults : {
@@ -131,32 +139,32 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
     },
 
     render : function( options ){
-        this.log( this + '.renderComponent:', options );
+        this.debug( this + '.render:', options );
         var view = this;
 
-        view.component.eachVertex( function( v ){
-            //TODO:? liMap needed - can't we attach to vertex?
-            var li = view._jobLiMap[ v.name ];
-            if( !li.$el.is( ':visible' ) ){
-                li.render( 0 );
-            }
-        });
+        function _render(){
+            view._updateLayout();
+            // set up the display containers
+            view.$el
+                .width( view.layout.el.width )
+                .height( view.layout.el.height );
+            view.renderSVG();
 
-        view._updateLayout();
-        // set up the display containers
-        view.$el
-            .width( view.layout.el.width )
-            .height( view.layout.el.height );
-        this.renderSVG();
-
-        // position the job views accrd. to the layout
-        view.component.eachVertex( function( v ){
-            //TODO:? liMap needed - can't we attach to vertex?
-            var li = view._jobLiMap[ v.name ],
-                position = view.layout.nodeMap[ li.model.id ];
-            //this.debug( position );
-            li.$el.css({ top: position.y, left: position.x });
-        });
+            // position the job views accrd. to the layout
+            view.component.eachVertex( function( v ){
+//TODO:? liMap needed - can't we attach to vertex?
+                var li = view._jobLiMap[ v.name ],
+                    position = view.layout.nodeMap[ li.model.id ];
+                //this.debug( position );
+                li.$el.css({ top: position.y, left: position.x });
+            });
+        }
+//TODO: hack - li's invisible in updateLayout without this delay
+        if( !this.$el.is( ':visible' ) ){
+            _.delay( _render, 0 );
+        } else {
+            _render();
+        }
         return this;
     },
 
@@ -195,7 +203,7 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
                 .on( 'mouseover', highlightConnect )
                 .on( 'mouseout', unhighlightConnect );
 
-        connections.transition()
+        connections
                 .attr( 'd', function( d ){ return view._connectionPath( d ); });
 
 //TODO: ? can we use tick here to update the links?
@@ -256,7 +264,7 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
  */
 var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
 
-    logger : console,
+    //logger : console,
 
     className : HistoryStructureComponent.prototype.className + ' vertical',
 
@@ -376,8 +384,8 @@ var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
 
     _createComponent : function( component ){
         this.log( this + '._createComponent:', component );
-        return new HistoryStructureComponent({
-        //return new VerticalHistoryStructureComponent({
+        //return new HistoryStructureComponent({
+        return new VerticalHistoryStructureComponent({
                 model       : this.model,
                 component   : component
             });

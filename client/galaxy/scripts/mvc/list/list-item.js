@@ -17,7 +17,7 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         /** are the details of this view expanded/shown or not? */
         this.expanded   = attributes.expanded || false;
         this.log( '\t expanded:', this.expanded );
-        this.fxSpeed = attributes.fxSpeed || this.fxSpeed;
+        this.fxSpeed = attributes.fxSpeed !== undefined? attributes.fxSpeed : this.fxSpeed;
     },
 
     // ........................................................................ render main
@@ -119,15 +119,8 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
      */
     expand : function(){
         var view = this;
-        return view._fetchModelDetails()
-            .always(function(){
-                var $newDetails = view._renderDetails();
-                view.$details().replaceWith( $newDetails );
-                // needs to be set after the above or the slide will not show
-                view.expanded = true;
-                view.$details().slideDown( view.fxSpeed, function(){
-                    view.trigger( 'expanded', view );
-                });
+        return view._fetchModelDetails().always( function(){
+                view._expand();
             });
     },
 
@@ -141,6 +134,24 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         return jQuery.when();
     },
 
+    /** Inner fn called when expand (public) has fetched the details */
+    _expand : function(){
+        var view = this,
+            $newDetails = view._renderDetails();
+        view.$details().replaceWith( $newDetails );
+        // needs to be set after the above or the slide will not show
+        view.expanded = true;
+        view.$details().slideDown({
+            duration : view.fxSpeed,
+            step: function(){
+                view.trigger( 'expanding', view );
+            },
+            complete: function(){
+                view.trigger( 'expanded', view );
+            }
+        });
+    },
+
     /** Hide the body/details of an HDA.
      *  @fires collapsed when a body has been collapsed
      */
@@ -148,8 +159,14 @@ var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
         this.debug( this + '(ExpandableView).collapse' );
         var view = this;
         view.expanded = false;
-        this.$details().slideUp( view.fxSpeed, function(){
-            view.trigger( 'collapsed', view );
+        this.$details().slideUp({
+            duration : view.fxSpeed,
+            step: function(){
+                view.trigger( 'collapsing', view );
+            },
+            complete: function(){
+                view.trigger( 'collapsed', view );
+            }
         });
     }
 
@@ -377,11 +394,13 @@ var FoldoutListItemView = ListItemView.extend({
      *      disrespect attributes.expanded if drilldown
      */
     initialize : function( attributes ){
-        ListItemView.prototype.initialize.call( this, attributes );
 //TODO: hackish
         if( this.foldoutStyle === 'drilldown' ){ this.expanded = false; }
         this.foldoutStyle = attributes.foldoutStyle || this.foldoutStyle;
         this.foldoutPanelClass = attributes.foldoutPanelClass || this.foldoutPanelClass;
+
+        ListItemView.prototype.initialize.call( this, attributes );
+        this.foldout = this._createFoldoutPanel();
     },
 
 //TODO:?? override to exclude foldout scope?
@@ -395,7 +414,7 @@ var FoldoutListItemView = ListItemView.extend({
 //TODO: hackish
         if( this.foldoutStyle === 'drilldown' ){ return $(); }
         var $newDetails = ListItemView.prototype._renderDetails.call( this );
-        return this._attachFoldout( this._createFoldoutPanel(), $newDetails );
+        return this._attachFoldout( this.foldout, $newDetails );
     },
 
     /** In this override, handle collection expansion. */
@@ -419,7 +438,8 @@ var FoldoutListItemView = ListItemView.extend({
     _getFoldoutPanelOptions : function(){
         return {
             // propagate foldout style down
-            foldoutStyle : this.foldoutStyle
+            foldoutStyle : this.foldoutStyle,
+            fxSpeed      : this.fxSpeed
         };
     },
 
@@ -438,23 +458,11 @@ var FoldoutListItemView = ListItemView.extend({
         return view._fetchModelDetails()
             .always(function(){
                 if( view.foldoutStyle === 'foldout' ){
-                    view._expandByFoldout();
+                    view._expand();
                 } else if( view.foldoutStyle === 'drilldown' ){
                     view._expandByDrilldown();
                 }
             });
-    },
-
-    /** For foldout, call render details then slide down */
-    _expandByFoldout : function(){
-        var view = this;
-        var $newDetails = view._renderDetails();
-        view.$details().replaceWith( $newDetails );
-        // needs to be set after the above or the slide will not show
-        view.expanded = true;
-        view.$details().slideDown( view.fxSpeed, function(){
-            view.trigger( 'expanded', view );
-        });
     },
 
     /** For drilldown, set up close handler and fire expanded:drilldown
@@ -464,7 +472,6 @@ var FoldoutListItemView = ListItemView.extend({
     _expandByDrilldown : function(){
         var view = this;
         // attachment and rendering done by listener
-        view.foldout = this._createFoldoutPanel();
         view.foldout.on( 'close', function(){
             view.trigger( 'collapsed:drilldown', view, view.foldout );
         });

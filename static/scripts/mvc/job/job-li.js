@@ -30,7 +30,6 @@ var JobListItemView = _super.extend(/** @lends JobListItemView.prototype */{
 
         /** where should pages from links be displayed? (default to new tab/window) */
         this.linkTarget = attributes.linkTarget || '_blank';
-        this._setUpListeners();
     },
 
     /** In this override, add the state as a class for use with state-based CSS */
