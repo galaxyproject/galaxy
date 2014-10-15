@@ -613,7 +613,7 @@ class RepositoriesController( BaseAPIController ):
             file_data.file.close()
             file_data = dict( filename=file_data.filename,
                               local_filename=local_filename )
-        elif type( file_data ) == dict and 'filename' and 'local_filename' not in file_data:
+        elif type( file_data ) == dict and 'local_filename' not in file_data:
             raise Exception( 'Uploaded file was encoded in a way not understood.' )
 
         commit_message = kwd.get( 'commit_message', 'Uploaded' )
@@ -621,7 +621,6 @@ class RepositoriesController( BaseAPIController ):
         uploaded_file = open(file_data['local_filename'], 'rb')
         uploaded_file_name = file_data['local_filename']
 
-        ok = True
         isgzip = False
         isbz2 = False
         isgzip = checkers.is_gzip( uploaded_file_name )
