@@ -2,10 +2,10 @@ define([
 ],function(){
 /* ============================================================================
 TODO:
-    edges can't retain data
 
 ============================================================================ */
 //TODO: go ahead and move to underscore...
+/** call fn on each key/value in d */
 function each( d, fn ){
     for( var k in d ){
         if( d.hasOwnProperty( k ) ){
@@ -14,6 +14,7 @@ function each( d, fn ){
     }
 }
 
+/** copy key/values from d2 to d overwriting if present */
 function extend( d, d2 ){
     for( var k in d2 ){
         if( d2.hasOwnProperty( k ) ){
@@ -23,6 +24,7 @@ function extend( d, d2 ){
     return d;
 }
 
+/** deep equal of two dictionaries */
 function matches( d, d2 ){
     for( var k in d2 ){
         if( d2.hasOwnProperty( k ) ){
@@ -34,6 +36,10 @@ function matches( d, d2 ){
     return true;
 }
 
+/** map key/values in obj
+ *      if propsOrFn is an object, return only those k/v that match the object
+ *      if propsOrFn is function, call the fn and returned the mapped values from it
+ */
 function iterate( obj, propsOrFn ){
     var fn =    typeof propsOrFn === 'function'? propsOrFn : undefined,
         props = typeof propsOrFn === 'object'?   propsOrFn : undefined,
@@ -60,6 +66,8 @@ function iterate( obj, propsOrFn ){
 
 
 // ============================================================================
+/** A graph edge containing the name/id of both source and target and optional data
+ */
 function Edge( source, target, data ){
     var self = this;
     self.source = source !== undefined? source : null;
@@ -70,10 +78,12 @@ function Edge( source, target, data ){
     //}
     return self;
 }
+/** String representation */
 Edge.prototype.toString = function(){
     return this.source + '->' + this.target;
 };
 
+/** Return a plain object representing this edge */
 Edge.prototype.toJSON = function(){
     //TODO: this is safe in most browsers (fns will be stripped) - alter tests to incorporate this in order to pass data
     //return this;
@@ -88,6 +98,9 @@ Edge.prototype.toJSON = function(){
 };
 
 // ============================================================================
+/** A graph vertex with a (unique) name/id and optional data.
+ *      A vertex contains a list of Edges (whose sources are this vertex) and maintains the degree.
+ */
 function Vertex( name, data ){
     var self = this;
     self.name = name !== undefined? name : '(unnamed)';
@@ -96,16 +109,19 @@ function Vertex( name, data ){
     self.degree = 0;
     return self;
 }
-window.Vertex = Vertex;
+
+/** String representation */
 Vertex.prototype.toString = function(){
     return 'Vertex(' + this.name + ')';
 };
 
 //TODO: better name w no collision for either this.eachEdge or this.edges
+/** Iterate over each edge from this vertex */
 Vertex.prototype.eachEdge = function( propsOrFn ){
     return iterate( this.edges, propsOrFn );
 };
 
+/** Return a plain object representing this vertex */
 Vertex.prototype.toJSON = function(){
     //return this;
     return {
@@ -116,6 +132,10 @@ Vertex.prototype.toJSON = function(){
 
 
 // ============================================================================
+/** Base (abstract) class for Graph search algorithms.
+ *      Pass in the graph to search
+ *      and an optional dictionary containing the 3 vertex/edge processing fns listed below.
+ */
 var GraphSearch = function( graph, processFns ){
     var self = this;
     self.graph = graph;
@@ -136,6 +156,9 @@ var GraphSearch = function( graph, processFns ){
     return self;
 };
 
+/** Search interface where start is the vertex (or the name/id of the vertex) to begin the search at
+ *      This public interface caches searches and returns the cached version if it's already been done.
+ */
 GraphSearch.prototype.search = function _search( start ){
     var self = this;
     if( start in self._cache ){ return self._cache[ start ]; }
@@ -143,6 +166,22 @@ GraphSearch.prototype.search = function _search( start ){
     return ( self._cache[ start.name ] = self._search( start ) );
 };
 
+/** Actual search (private) function (abstract here) */
+GraphSearch.prototype._search = function __search( start, search ){
+    search = search || {
+        discovered : {},
+        //parents : {},
+        edges : []
+    };
+    return search;
+};
+
+/** Searches graph from start and returns a search tree of the results */
+GraphSearch.prototype.searchTree = function _searchTree( start ){
+    return this._searchTree( this.search( start ) );
+};
+
+/** Helper fn that returns a graph (a search tree) based on the search object passed in (does not actually search) */
 GraphSearch.prototype._searchTree = function __searchTree( search ){
     var self = this;
     return new Graph( true, {
@@ -153,11 +192,10 @@ GraphSearch.prototype._searchTree = function __searchTree( search ){
     });
 };
 
-GraphSearch.prototype.searchTree = function _searchTree( start ){
-    return this._searchTree( this.search( start ) );
-};
 
 // ============================================================================
+/** Breadth first search algo.
+ */
 var BreadthFirstSearch = function( graph, processFns ){
     var self = this;
     GraphSearch.call( this, graph, processFns );
@@ -166,6 +204,7 @@ var BreadthFirstSearch = function( graph, processFns ){
 BreadthFirstSearch.prototype = new GraphSearch();
 BreadthFirstSearch.prototype.constructor = BreadthFirstSearch;
 
+/** (Private) implementation of BFS */
 BreadthFirstSearch.prototype._search = function __search( start, search ){
     search = search || {
         discovered : {},
@@ -205,6 +244,8 @@ BreadthFirstSearch.prototype._search = function __search( start, search ){
 
 
 // ============================================================================
+/** Depth first search algorithm.
+ */
 var DepthFirstSearch = function( graph, processFns ){
     var self = this;
     GraphSearch.call( this, graph, processFns );
@@ -213,6 +254,7 @@ var DepthFirstSearch = function( graph, processFns ){
 DepthFirstSearch.prototype = new GraphSearch();
 DepthFirstSearch.prototype.constructor = DepthFirstSearch;
 
+/** (Private) implementation of DFS */
 DepthFirstSearch.prototype._search = function( start, search ){
     //console.debug( 'depthFirstSearch:', start );
     search = search || {
@@ -258,6 +300,8 @@ DepthFirstSearch.prototype._search = function( start, search ){
 
 
 // ============================================================================
+/** A directed/non-directed graph object.
+ */
 function Graph( directed, data, options ){
 //TODO: move directed to options
     this.directed = directed || false;
@@ -265,7 +309,7 @@ function Graph( directed, data, options ){
 }
 window.Graph = Graph;
 
-
+/** Set up options and instance variables */
 Graph.prototype.init = function( options ){
     options = options || {};
     var self = this;
@@ -277,6 +321,7 @@ Graph.prototype.init = function( options ){
     return self;
 };
 
+/** Read data from the plain object data - both in d3 form (nodes and links) or vertices and edges */
 Graph.prototype.read = function( data ){
     if( !data ){ return this; }
     var self = this;
@@ -286,6 +331,7 @@ Graph.prototype.read = function( data ){
 };
 
 //TODO: the next two could be combined
+/** Create the graph using a list of nodes and a list of edges (where source and target are indeces into nodes) */
 Graph.prototype.readNodesAndLinks = function( data ){
     if( !( data && data.hasOwnProperty( 'nodes' ) ) ){ return this; }
     //console.debug( 'readNodesAndLinks:', data );
@@ -306,6 +352,7 @@ Graph.prototype.readNodesAndLinks = function( data ){
     return self;
 };
 
+/** Create the graph using a list of nodes and a list of edges (where source and target are names of nodes) */
 Graph.prototype.readVerticesAndEdges = function( data ){
     if( !( data && data.hasOwnProperty( 'vertices' ) ) ){ return this; }
     //console.debug( 'readVerticesAndEdges:', data );
@@ -324,12 +371,16 @@ Graph.prototype.readVerticesAndEdges = function( data ){
     return self;
 };
 
+/** Return the vertex with name, creating it if necessary */
 Graph.prototype.createVertex = function( name, data ){
     //console.debug( 'createVertex:', name, data );
     if( this.vertices[ name ] ){ return this.vertices[ name ]; }
     return ( this.vertices[ name ] = new Vertex( name, data ) );
 };
 
+/** Create an edge in vertex named sourceName to targetName (optionally adding data to it)
+ *      If directed is false, create a second edge from targetName to sourceName.
+ */
 Graph.prototype.createEdge = function( sourceName, targetName, directed, data ){
     //note: allows multiple 'equivalent' edges (to/from same source/target)
     //console.debug( 'createEdge:', source, target, directed );
@@ -359,16 +410,19 @@ Graph.prototype.createEdge = function( sourceName, targetName, directed, data ){
     return edge;
 };
 
+/** Walk over all the edges of the graph using the vertex.eachEdge iterator */
 Graph.prototype.edges = function( propsOrFn ){
     return Array.prototype.concat.apply( [], this.eachVertex( function( vertex ){
         return vertex.eachEdge( propsOrFn );
     }));
 };
 
+/** Iterate over all the vertices in the graph */
 Graph.prototype.eachVertex = function( propsOrFn ){
     return iterate( this.vertices, propsOrFn );
 };
 
+/** Return a list of the vertices adjacent to vertex */
 Graph.prototype.adjacent = function( vertex ){
     var self = this;
     return iterate( vertex.edges, function( edge ){
@@ -376,6 +430,7 @@ Graph.prototype.adjacent = function( vertex ){
     });
 };
 
+/** Call fn on each vertex adjacent to vertex */
 Graph.prototype.eachAdjacent = function( vertex, fn ){
     var self = this;
     return iterate( vertex.edges, function( edge ){
@@ -384,6 +439,7 @@ Graph.prototype.eachAdjacent = function( vertex, fn ){
     });
 };
 
+/** Print the graph to the console (debugging) */
 Graph.prototype.print = function(){
     var self = this;
     console.log( 'Graph has ' + Object.keys( self.vertices ).length + ' vertices' );
@@ -396,6 +452,7 @@ Graph.prototype.print = function(){
     return self;
 };
 
+/** Return a DOT format string of this graph */
 Graph.prototype.toDOT = function(){
     var self = this,
         strings = [];
@@ -407,6 +464,7 @@ Graph.prototype.toDOT = function(){
     return strings.join( '\n' );
 };
 
+/** Return vertices and edges of this graph in d3 node/link format */
 Graph.prototype.toNodesAndLinks = function(){
     var self = this,
         indeces = {};
@@ -424,6 +482,7 @@ Graph.prototype.toNodesAndLinks = function(){
     };
 };
 
+/** Return vertices and edges of this graph where edges use the name/id as source and target */
 Graph.prototype.toVerticesAndEdges = function(){
     var self = this;
     return {
@@ -436,18 +495,22 @@ Graph.prototype.toVerticesAndEdges = function(){
     };
 };
 
+/** Search this graph using BFS */
 Graph.prototype.breadthFirstSearch = function( start, processFns ){
     return new BreadthFirstSearch( this ).search( start );
 };
 
+/** Return a searchtree of this graph using BFS */
 Graph.prototype.breadthFirstSearchTree = function( start, processFns ){
     return new BreadthFirstSearch( this ).searchTree( start );
 };
 
+/** Search this graph using DFS */
 Graph.prototype.depthFirstSearch = function( start, processFns ){
     return new DepthFirstSearch( this ).search( start );
 };
 
+/** Return a searchtree of this graph using DFS */
 Graph.prototype.depthFirstSearchTree = function( start, processFns ){
     return new DepthFirstSearch( this ).searchTree( start );
 };
@@ -465,6 +528,7 @@ Graph.prototype.depthFirstSearchTree = function( start, processFns ){
 //Graph.prototype.isBipartite = function(){
 //};
 
+/** Return an array of weakly connected (no edges between) sub-graphs in this graph */
 Graph.prototype.weakComponents = function(){
 //TODO: alternately, instead of returning graph-like objects:
 //  - could simply decorate the vertices (vertex.component = componentIndex), or clone the graph and do that
@@ -515,6 +579,7 @@ Graph.prototype.weakComponents = function(){
     return components;
 };
 
+/** Return a single graph containing the weakly connected components in this graph */
 Graph.prototype.weakComponentGraph = function(){
     //note: although this can often look like the original graph - edges can be lost
     var components = this.weakComponents();
@@ -528,6 +593,7 @@ Graph.prototype.weakComponentGraph = function(){
     });
 };
 
+/** Return an array of graphs of the weakly connected components in this graph */
 Graph.prototype.weakComponentGraphArray = function(){
     //note: although this can often look like the original graph - edges can be lost
     return this.weakComponents().map( function( component ){
@@ -537,10 +603,8 @@ Graph.prototype.weakComponentGraphArray = function(){
 
 
 // ============================================================================
-
-
-
-// ============================================================================
+/** Create a random graph with numVerts vertices and numEdges edges (for testing)
+ */
 function randGraph( directed, numVerts, numEdges ){
     //console.debug( 'randGraph', directed, numVerts, numEdges );
     var data = { nodes : [], links : [] };

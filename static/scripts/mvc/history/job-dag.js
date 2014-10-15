@@ -4,6 +4,10 @@ define([
 ],function( GRAPH, addLogging ){
 // ============================================================================
 var _super = GRAPH.Graph;
+/** A Directed acyclic Graph built from a history's job data.
+ *      Reads in job json, filters and process that json, and builds a graph
+ *      using the connections between job inputs and outputs.
+ */
 var JobDAG = function( options ){
     var self = this;
     //this.logger = console;
@@ -25,9 +29,12 @@ var JobDAG = function( options ){
 };
 JobDAG.prototype = new GRAPH.Graph();
 JobDAG.prototype.constructor = JobDAG;
+
+// add logging ability - turn off/on using the this.logger statement above
 addLogging( JobDAG );
 
 // ----------------------------------------------------------------------------
+/** process jobs, options, filters, and any history data, then create the graph */
 JobDAG.prototype.init = function _init( options ){
     options = options || {};
     _super.prototype.init.call( this, options );
@@ -52,6 +59,7 @@ JobDAG.prototype.init = function _init( options ){
     return self;
 };
 
+/** add job filters based on options */
 JobDAG.prototype._initFilters = function __initFilters(){
     var self = this,
         filters = [];
@@ -84,6 +92,7 @@ JobDAG.prototype._initFilters = function __initFilters(){
     return filters;
 };
 
+/** sort the jobs and cache any that pass all filters into _idMap by job.id */
 JobDAG.prototype.preprocessJobs = function _preprocessJobs( jobs ){
     this.info( 'processing jobs' );
 
@@ -98,6 +107,7 @@ JobDAG.prototype.preprocessJobs = function _preprocessJobs( jobs ){
     return self;
 };
 
+/** sort the jobs based on update time */
 JobDAG.prototype.sort = function _sort( jobs ){
     function cmpCreate( a, b ){
         if( a.update_time > b.update_time ){ return 1; }
@@ -107,6 +117,7 @@ JobDAG.prototype.sort = function _sort( jobs ){
     return jobs.sort( cmpCreate );
 };
 
+/** proces input/output, filter based on job data returning data if passing, null if not */
 JobDAG.prototype.preprocessJob = function _preprocessJob( job, index ){
     //this.info( 'preprocessJob', job, index );
     var self = this,
@@ -138,6 +149,9 @@ JobDAG.prototype.preprocessJob = function _preprocessJob( job, index ){
     return jobData;
 };
 
+/** make verbose input/output lists more concise, sanity checking along the way
+ *      processFn is called on each input/output and passed the dataset obj (id,src) and the input/output name.
+ */
 JobDAG.prototype.datasetMapToIdArray = function _datasetMapToIdArray( datasetMap, processFn ){
     var self = this;
     return _.map( datasetMap, function( dataset, nameInJob ){
@@ -152,6 +166,9 @@ JobDAG.prototype.datasetMapToIdArray = function _datasetMapToIdArray( datasetMap
     });
 };
 
+/** Walk all the jobs (vertices), attempting to find connections
+ *  between datasets used as both inputs and outputs (edges)
+ */
 JobDAG.prototype.createGraph = function _createGraph(){
     var self = this;
     self.debug( 'connections:' );
@@ -183,6 +200,7 @@ JobDAG.prototype.createGraph = function _createGraph(){
     return self;
 };
 
+/** Override to re-sort (ugh) jobs in each component by update time */
 Graph.prototype.weakComponentGraphArray = function(){
     return this.weakComponents().map( function( component ){
 //TODO: this seems to belong above (in sort) - why isn't it preserved?
@@ -198,7 +216,4 @@ Graph.prototype.weakComponentGraphArray = function(){
 
 // ============================================================================
     return JobDAG;
-    //return {
-    //    jobDAG : jobDAG
-    //};
 });

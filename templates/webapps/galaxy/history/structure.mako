@@ -95,9 +95,6 @@ svg foreignObject {
 <script type="text/javascript">
 /*
 TODO:
-    components should be graphs?
-        as it is they're verts+edges
-
     in-panel view of anc desc
 
     show datasets when job not expanded
@@ -119,8 +116,8 @@ TODO:
     controls:
         (optionally) filter all deleted
         (optionally) filter all hidden
-        (optionally) filter __SET_METADATA__
-        (optionally) filter error'd jobs
+        //(optionally) filter __SET_METADATA__
+        //(optionally) filter error'd jobs
 
     vertical layout
         will not allow expansion of jobs/datasets easily
@@ -141,8 +138,6 @@ TODO:
                 would need to update as jquery was expanding foreignObject/dom
 
 */
-
-
 define( 'app', function(){
     require([
         'mvc/job/job-model',
@@ -151,18 +146,14 @@ define( 'app', function(){
     ], function( JOB, HISTORY, StructureView ){
 
         var historyModel = new HISTORY.History( bootstrapped.history, bootstrapped.hdas );
-window.historymodel = history;
-window.jobs = bootstrapped.jobs;
+//window.historymodel = history;
+//window.jobs = bootstrapped.jobs;
 
         var structure = new StructureView({
             model   : historyModel,
             jobs    : bootstrapped.jobs
         });
-        structure.$el.appendTo( 'body' );
-        console.debug( 'structure visible?', structure.$el.is( ':visible' ) );
-        structure.render();
-window.structure = structure;
-
+        structure.render().$el.appendTo( 'body' );
     });
 });
 </script>

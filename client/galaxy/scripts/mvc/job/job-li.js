@@ -6,7 +6,8 @@ define([
 ], function( LIST_ITEM, DATASET_LIST, BASE_MVC, _l ){
 //==============================================================================
 var _super = LIST_ITEM.FoldoutListItemView;
-/** @class
+/** @class A job view used from within a larger list of jobs.
+ *      Each job itself is a foldout panel of history contents displaying the outputs of this job.
  */
 var JobListItemView = _super.extend(/** @lends JobListItemView.prototype */{
 

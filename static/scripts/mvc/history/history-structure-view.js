@@ -13,6 +13,9 @@ change component = this to something else
 
 */
 // ============================================================================
+/**
+ *
+ */
 var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 
     //logger : console,
@@ -151,7 +154,6 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
             //TODO:? liMap needed - can't we attach to vertex?
             var li = view._jobLiMap[ v.name ],
                 position = view.layout.nodeMap[ li.model.id ];
-            console.debug( li.$el.is( ':visible' ) );
             //this.debug( position );
             li.$el.css({ top: position.y, left: position.x });
         });
@@ -249,6 +251,9 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
 
 
 // ============================================================================
+/**
+ *
+ */
 var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
 
     logger : console,
@@ -288,7 +293,6 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
             node.y = y;
             var li = view._jobLiMap[ jobId ];
             if( li.$el.is( ':visible' ) ){
-                console.debug( 'li is visible, adj. by:', li.$el.height() );
                 y += li.$el.height() + layout.jobSpacing;
             } else {
                 y += layout.initialSpacing + layout.jobSpacing;
@@ -331,6 +335,9 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
 
 
 // ============================================================================
+/**
+ *
+ */
 var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 
     //logger : console,
@@ -351,7 +358,7 @@ var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
             excludeSetMetadata  : true,
             excludeErroredJobs  : true
         });
-window.dag = this.dag;
+//window.dag = this.dag;
         this.log( this + '.dag:', this.dag );
 
         this._createComponents();
@@ -360,7 +367,7 @@ window.dag = this.dag;
     _createComponents : function(){
         this.log( this + '._createComponents' );
         var structure = this;
-window.structure = structure;
+//window.structure = structure;
 
         structure.componentViews = structure.dag.weakComponentGraphArray().map( function( componentGraph ){
             return structure._createComponent( componentGraph );
@@ -402,8 +409,5 @@ window.structure = structure;
 
 
 // ============================================================================
-    //return {
-    //    HistoryStructureView : HistoryStructureView
-    //};
     return HistoryStructureView;
 });
