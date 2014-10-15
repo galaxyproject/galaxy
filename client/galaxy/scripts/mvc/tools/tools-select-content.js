@@ -40,7 +40,7 @@ var View = Backbone.View.extend({
         var dataset_options = [];
         for (var i in datasets) {
             dataset_options.push({
-                label: datasets[i].name,
+                label: datasets[i].hid + ': ' + datasets[i].name,
                 value: datasets[i].id
             });
         }
@@ -67,7 +67,7 @@ var View = Backbone.View.extend({
         var collection_options = [];
         for (var i in collections) {
             collection_options.push({
-                label: collections[i].name,
+                label: collections[i].hid + ': ' + collections[i].name,
                 value: collections[i].id
             });
         }
@@ -103,20 +103,34 @@ var View = Backbone.View.extend({
     },
     
     /** Return the currently selected dataset values */
-    value : function () {
-        // identify select element
-        var select = null;
-        switch(this.current) {
-            case 'hda':
-                select = this.select_datasets;
-                break;
-            case 'hdca':
-                select = this.select_collection;
-                break;
+    value : function (dict) {
+        // update current value
+        if (dict !== undefined) {
+            if (dict.values.length > 0 && dict.values[0] && dict.values[0].src) {
+                // create list
+                var list = [];
+                for (var i in dict.values) {
+                    list.push(dict.values[i].id);
+                }
+                
+                // set source
+                this.current = dict.values[0].src;
+                this.refresh();
+                
+                // identify select element
+                switch(this.current) {
+                    case 'hda':
+                        this.select_datasets.value(list);
+                        break;
+                    case 'hdca':
+                        this.select_collection.value(list[0]);
+                        break;
+                }
+            }
         }
         
         // transform into an array
-        var id_list = select.value();
+        var id_list = this._select().value();
         if (!(id_list instanceof Array)) {
             id_list = [id_list];
         }
@@ -142,12 +156,7 @@ var View = Backbone.View.extend({
     /** Validate current selection
     */
     validate: function() {
-        switch(this.current) {
-            case 'hda':
-                return this.select_datasets.validate();
-            case 'hdca':
-                return this.select_collection.validate();
-        }
+        return this._select().validate();
     },
     
     /** Refreshes data selection view */
@@ -161,6 +170,16 @@ var View = Backbone.View.extend({
                 this.select_datasets.$el.hide();
                 this.select_collection.$el.fadeIn();
                 break;
+        }
+    },
+    
+    /** Assists in selecting the current field */
+    _select: function() {
+        switch(this.current) {
+            case 'hdca':
+                return this.select_collection;
+            default:
+                return this.select_datasets;
         }
     }
 });

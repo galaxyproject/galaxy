@@ -1278,7 +1278,7 @@ class ColumnListParameter( SelectToolParameter ):
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # call parent to_dict
-        d = super( ColumnListParameter, self ).to_dict( trans, other_values )
+        d = super( ColumnListParameter, self ).to_dict( trans, other_values=other_values)
 
         # add data reference
         d['data_ref'] = self.data_ref
@@ -1432,7 +1432,10 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         call_other_values = { '__trans__': trans, '__value__': value }
         if other_values:
             call_other_values.update( other_values.dict )
-        return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
+        try:
+            return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
+        except Exception:
+            return []
 
     def get_options( self, trans=None, value=None, other_values={} ):
         if self.is_dynamic:

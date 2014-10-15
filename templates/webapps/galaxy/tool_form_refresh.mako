@@ -4,30 +4,55 @@
     tool_model = tool.to_dict(trans)
     tool_model['inputs'] = {}
 
-    ## sanitize
+    ## convert value to jsonifiable value
+    def convert(v):
+        # check if value is numeric
+        isnumber = False
+        try:
+            float(v)
+            isnumber = True
+        except Exception:
+            pass
+
+        ## fix hda parsing
+        if isinstance(v, HistoryDatasetAssociation):
+            return {
+                'id'  : trans.security.encode_id(v.id),
+                'src' : 'hda'
+            }
+        elif isinstance(v, basestring) or isnumber:
+            return v
+        else:
+            return None
+
+    ## ensures that input dictionary is jsonifiable
     from collections import Iterable
     from galaxy.model import HistoryDatasetAssociation
     def sanitize(dict):
-        # quotations for Infinity so its jsonifiable
+        ## quotations for Infinity so its jsonifiable
         for name in dict:
             if dict[name] == Infinity:
                 dict[name] = 'Infinity'
-        value = dict['value'] if 'value' in dict else None;
-        # check if value is numeric
-        def isnumber(s):
-            try:
-                float(s)
-                return True
-            except Exception:
-                return False
-        # fix hda parsing
-        if isinstance(value, HistoryDatasetAssociation):
+
+        ## get current value
+        value = dict['value'] if 'value' in dict else None
+
+        ## identify lists
+        if dict['type'] == 'data':
+            if isinstance(value, list):
+                value = [ convert(v) for v in value ]
+            else:
+                value = [ convert(value) ]
             value = {
-                'id'  : trans.security.encode_id(value.dataset_id),
-                'src' : 'hda'
+                'batch'     : dict['multiple'],
+                'values'    : value
             }
-        elif value and not (isinstance(value, basestring) or isnumber(value) or isinstance(value, Iterable)):
-            value = 'Unsupported'
+        elif isinstance(value, list):
+            value = [ convert(v) for v in value ]
+        else:
+            value = convert(value)
+
+        ## update and return
         dict['value'] = value
         return dict
 
@@ -52,7 +77,7 @@
             elif input.type == "conditional":
                 try:
                     test_param = group_inputs[input_index]['test_param']
-                    test_param['value'] = tool_state[test_param['name']]
+                    test_param['value'] = group_state[test_param['name']]
                 except Exception:
                     pass
                 i = group_state['__current_case__']
@@ -65,7 +90,7 @@
                 except Exception:
                     pass
 
-                ## update input value from tool state and sanitize dictionary
+                ## update input value from tool state
                 try:
                     group_inputs[input_index]['value'] = tool_state[group_inputs[input_index]['name']]
                     group_inputs[input_index] = sanitize(group_inputs[input_index])

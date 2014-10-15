@@ -97,7 +97,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // finalize data
             var current_state = this.tree.finalize({
                 data : function(dict) {
-                    if (dict.values.length > 0 && dict.values[0].src === 'hda') {
+                    if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
                         return self.content.get({id: dict.values[0].id}).dataset_id;
                     }
                     return null;
@@ -185,11 +185,11 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // switch to classic tool form mako if the form definition is incompatible
-            //if (this.incompatible) {
+            if (this.incompatible) {
                 this.$el.hide();
                 $('#tool-form-classic').show();
                 return;
-            //}
+            }
             
             // create portlet
             this.portlet = new Portlet.View({

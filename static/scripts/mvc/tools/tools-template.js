@@ -49,7 +49,7 @@ return {
     error: function(job_def) {
         return  '<div>' +
                     '<p>' +
-                        'Sorry, the server could not complete the request. Please contact the Galaxy Team if this error is persistent.' +
+                        'The server could not complete the request. Please contact the Galaxy Team if this error persists.' +
                     '</p>' +
                     '<textarea class="ui-textarea" disabled style="color: black;" rows="6">' +
                         JSON.stringify(job_def, undefined, 4) +
