@@ -1332,6 +1332,7 @@ class Dataset( object ):
         self.purged = False
         self.purgable = purgable
         self.external_filename = external_filename
+        self.external_extra_files_path = None
         self._extra_files_path = extra_files_path
         self.file_size = file_size
         if uuid is None:
@@ -1355,9 +1356,20 @@ class Dataset( object ):
         else:
             self.external_filename = filename
     file_name = property( get_file_name, set_file_name )
-    @property
-    def extra_files_path( self ):
-        return self.object_store.get_filename( self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id )
+    def get_extra_files_path( self ):
+        # Unlike get_file_name - extrnal_extra_files_path is not backed by an
+        # actual database column so if SA instantiates this object - the
+        # attribute won't exist yet.
+        if not getattr( self, "external_extra_files_path", None ):
+            return self.object_store.get_filename( self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id )
+        else:
+            return os.path.abspath( self.external_extra_files_path )
+    def set_extra_files_path( self, extra_files_path ):
+        if not extra_files_path:
+            self.external_extra_files_path = None
+        else:
+            self.external_extra_files_path = extra_files_path
+    extra_files_path = property( get_extra_files_path, set_extra_files_path)
     def _calculate_size( self ):
         if self.external_filename:
             try:

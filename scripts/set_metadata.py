@@ -120,6 +120,8 @@ def __main__():
             dataset = cPickle.load( open( filename_in ) )  # load DatasetInstance
             if dataset_filename_override:
                 dataset.dataset.external_filename = dataset_filename_override
+            files_path = os.path.abspath(os.path.join( tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id) ))
+            dataset.dataset.external_extra_files_path = files_path
             if dataset.dataset.id in existing_job_metadata_dict:
                 dataset.extension = existing_job_metadata_dict[ dataset.dataset.id ].get( 'ext', dataset.extension )
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
