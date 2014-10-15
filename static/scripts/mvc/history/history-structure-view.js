@@ -48,7 +48,7 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
             });
             // set the collection (HistoryContents) for the job to that json (setting historyId for proper ajax urls)
             job.outputCollection.reset( outputModels );
-            job.outputCollection.historyId = structure.model.id;
+            job.outputCollection.historyId = view.model.id;
             //this.debug( job.outputCollection );
 
             // create the bbone view for the job (to be positioned later accrd. to the layout) and cache
