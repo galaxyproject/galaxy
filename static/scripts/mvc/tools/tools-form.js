@@ -132,7 +132,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu = new Ui.ButtonMenu({
                 icon    : 'fa-gear',
-                tooltip : 'Click to see a list of available operations.'
+                tooltip : 'Click to see a list of options.'
             });
             
             // add question option

@@ -55,6 +55,7 @@ return Backbone.Model.extend({
                     var error_messages = self.app.tree.matchResponse(response.message.data);
                     for (var input_id in error_messages) {
                         self._foundError(input_id, error_messages[input_id]);
+                        break;
                     }
                 } else {
                     // show error message with details
