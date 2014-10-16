@@ -112,8 +112,7 @@ class FTPFilesAPIController( BaseAPIController ):
                     response.append( dict(  path    = path,
                                             size    = statinfo.st_size,
                                             ctime   = time.strftime( "%m/%d/%Y %I:%M:%S %p", time.localtime( statinfo.st_ctime ) ) ) )
-        else:
-            raise exceptions.ConfigDoesNotAllowException( 'The given directory does not exist.' )
+        
         # sort by path
         response = sorted(response, key=itemgetter("path"))
         return response
