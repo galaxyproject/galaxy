@@ -77,7 +77,11 @@ class S3ObjectStore(ObjectStore):
             b_xml = config_xml.findall('bucket')[0]
             self.bucket = b_xml.get('name')
             self.use_rr = b_xml.get('use_reduced_redundancy', False)
-            cn_xml = config_xml.findall('connection')[0]
+            cn_xml = config_xml.findall('connection')
+            if not cn_xml:
+                cn_xml = {}
+            else:
+                cn_xml = cn_xml[0]
             self.host = cn_xml.get('host', None)
             self.port = int(cn_xml.get('port', 6000))
             self.is_secure = cn_xml.get('is_secure', True)
