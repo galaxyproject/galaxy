@@ -404,11 +404,11 @@ var CircsterTrackView = Backbone.View.extend({
     /* ----------------------- Public Methods ------------------------- */
 
     initialize: function(options) {
-        this.bg_stroke = 'ddd';
+        this.bg_stroke = '#ddd';
         // Fill color when loading data.
-        this.loading_bg_fill = 'ffc';
+        this.loading_bg_fill = '#ffc';
         // Fill color when data has been loaded.
-        this.bg_fill = 'ddd';
+        this.bg_fill = '#ddd';
         this.total_gap = options.total_gap;
         this.track = options.track;
         this.radius_bounds = options.radius_bounds;
@@ -688,8 +688,8 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
         // Use a single arc for rendering data.
         this.innerRadius = this.radius_bounds[0];
         this.radius_bounds[0] = this.radius_bounds[1];
-        this.bg_stroke = 'fff';
-        this.bg_fill = 'fff';
+        this.bg_stroke = '#fff';
+        this.bg_fill = '#fff';
 
         // Minimum arc distance for labels to be applied.
         this.min_arc_len = 0.05;
