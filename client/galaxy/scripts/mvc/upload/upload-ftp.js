@@ -23,7 +23,8 @@ return Backbone.View.extend({
         // load extension
         Utils.get({
             url     : galaxy_config.root + 'api/ftp_files',
-            success : function(ftp_files) { self._fill(ftp_files); }
+            success : function(ftp_files) { self._fill(ftp_files); },
+            error   : function() { self._fill(); }
         });
     },
     
@@ -34,7 +35,7 @@ return Backbone.View.extend({
     
     // fill table
     _fill: function(ftp_files) {
-        if (ftp_files.length > 0) {
+        if (ftp_files && ftp_files.length > 0) {
             // add table
             this.$el.find('#upload-ftp-content').html($(this._templateTable()));
             
