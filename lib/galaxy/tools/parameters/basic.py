@@ -818,7 +818,7 @@ class SelectToolParameter( ToolParameter ):
                 if value == '':
                     value = None
                 else:
-                    if not isinstance( value, list ):
+                    if isinstance( value, basestring ):
                         # Split on all whitespace. This not only provides flexibility
                         # in interpreting values but also is needed because many browsers
                         # use \r\n to separate lines.
