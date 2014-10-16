@@ -699,7 +699,7 @@ class ToolBox( object, Dictifiable ):
 
     def load_tooldir_tag_set(self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict):
         directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
-        recursive = string_as_bool( sub_elem.attrib.get("recursive", True) )        
+        recursive = string_as_bool( sub_elem.attrib.get("recursive", True) )
         self.__watch_directory( directory, elems, integrated_elems, load_panel_dict, recursive )
 
     def __watch_directory( self, directory, elems, integrated_elems, load_panel_dict, recursive):
@@ -825,7 +825,7 @@ class ToolBox( object, Dictifiable ):
                 tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
             tarball_files.append( tool_tup )
             # TODO: This feels hacky.
-            tool_command = tool.command.strip().split( ' ' )[0]
+            tool_command = tool.command.strip().split()[0]
             tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
             # Add the tool XML to the tuple that will be used to populate the tarball.
             if os.path.exists( os.path.join( tool_path, tool_command ) ):
