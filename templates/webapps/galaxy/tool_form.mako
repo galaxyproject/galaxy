@@ -1,16 +1,27 @@
 <%inherit file="/base.mako"/>
 
-## initialize configuration
-<%namespace name="tool_form_refresh" file="./webapps/galaxy/tool_form_refresh.mako" import="*" />
-${tool_form_refresh.init()}
-
 ## new tool form
+<%
+    ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
+    ## This avoids making two separate requests since the classic form requires the mako anyway.
+    from galaxy.webapps.galaxy.api.tools import ToolsController
+    controller = ToolsController(trans.app)
+    params = dict(trans.request.params)
+    if 'id' in params:
+        params['dataset_id'] = params['id']
+    self.form_config = controller._build_dict(trans, tool, params)
+    self.form_config.update({
+        'id'            : tool.id,
+        'job_id'        : trans.security.encode_id( job.id ) if job else None,
+        'history_id'    : trans.security.encode_id( trans.history.id )
+    })
+%>
 ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
 ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
 <script>
     require(['mvc/tools/tools-form'], function(ToolsForm){
         $(function(){
-            var form = new ToolsForm.View(${ h.dumps(tool_form_refresh.form_config) });
+            var form = new ToolsForm.View(${ h.dumps(self.form_config) });
         });
     });
 </script>

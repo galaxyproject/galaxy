@@ -22,7 +22,7 @@ define(['utils/utils'], function(Utils){
                     
                     // get history summary
                     Utils.get({
-                        url     : self.base_url + '?deleted=false',
+                        url     : self.base_url + '?deleted=false&state=ok',
                         success : function(response) {
                             // backup summary
                             self.summary = response;

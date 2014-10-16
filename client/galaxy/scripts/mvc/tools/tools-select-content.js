@@ -106,16 +106,16 @@ var View = Backbone.View.extend({
     value : function (dict) {
         // update current value
         if (dict !== undefined) {
-            if (dict.values.length > 0 && dict.values[0] && dict.values[0].src) {
+            try {
+                // set source
+                this.current = dict.values[0].src;
+                this.refresh();
+                
                 // create list
                 var list = [];
                 for (var i in dict.values) {
                     list.push(dict.values[i].id);
                 }
-                
-                // set source
-                this.current = dict.values[0].src;
-                this.refresh();
                 
                 // identify select element
                 switch(this.current) {
@@ -126,6 +126,8 @@ var View = Backbone.View.extend({
                         this.select_collection.value(list[0]);
                         break;
                 }
+            } catch (err) {
+                console.debug('tools-select-content::value() - Skipped.');
             }
         }
         

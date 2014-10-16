@@ -60,9 +60,6 @@ class ToolRunner( BaseUIController ):
         # so the default selected option should be the most recent version of the tool.  The following 
         # check will mae sure this occurs.
         refreshed_on_change = kwd.get( 'refresh', False )
-        # This is the new tool forms equivalent to the 'refresh' parameter of the classic tool form
-        form_refresh = kwd.get( 'form_refresh', False )
-        process_state = "populate" if form_refresh else "update"
         tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
                                                                              tool_version=None,
                                                                              get_loaded_tools_by_lineage=False,
@@ -90,7 +87,7 @@ class ToolRunner( BaseUIController ):
         # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
         # so make sure to create a new history if we've never had one before.
         history = tool.get_default_history_by_trans( trans, create=True )
-        template, vars = tool.handle_input( trans, params.__dict__, process_state=process_state)
+        template, vars = tool.handle_input( trans, params.__dict__ )
         if len( params ) > 0:
             trans.log_event( "Tool params: %s" % ( str( params ) ), tool_id=tool_id )
         add_frame = AddFrameData()
@@ -98,8 +95,6 @@ class ToolRunner( BaseUIController ):
         if from_noframe is not None:
             add_frame.wiki_url = trans.app.config.wiki_url
             add_frame.from_noframe = True
-        if form_refresh:
-            template = "tool_form_refresh.mako"
         return trans.fill_template( template,
                                     history=history,
                                     toolbox=self.get_toolbox(),

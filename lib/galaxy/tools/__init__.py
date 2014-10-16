@@ -2175,7 +2175,7 @@ class Tool( object, Dictifiable ):
         for expanded_incoming in expanded_incomings:
             state, state_new = self.__fetch_state( trans, expanded_incoming, history, all_pages=all_pages )
             all_states.append( state )
-        if state_new and "form_refresh" not in incoming:
+        if state_new:
             # This feels a bit like a hack. It allows forcing full processing
             # of inputs even when there is no state in the incoming dictionary
             # by providing either 'runtool_btn' (the name of the submit button
@@ -2358,7 +2358,7 @@ class Tool( object, Dictifiable ):
             message='Your upload was interrupted. If this was uninentional, please retry it.',
             refresh_frames=[], cont=None )
 
-    def populate_state( self, trans, inputs, state, incoming, history, source, prefix="", context=None ):
+    def populate_state( self, trans, inputs, state, incoming, history=None, source="html", prefix="", context=None ):
         errors = dict()
         # Push this level onto the context stack
         context = ExpressionContext( state, context )
