@@ -167,8 +167,12 @@ class S3ObjectStore(ObjectStore):
                 log.debug("Using cloud object store with bucket '%s'" % bucket.name)
                 return bucket
             except S3ResponseError:
-                log.debug("Could not get bucket '%s', attempt %s/5" % (bucket_name, i + 1))
-                time.sleep(2)
+                try:
+                    log.debug("Bucket not found, creating s3 bucket with handle '%s'" % bucket_name)
+                    self.conn.create_bucket(bucket_name)
+                except S3ResponseError:
+                    log.exception("Could not get bucket '%s', attempt %s/5" % (bucket_name, i + 1))
+                    time.sleep(2)
         # All the attempts have been exhausted and connection was not established,
         # raise error
         raise S3ResponseError
