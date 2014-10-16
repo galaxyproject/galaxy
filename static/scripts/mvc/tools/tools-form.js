@@ -135,25 +135,28 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 tooltip : 'Click to see a list of options.'
             });
             
-            // add question option
-            menu.addMenu({
-                icon    : 'fa-question-circle',
-                title   : 'Question?',
-                tooltip : 'Ask a question about this tool (Biostar)',
-                onclick : function() {
-                    window.open(self.options.biostar_url + '/p/new/post/');
-                }
-            });
-            
-            // create search button
-            menu.addMenu({
-                icon    : 'fa-search',
-                title   : 'Search',
-                tooltip : 'Search help for this tool (Biostar)',
-                onclick : function() {
-                    window.open(self.options.biostar_url + '/t/' + self.options.id + '/');
-                }
-            });
+            // configure button selection
+            if(this.options.biostar_url) {
+                // add question option
+                menu.addMenu({
+                    icon    : 'fa-question-circle',
+                    title   : 'Question?',
+                    tooltip : 'Ask a question about this tool (Biostar)',
+                    onclick : function() {
+                        window.open(self.options.biostar_url + '/p/new/post/');
+                    }
+                });
+                
+                // create search button
+                menu.addMenu({
+                    icon    : 'fa-search',
+                    title   : 'Search',
+                    tooltip : 'Search help for this tool (Biostar)',
+                    onclick : function() {
+                        window.open(self.options.biostar_url + '/t/' + self.options.id + '/');
+                    }
+                });
+            };
             
             // create share button
             menu.addMenu({
@@ -212,12 +215,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     })
                 }
             });
-            
-            // configure button selection
-            if(!this.options.biostar_url) {
-                button_question.$el.hide();
-                button_search.$el.hide();
-            }
             
             // append form
             this.$el.append(this.portlet.$el);
