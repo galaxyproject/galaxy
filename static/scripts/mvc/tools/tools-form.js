@@ -27,10 +27,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 this.modal = new Ui.Modal.View();
             }
             
-            // link model/inputs and all options
-            this.options    = options;
-            this.model      = options.model;
-            this.inputs     = options.model.inputs;
+            // link options
+            this.options = options;
             
             // set element
             this.setElement('<div/>');
@@ -53,9 +51,13 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // reset input element list, which contains the dom elements of each input element (includes also the input field)
             this.element_list = {};
             
-            // initialize contents
+            // for now the initial tool model is parsed through the mako
+            this.model  = this.options;
+            this.inputs = this.options.inputs;
+                    
+            // request history content and build form
             this.content = new ToolContent({
-                history_id  : this.options.history_id,
+                history_id  : self.options.history_id,
                 success     : function() {
                     self._buildForm();
                 }
@@ -89,6 +91,51 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             console.debug('tools-form::refresh() - Recreated data structure. Refresh.');
         },
         
+        // build tool model through api call
+        _buildModel: function() {
+            // link this
+            var self = this;
+            
+            // construct url
+            var model_url = galaxy_config.root + 'api/tools/' + this.options.id + '/build?';
+            if (this.options.job_id) {
+                model_url += 'job_id=' + this.options.job_id;
+            } else {
+                if (this.options.dataset_id) {
+                    model_url += 'dataset_id=' + this.options.dataset_id;
+                } else {
+                    var loc = top.location.href;
+                    var pos = loc.indexOf('?');
+                    if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
+                        model_url += loc.slice(pos + 1);
+                    }
+                }
+            }
+        
+            // get initial model
+            Utils.request({
+                type    : 'GET',
+                url     : model_url,
+                success : function(response) {
+                    // link model data update options
+                    self.options    = $.extend(self.options, response);
+                    self.model      = response;
+                    self.inputs     = response.inputs;
+                    
+                    // log success
+                    console.debug('tools-form::initialize() - Initial tool model ready.');
+                    console.debug(response);
+
+                    // build form
+                    self._buildForm();
+                },
+                error   : function(response) {
+                    console.debug('tools-form::initialize() - Initial tool model request failed.');
+                    console.debug(response);
+                }
+            });
+        },
+        
         // refresh form data
         _refreshForm: function() {
             // link this
@@ -97,7 +144,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // finalize data
             var current_state = this.tree.finalize({
                 data : function(dict) {
-                    if (dict.values.length > 0 && dict.values[0].src === 'hda') {
+                    if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
                         return self.content.get({id: dict.values[0].id}).dataset_id;
                     }
                     return null;
@@ -111,7 +158,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // post job
             Utils.request({
                 type    : 'GET',
-                url     : galaxy_config.root + 'tool_runner/index?tool_id=' + this.options.id + '&form_refresh=True',
+                url     : galaxy_config.root + 'api/tools/' + this.options.id + '/build',
                 data    : current_state,
                 success : function(response) {
                     console.debug('tools-form::_refreshForm() - Refreshed inputs/states.');
@@ -132,28 +179,31 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu = new Ui.ButtonMenu({
                 icon    : 'fa-gear',
-                tooltip : 'Click to see a list of available operations.'
+                tooltip : 'Click to see a list of options.'
             });
             
-            // add question option
-            menu.addMenu({
-                icon    : 'fa-question-circle',
-                title   : 'Question?',
-                tooltip : 'Ask a question about this tool (Biostar)',
-                onclick : function() {
-                    window.open(self.options.biostar_url + '/p/new/post/');
-                }
-            });
-            
-            // create search button
-            menu.addMenu({
-                icon    : 'fa-search',
-                title   : 'Search',
-                tooltip : 'Search help for this tool (Biostar)',
-                onclick : function() {
-                    window.open(self.options.biostar_url + '/t/' + self.options.id + '/');
-                }
-            });
+            // configure button selection
+            if(this.options.biostar_url) {
+                // add question option
+                menu.addMenu({
+                    icon    : 'fa-question-circle',
+                    title   : 'Question?',
+                    tooltip : 'Ask a question about this tool (Biostar)',
+                    onclick : function() {
+                        window.open(self.options.biostar_url + '/p/new/post/');
+                    }
+                });
+                
+                // create search button
+                menu.addMenu({
+                    icon    : 'fa-search',
+                    title   : 'Search',
+                    tooltip : 'Search help for this tool (Biostar)',
+                    onclick : function() {
+                        window.open(self.options.biostar_url + '/t/' + self.options.id + '/');
+                    }
+                });
+            };
             
             // create share button
             menu.addMenu({
@@ -185,11 +235,11 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // switch to classic tool form mako if the form definition is incompatible
-            //if (this.incompatible) {
+            if (this.incompatible) {
                 this.$el.hide();
                 $('#tool-form-classic').show();
                 return;
-            //}
+            }
             
             // create portlet
             this.portlet = new Portlet.View({
@@ -212,12 +262,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     })
                 }
             });
-            
-            // configure button selection
-            if(!this.options.biostar_url) {
-                button_question.$el.hide();
-                button_search.$el.hide();
-            }
             
             // append form
             this.$el.append(this.portlet.$el);

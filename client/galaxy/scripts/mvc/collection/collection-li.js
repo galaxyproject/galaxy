@@ -100,8 +100,6 @@ var DCEListItemView = ListItemView.extend(
 
     /** add the DCE class to the list item */
     className   : ListItemView.prototype.className + " dataset-collection-element",
-    /** jq fx speed for this view */
-    fxSpeed     : 'fast',
 
     /** set up */
     initialize  : function( attributes ){

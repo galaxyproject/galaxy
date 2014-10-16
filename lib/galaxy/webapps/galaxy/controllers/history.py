@@ -529,6 +529,27 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.fill_template( "history/display_structured.mako", items=items, history=history )
 
     @web.expose
+    def structure( self, trans, id=None ):
+        """
+        """
+        if not id:
+            id = trans.security.encode_id( trans.history.id )
+
+        history_to_view = self.get_history( trans, id, check_ownership=False, check_accessible=True )
+        history_data = self.mgrs.histories._get_history_data( trans, history_to_view )
+        history_dictionary = history_data[ 'history' ]
+        hda_dictionaries   = history_data[ 'contents' ]
+
+        jobs = ( trans.sa_session.query( trans.app.model.Job )
+            .filter( trans.app.model.Job.user == trans.user )
+            .filter( trans.app.model.Job.history_id == trans.security.decode_id( id ) ) ).all()
+
+        jobs = map( lambda j: self.encode_all_ids( trans, j.to_dict( 'element' ), True ), jobs )
+
+        return trans.fill_template( "history/structure.mako", historyId=history_dictionary[ 'id' ],
+            history=history_dictionary, hdas=hda_dictionaries, jobs=jobs )
+
+    @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
         """
         View a history. If a history is importable, then it is viewable by any user.

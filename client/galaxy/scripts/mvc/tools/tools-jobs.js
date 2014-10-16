@@ -37,7 +37,7 @@ return Backbone.Model.extend({
         console.debug(job_def);
         
         // show progress modal
-        this.app.modal.show({title: 'Please wait...', body: 'progress', buttons: { 'Close' : function () {self.app.modal.hide();} }});
+        this.app.modal.show({title: 'Please wait...', body: 'progress', closing_events: true, buttons: { 'Close' : function () {self.app.modal.hide();} }});
         
         // post job
         Utils.request({
@@ -55,10 +55,20 @@ return Backbone.Model.extend({
                     var error_messages = self.app.tree.matchResponse(response.message.data);
                     for (var input_id in error_messages) {
                         self._foundError(input_id, error_messages[input_id]);
+                        break;
                     }
                 } else {
                     // show error message with details
                     console.debug(response);
+                    self.app.modal.show({
+                        title   : 'Job submission failed',
+                        body    : ToolTemplate.error(job_def),
+                        buttons : {
+                            'Close' : function() {
+                                self.app.modal.hide();
+                            }
+                        }
+                    });
                 }
             }
         });

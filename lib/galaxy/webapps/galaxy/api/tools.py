@@ -10,8 +10,13 @@ from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import dumps
 from galaxy.visualization.data_providers.genome import *
-
+from galaxy.tools.parameters import params_to_incoming
+from galaxy.tools.parameters import visit_input_values
+from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.model import HistoryDatasetAssociation
+from galaxy.util.expressions import ExpressionContext
+from collections import Iterable
 
 import galaxy.queue_worker
 
@@ -61,6 +66,15 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         tool = self._get_tool( id )
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
+    @_future_expose_api_anonymous
+    def build( self, trans, id, **kwd ):
+        """
+        GET /api/tools/{tool_id}/build
+        Returns a tool model including dynamic parameters and updated values, repeats block etc.
+        """
+        tool = self._get_tool( id )
+        return self._build_dict(trans, tool, kwd)
+    
     @_future_expose_api
     @web.require_admin
     def reload( self, trans, tool_id, **kwd ):
@@ -464,3 +478,174 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         dataset_dict[ 'id' ] = trans.security.encode_id( dataset_dict[ 'id' ] )
         dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset )
         return dataset_dict
+
+    def _build_dict(self, trans, tool, kwd={}):
+        """
+        Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
+        """
+        job_id = kwd.get('job_id', None)
+        dataset_id = kwd.get('dataset_id', None)
+        
+        # load job details if provided
+        job = None
+        if job_id:
+            try:
+                job_id = trans.security.decode_id( job_id )
+                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+            except Exception, exception:
+                trans.response.status = 500
+                return { 'error': 'Failed to retrieve job.' }
+        elif dataset_id:
+            try:
+                dataset_id = trans.security.decode_id( dataset_id )
+                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
+                    trans.response.status = 500
+                    return { 'error': 'User has no access to dataset.' }
+                job = data.creating_job
+                if not job:
+                    trans.response.status = 500
+                    return { 'error': 'Creating job not found.' }
+            except Exception, exception:
+                trans.response.status = 500
+                return { 'error': 'Failed to get job information.' }
+        
+        # check if job was identified
+        if job:
+            try:
+                job_params = job.get_param_values( trans.app, ignore_errors = True )
+                job_messages = tool.check_and_update_param_values( job_params, trans, update_values=False )
+                params_to_incoming( kwd, tool.inputs, job_params, trans.app )
+            except Exception, exception:
+                trans.response.status = 500
+                return { 'error': str( exception ) }
+        
+        # create parameter object
+        params = galaxy.util.Params( kwd, sanitize = False )
+        
+        # convert value to jsonifiable value
+        def convert(v):
+            # check if value is numeric
+            isnumber = False
+            try:
+                float(v)
+                isnumber = True
+            except Exception:
+                pass
+
+            # fix hda parsing
+            if isinstance(v, HistoryDatasetAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'src' : 'hda'
+                }
+            elif isinstance(v, basestring) or isnumber:
+                return v
+            else:
+                return None
+
+        # ensures that input dictionary is jsonifiable
+        def sanitize(dict):
+            # get current value
+            value = dict['value'] if 'value' in dict else None
+
+            # identify lists
+            if dict['type'] == 'data':
+                if isinstance(value, list):
+                    value = [ convert(v) for v in value ]
+                else:
+                    value = [ convert(value) ]
+                value = {
+                    'batch'     : dict['multiple'],
+                    'values'    : value
+                }
+            elif isinstance(value, list):
+                value = [ convert(v) for v in value ]
+            else:
+                value = convert(value)
+
+            # update and return
+            dict['value'] = value
+            return dict
+
+        # build model
+        def iterate(group_inputs, inputs, tool_state, errors, other_values=None):
+            other_values = ExpressionContext( tool_state, other_values )
+            for input_index, input in enumerate( inputs.itervalues() ):
+                # create model dictionary
+                group_inputs[input_index] = input.to_dict(trans)
+
+                # identify stat for subsection/group
+                group_state = tool_state[input.name]
+
+                # iterate and update values
+                if input.type == 'repeat':
+                    group_cache = group_inputs[input_index]['cache'] = {}
+                    for i in range( len( group_state ) ):
+                        group_cache[i] = {}
+                        group_errors = errors[input.name][i] if input.name in errors else dict()
+                        iterate( group_cache[i], input.inputs, group_state[i], group_errors, other_values )
+                elif input.type == 'conditional':
+                    # TODO: loop over all cases
+                    try:
+                        test_param = group_inputs[input_index]['test_param']
+                        test_param['value'] = group_state[test_param['name']]
+                    except Exception:
+                        pass
+                    i = group_state['__current_case__']
+                    group_errors = errors.get( input.name, {} )
+                    iterate(group_inputs[input_index]['cases'][i]['inputs'], input.cases[i].inputs, group_state, group_errors, other_values)
+                else:
+                    # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
+                    try:
+                        group_inputs[input_index] = input.to_dict(trans, other_values=other_values)
+                    except Exception:
+                        pass
+
+                    # update input value from tool state
+                    try:
+                        group_inputs[input_index]['value'] = tool_state[group_inputs[input_index]['name']]
+                    except Exception:
+                        pass
+
+                    # sanitize if value exists
+                    if group_inputs[input_index]['value']:
+                        group_inputs[input_index] = sanitize(group_inputs[input_index])
+
+        # do param translation here, used by datasource tools
+        if tool.input_translator:
+            tool.input_translator.translate( params )
+
+        # create tool state
+        state = tool.new_state(trans, all_pages=True)
+        errors = tool.populate_state( trans, tool.inputs, state.inputs, params.__dict__ )
+
+        # create basic tool model
+        tool_model = tool.to_dict(trans)
+        tool_model['inputs'] = {}
+
+        # build tool model
+        iterate(tool_model['inputs'], tool.inputs, state.inputs, errors, '')
+
+        # load tool help
+        tool_help = ''
+        if tool.help:
+            tool_help = tool.help
+            tool_help = tool_help.render( static_path=web.url_for( '/static' ), host_url=web.url_for('/', qualified=True) )
+            if type( tool_help ) is not unicode:
+                tool_help = unicode( tool_help, 'utf-8')
+        
+        # check if citations exist
+        tool_citations = False
+        if tool.citations:
+            tool_citations = True
+
+        # add additional properties
+        tool_model.update({
+            'help'          : tool_help,
+            'citations'     : tool_citations,
+            'biostar_url'   : trans.app.config.biostar_url
+        })
+        
+        # return enriched tool model
+        return tool_model

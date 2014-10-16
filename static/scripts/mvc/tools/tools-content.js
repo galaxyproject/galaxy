@@ -22,10 +22,15 @@ define(['utils/utils'], function(Utils){
                     
                     // get history summary
                     Utils.get({
-                        url     : self.base_url + '?deleted=false',
+                        url     : self.base_url + '?deleted=false&state=ok',
                         success : function(response) {
                             // backup summary
                             self.summary = response;
+                            
+                            // sort by id
+                            self.summary.sort(function(a, b) {
+                                return a.hid > b.hid ? -1 : (a.hid < b.hid ? 1 : 0);
+                            });
                             
                             // log
                             console.debug('tools-content::initialize() - Completed.');
