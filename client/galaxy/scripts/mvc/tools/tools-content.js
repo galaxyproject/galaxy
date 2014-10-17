@@ -72,7 +72,7 @@ define(['utils/utils'], function(Utils){
                 var content = this.summary[i];
                 
                 // check ok state (TODO: should be implemented in the api)
-                if (content.state !== 'ok') {
+                if (content.history_content_type === 'dataset' && content.state !== 'ok') {
                     continue;
                 }
                 
