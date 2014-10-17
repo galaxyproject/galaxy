@@ -96,7 +96,8 @@ return Backbone.Model.extend({
         var job_inputs = job_def.inputs;
         
         // counter for values declared in batch mode
-        var n_values = -1;
+        var batch_n = -1;
+        var batch_src = null;
         
         // validation
         for (var job_input_id in job_inputs) {
@@ -116,12 +117,33 @@ return Backbone.Model.extend({
             
             // check if input field is in batch mode
             if (input_value.batch) {
+                // get values
                 var n = input_value.values.length;
-                if (n_values === -1) {
-                    n_values = n;
+                
+                // get source
+                var src = null;
+                if (n > 0) {
+                    src = input_value.values[0] && input_value.values[0].src;
+                }
+                
+                // check source type
+                if (src) {
+                    if (batch_src === null) {
+                        batch_src = src;
+                    } else {
+                        if (batch_src !== src) {
+                            this._foundError(input_id, 'Please select either dataset or dataset list fields for all batch mode fields.');
+                            return false;
+                        }
+                    }
+                }
+                
+                // check number of inputs
+                if (batch_n === -1) {
+                    batch_n = n;
                 } else {
-                    if (n_values !== n) {
-                        this._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + n_values + '</b>.');
+                    if (batch_n !== n) {
+                        this._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
                         return false;
                     }
                 }
