@@ -1163,8 +1163,9 @@ class ColumnListParameter( SelectToolParameter ):
 
     @staticmethod
     def _strip_c(column):
-        if column.startswith( 'c' ):
-            column = column.strip().lower()[1:]
+        if isinstance(column, basestring):
+            if column.startswith( 'c' ):
+                column = column.strip().lower()[1:]
         return column
 
     def get_column_list( self, trans, other_values ):
