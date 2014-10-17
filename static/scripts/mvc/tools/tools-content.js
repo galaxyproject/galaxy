@@ -22,7 +22,7 @@ define(['utils/utils'], function(Utils){
                     
                     // get history summary
                     Utils.get({
-                        url     : self.base_url + '?deleted=false&state=ok',
+                        url     : self.base_url + '?deleted=false',
                         success : function(response) {
                             // backup summary
                             self.summary = response;
@@ -70,6 +70,11 @@ define(['utils/utils'], function(Utils){
             // search in summary
             for (var i in this.summary) {
                 var content = this.summary[i];
+                
+                // check ok state (TODO: should be implemented in the api)
+                if (content.state !== 'ok') {
+                    continue;
+                }
                 
                 // match datatypes
                 var found = false;

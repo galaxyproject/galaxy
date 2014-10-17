@@ -126,6 +126,12 @@ var View = Backbone.View.extend({
                         this.select_collection.value(list[0]);
                         break;
                 }
+                
+                // check if value has been set
+                var select = this._select();
+                if (!select.validate()) {
+                    select.value(select.first());
+                }
             } catch (err) {
                 console.debug('tools-select-content::value() - Skipped.');
             }

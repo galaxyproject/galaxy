@@ -114,7 +114,7 @@ var OptionsBase = Backbone.View.extend({
             current = [current];
         }
         for (var i in current) {
-            if (current[i] === 'null') {
+            if ([null, 'null', undefined].indexOf(current[i]) > -1) {
                 return false;
             }
         }
