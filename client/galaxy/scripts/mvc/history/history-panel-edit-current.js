@@ -226,7 +226,7 @@ var CurrentHistoryPanel = _super.extend(
                 '</a>'
             ].join('') );
             $emptyMsg.find( '.uploader-link' ).click( function( ev ){
-                Galaxy.upload._eventShow( ev );
+                Galaxy.upload.show( ev );
             });
             $emptyMsg.find( '.get-data-link' ).click( function( ev ){
                 $toolMenu.parent().scrollTop( 0 );
