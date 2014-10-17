@@ -1361,7 +1361,7 @@ class Dataset( object ):
             self.external_filename = filename
     file_name = property( get_file_name, set_file_name )
     def get_extra_files_path( self ):
-        # Unlike get_file_name - extrnal_extra_files_path is not backed by an
+        # Unlike get_file_name - external_extra_files_path is not backed by an
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
         if not getattr( self, "external_extra_files_path", None ):
@@ -2449,7 +2449,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             file_size = int( ldda.get_size() )
         except OSError:
             file_size = 0
-        
+
         rval = dict( id = ldda.id,
                      hda_ldda = 'ldda',
                      model_class = self.__class__.__name__,
