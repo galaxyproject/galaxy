@@ -1,15 +1,24 @@
 <%
 import os
 import sys
-import tempfile
-import shutil
 import time
-import subprocess
 import yaml
+import shlex
 import random
+import shutil
+import tempfile
+import subprocess
+import ConfigParser
 
+galaxy_root_dir = os.path.abspath(trans.app.config.root)
 history_id = trans.security.encode_id( trans.history.id )
 dataset_id = trans.security.encode_id( hda.id )
+
+config = ConfigParser.SafeConfigParser({'port': '8080'})
+config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
+
+galaxy_paster_port = config.getint('server:main', 'port')
+
 # Ensure generation of notebook id is deterministic for the dataset. Replace with history id
 # whenever we figure out how to access that.
 random.seed( history_id )
@@ -60,7 +69,6 @@ empty_nb = """{
 
 
 # Find all ports that are already occupied
-import shlex
 cmd_netstat = shlex.split("netstat -tuln")
 p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
 
@@ -84,32 +92,6 @@ if ':' in HOST:
     HOST = HOST[0:HOST.index(':')]
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
-
-# Get port galaxy is being served on, if it is being served on a single port via paste process
-p1 = subprocess.Popen(shlex.split("""ps a"""), stdout=subprocess.PIPE)
-
-galaxy_paster_pids = set()
-for line in p1.stdout.read().split('\n'):
-    line = line.strip()
-    if line.find('python ./script') != -1:
-        port = line.split()[0]
-        if port.isdigit():
-            galaxy_paster_pids.add( port )
-
-# Only take first PID in case we have multiple.
-galaxy_paster_pid = galaxy_paster_pids.pop()
-galaxy_paster_port = None
-if len(galaxy_paster_pid) > 0:
-    # Find all files opened by the process of interest
-    p1 = subprocess.Popen(shlex.split("""lsof -P -p %d""" % (int(galaxy_paster_pid),) ),
-                          stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-    # Grep out the TCP connections opened by this process
-    p2 = subprocess.Popen(shlex.split("""grep -o 'TCP [^:]*:[0-9]*'"""), stdin=p1.stdout,
-                          stdout=subprocess.PIPE)
-    # Remove 'TCP *:' from 'TCP *:4000'
-    p3 = subprocess.Popen(shlex.split("""cut -d: -f2"""), stdin=p2.stdout,
-                          stdout=subprocess.PIPE)
-    galaxy_paster_port = p3.stdout.read().strip()
 
 conf_file = {
     'history_id': history_id,
