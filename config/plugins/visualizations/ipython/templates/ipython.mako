@@ -72,7 +72,6 @@ history_id = trans.security.encode_id( trans.history.id )
 # Routes
 root        = h.url_for( "/" )
 app_root    = root + "plugins/visualizations/ipython/static/"
-random.seed()
 
 galaxy_paster_port = get_galaxy_paster_port()
 
