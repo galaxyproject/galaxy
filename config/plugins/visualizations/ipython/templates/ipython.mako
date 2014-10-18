@@ -8,7 +8,6 @@ import subprocess
 import yaml
 import random
 
-
 history_id = trans.security.encode_id( trans.history.id )
 dataset_id = trans.security.encode_id( hda.id )
 # Ensure generation of notebook id is deterministic for the dataset. Replace with history id
@@ -86,7 +85,6 @@ with open( empty_nb_path, 'w+' ) as handle:
     handle.write( empty_nb )
 
 docker_cmd = 'docker run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" bgruening/docker-ipython-notebook' % (PORT, temp_dir)
-
 subprocess.call(docker_cmd, shell=True)
 
 # We need to wait until the Image and IPython in loaded
