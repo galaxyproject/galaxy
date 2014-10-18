@@ -70,12 +70,9 @@ ${h.javascript_link( ie.attr.app_root + 'ipy-galaxy.js' )}
 <body>
 
 <script type="text/javascript">
-var password_auth = ${ ie.javascript_boolean(ie.attr.PASSWORD_AUTH) };
-var apache_urls = ${ ie.javascript_boolean(ie.attr.APACHE_URLS) };
+${ ie.default_javascript_variables() }
 var notebook_login_url = '${ notebook_login_url }';
-var password = '${ ie.attr.notebook_pw }';
 var notebook_access_url = '${ notebook_access_url }';
-var galaxy_root = '${ ie.attr.root }';
 // Load notebook
 load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root);
 </script>

@@ -176,3 +176,11 @@ import ConfigParser
          self.attr.ipy_viz_config.get("docker", "image"))
 %>
 </%def>
+
+
+<%def name="default_javascript_variables()">
+var password_auth = ${ self.javascript_boolean(self.attr.PASSWORD_AUTH) };
+var apache_urls = ${ self.javascript_boolean(self.attr.APACHE_URLS) };
+var password = '${ self.attr.notebook_pw }';
+var galaxy_root = '${ self.attr.root }';
+</%def>
