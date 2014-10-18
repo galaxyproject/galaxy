@@ -84,9 +84,6 @@ ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command':
                                                 'docker_delay': 1})
 ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
-# Prepare an empty notebook
-empty_nb = load_notebook()
-
 PASSWORD_AUTH = ipy_viz_config.getboolean("main", "password_auth")
 APACHE_URLS = ipy_viz_config.getboolean("main", "apache_urls")
 SSL_URLS = ipy_viz_config.getboolean("main", "ssl"):
@@ -124,6 +121,8 @@ else:
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
     handle.write( yaml.dump(conf_file, default_flow_style=False) )
 
+# Prepare an empty notebook
+empty_nb = load_notebook()
 # Copy over default notebook, unless the dataset this viz is running on is a notebook
 empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
 if hda.datatype.__class__.__name__ != "Ipynb":
