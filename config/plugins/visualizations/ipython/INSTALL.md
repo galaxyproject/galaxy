@@ -58,6 +58,10 @@ These two rules proxy `^/ipython/` requests to their correct locations. API requ
 
 The WebSocket server in IPython pays attention to Cross-Origin-Requests and will through up a 500 Internal Server Error (in docker) if you attempt to send it bad data. Thus, we use the extracted port number from the earlier `SetEnvIf` request in order to obtain the port that IPython will actually receive connections from.
 
+## Nginx Configuration
+
+Please submit it if you write it!
+
 ## Template Configuration
 
 Normally containers are accessed via URLs that look like:
