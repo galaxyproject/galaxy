@@ -572,6 +572,12 @@ nglims_config_file = tool-data/nglims.yaml
 # by setting the following option to True.
 #serve_xss_vulnerable_mimetypes = False
 
+# Set the following to True to use ipython nbconvert to build HTML from IPython
+# notebooks in Galaxy histories. This process may allow users to execute arbitrary
+# code or serve arbitrary HTML. If enabled ipython must be available and on Galaxy's
+# PATH, to do this run `pip install jinja2 pygments ipython` in Galaxy's virtualenv.
+#trust_ipython_notebook_conversion = False
+
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
 # also causes the files used by PBS/SGE (submission script, output, and error)
