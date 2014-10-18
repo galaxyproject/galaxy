@@ -203,9 +203,11 @@ import ConfigParser
 
 
 <%def name="default_javascript_variables()">
-var password_auth = ${ self.javascript_boolean(self.attr.PASSWORD_AUTH) };
-var apache_urls = ${ self.javascript_boolean(self.attr.APACHE_URLS) };
-var password = '${ self.attr.notebook_pw }';
+// Globals
+ie_password_auth = ${ self.javascript_boolean(self.attr.PASSWORD_AUTH) };
+ie_apache_urls = ${ self.javascript_boolean(self.attr.APACHE_URLS) };
+ie_password = '${ self.attr.notebook_pw }';
+// Do these need to be global as well??
 var galaxy_root = '${ self.attr.root }';
 var app_root = '${ self.attr.app_root }';
 </%def>

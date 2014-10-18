@@ -4,9 +4,9 @@
  */
 function append_notebook(url){
     clear_main_area();
-    $('#main').append('<object data="' + url + '" height="95%" width="100%">'
-    +'<embed src="' + url + '" height="100%" width="100%"/></object>'
-    );
+    //$('#main').append('<object data="' + url + '" height="95%" width="100%">'
+    //+'<embed src="' + url + '" height="100%" width="100%"/></object>'
+    //);
 }
 
 function clear_main_area(){
@@ -29,7 +29,7 @@ function test_ie_availability(url, success_callback){
     interval = setInterval(function(){
         $.ajax({
             type: "GET",
-            url: url,
+            url: url + "?ie_test=1",
             success: function(){
                 clearInterval(interval);
                 success_callback();

@@ -32,8 +32,8 @@ function message_no_auth(){
  */
 function load_notebook(password, notebook_login_url, notebook_access_url){
     $( document ).ready(function() {
-        test_ie_availability(notebook_access_url, function(){
-            _handle_notebook_loading(notebook_login_url, notebook_access_url);
+        test_ie_availability(notebook_login_url, function(){
+            _handle_notebook_loading(password, notebook_login_url, notebook_access_url);
         });
     });
 }
@@ -41,8 +41,9 @@ function load_notebook(password, notebook_login_url, notebook_access_url){
 /**
  * Must be implemented by IEs
  */
-function _handle_notebook_loading(notebook_login_url, notebook_access_url){
-    if ( password_auth ) {
+function _handle_notebook_loading(password, notebook_login_url, notebook_access_url){
+    console.log(ie_password_auth);
+    if ( ie_password_auth ) {
         // Make an AJAX POST
         $.ajax({
             type: "POST",
@@ -60,7 +61,7 @@ function _handle_notebook_loading(notebook_login_url, notebook_access_url){
                 append_notebook(notebook_access_url);
             },
             error: function(jqxhr, status, error){
-                if(password_auth && !apache_urls){
+                if(ie_password_auth && !ie_apache_urls){
                     // Failure happens due to CORS
                     message_failed_auth(password);
                     append_notebook(notebook_access_url);
