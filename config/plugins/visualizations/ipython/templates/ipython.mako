@@ -135,11 +135,11 @@ else:
 # Access URLs for the notebook from within galaxy.
 if ipy_viz_config.getboolean("main", "apache_urls"):
     notebook_access_url = "%s://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT )
-    notebook_login_url = "%s://%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT, PORT )
+    notebook_login_url = "%s://%s/ipython/%s/login" % ( PROTO, HOST, PORT, PORT )
     apache_urls_jsvar = "true"
 else:
     notebook_access_url = "%s://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT, PORT )
-    notebook_login_url = "%s://%s:%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT, PORT, PORT )
+    notebook_login_url = "%s://%s:%s/ipython/%s/login" % ( PROTO, HOST, PORT, PORT, PORT )
     apache_urls_jsvar = "false"
 subprocess.call(docker_cmd, shell=True)
 
