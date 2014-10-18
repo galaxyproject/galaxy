@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import shutil
+import time
 import subprocess
 
 empty_nb = """{
@@ -59,6 +60,9 @@ docker_cmd = 'docker run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" bgrueni
 
 subprocess.call(docker_cmd, shell=True)
 
+# We need to wait until the Image and IPython in loaded
+# TODO: This can be enhanced later, with some JS spinning if needed.
+time.sleep(1)
 
 %>
 <html>
