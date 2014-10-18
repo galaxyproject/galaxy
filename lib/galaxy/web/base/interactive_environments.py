@@ -44,12 +44,18 @@ class InteractiveEnviornmentRequest(object):
         viz_config.read( conf_path )
         self.attr.viz_config = viz_config
 
+        def _boolean_option(option, default=False):
+            if self.attr.viz_config.has_option("main", option):
+                return self.attr.viz_config.getboolean("main", option)
+            else:
+                return default
+
         # Older style port range proxying - not sure we want to keep these around or should
         # we always assume use of Galaxy dynamic proxy? None of these need to be specified
         # if using the Galaxy dynamic proxy.
-        self.attr.PASSWORD_AUTH = self.attr.viz_config.getboolean("main", "password_auth")
-        self.attr.APACHE_URLS = self.attr.viz_config.getboolean("main", "apache_urls")
-        self.attr.SSL_URLS = self.attr.viz_config.getboolean("main", "ssl")
+        self.attr.PASSWORD_AUTH = _boolean_option("password_auth")
+        self.attr.APACHE_URLS = _boolean_option("apache_urls")
+        self.attr.SSL_URLS = _boolean_option("ssl")
 
     def write_conf_file(self, output_directory, extra={}):
         """
@@ -68,7 +74,9 @@ class InteractiveEnviornmentRequest(object):
             'cors_origin': request.host_url,
         }
 
-        if self.attr.galaxy_config.galaxy_infrastructure_url_set:
+        if self.attr.viz_config.has_option("docker", "galaxy_url"):
+            conf_file['galaxy_url'] = self.attr.viz_config.getstring("docker", "galaxy_url")
+        elif self.attr.galaxy_config.galaxy_infrastructure_url_set:
             conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'

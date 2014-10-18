@@ -1,9 +1,16 @@
 [main]
-apache_urls = False
-password_auth = False
-ssl = False
+
+# Following options are ignored if using the Galaxy dynamic proxy but
+# are useful if mapping a range of ports for environment consumption.
+#apache_urls = False
+#password_auth = False
+#ssl = False
 
 [docker]
 command = docker
 image = bgruening/docker-ipython-notebook
 
+# URL to access the Galaxy API with from the spawn Docker containter, if empty
+# this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
+# Docker host of the spawned container if that is also not set.
+#galaxy_url = 
