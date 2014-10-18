@@ -1,16 +1,16 @@
 <%namespace file="ie.mako" name="ie"/>
 <%
 import os
-import sys
-import time
-import yaml
-import shlex
-import random
+#import sys
+#import time
+#import yaml
+#import shlex
+#import random
 import shutil
-import hashlib
+#import hashlib
 import tempfile
 import subprocess
-import ConfigParser
+#import ConfigParser
 
 ie.set_id("ipython")
 ie.register_galaxy_objects(trans, h, response, plugin_path, request)
@@ -21,15 +21,14 @@ ie.register_defaults({
     'password_auth': False,
     'ssl': False})
 
-galaxy_paster_port = ie.get_galaxy_paster_port(ie.attr.galaxy_root_dir, ie.attr.galaxy_config)
-
-
+# Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
+# Set user's API key
 ie.attr.api_key = get_api_key()
-
 # Write out conf file...needs work
 ie.write_conf_file(temp_dir)
 
+## IPython Specific
 
 # Prepare an empty notebook
 notebook_id = ie.generate_hex(64)
@@ -45,13 +44,14 @@ else:
     shutil.copy( hda.file_name, empty_nb_path )
 
 
+## General IE specific
+
 # Access URLs for the notebook from within galaxy.
 notebook_access_url = ie.url_template('${PROTO}://${HOST}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb')
 notebook_login_url = ie.url_template('${PROTO}://${HOST}/ipython/${PORT}/login')
 
 docker_cmd = ie.docker_cmd(temp_dir)
 subprocess.call(docker_cmd, shell=True)
-
 %>
 <html>
 <head>

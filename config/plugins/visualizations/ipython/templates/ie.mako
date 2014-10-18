@@ -195,6 +195,6 @@ var galaxy_root = '${ self.attr.root }';
 ${h.css( 'base' ) }
 ${h.js( 'libs/jquery/jquery' ) }
 ${h.js( 'libs/toastr' ) }
-${h.javascript_link( ie.attr.app_root + 'ie.js' )}
-${h.javascript_link( ie.attr.app_root + ie.attr.viz_name + '.js' )}
+${h.javascript_link( self.attr.app_root + 'ie.js' )}
+${h.javascript_link( self.attr.app_root + self.attr.viz_id + '.js' )}
 </%def>
