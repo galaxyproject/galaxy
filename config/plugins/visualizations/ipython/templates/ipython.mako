@@ -30,8 +30,8 @@ else:
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.
-notebook_access_url = ie.url_template('${PROTO}://${HOST}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb')
-notebook_login_url = ie.url_template('${PROTO}://${HOST}/ipython/${PORT}/login?next=%2Fipython%2F${PORT}%2Ftree')
+notebook_access_url = ie.url_template('${PROXY_URL}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb')
+notebook_login_url = ie.url_template('${PROXY_URL}/ipython/${PORT}/login?next=%2Fipython%2F${PORT}%2Ftree')
 
 docker_cmd = ie.docker_cmd(temp_dir)
 subprocess.call(docker_cmd, shell=True)

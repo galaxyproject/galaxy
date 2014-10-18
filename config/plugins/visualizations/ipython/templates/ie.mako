@@ -19,6 +19,8 @@ import ConfigParser
     """
     self.attr.viz_id = name
     self.attr.history_id = trans.security.encode_id( trans.history.id )
+    self.attr.proxy_request = trans.app.proxy_manager.setup_proxy( trans )
+    self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
     self.attr.galaxy_config = trans.app.config
     self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
     self.attr.root = h.url_for("/")
@@ -33,8 +35,7 @@ import ConfigParser
     self.attr.PASSWORD_AUTH = self.attr.viz_config.getboolean("main", "password_auth")
     self.attr.APACHE_URLS = self.attr.viz_config.getboolean("main", "apache_urls")
     self.attr.SSL_URLS = self.attr.viz_config.getboolean("main", "ssl")
-    self.attr.PORT = self.proxy_request_port()
-
+    self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
     self.attr.HOST = request.host.rsplit(':', 1)[0]
 %>
 </%def>
@@ -97,32 +98,6 @@ import ConfigParser
   %>
 </%def>
 
-<%def name="proxy_request_port()">
-<%
-    """
-        Refactor of our port getting...eventually this will be replaced with an API call instead.
-    """
-    # Find all ports that are already occupied
-    cmd_netstat = shlex.split("netstat -tuln")
-    p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
-
-    occupied_ports = set()
-    for line in p1.stdout.read().split('\n'):
-        if line.startswith('tcp') or line.startswith('tcp6'):
-            col = line.split()
-            local_address = col[3]
-            local_port = local_address.split(':')[-1]
-            occupied_ports.add( int(local_port) )
-
-    # Generate random free port number for our docker container
-    while True:
-        port = random.randrange(10000,15000)
-        if port not in occupied_ports:
-            break
-    return port
-%>
-</%def>
-
 <%def name="generate_hex(length)">
 <%
     """
@@ -161,26 +136,10 @@ import ConfigParser
 
         There are several variables accessible to the user:
 
-            - ${PROTO} will be replaced with protocol (http/https)
-            - ${HOST} will be replaced with the correct hostname
+            - ${PROXY_URL} will be replaced with dynamically create proxy
             - ${PORT} will be replaced with the port the docker image is attached to
-
-        In the case that `apache_urls = False`, the first instance of HOST has a PORT appeneded to
-        it, so the user doesn't have to template 2x urls.
     """
-    # Figure out our substitutions
-    if self.attr.SSL_URLS:
-        protocol = 'https'
-    else:
-        protocol = 'http'
-
-    if not self.attr.APACHE_URLS:
-        # If they are not using apache URLs, that implies there's a port attached to the host
-        # string, thus we replace just the first instance of host that we see.
-        url_template = url_template.replace('${HOST}', '${HOST}:${PORT}', 1)
-
-    url = url_template.replace('${PROTO}', protocol) \
-            .replace('${HOST}', self.attr.HOST) \
+    url = url_template.replace('${PROXY_URL}', str(self.attr.proxy_url)) \
             .replace('${PORT}', str(self.attr.PORT))
     return url
 %>

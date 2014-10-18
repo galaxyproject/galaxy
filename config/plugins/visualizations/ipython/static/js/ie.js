@@ -31,6 +31,9 @@ function test_ie_availability(url, success_callback){
     interval = setInterval(function(){
         $.ajax({
             url: url,
+            xhrFields: {
+                withCredentials: true
+            },
             type: "GET",
             timeout: 500,
             success: function(){
