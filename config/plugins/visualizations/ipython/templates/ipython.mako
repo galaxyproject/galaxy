@@ -47,7 +47,8 @@ our_config_dir = os.path.join(viz_plugin_dir, "config")
 our_template_dir = os.path.join(viz_plugin_dir, "templates")
 ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
                                                 'bgruening/docker-ipython-notebook',
-                                                'password_auth': False, 'ssl': False})
+                                                'password_auth': False, 'ssl': False,
+                                                'docker_delay': 1})
 ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
 # Ensure generation of notebook id is deterministic for the dataset. Replace with history id
@@ -149,7 +150,7 @@ subprocess.call(docker_cmd, shell=True)
 
 # We need to wait until the Image and IPython in loaded
 # TODO: This can be enhanced later, with some JS spinning if needed.
-time.sleep(1)
+time.sleep(ipy_viz_config.getint("main", "docker_delay"))
 
 %>
 <html>
