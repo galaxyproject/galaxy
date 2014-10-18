@@ -6,11 +6,17 @@ import shutil
 import time
 import subprocess
 import yaml
+import random
 
+
+# Ensure generation of notebook id is deterministic for the dataset. Replace with history id
+# whenever we figure out how to access that.
+random.seed( trans.security.encode_id( hda.id ) )
+notebook_id = ''.join(random.choice('0123456789abcdef') for _ in range(64))
 empty_nb = """{
  "metadata": {
   "name": "",
-  "signature": "sha256:201eaf53a7ca0a5b661e0c8925adc61714a91ac871471604c428cbda4a698239"
+  "signature": "sha256:%s"
  },
  "nbformat": 3,
  "nbformat_minor": 0,
@@ -44,7 +50,7 @@ empty_nb = """{
    "metadata": {}
   }
  ]
-}"""
+}""" % (notebook_id, )
 
 PORT = 7777
 
