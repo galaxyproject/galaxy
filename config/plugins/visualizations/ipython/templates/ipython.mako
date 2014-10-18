@@ -18,7 +18,11 @@ dataset_id = trans.security.encode_id( hda.id )
 config = ConfigParser.SafeConfigParser({'port': '8080'})
 config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
 
-galaxy_paster_port = config.getint('server:main', 'port')
+# uWSGI galaxy installations don't use paster and only speak uWSGI not http
+try:
+    galaxy_paster_port = config.getint('server:main', 'port')
+except:
+    galaxy_paster_port = None
 
 # Find out where we are
 viz_plugin_dir = config.get('app:main', 'visualization_plugins_directory')
