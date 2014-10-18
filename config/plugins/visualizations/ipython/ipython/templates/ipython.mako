@@ -9,9 +9,11 @@ import yaml
 import random
 
 
+history_id = trans.security.encode_id( trans.history.id )
+dataset_id = trans.security.encode_id( hda.id )
 # Ensure generation of notebook id is deterministic for the dataset. Replace with history id
 # whenever we figure out how to access that.
-random.seed( trans.security.encode_id( hda.id ) )
+random.seed( history_id )
 notebook_id = ''.join(random.choice('0123456789abcdef') for _ in range(64))
 empty_nb = """{
  "metadata": {
@@ -60,7 +62,7 @@ shutil.copy( hda.file_name, new_dataset_path )
 
 
 conf_file = {
-    'history_id': None,
+    'history_id': history_id,
     'galaxy_url': None,
     'api_key': None,
 }
