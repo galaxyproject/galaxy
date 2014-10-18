@@ -19,6 +19,20 @@ config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
 
 galaxy_paster_port = config.getint('server:main', 'port')
 
+# Find out where we are
+viz_plugin_dir = config.get('app:main', 'visualization_plugins_directory')
+if not os.path.isabs(viz_plugin_dir):
+    # If it is NOT absolute, i.e. relative, append to galaxy root
+    viz_plugin_dir = os.path.join(galaxy_root_dir, viz_plugin_dir)
+# Get this plugin's directory
+viz_plugin_dir = os.path.join(viz_plugin_dir, "ipython")
+# Store our template and configuration path
+our_config_dir = os.path.join(viz_plugin_dir, "config")
+our_template_dir = os.path.join(viz_plugin_dir, "template")
+ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
+                                                'bgruening/docker-ipython-notebook'})
+ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
+
 # Ensure generation of notebook id is deterministic for the dataset. Replace with history id
 # whenever we figure out how to access that.
 random.seed( history_id )
@@ -112,7 +126,13 @@ if hda.datatype.__class__.__name__ != "Ipynb":
 else:
     shutil.copy( hda.file_name, empty_nb_path )
 
-docker_cmd = 'docker run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" bgruening/docker-ipython-notebook' % (PORT, temp_dir)
+docker_cmd = '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
+    (ipy_viz_config.get("docker", "command"), PORT, temp_dir, ipy_viz_config.get("docker", "image"))
+
+if ipy_viz_config.getboolean("main", "apache_urls"):
+    notebook_access_url = "http://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT )
+else:
+    notebook_access_url = "http://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
 subprocess.call(docker_cmd, shell=True)
 
 # We need to wait until the Image and IPython in loaded
@@ -124,8 +144,8 @@ time.sleep(1)
 
 
 <body>
-    <object data="http://${HOST}:${PORT}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
-        <embed src="http://${HOST}:${PORT}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
+    <object data="${notebook_access_url}" height="100%" width="100%">
+        <embed src="${notebook_access_url}" height="100%" width="100%">
         </embed>
     </object>
 </body>
