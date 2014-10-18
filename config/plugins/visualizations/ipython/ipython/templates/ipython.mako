@@ -60,7 +60,7 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
 # TODO: Provide a method to allow selecting which datasets are used
 for dataset in trans.history.active_datasets:
-    shutil.copy( dataset.file_name, os.path.join( temp_dir, str( hda.hid ) ) )
+    shutil.copy( dataset.file_name, os.path.join( temp_dir, str( dataset.hid ) ) )
 
 
 conf_file = {
