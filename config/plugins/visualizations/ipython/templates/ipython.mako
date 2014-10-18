@@ -58,6 +58,8 @@ history_id = trans.security.encode_id( trans.history.id )
 # Routes
 root        = h.url_for( "/" )
 app_root    = root + "plugins/visualizations/ipython/static/"
+# Register ourself with the ie module
+ie.set_id("ipython")
 
 galaxy_paster_port = ie.get_galaxy_paster_port(galaxy_root_dir, galaxy_config)
 
@@ -73,7 +75,7 @@ ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 PASSWORD_AUTH = ipy_viz_config.getboolean("main", "password_auth")
 APACHE_URLS = ipy_viz_config.getboolean("main", "apache_urls")
 SSL_URLS = ipy_viz_config.getboolean("main", "ssl")
-PORT = proxy_request_port()
+PORT = ie.proxy_request_port()
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
 if ':' in HOST:
@@ -94,8 +96,8 @@ conf_file = {
 
 if PASSWORD_AUTH:
     # Generate a random password + salt
-    notebook_pw_salt = generate_pasword(length=12)
-    notebook_pw = generate_pasword(length=24)
+    notebook_pw_salt = ie.generate_password(length=12)
+    notebook_pw = ie.generate_password(length=24)
     m = hashlib.sha1()
     m.update( notebook_pw + notebook_pw_salt )
     conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
@@ -117,8 +119,7 @@ if hda.datatype.__class__.__name__ != "Ipynb":
 else:
     shutil.copy( hda.file_name, empty_nb_path )
 
-docker_cmd = '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
-    (ipy_viz_config.get("docker", "command"), PORT, temp_dir, ipy_viz_config.get("docker", "image"))
+docker_cmd = ie.docker_cmd(ipy_viz_config, PORT, temp_dir)
 
 # Set our proto so passwords don't go in clear
 if SSL_URLS:
@@ -147,8 +148,8 @@ ${h.javascript_link( app_root + 'ipy-galaxy.js' )}
 <body>
 
 <script type="text/javascript">
-var password_auth = ${ javascript_boolean(PASSWORD_AUTH) };
-var apache_urls = ${ javascript_boolean(APACHE_URLS) };
+var password_auth = ${ ie.javascript_boolean(PASSWORD_AUTH) };
+var apache_urls = ${ ie.javascript_boolean(APACHE_URLS) };
 var notebook_login_url = '${ notebook_login_url }';
 var password = '${ notebook_pw }';
 var notebook_access_url = '${ notebook_access_url }';
