@@ -107,6 +107,7 @@ conf_file = {
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
     'docker_port': PORT,
+    'cors_origin': request.host_url,
 }
 
 if ipy_viz_config.getboolean("main", "password_auth"):
