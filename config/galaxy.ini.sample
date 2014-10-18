@@ -221,8 +221,14 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Visualizations config directory: where to look for individual visualization plugins.
 # The path is relative to the Galaxy root dir. To use an absolute path begin the path
-# with '/'. Defaults to "config/plugins/visualizations".
+# with '/'. This is a comma separated list. Defaults to "config/plugins/visualizations".
 #visualization_plugins_directory = config/plugins/visualizations
+
+# Interactive environment plugins root directory: where to look for interactive environment
+# plugins. By default none will be loaded. Set to config/plugins/interactive_environments
+# to load Galaxy's stock plugins (currently just IPython). These will require Docker
+# to be configured and have security considerations so proceed with caution.
+#interactive_environment_plugins_directory = 
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be

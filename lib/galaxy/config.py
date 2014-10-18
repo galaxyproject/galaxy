@@ -377,6 +377,12 @@ class Configuration( object ):
         # directory where the visualization/registry searches for plugins
         self.visualization_plugins_directory = kwargs.get(
             'visualization_plugins_directory', 'config/plugins/visualizations' )
+        ie_dirs = kwargs.get( 'interactive_environment_plugins_directory', None )
+        if ie_dirs and not self.visualization_plugins_directory:
+            self.visualization_plugins_directory = ie_dirs
+        elif ie_dirs:
+            self.visualization_plugins_directory += ",%s" % ie_dirs
+
         self.proxy_session_map = self.resolve_path( kwargs.get( "dynamic_proxy_session_map", "database/session_map.sqlite" ) )
         self.manage_dynamic_proxy = string_as_bool( kwargs.get( "dynamic_proxy_manage", "True" ) )  # Set to false if being launched externally
         self.dynamic_proxy_bind_port = int( kwargs.get( "dynamic_proxy_bind_port", "8800" ) )
