@@ -117,6 +117,7 @@ conf_file = {
     'api_key': trans.user.api_keys[0].key,
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
+    'docker_port': PORT,
 }
 
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
@@ -144,8 +145,8 @@ time.sleep(1)
 
 
 <body>
-    <object data="http://${HOST}:${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
-        <embed src="http://${HOST}:${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
+    <object data="http://${HOST}:${PORT}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
+        <embed src="http://${HOST}:${PORT}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
         </embed>
     </object>
 </body>
