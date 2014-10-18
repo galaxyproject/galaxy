@@ -26,7 +26,7 @@ empty_nb = """{
    "cells": [
     {
      "cell_type": "heading",
-     "level": 2,
+     "level": 1,
      "metadata": {},
      "source": [
       "Welcome to the interactive Galaxy IPython Notebook."
@@ -36,27 +36,59 @@ empty_nb = """{
      "cell_type": "markdown",
      "metadata": {},
      "source": [
-      "You can access your data via the dataset number. For example: handle = open('42', 'r')"
+      "You can access your data via the dataset number. For example, `handle = get(42)`.\\n",
+      "To save data, write your data to a file, and then call `put('filename.txt')`. The dataset will then be available in your galaxy history."
      ]
     },
     {
      "cell_type": "code",
      "collapsed": false,
-     "input": [],
+     "input": [
+      "# This button just calls put('ipython_galaxy_notebook.ipynb')"
+     ],
      "language": "python",
      "metadata": {},
-     "outputs": []
+     "outputs": [
+      {
+       "html": [
+        "<button onclick=\\\"save()\\\">Save Notebook to Galaxy</button>\\n",
+        "<script type=\\\"text/Javascript\\\">\\n",
+        "    function save(){\\n",
+        "        console.log(IPython.notebook.kernel.execute(\\\"put('ipython_galaxy_notebook.ipynb')\\\"));\\n",
+        "    }\\n",
+        "</script>\\n"
+       ],
+       "metadata": {},
+       "output_type": "pyout",
+       "prompt_number": 1,
+       "text": [
+        "<IPython.core.display.HTML at 0x3b33650>"
+       ]
+      }
+     ],
+     "prompt_number": 1
+    },
+    {
+     "cell_type": "code",
+     "collapsed": false,
+     "input": [
+     ],
+     "language": "python",
+     "metadata": {},
+     "outputs": [],
+     "prompt_number": 2
     }
    ],
    "metadata": {}
   }
  ]
-}""" % (notebook_id, )
+}
+""" % (notebook_id, )
 
 
 # Find all ports that are already occupied
 import shlex
-cmd_netstat = shlex.split("netstat -tnaAinet")
+cmd_netstat = shlex.split("netstat -tuln")
 p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
 
 cmd_awk = shlex.split("awk 'NR >= 3 { print $4 }'")
@@ -77,7 +109,6 @@ while True:
     PORT = random.randrange(10000,15000)
     if PORTS not in occupied_ports:
         break
-print "Starting docker on port %s" % PORT
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
 if ':' in HOST:
