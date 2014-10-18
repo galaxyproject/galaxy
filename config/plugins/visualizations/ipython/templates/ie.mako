@@ -72,6 +72,12 @@ import ConfigParser
 %>
 </%def>
 
+<%def name="generate_hex(length)">
+<%
+    return ''.join(random.choice('0123456789abcdef') for _ in range(length))
+%>
+</%def>
+
 <%def name="generate_password(length)">
 <%
     return ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(length))

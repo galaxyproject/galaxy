@@ -13,7 +13,7 @@ import subprocess
 import ConfigParser
 
 def load_notebook():
-    notebook_id = ''.join(random.choice('0123456789abcdef') for _ in range(64))
+    notebook_id = ie.generate_hex(64)
     with open( os.path.join( our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
         empty_nb = nb_handle.read()
     empty_nb = empty_nb % notebook_id
