@@ -421,6 +421,11 @@ nglims_config_file = tool-data/nglims.yaml
 # - $iso8601 (complete format string as specified by ISO 8601 international standard).
 # pretty_datetime_format = $locale (UTC)
 
+# URL (with schema http/https) of the Galaxy instance as accessible within your local
+# network - if specified used as a default by pulsar file staging and IPython docker
+# container for communicating back with Galaxy via the API.
+#galaxy_infrastructure_url = http://localhost:8080
+
 # The URL of the page to display in Galaxy's middle pane when loaded. This can be 
 # an absolute or relative URL.
 #welcome_url = /static/welcome.html

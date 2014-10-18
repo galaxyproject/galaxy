@@ -18,6 +18,8 @@ from galaxy.util import listify
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy import eggs
 
+import ConfigParser
+
 log = logging.getLogger( __name__ )
 
 
@@ -296,6 +298,23 @@ class Configuration( object ):
         for section in global_conf_parser.sections():
             if section.startswith('server:'):
                 self.server_names.append(section.replace('server:', '', 1))
+
+        # Default URL (with schema http/https) of the Galaxy instance within the
+        # local network - used to remotely communicate with the Galaxy API.
+        galaxy_infrastructure_url = kwargs.get( 'galaxy_infrastructure_url', None )
+        galaxy_infrastructure_url_set = True
+        if galaxy_infrastructure_url is None:
+            # Still provide a default but indicate it was not explicitly set
+            # so dependending on the context a better default can be used (
+            # request url in a web thread, Docker parent in IE stuff, etc...)
+            galaxy_infrastructure_url = "http://localhost"
+            port = self.guess_galaxy_port()
+            if port:
+                galaxy_infrastructure_url += ":%s" % (port)
+            galaxy_infrastructure_url_set = False
+        self.galaxy_infrastructure_url = galaxy_infrastructure_url
+        self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
+
         # Store advanced job management config
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
@@ -547,6 +566,19 @@ class Configuration( object ):
         """ Resolve a path relative to Galaxy's root.
         """
         return resolve_path( path, self.root )
+
+    def guess_galaxy_port(self):
+        # Code derived from IPython work ie.mako
+        config = ConfigParser.SafeConfigParser({'port': '8080'})
+        if self.config_file:
+            config.read( self.config_file )
+
+        try:
+            port = config.getint('server:%s' % self.server_name, 'port')
+        except:
+            # uWSGI galaxy installations don't use paster and only speak uWSGI not http
+            port = None
+        return port
 
 
 def get_database_engine_options( kwargs, model_prefix='' ):

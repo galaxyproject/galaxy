@@ -50,7 +50,9 @@
           <!-- AMQP URL to connect to. -->
           <param id="amqp_url">amqp://guest:guest@localhost:5672//</param>
           <!-- URL remote Pulsar apps should transfer files to this Galaxy
-               instance to/from. -->
+               instance to/from. This can be unspecified/empty if
+               galaxy_infrastructure_url is set in galaxy.ini.
+          -->
           <param id="galaxy_url">http://localhost:8080</param>
           <!-- Pulsar job manager to communicate with (see Pulsar
                docs for information on job managers). -->
