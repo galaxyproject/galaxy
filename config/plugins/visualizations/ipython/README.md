@@ -1,7 +1,10 @@
 Galaxy IPython Integration
 ==========================
 
-IPython Integration into Galaxy
+This projects integrates [IPython Notebook](http://ipython.org/notebook.html), a interactive computational environment, with [Galaxy](http://galaxyproject.org). 
+We hope to make Galaxy more attractive for bioinformaticians and to combine the power of both projects to unlock creativity in data analysis, but also in Next-Generation-Training courses.
+
+![IPython in Galaxy](https://raw.githubusercontent.com/bgruening/galaxy-ipython/master/images/ipython_in_galaxy.png)
 
 
 Requirements
