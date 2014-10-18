@@ -128,16 +128,23 @@ $( document ).ready(function() {
         data: {
             'password': '${ notebook_pw }'
         },
-        // If that is successful, load the iframe element
+        // If that is successful, load the notebook
         success: function(){
-            var frame = $('<iframe />', {
-                name: 'remote_notebook',
-                id: 'remote_notebook',
-                src: '${ notebook_access_url }',
-                height: '100%',
-                width: '100%'
-            });
-            frame.appendTo('body');
+            //Append an object to the body
+            $('body').append(
+                $('<object/>', {
+                    src: '${ notebook_access_url }',
+                    height: '100%',
+                    width: '100%'
+                }).append(
+                    // And an embed to the object
+                    $('<embed/>', {
+                        src: '${ notebook_access_url }',
+                        height: '100%',
+                        width: '100%'
+                    })
+                )
+            );
         }
     });
 });
