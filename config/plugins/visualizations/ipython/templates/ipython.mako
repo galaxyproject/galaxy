@@ -32,7 +32,7 @@ our_config_dir = os.path.join(viz_plugin_dir, "config")
 our_template_dir = os.path.join(viz_plugin_dir, "templates")
 ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
                                                 'bgruening/docker-ipython-notebook',
-                                                'password_auth': False})
+                                                'password_auth': False, 'ssl': False})
 ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
 # Ensure generation of notebook id is deterministic for the dataset. Replace with history id
@@ -108,14 +108,20 @@ else:
 docker_cmd = '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
     (ipy_viz_config.get("docker", "command"), PORT, temp_dir, ipy_viz_config.get("docker", "image"))
 
+# Set our proto so passwords don't go in clear
+if ipy_viz_config.getboolean("main", "ssl"):
+    PROTO = "https"
+else:
+    PROTO = "http"
+
 # Access URLs for the notebook from within galaxy.
 if ipy_viz_config.getboolean("main", "apache_urls"):
-    notebook_access_url = "http://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT )
-    notebook_login_url = "http://%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
+    notebook_access_url = "%s://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT )
+    notebook_login_url = "%s://%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT, PORT )
     apache_urls_jsvar = "true"
 else:
-    notebook_access_url = "http://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
-    notebook_login_url = "http://%s:%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT, PORT )
+    notebook_access_url = "%s://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT, PORT )
+    notebook_login_url = "%s://%s:%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT, PORT, PORT )
     apache_urls_jsvar = "false"
 subprocess.call(docker_cmd, shell=True)
 
