@@ -145,40 +145,18 @@ if ( ${ password_auth_jsvar } ) {
             // If that is successful, load the notebook
             success: function(){
                 //Append an object to the body
-                $('body').append(
-                    $('<object/>', {
-                        src: '${ notebook_access_url }',
-                        height: '100%',
-                        width: '100%'
-                    }).append(
-                        // And an embed to the object
-                        $('<embed/>', {
-                            src: '${ notebook_access_url }',
-                            height: '100%',
-                            width: '100%'
-                        })
-                    )
-                );
+                $('body').append('<object data="${ notebook_access_url }" height="100%" width="100%">'
+                +'<embed src="${ notebook_access_url }" height="100%" width="100%"/></object>'
+                )
             },
             error: function(jqxhr, status, error){
                 if(${ password_auth_jsvar } && !${ apache_urls_jsvar }){
                     $('body').append("Error, could not automatically authorize you. Your"
                                         + " password is: ${ notebook_pw }<br/>Ask your administrator"
                                         + " to set apache_urls = True to make this go away");
-                    $('body').append(
-                        $('<object/>', {
-                            src: '${ notebook_access_url }',
-                            height: '100%',
-                            width: '100%'
-                        }).append(
-                            // And an embed to the object
-                            $('<embed/>', {
-                                src: '${ notebook_access_url }',
-                                height: '100%',
-                                width: '100%'
-                            })
-                        )
-                    );
+                    $('body').append('<object data="${ notebook_access_url }" height="100%" width="100%">'
+                    +'<embed src="${ notebook_access_url }" height="100%" width="100%"/></object>'
+                    )
                 }else{
                     var error_msg = "<h1>Error " + status
                         + "</h1>Could not connect to IPython Notebook: "
@@ -195,20 +173,9 @@ if ( ${ password_auth_jsvar } ) {
 else {
     // Not using password auth, just embed it to avoid content-origin issues.
     $( document ).ready(function() {
-        $('body').append(
-            $('<object/>', {
-                src: '${ notebook_access_url }',
-                height: '100%',
-                width: '100%'
-            }).append(
-                // And an embed to the object
-                $('<embed/>', {
-                    src: '${ notebook_access_url }',
-                    height: '100%',
-                    width: '100%'
-                })
-            )
-        );
+        $('body').append('<object data="${ notebook_access_url }" height="100%" width="100%">'
+        +'<embed src="${ notebook_access_url }" height="100%" width="100%"/></object>'
+        )
     });
 }
 </script>
