@@ -144,12 +144,12 @@ import ConfigParser
 %>
 </%def>
 
-<%def name="javascript_boolean(length)">
+<%def name="javascript_boolean(python_boolean)">
 <%
     """
         Convenience function to convert boolean for use in JS
     """
-    if boolean:
+    if python_boolean:
         return "true";
     else:
         return "false"
