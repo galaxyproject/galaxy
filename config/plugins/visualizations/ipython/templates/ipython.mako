@@ -18,15 +18,20 @@ history_id = trans.security.encode_id( trans.history.id )
 root        = h.url_for( "/" )
 app_root    = root + "plugins/visualizations/ipython/static/"
 
-# Galaxy config parser
-config = ConfigParser.SafeConfigParser({'port': '8080'})
-config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
+def get_galaxy_paster_port():
+    # Galaxy config parser
+    config = ConfigParser.SafeConfigParser({'port': '8080'})
+    config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
 
-# uWSGI galaxy installations don't use paster and only speak uWSGI not http
-try:
-    galaxy_paster_port = config.getint('server:%s' % galaxy_config.server_name, 'port')
-except:
-    galaxy_paster_port = None
+    # uWSGI galaxy installations don't use paster and only speak uWSGI not http
+    try:
+        port = config.getint('server:%s' % galaxy_config.server_name, 'port')
+    except:
+        port = None
+    return port
+
+
+galaxy_paster_port = get_galaxy_paster_port()
 
 viz_plugin_dir = None
 try:
