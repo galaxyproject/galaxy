@@ -24,12 +24,6 @@ ie.register_defaults({
 galaxy_paster_port = ie.get_galaxy_paster_port(ie.attr.galaxy_root_dir, ie.attr.galaxy_config)
 
 
-PORT = ie.proxy_request_port()
-HOST = request.host
-# Strip out port, we just want the URL this galaxy server was accessed at.
-if ':' in HOST:
-    HOST = HOST[0:HOST.index(':')]
-
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 ie.attr.api_key = get_api_key()
 
@@ -61,11 +55,7 @@ subprocess.call(docker_cmd, shell=True)
 %>
 <html>
 <head>
-${h.css( 'base' ) }
-${h.js( 'libs/jquery/jquery' ) }
-${h.js( 'libs/toastr' ) }
-## Load IPython-Galaxy connector
-${h.javascript_link( ie.attr.app_root + 'ipy-galaxy.js' )}
+${ ie.load_default_js() }
 </head>
 <body>
 
