@@ -344,6 +344,10 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         # TODO: As part of a future note plugin registry effort - move this
         # override and let VisualizationsRegistry just revert to using parent's
         # fill_template.
+
+        # No longer needed but being left around for a few releases as ipython-galaxy
+        # as an external visualization plugin is deprecated in favor of core interactive
+        # environment plugin.
         if 'get_api_key' not in kwargs:
 
             def get_api_key():
