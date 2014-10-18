@@ -522,6 +522,24 @@ nglims_config_file = tool-data/nglims.yaml
 # requests.
 #nginx_upload_path = False
 
+# Have Galaxy manage dynamic proxy component for routing requests to other
+# services based on Galaxy's session cookie. It will attempt to do this by
+# default though you do need to install node+npm and do an npm install from
+# `lib/galaxy/web/proxy/js`. It is generally more robust to configure this
+# externally managing it however Galaxy is managed. If True Galaxy will only
+# launch the proxy if it is actually going to be used (e.g. for IPython).
+#dynamic_proxy_manage=True
+
+# Dynamic proxy can use an SQLite database or a JSON file for IPC, set that
+# here.
+#dynamic_proxy_session_map=database/session_map.sqlite
+
+# Set the port and IP for the the dynamic proxy to bind to, this must match
+# the external configuration if dynamic_proxy_manage is False.
+#dynamic_proxy_bind_port=8800
+#dynamic_proxy_bind_ip=0.0.0.0
+
+
 # -- Logging and Debugging
 
 # Verbosity of console log messages.  Acceptable values can be found here:
