@@ -93,17 +93,16 @@ For your convience, we have added a few pre-defined functions to the IPython pro
 Security
 ========
 
- * Containers can be secured via Apache+SSL. Please see the [setup](INSTALL.md) document for more
-   information.
- * Containers will soon have `iptables` based security to provide a minimum attempt at preventing
-   users from accessing one another's notebooks.
+Containers should be secured via Apache+SSL for production usage. Please see the [setup](INSTALL.md) document for more information.
+
+Individual notebooks are password protected through a password known only to the Galaxy user's browser and to the container. While this does not prevent port mapping followed by password bruteforcing, we believe we have succesfully limited access to the notebook to only authorized users. We are very concerned about security issues with IPython embedded within galaxy, so if you find a vulnerability in the system we've devised, please contact us and we'll patch it as soon as possible!
 
 
 Authors
 =======
 
  * Björn Grüning
- * Eric Rasche
+ * Eric Rasche <rasche.eric@yandex.ru>
 
 
 History
