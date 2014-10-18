@@ -87,7 +87,9 @@ import ConfigParser
         Get port galaxy is running on (if running under paster)
     """
     config = ConfigParser.SafeConfigParser({'port': '8080'})
-    config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
+    config_file = galaxy_config.config_file
+    if config_file:
+        config.read( config_file )
 
     # uWSGI galaxy installations don't use paster and only speak uWSGI not http
     try:
