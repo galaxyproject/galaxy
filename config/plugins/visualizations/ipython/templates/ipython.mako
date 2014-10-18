@@ -91,24 +91,21 @@ import shlex
 cmd_netstat = shlex.split("netstat -tuln")
 p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
 
-cmd_awk = shlex.split("awk 'NR >= 3 { print $4 }'")
-p2 = subprocess.Popen(cmd_awk, stdin=p1.stdout, stdout=subprocess.PIPE)
-
-cmd_cut = shlex.split("cut -d: -f2")
-p3 = subprocess.Popen(cmd_cut, stdin=p2.stdout, stdout=subprocess.PIPE)
-
-cmd_sort = shlex.split("sort -un")
-p4 = subprocess.Popen(cmd_sort, stdin=p3.stdout, stdout=subprocess.PIPE)
-
-netstat_out = p4.stdout.read()
-
-occupied_ports = [port for port in netstat_out.split('\n') if port.isdigit()]
+occupied_ports = list()
+for line in p1.stdout.read().split('\n'):
+    if line.startswith('tcp') or line.startswith('tcp6'):
+        col = line.split()
+        local_address = col[3]
+        local_port = local_address.split(':')[-1]
+        occupied_ports.append( int(local_port) )
 
 # Generate random free port number for our docker container
+print occupied_ports
 while True:
     PORT = random.randrange(10000,15000)
-    if PORTS not in occupied_ports:
+    if PORT not in occupied_ports:
         break
+
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
 if ':' in HOST:
