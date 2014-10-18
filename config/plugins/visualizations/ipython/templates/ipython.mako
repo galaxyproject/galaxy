@@ -85,11 +85,18 @@ if ':' in HOST:
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
+try:
+    # Newer get_api_key will is better abstraction and will also generate the
+    # key if not available.
+    api_key = get_api_key()
+except Exception:
+    # fallback to deprecated pattern for older Galaxy instances.
+    api_key = trans.user.api_keys[0].key
 
 conf_file = {
     'history_id': history_id,
     'galaxy_url': request.application_url.rstrip('/'),
-    'api_key': trans.user.api_keys[0].key,
+    'api_key': api_key,
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
     'docker_port': PORT,
