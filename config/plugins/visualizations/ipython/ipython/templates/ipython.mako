@@ -57,8 +57,10 @@ empty_nb = """{
 PORT = 7777
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
-new_dataset_path = os.path.join( temp_dir, str( hda.hid ) )
-shutil.copy( hda.file_name, new_dataset_path )
+
+# TODO: Provide a method to allow selecting which datasets are used
+for dataset in trans.history.active_datasets:
+    shutil.copy( dataset.file_name, os.path.join( temp_dir, str( hda.hid ) ) )
 
 
 conf_file = {
