@@ -11,7 +11,6 @@ import tempfile
 import subprocess
 import ConfigParser
 
-viz_id = None
 %>
 
 <%def name="set_id(name)">
