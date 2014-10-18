@@ -83,17 +83,7 @@ if ':' in HOST:
     HOST = HOST[0:HOST.index(':')]
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
-
-try:
-    # Newer get_api_key will is better abstraction and will also generate the
-    # key if not available.
-    api_key = get_api_key()
-except Exception:
-    # fallback to deprecated pattern for older Galaxy instances.
-    try:
-        api_key = trans.user.api_keys[0].key
-    except:
-        raise Exception("You do not have an API key available, please click User->API Keys to generate one")
+api_key = get_api_key()
 
 conf_file = {
     'history_id': history_id,
