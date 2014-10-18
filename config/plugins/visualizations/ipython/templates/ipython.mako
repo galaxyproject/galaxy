@@ -91,16 +91,15 @@ import shlex
 cmd_netstat = shlex.split("netstat -tuln")
 p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
 
-occupied_ports = list()
+occupied_ports = set()
 for line in p1.stdout.read().split('\n'):
     if line.startswith('tcp') or line.startswith('tcp6'):
         col = line.split()
         local_address = col[3]
         local_port = local_address.split(':')[-1]
-        occupied_ports.append( int(local_port) )
+        occupied_ports.add( int(local_port) )
 
 # Generate random free port number for our docker container
-print occupied_ports
 while True:
     PORT = random.randrange(10000,15000)
     if PORT not in occupied_ports:
@@ -115,12 +114,17 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
 ############### Getting of port galaxy is being served on.
 p1 = subprocess.Popen(shlex.split("""ps a"""), stdout=subprocess.PIPE)
-p2 = subprocess.Popen(shlex.split("""grep 'python ./scripts'"""), stdin=p1.stdout,
-                      stdout=subprocess.PIPE)
-p3 = subprocess.Popen(shlex.split("""grep -v 'grep'"""), stdin=p2.stdout, stdout=subprocess.PIPE)
-p4 = subprocess.Popen(shlex.split("""awk '{print $1}'"""), stdin=p3.stdout, stdout=subprocess.PIPE)
+
+galaxy_paster_pids = set()
+for line in p1.stdout.read().split('\n'):
+    line = line.strip()
+    if line.find('python ./script') != -1:
+        port = line.split()[0]
+        if port.isdigit():
+            galaxy_paster_pids.add( port )
+
 # Only take first PID in case we have multiple.
-galaxy_paster_pid = p4.stdout.read().split('\n')[0]
+galaxy_paster_pid = galaxy_paster_pids.pop()
 galaxy_paster_port = None
 if len(galaxy_paster_pid) > 0:
     # Find all files opened by the process of interest
@@ -141,6 +145,7 @@ conf_file = {
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
 }
+
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
     handle.write( yaml.dump(conf_file, default_flow_style=False) )
 
