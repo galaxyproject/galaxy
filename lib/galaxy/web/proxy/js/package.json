@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "http-proxy": "~1.1",
-    "commander": "~2.2"
+    "commander": "~2.2",
+    "sqlite3": "3.0.2"
   }
 }

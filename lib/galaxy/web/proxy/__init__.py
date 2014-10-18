@@ -5,6 +5,7 @@ import json
 from .filelock import FileLock
 from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
+from galaxy.util import sqlite
 
 log = logging.getLogger( __name__ )
 
@@ -100,7 +101,10 @@ class ProxyRequests(object):
 
 def proxy_ipc(config):
     proxy_session_map = config.proxy_session_map
-    return JsonFileProxyIpc(proxy_session_map)
+    if proxy_session_map.endswith(".sqlite"):
+        return SqliteProxyIpc(proxy_session_map)
+    else:
+        return JsonFileProxyIpc(proxy_session_map)
 
 
 class ProxyIpc(object):
@@ -133,5 +137,30 @@ class JsonFileProxyIpc(object):
             open( self.proxy_session_map, "w" ).write( new_json_data )
 
 
-# TODO: sqlitefileipc
-# TODO: RESTful API driven proxy
+class SqliteProxyIpc(object):
+
+    def __init__(self, proxy_session_map):
+        self.proxy_session_map = proxy_session_map
+
+    def handle_requests(self, authentication, proxy_requests):
+        key = "%s:%s" % ( proxy_requests.host, proxy_requests.port )
+        secure_id = authentication.cookie_value
+        with FileLock( self.proxy_session_map ):
+            conn = sqlite.connect(self.proxy_session_map)
+            try:
+                c = conn.cursor()
+                try:
+                    # Create table
+                    c.execute('''CREATE TABLE gxproxy
+                                 (key text PRIMARY_KEY, secret text)''')
+                except Exception:
+                    pass
+                insert_tmpl = '''INSERT INTO gxproxy (key, secret) VALUES ('%s', '%s');'''
+                insert = insert_tmpl % (key, secure_id)
+                c.execute(insert)
+                conn.commit()
+            finally:
+                conn.close()
+
+# TODO: RESTful API driven proxy?
+# TODO: MQ diven proxy?
