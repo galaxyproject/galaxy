@@ -60,10 +60,7 @@ def javascript_boolean(boolean):
     """
         Convenience function to convert boolean for use in JS
     """
-    if boolean:
-        return "true";
-    else:
-        return "false"
+    return "true" if boolean else "false"
 
 
 galaxy_config = trans.app.config
