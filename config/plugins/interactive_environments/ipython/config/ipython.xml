@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE visualization SYSTEM "../../interactive_environments.dtd">
-<visualization name="IPython">
+<!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
+<interactive_environment name="IPython">
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -13,4 +13,4 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <template>ipython.mako</template>
-</visualization>
+</interactive_environment>

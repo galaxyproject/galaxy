@@ -401,6 +401,10 @@ class VisualizationsConfigParser( object ):
         """
         returned = {}
 
+        # main tag specifies plugin type (visualization or
+        # interactive_enviornment).
+        returned[ 'plugin_type' ] = xml_tree.tag
+
         # a text display name for end user links
         returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
         if not returned[ 'name' ]:
