@@ -13,5 +13,10 @@ For a detailed instruction how to install docker, please look at the docker webs
 Installation
 ============
 
-Cpoy the IPython folder in your <GALAXY_ROOT>/config/plugins/visualizations folder and restart Galaxy.
+Cpoy the template and config folder in your <GALAXY_ROOT>/config/plugins/visualizations/ipython folder and restart Galaxy.
+
+or
+
+``git clone https://github.com/bgruening/galaxy-ipython.git config/plugins/viz/ipython``
+
 The IPython Visualisation Option should be visible next to the usual Charts or Trackster Options in your Visualisation menue.
