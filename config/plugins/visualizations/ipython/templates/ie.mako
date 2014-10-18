@@ -49,14 +49,17 @@ import ConfigParser
     """
     conf_file = {
         'history_id': self.attr.history_id,
-        'galaxy_url': request.application_url.rstrip('/') + '/',
         'api_key': get_api_key(),
         'remote_host': request.remote_addr,
-        'galaxy_paster_port': self.get_galaxy_paster_port(self.attr.galaxy_root_dir,
-                                                          self.attr.galaxy_config),
         'docker_port': self.attr.PORT,
         'cors_origin': request.host_url,
     }
+
+    if self.attr.galaxy_config.galaxy_infrastructure_url_set:
+        conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
+    else:
+        conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
+        conf_file['galaxy_paster_port'] = self.attr.galaxy_config.guess_galaxy_port()
 
     if self.attr.PASSWORD_AUTH:
         # Generate a random password + salt
@@ -79,25 +82,6 @@ import ConfigParser
         handle.write( yaml.dump(conf_file, default_flow_style=False) )
 
 %>
-</%def>
-
-<%def name="get_galaxy_paster_port(galaxy_root_dir, galaxy_config)">
-  <%
-    """
-        Get port galaxy is running on (if running under paster)
-    """
-    config = ConfigParser.SafeConfigParser({'port': '8080'})
-    config_file = galaxy_config.config_file
-    if config_file:
-        config.read( config_file )
-
-    # uWSGI galaxy installations don't use paster and only speak uWSGI not http
-    try:
-        port = config.getint('server:%s' % galaxy_config.server_name, 'port')
-    except:
-        port = None
-    return port
-  %>
 </%def>
 
 <%def name="generate_hex(length)">
