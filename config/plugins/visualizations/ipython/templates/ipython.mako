@@ -95,7 +95,7 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
 conf_file = {
     'history_id': history_id,
-    'galaxy_url': request.application_url,
+    'galaxy_url': request.application_url.rstrip('/'),
     'api_key': trans.user.api_keys[0].key,
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
