@@ -1,22 +1,15 @@
-function append_notebook(){
-    $('body').append(
-        $('<object/>', {
-            src: notebook_access_url,
-            data: notebook_access_url,
-            height: '100%',
-            width: '100%',
-        }).append(
-            $('<embded/>', {
-                src: notebook_access_url,
-                data: notebook_access_url,
-                height: '100%',
-                width: '100%',
-            })
-        )
+/**
+ * Internal function to remove content from the main area and add the notebook.
+ * Not idempotent
+ */
+function append_notebook(url){
+    $('#spinner').remove();
+    $('#main').append('<object data="' + url + '" height="95%" width="100%">'
+    +'<embed src="' + url + '" height="100%" width="100%"/></object>'
     );
 }
 
-function message_failed_auth(){
+function message_failed_auth(password){
     toastr.info(
         "Automatic authorization failed. You can manually login with:<br>" + password + "<br> <a href='https://github.com/bgruening/galaxy-ipython/wiki/Automatic-Authorization-Failed' target='_blank'>More details ...</a>",
         "Please login manually",
@@ -40,6 +33,23 @@ function message_no_auth(){
     );
 }
 
+/**
+ * Initial version of function to test availability of URL/resource
+ * http://stackoverflow.com/q/25390206/347368
+ */
+function test_ie_availability(url){
+    interval = setInterval(function(){
+        $.ajax({
+            type: "GET",
+            url: url,
+            success: function(){
+                clearInterval(interval);
+                return true;
+                //_handle_notebook_loading(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, docker_delay);
+            }
+        });
+    }, 500);
+}
 
 /**
  * Load an interactive environment (IE) from a remote URL
@@ -47,43 +57,65 @@ function message_no_auth(){
  * @param {String} password: password used to authenticate to the remote resource
  * @param {String} notebook_login_url: URL that should be POSTed to for login
  * @param {String} notebook_access_url: the URL embeded in the page and loaded
+ * @param {Boolean} apache_urls: Proxying is done outside of galaxy in the webserver
+ * @param {String} galaxy_root: root of the galaxy server, used for finding the static spinner.gif that ships with galaxy.
  * 
  * TODO: This function needs a lot of work to make it more generic:
  * TODO: exchange login_url, password, password_auth for a single function which encapsulates all the authentication procedure, as that will differ between IEs.
  */
-function load_notebook(password_auth, password, notebook_login_url, notebook_access_url){
-    if ( password_auth ) {
-        // On document ready
-        $( document ).ready(function() {
-            // Make an AJAX POST
+function load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root){
+    $( document ).ready(function() {
+        $('#main').append('<img id="spinner" src="' + galaxy_root + '/static/style/largespinner.gif" >');
+        interval = setInterval(function(){
             $.ajax({
-                type: "POST",
-                // to the Login URL
-                url: notebook_login_url,
-                // With our password
-                data: {
-                    'password': notebook_pw
+                type: "GET",
+                url: notebook_access_url,
+                success: function(){
+                    clearInterval(interval);
+                    _handle_notebook_loading(password_auth, password, notebook_login_url, notebook_access_url, apache_urls);
                 },
-                // If that is successful, load the notebook
-                success: append_notebook,
-                error: function(jqxhr, status, error){
-                    if(password_auth_jsvar && !apache_urls_jsvar){
-                        // Failure happens due to CORS
-                        message_failed_auth();
-                        append_notebook();
-                    }else{
-                        message_failed_connection();
-                        // Do we want to try and load the notebook anyway? Just in case?
-                    }
+                error: function(){
+                    console.log("Some error");
                 }
             });
+        }, 500);
+    });
+}
+
+/**
+ * Internal function
+ */
+function _handle_notebook_loading(password_auth, password, notebook_login_url, notebook_access_url, apache_urls){
+    if ( password_auth ) {
+        // Make an AJAX POST
+        $.ajax({
+            type: "POST",
+            // to the Login URL
+            url: notebook_login_url,
+            // With our password
+            data: {
+                'password': password
+            },
+            // If that is successful, load the notebook
+            success: function(){
+                append_notebook(notebook_access_url);
+            },
+            error: function(jqxhr, status, error){
+                if(password_auth && !apache_urls){
+                    // Failure happens due to CORS
+                    message_failed_auth(password);
+                    append_notebook(notebook_access_url);
+                }else{
+                    message_failed_connection();
+                    // Do we want to try and load the notebook anyway? Just in case?
+                    append_notebook(notebook_access_url);
+                }
+            }
         });
     }
     else {
         // Not using password auth, just embed it to avoid content-origin issues.
         message_no_auth();
-        $( document ).ready(function() {
-            append_notebook();
-        });
+        append_notebook(notebook_access_url);
     }
 }
