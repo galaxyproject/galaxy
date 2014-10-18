@@ -126,8 +126,7 @@ time.sleep(1)
 %>
 <html>
 <head>
-<!-- ToDo: figure out, howto inlclude the galaxy toastr.less file -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.css" rel="stylesheet"/>
+${h.css( 'base' ) }
 ${h.js( 'libs/jquery/jquery' ) }
 ${h.js( 'libs/toastr' ) }
 
