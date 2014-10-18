@@ -18,6 +18,7 @@ history_id = trans.security.encode_id( trans.history.id )
 root        = h.url_for( "/" )
 app_root    = root + "plugins/visualizations/ipython/static/"
 
+# Galaxy config parser
 config = ConfigParser.SafeConfigParser({'port': '8080'})
 config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
 
