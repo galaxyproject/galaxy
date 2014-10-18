@@ -7,18 +7,8 @@ import subprocess
 
 # Sets ID and sets up a lot of other variables
 ie.set_id("ipython")
-
-ie.register_defaults({
-    'apache_urls': False,
-    'command': 'docker',
-    'image': 'bgruening/docker-ipython-notebook',
-    'password_auth': False,
-    'ssl': False})
-
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
-# Set user's API key
-ie.attr.api_key = get_api_key()
 # Write out conf file...needs work
 ie.write_conf_file(temp_dir)
 

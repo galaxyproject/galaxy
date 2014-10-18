@@ -17,36 +17,29 @@ import ConfigParser
 <%
     """
         IEs must register their name, so it can be used in constructing strings
+
+        Additionally this method stores lots of config options we want to access elsewhere. This
+        should be refactored
     """
     self.attr.viz_id = name
-    self.attr.trans = trans
     self.attr.history_id = trans.security.encode_id( trans.history.id )
-    self.attr.h = h
-    self.attr.plugin_path = plugin_path
-    self.attr.response = response
     self.attr.galaxy_config = trans.app.config
     self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
     self.attr.root = h.url_for("/")
     self.attr.app_root = self.attr.root + "plugins/visualizations/ipython/static/"
-    self.attr.request = request
-%>
-</%def>
 
-<%def name="register_defaults(default_dict)">
-<%
     # Store our template and configuration path
-    self.attr.our_config_dir = os.path.join(self.attr.plugin_path, "config")
-    self.attr.our_template_dir = os.path.join(self.attr.plugin_path, "templates")
-    ipy_viz_config = ConfigParser.SafeConfigParser(default_dict)
-    ipy_viz_config.read( os.path.join( self.attr.our_config_dir, "ipython.conf" ) )
-    self.attr.ipy_viz_config = ipy_viz_config
+    self.attr.our_config_dir = os.path.join(plugin_path, "config")
+    self.attr.our_template_dir = os.path.join(plugin_path, "templates")
+    self.attr.viz_config = ConfigParser.SafeConfigParser(default_dict)
+    self.attr.viz_config.read( os.path.join( self.attr.our_config_dir, "ipython.conf" ) )
     # Store some variables we want by default
-    self.attr.PASSWORD_AUTH = self.attr.ipy_viz_config.getboolean("main", "password_auth")
-    self.attr.APACHE_URLS = self.attr.ipy_viz_config.getboolean("main", "apache_urls")
-    self.attr.SSL_URLS = self.attr.ipy_viz_config.getboolean("main", "ssl")
+    self.attr.PASSWORD_AUTH = self.attr.viz_config.getboolean("main", "password_auth")
+    self.attr.APACHE_URLS = self.attr.viz_config.getboolean("main", "apache_urls")
+    self.attr.SSL_URLS = self.attr.viz_config.getboolean("main", "ssl")
     self.attr.PORT = self.proxy_request_port()
 
-    HOST = self.attr.request.host
+    HOST = request.host
     # Strip out port, we just want the URL this galaxy server was accessed at.
     if ':' in HOST:
         HOST = HOST[0:HOST.index(':')]
@@ -58,13 +51,13 @@ import ConfigParser
 <%
     conf_file = {
         'history_id': self.attr.history_id,
-        'galaxy_url': self.attr.request.application_url.rstrip('/') + '/',
-        'api_key': self.attr.api_key,
-        'remote_host': self.attr.request.remote_addr,
+        'galaxy_url': request.application_url.rstrip('/') + '/',
+        'api_key': get_api_key(),
+        'remote_host': request.remote_addr,
         'galaxy_paster_port': self.get_galaxy_paster_port(self.attr.galaxy_root_dir,
                                                           self.attr.galaxy_config),
         'docker_port': self.attr.PORT,
-        'cors_origin': self.attr.request.host_url,
+        'cors_origin': request.host_url,
     }
 
     if self.attr.PASSWORD_AUTH:
@@ -175,8 +168,8 @@ import ConfigParser
 <%def name="docker_cmd(temp_dir)">
 <%
     return '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
-        (self.attr.ipy_viz_config.get("docker", "command"), self.attr.PORT, temp_dir,
-         self.attr.ipy_viz_config.get("docker", "image"))
+        (self.attr.viz_config.get("docker", "command"), self.attr.PORT, temp_dir,
+         self.attr.viz_config.get("docker", "image"))
 %>
 </%def>
 
