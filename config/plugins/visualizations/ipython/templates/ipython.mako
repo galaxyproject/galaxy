@@ -24,8 +24,6 @@ ie.register_defaults({
 galaxy_paster_port = ie.get_galaxy_paster_port(ie.attr.galaxy_root_dir, ie.attr.galaxy_config)
 
 
-APACHE_URLS = ie.attr.ipy_viz_config.getboolean("main", "apache_urls")
-SSL_URLS = ie.attr.ipy_viz_config.getboolean("main", "ssl")
 PORT = ie.proxy_request_port()
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
@@ -57,7 +55,7 @@ else:
 notebook_access_url = ie.url_template('${PROTO}://${HOST}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb')
 notebook_login_url = ie.url_template('${PROTO}://${HOST}/ipython/${PORT}/login')
 
-docker_cmd = ie.docker_cmd(ie.attr.ipy_viz_config, PORT, temp_dir)
+docker_cmd = ie.docker_cmd(temp_dir)
 subprocess.call(docker_cmd, shell=True)
 
 %>
@@ -73,7 +71,7 @@ ${h.javascript_link( ie.attr.app_root + 'ipy-galaxy.js' )}
 
 <script type="text/javascript">
 var password_auth = ${ ie.javascript_boolean(ie.attr.PASSWORD_AUTH) };
-var apache_urls = ${ ie.javascript_boolean(APACHE_URLS) };
+var apache_urls = ${ ie.javascript_boolean(ie.attr.APACHE_URLS) };
 var notebook_login_url = '${ notebook_login_url }';
 var password = '${ ie.attr.notebook_pw }';
 var notebook_access_url = '${ notebook_access_url }';

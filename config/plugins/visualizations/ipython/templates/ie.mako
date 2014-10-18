@@ -169,10 +169,10 @@ import ConfigParser
 </%def>
 
 
-<%def name="docker_cmd(ipy_viz_config, PORT, temp_dir)">
+<%def name="docker_cmd(temp_dir)">
 <%
     return '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
-        (ipy_viz_config.get("docker", "command"), PORT, temp_dir, ipy_viz_config.get("docker",
-                                                                                     "image"))
+        (self.attr.ipy_viz_config.get("docker", "command"), self.attr.PORT, temp_dir,
+         self.attr.ipy_viz_config.get("docker", "image"))
 %>
 </%def>
