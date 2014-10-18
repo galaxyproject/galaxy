@@ -38,6 +38,28 @@ def load_notebook():
     empty_nb = empty_nb % notebook_id
     return empty_nb
 
+def proxy_request_port():
+    """
+        Refactor of our port getting...eventually this will be replaced with an API call instead.
+    """
+    # Find all ports that are already occupied
+    cmd_netstat = shlex.split("netstat -tuln")
+    p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
+
+    occupied_ports = set()
+    for line in p1.stdout.read().split('\n'):
+        if line.startswith('tcp') or line.startswith('tcp6'):
+            col = line.split()
+            local_address = col[3]
+            local_port = local_address.split(':')[-1]
+            occupied_ports.add( int(local_port) )
+
+    # Generate random free port number for our docker container
+    while True:
+        port = random.randrange(10000,15000)
+        if port not in occupied_ports:
+            break
+    return port
 
 
 galaxy_paster_port = get_galaxy_paster_port()
@@ -54,24 +76,7 @@ ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 # Prepare an empty notebook
 empty_nb = load_notebook()
 
-# Find all ports that are already occupied
-cmd_netstat = shlex.split("netstat -tuln")
-p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
-
-occupied_ports = set()
-for line in p1.stdout.read().split('\n'):
-    if line.startswith('tcp') or line.startswith('tcp6'):
-        col = line.split()
-        local_address = col[3]
-        local_port = local_address.split(':')[-1]
-        occupied_ports.add( int(local_port) )
-
-# Generate random free port number for our docker container
-while True:
-    PORT = random.randrange(10000,15000)
-    if PORT not in occupied_ports:
-        break
-
+PORT = proxy_request_port()
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
 if ':' in HOST:
