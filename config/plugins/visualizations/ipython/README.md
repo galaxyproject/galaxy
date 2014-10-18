@@ -4,7 +4,7 @@ Galaxy IPython Integration
 This projects integrates [IPython Notebook](http://ipython.org/notebook.html), a interactive computational environment, with [Galaxy](http://galaxyproject.org). 
 We hope to make Galaxy more attractive for bioinformaticians and to combine the power of both projects to unlock creativity in data analysis, but also in Next-Generation-Training courses.
 
-![IPython in Galaxy](https://raw.githubusercontent.com/bgruening/galaxy-ipython/master/images/ipython_in_galaxy.png)
+![IPython in Galaxy](https://raw.githubusercontent.com/bgruening/galaxy-ipython/master/static/images/ipython_in_galaxy.png)
 
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/jQDyTuYnn1k/0.jpg)](http://www.youtube.com/watch?v=jQDyTuYnn1k)
 
@@ -28,7 +28,7 @@ git clone https://github.com/bgruening/galaxy-ipython.git config/plugins/visuali
 
 The IPython visualisation option should be visible next to the usual Charts or Trackster options in your visualisation menue.
 
-![Starting IPython in Galaxy](https://raw.githubusercontent.com/bgruening/galaxy-ipython/master/images/start_ipython.png)
+![Starting IPython in Galaxy](https://raw.githubusercontent.com/bgruening/galaxy-ipython/master/static/images/start_ipython.png)
 
 
 Features
