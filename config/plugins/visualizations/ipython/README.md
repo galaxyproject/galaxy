@@ -44,6 +44,14 @@ Features
  * saved IPython Notebook files can be viewed in HTML and re-opened
  * self-closing and cleaning IPython docker container
 
+How does it work
+================
+
+The mako template from the Galaxy visualisation framework renders the interface and builds all files and commands needed to lunch the docker container. A config file is saved under ``/import/`` inside the docker container. The IPython webpage running in docker will be included in a HTML object and displayed to the user. 
+Depending on your configuration some JavaScript magic is done to add an object to the DOM, which will be loaded by the browser and conditionally handles login.
+Iside of docker TCP connections are monitored using cron. As soon as the user quits using the notebook, the dropping TCP connections are recognised and the cotainer cleans up after itself and kills itself.
+
+
 
 Functions and variables
 =======================
