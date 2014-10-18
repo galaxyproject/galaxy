@@ -81,7 +81,6 @@ while True:
     PORT = random.randrange(10000,15000)
     if PORT not in occupied_ports:
         break
-PORT = 14131
 
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
@@ -155,10 +154,6 @@ else:
     apache_urls_jsvar = "false"
 subprocess.call(docker_cmd, shell=True)
 
-# We need to wait until the Image and IPython in loaded
-# TODO: This can be enhanced later, with some JS spinning if needed.
-time.sleep(ipy_viz_config.getint("main", "docker_delay"))
-
 %>
 <html>
 <head>
@@ -171,13 +166,18 @@ ${h.javascript_link( app_root + 'ipy-galaxy.js' )}
 <body>
 
 <script type="text/javascript">
-password_auth = '${ password_auth_jsvar }';
-notebook_login_url = '${ notebook_login_url }';
-password = '${ notebook_pw }';
-notebook_access_url = '${ notebook_access_url }';
+var password_auth = ${ password_auth_jsvar };
+var apache_urls = ${ apache_urls_jsvar };
+var notebook_login_url = '${ notebook_login_url }';
+var password = '${ notebook_pw }';
+var notebook_access_url = '${ notebook_access_url }';
+var galaxy_root = '${ root }';
 // Load notebook
-load_notebook(password_auth, password, notebook_login_url, notebook_access_url);
+load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root);
 </script>
+
+<div id="main" width="100%" height="100%">
+</div>
 
 </body>
 </html>
