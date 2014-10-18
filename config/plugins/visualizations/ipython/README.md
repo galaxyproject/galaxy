@@ -10,6 +10,7 @@ Requirements
 For security reasons you need to have docker installed.
 For a detailed instruction how to install docker, please look at the docker website.
 
+
 Installation
 ============
 
@@ -32,6 +33,15 @@ Features
  * save the IPython Notebook into your Galaxy history
  * saved IPython Notebook files can be viewed in HTML and re-opened
  * self-closing and cleaning IPython docker container
+
+
+Security
+========
+
+ * Containers can be secured via Apache+SSL. Please see the [setup](INSTALL.md) document for more
+   information.
+ * Containers will soon have `iptables` based security to provide a minimum attempt at preventing
+   users from accessing one another's notebooks.
 
 
 Authors
