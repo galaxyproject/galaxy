@@ -4,9 +4,9 @@
  */
 function append_notebook(url){
     clear_main_area();
-    //$('#main').append('<object data="' + url + '" height="95%" width="100%">'
-    //+'<embed src="' + url + '" height="100%" width="100%"/></object>'
-    //);
+    $('#main').append('<object data="' + url + '" height="95%" width="100%">'
+    +'<embed src="' + url + '" height="100%" width="100%"/></object>'
+    );
 }
 
 function clear_main_area(){
@@ -20,8 +20,11 @@ function display_spinner(){
 
 
 /**
- * Initial version of function to test availability of URL/resource
+ * Test availability of a URL, and call a callback when done.
  * http://stackoverflow.com/q/25390206/347368
+ * @param {String} url: URL to test availability of. Must return a 200 (302->200 is OK).
+ * @param {String} callback: function to call once successfully connected.
+ *
  */
 function test_ie_availability(url, success_callback){
     var request_count = 0;
@@ -29,7 +32,6 @@ function test_ie_availability(url, success_callback){
     interval = setInterval(function(){
         $.ajax({
             type: "GET",
-            url: url + "?ie_test=1",
             success: function(){
                 clearInterval(interval);
                 success_callback();
@@ -39,24 +41,13 @@ function test_ie_availability(url, success_callback){
                 if(request_count > 30){
                     clearInterval(interval);
                     clear_main_area();
-                    console.log("Gave up after 15 seconds");
+                    toastr.error(
+                        "Could not connect to IE, contact your administrator",
+                        "Error",
+                        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
+                    );
                 }
             }
         });
     }, 500);
-}
-
-/**
- * Load an interactive environment (IE) from a remote URL
- * @param {String} password: password used to authenticate to the remote resource
- * @param {String} notebook_login_url: URL that should be POSTed to for login
- * @param {String} notebook_access_url: the URL embeded in the page and loaded
- *
- */
-function load_notebook(password, notebook_login_url, notebook_access_url, callback_function){
-    $( document ).ready(function() {
-        test_ie_availability(notebook_access_url, function(){
-            callback_function(notebook_login_url, notebook_access_url);
-        });
-    });
 }

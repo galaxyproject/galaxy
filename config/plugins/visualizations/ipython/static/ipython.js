@@ -32,6 +32,8 @@ function message_no_auth(){
  */
 function load_notebook(password, notebook_login_url, notebook_access_url){
     $( document ).ready(function() {
+        // Test notebook_login_url for accessibility, executing the login+load function whenever
+        // we've successfully connected to the IE.
         test_ie_availability(notebook_login_url, function(){
             _handle_notebook_loading(password, notebook_login_url, notebook_access_url);
         });
@@ -42,7 +44,6 @@ function load_notebook(password, notebook_login_url, notebook_access_url){
  * Must be implemented by IEs
  */
 function _handle_notebook_loading(password, notebook_login_url, notebook_access_url){
-    console.log(ie_password_auth);
     if ( ie_password_auth ) {
         // Make an AJAX POST
         $.ajax({
