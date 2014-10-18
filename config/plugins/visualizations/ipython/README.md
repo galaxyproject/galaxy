@@ -93,9 +93,12 @@ For your convience, we have added a few pre-defined functions to the IPython pro
 Security
 ========
 
-Containers should be secured via Apache+SSL for production usage. Please see the [setup](INSTALL.md) document for more information.
+By default, no security turned on. To do this, you must adjust two variables, `apache_urls` and
+`password_auth` in the configuration file (`config/ipython.conf`). 
 
-Individual notebooks are password protected through a password known only to the Galaxy user's browser and to the container. While this does not prevent port mapping followed by password bruteforcing, we believe we have succesfully limited access to the notebook to only authorized users. We are very concerned about security issues with IPython embedded within galaxy, so if you find a vulnerability in the system we've devised, please contact us and we'll patch it as soon as possible!
+The `apache_urls` variable should be set to `True`, and containers should be secured via Apache+SSL for production usage. Please see the [setup](INSTALL.md) document for more information.
+
+The `password_auth` variable should be set to `True`. It functions by generating a random password which is only shared with the docker, and the user's browser through Galaxy. In theory this should be a secure system (or at least as secure as the weakest link), however if you find a vulnerability in the system we've devised, please contact us and we'll patch it as soon as possible!
 
 
 Authors

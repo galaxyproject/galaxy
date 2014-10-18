@@ -31,7 +31,8 @@ viz_plugin_dir = os.path.join(viz_plugin_dir, "ipython")
 our_config_dir = os.path.join(viz_plugin_dir, "config")
 our_template_dir = os.path.join(viz_plugin_dir, "templates")
 ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
-                                                'bgruening/docker-ipython-notebook'})
+                                                'bgruening/docker-ipython-notebook',
+                                                'password_auth': False})
 ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
 # Ensure generation of notebook id is deterministic for the dataset. Replace with history id
@@ -69,11 +70,6 @@ if ':' in HOST:
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
-# Generate a random password + salt
-notebook_pw_salt = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(12))
-notebook_pw = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(24))
-m = hashlib.sha1()
-m.update( notebook_pw + notebook_pw_salt )
 
 conf_file = {
     'history_id': history_id,
@@ -82,12 +78,26 @@ conf_file = {
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
     'docker_port': PORT,
-    'notebook_password': 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest()),
 }
 
+if ipy_viz_config.getboolean("main", "password_auth"):
+    # Generate a random password + salt
+    notebook_pw_salt = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(12))
+    notebook_pw = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(24))
+    m = hashlib.sha1()
+    m.update( notebook_pw + notebook_pw_salt )
+    conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
+    # Should we use password based connection or "default" connection style in galaxy
+    password_auth_jsvar = "true"
+else:
+    notebook_pw = "None"
+    password_auth_jsvar = "false"
+
+# Write conf
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
     handle.write( yaml.dump(conf_file, default_flow_style=False) )
 
+# Copy over default notebook, unless the dataset this viz is running on is a notebook
 empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
 if hda.datatype.__class__.__name__ != "Ipynb":
     with open( empty_nb_path, 'w+' ) as handle:
@@ -98,12 +108,15 @@ else:
 docker_cmd = '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
     (ipy_viz_config.get("docker", "command"), PORT, temp_dir, ipy_viz_config.get("docker", "image"))
 
+# Access URLs for the notebook from within galaxy.
 if ipy_viz_config.getboolean("main", "apache_urls"):
     notebook_access_url = "http://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT )
     notebook_login_url = "http://%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
+    apache_urls_jsvar = "true"
 else:
     notebook_access_url = "http://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
     notebook_login_url = "http://%s:%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT, PORT )
+    apache_urls_jsvar = "false"
 subprocess.call(docker_cmd, shell=True)
 
 # We need to wait until the Image and IPython in loaded
@@ -117,37 +130,87 @@ ${h.js( 'libs/jquery/jquery' ) }
 </head>
 <body>
 <script type="text/javascript">
-// On document ready
-$( document ).ready(function() {
-    // Make an AJAX POST
-    $.ajax({
-        type: "POST",
-        // to the Login URL
-        url: "${ notebook_login_url }",
-        // With our password
-        data: {
-            'password': '${ notebook_pw }'
-        },
-        // If that is successful, load the notebook
-        success: function(){
-            //Append an object to the body
-            $('body').append(
-                $('<object/>', {
-                    src: '${ notebook_access_url }',
-                    height: '100%',
-                    width: '100%'
-                }).append(
-                    // And an embed to the object
-                    $('<embed/>', {
+if ( ${ password_auth_jsvar } ) {
+    // On document ready
+    $( document ).ready(function() {
+        // Make an AJAX POST
+        $.ajax({
+            type: "POST",
+            // to the Login URL
+            url: "${ notebook_login_url }",
+            // With our password
+            data: {
+                'password': '${ notebook_pw }'
+            },
+            // If that is successful, load the notebook
+            success: function(){
+                //Append an object to the body
+                $('body').append(
+                    $('<object/>', {
                         src: '${ notebook_access_url }',
                         height: '100%',
                         width: '100%'
-                    })
-                )
-            );
-        }
+                    }).append(
+                        // And an embed to the object
+                        $('<embed/>', {
+                            src: '${ notebook_access_url }',
+                            height: '100%',
+                            width: '100%'
+                        })
+                    )
+                );
+            },
+            error: function(jqxhr, status, error){
+                if(${ password_auth_jsvar } && !${ apache_urls_jsvar }){
+                    $('body').append("Error, could not automatically authorize you. Your"
+                                        + " password is: ${ notebook_pw }<br/>Ask your administrator"
+                                        + " to set apache_urls = True to make this go away");
+                    $('body').append(
+                        $('<object/>', {
+                            src: '${ notebook_access_url }',
+                            height: '100%',
+                            width: '100%'
+                        }).append(
+                            // And an embed to the object
+                            $('<embed/>', {
+                                src: '${ notebook_access_url }',
+                                height: '100%',
+                                width: '100%'
+                            })
+                        )
+                    );
+                }else{
+                    var error_msg = "<h1>Error " + status
+                        + "</h1>Could not connect to IPython Notebook: "
+                        + error + "<br/>Please check IPython configuration settings<br/>"
+                    + "Current settings:<br />"
+                    + "apache_urls: " + ${ apache_urls_jsvar } + " <br/>"
+                    + "password_auth: " + ${ password_auth_jsvar } + " <br/>";
+                    $('body').append( error_msg );
+                }
+            }
+        });
     });
-});
+}
+else {
+    // Not using password auth, just embed it to avoid content-origin issues.
+    $( document ).ready(function() {
+        $('body').append(
+            $('<object/>', {
+                src: '${ notebook_access_url }',
+                height: '100%',
+                width: '100%'
+            }).append(
+                // And an embed to the object
+                $('<embed/>', {
+                    src: '${ notebook_access_url }',
+                    height: '100%',
+                    width: '100%'
+                })
+            )
+        );
+    });
+}
 </script>
 </body>
 </html>
