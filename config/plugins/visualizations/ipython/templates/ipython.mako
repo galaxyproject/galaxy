@@ -153,7 +153,7 @@ with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
 # For now we assume all "text" datatypes are ipynbs.
 # <datatype extension="ipynb" type="galaxy.datatypes.data:Text" mimetype="application/json" subclass="True" display_in_upload="True"/>
 empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
-if hda.datatype.__class__.__name__ != "Text":
+if hda.datatype.__class__.__name__ != "Ipynb":
     with open( empty_nb_path, 'w+' ) as handle:
         handle.write( empty_nb )
 else:
