@@ -104,14 +104,14 @@ The `password_auth` variable should be set to `True`. It functions by generating
 Authors
 =======
 
- * Björn Grüning
+ * Björn Grüning <bjoern.gruening@gmail.com>
  * Eric Rasche <rasche.eric@yandex.ru>
 
 
 History
 =======
 
-- v0.1: Initial public release
+- v0.1: Initial public release (01.08.2014)
 
 
 Licence (MIT)
