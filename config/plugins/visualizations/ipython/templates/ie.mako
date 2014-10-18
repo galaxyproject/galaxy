@@ -18,8 +18,7 @@ import ConfigParser
     """
         IEs must register their name, so it can be used in constructing strings
 
-        Additionally this method stores lots of config options we want to access elsewhere. This
-        should be refactored
+        Additionally this method stores lots of config options we want to access elsewhere.
     """
     self.attr.viz_id = name
     self.attr.history_id = trans.security.encode_id( trans.history.id )
@@ -49,6 +48,11 @@ import ConfigParser
 
 <%def name="write_conf_file(output_directory)">
 <%
+    """
+        Build up a configuration file that is standard for ALL IEs.
+
+        TODO: replace hashed password with plaintext.
+    """
     conf_file = {
         'history_id': self.attr.history_id,
         'galaxy_url': request.application_url.rstrip('/') + '/',
@@ -81,6 +85,9 @@ import ConfigParser
 
 <%def name="get_galaxy_paster_port(galaxy_root_dir, galaxy_config)">
   <%
+    """
+        Get port galaxy is running on (if running under paster)
+    """
     config = ConfigParser.SafeConfigParser({'port': '8080'})
     config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
 
@@ -121,12 +128,18 @@ import ConfigParser
 
 <%def name="generate_hex(length)">
 <%
+    """
+        Generate a hex string
+    """
     return ''.join(random.choice('0123456789abcdef') for _ in range(length))
 %>
 </%def>
 
 <%def name="generate_password(length)">
 <%
+    """
+        Generate a random alphanumeric password
+    """
     return ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(length))
 %>
 </%def>
@@ -146,6 +159,18 @@ import ConfigParser
 
 <%def name="url_template(url_template)">
 <%
+    """
+        Process a URL template
+
+        There are several variables accessible to the user:
+
+            - ${PROTO} will be replaced with protocol (http/https)
+            - ${HOST} will be replaced with the correct hostname
+            - ${PORT} will be replaced with the port the docker image is attached to
+
+        In the case that `apache_urls = False`, the first instance of HOST has a PORT appeneded to
+        it, so the user doesn't have to template 2x urls.
+    """
     # Figure out our substitutions
     if self.attr.SSL_URLS:
         protocol = 'https'
@@ -167,6 +192,9 @@ import ConfigParser
 
 <%def name="docker_cmd(temp_dir)">
 <%
+    """
+        Generate and return the docker command to execute
+    """
     return '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
         (self.attr.viz_config.get("docker", "command"), self.attr.PORT, temp_dir,
          self.attr.viz_config.get("docker", "image"))
