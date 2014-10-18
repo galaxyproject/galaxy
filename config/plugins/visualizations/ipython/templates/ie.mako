@@ -184,3 +184,12 @@ var apache_urls = ${ self.javascript_boolean(self.attr.APACHE_URLS) };
 var password = '${ self.attr.notebook_pw }';
 var galaxy_root = '${ self.attr.root }';
 </%def>
+
+
+<%def name="load_default_js()">
+${h.css( 'base' ) }
+${h.js( 'libs/jquery/jquery' ) }
+${h.js( 'libs/toastr' ) }
+${h.javascript_link( ie.attr.app_root + 'ie.js' )}
+${h.javascript_link( ie.attr.app_root + ie.attr.viz_name + '.js' )}
+</%def>
