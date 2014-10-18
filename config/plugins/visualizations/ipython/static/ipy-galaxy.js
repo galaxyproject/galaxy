@@ -67,9 +67,9 @@ function load_notebook(password_auth, password, notebook_login_url, notebook_acc
                 // If that is successful, load the notebook
                 success: append_notebook,
                 error: function(jqxhr, status, error){
-                    message_failed_auth();
                     if(password_auth_jsvar && !apache_urls_jsvar){
                         // Failure happens due to CORS
+                        message_failed_auth();
                         append_notebook();
                     }else{
                         message_failed_connection();
