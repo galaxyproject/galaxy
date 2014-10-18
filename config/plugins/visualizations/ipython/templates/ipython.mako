@@ -14,7 +14,6 @@ import ConfigParser
 galaxy_config = trans.app.config
 galaxy_root_dir = os.path.abspath(galaxy_config.root)
 history_id = trans.security.encode_id( trans.history.id )
-dataset_id = trans.security.encode_id( hda.id )
 # Routes
 root        = h.url_for( "/" )
 app_root    = root + "plugins/visualizations/ipython/static/"
