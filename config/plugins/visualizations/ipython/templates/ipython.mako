@@ -112,7 +112,7 @@ if ':' in HOST:
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
-############### Getting of port galaxy is being served on.
+# Get port galaxy is being served on, if it is being served on a single port via paste process
 p1 = subprocess.Popen(shlex.split("""ps a"""), stdout=subprocess.PIPE)
 
 galaxy_paster_pids = set()
@@ -128,7 +128,7 @@ galaxy_paster_pid = galaxy_paster_pids.pop()
 galaxy_paster_port = None
 if len(galaxy_paster_pid) > 0:
     # Find all files opened by the process of interest
-    p1 = subprocess.Popen(shlex.split("""lsof -p %d""" % (int(galaxy_paster_pid),) ),
+    p1 = subprocess.Popen(shlex.split("""lsof -P -p %d""" % (int(galaxy_paster_pid),) ),
                           stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
     # Grep out the TCP connections opened by this process
     p2 = subprocess.Popen(shlex.split("""grep -o 'TCP [^:]*:[0-9]*'"""), stdin=p1.stdout,
