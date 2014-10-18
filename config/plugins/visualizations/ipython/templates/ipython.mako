@@ -85,11 +85,30 @@ if ':' in HOST:
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
+############### Getting of port galaxy is being served on.
+p1 = subprocess.Popen(shlex.split("""ps a"""), stdout=subprocess.PIPE)
+p2 = subprocess.Popen(shlex.split("""grep 'python ./scripts'"""), stdin=p1.stdout,
+                      stdout=subprocess.PIPE)
+p3 = subprocess.Popen(shlex.split("""grep -v 'grep'"""), stdin=p2.stdout, stdout=subprocess.PIPE)
+p4 = subprocess.Popen(shlex.split("""awk '{print $1}'"""), stdin=p3.stdout, stdout=subprocess.PIPE)
+galaxy_paster_pid = p4.stdout.read()
+galaxy_paster_port = None
+if len(galaxy_paster_pid) > 0:
+    print "Found pid: " + str(galaxy_paster_pid)
+    p1 = subprocess.Popen(shlex.split("""netstat -ntpa"""), stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(shlex.split("""grep %d""" % (int(galaxy_paster_pid), )), stdin=p1.stdout,
+                          stdout=subprocess.PIPE)
+    p3 = subprocess.Popen(shlex.split("""awk '{print $4}'"""), stdin=p2.stdout,
+                          stdout=subprocess.PIPE)
+    p4 = subprocess.Popen(shlex.split("""cut -d: -f2"""), stdin=p3.stdout, stdout=subprocess.PIPE)
+    galaxy_paster_port = p4.stdout.read()
+
 conf_file = {
     'history_id': history_id,
     'galaxy_url': request.application_url,
     'api_key': trans.user.api_keys[0].key,
     'remote_host': request.remote_addr,
+    'galaxy_paster_port': galaxy_paster_port,
 }
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
     handle.write( yaml.dump(conf_file, default_flow_style=False) )
