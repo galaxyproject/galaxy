@@ -55,7 +55,7 @@ empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
 with open( empty_nb_path, 'w+' ) as handle:
     handle.write( empty_nb )
 
-docker_cmd = 'docker run -d -p %s:6789 -v "%s:/import/" bgruening/docker-ipython-notebook' % (PORT, temp_dir)
+docker_cmd = 'docker run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" bgruening/docker-ipython-notebook' % (PORT, temp_dir)
 
 subprocess.call(docker_cmd, shell=True)
 
