@@ -23,7 +23,7 @@ Copy the template and config folder in your ``GALAXY_ROOT/config/plugins/visuali
 Alternativly, you can clone the repository with
 
 ```bash
-git clone https://github.com/bgruening/galaxy-ipython.git config/plugins/viz/ipython
+git clone https://github.com/bgruening/galaxy-ipython.git config/plugins/visualizations/ipython
 ````
 
 The IPython visualisation option should be visible next to the usual Charts or Trackster options in your visualisation menue.
