@@ -54,7 +54,18 @@ empty_nb = """{
  ]
 }""" % (notebook_id, )
 
-PORT = 7777
+
+# Find all ports that are alreaxy occupied
+netstat_cmd = "netstat -tnaAinet | awk 'NR >= 3 { print $4 }' | cut -d: -f2 | sort -un"
+netstat_out = subprocess.check_output( shlex.split( netstat_cmd ))
+occupied_ports = [port for port in netstat_out.split('\n') if port.isdigit()]
+
+# Generate random free port number for our docker container
+while True:
+    PORT = random.randrange(10000,15000)
+    if PORTS not in occupied_ports:
+        break
+
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
 if ':' in HOST:
