@@ -32,12 +32,15 @@ function test_ie_availability(url, success_callback){
         $.ajax({
             url: url,
             type: "GET",
+            timeout: 500,
             success: function(){
+                console.log("Connected to IE, returning");
                 clearInterval(interval);
                 success_callback();
             },
-            error: function(){
+            error: function(jqxhr, status, error){
                 request_count++;
+                console.log("Request " + request_count);
                 if(request_count > 30){
                     clearInterval(interval);
                     clear_main_area();
