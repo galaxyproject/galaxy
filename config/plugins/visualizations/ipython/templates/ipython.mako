@@ -1,19 +1,13 @@
 <%namespace file="ie.mako" name="ie"/>
 <%
 import os
-#import sys
-#import time
-#import yaml
-#import shlex
-#import random
 import shutil
-#import hashlib
 import tempfile
 import subprocess
-#import ConfigParser
 
+# Sets ID and sets up a lot of other variables
 ie.set_id("ipython")
-ie.register_galaxy_objects(trans, h, response, plugin_path, request)
+
 ie.register_defaults({
     'apache_urls': False,
     'command': 'docker',
@@ -29,7 +23,6 @@ ie.attr.api_key = get_api_key()
 ie.write_conf_file(temp_dir)
 
 ## IPython Specific
-
 # Prepare an empty notebook
 notebook_id = ie.generate_hex(64)
 with open( os.path.join( ie.attr.our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
@@ -45,7 +38,6 @@ else:
 
 
 ## General IE specific
-
 # Access URLs for the notebook from within galaxy.
 notebook_access_url = ie.url_template('${PROTO}://${HOST}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb')
 notebook_login_url = ie.url_template('${PROTO}://${HOST}/ipython/${PORT}/login')
@@ -66,9 +58,7 @@ var notebook_access_url = '${ notebook_access_url }';
 // Load notebook
 load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root);
 </script>
-
 <div id="main" width="100%" height="100%">
 </div>
-
 </body>
 </html>

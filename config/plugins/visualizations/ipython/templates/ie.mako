@@ -15,12 +15,10 @@ import ConfigParser
 
 <%def name="set_id(name)">
 <%
+    """
+        IEs must register their name, so it can be used in constructing strings
+    """
     self.attr.viz_id = name
-%>
-</%def>
-
-<%def name="register_galaxy_objects(trans, h, response, plugin_path, request)">
-<%
     self.attr.trans = trans
     self.attr.history_id = trans.security.encode_id( trans.history.id )
     self.attr.h = h
