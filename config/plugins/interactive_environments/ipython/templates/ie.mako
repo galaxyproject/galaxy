@@ -30,7 +30,10 @@ import ConfigParser
     self.attr.our_config_dir = os.path.join(plugin_path, "config")
     self.attr.our_template_dir = os.path.join(plugin_path, "templates")
     self.attr.viz_config = ConfigParser.SafeConfigParser(default_dict)
-    self.attr.viz_config.read( os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".conf" ) )
+    conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
+    if not os.path.exists( conf_path ):
+        conf_path = "%s.sample" % conf_path
+    self.attr.viz_config.read( conf_path )
     # Store some variables we want by default
     self.attr.PASSWORD_AUTH = self.attr.viz_config.getboolean("main", "password_auth")
     self.attr.APACHE_URLS = self.attr.viz_config.getboolean("main", "apache_urls")
