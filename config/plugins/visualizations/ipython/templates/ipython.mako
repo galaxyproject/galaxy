@@ -126,7 +126,11 @@ time.sleep(1)
 %>
 <html>
 <head>
+<!-- ToDo: figure out, howto inlclude the galaxy toastr.less file -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.css" rel="stylesheet"/>
 ${h.js( 'libs/jquery/jquery' ) }
+${h.js( 'libs/toastr' ) }
+
 </head>
 <body>
 <script type="text/javascript">
@@ -150,21 +154,23 @@ if ( ${ password_auth_jsvar } ) {
                 )
             },
             error: function(jqxhr, status, error){
+
+                toastr.info(
+                    "Automatic authorization failed. You can manually login with:<br>${ notebook_pw }<br> <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
+                    "Please login manually",
+                    {'closeButton': true, 'timeOut': 30000, 'tapToDismiss': false}
+                );
+
                 if(${ password_auth_jsvar } && !${ apache_urls_jsvar }){
-                    $('body').append("Error, could not automatically authorize you. Your"
-                                        + " password is: ${ notebook_pw }<br/>Ask your administrator"
-                                        + " to set apache_urls = True to make this go away");
                     $('body').append('<object data="${ notebook_access_url }" height="100%" width="100%">'
                     +'<embed src="${ notebook_access_url }" height="100%" width="100%"/></object>'
                     )
                 }else{
-                    var error_msg = "<h1>Error " + status
-                        + "</h1>Could not connect to IPython Notebook: "
-                        + error + "<br/>Please check IPython configuration settings<br/>"
-                    + "Current settings:<br />"
-                    + "apache_urls: " + ${ apache_urls_jsvar } + " <br/>"
-                    + "password_auth: " + ${ password_auth_jsvar } + " <br/>";
-                    $('body').append( error_msg );
+                    toastr.error(
+                        "Could not connect to IPython Notebook. Please contact your administrator. <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
+                        "Security warning", 
+                        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': true}
+                        );
                 }
             }
         });
@@ -172,6 +178,11 @@ if ( ${ password_auth_jsvar } ) {
 }
 else {
     // Not using password auth, just embed it to avoid content-origin issues.
+    toastr.warning(
+        "IPython Notebook was lunched wihtout authentication. This is a security issue. <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
+        "Security warning", 
+        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
+        );
     $( document ).ready(function() {
         $('body').append('<object data="${ notebook_access_url }" height="100%" width="100%">'
         +'<embed src="${ notebook_access_url }" height="100%" width="100%"/></object>'
