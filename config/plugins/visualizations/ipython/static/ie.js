@@ -23,17 +23,25 @@ function display_spinner(){
  * Initial version of function to test availability of URL/resource
  * http://stackoverflow.com/q/25390206/347368
  */
-function test_ie_availability(url){
+function test_ie_availability(url, success_callback){
+    var request_count = 0;
+    display_spinner();
     interval = setInterval(function(){
         $.ajax({
             type: "GET",
             url: url,
             success: function(){
                 clearInterval(interval);
-                return true;
-                //_handle_notebook_loading(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, docker_delay);
+                success_callback();
+            },
+            error: function(){
+                request_count++;
+                if(request_count > 30){
+                    clearInterval(interval);
+                    clear_main_area();
+                    console.log("Gave up after 15 seconds");
+                }
             }
         });
     }, 500);
 }
-

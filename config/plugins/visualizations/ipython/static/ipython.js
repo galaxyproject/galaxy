@@ -37,27 +37,9 @@ function message_no_auth(){
  */
 function load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root){
     $( document ).ready(function() {
-        var counter = 0;
-        display_spinner();
-        interval = setInterval(function(){
-            $.ajax({
-                type: "GET",
-                url: notebook_access_url,
-                success: function(){
-                    counter++;
-                    clearInterval(interval);
-                    _handle_notebook_loading(password_auth, password, notebook_login_url, notebook_access_url, apache_urls);
-                },
-                error: function(a, b, c){
-                    counter++;
-                    if(counter > 10){
-                        clearInterval(interval);
-                        console.log("Giving up!");
-                    }
-                    console.log("Some error");
-                }
-            });
-        }, 500);
+        test_ie_availability(notebook_access_url, function(){
+            _handle_notebook_loading(password_auth, password, notebook_login_url, notebook_access_url, apache_urls);
+        });
     });
 }
 
