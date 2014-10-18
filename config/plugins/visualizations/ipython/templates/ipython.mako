@@ -47,14 +47,15 @@ var notebook_login_url = '${ notebook_login_url }';
 var notebook_access_url = '${ notebook_access_url }';
 // Load notebook
 
-//require.config({
-//    baseUrl: app_root,
-//    paths: {
-//        "plugin" : app_root,
-//    },
-//});
-//requirejs(['plugin/ie', 'plugin/ipython']);
-load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root);
+require.config({
+    baseUrl: app_root,
+    paths: {
+        "plugin" : app_root,
+    },
+});
+requirejs(['plugin/ie', 'plugin/ipython'], function(){
+    load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root);
+});
 </script>
 <div id="main" width="100%" height="100%">
 </div>

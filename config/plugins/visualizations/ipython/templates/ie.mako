@@ -216,6 +216,4 @@ ${h.css( 'base' ) }
 ${h.js( 'libs/jquery/jquery',
         'libs/toastr',
         'libs/require')}
-${h.javascript_link( self.attr.app_root + 'ie.js' )}
-${h.javascript_link( self.attr.app_root + self.attr.viz_id + '.js' )}
 </%def>
