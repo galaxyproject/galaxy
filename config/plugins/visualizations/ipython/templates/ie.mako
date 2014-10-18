@@ -22,13 +22,13 @@ import ConfigParser
     self.attr.galaxy_config = trans.app.config
     self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
     self.attr.root = h.url_for("/")
-    self.attr.app_root = self.attr.root + "plugins/visualizations/ipython/static/"
+    self.attr.app_root = self.attr.root + "plugins/visualizations/" + self.attr.viz_id + "/static/"
 
     # Store our template and configuration path
     self.attr.our_config_dir = os.path.join(plugin_path, "config")
     self.attr.our_template_dir = os.path.join(plugin_path, "templates")
     self.attr.viz_config = ConfigParser.SafeConfigParser(default_dict)
-    self.attr.viz_config.read( os.path.join( self.attr.our_config_dir, "ipython.conf" ) )
+    self.attr.viz_config.read( os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".conf" ) )
     # Store some variables we want by default
     self.attr.PASSWORD_AUTH = self.attr.viz_config.getboolean("main", "password_auth")
     self.attr.APACHE_URLS = self.attr.viz_config.getboolean("main", "apache_urls")
@@ -39,7 +39,7 @@ import ConfigParser
 %>
 </%def>
 
-<%def name="write_conf_file(output_directory)">
+<%def name="write_conf_file(output_directory, extra={})">
 <%
     """
         Build up a configuration file that is standard for ALL IEs.
@@ -67,6 +67,10 @@ import ConfigParser
         # Should we use password based connection or "default" connection style in galaxy
     else:
         notebook_pw = "None"
+
+    # Some will need to pass extra data
+    for extra_key in extra:
+        conf_file[extra_key] = extra[extra_key]
 
     self.attr.notebook_pw = notebook_pw
     # Write conf
@@ -188,9 +192,9 @@ import ConfigParser
     """
         Generate and return the docker command to execute
     """
-    return '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
-        (self.attr.viz_config.get("docker", "command"), self.attr.PORT, temp_dir,
-         self.attr.viz_config.get("docker", "image"))
+    return '%s run -d --sig-proxy=true -p %s:%s -v "%s:/import/" %s' % \
+        (self.attr.viz_config.get("docker", "command"), self.attr.PORT, self.attr.docker_port,
+         temp_dir, self.attr.viz_config.get("docker", "image"))
 %>
 </%def>
 
@@ -200,7 +204,6 @@ import ConfigParser
 ie_password_auth = ${ self.javascript_boolean(self.attr.PASSWORD_AUTH) };
 ie_apache_urls = ${ self.javascript_boolean(self.attr.APACHE_URLS) };
 ie_password = '${ self.attr.notebook_pw }';
-// Do these need to be global as well??
 var galaxy_root = '${ self.attr.root }';
 var app_root = '${ self.attr.app_root }';
 </%def>

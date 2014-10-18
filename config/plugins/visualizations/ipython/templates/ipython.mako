@@ -7,6 +7,7 @@ import subprocess
 
 # Sets ID and sets up a lot of other variables
 ie.set_id("ipython")
+ie.attr.docker_port = 6789
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 # Write out conf file...needs work
