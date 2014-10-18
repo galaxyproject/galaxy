@@ -92,7 +92,7 @@ conf_file = {
     'remote_host': request.remote_addr,
 }
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
-    handle.write( yaml.dump(conf_file) )
+    handle.write( yaml.dump(conf_file, default_flow_style=False) )
 
 # TODO: Implement proper IPyNB datatype atop a proper JSON datatype
 # For now we assume all "text" datatypes are ipynbs.
