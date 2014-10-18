@@ -77,7 +77,7 @@ while True:
     PORT = random.randrange(10000,15000)
     if PORTS not in occupied_ports:
         break
-
+print "Starting docker on port %s" % PORT
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
 if ':' in HOST:
@@ -91,17 +91,19 @@ p2 = subprocess.Popen(shlex.split("""grep 'python ./scripts'"""), stdin=p1.stdou
                       stdout=subprocess.PIPE)
 p3 = subprocess.Popen(shlex.split("""grep -v 'grep'"""), stdin=p2.stdout, stdout=subprocess.PIPE)
 p4 = subprocess.Popen(shlex.split("""awk '{print $1}'"""), stdin=p3.stdout, stdout=subprocess.PIPE)
-galaxy_paster_pid = p4.stdout.read()
+# Only take first PID in case we have multiple.
+galaxy_paster_pid = p4.stdout.read().split('\n')[0]
 galaxy_paster_port = None
 if len(galaxy_paster_pid) > 0:
-    print "Found pid: " + str(galaxy_paster_pid)
-    p1 = subprocess.Popen(shlex.split("""netstat -ntpa"""), stdout=subprocess.PIPE)
-    p2 = subprocess.Popen(shlex.split("""grep %d""" % (int(galaxy_paster_pid), )), stdin=p1.stdout,
+    # Find all files opened by the process of interest
+    p1 = subprocess.Popen(shlex.split("""lsof -p %d""" % (int(galaxy_paster_pid),) ), stdout=subprocess.PIPE)
+    # Grep out the TCP connections opened by this process
+    p2 = subprocess.Popen(shlex.split("""grep -o 'TCP [^:]*:[0-9]*'"""), stdin=p1.stdout,
                           stdout=subprocess.PIPE)
-    p3 = subprocess.Popen(shlex.split("""awk '{print $4}'"""), stdin=p2.stdout,
+    # Remove 'TCP *:' from 'TCP *:4000'
+    p3 = subprocess.Popen(shlex.split("""cut -d: -f2"""), stdin=p2.stdout,
                           stdout=subprocess.PIPE)
-    p4 = subprocess.Popen(shlex.split("""cut -d: -f2"""), stdin=p3.stdout, stdout=subprocess.PIPE)
-    galaxy_paster_port = p4.stdout.read()
+    galaxy_paster_port = p3.stdout.read().strip()
 
 conf_file = {
     'history_id': history_id,
