@@ -64,6 +64,14 @@ def proxy_request_port():
 def generate_pasword(length=12):
     return ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(length))
 
+def javascript_boolean(boolean):
+    """
+        Convenience function to convert boolean for use in JS
+    """
+    if boolean:
+        return "true";
+    else:
+        return "false"
 
 galaxy_paster_port = get_galaxy_paster_port()
 
