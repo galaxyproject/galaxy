@@ -100,8 +100,10 @@ docker_cmd = '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
 
 if ipy_viz_config.getboolean("main", "apache_urls"):
     notebook_access_url = "http://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT )
+    notebook_login_url = "http://%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
 else:
     notebook_access_url = "http://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT )
+    notebook_login_url = "http://%s:%s/ipython/%s/login?next=%%2Fipython%%2F%s%%2Fnotebooks%%2Fipython_galaxy_notebook.ipynb" % ( HOST, PORT, PORT, PORT )
 subprocess.call(docker_cmd, shell=True)
 
 # We need to wait until the Image and IPython in loaded
@@ -110,13 +112,35 @@ time.sleep(1)
 
 %>
 <html>
-
-
+<head>
+${h.js( 'libs/jquery/jquery' ) }
+</head>
 <body>
-Your password is: ${ notebook_pw }
-    <object data="${notebook_access_url}" height="100%" width="100%">
-        <embed src="${notebook_access_url}" height="100%" width="100%">
-        </embed>
-    </object>
+<script type="text/javascript">
+// On document ready
+$( document ).ready(function() {
+    // Make an AJAX POST
+    $.ajax({
+        type: "POST",
+        // to the Login URL
+        url: "${ notebook_login_url }",
+        // With our password
+        data: {
+            'password': '${ notebook_pw }'
+        },
+        // If that is successful, load the iframe element
+        success: function(){
+            var frame = $('<iframe />', {
+                name: 'remote_notebook',
+                id: 'remote_notebook',
+                src: '${ notebook_access_url }',
+                height: '100%',
+                width: '100%'
+            });
+            frame.appendTo('body');
+        }
+    });
+});
+</script>
 </body>
 </html>
