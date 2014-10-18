@@ -157,7 +157,7 @@ if ( ${ password_auth_jsvar } ) {
                 toastr.info(
                     "Automatic authorization failed. You can manually login with:<br>${ notebook_pw }<br> <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
                     "Please login manually",
-                    {'closeButton': true, 'timeOut': 30000, 'tapToDismiss': false}
+                    {'closeButton': true, 'timeOut': 100000, 'tapToDismiss': false}
                 );
 
                 if(${ password_auth_jsvar } && !${ apache_urls_jsvar }){
@@ -167,7 +167,7 @@ if ( ${ password_auth_jsvar } ) {
                 }else{
                     toastr.error(
                         "Could not connect to IPython Notebook. Please contact your administrator. <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
-                        "Security warning", 
+                        "Security warning",
                         {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': true}
                         );
                 }
@@ -179,7 +179,7 @@ else {
     // Not using password auth, just embed it to avoid content-origin issues.
     toastr.warning(
         "IPython Notebook was lunched wihtout authentication. This is a security issue. <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
-        "Security warning", 
+        "Security warning",
         {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
         );
     $( document ).ready(function() {
