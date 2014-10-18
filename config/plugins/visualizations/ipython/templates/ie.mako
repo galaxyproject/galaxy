@@ -19,7 +19,7 @@ import ConfigParser
 %>
 </%def>
 
-<%def name="register_galaxy_objects(trans, h, response, plugin_path)">
+<%def name="register_galaxy_objects(trans, h, response, plugin_path, request)">
 <%
     self.attr.trans = trans
     self.attr.history_id = trans.security.encode_id( trans.history.id )
@@ -30,6 +30,7 @@ import ConfigParser
     self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
     self.attr.root = h.url_for("/")
     self.attr.app_root = self.attr.root + "plugins/visualizations/ipython/static/"
+    self.attr.request = request
 %>
 </%def>
 
@@ -41,6 +42,44 @@ import ConfigParser
     ipy_viz_config = ConfigParser.SafeConfigParser(default_dict)
     ipy_viz_config.read( os.path.join( self.attr.our_config_dir, "ipython.conf" ) )
     self.attr.ipy_viz_config = ipy_viz_config
+    # Store some variables we want by default
+    self.attr.PASSWORD_AUTH = self.attr.ipy_viz_config.getboolean("main", "password_auth")
+    self.attr.APACHE_URLS = self.attr.ipy_viz_config.getboolean("main", "apache_urls")
+    self.attr.SSL_URLS = self.attr.ipy_viz_config.getboolean("main", "ssl")
+    self.attr.PORT = self.proxy_request_port()
+    self.attr.HOST = self.attr.request.host
+%>
+</%def>
+
+<%def name="write_conf_file(output_directory)">
+<%
+    conf_file = {
+        'history_id': self.attr.history_id,
+        'galaxy_url': self.attr.request.application_url.rstrip('/') + '/',
+        'api_key': self.attr.api_key,
+        'remote_host': self.attr.request.remote_addr,
+        'galaxy_paster_port': self.get_galaxy_paster_port(self.attr.galaxy_root_dir,
+                                                          self.attr.galaxy_config),
+        'docker_port': self.attr.PORT,
+        'cors_origin': self.attr.request.host_url,
+    }
+
+    if self.attr.PASSWORD_AUTH:
+        # Generate a random password + salt
+        notebook_pw_salt = self.generate_password(length=12)
+        notebook_pw = self.generate_password(length=24)
+        m = hashlib.sha1()
+        m.update( notebook_pw + notebook_pw_salt )
+        conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
+        # Should we use password based connection or "default" connection style in galaxy
+    else:
+        notebook_pw = "None"
+
+    self.attr.notebook_pw = notebook_pw
+    # Write conf
+    with open( os.path.join( output_directory, 'conf.yaml' ), 'wb' ) as handle:
+        handle.write( yaml.dump(conf_file, default_flow_style=False) )
+
 %>
 </%def>
 
@@ -105,6 +144,27 @@ import ConfigParser
         return "true";
     else:
         return "false"
+%>
+</%def>
+
+
+<%def name="url_template(url_template)">
+<%
+    # Figure out our substitutions
+    if self.attr.SSL_URLS:
+        protocol = 'https'
+    else:
+        protocol = 'http'
+
+    if not self.attr.APACHE_URLS:
+        # If they are not using apache URLs, that implies there's a port attached to the host
+        # string, thus we replace just the first instance of host that we see.
+        url_template = url_template.replace('${HOST}', '${HOST}:${PORT}', 1)
+
+    url = url_template.replace('${PROTO}', protocol) \
+            .replace('${HOST}', self.attr.HOST) \
+            .replace('${PORT}', str(self.attr.PORT))
+    return url
 %>
 </%def>
 
