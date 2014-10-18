@@ -54,7 +54,7 @@ require.config({
     },
 });
 requirejs(['plugin/ie', 'plugin/ipython'], function(){
-    load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root);
+    load_notebook(password, notebook_login_url, notebook_access_url);
 });
 </script>
 <div id="main" width="100%" height="100%">

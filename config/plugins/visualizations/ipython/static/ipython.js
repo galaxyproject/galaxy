@@ -25,28 +25,23 @@ function message_no_auth(){
 
 /**
  * Load an interactive environment (IE) from a remote URL
- * @param {Boolean} password_auth Whether or not this resource requires password authentication
  * @param {String} password: password used to authenticate to the remote resource
  * @param {String} notebook_login_url: URL that should be POSTed to for login
  * @param {String} notebook_access_url: the URL embeded in the page and loaded
- * @param {Boolean} apache_urls: Proxying is done outside of galaxy in the webserver
- * @param {String} galaxy_root: root of the galaxy server, used for finding the static spinner.gif that ships with galaxy.
  *
- * TODO: This function needs a lot of work to make it more generic:
- * TODO: exchange login_url, password, password_auth for a single function which encapsulates all the authentication procedure, as that will differ between IEs.
  */
-function load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root){
+function load_notebook(password, notebook_login_url, notebook_access_url){
     $( document ).ready(function() {
         test_ie_availability(notebook_access_url, function(){
-            _handle_notebook_loading(password_auth, password, notebook_login_url, notebook_access_url, apache_urls);
+            _handle_notebook_loading(notebook_login_url, notebook_access_url);
         });
     });
 }
 
 /**
- * Internal function
+ * Must be implemented by IEs
  */
-function _handle_notebook_loading(password_auth, password, notebook_login_url, notebook_access_url, apache_urls){
+function _handle_notebook_loading(notebook_login_url, notebook_access_url){
     if ( password_auth ) {
         // Make an AJAX POST
         $.ajax({
