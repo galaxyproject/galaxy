@@ -54,9 +54,22 @@ empty_nb = """{
 }""" % (notebook_id, )
 
 
-# Find all ports that are alreaxy occupied
-netstat_cmd = "netstat -tnaAinet | awk 'NR >= 3 { print $4 }' | cut -d: -f2 | sort -un"
-netstat_out = subprocess.check_output( shlex.split( netstat_cmd ))
+# Find all ports that are already occupied
+import shlex
+cmd_netstat = shlex.split("netstat -tnaAinet")
+p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
+
+cmd_awk = shlex.split("awk 'NR >= 3 { print $4 }'")
+p2 = subprocess.Popen(cmd_awk, stdin=p1.stdout, stdout=subprocess.PIPE)
+
+cmd_cut = shlex.split("cut -d: -f2")
+p3 = subprocess.Popen(cmd_cut, stdin=p2.stdout, stdout=subprocess.PIPE)
+
+cmd_sort = shlex.split("sort -un")
+p4 = subprocess.Popen(cmd_sort, stdin=p3.stdout, stdout=subprocess.PIPE)
+
+netstat_out = p4.stdout.read()
+
 occupied_ports = [port for port in netstat_out.split('\n') if port.isdigit()]
 
 # Generate random free port number for our docker container
