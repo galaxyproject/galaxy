@@ -167,7 +167,7 @@ if ( ${ password_auth_jsvar } ) {
             error: function(jqxhr, status, error){
 
                 toastr.info(
-                    "Automatic authorization failed. You can manually login with:<br>${ notebook_pw }<br> <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
+                    "Automatic authorization failed. You can manually login with:<br>${ notebook_pw }<br> <a href='https://github.com/bgruening/galaxy-ipython/wiki/Automatic-Authorization-Failed' target='_blank'>More details ...</a>",
                     "Please login manually",
                     {'closeButton': true, 'timeOut': 100000, 'tapToDismiss': false}
                 );
@@ -178,7 +178,7 @@ if ( ${ password_auth_jsvar } ) {
                     )
                 }else{
                     toastr.error(
-                        "Could not connect to IPython Notebook. Please contact your administrator. <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
+                        "Could not connect to IPython Notebook. Please contact your administrator. <a href='https://github.com/bgruening/galaxy-ipython/wiki/Could-not-connect-to-IPython-Notebook' target='_blank'>More details ...</a>",
                         "Security warning",
                         {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': true}
                         );
@@ -190,7 +190,7 @@ if ( ${ password_auth_jsvar } ) {
 else {
     // Not using password auth, just embed it to avoid content-origin issues.
     toastr.warning(
-        "IPython Notebook was lunched wihtout authentication. This is a security issue. <a href='https://github.com/bgruening/galaxy-ipython' target='_blank'>More details ...</a>",
+        "IPython Notebook was lunched without authentication. This is a security issue. <a href='https://github.com/bgruening/galaxy-ipython/wiki/IPython-Notebook-was-lunched-without-authentication' target='_blank'>More details ...</a>",
         "Security warning",
         {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
         );
