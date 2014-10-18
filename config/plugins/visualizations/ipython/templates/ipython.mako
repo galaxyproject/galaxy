@@ -28,7 +28,7 @@ if not os.path.isabs(viz_plugin_dir):
 viz_plugin_dir = os.path.join(viz_plugin_dir, "ipython")
 # Store our template and configuration path
 our_config_dir = os.path.join(viz_plugin_dir, "config")
-our_template_dir = os.path.join(viz_plugin_dir, "template")
+our_template_dir = os.path.join(viz_plugin_dir, "templates")
 ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
                                                 'bgruening/docker-ipython-notebook'})
 ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
@@ -37,49 +37,10 @@ ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 # whenever we figure out how to access that.
 random.seed( history_id )
 notebook_id = ''.join(random.choice('0123456789abcdef') for _ in range(64))
-empty_nb = """{
- "metadata": {
-  "name": "",
-  "signature": "sha256:%s"
- },
- "nbformat": 3,
- "nbformat_minor": 0,
- "worksheets": [
-  {
-   "cells": [
-    {
-     "cell_type": "heading",
-     "level": 1,
-     "metadata": {},
-     "source": [
-      "Welcome to the interactive Galaxy IPython Notebook."
-     ]
-    },
-    {
-     "cell_type": "markdown",
-     "metadata": {},
-     "source": [
-      "You can access your data via the dataset number. For example, `handle = get(42)`.\\n",
-      "To save data, write your data to a file, and then call `put('filename.txt')`. The dataset will then be available in your galaxy history.\\n",
-      "To save your notebook to galaxy, click the large green button at the top right of the IPython interface"
-     ]
-    },
-    {
-     "cell_type": "code",
-     "collapsed": false,
-     "input": [
-     ],
-     "language": "python",
-     "metadata": {},
-     "outputs": [],
-     "prompt_number": 1
-    }
-   ],
-   "metadata": {}
-  }
- ]
-}
-""" % (notebook_id, )
+
+with open( os.path.join( our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
+    empty_nb = nb_handle.read()
+empty_nb = empty_nb % notebook_id
 
 
 # Find all ports that are already occupied
