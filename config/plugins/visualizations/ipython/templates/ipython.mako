@@ -11,7 +11,8 @@ import tempfile
 import subprocess
 import ConfigParser
 
-galaxy_root_dir = os.path.abspath(trans.app.config.root)
+galaxy_config = trans.app.config
+galaxy_root_dir = os.path.abspath(galaxy_config.root)
 history_id = trans.security.encode_id( trans.history.id )
 dataset_id = trans.security.encode_id( hda.id )
 
@@ -20,9 +21,10 @@ config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
 
 # uWSGI galaxy installations don't use paster and only speak uWSGI not http
 try:
-    galaxy_paster_port = config.getint('server:main', 'port')
+    galaxy_paster_port = config.getint('server:%s' % galaxy_config.server_name, 'port')
 except:
     galaxy_paster_port = None
+
 
 # Find out where we are
 viz_plugin_dir = config.get('app:main', 'visualization_plugins_directory')
