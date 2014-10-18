@@ -5,6 +5,7 @@ import tempfile
 import shutil
 import time
 import subprocess
+import yaml
 
 empty_nb = """{
  "metadata": {
@@ -51,6 +52,14 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 new_dataset_path = os.path.join( temp_dir, str( hda.hid ) )
 shutil.copy( hda.file_name, new_dataset_path )
 
+
+conf_file = {
+    'history_id': None,
+    'galaxy_url': None,
+    'api_key': None,
+}
+with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
+    handle.write( yaml.dump(conf_file) )
 
 empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
 with open( empty_nb_path, 'w+' ) as handle:
