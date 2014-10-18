@@ -17,6 +17,7 @@ history_id = trans.security.encode_id( trans.history.id )
 # Routes
 root        = h.url_for( "/" )
 app_root    = root + "plugins/visualizations/ipython/static/"
+random.seed()
 
 def get_galaxy_paster_port():
     # Galaxy config parser
@@ -42,9 +43,6 @@ ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command':
                                                 'docker_delay': 1})
 ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
-# Ensure generation of notebook id is deterministic for the dataset. Replace with history id
-# whenever we figure out how to access that.
-random.seed( history_id )
 notebook_id = ''.join(random.choice('0123456789abcdef') for _ in range(64))
 
 with open( os.path.join( our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
