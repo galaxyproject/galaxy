@@ -96,7 +96,8 @@ galaxy_paster_pid = p4.stdout.read().split('\n')[0]
 galaxy_paster_port = None
 if len(galaxy_paster_pid) > 0:
     # Find all files opened by the process of interest
-    p1 = subprocess.Popen(shlex.split("""lsof -p %d""" % (int(galaxy_paster_pid),) ), stdout=subprocess.PIPE)
+    p1 = subprocess.Popen(shlex.split("""lsof -p %d""" % (int(galaxy_paster_pid),) ),
+                          stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
     # Grep out the TCP connections opened by this process
     p2 = subprocess.Popen(shlex.split("""grep -o 'TCP [^:]*:[0-9]*'"""), stdin=p1.stdout,
                           stdout=subprocess.PIPE)
