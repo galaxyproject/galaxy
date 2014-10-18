@@ -61,6 +61,9 @@ def proxy_request_port():
             break
     return port
 
+def generate_pasword(length=12):
+    return ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(length))
+
 
 galaxy_paster_port = get_galaxy_paster_port()
 
@@ -97,8 +100,8 @@ conf_file = {
 
 if ipy_viz_config.getboolean("main", "password_auth"):
     # Generate a random password + salt
-    notebook_pw_salt = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(12))
-    notebook_pw = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(24))
+    notebook_pw_salt = generate_pasword(length=12)
+    notebook_pw = generate_pasword(length=24)
     m = hashlib.sha1()
     m.update( notebook_pw + notebook_pw_salt )
     conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
