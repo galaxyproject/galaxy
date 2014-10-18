@@ -6,6 +6,8 @@ We hope to make Galaxy more attractive for bioinformaticians and to combine the 
 
 ![IPython in Galaxy](https://raw.githubusercontent.com/bgruening/galaxy-ipython/master/images/ipython_in_galaxy.png)
 
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/jQDyTuYnn1k/0.jpg)](http://www.youtube.com/watch?v=jQDyTuYnn1k)
+
 
 Requirements
 ============
