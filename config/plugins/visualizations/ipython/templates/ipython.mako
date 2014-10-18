@@ -87,6 +87,9 @@ ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 # Prepare an empty notebook
 empty_nb = load_notebook()
 
+PASSWORD_AUTH = ipy_viz_config.getboolean("main", "password_auth")
+APACHE_URLS = ipy_viz_config.getboolean("main", "apache_urls")
+SSL_URLS = ipy_viz_config.getboolean("main", "ssl"):
 PORT = proxy_request_port()
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
@@ -106,7 +109,7 @@ conf_file = {
     'cors_origin': request.host_url,
 }
 
-if ipy_viz_config.getboolean("main", "password_auth"):
+if PASSWORD_AUTH:
     # Generate a random password + salt
     notebook_pw_salt = generate_pasword(length=12)
     notebook_pw = generate_pasword(length=24)
@@ -135,13 +138,13 @@ docker_cmd = '%s run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" %s' % \
     (ipy_viz_config.get("docker", "command"), PORT, temp_dir, ipy_viz_config.get("docker", "image"))
 
 # Set our proto so passwords don't go in clear
-if ipy_viz_config.getboolean("main", "ssl"):
+if SSL_URLS:
     PROTO = "https"
 else:
     PROTO = "http"
 
 # Access URLs for the notebook from within galaxy.
-if ipy_viz_config.getboolean("main", "apache_urls"):
+if APACHE_URLS:
     notebook_access_url = "%s://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT )
     notebook_login_url = "%s://%s/ipython/%s/login" % ( PROTO, HOST, PORT, PORT )
     apache_urls_jsvar = "true"
