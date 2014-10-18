@@ -1,3 +1,28 @@
+function message_failed_auth(password){
+    toastr.info(
+        "Automatic authorization failed. You can manually login with:<br>" + password + "<br> <a href='https://github.com/bgruening/galaxy-ipython/wiki/Automatic-Authorization-Failed' target='_blank'>More details ...</a>",
+        "Please login manually",
+        {'closeButton': true, 'timeOut': 100000, 'tapToDismiss': false}
+    );
+}
+
+function message_failed_connection(){
+    toastr.error(
+        "Could not connect to IPython Notebook. Please contact your administrator. <a href='https://github.com/bgruening/galaxy-ipython/wiki/Could-not-connect-to-IPython-Notebook' target='_blank'>More details ...</a>",
+    "Security warning",
+        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': true}
+    );
+}
+
+function message_no_auth(){
+    toastr.warning(
+        "IPython Notebook was lunched without authentication. This is a security issue. <a href='https://github.com/bgruening/galaxy-ipython/wiki/IPython-Notebook-was-lunched-without-authentication' target='_blank'>More details ...</a>",
+        "Security warning",
+        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
+    );
+}
+
+
 /**
  * Load an interactive environment (IE) from a remote URL
  * @param {Boolean} password_auth Whether or not this resource requires password authentication
