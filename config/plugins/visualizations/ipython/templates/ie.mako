@@ -38,11 +38,7 @@ import ConfigParser
     self.attr.SSL_URLS = self.attr.viz_config.getboolean("main", "ssl")
     self.attr.PORT = self.proxy_request_port()
 
-    HOST = request.host
-    # Strip out port, we just want the URL this galaxy server was accessed at.
-    if ':' in HOST:
-        HOST = HOST[0:HOST.index(':')]
-    self.attr.HOST = HOST
+    self.attr.HOST = request.host.rsplit(':', 1)[0]
 %>
 </%def>
 
