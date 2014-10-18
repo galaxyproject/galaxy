@@ -59,7 +59,7 @@ function test_ie_availability(url){
  * @param {String} notebook_access_url: the URL embeded in the page and loaded
  * @param {Boolean} apache_urls: Proxying is done outside of galaxy in the webserver
  * @param {String} galaxy_root: root of the galaxy server, used for finding the static spinner.gif that ships with galaxy.
- * 
+ *
  * TODO: This function needs a lot of work to make it more generic:
  * TODO: exchange login_url, password, password_auth for a single function which encapsulates all the authentication procedure, as that will differ between IEs.
  */
@@ -95,6 +95,9 @@ function _handle_notebook_loading(password_auth, password, notebook_login_url, n
             // With our password
             data: {
                 'password': password
+            },
+            xhrFields: {
+                withCredentials: true
             },
             // If that is successful, load the notebook
             success: function(){
