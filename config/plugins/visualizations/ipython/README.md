@@ -20,7 +20,7 @@ Installation
 ============
 
 Copy the template and config folder in your ``GALAXY_ROOT/config/plugins/visualizations/ipython`` folder and restart Galaxy.
-Alternativly, you can clone the repository with
+Alternatively, you can clone the repository with
 
 ```bash
 git clone https://github.com/bgruening/galaxy-ipython.git config/plugins/visualizations/ipython

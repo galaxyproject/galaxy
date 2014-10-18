@@ -61,35 +61,3 @@ The WebSocket server in IPython pays attention to Cross-Origin-Requests and will
 ## Nginx Configuration
 
 Please submit it if you write it!
-
-## Template Configuration
-
-Normally containers are accessed via URLs that look like:
-
-```
-http://fqdn:11235/ipython/11235/ipython_notebook.ipynb
-```
-
-In order to secure them we want to access them via URLs that look like:
-
-```
-http://fqdn/ipython/11235/ipython_notebook.ipynb
-```
-
-This change needs to be realised in the template file. At the very end of the template there is a section of HTML code which looks like the following:
-
-```html
-<object data="http://${HOST}:${PORT}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
-    <embed src="http://${HOST}:${PORT}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
-    </embed>
-</object>
-```
-
-Just remove the `:${PORT}` and you're ready to go! It should look like this:
-
-```html
-<object data="http://${HOST}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
-    <embed src="http://${HOST}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
-    </embed>
-</object>
-```
