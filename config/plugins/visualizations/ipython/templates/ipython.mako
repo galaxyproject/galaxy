@@ -92,7 +92,10 @@ try:
     api_key = get_api_key()
 except Exception:
     # fallback to deprecated pattern for older Galaxy instances.
-    api_key = trans.user.api_keys[0].key
+    try:
+        api_key = trans.user.api_keys[0].key
+    except:
+        raise Exception("You do not have an API key available, please click User->API Keys to generate one")
 
 conf_file = {
     'history_id': history_id,
