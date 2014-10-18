@@ -7,8 +7,8 @@ IPython Integration into Galaxy
 Requirements
 ============
 
-For security reasons you need to have docker installed.
-For a detailed instruction how to install docker, please look at the docker website.
+The only requirement is to have [Docker](https://www.docker.com) installed on your system.
+For a detailed instruction how to install docker, please look at the [docker website](https://docs.docker.com/installation/).
 
 
 Installation
@@ -97,7 +97,7 @@ Security
 Authors
 =======
 
- * Bjoern Gruening
+ * Björn Grüning
  * Eric Rasche
 
 
