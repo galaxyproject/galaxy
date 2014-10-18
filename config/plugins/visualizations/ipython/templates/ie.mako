@@ -1,13 +1,10 @@
 <%!
 import os
-import sys
-import time
 import yaml
 import shlex
 import random
 import shutil
 import hashlib
-import tempfile
 import subprocess
 import ConfigParser
 
