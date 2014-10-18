@@ -117,10 +117,8 @@ if PASSWORD_AUTH:
     m.update( notebook_pw + notebook_pw_salt )
     conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
     # Should we use password based connection or "default" connection style in galaxy
-    password_auth_jsvar = "true"
 else:
     notebook_pw = "None"
-    password_auth_jsvar = "false"
 
 # Write conf
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
@@ -147,11 +145,9 @@ else:
 if APACHE_URLS:
     notebook_access_url = "%s://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT )
     notebook_login_url = "%s://%s/ipython/%s/login" % ( PROTO, HOST, PORT, PORT )
-    apache_urls_jsvar = "true"
 else:
     notebook_access_url = "%s://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT, PORT )
     notebook_login_url = "%s://%s:%s/ipython/%s/login" % ( PROTO, HOST, PORT, PORT, PORT )
-    apache_urls_jsvar = "false"
 subprocess.call(docker_cmd, shell=True)
 
 %>
@@ -166,8 +162,8 @@ ${h.javascript_link( app_root + 'ipy-galaxy.js' )}
 <body>
 
 <script type="text/javascript">
-var password_auth = ${ password_auth_jsvar };
-var apache_urls = ${ apache_urls_jsvar };
+var password_auth = ${ javascript_boolean(PASSWORD_AUTH) };
+var apache_urls = ${ javascript_boolean(APACHE_URLS) };
 var notebook_login_url = '${ notebook_login_url }';
 var password = '${ notebook_pw }';
 var notebook_access_url = '${ notebook_access_url }';
