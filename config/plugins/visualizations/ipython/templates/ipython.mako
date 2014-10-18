@@ -37,36 +37,9 @@ empty_nb = """{
      "metadata": {},
      "source": [
       "You can access your data via the dataset number. For example, `handle = get(42)`.\\n",
-      "To save data, write your data to a file, and then call `put('filename.txt')`. The dataset will then be available in your galaxy history."
+      "To save data, write your data to a file, and then call `put('filename.txt')`. The dataset will then be available in your galaxy history.\\n",
+      "To save your notebook to galaxy, click the 'Download' button at the top right of the IPython interface"
      ]
-    },
-    {
-     "cell_type": "code",
-     "collapsed": false,
-     "input": [
-      "# This button just calls put('ipython_galaxy_notebook.ipynb')"
-     ],
-     "language": "python",
-     "metadata": {},
-     "outputs": [
-      {
-       "html": [
-        "<button onclick=\\\"save()\\\">Save Notebook to Galaxy</button>\\n",
-        "<script type=\\\"text/Javascript\\\">\\n",
-        "    function save(){\\n",
-        "        console.log(IPython.notebook.kernel.execute(\\\"put('ipython_galaxy_notebook.ipynb')\\\"));\\n",
-        "    }\\n",
-        "</script>\\n"
-       ],
-       "metadata": {},
-       "output_type": "pyout",
-       "prompt_number": 1,
-       "text": [
-        "<IPython.core.display.HTML at 0x3b33650>"
-       ]
-      }
-     ],
-     "prompt_number": 1
     },
     {
      "cell_type": "code",
@@ -76,7 +49,7 @@ empty_nb = """{
      "language": "python",
      "metadata": {},
      "outputs": [],
-     "prompt_number": 2
+     "prompt_number": 1
     }
    ],
    "metadata": {}
