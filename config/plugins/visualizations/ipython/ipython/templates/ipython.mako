@@ -66,7 +66,7 @@ for dataset in trans.history.active_datasets:
 conf_file = {
     'history_id': history_id,
     'galaxy_url': None,
-    'api_key': None,
+    'api_key': trans.user.api_keys[0].key,
 }
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
     handle.write( yaml.dump(conf_file) )
