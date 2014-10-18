@@ -5,10 +5,12 @@ SSL. This requires some non-trivial apache configuration to support.
 
 ## Requirements
 
- * `mod_proxy`
- * `mod_proxy_http`
- * `mod_proxy_wstunnel`
- * `mod_headers`
+ * [mod_headers](http://httpd.apache.org/docs/2.4/mod/mod_headers.html)
+ * [mod_proxy](http://httpd.apache.org/docs/2.4/mod/mod_proxy.html)
+ * [mod_proxy_http](http://httpd.apache.org/docs/2.4/mod/mod_proxy_http.html)
+ * [mod_proxy_wstunnel](http://httpd.apache.org/docs/2.4/mod/mod_proxy_wstunnel.html)
+ * [mod_rewrite](http://httpd.apache.org/docs/2.4/mod/mod_rewrite.html)
+ * [mod_setenvif](http://httpd.apache.org/docs/2.4/mod/mod_setenvif.html)
 
 IPython makes use of WebSockets which we need to proxy in apache. Support was added to `apache2.4`
 for this, which is available in `Ubuntu 14.04`. There are tutorials on the internet for backporting
