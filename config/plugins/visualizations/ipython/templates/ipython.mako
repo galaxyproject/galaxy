@@ -24,12 +24,9 @@ ie.register_defaults({
 galaxy_paster_port = ie.get_galaxy_paster_port(ie.attr.galaxy_root_dir, ie.attr.galaxy_config)
 
 
-#PASSWORD_AUTH = ie.attr.ipy_viz_config.getboolean("main", "password_auth")
-#APACHE_URLS = ie.attr.ipy_viz_config.getboolean("main", "apache_urls")
-#SSL_URLS = ie.attr.ipy_viz_config.getboolean("main", "ssl")
-PASSWORD_AUTH = False
-APACHE_URLS = False
-SSL_URLS = False
+PASSWORD_AUTH = ie.attr.ipy_viz_config.getboolean("main", "password_auth")
+APACHE_URLS = ie.attr.ipy_viz_config.getboolean("main", "apache_urls")
+SSL_URLS = ie.attr.ipy_viz_config.getboolean("main", "ssl")
 PORT = ie.proxy_request_port()
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
