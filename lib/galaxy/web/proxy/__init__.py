@@ -17,7 +17,7 @@ SECURE_COOKIE = "galaxysession"
 class ProxyManager(object):
 
     def __init__( self, config ):
-        for option in [ "manage_dynamic_proxy", "dynamic_proxy_bind_port", "dynamic_proxy_bind_ip" ]:
+        for option in [ "manage_dynamic_proxy", "dynamic_proxy_bind_port", "dynamic_proxy_bind_ip", "dynamic_proxy_debug" ]:
             setattr( self, option, getattr( config, option ) )
         self.launch_by = "node"  # TODO: Support docker
         if self.manage_dynamic_proxy:
@@ -74,6 +74,9 @@ class NodeProxyLauncher(object):
             "--ip", config.dynamic_proxy_bind_ip,
             "--port", str(config.dynamic_proxy_bind_port),
         ]
+        if config.dynamic_proxy_debug:
+            args.append("--verbose")
+
         parent_directory = os.path.dirname( __file__ )
         path_to_application = os.path.join( parent_directory, "js", "lib", "main.js" )
         command = [ path_to_application ] + args

@@ -545,6 +545,8 @@ nglims_config_file = tool-data/nglims.yaml
 #dynamic_proxy_bind_port=8800
 #dynamic_proxy_bind_ip=0.0.0.0
 
+# Enable verbose debugging of Galaxy-managed dynamic proxy.
+#dynamic_proxy_debug=False
 
 # -- Logging and Debugging
 
