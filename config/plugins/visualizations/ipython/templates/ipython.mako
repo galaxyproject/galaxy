@@ -6,6 +6,7 @@ import yaml
 import shlex
 import random
 import shutil
+import hashlib
 import tempfile
 import subprocess
 import ConfigParser
@@ -68,6 +69,12 @@ if ':' in HOST:
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
+# Generate a random password + salt
+notebook_pw_salt = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(12))
+notebook_pw = ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(24))
+m = hashlib.sha1()
+m.update( notebook_pw + notebook_pw_salt )
+
 conf_file = {
     'history_id': history_id,
     'galaxy_url': request.application_url.rstrip('/'),
@@ -75,6 +82,7 @@ conf_file = {
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
     'docker_port': PORT,
+    'notebook_password': 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest()),
 }
 
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
@@ -105,6 +113,7 @@ time.sleep(1)
 
 
 <body>
+Your password is: ${ notebook_pw }
     <object data="${notebook_access_url}" height="100%" width="100%">
         <embed src="${notebook_access_url}" height="100%" width="100%">
         </embed>
