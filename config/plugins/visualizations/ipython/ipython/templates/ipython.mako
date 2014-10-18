@@ -55,6 +55,10 @@ empty_nb = """{
 }""" % (notebook_id, )
 
 PORT = 7777
+HOST = request.host
+# Strip out port, we just want the URL this galaxy server was accessed at.
+if ':' in HOST:
+    HOST = HOST[0:HOST.index(':')]
 
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
@@ -88,8 +92,8 @@ time.sleep(1)
 
 
 <body>
-    <object data="http://localhost:${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
-        <embed src="http://localhost:${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
+    <object data="http://${HOST}:${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
+        <embed src="http://${HOST}:${PORT}/notebooks/ipython_galaxy_notebook.ipynb" height="100%" width="100%">
         </embed>
     </object>
 </body>
