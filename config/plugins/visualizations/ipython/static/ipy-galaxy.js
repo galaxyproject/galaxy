@@ -65,7 +65,7 @@ function test_ie_availability(url){
  */
 function load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root){
     $( document ).ready(function() {
-        $('#main').append('<img id="spinner" src="' + galaxy_root + '/static/style/largespinner.gif" >');
+        $('#main').append('<img id="spinner" src="' + galaxy_root + '/static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">');
         interval = setInterval(function(){
             $.ajax({
                 type: "GET",
