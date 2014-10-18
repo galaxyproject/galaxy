@@ -31,6 +31,14 @@ def get_galaxy_paster_port():
         port = None
     return port
 
+def load_notebook():
+    notebook_id = ''.join(random.choice('0123456789abcdef') for _ in range(64))
+    with open( os.path.join( our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
+        empty_nb = nb_handle.read()
+    empty_nb = empty_nb % notebook_id
+    return empty_nb
+
+
 
 galaxy_paster_port = get_galaxy_paster_port()
 
@@ -43,12 +51,8 @@ ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command':
                                                 'docker_delay': 1})
 ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
-notebook_id = ''.join(random.choice('0123456789abcdef') for _ in range(64))
-
-with open( os.path.join( our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
-    empty_nb = nb_handle.read()
-empty_nb = empty_nb % notebook_id
-
+# Prepare an empty notebook
+empty_nb = load_notebook()
 
 # Find all ports that are already occupied
 cmd_netstat = shlex.split("netstat -tuln")
