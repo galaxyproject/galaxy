@@ -80,9 +80,15 @@ conf_file = {
 with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
     handle.write( yaml.dump(conf_file) )
 
+# TODO: Implement proper IPyNB datatype atop a proper JSON datatype
+# For now we assume all "text" datatypes are ipynbs.
+# <datatype extension="ipynb" type="galaxy.datatypes.data:Text" mimetype="application/json" subclass="True" display_in_upload="True"/>
 empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
-with open( empty_nb_path, 'w+' ) as handle:
-    handle.write( empty_nb )
+if hda.datatype.__class__.__name__ != "Text":
+    with open( empty_nb_path, 'w+' ) as handle:
+        handle.write( empty_nb )
+else:
+    shutil.copy( hda.file_name, empty_nb_path )
 
 docker_cmd = 'docker run -d --sig-proxy=true -p %s:6789 -v "%s:/import/" bgruening/docker-ipython-notebook' % (PORT, temp_dir)
 subprocess.call(docker_cmd, shell=True)
