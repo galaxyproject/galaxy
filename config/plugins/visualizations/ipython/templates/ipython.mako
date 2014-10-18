@@ -102,7 +102,7 @@ except Exception:
 
 conf_file = {
     'history_id': history_id,
-    'galaxy_url': request.application_url.rstrip('/'),
+    'galaxy_url': request.application_url.rstrip('/') + '/',
     'api_key': api_key,
     'remote_host': request.remote_addr,
     'galaxy_paster_port': galaxy_paster_port,
