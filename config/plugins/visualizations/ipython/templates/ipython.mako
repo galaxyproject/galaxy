@@ -50,7 +50,7 @@ var notebook_access_url = '${ notebook_access_url }';
 require.config({
     baseUrl: app_root,
     paths: {
-        "plugin" : app_root,
+        "plugin" : app_root + "js/",
     },
 });
 requirejs(['plugin/ie', 'plugin/ipython'], function(){
