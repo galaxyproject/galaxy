@@ -21,7 +21,9 @@ Alternativly, you can clone the repository with
 git clone https://github.com/bgruening/galaxy-ipython.git config/plugins/viz/ipython
 ````
 
-The IPython Visualisation Option should be visible next to the usual Charts or Trackster Options in your Visualisation menue.
+The IPython visualisation option should be visible next to the usual Charts or Trackster options in your visualisation menue.
+
+![Starting IPython in Galaxy](https://raw.githubusercontent.com/bgruening/galaxy-ipython/master/images/start_ipython.png)
 
 
 Features
