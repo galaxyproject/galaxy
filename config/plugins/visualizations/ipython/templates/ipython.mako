@@ -12,70 +12,24 @@ import tempfile
 import subprocess
 import ConfigParser
 
-def load_notebook():
-    notebook_id = ie.generate_hex(64)
-    with open( os.path.join( our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
-        empty_nb = nb_handle.read()
-    empty_nb = empty_nb % notebook_id
-    return empty_nb
-
-def proxy_request_port():
-    """
-        Refactor of our port getting...eventually this will be replaced with an API call instead.
-    """
-    # Find all ports that are already occupied
-    cmd_netstat = shlex.split("netstat -tuln")
-    p1 = subprocess.Popen(cmd_netstat, stdout=subprocess.PIPE)
-
-    occupied_ports = set()
-    for line in p1.stdout.read().split('\n'):
-        if line.startswith('tcp') or line.startswith('tcp6'):
-            col = line.split()
-            local_address = col[3]
-            local_port = local_address.split(':')[-1]
-            occupied_ports.add( int(local_port) )
-
-    # Generate random free port number for our docker container
-    while True:
-        port = random.randrange(10000,15000)
-        if port not in occupied_ports:
-            break
-    return port
-
-def generate_pasword(length=12):
-    return ''.join(random.choice('0123456789abcdefghijklmnopqrstuvwxyz') for _ in range(length))
-
-def javascript_boolean(boolean):
-    """
-        Convenience function to convert boolean for use in JS
-    """
-    return "true" if boolean else "false"
-
-
-galaxy_config = trans.app.config
-galaxy_root_dir = os.path.abspath(galaxy_config.root)
-history_id = trans.security.encode_id( trans.history.id )
-# Routes
-root        = h.url_for( "/" )
-app_root    = root + "plugins/visualizations/ipython/static/"
-# Register ourself with the ie module
 ie.set_id("ipython")
-ie.register_galaxy_objects(trans, h, response)
+ie.register_galaxy_objects(trans, h, response, plugin_path)
+ie.register_defaults({
+    'apache_urls': False,
+    'command': 'docker',
+    'image': 'bgruening/docker-ipython-notebook',
+    'password_auth': False,
+    'ssl': False})
 
 galaxy_paster_port = ie.get_galaxy_paster_port(ie.attr.galaxy_root_dir, ie.attr.galaxy_config)
 
-# Store our template and configuration path
-our_config_dir = os.path.join(plugin_path, "config")
-our_template_dir = os.path.join(plugin_path, "templates")
-ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
-                                                'bgruening/docker-ipython-notebook',
-                                                'password_auth': False, 'ssl': False,
-                                                'docker_delay': 1})
-ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
-PASSWORD_AUTH = ipy_viz_config.getboolean("main", "password_auth")
-APACHE_URLS = ipy_viz_config.getboolean("main", "apache_urls")
-SSL_URLS = ipy_viz_config.getboolean("main", "ssl")
+#PASSWORD_AUTH = ie.attr.ipy_viz_config.getboolean("main", "password_auth")
+#APACHE_URLS = ie.attr.ipy_viz_config.getboolean("main", "apache_urls")
+#SSL_URLS = ie.attr.ipy_viz_config.getboolean("main", "ssl")
+PASSWORD_AUTH = False
+APACHE_URLS = False
+SSL_URLS = False
 PORT = ie.proxy_request_port()
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
@@ -86,7 +40,7 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 api_key = get_api_key()
 
 conf_file = {
-    'history_id': history_id,
+    'history_id': ie.attr.history_id,
     'galaxy_url': request.application_url.rstrip('/') + '/',
     'api_key': api_key,
     'remote_host': request.remote_addr,
@@ -111,7 +65,10 @@ with open( os.path.join( temp_dir, 'conf.yaml' ), 'wb' ) as handle:
     handle.write( yaml.dump(conf_file, default_flow_style=False) )
 
 # Prepare an empty notebook
-empty_nb = load_notebook()
+notebook_id = ie.generate_hex(64)
+with open( os.path.join( ie.attr.our_template_dir, 'notebook.ipynb' ), 'r') as nb_handle:
+    empty_nb = nb_handle.read()
+empty_nb = empty_nb % notebook_id
 # Copy over default notebook, unless the dataset this viz is running on is a notebook
 empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
 if hda.datatype.__class__.__name__ != "Ipynb":
@@ -120,7 +77,7 @@ if hda.datatype.__class__.__name__ != "Ipynb":
 else:
     shutil.copy( hda.file_name, empty_nb_path )
 
-docker_cmd = ie.docker_cmd(ipy_viz_config, PORT, temp_dir)
+docker_cmd = ie.docker_cmd(ie.attr.ipy_viz_config, PORT, temp_dir)
 
 # Set our proto so passwords don't go in clear
 if SSL_URLS:

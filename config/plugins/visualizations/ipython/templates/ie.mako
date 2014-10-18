@@ -19,16 +19,28 @@ import ConfigParser
 %>
 </%def>
 
-<%def name="register_galaxy_objects(trans, h, response)">
+<%def name="register_galaxy_objects(trans, h, response, plugin_path)">
 <%
     self.attr.trans = trans
     self.attr.history_id = trans.security.encode_id( trans.history.id )
     self.attr.h = h
+    self.attr.plugin_path = plugin_path
     self.attr.response = response
     self.attr.galaxy_config = trans.app.config
     self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
     self.attr.root = h.url_for("/")
     self.attr.app_root = self.attr.root + "plugins/visualizations/ipython/static/"
+%>
+</%def>
+
+<%def name="register_defaults(default_dict)">
+<%
+    # Store our template and configuration path
+    self.attr.our_config_dir = os.path.join(self.attr.plugin_path, "config")
+    self.attr.our_template_dir = os.path.join(self.attr.plugin_path, "templates")
+    ipy_viz_config = ConfigParser.SafeConfigParser(default_dict)
+    ipy_viz_config.read( os.path.join( self.attr.our_config_dir, "ipython.conf" ) )
+    self.attr.ipy_viz_config = ipy_viz_config
 %>
 </%def>
 
