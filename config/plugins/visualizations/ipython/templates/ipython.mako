@@ -86,7 +86,7 @@ ipy_viz_config.read( os.path.join( our_config_dir, "ipython.conf" ) )
 
 PASSWORD_AUTH = ipy_viz_config.getboolean("main", "password_auth")
 APACHE_URLS = ipy_viz_config.getboolean("main", "apache_urls")
-SSL_URLS = ipy_viz_config.getboolean("main", "ssl"):
+SSL_URLS = ipy_viz_config.getboolean("main", "ssl")
 PORT = proxy_request_port()
 HOST = request.host
 # Strip out port, we just want the URL this galaxy server was accessed at.
@@ -143,10 +143,10 @@ else:
 # Access URLs for the notebook from within galaxy.
 if APACHE_URLS:
     notebook_access_url = "%s://%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT )
-    notebook_login_url = "%s://%s/ipython/%s/login" % ( PROTO, HOST, PORT, PORT )
+    notebook_login_url = "%s://%s/ipython/%s/login" % ( PROTO, HOST, PORT )
 else:
     notebook_access_url = "%s://%s:%s/ipython/%s/notebooks/ipython_galaxy_notebook.ipynb" % ( PROTO, HOST, PORT, PORT )
-    notebook_login_url = "%s://%s:%s/ipython/%s/login" % ( PROTO, HOST, PORT, PORT, PORT )
+    notebook_login_url = "%s://%s:%s/ipython/%s/login" % ( PROTO, HOST, PORT, PORT )
 subprocess.call(docker_cmd, shell=True)
 
 %>
