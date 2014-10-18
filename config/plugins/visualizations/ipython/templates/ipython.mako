@@ -1,3 +1,4 @@
+<%namespace file="ie.mako" name="ie"/>
 <%
 import os
 import sys
@@ -10,18 +11,6 @@ import hashlib
 import tempfile
 import subprocess
 import ConfigParser
-
-def get_galaxy_paster_port():
-    # Galaxy config parser
-    config = ConfigParser.SafeConfigParser({'port': '8080'})
-    config.read( os.path.join( galaxy_root_dir, 'universe_wsgi.ini' ) )
-
-    # uWSGI galaxy installations don't use paster and only speak uWSGI not http
-    try:
-        port = config.getint('server:%s' % galaxy_config.server_name, 'port')
-    except:
-        port = None
-    return port
 
 def load_notebook():
     notebook_id = ''.join(random.choice('0123456789abcdef') for _ in range(64))
@@ -70,7 +59,7 @@ history_id = trans.security.encode_id( trans.history.id )
 root        = h.url_for( "/" )
 app_root    = root + "plugins/visualizations/ipython/static/"
 
-galaxy_paster_port = get_galaxy_paster_port()
+galaxy_paster_port = ie.get_galaxy_paster_port(galaxy_root_dir, galaxy_config)
 
 # Store our template and configuration path
 our_config_dir = os.path.join(plugin_path, "config")
