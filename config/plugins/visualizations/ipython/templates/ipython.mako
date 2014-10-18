@@ -47,7 +47,7 @@ empty_nb = """{
      "source": [
       "You can access your data via the dataset number. For example, `handle = get(42)`.\\n",
       "To save data, write your data to a file, and then call `put('filename.txt')`. The dataset will then be available in your galaxy history.\\n",
-      "To save your notebook to galaxy, click the button at the top right of the IPython interface, next to 'Cell Toolbar'"
+      "To save your notebook to galaxy, click the large green button at the top right of the IPython interface"
      ]
     },
     {
