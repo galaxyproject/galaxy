@@ -33,26 +33,9 @@ def get_galaxy_paster_port():
 
 galaxy_paster_port = get_galaxy_paster_port()
 
-viz_plugin_dir = None
-try:
-    # Newer Python versions allow more, direct/correct
-    # access to the current plugin directory.
-    viz_plugin_dir = plugin_path
-except Exception:
-    pass
-
-if not viz_plugin_dir:
-    # Provide fallback for older versions.
-    viz_plugin_dir = config.get('app:main', 'visualization_plugins_directory')
-    if not os.path.isabs(viz_plugin_dir):
-        # If it is NOT absolute, i.e. relative, append to galaxy root
-        viz_plugin_dir = os.path.join(galaxy_root_dir, viz_plugin_dir)
-    # Get this plugin's directory
-    viz_plugin_dir = os.path.join(viz_plugin_dir, "ipython")
-
 # Store our template and configuration path
-our_config_dir = os.path.join(viz_plugin_dir, "config")
-our_template_dir = os.path.join(viz_plugin_dir, "templates")
+our_config_dir = os.path.join(plugin_path, "config")
+our_template_dir = os.path.join(plugin_path, "templates")
 ipy_viz_config = ConfigParser.SafeConfigParser({'apache_urls': False, 'command': 'docker', 'image':
                                                 'bgruening/docker-ipython-notebook',
                                                 'password_auth': False, 'ssl': False,
