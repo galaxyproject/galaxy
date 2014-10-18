@@ -60,8 +60,9 @@ root        = h.url_for( "/" )
 app_root    = root + "plugins/visualizations/ipython/static/"
 # Register ourself with the ie module
 ie.set_id("ipython")
+ie.register_galaxy_objects(trans, h, response)
 
-galaxy_paster_port = ie.get_galaxy_paster_port(galaxy_root_dir, galaxy_config)
+galaxy_paster_port = ie.get_galaxy_paster_port(ie.attr.galaxy_root_dir, ie.attr.galaxy_config)
 
 # Store our template and configuration path
 our_config_dir = os.path.join(plugin_path, "config")
@@ -143,7 +144,7 @@ ${h.css( 'base' ) }
 ${h.js( 'libs/jquery/jquery' ) }
 ${h.js( 'libs/toastr' ) }
 ## Load IPython-Galaxy connector
-${h.javascript_link( app_root + 'ipy-galaxy.js' )}
+${h.javascript_link( ie.attr.app_root + 'ipy-galaxy.js' )}
 </head>
 <body>
 
@@ -153,7 +154,7 @@ var apache_urls = ${ ie.javascript_boolean(APACHE_URLS) };
 var notebook_login_url = '${ notebook_login_url }';
 var password = '${ notebook_pw }';
 var notebook_access_url = '${ notebook_access_url }';
-var galaxy_root = '${ root }';
+var galaxy_root = '${ ie.attr.root }';
 // Load notebook
 load_notebook(password_auth, password, notebook_login_url, notebook_access_url, apache_urls, galaxy_root);
 </script>

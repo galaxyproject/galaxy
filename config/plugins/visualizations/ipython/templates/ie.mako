@@ -8,9 +8,22 @@ import random
 viz_id = None
 %>
 
-<%def name="set_id(name)"%>
+<%def name="set_id(name)">
 <%
-    viz_id = name
+    self.attr.viz_id = name
+%>
+</%def>
+
+<%def name="register_galaxy_objects(trans, h, response)">
+<%
+    self.attr.trans = trans
+    self.attr.history_id = trans.security.encode_id( trans.history.id )
+    self.attr.h = h
+    self.attr.response = response
+    self.attr.galaxy_config = trans.app.config
+    self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
+    self.attr.root = h.url_for("/")
+    self.attr.app_root = self.attr.root + "plugins/visualizations/ipython/static/"
 %>
 </%def>
 
