@@ -49,5 +49,5 @@ function test_ie_availability(url, success_callback){
                 }
             }
         });
-    }, 500);
+    }, 1000);
 }
