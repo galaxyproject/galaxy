@@ -2,4 +2,5 @@
 <!-- these relative paths can contain common templates importable by all visualization plugins -->
 <paths>
     <path>common/templates</path>
+    <path>../interactive_environments/common/templates</path>
 </paths>

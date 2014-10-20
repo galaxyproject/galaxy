@@ -221,8 +221,14 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Visualizations config directory: where to look for individual visualization plugins.
 # The path is relative to the Galaxy root dir. To use an absolute path begin the path
-# with '/'. Defaults to "config/plugins/visualizations".
+# with '/'. This is a comma separated list. Defaults to "config/plugins/visualizations".
 #visualization_plugins_directory = config/plugins/visualizations
+
+# Interactive environment plugins root directory: where to look for interactive environment
+# plugins. By default none will be loaded. Set to config/plugins/interactive_environments
+# to load Galaxy's stock plugins (currently just IPython). These will require Docker
+# to be configured and have security considerations so proceed with caution.
+#interactive_environment_plugins_directory = 
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -421,6 +427,11 @@ nglims_config_file = tool-data/nglims.yaml
 # - $iso8601 (complete format string as specified by ISO 8601 international standard).
 # pretty_datetime_format = $locale (UTC)
 
+# URL (with schema http/https) of the Galaxy instance as accessible within your local
+# network - if specified used as a default by pulsar file staging and IPython docker
+# container for communicating back with Galaxy via the API.
+#galaxy_infrastructure_url = http://localhost:8080
+
 # The URL of the page to display in Galaxy's middle pane when loaded. This can be 
 # an absolute or relative URL.
 #welcome_url = /static/welcome.html
@@ -517,6 +528,26 @@ nglims_config_file = tool-data/nglims.yaml
 # requests.
 #nginx_upload_path = False
 
+# Have Galaxy manage dynamic proxy component for routing requests to other
+# services based on Galaxy's session cookie. It will attempt to do this by
+# default though you do need to install node+npm and do an npm install from
+# `lib/galaxy/web/proxy/js`. It is generally more robust to configure this
+# externally managing it however Galaxy is managed. If True Galaxy will only
+# launch the proxy if it is actually going to be used (e.g. for IPython).
+#dynamic_proxy_manage=True
+
+# Dynamic proxy can use an SQLite database or a JSON file for IPC, set that
+# here.
+#dynamic_proxy_session_map=database/session_map.sqlite
+
+# Set the port and IP for the the dynamic proxy to bind to, this must match
+# the external configuration if dynamic_proxy_manage is False.
+#dynamic_proxy_bind_port=8800
+#dynamic_proxy_bind_ip=0.0.0.0
+
+# Enable verbose debugging of Galaxy-managed dynamic proxy.
+#dynamic_proxy_debug=False
+
 # -- Logging and Debugging
 
 # Verbosity of console log messages.  Acceptable values can be found here:
@@ -548,6 +579,12 @@ nglims_config_file = tool-data/nglims.yaml
 # instance cause SVG datasets to not render properly and so may be disabled
 # by setting the following option to True.
 #serve_xss_vulnerable_mimetypes = False
+
+# Set the following to True to use ipython nbconvert to build HTML from IPython
+# notebooks in Galaxy histories. This process may allow users to execute arbitrary
+# code or serve arbitrary HTML. If enabled ipython must be available and on Galaxy's
+# PATH, to do this run `pip install jinja2 pygments ipython` in Galaxy's virtualenv.
+#trust_ipython_notebook_conversion = False
 
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It

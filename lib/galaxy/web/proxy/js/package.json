@@ -1,0 +1,18 @@
+{
+  "name": "galaxy-proxy",
+  "version": "0.0.1",
+  "description": "A dynamic reverse proxy for use within Galaxy",
+  "main": "index.js",
+  "author": "John Chilton",
+  "license": "AFL v3",
+  "readmeFilename": "README.md",
+  "repository": {
+    "type": "mercurial",
+    "url": "https://bitbucket.org/galaxy/galaxy-central"
+  },
+  "dependencies": {
+    "http-proxy": "~1.1",
+    "commander": "~2.2",
+    "sqlite3": "3.0.2"
+  }
+}

@@ -20,6 +20,8 @@ import mako
 from galaxy import util
 from galaxy.util import odict
 from galaxy.util import bunch
+from .interactive_environments import InteractiveEnviornmentRequest
+
 
 import logging
 log = logging.getLogger( __name__ )
@@ -589,6 +591,11 @@ class PageServingPluginManager( PluginManager ):
         """
         if 'plugin_path' not in kwargs:
             kwargs[ 'plugin_path'] = os.path.abspath( plugin.path )
+
+        plugin_type = plugin.config["plugin_type"]
+        if plugin_type == "interactive_environment":
+            request = InteractiveEnviornmentRequest(trans, plugin)
+            kwargs["ie_request"] = request
 
         # defined here to be overridden
         return trans.fill_template( template_filename, template_lookup=plugin.template_lookup, **kwargs )

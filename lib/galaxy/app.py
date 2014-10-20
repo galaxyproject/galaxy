@@ -17,6 +17,7 @@ from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.jobs import metrics as job_metrics
 from galaxy.web.base import pluginframework
+from galaxy.web.proxy import ProxyManager
 from galaxy.queue_worker import GalaxyQueueWorker
 from tool_shed.galaxy_install import update_repository_manager
 
@@ -138,6 +139,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
         self.job_stop_queue = self.job_manager.job_stop_queue
+        self.proxy_manager = ProxyManager( self.config )
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
         self.model.engine.dispose()

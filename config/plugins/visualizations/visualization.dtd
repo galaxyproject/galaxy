@@ -1,5 +1,6 @@
 <!-- each visualization must have a template (all other elements are optional) -->
 <!ELEMENT visualization (description*,data_sources*,params*,template_root*,template,render_target*)>
+<!ELEMENT interactive_environment (description*,data_sources*,params*,template_root*,template,render_target*)>
 <!-- visualization
         name: the title/display name of the visualization (e.g. 'Trackster', 'Fastq Stats', etc.) REQUIRED
         disabled: if included (value does not matter), this attribute will prevent the visualization being loaded
