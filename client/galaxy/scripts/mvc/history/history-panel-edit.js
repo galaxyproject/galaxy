@@ -148,7 +148,7 @@ var HistoryPanelEdit = _super.extend(
                 :( toggleLink( 'toggle-hidden-link', _l( 'hide hidden' ) ) )
             );
         }
-        return $whereTo.find( '.subtitle' ).html( msgs.join( ', ' ) );
+        return $whereTo.find( '> .controls .subtitle' ).html( msgs.join( ', ' ) );
     },
 
     /** render the tags sub-view controller */
