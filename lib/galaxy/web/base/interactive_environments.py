@@ -6,6 +6,8 @@ import random
 
 from galaxy.util.bunch import Bunch
 from galaxy import web
+from galaxy import eggs
+eggs.require("PyYAML")
 import yaml
 from galaxy.managers import api_keys
 
