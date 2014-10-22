@@ -11,7 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys, os, datetime
 
 
 ####### REQUIRED GALAXY INCLUDES
@@ -40,7 +40,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo', 'sp
 templates_path = ['_templates']
 
 #configure default autodoc's action
-autodoc_default_flags = ['members', 'undoc-members']
+autodoc_default_flags = [ 'members', 'undoc-members', 'show-inheritance' ]
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Galaxy Code'
-copyright = u'2012, Galaxy Team'
+copyright = str( datetime.datetime.now().year ) + u', Galaxy Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
