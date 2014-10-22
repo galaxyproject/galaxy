@@ -1,6 +1,7 @@
 a{text-decoration:underline}
 label{font-weight:normal}
 .libraryRow{background-color:#ebd9b2}
+tr{height:32px}
 .datasetHighlighted{background-color:#f9f9f9}
 .libraryItemDeleted-True{font-style:italic}
 div.libraryItemBody{padding:4px 4px 2px 4px}

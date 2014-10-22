@@ -97,7 +97,7 @@ var LibraryToolbarView = Backbone.View.extend({
     var library_page_size = prompt( 'How many libraries per page do you want to see?', Galaxy.libraries.preferences.get( 'library_page_size' ) );
     if ( ( library_page_size != null ) && ( library_page_size == parseInt( library_page_size ) ) ) {
         Galaxy.libraries.preferences.set( { 'library_page_size': parseInt( library_page_size ) } );
-        Galaxy.libraries.libraryListView.render();
+        Galaxy.libraries.libraryListView.render( { show_page: 1 } );
     }
   },
 

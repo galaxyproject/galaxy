@@ -414,7 +414,6 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         kwd[ 'space_to_tab' ] = 'False'
         kwd[ 'to_posix_lines' ] = 'True'
-        
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
         kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
         kwd[' link_data_only' ] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
@@ -436,9 +435,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 raise exceptions.AdminRequiredException( 'Only admins can import from importdir.' )
             if not trans.app.config.library_import_dir:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to import into library from importdir.' )
-            user_base_dir = trans.app.config.library_import_dir
-
-
+            import_base_dir = trans.app.config.library_import_dir
+            path = os.path.join( import_base_dir, path )
         if source in [ 'userdir_file', 'userdir_folder' ]:
             user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
@@ -472,9 +470,11 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         library_bunch = upload_common.handle_library_params( trans, {}, trans.security.encode_id( folder.id ) )
         abspath_datasets = []
         kwd[ 'filesystem_paths' ] = path
+        if source in [ 'importdir_folder' ]:
+            kwd[ 'filesystem_paths' ] = os.path.join( import_base_dir, path )
         params = util.Params( kwd )
         # user wants to import one file only
-        if source == "userdir_file":
+        if source in [ "userdir_file", "importdir_file" ]:
             file = os.path.abspath( path )
             abspath_datasets.append( trans.webapp.controllers[ 'library_common' ].make_library_uploaded_dataset(
                 trans, 'api', params, os.path.basename( file ), file, 'server_dir', library_bunch ) )
@@ -482,14 +482,14 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if source == "userdir_folder":
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
                 trans, 'api', params, library_bunch, 200, '' )
-            uploaded_datasets = uploaded_datasets_bunch[0]
+            uploaded_datasets = uploaded_datasets_bunch[ 0 ]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
             for ud in uploaded_datasets:
                 ud.path = os.path.abspath( ud.path )
                 abspath_datasets.append( ud )
-        #  user wants to import from path (admins only)
-        if source == "admin_path":
+        #  user wants to import from path
+        if source in [ "admin_path", "importdir_folder" ]:
             # validate the path is within root
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
                 trans, 'api', params, library_bunch, 200, '' )
