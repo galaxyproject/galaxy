@@ -370,8 +370,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :param  encoded_dataset_id:      the encoded id of the dataset to change
         :type   encoded_dataset_id:      an encoded id string
 
-        :rtype:     dictionary
         :returns:   dict containing information about the dataset
+        :rtype:     dictionary
         """
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         try:
@@ -400,16 +400,34 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     @expose_api
     def load( self, trans, **kwd ):
         """
-        Load dataset from the given source into the library.
-
-        :param  encoded_folder_id:      the encoded id of the folder to import dataset to
+        load( self, trans, **kwd ):
+        * POST /api/libraries/datasets
+        Load dataset from the given source into the library. 
+        Source can be:
+            user directory - root folder specified in galaxy.ini as "$user_library_import_dir"
+                example path: path/to/galaxy/$user_library_import_dir/user@example.com/{user can browse everything here}
+                the folder with the user login has to be created beforehand
+            (admin)import directory - root folder specified in galaxy ini as "$library_import_dir"
+                example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
+            (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
+         
+        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
-        :param  source:                 source of the dataset to be loaded
+        :param  source:                 source the datasets should be loaded form
         :type   source:                 str
-        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy
+        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
+                                        while linking is set to True all symlinks will be resolved _once_
         :type   link_data:              bool
-        :param  preserve_dirs:          flag whether to preserver directory structure when importing dir
+        :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
+                                        if False only datasets will be imported
         :type   preserve_dirs:          bool
+        :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
+        :type   file_type:              str
+        :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
+        :type   dbkey:                  str
+
+        :returns:   dict containing information about the created upload job
+        :rtype:     dictionary        
         """
 
         kwd[ 'space_to_tab' ] = 'False'
@@ -443,9 +461,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             if user_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from user directories.' )
             full_dir = os.path.join( user_base_dir, user_login )
-            # path_to_root_import_folder = None
             if not path.lower().startswith( full_dir.lower() ):
-                # path_to_root_import_folder = path
                 path = os.path.join( full_dir, path )
             if not os.path.exists( path ):
                 raise exceptions.RequestParameterInvalidException( 'Given path does not exist on the host.' )
