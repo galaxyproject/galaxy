@@ -146,7 +146,48 @@ return Backbone.Model.extend({
         return this.job_ids && this.job_ids[job_input_id];
     },
     
-    /** Matches identifier from api response to input element
+    /** Matches identifier from api model to input elements
+    */
+    matchModel: function(model, callback) {
+        // final result dictionary
+        var result = {};
+        
+        // link this
+        var self = this;
+        
+        // search throughout response
+        function search (id, head) {
+            for (var i in head) {
+                var node = head[i];
+                var index = node.name;
+                if (id != '') {
+                    index = id + '|' + index;
+                }
+                if (node.type == 'repeat') {
+                    for (var j in node.cache) {
+                        search (index + '_' + j, node.cache[j]);
+                    }
+                } else {
+                    if (node.type == 'conditional') {
+                        search (index, node.inputs);
+                    } else {
+                        var input_id = self.app.tree.job_ids[index];
+                        if (input_id) {
+                            callback(input_id, node);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // match all ids and return messages
+        search('', model.inputs);
+
+        // return matched results
+        return result;
+    },
+    
+    /** Matches identifier from api response to input elements
     */
     matchResponse: function(response) {
         // final result dictionary

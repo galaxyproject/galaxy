@@ -42,24 +42,11 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // creates the job handler
             this.job_handler = new ToolJobs(this);
 
-            // reset field list, which contains the input field elements
-            this.field_list = {};
-            
-            // reset sequential input definition list, which contains the input definitions as provided from the api
-            this.input_list = {};
-            
-            // reset input element list, which contains the dom elements of each input element (includes also the input field)
-            this.element_list = {};
-            
-            // for now the initial tool model is parsed through the mako
-            this.model  = this.options;
-            this.inputs = this.options.inputs;
-                    
             // request history content and build form
             this.content = new ToolContent({
                 history_id  : self.options.history_id,
                 success     : function() {
-                    self._buildForm();
+                    self._buildForm(self.options);
                 }
             });
         },
@@ -137,7 +124,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         },
         
         // refresh form data
-        _refreshForm: function() {
+        rebuild: function() {
             // link this
             var self = this;
             
@@ -161,6 +148,10 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 url     : galaxy_config.root + 'api/tools/' + this.options.id + '/build',
                 data    : current_state,
                 success : function(response) {
+                    // rebuild form
+                    self._rebuildForm(response);
+            
+                    // log success
                     console.debug('tools-form::_refreshForm() - Refreshed inputs/states.');
                     console.debug(response);
                 },
@@ -171,10 +162,54 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
         },
         
+        // rebuild the form elements
+        _rebuildForm: function(new_model) {
+            var self = this;
+            this.tree.matchModel(new_model, function(input_id, node) {
+                var input = self.input_list[input_id];
+                if (input && input.options) {
+                    if (JSON.stringify(input.options) != JSON.stringify(node.options)) {
+                        // backup new options
+                        input.options = node.options;
+                        
+                        // get/update field (currently only done for select fields)
+                        var field = self.field_list[input_id];
+                        if (field.update && input.type == 'select') {
+                            var new_options = [];
+                            for (var i in node.options) {
+                                var opt = node.options[i];
+                                if (opt.length > 2) {
+                                    new_options.push({
+                                        'label': opt[0],
+                                        'value': opt[1]
+                                    });
+                                }
+                            }
+                            field.update(new_options);
+                            console.debug('Updating options for ' + input_id);
+                        }
+                    }
+                }
+            });
+        },
+        
         // builds the tool form
-        _buildForm: function() {
+        _buildForm: function(options) {
             // link this
             var self = this;
+            
+            // reset field list, which contains the input field elements
+            this.field_list = {};
+            
+            // reset sequential input definition list, which contains the input definitions as provided from the api
+            this.input_list = {};
+            
+            // reset input element list, which contains the dom elements of each input element (includes also the input field)
+            this.element_list = {};
+            
+            // for now the initial tool model is parsed through the mako
+            this.model  = options;
+            this.inputs = options.inputs;
             
             // button menu
             var menu = new Ui.ButtonMenu({
@@ -183,7 +218,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // configure button selection
-            if(this.options.biostar_url) {
+            if(options.biostar_url) {
                 // add question option
                 menu.addMenu({
                     icon    : 'fa-question-circle',
@@ -256,29 +291,30 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         cls      : 'btn btn-primary',
                         floating : 'clear',
                         onclick  : function() {
-                            //self._refreshForm();
+                            //self.rebuild();
                             self.job_handler.submit();
                         }
                     })
                 }
             });
             
-            // append form
+            // start form
+            this.$el.empty();
             this.$el.append(this.portlet.$el);
             
             // append help
-            if (this.options.help != '') {
-                this.$el.append(ToolTemplate.help(this.options.help));
+            if (options.help != '') {
+                this.$el.append(ToolTemplate.help(options.help));
             }
             
             // append citations
-            if (this.options.citations) {
+            if (options.citations) {
                 // append html
                 this.$el.append(ToolTemplate.citations());
     
                 // fetch citations
                 var citations = new CitationModel.ToolCitationCollection();
-                citations.tool_id = this.options.id;
+                citations.tool_id = options.id;
                 var citation_list_view = new CitationView.CitationListView({ collection: citations } );
                 citation_list_view.render();
                 citations.fetch();

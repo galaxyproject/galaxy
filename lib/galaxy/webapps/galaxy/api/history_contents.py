@@ -131,6 +131,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         api_type = "file"
         encoded_id = trans.security.encode_id( hda.id )
+        
         # TODO: handle failed_metadata here as well
         return {
             'id'    : encoded_id,

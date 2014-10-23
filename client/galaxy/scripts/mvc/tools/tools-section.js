@@ -50,7 +50,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             var input_def = jQuery.extend(true, {}, input);
             
             // create unique id
-            input_def.id = Utils.uuid();
+            input_def.id = input.id = Utils.uuid();
     
             // add to sequential list of inputs
             this.app.input_list[input_def.id] = input_def;
@@ -208,7 +208,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         _addRow: function(field_type, input_def) {
             // get id
             var id = input_def.id;
-            
+
             // field wrapper
             var field = null;
             
@@ -281,6 +281,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     
                     // log
                     console.debug('tools-form::_addRow() : Auto matched field type (' + field_type + ').');
+            }
+            
+            // deactivate dynamic fields
+            if (input_def.is_dynamic) {
+                this.app.incompatible = true;
             }
             
             // set field value
@@ -380,6 +385,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
                 onchange    : function(dict) {
+                    // rebuild the form
+                    if (self.app.is_dynamic) {
+                        self.app.rebuild();
+                    }
+                    
                     // pick the first content only (todo: maybe collect multiple meta information)
                     var content_def     = dict.values[0];
                     var content_id      = content_def.id;
@@ -485,7 +495,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         _fieldSelect : function (input_def) {
             // check compatibility
             if (input_def.is_dynamic) {
-                this.app.incompatible = true;
+                this.app.is_dynamic = true;
             }
             
             // configure options fields

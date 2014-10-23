@@ -510,16 +510,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                 trans.response.status = 500
                 return { 'error': 'Failed to get job information.' }
         
-        # check if job was identified
+        # load job parameters into incoming
+        tool_message = ''
         if job:
             try:
                 job_params = job.get_param_values( trans.app, ignore_errors = True )
                 job_messages = tool.check_and_update_param_values( job_params, trans, update_values=False )
+                tool_message = self._compare_tool_version(trans, tool, job)
                 params_to_incoming( kwd, tool.inputs, job_params, trans.app )
             except Exception, exception:
                 trans.response.status = 500
                 return { 'error': str( exception ) }
-        
+                
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize = False )
         
@@ -644,8 +646,52 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         tool_model.update({
             'help'          : tool_help,
             'citations'     : tool_citations,
-            'biostar_url'   : trans.app.config.biostar_url
+            'biostar_url'   : trans.app.config.biostar_url,
+            'message'       : tool_message
         })
         
         # return enriched tool model
         return tool_model
+
+    def _get_tool_components( self, trans, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
+        return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
+
+    def _compare_tool_version( self, trans, tool, job ):
+        """
+        Compares a tool version with the tool version from a job (from ToolRunne.
+        """
+        id = job.tool_id
+        version = job.tool_version
+        message = ''
+        try:
+            select_field, tools, tool = self._get_tool_components( trans, id, tool_version=version, get_loaded_tools_by_lineage=False, set_selected=True )
+            if tool is None:
+                trans.response.status = 500
+                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % id }
+            if ( tool.id != id and tool.old_id != id ) or tool.version != version:
+                if tool.id == id:
+                    if version == None:
+                        # for some reason jobs don't always keep track of the tool version.
+                        message = ''
+                    else:
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % version
+                        if len( tools ) > 1:
+                            message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                        else:
+                            message += 'You can re-run the job with this tool version, which is a derivation of the original tool.'
+                else:
+                    if len( tools ) > 1:
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % version
+                        message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                    else:
+                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( id, version )
+                        message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
+        except Exception, error:
+            trans.response.status = 500
+            return { 'error': str (error) }
+                
+        # can't rerun upload, external data sources, et cetera. workflow compatible will proxy this for now
+        if not tool.is_workflow_compatible:
+            trans.response.status = 500
+            return { 'error': 'The \'%s\' tool does currently not support re-running.' % tool.name }
+        return message

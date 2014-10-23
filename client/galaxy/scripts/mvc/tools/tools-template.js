@@ -30,7 +30,7 @@ return {
         if (njobs == 1) {
             njobs_text = '1 job has';
         } else {
-            njobs_text = njobs + ' jobs have been';
+            njobs_text = njobs + ' jobs have';
         }
        
         // create template string
