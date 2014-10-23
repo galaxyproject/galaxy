@@ -399,8 +399,11 @@
              the terminal condition of a job will be used.
 
              The 'condition' attribute is optional, if not present, the
-             resubmit destination will be used for all conditions. Currently,
-             only the "walltime_reached" condition is implemented.
+             resubmit destination will be used for all conditions. The
+             conditions currently implemented are:
+
+               - "walltime_reached"
+               - "memory_limit_reached"
 
              The 'handler' tag is optional, if not present, the job's original
              handler will be reused for the resubmitted job.
@@ -412,6 +415,10 @@
         <destination id="long_slow" runner="sge">
             <!-- The destination that you resubmit jobs to can be any runner type -->
             <param id="nativeSpecification">-l h_rt=96:00:00</param>
+        </destination>
+        <destination id="smallmem" runner="slurm">
+            <param id="nativeSpecification">--mem-per-cpu=512</param>
+            <resubmit condition="memory_limit_reached" destination="bigmem" />
         </destination>
 
     </destinations>
