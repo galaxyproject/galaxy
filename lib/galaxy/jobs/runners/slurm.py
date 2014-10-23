@@ -19,13 +19,20 @@ class SlurmJobRunner( DRMAAJobRunner ):
 
     def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
         def __get_jobinfo():
-            p = subprocess.Popen( ( 'scontrol', '-o', 'show', 'job', ajs.job_id ), stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            job_id = ajs.job_id
+            cmd = [ 'scontrol', '-o' ]
+            if '.' in ajs.job_id:
+                # custom slurm-drmaa-with-cluster-support job id syntax
+                job_id, cluster = ajs.job_id.split('.', 1)
+                cmd.extend( [ '-M', cluster ] )
+            cmd.extend( [ 'show', 'job', job_id ] )
+            p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             if p.returncode != 0:
                 # Will need to be more clever here if this message is not consistent
                 if stderr == 'slurm_load_jobs error: Invalid job id specified\n':
                     return dict( JobState='NOT_FOUND' )
-                raise Exception( '`scontrol -o show job %s` returned %s, stderr: %s' % ( ajs.job_id, p.returncode, stderr ) )
+                raise Exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
             return dict( [ out_param.split( '=', 1 ) for out_param in stdout.split() ] )
         if drmaa_state == self.drmaa_job_states.FAILED:
             try:
