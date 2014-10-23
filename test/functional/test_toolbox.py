@@ -29,10 +29,10 @@ class ToolTestCase( TwillTestCase ):
 
         stage_data_in_history( galaxy_interactor, testdef.test_data(), test_history, shed_tool_id )
 
-        data_list = galaxy_interactor.run_tool( testdef, test_history )
+        data_list, jobs = galaxy_interactor.run_tool( testdef, test_history )
         self.assertTrue( data_list )
 
-        self._verify_outputs( testdef, test_history, shed_tool_id, data_list, galaxy_interactor )
+        self._verify_outputs( testdef, test_history, jobs, shed_tool_id, data_list, galaxy_interactor )
 
         galaxy_interactor.delete_history( test_history )
 
@@ -47,7 +47,7 @@ class ToolTestCase( TwillTestCase ):
             else:
                 raise Exception( "Test parse failure" )
 
-    def _verify_outputs( self, testdef, history, shed_tool_id, data_list, galaxy_interactor ):
+    def _verify_outputs( self, testdef, history, jobs, shed_tool_id, data_list, galaxy_interactor ):
         maxseconds = testdef.maxseconds
         if testdef.num_outputs is not None:
             expected = testdef.num_outputs
@@ -72,11 +72,13 @@ class ToolTestCase( TwillTestCase ):
                     output_data = data_list[ len(data_list) - len(testdef.outputs) + output_index ]
             self.assertTrue( output_data is not None )
             try:
-                galaxy_interactor.verify_output( history, output_data, output_testdef=output_testdef, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
+                galaxy_interactor.verify_output( history, jobs, output_data, output_testdef=output_testdef, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
             except Exception:
-                for stream in ['stdout', 'stderr']:
-                    stream_output = galaxy_interactor.get_job_stream( history, output_data, stream=stream )
-                    print >>sys.stderr, self._format_stream( stream_output, stream=stream, format=True )
+                for job in jobs:
+                    job_stdio = galaxy_interactor.get_job_stdio( job[ 'id' ] )
+                    for stream in ['stdout', 'stderr']:
+                        if stream in job_stdio:
+                            print >>sys.stderr, self._format_stream( job_stdio[ stream ], stream=stream, format=True )
                 raise
 
 

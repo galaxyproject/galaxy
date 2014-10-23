@@ -93,7 +93,11 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :returns:   dictionary containing full description of job data
         """
         job = self.__get_job( trans, id )
-        return self.encode_all_ids( trans, job.to_dict( 'element' ), True )
+        job_dict = self.encode_all_ids( trans, job.to_dict( 'element' ), True )
+        full_output = util.asbool( kwd.get( 'full', 'false' ) )
+        if full_output:
+            job_dict.update( dict( stderr=job.stderr, stdout=job.stdout ) )
+        return job_dict
 
     @expose_api
     def inputs( self, trans, id, **kwd ):
