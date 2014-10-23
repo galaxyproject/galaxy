@@ -283,6 +283,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     console.debug('tools-form::_addRow() : Auto matched field type (' + field_type + ').');
             }
             
+            // deactivate dynamic fields
+            if (input_def.is_dynamic) {
+                this.app.incompatible = true;
+            }
+            
             // set field value
             if (input_def.value !== undefined) {
                 field.value(input_def.value);
