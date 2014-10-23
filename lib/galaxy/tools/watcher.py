@@ -51,7 +51,7 @@ class ToolWatcher(object):
         self.tool_dir_callbacks[tool_dir] = callback
         if tool_dir not in self.monitored_dirs:
             self.monitored_dirs[ tool_dir ] = tool_dir
-            self.restart( tool_dir )
+            self.monitor( tool_dir )
 
 
 class ToolFileEventHandler(FileSystemEventHandler):
