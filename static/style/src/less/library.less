@@ -5,9 +5,6 @@
     background-color: @table-heading-bg;
 }
 
-tr{
-    height: 32px;
-}
 .datasetHighlighted {
     background-color: @table-bg-accent;
 }
@@ -58,11 +55,14 @@ td.right-center {
         }
     }
 }
-.library_style_container{
+.library_style_container {
     width: 95%; 
     margin: auto; 
     margin-top:2em; 
     overflow: auto !important; 
+    tr {
+        height: 32px;
+    }
 }
 
 tr.light td
