@@ -118,8 +118,9 @@ class GalaxyInteractorApi( object ):
     def wait_for_job( self, job_id, maxseconds ):
         self.twill_test_case.wait_for( lambda: not self.__job_ready( job_id ), maxseconds=maxseconds)
 
-    def get_job_stdio( self, job_id, stream ):
+    def get_job_stdio( self, job_id ):
         job_stdio = self.__get_job_stdio( job_id ).json()
+        return job_stdio
 
     def __get_job( self, job_id ):
         return self._get( 'jobs/%s' % job_id )
