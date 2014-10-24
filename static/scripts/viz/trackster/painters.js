@@ -1519,7 +1519,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             alt = [ locus_data[4].split(',') ];
             sample_gts = locus_data[7].split(',');
             allele_counts = locus_data.slice(8);
-
+            
             // Process alterate values to derive information about each alt.
             alt = _.map(_.flatten(alt), function(a) {
                 var alt_info = {
@@ -1537,23 +1537,23 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
                 continue;
             }
 
-            // Compute start for drawing variants marker, text.
-            draw_x_start = this.get_start_draw_pos(pos, w_scale);
-            
-            // Draw summary.
+            // Draw summary for alleles.
             if (draw_summary) {
                 ctx.fillStyle = '#999999';
                 ctx.globalAlpha = 1;
-                // Draw background for summary.
-                ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
-                draw_y_start = this.prefs.summary_height;
-                // Draw allele fractions onto summary.
-                for (j = 0; j < alt.length; j++) {
-                    ctx.fillStyle = ( alt[j].type === 'deletion' ? 'black' : this.base_color_fn(alt[j].value) );
-                    allele_frac = allele_counts / sample_gts.length;
-                    draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
-                    ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
-                    draw_y_start -= draw_height;
+                for (j = 0; j < alt.length; j++) {    
+                    // Draw background for summary.
+                    draw_x_start = this.get_start_draw_pos(pos + alt[j].start, w_scale);
+                    ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
+                    draw_y_start = this.prefs.summary_height;
+                    // Draw allele fractions onto summary.
+                    for (j = 0; j < alt.length; j++) {
+                        ctx.fillStyle = ( alt[j].type === 'deletion' ? 'black' : this.base_color_fn(alt[j].value) );
+                        allele_frac = allele_counts / sample_gts.length;
+                        draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
+                        ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
+                        draw_y_start -= draw_height;
+                    }
                 }
             }
 
@@ -1586,6 +1586,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
 
                 // If there's a variant, draw it.
                 if (variant) {
+                    draw_x_start = this.get_start_draw_pos(pos + variant.start, w_scale);
                     if (variant.type === 'snp') {
                         var snp = variant.value;
                         ctx.fillStyle = this.base_color_fn(snp);
@@ -1597,7 +1598,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
                         }
                     }
                     else if (variant.type === 'deletion') {
-                        paint_utils.draw_deletion(draw_x_start + base_px * variant.start, draw_y_start + 1, variant.len);
+                        paint_utils.draw_deletion(draw_x_start, draw_y_start + 1, variant.len);
                     }
                     else {
                         // TODO: handle insertions.
