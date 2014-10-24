@@ -548,6 +548,9 @@ nglims_config_file = tool-data/nglims.yaml
 # Enable verbose debugging of Galaxy-managed dynamic proxy.
 #dynamic_proxy_debug=False
 
+# The dynamic proxy is proxied by an external proxy (e.g. apache frontend to nodejs to wrap connections in SSL)
+#dynamic_proxy_external_proxy=False
+
 # -- Logging and Debugging
 
 # Verbosity of console log messages.  Acceptable values can be found here:
