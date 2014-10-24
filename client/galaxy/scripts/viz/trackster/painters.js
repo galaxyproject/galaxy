@@ -137,6 +137,35 @@ Painter.prototype.default_prefs = {};
  */
 Painter.prototype.draw = function(ctx, width, height, w_scale) {};
 
+/**
+ * Get starting drawing position, which is offset a half-base left of coordinate.
+ */
+Painter.prototype.get_start_draw_pos = function(chrom_pos, w_scale) {
+    return this._chrom_pos_to_draw_pos(chrom_pos, w_scale, -0.5);
+};
+
+/**
+ * Get end drawing position, which is offset a half-base right of coordinate.
+ */
+Painter.prototype.get_end_draw_pos = function(chrom_pos, w_scale) {
+    return this._chrom_pos_to_draw_pos(chrom_pos, w_scale, 0.5);
+};
+
+/**
+ * Get drawing position.
+ */
+Painter.prototype.get_draw_pos = function(chrom_pos, w_scale) {
+    return this._chrom_pos_to_draw_pos(chrom_pos, w_scale, 0);
+};
+
+/**
+ * Convert chromosome position to drawing position.
+ */
+Painter.prototype._chrom_pos_to_draw_pos = function(chrom_pos, w_scale, offset) {
+    return Math.floor( w_scale * ( Math.max(0, chrom_pos - this.view_start) + offset) );
+};
+
+
 var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
     if ( this.prefs.min_value === undefined ) {
@@ -1447,7 +1476,6 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             allele_counts,
             variant,
             draw_x_start,
-            char_x_start,   
             draw_y_start,
             genotype,
             // Always draw variants at least 1 pixel wide.
@@ -1510,8 +1538,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             }
 
             // Compute start for drawing variants marker, text.
-            draw_x_start = Math.floor( Math.max(-0.5 * w_scale, (pos - this.view_start - 0.5) * w_scale) );
-            char_x_start = Math.floor( Math.max(0, (pos - this.view_start) * w_scale) );
+            draw_x_start = this.get_start_draw_pos(pos, w_scale);
             
             // Draw summary.
             if (draw_summary) {
@@ -1563,7 +1590,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
                         var snp = variant.value;
                         ctx.fillStyle = this.base_color_fn(snp);
                         if (paint_utils.draw_details) {
-                            ctx.fillText(snp, char_x_start, draw_y_start + row_height);
+                            ctx.fillText(snp, this.get_draw_pos(pos, w_scale), draw_y_start + row_height);
                         }
                         else {
                             ctx.fillRect(draw_x_start, draw_y_start + 1, base_px, feature_height);
