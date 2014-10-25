@@ -55,39 +55,9 @@ function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_
  */
 function _handle_notebook_loading(password, notebook_login_url, notebook_access_url){
     if ( ie_password_auth ) {
-        // Make an AJAX POST
-        $.ajax({
-            type: "POST",
-            // to the Login URL
-            url: notebook_login_url,
-            // With our password
-            data: {
-                'v': password,
-                'persist': 1,
-                'clientPath': '/rstudio/auth-sign-in',
-                'appUri': '',
-            },
-            contentType: "application/x-www-form-urlencoded",
-            xhrFields: {
-                withCredentials: true
-            },
-            // If that is successful, load the notebook
-            success: function(){
-                append_notebook(notebook_access_url);
-            },
-            error: function(jqxhr, status, error){
-                if(ie_password_auth && !ie_apache_urls){
-                    // Failure happens due to CORS, can't use `password` because that's actually
-                    // encrypted for rstudio
-                    message_failed_auth(ie_password);
-                    append_notebook(notebook_access_url);
-                }else{
-                    message_failed_connection();
-                    // Do we want to try and load the notebook anyway? Just in case?
-                    append_notebook(notebook_access_url);
-                }
-            }
-        });
+        $('form[name=realform]').attr('action', notebook_login_url);
+        $('input[name=v]').val(password);
+        $('form[name=realform]').submit();
     }
     else {
         // Not using password auth, just embed it to avoid content-origin issues.

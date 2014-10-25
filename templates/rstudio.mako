@@ -33,8 +33,6 @@ print docker_cmd
 ${ ie.load_default_js() }
 </head>
 <body>
-
-${ ie.attr.notebook_pw }
 <script type="text/javascript">
 ${ ie.default_javascript_variables() }
 var notebook_login_url = '${ notebook_login_url }';
@@ -60,6 +58,13 @@ requirejs([
     load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url, "${ USERNAME }");
 });
 </script>
+
+<form action="auth-do-sign-in" name="realform" id="realform" method="POST">
+   <input name="persist" id="persist" value="1" type="hidden">
+   <input name="appUri" value="" type="hidden">
+   <input name="clientPath" id="clientPath" value="/rstudio/auth-sign-in" type="hidden">
+   <input id="package" name="v" value="" type="hidden">
+</form>
 <div id="main" width="100%" height="100%">
 </div>
 </body>
