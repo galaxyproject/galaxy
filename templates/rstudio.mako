@@ -21,7 +21,7 @@ USERNAME = "galaxy"
 ## General IE specific
 # Access URLs for the notebook from within galaxy.
 notebook_pubkey_url = ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth-public-key')
-notebook_access_url = ie_request('${PROXY_URL}/rstudio/${PORT}/')
+notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/')
 notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth-do-sign-in')
 
 docker_cmd = ie_request.docker_cmd(temp_dir)
@@ -30,7 +30,7 @@ print docker_cmd
 %>
 <html>
 <head>
-${ ie_request.load_default_js() }
+${ ie.load_default_js() }
 </head>
 <body>
 <script type="text/javascript">
@@ -42,12 +42,13 @@ var notebook_username = '${ USERNAME }';
 require.config({
     baseUrl: app_root,
     paths: {
+        "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",        
         "plugin" : app_root + "js/",
         "crypto" : app_root + "js/crypto/",
     },
 });
 requirejs([
-    'plugin/ie',
+    'interactive_environments',
     'plugin/rstudio',
     'crypto/prng4',
     'crypto/rng',
