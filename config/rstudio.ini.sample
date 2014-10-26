@@ -7,5 +7,5 @@ ssl = False
 
 [docker]
 command = docker
-image = rstudio-notebook
+image = erasche/docker-rstudio-notebook
 

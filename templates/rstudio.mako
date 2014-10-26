@@ -7,24 +7,41 @@ import time
 import subprocess
 
 # Sets ID and sets up a lot of other variables
-ie.set_id("rstudio")
-# In order to keep 302 redirects happy, nginx needs to be aware there's a proxy in front of it,
-# which may be using a different port. As a result, we have to start nginx on whichever port it is
-# we plan to use.
-ie.attr.docker_port = ie.attr.PORT
+ie_request.load_deploy_config()
+# In order to keep 302 redirects happy, nginx needs to be aware there's a proxy
+# in front of it, which may be using a different port. As a result, we have to
+# start nginx on whichever port it is we plan to use.
+ie_request.attr.docker_port = ie_request.attr.PORT
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
-# Write out conf file...needs work
-ie.write_conf_file(temp_dir, {'notebook_username': 'galaxy'})
+# We have to do some special things with the password here. Currently there's
+# an unpatched issue in Galaxy-IE which means passwords are automatically hashed
+# according to what IPython expects (sha1+salt). Unfortunately this is also done
+# for RStudio which takes the password as-is. However, we give the IE plugin NO
+# way to access this hashed password, so we have to work around this. Fortunately
+# we placed the additional conf entries at the very end of of the
+# `write_conf_file` function, enabling us to overwrite the correct attributes
+# simply by passing `notebook_password` with a "plaintext", unhashed password.
+PASSWORD = ie_request.generate_password(length=36)
 USERNAME = "galaxy"
+# Write out conf file...needs work
+ie_request.write_conf_file(temp_dir, {'notebook_username': 'galaxy', 'notebook_password': PASSWORD})
+# This is overwritten at the end of the above function call, so we need to re-overwrite it.
+ie_request.attr.notebook_pw = PASSWORD
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.
-notebook_pubkey_url = ie.url_template('${PROTO}://${HOST}/rstudio/${PORT}/auth-public-key')
-notebook_access_url = ie.url_template('${PROTO}://${HOST}/rstudio/${PORT}/')
-notebook_login_url = ie.url_template('${PROTO}://${HOST}/rstudio/${PORT}/auth-do-sign-in')
+# TODO: Make this work without pointing directly to IE. Currently does not work
+# through proxy.
+notebook_pubkey_url = ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/auth-public-key')
+notebook_access_url = ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/')
+notebook_login_url =  ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/auth-do-sign-in')
 
-docker_cmd = ie.docker_cmd(temp_dir)
+import re
+docker_cmd = ie_request.docker_cmd(temp_dir)
+# Hack out the -u galaxy_id statement because the RStudio IE isn't ready to run
+# as root
+docker_cmd = re.sub('-u (\d+) ', '', docker_cmd)
 subprocess.call(docker_cmd, shell=True)
 print docker_cmd
 %>
@@ -42,29 +59,32 @@ var notebook_username = '${ USERNAME }';
 require.config({
     baseUrl: app_root,
     paths: {
+        "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
         "plugin" : app_root + "js/",
         "crypto" : app_root + "js/crypto/",
     },
 });
 requirejs([
-    'plugin/ie',
-    'plugin/rstudio',
+    'interactive_environments',
     'crypto/prng4',
     'crypto/rng',
     'crypto/rsa',
     'crypto/jsbn',
-    'crypto/base64'
+    'crypto/base64',
+    'plugin/rstudio'
 ], function(){
     load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url, "${ USERNAME }");
 });
 </script>
 
+<!--
 <form action="auth-do-sign-in" name="realform" id="realform" method="POST">
    <input name="persist" id="persist" value="1" type="hidden">
    <input name="appUri" value="" type="hidden">
    <input name="clientPath" id="clientPath" value="/rstudio/auth-sign-in" type="hidden">
    <input id="package" name="v" value="" type="hidden">
 </form>
+-->
 <div id="main" width="100%" height="100%">
 </div>
 </body>
