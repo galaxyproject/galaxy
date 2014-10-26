@@ -24,7 +24,9 @@ notebook_pubkey_url = ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth
 notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/')
 notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth-do-sign-in')
 
+import re
 docker_cmd = ie_request.docker_cmd(temp_dir)
+docker_cmd = re.sub('-u (\d+) ', '', docker_cmd)
 subprocess.call(docker_cmd, shell=True)
 print docker_cmd
 %>
@@ -42,7 +44,7 @@ var notebook_username = '${ USERNAME }';
 require.config({
     baseUrl: app_root,
     paths: {
-        "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",        
+        "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
         "plugin" : app_root + "js/",
         "crypto" : app_root + "js/crypto/",
     },
