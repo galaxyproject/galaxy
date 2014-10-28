@@ -4,7 +4,6 @@
   <command interpreter="python">
     velvetg_wrapper.py 
            '$input.extra_files_path'
-           '$contigs' '$stats' '$LastGraph' '$velvet_asm' '$unused_reads_fasta'
            #if $generate_amos.afg  == "yes":
                -amos_file $generate_amos.afg
            #end if
@@ -169,20 +168,17 @@
     </conditional>
   </inputs>
   <outputs>
-    <!--
-    <data format="velvet_graph" name="LastGraph" />
-    -->
-    <data format="txt" name="LastGraph" label="${tool.name} on ${on_string}: LastGraph">
+    <data format="txt" name="LastGraph" label="${tool.name} on ${on_string}: LastGraph" from_work_dir="LastGraph">
       <filter>last_graph['generate_graph'] == "yes"</filter>
     </data>
-    <data format="afg" name="velvet_asm" label="${tool.name} on ${on_string}: AMOS.afg">
+    <data format="afg" name="velvet_asm" label="${tool.name} on ${on_string}: AMOS.afg" from_work_dir="velvet_asm.afg">
       <filter>generate_amos['afg'] == "yes"</filter>
     </data>
-    <data format="fasta" name="unused_reads_fasta" label="${tool.name} on ${on_string}: Unused Reads">
+    <data format="fasta" name="unused_reads_fasta" label="${tool.name} on ${on_string}: Unused Reads" from_work_dir="UnusedReads.fa">
       <filter>unused_reads['generate_unused'] == "yes"</filter>
     </data>
-    <data format="tabular" name="stats" label="${tool.name} on ${on_string}: Stats"/>
-    <data format="fasta" name="contigs" label="${tool.name} on ${on_string}: Contigs"/>
+    <data format="tabular" name="stats" label="${tool.name} on ${on_string}: Stats" from_work_dir="stats.txt" />
+    <data format="fasta" name="contigs" label="${tool.name} on ${on_string}: Contigs" from_work_dir="contigs.fa" />
   </outputs>
   <requirements>
     <requirement type="package">velvet</requirement>
