@@ -95,7 +95,7 @@
       <when value="yes"/>
     </conditional>
 
-    <param name="read_trkg" type="boolean" checked="false" truevalue="-read_trkg yes" falsevalue="-read_trkg no" label="track short read positions" help=" tracking of short read positions in assembly"/>
+    <param name="read_trkg" type="boolean" checked="false" truevalue="-read_trkg yes" falsevalue="-read_trkg no" label="Tracking of short read positions in assembly" help="Generates Graph2 dataset" />
 
     <conditional name="coverage">
       <param name="cutoff" type="select" label="Coverage cutoff" help="">
@@ -168,6 +168,9 @@
     </conditional>
   </inputs>
   <outputs>
+    <data format="txt" name="Graph2" label="${tool.name} on ${on_string}: Graph2" from_work_dir="Graph2">
+      <filter>read_trkg is True</filter>
+    </data>
     <data format="txt" name="LastGraph" label="${tool.name} on ${on_string}: LastGraph" from_work_dir="LastGraph">
       <filter>last_graph['generate_graph'] == "yes"</filter>
     </data>
