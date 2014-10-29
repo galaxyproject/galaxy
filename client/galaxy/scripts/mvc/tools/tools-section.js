@@ -286,6 +286,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             // deactivate dynamic fields
             if (input_def.is_dynamic) {
                 this.app.incompatible = true;
+                this.app.is_dynamic = true;
             }
             
             // set field value
@@ -493,11 +494,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Select/Checkbox/Radio options field
         */
         _fieldSelect : function (input_def) {
-            // check compatibility
-            if (input_def.is_dynamic) {
-                this.app.is_dynamic = true;
-            }
-            
             // configure options fields
             var options = [];
             for (var i in input_def.options) {

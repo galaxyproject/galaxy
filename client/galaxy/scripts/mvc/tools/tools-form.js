@@ -309,15 +309,15 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // append citations
             if (options.citations) {
-                // append html
-                this.$el.append(ToolTemplate.citations());
-    
                 // fetch citations
                 var citations = new CitationModel.ToolCitationCollection();
                 citations.tool_id = options.id;
                 var citation_list_view = new CitationView.CitationListView({ collection: citations } );
                 citation_list_view.render();
                 citations.fetch();
+                
+                // append to element
+                this.$el.append(citation_list_view.$el);
             }
             
             // append tool section
