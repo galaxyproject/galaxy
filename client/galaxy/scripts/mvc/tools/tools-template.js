@@ -11,10 +11,6 @@ return {
                 '</div>';
     },
     
-    citations: function() {
-        return  '<div id="citations"></div>';
-    },
-    
     success: function(response) {
         // check
         if (!response.jobs || !response.jobs.length) {

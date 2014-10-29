@@ -5,7 +5,7 @@ define([], function() {
 return Backbone.Model.extend({
     // options
     defaults : {
-        query_limit     : 5000,
+        query_limit     : 10000,
         query_timeout   : 100
     }
 });

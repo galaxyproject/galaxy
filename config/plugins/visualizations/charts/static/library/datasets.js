@@ -38,7 +38,6 @@ return Backbone.Collection.extend(
         
         // query block size
         var query_size    = this.app.config.get('query_limit');
-        var query_timeout = this.app.config.get('query_timeout');
         
         // set range
         var query_start = request_dictionary.start || 0;
