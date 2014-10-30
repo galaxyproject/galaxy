@@ -131,6 +131,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                         repeat.retitle(input_def.title);
                         
                         // trigger refresh
+                        self.app.rebuild();
                         self.app.refresh();
                     }
                 }
@@ -164,6 +165,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     create(input_def.inputs, true);
                             
                     // trigger refresh
+                    self.app.rebuild();
                     self.app.refresh();
                 }
             });
@@ -366,6 +368,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                             section_row.hide();
                         }
                     }
+                    
+                    // refresh form inputs
+                    self.app.refresh();
                 }
             });
         },
@@ -378,8 +383,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
-                onchange    : function(dict) {
-                    self.app.rebuild();
+                onchange    : function() {
+                    self.app.refresh();
                 }
             });
         },
@@ -415,7 +420,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 data    : options,
                 multiple: input_def.multiple,
                 onchange: function() {
-                    self.app.rebuild();
+                    self.app.refresh();
                 }
             });
         },

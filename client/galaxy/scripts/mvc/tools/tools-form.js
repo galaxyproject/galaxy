@@ -64,18 +64,55 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
         },
         
-        // refresh
-        refresh: function() {
-            // recreate tree structure
+        // rebuild underlying data structure representation for the tool form
+        // this happens i.e. when repeat blocks are added or removed and on initialization
+        rebuild: function() {
             this.tree.refresh();
+            console.debug('tools-form::refresh() - Refreshed form structure.');
+        },
+        
+        // refreshes input states i.e. for dynamic parameters
+        refresh: function() {
+            // link this
+            var self = this;
             
-            // trigger change
-            for (var id in this.field_list) {
-                this.field_list[id].trigger('change');
+            // only refresh the state if the form contains dynamic parameters
+            if (!this.is_dynamic) {
+                return;
             }
             
-            // log
-            console.debug('tools-form::refresh() - Recreated data structure. Refresh.');
+            // finalize data
+            var current_state = this.tree.finalize({
+                data : function(dict) {
+                    if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
+                        return self.content.get({id: dict.values[0].id}).dataset_id;
+                    }
+                    return null;
+                }
+            });
+            
+            // log tool state
+            console.debug('tools-form::_refreshForm() - Refreshing states.');
+            console.debug(current_state);
+            
+            // post job
+            Utils.request({
+                type    : 'GET',
+                url     : galaxy_config.root + 'api/tools/' + this.options.id + '/build',
+                data    : current_state,
+                success : function(response) {
+                    // rebuild form
+                    self._rebuildForm(response);
+            
+                    // log success
+                    console.debug('tools-form::_refreshForm() - States refreshed.');
+                    console.debug(response);
+                },
+                error   : function(response) {
+                    console.debug('tools-form::_refreshForm() - Refresh request failed.');
+                    console.debug(response);
+                }
+            });
         },
         
         // build tool model through api call
@@ -123,50 +160,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
         },
         
-        // refresh form data
-        rebuild: function() {
-            // link this
-            var self = this;
-            
-            // only refresh the state if the form contains dynamic parameters
-            if (!this.is_dynamic) {
-                return;
-            }
-            
-            // finalize data
-            var current_state = this.tree.finalize({
-                data : function(dict) {
-                    if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
-                        return self.content.get({id: dict.values[0].id}).dataset_id;
-                    }
-                    return null;
-                }
-            });
-            
-            // log tool state
-            console.debug('tools-form::_refreshForm() - Refreshing states.');
-            console.debug(current_state);
-            
-            // post job
-            Utils.request({
-                type    : 'GET',
-                url     : galaxy_config.root + 'api/tools/' + this.options.id + '/build',
-                data    : current_state,
-                success : function(response) {
-                    // rebuild form
-                    self._rebuildForm(response);
-            
-                    // log success
-                    console.debug('tools-form::_refreshForm() - States refreshed.');
-                    console.debug(response);
-                },
-                error   : function(response) {
-                    console.debug('tools-form::_refreshForm() - Refresh request failed.');
-                    console.debug(response);
-                }
-            });
-        },
-        
         // rebuild the form elements
         _rebuildForm: function(new_model) {
             var self = this;
@@ -177,7 +170,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         // backup new options
                         input.options = node.options;
                         
-                        // get/update field (currently only done for select fields)
+                        // get/update field
                         var field = self.field_list[input_id];
                         if (field.update && input.type != 'data') {
                             var new_options = [];
@@ -296,7 +289,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         cls      : 'btn btn-primary',
                         floating : 'clear',
                         onclick  : function() {
-                            //self.rebuild();
                             self.job_handler.submit();
                         }
                     })
@@ -328,8 +320,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // append tool section
             this.portlet.append(this.section.$el);
             
-            // trigger refresh
-            this.refresh();
+            // rebuild the underlying data structure
+            this.rebuild();
         }
     });
 
