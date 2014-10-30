@@ -95,6 +95,24 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             console.debug('tools-form::_refreshForm() - Refreshing states.');
             console.debug(current_state);
             
+            // activates/disables spinner for dynamic fields to indicate that they are currently being updated
+            function wait(activate) {
+                for (var i in self.input_list) {
+                    var field = self.field_list[i];
+                    var input = self.input_list[i];
+                    if (input.is_dynamic && field.wait && field.show) {
+                        if (activate) {
+                            field.wait();
+                        } else {
+                            field.show();
+                        }
+                    }
+                }
+            }
+            
+            // set wait mode
+            wait(true);
+            
             // post job
             Utils.request({
                 type    : 'GET',
@@ -103,6 +121,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 success : function(response) {
                     // rebuild form
                     self._rebuildForm(response);
+            
+                    // unset wait mode
+                    wait(false);
             
                     // log success
                     console.debug('tools-form::_refreshForm() - States refreshed.');

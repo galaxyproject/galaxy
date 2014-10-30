@@ -82,7 +82,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             input_def.value = input_def.test_param.value;
         
             // build options field
-            var table_row = this._addRow('conditional', input_def);
+            var field = this._addRow('conditional', input_def);
             
             // add fields
             for (var i in input_def.cases) {
@@ -104,6 +104,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 // append to table
                 this.table.append(sub_section_id);
             }
+            
+            // trigger refresh on conditional input field after all input elements have been created
+            field.trigger('change');
         },
         
         /** Add a repeat block
@@ -315,8 +318,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             // append to table
             this.table.append(id);
             
-            // return table row
-            return this.table.get(id)
+            // return created field
+            return field;
         },
         
         /** Conditional input field selector
