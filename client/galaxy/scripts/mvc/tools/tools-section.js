@@ -231,7 +231,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 
                 // data column
                 case 'data_column':
-                    input_def.is_dynamic = false;
                     field = this._fieldSelect(input_def);
                     break;
                     
@@ -285,7 +284,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             
             // deactivate dynamic fields
             if (input_def.is_dynamic) {
-                this.app.incompatible = true;
+                //this.app.incompatible = true;
                 this.app.is_dynamic = true;
             }
             
@@ -374,119 +373,13 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Data input field
         */
         _fieldData : function(input_def) {
-            // link this
             var self = this;
-            
-            // get element id
-            var id = input_def.id;
-            
-            // select field
             return new SelectContent.View(this.app, {
-                id          : 'field-' + id,
+                id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
                 onchange    : function(dict) {
-                    // rebuild the form
-                    if (self.app.is_dynamic) {
-                        self.app.rebuild();
-                    }
-                    
-                    // pick the first content only (todo: maybe collect multiple meta information)
-                    var content_def     = dict.values[0];
-                    var content_id      = content_def.id;
-                    var content_src     = content_def.src;
-                    
-                    // get referenced columns
-                    var column_list = self.app.tree.references(id, 'data_column');
-                    
-                    // check data column list
-                    if (column_list.length <= 0) {
-                        console.debug('tool-form::field_data() -  Data column parameters unavailable.');
-                        return;
-                    }
-                    
-                    // set wait mode
-                    for (var i in column_list) {
-                        var column_field = self.app.field_list[column_list[i]];
-                        column_field.wait && column_field.wait();
-                    }
-                    
-                    // find selected content
-                    self.app.content.getDetails({
-                        id      : content_id,
-                        src     : content_src,
-                        success : function(content) {
-                            // meta data
-                            var meta = null;
-                            
-                            // check content
-                            if (content) {
-                                // log selection
-                                console.debug('tool-form::field_data() - Selected content ' + content_id + '.');
-                            
-                                // select the first dataset to represent collections
-                                if (content_src == 'hdca' && content.elements && content.elements.length > 0) {
-                                    content = content.elements[0].object;
-                                }
-                            
-                                // get meta data
-                                meta = content.metadata_column_types;
-                            
-                                // check meta data
-                                if (!meta) {
-                                    console.debug('tool-form::field_data() - FAILED: Could not find metadata for content ' + content_id + '.');
-                                }
-                            } else {
-                                console.debug('tool-form::field_data() - FAILED: Could not find content ' + content_id + '.');
-                            }
-                            
-                            // update referenced columns
-                            for (var i in column_list) {
-                                // get column input/field
-                                var column_input = self.app.input_list[column_list[i]];
-                                var column_field = self.app.field_list[column_list[i]];
-                                if (!column_input || !column_field) {
-                                    console.debug('tool-form::field_data() - FAILED: Column not found.');
-                                }
-                            
-                                // is numerical?
-                                var numerical = column_input.numerical;
-                                
-                                // identify column options
-                                var columns = [];
-                                for (var key in meta) {
-                                    // get column type
-                                    var column_type = meta[key];
-                                    
-                                    // column index
-                                    var column_index = (parseInt(key) + 1);
-                                    
-                                    // column type label
-                                    var column_label = 'Text';
-                                    if (column_type == 'int' || column_type == 'float') {
-                                        column_label = 'Number';
-                                    }
-                                    
-                                    // add to selection
-                                    if (column_type == 'int' || column_type == 'float' || !numerical) {
-                                        columns.push({
-                                            'label' : 'Column: ' + column_index + ' [' + column_label + ']',
-                                            'value' : column_index
-                                        });
-                                    }
-                                }
-                                
-                                // update field
-                                if (column_field) {
-                                    column_field.update(columns);
-                                    if (!column_field.exists(column_field.value())) {
-                                        column_field.value(column_field.first());
-                                    }
-                                    column_field.show();
-                                }
-                            }
-                        }
-                    });
+                    self.app.rebuild();
                 }
             });
         },
@@ -516,10 +409,14 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             }
             
             // select field
+            var self = this;
             return new SelectClass.View({
                 id      : 'field-' + input_def.id,
                 data    : options,
-                multiple: input_def.multiple
+                multiple: input_def.multiple,
+                onchange: function() {
+                    self.app.rebuild();
+                }
             });
         },
         
@@ -535,7 +432,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Slider field
         */
         _fieldSlider: function(input_def) {
-            // create slider
             return new Ui.Slider.View({
                 id      : 'field-' + input_def.id,
                 precise : input_def.type == 'float',

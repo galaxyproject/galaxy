@@ -128,6 +128,11 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // link this
             var self = this;
             
+            // only refresh the state if the form contains dynamic parameters
+            if (!this.is_dynamic) {
+                return;
+            }
+            
             // finalize data
             var current_state = this.tree.finalize({
                 data : function(dict) {
@@ -139,7 +144,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // log tool state
-            console.debug('tools-form::_refreshForm() - Refreshing inputs/states.');
+            console.debug('tools-form::_refreshForm() - Refreshing states.');
             console.debug(current_state);
             
             // post job
@@ -152,7 +157,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     self._rebuildForm(response);
             
                     // log success
-                    console.debug('tools-form::_refreshForm() - Refreshed inputs/states.');
+                    console.debug('tools-form::_refreshForm() - States refreshed.');
                     console.debug(response);
                 },
                 error   : function(response) {
@@ -174,7 +179,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         
                         // get/update field (currently only done for select fields)
                         var field = self.field_list[input_id];
-                        if (field.update && input.type == 'select') {
+                        if (field.update && input.type != 'data') {
                             var new_options = [];
                             for (var i in node.options) {
                                 var opt = node.options[i];

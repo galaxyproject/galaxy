@@ -1242,7 +1242,7 @@ class ColumnListParameter( SelectToolParameter ):
                 if type(col) == type(()) and len(col) == 2: # fiddled
                     options.append((col[1],col[0],False))
                 else:
-                    options.append( ( 'c' + col, col, False ) )
+                    options.append( ( 'Column: ' + col, col, False ) )
         return options
 
     def get_initial_value( self, trans, context, history=None ):
