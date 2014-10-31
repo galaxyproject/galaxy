@@ -11,7 +11,7 @@
     "url": "https://bitbucket.org/galaxy/galaxy-central"
   },
   "dependencies": {
-    "http-proxy": "~1.1",
+    "http-proxy": "1.6.0",
     "commander": "~2.2",
     "sqlite3": "3.0.2"
   }
