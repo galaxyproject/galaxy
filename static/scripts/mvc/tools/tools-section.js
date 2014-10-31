@@ -192,7 +192,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             }
             
             // create input field wrapper
-            var input_element = new InputElement({
+            var input_element = new InputElement(this.app, {
                 label       : input_def.title,
                 help        : input_def.help,
                 field       : repeat
@@ -302,7 +302,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             this.app.field_list[id] = field;
             
             // create input field wrapper
-            var input_element = new InputElement({
+            var input_element = new InputElement(this.app, {
                 label       : input_def.label,
                 optional    : input_def.optional,
                 help        : input_def.help,

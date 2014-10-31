@@ -96,15 +96,15 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             console.debug(current_state);
             
             // activates/disables spinner for dynamic fields to indicate that they are currently being updated
-            function wait(activate) {
+            function wait(active) {
                 for (var i in self.input_list) {
                     var field = self.field_list[i];
                     var input = self.input_list[i];
-                    if (input.is_dynamic && field.wait && field.show) {
-                        if (activate) {
+                    if (input.is_dynamic && field.wait && field.unwait) {
+                        if (active) {
                             field.wait();
                         } else {
-                            field.show();
+                            field.unwait();
                         }
                     }
                 }
