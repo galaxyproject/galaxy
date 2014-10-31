@@ -337,7 +337,7 @@ class InputDataCollectionModule( InputModule ):
         type_hints[ "list" ] = "List of Datasets"
         type_hints[ "paired" ] = "Dataset Pair"
         type_hints[ "list:paired" ] = "List of Dataset Pairs"
-        
+
         type_input = formbuilder.DatalistInput(
             name="collection_type",
             label="Collection Type",
@@ -486,7 +486,7 @@ class ToolModule( WorkflowModule ):
 
     def get_tooltip( self, static_path='' ):
         if self.tool.help:
-            return self.tool.help.render( static_path=static_path )
+            return self.tool.help.render( host_url='', static_path=static_path )
         else:
             return None
 
