@@ -1133,7 +1133,9 @@ class Admin( object ):
         finished = {}
         for job in recent_jobs:
             delta = datetime.utcnow() - job.update_time
-            if delta > timedelta( minutes=60 ):
+            if delta.days > 0:
+                finished[job.id] = '%s hours' % ( delta.days * 24 + int( delta.seconds / 60 / 60 ) )
+            elif delta > timedelta( minutes=59 ):
                 finished[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
             else:
                 finished[job.id] = '%s minutes' % int( delta.seconds / 60 )
