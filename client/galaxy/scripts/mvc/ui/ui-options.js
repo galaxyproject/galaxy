@@ -11,7 +11,8 @@ var OptionsBase = Backbone.View.extend({
             visible     : true,
             data        : [],
             id          : Utils.uuid(),
-            empty       : 'No data available'
+            errorText   : 'No data available.',
+            waitText    : 'Please wait...'
         };
     
         // configure options
@@ -21,11 +22,11 @@ var OptionsBase = Backbone.View.extend({
         this.setElement('<div/>');
         
         // create elements
-        this.$error = $(this._templateError(options));
+        this.$message = $('<div/>');
         this.$options = $(this._template(options));
         
         // append
-        this.$el.append(this.$error);
+        this.$el.append(this.$message);
         this.$el.append(this.$options);
         
         // hide input field
@@ -121,6 +122,22 @@ var OptionsBase = Backbone.View.extend({
         return true;
     },
     
+    /** Wait message during request processing
+    */
+    wait: function() {
+        if (this._size() == 0) {
+            this._messageShow(this.options.waitText, 'info');
+            this.$options.hide();
+        }
+    },
+    
+    /** Hide wait message
+    */
+    unwait: function() {
+        this._messageHide();
+        this._refresh();
+    },
+    
     /** Trigger custom onchange callback function
     */
     _change: function() {
@@ -132,13 +149,11 @@ var OptionsBase = Backbone.View.extend({
     /** Refresh options view
     */
     _refresh: function() {
-        // count remaining options
-        var remaining = this.$el.find('.ui-option').length;
-        if (remaining == 0) {
-            this.$error.show();
+        if (this._size() == 0) {
+            this._messageShow(this.options.errorText, 'danger');
             this.$options.hide();
         } else {
-            this.$error.hide();
+            this._messageHide();
             this.$options.css('display', 'inline-block');
         }
     },
@@ -163,9 +178,26 @@ var OptionsBase = Backbone.View.extend({
             return selected.val();
         }
     },
+    
+    /** Returns the number of options
+    */
+    _size: function() {
+        return this.$el.find('.ui-option').length;
+    },
 
-    _templateError: function(options) {
-        return '<div class="ui-error" style="display: none;">' + options.empty + '</div>';
+    /** Show message instead if options
+    */
+    _messageShow: function(text, status) {
+        this.$message.show();
+        this.$message.removeClass();
+        this.$message.addClass('ui-message alert alert-' + status);
+        this.$message.html(text);
+    },
+    
+    /** Hide message
+    */
+    _messageHide: function() {
+        this.$message.hide();
     }
 });
 

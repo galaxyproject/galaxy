@@ -169,7 +169,12 @@ return Backbone.Model.extend({
                     }
                 } else {
                     if (node.type == 'conditional') {
-                        search (index, node.inputs);
+                        var value = node.test_param && node.test_param.value;
+                        for (var j in node.cases) {
+                            if (node.cases[j].value == value) {
+                                search (index, node.cases[j].inputs);
+                            }
+                        }
                     } else {
                         var input_id = self.app.tree.job_ids[index];
                         if (input_id) {

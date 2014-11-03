@@ -110,7 +110,7 @@ return Backbone.Model.extend({
                     chart.set('dataset_id_job', job.id);
                     
                     // save
-                    this.app.storage.save();
+                    self.app.storage.save();
                     
                     // wait for job completion
                     self._wait(chart, success, error);

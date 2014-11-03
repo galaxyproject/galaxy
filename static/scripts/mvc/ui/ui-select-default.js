@@ -107,8 +107,7 @@ var View = Backbone.View.extend({
     /** Show the select field
     */
     show: function() {
-        this.$icon.removeClass();
-        this.$icon.addClass('fa fa-caret-down');
+        this.unwait();
         this.$select.show();
         this.$el.show();
     },
@@ -124,6 +123,13 @@ var View = Backbone.View.extend({
     wait: function() {
         this.$icon.removeClass();
         this.$icon.addClass('fa fa-spinner fa-spin');
+    },
+    
+    /** Hide spinner indicating that the request has been completed
+    */
+    unwait: function() {
+        this.$icon.removeClass();
+        this.$icon.addClass('fa fa-caret-down');
     },
     
     /** Returns true if the field is disabled

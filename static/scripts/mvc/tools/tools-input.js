@@ -6,7 +6,10 @@ define([], function() {
     // input field element wrapper
     return Backbone.View.extend({
         // initialize input wrapper
-        initialize: function(options) {
+        initialize: function(app, options) {
+            // link app
+            this.app = app;
+            
             // link field
             this.field = options.field;
             
@@ -61,10 +64,10 @@ define([], function() {
         /** Refresh element
         */
         _refresh: function() {
-            // show/hide field element
             if (!this.field.skip) {
                 this.$field.fadeIn('fast');
                 this.$title_optional.html('Disable');
+                this.app.refresh();
             } else {
                 this.$field.hide();
                 this.$title_optional.html('Enable');

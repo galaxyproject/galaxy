@@ -82,7 +82,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             input_def.value = input_def.test_param.value;
         
             // build options field
-            var table_row = this._addRow('conditional', input_def);
+            var field = this._addRow('conditional', input_def);
             
             // add fields
             for (var i in input_def.cases) {
@@ -104,6 +104,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 // append to table
                 this.table.append(sub_section_id);
             }
+            
+            // trigger refresh on conditional input field after all input elements have been created
+            field.trigger('change');
         },
         
         /** Add a repeat block
@@ -131,6 +134,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                         repeat.retitle(input_def.title);
                         
                         // trigger refresh
+                        self.app.rebuild();
                         self.app.refresh();
                     }
                 }
@@ -164,6 +168,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     create(input_def.inputs, true);
                             
                     // trigger refresh
+                    self.app.rebuild();
                     self.app.refresh();
                 }
             });
@@ -187,7 +192,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             }
             
             // create input field wrapper
-            var input_element = new InputElement({
+            var input_element = new InputElement(this.app, {
                 label       : input_def.title,
                 help        : input_def.help,
                 field       : repeat
@@ -297,7 +302,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             this.app.field_list[id] = field;
             
             // create input field wrapper
-            var input_element = new InputElement({
+            var input_element = new InputElement(this.app, {
                 label       : input_def.label,
                 optional    : input_def.optional,
                 help        : input_def.help,
@@ -313,8 +318,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             // append to table
             this.table.append(id);
             
-            // return table row
-            return this.table.get(id)
+            // return created field
+            return field;
         },
         
         /** Conditional input field selector
@@ -366,6 +371,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                             section_row.hide();
                         }
                     }
+                    
+                    // refresh form inputs
+                    self.app.refresh();
                 }
             });
         },
@@ -378,8 +386,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
-                onchange    : function(dict) {
-                    self.app.rebuild();
+                onchange    : function() {
+                    self.app.refresh();
                 }
             });
         },
@@ -415,7 +423,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 data    : options,
                 multiple: input_def.multiple,
                 onchange: function() {
-                    self.app.rebuild();
+                    self.app.refresh();
                 }
             });
         },

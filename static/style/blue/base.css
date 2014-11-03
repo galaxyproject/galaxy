@@ -1292,7 +1292,7 @@ label{font-weight:normal}
 .ui-table-form-info{clear:both !important}
 .ui-table-form-separator{font-weight:bold;font-size:0.9em}
 .ui-label{font-weight:bold}
-.ui-message{padding:2px 2px 2px 10px}
+.ui-message{padding:2px 2px 2px 10px;margin-bottom:5px}
 .ui-icon{font-size:1.2em}
 .ui-button-icon{margin-right:5px}.ui-button-icon ul i{font-size:1.2em;margin-right:5px;position:relative;top:1px}
 .ui-button-icon .button{margin-right:5px;margin-left:5px}.ui-button-icon .button .title{position:relative;font-size:0.8em;font-weight:normal;top:-1px}
