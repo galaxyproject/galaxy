@@ -44,6 +44,25 @@ class Sentry(object):
                     self.handle_exception(environ)
 
     def handle_exception(self, environ):
+        headers = dict(get_headers(environ))
+        # Authorization header for REMOTE_USER sites consists of a base64() of
+        # their plaintext password. It is a security issue for this password to
+        # be exposed to a third party system which may or may not be under
+        # control of the same administrators as the local Authentication
+        # system. E.g. university LDAP systems.
+        if 'Authorization' in headers:
+            # Redact so the administrator knows that a value is indeed present.
+            headers['Authorization'] = 'redacted'
+        # Passing cookies allows for impersonation of users (depending on
+        # remote service) and can be considered a security risk as well. For
+        # multiple services running alongside Galaxy on the same host, this
+        # could allow a sentry user with access to logs to impersonate a user
+        # on another service. In the case of services like IPython, this can be
+        # a serious concern as that would allow for terminal access. Furthermore,
+        # very little debugging information can be gained as a result of having
+        # access to all of the users cookies (including Galaxy cookies)
+        if 'Cookie' in headers:
+            headers['Cookie'] = 'redacted'
         event_id = self.client.captureException(
             data={
                 'sentry.interfaces.Http': {
@@ -52,7 +71,7 @@ class Sentry(object):
                     'query_string': environ.get('QUERY_STRING'),
                     # TODO
                     # 'data': environ.get('wsgi.input'),
-                    'headers': dict(get_headers(environ)),
+                    'headers': headers,
                     'env': dict(get_environ(environ)),
                 }
             },
