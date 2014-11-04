@@ -166,6 +166,7 @@ class Configuration( object ):
         self.terms_url = kwargs.get( 'terms_url', None )
         self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
+        self.ga_code = kwargs.get( 'ga_code', None )
         #  Get the disposable email domains blacklist file and its contents
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
         self.blacklist_content = None

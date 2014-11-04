@@ -375,6 +375,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
 
+# -- Analytics
+
+# You can enter tracking code here to track visitor's behavior
+# through your Google Analytics account. Example: UA-XXXXXXXX-Y
+#ga_code = None
+
 # -- Display sites
 
 # Galaxy can display data at various external browsers.  These options specify
