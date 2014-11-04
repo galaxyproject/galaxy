@@ -431,9 +431,13 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Text input field
         */
         _fieldText : function(input_def) {
+            var self = this;
             return new Ui.Input({
                 id      : 'field-' + input_def.id,
-                area    : input_def.area
+                area    : input_def.area,
+                onchange: function() {
+                    self.app.refresh();
+                }
             });
         },
         

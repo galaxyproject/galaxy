@@ -1,10 +1,10 @@
 /**
     This is the main class of the tool form plugin. It is referenced as 'app' in all lower level modules.
 */
-define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
+define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         'mvc/citation/citation-model', 'mvc/citation/citation-view',
         'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-content', 'mvc/tools/tools-section', 'mvc/tools/tools-tree', 'mvc/tools/tools-jobs'],
-    function(Utils, Portlet, Ui, CitationModel, CitationView,
+    function(Utils, Deferred, Portlet, Ui, CitationModel, CitationView,
              Tools, ToolTemplate, ToolContent, ToolSection, ToolTree, ToolJobs) {
 
     // create form view
@@ -29,6 +29,10 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // link options
             this.options = options;
+            
+            // create deferred processing queue handler
+            // this handler reduces the number of requests to the api by filtering redundant requests
+            this.deferred = new Deferred();
             
             // set element
             this.setElement('<div/>');
@@ -73,67 +77,15 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         
         // refreshes input states i.e. for dynamic parameters
         refresh: function() {
-            // link this
-            var self = this;
-            
             // only refresh the state if the form contains dynamic parameters
             if (!this.is_dynamic) {
                 return;
             }
             
-            // finalize data
-            var current_state = this.tree.finalize({
-                data : function(dict) {
-                    if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
-                        return self.content.get({id: dict.values[0].id}).dataset_id;
-                    }
-                    return null;
-                }
-            });
-            
-            // log tool state
-            console.debug('tools-form::_refreshForm() - Refreshing states.');
-            console.debug(current_state);
-            
-            // activates/disables spinner for dynamic fields to indicate that they are currently being updated
-            function wait(active) {
-                for (var i in self.input_list) {
-                    var field = self.field_list[i];
-                    var input = self.input_list[i];
-                    if (input.is_dynamic && field.wait && field.unwait) {
-                        if (active) {
-                            field.wait();
-                        } else {
-                            field.unwait();
-                        }
-                    }
-                }
-            }
-            
-            // set wait mode
-            wait(true);
-            
-            // post job
-            Utils.request({
-                type    : 'GET',
-                url     : galaxy_config.root + 'api/tools/' + this.options.id + '/build',
-                data    : current_state,
-                success : function(response) {
-                    // rebuild form
-                    self._rebuildForm(response);
-            
-                    // unset wait mode
-                    wait(false);
-            
-                    // log success
-                    console.debug('tools-form::_refreshForm() - States refreshed.');
-                    console.debug(response);
-                },
-                error   : function(response) {
-                    console.debug('tools-form::_refreshForm() - Refresh request failed.');
-                    console.debug(response);
-                }
-            });
+            // place refresh process into deferred queue
+            var self = this;
+            this.deferred.reset();
+            this.deferred.execute(function(){self._updateModel()});
         },
         
         // build tool model through api call
@@ -181,8 +133,78 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
         },
         
-        // rebuild the form elements
-        _rebuildForm: function(new_model) {
+        // request a new model and update the form inputs
+        _updateModel: function() {
+            // link this
+            var self = this;
+            
+            // finalize data
+            var current_state = this.tree.finalize({
+                data : function(dict) {
+                    if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
+                        return self.content.get({id: dict.values[0].id}).dataset_id;
+                    }
+                    return null;
+                }
+            });
+            
+            // log tool state
+            console.debug('tools-form::_refreshForm() - Refreshing states.');
+            console.debug(current_state);
+            
+            // activates/disables spinner for dynamic fields to indicate that they are currently being updated
+            function wait(active) {
+                for (var i in self.input_list) {
+                    var field = self.field_list[i];
+                    var input = self.input_list[i];
+                    if (input.is_dynamic && field.wait && field.unwait) {
+                        if (active) {
+                            field.wait();
+                        } else {
+                            field.unwait();
+                        }
+                    }
+                }
+            }
+            
+            // set wait mode
+            wait(true);
+            
+            // register process
+            var process_id = this.deferred.register();
+
+            // post job
+            Utils.request({
+                type    : 'GET',
+                url     : galaxy_config.root + 'api/tools/' + this.options.id + '/build',
+                data    : current_state,
+                success : function(response) {
+                    // rebuild form
+                    self._updateForm(response);
+            
+                    // unset wait mode
+                    wait(false);
+            
+                    // process completed
+                    self.deferred.done(process_id);
+            
+                    // log success
+                    console.debug('tools-form::_refreshForm() - States refreshed.');
+                    console.debug(response);
+                },
+                error   : function(response) {
+                    // process completed
+                    self.deferred.done(process_id);
+                    
+                    // log error
+                    console.debug('tools-form::_refreshForm() - Refresh request failed.');
+                    console.debug(response);
+                }
+            });
+        },
+        
+        // update form inputs
+        _updateForm: function(new_model) {
             var self = this;
             this.tree.matchModel(new_model, function(input_id, node) {
                 var input = self.input_list[input_id];
