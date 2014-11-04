@@ -504,9 +504,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             for char in filter( lambda x: x not in string.ascii_lowercase + string.digits + '-', username ):
                 username = username.replace( char, '-' )
             # Find a unique username - user can change it later
-            if ( self.sa_session.query( self.app.model.User ).filter_by( username=username ).first() ):
+            if self.sa_session.query( self.app.model.User ).filter_by( username=username ).first():
                 i = 1
-                while ( self.sa_session.query( self.app.model.User ).filter_by( username=(username + '-' + str(i) ) ).first() ):
+                while self.sa_session.query( self.app.model.User ).filter_by( username=(username + '-' + str(i) ) ).first():
                     i += 1
                 username += '-' + str(i)
             user.username = username
@@ -700,11 +700,6 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
     @base.lazy_property
     def template_context( self ):
         return dict()
-
-    def make_form_data( self, name, **kwargs ):
-        rval = self.template_context[name] = FormData()
-        rval.values.update( kwargs )
-        return rval
 
     def set_message( self, message, type=None ):
         """
