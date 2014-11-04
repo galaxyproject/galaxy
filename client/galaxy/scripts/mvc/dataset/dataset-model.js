@@ -94,10 +94,7 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
                 this.trigger( 'state:ready', currModel, newState, this.previous( 'state' ) );
             }
         });
-        this.on( 'change:urls', function(){
-            console.warn( 'change:urls', arguments );
-        });
-        // the download url (currenlty) relies on having a correct file extension
+        // the download url (currently) relies on having a correct file extension
         this.on( 'change:id change:file_ext', function( currModel ){
             this._generateUrls();
         });
@@ -139,8 +136,15 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     },
 
     // ........................................................................ ajax
-    //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
+    fetch : function( options ){
+        var dataset = this;
+        return Backbone.Model.prototype.fetch.call( this, options )
+            .always( function(){
+                dataset._generateUrls();
+            });
+    },
 
+    //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
     /** save this dataset, _Mark_ing it as deleted (just a flag) */
     'delete' : function( options ){
         if( this.get( 'deleted' ) ){ return jQuery.when(); }
