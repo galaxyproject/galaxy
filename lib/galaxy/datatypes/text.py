@@ -154,11 +154,3 @@ class Obo( Text ):
                         return True
         return False
 
-
-
-    def set_meta( self, dataset, **kwd ):
-        """
-        Set metadata for OBO files.
-        """
-        pass
-
