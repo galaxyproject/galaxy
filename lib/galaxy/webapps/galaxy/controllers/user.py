@@ -864,7 +864,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 return trans.show_ok_message( "Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
             else:
                 #  Tokens don't match. Activation is denied.
-                return trans.show_error_message( "You are using invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+                return trans.show_error_message( "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
         return
 
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
