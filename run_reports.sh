@@ -23,7 +23,7 @@ fi
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     if [ -f reports_wsgi.ini ]; then
         GALAXY_REPORTS_CONFIG=reports_wsgi.ini
-    elif [ -f config/tool_shed.ini ]; then
+    elif [ -f config/reports_wsgi.ini ]; then
         GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini
     else
         GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini.sample
