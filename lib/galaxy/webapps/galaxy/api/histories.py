@@ -92,7 +92,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
 
         :rtype:     dictionary
         :returns:   detailed history information from
-            :func:`galaxy.web.base.controller.UsesHistoryDatasetAssociationMixin.get_history_dict`
+            :func:`galaxy.web.base.controller.UsesHistoryMixin.get_history_dict`
         """
         history_id = id
         deleted = string_as_bool( deleted )
