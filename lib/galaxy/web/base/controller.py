@@ -85,7 +85,7 @@ class BaseController( object ):
         Convenience method to get a model object with the specified checks.
         """
         return managers_base.get_object( trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-  
+
     # this should be here - but catching errors from sharable item controllers that *should* have SharableItemMixin
     #   but *don't* then becomes difficult
     #def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
@@ -1596,6 +1596,8 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         else:
             name = data['name']
         workflow.name = name
+        if 'uuid' in data:
+            workflow.uuid = data['uuid']
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
         # Create each step
@@ -1703,7 +1705,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         data['name'] = workflow.name
         data['annotation'] = annotation_str
         if workflow.uuid is not None:
-            data['uuid'] = str(workflow.uuid)  
+            data['uuid'] = str(workflow.uuid)
         data['steps'] = {}
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
