@@ -104,12 +104,10 @@ return Backbone.Model.extend({
                             // add conditional value
                             add (job_input_id + '|' + input.test_param.name, input.id, value);
                             
-                            // find selected case
-                            for (var i in input.cases) {
-                                if (input.cases[i].value == value) {
-                                    convert(job_input_id, head[input.id + '-section-' + i]);
-                                    break;
-                                }
+                            // identify selected case
+                            var selectedCase = self.matchCase(input, value);
+                            if (selectedCase != -1) {
+                                convert(job_input_id, head[input.id + '-section-' + selectedCase]);
                             }
                             break;
                         default:
@@ -146,6 +144,29 @@ return Backbone.Model.extend({
         return this.job_ids && this.job_ids[job_input_id];
     },
     
+    /** Match conditional values to selected cases
+    */
+    matchCase: function(input, value) {
+        // format value for boolean inputs
+        if (input.test_param.type == 'boolean') {
+            if (value == 'true') {
+                value = input.test_param.truevalue || 'true';
+            } else {
+                value = input.test_param.falsevalue || 'false';
+            }
+        }
+        
+        // find selected case
+        for (var i in input.cases) {
+            if (input.cases[i].value == value) {
+                return i;
+            }
+        }
+        
+        // selected case not found
+        return -1;
+    },
+    
     /** Matches identifier from api model to input elements
     */
     matchModel: function(model, callback) {
@@ -163,24 +184,24 @@ return Backbone.Model.extend({
                 if (id != '') {
                     index = id + '|' + index;
                 }
-                if (node.type == 'repeat') {
-                    for (var j in node.cache) {
-                        search (index + '_' + j, node.cache[j]);
-                    }
-                } else {
-                    if (node.type == 'conditional') {
-                        var value = node.test_param && node.test_param.value;
-                        for (var j in node.cases) {
-                            if (node.cases[j].value == value) {
-                                search (index, node.cases[j].inputs);
-                            }
+                switch (node.type) {
+                    case 'repeat':
+                        for (var j in node.cache) {
+                            search (index + '_' + j, node.cache[j]);
                         }
-                    } else {
+                        break;
+                    case 'conditional':
+                        var value = node.test_param && node.test_param.value;
+                        var selectedCase = self.matchCase(node, value);
+                        if (selectedCase != -1) {
+                            search (index, node.cases[selectedCase].inputs);
+                        }
+                        break;
+                    default:
                         var input_id = self.app.tree.job_ids[index];
                         if (input_id) {
                             callback(input_id, node);
                         }
-                    }
                 }
             }
         }

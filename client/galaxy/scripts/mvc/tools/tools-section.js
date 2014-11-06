@@ -1,5 +1,5 @@
 /**
-    This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _addRow() function.
+    This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _createField() function.
 */
 define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content', 'mvc/tools/tools-input'],
     function(Utils, Table, Ui, Repeat, SelectContent, InputElement) {
@@ -68,23 +68,61 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     break;
                 // default single element row
                 default:
-                    this._addRow(type, input_def);
+                    this._addRow(input_def);
             }
         },
         
         /** Add a conditional block
         */
         _addConditional: function(input_def) {
-            // add label to input definition root
-            input_def.label = input_def.test_param.label;
-        
-            // add value to input definition root
-            input_def.value = input_def.test_param.value;
-        
-            // build options field
-            var field = this._addRow('conditional', input_def);
+            // link this
+            var self = this;
             
-            // add fields
+            // copy identifier
+            input_def.test_param.id = input_def.id;
+            
+            // build test parameter
+            var field = this._addRow(input_def.test_param);
+            
+            // set onchange event for test parameter
+            field.options.onchange = function(value) {
+                // identify the selected case
+                var selectedCase = self.app.tree.matchCase(input_def, value);
+                
+                // check value in order to hide/show options
+                for (var i in input_def.cases) {
+                    // get case
+                    var case_def = input_def.cases[i];
+                    
+                    // identify subsection name
+                    var section_id = input_def.id + '-section-' + i;
+                    
+                    // identify row
+                    var section_row = self.table.get(section_id);
+                    
+                    // check if non-hidden elements exist
+                    var nonhidden = false;
+                    for (var j in case_def.inputs) {
+                        var type = case_def.inputs[j].type;
+                        if (type && type !== 'hidden') {
+                            nonhidden = true;
+                            break;
+                        }
+                    }
+                    
+                    // show/hide sub form
+                    if (i == selectedCase && nonhidden) {
+                        section_row.fadeIn('fast');
+                    } else {
+                        section_row.hide();
+                    }
+                }
+                
+                // refresh form inputs
+                self.app.refresh();
+            };
+            
+            // add conditional sub sections
             for (var i in input_def.cases) {
                 // create id tag
                 var sub_section_id = input_def.id + '-section-' + i;
@@ -208,17 +246,52 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             this.table.append(input_def.id);
         },
         
-        /** Add a single field element
+        /** Add a single input field element
         */
-        _addRow: function(field_type, input_def) {
+        _addRow: function(input_def) {
             // get id
             var id = input_def.id;
 
+            // create input field
+            var field = this._createField(input_def);
+            
+            // flagging this form as dynamic will trigger api-driven refresh events
+            if (input_def.is_dynamic) {
+                this.app.is_dynamic = true;
+            }
+            
+            // add to field list
+            this.app.field_list[id] = field;
+            
+            // create input field wrapper
+            var input_element = new InputElement(this.app, {
+                label       : input_def.label,
+                optional    : input_def.optional,
+                help        : input_def.help,
+                field       : field
+            });
+            
+            // add to element list
+            this.app.element_list[id] = input_element;
+               
+            // create table row
+            this.table.add(input_element.$el);
+            
+            // append to table
+            this.table.append(id);
+            
+            // return created field
+            return field;
+        },
+        
+        /** Returns an input field for a given field type
+        */
+        _createField: function(input_def) {
             // field wrapper
             var field = null;
             
             // identify field type
-            switch(field_type) {
+            switch(input_def.type) {
                 // text input field
                 case 'text' :
                     field = this._fieldText(input_def);
@@ -239,11 +312,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldSelect(input_def);
                     break;
                     
-                // conditional select field
-                case 'conditional':
-                    field = this._fieldConditional(input_def);
-                    break;
-                
                 // hidden field
                 case 'hidden':
                     field = this._fieldHidden(input_def);
@@ -287,95 +355,13 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     console.debug('tools-form::_addRow() : Auto matched field type (' + field_type + ').');
             }
             
-            // deactivate dynamic fields
-            if (input_def.is_dynamic) {
-                //this.app.incompatible = true;
-                this.app.is_dynamic = true;
-            }
-            
             // set field value
             if (input_def.value !== undefined) {
                 field.value(input_def.value);
             }
             
-            // add to field list
-            this.app.field_list[id] = field;
-            
-            // create input field wrapper
-            var input_element = new InputElement(this.app, {
-                label       : input_def.label,
-                optional    : input_def.optional,
-                help        : input_def.help,
-                field       : field
-            });
-            
-            // add to element list
-            this.app.element_list[id] = input_element;
-               
-            // create table row
-            this.table.add(input_element.$el);
-            
-            // append to table
-            this.table.append(id);
-            
-            // return created field
+            // return field element
             return field;
-        },
-        
-        /** Conditional input field selector
-        */
-        _fieldConditional : function(input_def) {
-            // link this
-            var self = this;
-
-            // configure options fields
-            var options = [];
-            for (var i in input_def.test_param.options) {
-                var option = input_def.test_param.options[i];
-                options.push({
-                    label: option[0],
-                    value: option[1]
-                });
-            }
-            
-            // select field
-            return new Ui.Select.View({
-                id          : 'field-' + input_def.id,
-                data        : options,
-                onchange    : function(value) {
-                    // check value in order to hide/show options
-                    for (var i in input_def.cases) {
-                        // get case
-                        var case_def = input_def.cases[i];
-                        
-                        // identify subsection name
-                        var section_id = input_def.id + '-section-' + i;
-                        
-                        // identify row
-                        var section_row = self.table.get(section_id);
-                        
-                        // check if non-hidden elements exist
-                        var nonhidden = false;
-                        for (var j in case_def.inputs) {
-                            var type = case_def.inputs[j].type;
-                            if (type && type !== 'hidden') {
-                                nonhidden = true;
-                                break;
-                            }
-                        }
-                        
-                        // show/hide sub form
-                        if (case_def.value == value && nonhidden) {
-                            section_row.fadeIn('fast');
-                        } else {
-                            section_row.hide();
-                        }
-                    }
-                    
-                    // refresh form inputs
-                    self.app.refresh();
-                }
-            });
         },
         
         /** Data input field
