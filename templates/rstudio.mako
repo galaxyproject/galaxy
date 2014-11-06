@@ -33,9 +33,9 @@ ie_request.attr.notebook_pw = PASSWORD
 # Access URLs for the notebook from within galaxy.
 # TODO: Make this work without pointing directly to IE. Currently does not work
 # through proxy.
-notebook_pubkey_url = ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/auth-public-key')
-notebook_access_url = ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/')
-notebook_login_url =  ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/auth-do-sign-in')
+notebook_pubkey_url = ie_request.url_template('http://localhost/rstudio/${PORT}/auth-public-key')
+notebook_access_url = ie_request.url_template('http://localhost/rstudio/${PORT}/')
+notebook_login_url =  ie_request.url_template('http://localhost/rstudio/${PORT}/auth-do-sign-in')
 
 import re
 docker_cmd = ie_request.docker_cmd(temp_dir)
