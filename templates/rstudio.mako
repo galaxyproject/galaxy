@@ -37,6 +37,10 @@ notebook_pubkey_url = ie_request.url_template('http://localhost/rstudio/${PORT}/
 notebook_access_url = ie_request.url_template('http://localhost/rstudio/${PORT}/')
 notebook_login_url =  ie_request.url_template('http://localhost/rstudio/${PORT}/auth-do-sign-in')
 
+# Did the user give us an RData file?
+if hda.datatype.__class__.__name__ == "RData":
+    shutil.copy( hda.file_name, os.path.join(temp_dir, '.RData') )
+
 import re
 docker_cmd = ie_request.docker_cmd(temp_dir)
 # Hack out the -u galaxy_id statement because the RStudio IE isn't ready to run
