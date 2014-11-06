@@ -168,11 +168,11 @@ var FolderListView = Backbone.View.extend({
 
     this.$el.find('#first_folder_item').after(rowView.el);
 
-    // $('.library-row').hover(function() {
-    //   $(this).find('.show_on_hover').show();
-    // }, function () {
-    //   $(this).find('.show_on_hover').hide();
-    // });
+    $('.library-row').hover(function() {
+      $(this).find('.show_on_hover').show();
+    }, function () {
+      $(this).find('.show_on_hover').hide();
+    });
   },
 
   /**

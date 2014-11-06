@@ -164,12 +164,13 @@ var CurrentHistoryPanel = _super.extend(
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
 
+        //TODO:?? may not be needed? see history-panel-edit, 369
         // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
         this.collection.on( 'state:ready', function( model, newState, oldState ){
             if( ( !model.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
-                this.removeItemView( this.viewFromModel( model ) );
+                this.removeItemView( model );
             }
         }, this );
     },

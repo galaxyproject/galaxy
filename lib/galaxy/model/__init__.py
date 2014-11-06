@@ -2019,6 +2019,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      state = hda.state,
                      history_content_type=hda.history_content_type,
                      file_size = int( hda.get_size() ),
+                     create_time = hda.create_time.isoformat(),
                      update_time = hda.update_time.isoformat(),
                      data_type = hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                      genome_build = hda.dbkey,
@@ -2033,6 +2034,10 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
         rval[ 'tags' ] = tags_str_list
+
+        #if getattr( hda, 'hidden_beneath_collection_instance', False ):
+        #    collection_id = hda.hidden_beneath_collection_instance.id
+        #    rval['collection_id'] = collection_id
 
         if hda.copied_from_library_dataset_dataset_association is not None:
             rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id

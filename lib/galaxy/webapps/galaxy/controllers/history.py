@@ -1,9 +1,11 @@
 import logging
 from cgi import escape
+import urllib
 
 import galaxy.util
 from galaxy import model
 from galaxy import web
+from galaxy import exceptions
 from galaxy import managers
 from galaxy.datatypes.data import nice_size
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
@@ -529,7 +531,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.fill_template( "history/display_structured.mako", items=items, history=history )
 
     @web.expose
-    def structure( self, trans, id=None ):
+    def structure( self, trans, id=None, **kwargs ):
         """
         """
         if not id:
@@ -543,11 +545,19 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         jobs = ( trans.sa_session.query( trans.app.model.Job )
             .filter( trans.app.model.Job.user == trans.user )
             .filter( trans.app.model.Job.history_id == trans.security.decode_id( id ) ) ).all()
-
         jobs = map( lambda j: self.encode_all_ids( trans, j.to_dict( 'element' ), True ), jobs )
 
+        tools = {}
+        for tool_id in set( map( lambda j: j[ 'tool_id' ], jobs ) ):
+            unquoted_id = urllib.unquote_plus( tool_id )
+            tool = self.app.toolbox.get_tool( unquoted_id )
+            if not tool:
+                raise exceptions.ObjectNotFound( "Could not find tool with id '%s'" % tool_id )
+                #TODO: some fallback for tool information
+            tools[ tool_id ] = tool.to_dict( trans, io_details=True, link_details=True )
+
         return trans.fill_template( "history/structure.mako", historyId=history_dictionary[ 'id' ],
-            history=history_dictionary, hdas=hda_dictionaries, jobs=jobs )
+            history=history_dictionary, hdas=hda_dictionaries, jobs=jobs, tools=tools, **kwargs )
 
     @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):

@@ -21,18 +21,18 @@ define([
         var dag = new JobDAG();
         ok( dag instanceof JobDAG );
 
-        // test (empty) instance vars
-        testEmptyObject( dag._historyContentsMap );
-        equal( dag.filters.length, 0 );
-
-        testEmptyObject( dag._idMap );
-        equal( dag.noInputJobs.length, 0 );
-        equal( dag.noOutputJobs.length, 0 );
-
         // default options
+        deepEqual( dag.filters, [] );
         deepEqual( dag.options, {
             excludeSetMetadata : false
         });
+
+        // test (empty) instance vars
+        deepEqual( dag._jobsData, [] );
+        deepEqual( dag._historyContentsMap, {} );
+        deepEqual( dag._toolMap, {} );
+        equal( dag.noInputJobs.length, 0 );
+        equal( dag.noOutputJobs.length, 0 );
 
         // logging
         equal( typeof dag.debug, 'function' );
@@ -71,39 +71,57 @@ define([
             dag;
         dag = new JobDAG({
             historyContents : history,
+            tools : testData.tools,
             jobs : jobs
         });
-        deepEqual( Object.keys( dag._historyContentsMap ),
-                   [ "8c959c9304a2bc4b", "132016f833b57406", "846fb0a2a64137c0" ] );
-        deepEqual( dag._idMap, {
-            "8a81cf6f989c4467": {
-                "index": 0,
-                "job": _.findWhere( jobs, { id : "8a81cf6f989c4467" }),
-                "inputs": [],
-                "outputs": [ "8c959c9304a2bc4b" ],
-                "usedIn": [ { "job": "6505e875ddb66fd2", "output": "8c959c9304a2bc4b" } ]
-            },
-            "6505e875ddb66fd2": {
-                "index": 1,
-                "job": _.findWhere( jobs, { id : "6505e875ddb66fd2" }),
-                "inputs": [ "8c959c9304a2bc4b" ],
-                "outputs": [ "132016f833b57406" ],
-                "usedIn": [ { "job": "77f74776fd03cbc5", "output": "132016f833b57406" } ]
-            },
-            "77f74776fd03cbc5": {
-                "index": 2,
-                "job": _.findWhere( jobs, { id : "77f74776fd03cbc5" }),
-                "inputs": [ "132016f833b57406" ],
-                "outputs": [ "846fb0a2a64137c0" ],
-                "usedIn": []
-            }
-        });
 
+        deepEqual( dag._outputIdToJobMap, {
+            "8c959c9304a2bc4b": "8a81cf6f989c4467",
+            "132016f833b57406": "6505e875ddb66fd2",
+            "846fb0a2a64137c0": "77f74776fd03cbc5"
+        });
+        deepEqual( dag._jobsData, [
+            {
+                "job": _.findWhere( jobs, { id : "8a81cf6f989c4467" }),
+                "inputs": {},
+                "outputs": {
+                    "8c959c9304a2bc4b": { "src": "hda", "id": "8c959c9304a2bc4b", "name": "output0",
+                                          "content": _.findWhere( history, { id: "8c959c9304a2bc4b" }) }
+                },
+                "tool": {}
+            },
+            {
+                "job": _.findWhere( jobs, { id : "6505e875ddb66fd2" }),
+                "inputs": {
+                    "8c959c9304a2bc4b": { "src": "hda", "id": "8c959c9304a2bc4b", "name": "input",
+                                          "content": _.findWhere( history, { id: "8c959c9304a2bc4b" }) }
+                },
+                "outputs": {
+                    "132016f833b57406": { "src": "hda", "id": "132016f833b57406", "name": "out_file1",
+                                          "content": _.findWhere( history, { id: "132016f833b57406" }) }
+                },
+                "tool": {}
+            },
+            {
+                "job": _.findWhere( jobs, { id : "77f74776fd03cbc5" }),
+                "inputs": {
+                    "132016f833b57406": { "src": "hda", "id": "132016f833b57406", "name": "input",
+                                          "content": _.findWhere( history, { id: "132016f833b57406" }) }
+                },
+                "outputs": {
+                    "846fb0a2a64137c0": { "src": "hda", "id": "846fb0a2a64137c0", "name": "out_file1",
+                                          "content": _.findWhere( history, { id: "846fb0a2a64137c0" }) }
+                },
+                "tool": {}
+            }
+        ]);
+
+        var jobsDataMap = dag._jobsDataMap();
         deepEqual( dag.toNodesAndLinks(), {
             "nodes": [
-                { "name": "8a81cf6f989c4467", "data": dag._idMap[ "8a81cf6f989c4467" ] },
-                { "name": "6505e875ddb66fd2", "data": dag._idMap[ "6505e875ddb66fd2" ] },
-                { "name": "77f74776fd03cbc5", "data": dag._idMap[ "77f74776fd03cbc5" ] }
+                { "name": "8a81cf6f989c4467", "data": jobsDataMap[ "8a81cf6f989c4467" ] },
+                { "name": "6505e875ddb66fd2", "data": jobsDataMap[ "6505e875ddb66fd2" ] },
+                { "name": "77f74776fd03cbc5", "data": jobsDataMap[ "77f74776fd03cbc5" ] }
             ],
             "links": [
                 { "source": 0, "target": 1, "data": { "dataset": "8c959c9304a2bc4b" } },
@@ -113,9 +131,9 @@ define([
 
         deepEqual( dag.toVerticesAndEdges(), {
             "vertices": [
-                { "name": "8a81cf6f989c4467", "data": dag._idMap[ "8a81cf6f989c4467" ] },
-                { "name": "6505e875ddb66fd2", "data": dag._idMap[ "6505e875ddb66fd2" ] },
-                { "name": "77f74776fd03cbc5", "data": dag._idMap[ "77f74776fd03cbc5" ] }
+                { "name": "8a81cf6f989c4467", "data": jobsDataMap[ "8a81cf6f989c4467" ] },
+                { "name": "6505e875ddb66fd2", "data": jobsDataMap[ "6505e875ddb66fd2" ] },
+                { "name": "77f74776fd03cbc5", "data": jobsDataMap[ "77f74776fd03cbc5" ] }
             ],
             "edges": [
                 { "source": "8a81cf6f989c4467", "target": "6505e875ddb66fd2",
@@ -137,32 +155,16 @@ define([
             dag;
         dag = new JobDAG({
             historyContents : history,
+            tools : testData.tools,
             jobs : jobs,
             excludeSetMetadata : true
         });
-        deepEqual( Object.keys( dag._idMap ),
-                   [ "bf60fd5f5f7f44bf", "90240358ebde1489" ] );
 
-        deepEqual( dag._idMap, {
-            "bf60fd5f5f7f44bf": {
-                "index": 0,
-                "job": _.findWhere( jobs, { id : "bf60fd5f5f7f44bf" }),
-                "inputs": [],
-                "outputs": [ "eca0af6fb47bf90c" ],
-                "usedIn": [ { "job": "90240358ebde1489", "output": "eca0af6fb47bf90c" } ]
-            },
-            "90240358ebde1489": {
-                "index": 1,
-                "job": _.findWhere( jobs, { id : "90240358ebde1489" }),
-                "inputs": [ "eca0af6fb47bf90c" ],
-                "outputs": [ "6fc9fbb81c497f69" ],
-                "usedIn": []
-            }
-        });
+        var jobsDataMap = dag._jobsDataMap();
         deepEqual( dag.toNodesAndLinks(), {
             "nodes": [
-                { "name": "bf60fd5f5f7f44bf", "data": dag._idMap[ "bf60fd5f5f7f44bf" ] },
-                { "name": "90240358ebde1489", "data": dag._idMap[ "90240358ebde1489" ] }
+                { "name": "bf60fd5f5f7f44bf", "data": jobsDataMap[ "bf60fd5f5f7f44bf" ] },
+                { "name": "90240358ebde1489", "data": jobsDataMap[ "90240358ebde1489" ] }
             ],
             "links": [
                 { "source": 0, "target": 1, "data": { "dataset": "eca0af6fb47bf90c" } }
@@ -180,18 +182,18 @@ define([
             dag;
         dag = new JobDAG({
             historyContents : history,
+            tools : testData.tools,
             jobs : jobs
         });
-        deepEqual( Object.keys( dag._historyContentsMap ), [
-            "6fb17d0cc6e8fae5", "5114a2a207b7caff", "06ec17aefa2d49dd", "b8a0d6158b9961df", "24d84bcf64116fe7" ] );
 
+        var jobsDataMap = dag._jobsDataMap();
         deepEqual( dag.toVerticesAndEdges(), {
             "vertices": [
-                { "name": "8c959c9304a2bc4b", "data": dag._idMap[ "8c959c9304a2bc4b" ] },
-                { "name": "846fb0a2a64137c0", "data": dag._idMap[ "846fb0a2a64137c0" ] },
-                { "name": "132016f833b57406", "data": dag._idMap[ "132016f833b57406" ] },
-                { "name": "eca0af6fb47bf90c", "data": dag._idMap[ "eca0af6fb47bf90c" ] },
-                { "name": "6fc9fbb81c497f69", "data": dag._idMap[ "6fc9fbb81c497f69" ] }
+                { "name": "8c959c9304a2bc4b", "data": jobsDataMap[ "8c959c9304a2bc4b" ] },
+                { "name": "132016f833b57406", "data": jobsDataMap[ "132016f833b57406" ] },
+                { "name": "846fb0a2a64137c0", "data": jobsDataMap[ "846fb0a2a64137c0" ] },
+                { "name": "eca0af6fb47bf90c", "data": jobsDataMap[ "eca0af6fb47bf90c" ] },
+                { "name": "6fc9fbb81c497f69", "data": jobsDataMap[ "6fc9fbb81c497f69" ] }
             ],
             "edges": [
                 { "source": "8c959c9304a2bc4b", "target": "846fb0a2a64137c0",
@@ -207,8 +209,8 @@ define([
         deepEqual( components, [
             {
                 "vertices": [
-                    { "name": "8c959c9304a2bc4b", "data": dag._idMap[ "8c959c9304a2bc4b" ] },
-                    { "name": "846fb0a2a64137c0", "data": dag._idMap[ "846fb0a2a64137c0" ] }
+                    { "name": "8c959c9304a2bc4b", "data": jobsDataMap[ "8c959c9304a2bc4b" ] },
+                    { "name": "846fb0a2a64137c0", "data": jobsDataMap[ "846fb0a2a64137c0" ] }
                 ],
                 "edges": [
                     { "source": "8c959c9304a2bc4b", "target": "846fb0a2a64137c0" }
@@ -216,9 +218,9 @@ define([
             },
             {
                 "vertices": [
-                    { "name": "132016f833b57406", "data": dag._idMap[ "132016f833b57406" ] },
-                    { "name": "eca0af6fb47bf90c", "data": dag._idMap[ "eca0af6fb47bf90c" ] },
-                    { "name": "6fc9fbb81c497f69", "data": dag._idMap[ "6fc9fbb81c497f69" ] }
+                    { "name": "132016f833b57406", "data": jobsDataMap[ "132016f833b57406" ] },
+                    { "name": "eca0af6fb47bf90c", "data": jobsDataMap[ "eca0af6fb47bf90c" ] },
+                    { "name": "6fc9fbb81c497f69", "data": jobsDataMap[ "6fc9fbb81c497f69" ] }
                 ],
                 "edges": [
                     { "source": "132016f833b57406", "target": "eca0af6fb47bf90c" },
@@ -229,4 +231,33 @@ define([
 
     });
 
+    //TODO: test filtering out errored jobs
+    test( "JobDAG construction with copied history contents", function() {
+        equal( testData.jobs4.length, 1 );
+        equal( testData.historyContents4.length, 3 );
+
+        var history = testData.historyContents4,
+            jobs = testData.jobs4,
+            dag;
+        dag = new JobDAG({
+            historyContents : history,
+            tools : testData.tools,
+            jobs : jobs
+        });
+
+        var jobsDataMap = dag._jobsDataMap();
+        deepEqual( dag.toVerticesAndEdges(), {
+            "vertices": [
+                { "name": "92b83968e0b52980", "data": jobsDataMap[ "92b83968e0b52980" ] },
+                { "name": "copy-422eef6b1b545329", "data": _.findWhere( history, { id: '422eef6b1b545329' }) },
+                { "name": "copy-c86c1b73aa7102dd", "data": _.findWhere( history, { id: 'c86c1b73aa7102dd' }) }
+            ],
+            "edges": [
+                { "source": "copy-422eef6b1b545329", "target": "92b83968e0b52980",
+                    "data": { "dataset": "422eef6b1b545329" } },
+                { "source": "copy-c86c1b73aa7102dd", "target": "92b83968e0b52980",
+                    "data": { "dataset": "c86c1b73aa7102dd" } }
+            ]
+        });
+    });
 });

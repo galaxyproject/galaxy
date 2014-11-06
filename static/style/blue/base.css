@@ -2037,8 +2037,8 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .dataset-collection-panel .controls .title{margin-top:12px}.dataset-collection-panel .controls .title .name{font-weight:bold}
 .dataset-collection-panel .list-items{margin-top:8px}.dataset-collection-panel .list-items .dataset-collection-element{border-width:1px 0px 0px 0px}.dataset-collection-panel .list-items .dataset-collection-element:last-child{border-bottom-width:1px}
 .job.list-item{border:1px solid #bfbfbf}.job.list-item .title-bar .subtitle{color:grey;font-size:80%}
-.job.list-item>.details{padding:0px}.job.list-item>.details .params{padding:0px 8px 0px 8px;display:table}.job.list-item>.details .params .param{display:table-row}.job.list-item>.details .params .param .prompt{display:table-cell;margin-right:8px;text-align:right;color:grey}
-.job.list-item>.details .params .param .value{display:table-cell}
+.job.list-item>.details{padding:0px}.job.list-item>.details .params{padding:0px 8px 0px 8px}.job.list-item>.details .params .param .prompt,.job.list-item>.details .params .input .prompt{font-size:80%;color:grey}
+.job.list-item>.details .params .param .value,.job.list-item>.details .params .input .value{display:inline-block;font-weight:bold}
 .job.list-item>.details .list-panel{padding:0px}.job.list-item>.details .list-panel .list-items{border:0px;border-radius:0px}.job.list-item>.details .list-panel .list-items .list-item{border:0px;border-radius:0px;border-top:1px solid #bfbfbf}
 .collection-creator{height:100%;overflow:hidden;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}.collection-creator ol,.collection-creator li{list-style:none;padding:0;margin:0}
 .collection-creator>*:not(.popover){padding:0px 8px 0px 8px}

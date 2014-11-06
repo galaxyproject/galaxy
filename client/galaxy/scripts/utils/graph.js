@@ -596,8 +596,9 @@ Graph.prototype.weakComponentGraph = function(){
 /** Return an array of graphs of the weakly connected components in this graph */
 Graph.prototype.weakComponentGraphArray = function(){
     //note: although this can often look like the original graph - edges can be lost
+    var graph = this;
     return this.weakComponents().map( function( component ){
-        return new Graph( this.directed, component );
+        return new Graph( graph.directed, component );
     });
 };
 

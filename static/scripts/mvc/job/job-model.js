@@ -19,7 +19,7 @@ var Job = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     defaults : {
         model_class : 'Job',
 
-        tool        : null,
+        tool_id     : null,
         exit_code   : null,
 
         inputs      : {},
@@ -31,9 +31,27 @@ var Job = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         state       : STATES.NEW
     },
 
+    /** override to parse params on incomming */
+    parse : function( response, options ){
+        response.params = this.parseParams( response.params );
+        return response;
+    },
+
+    /** override to treat param values as json */
+    parseParams : function( params ){
+        var newParams = {};
+        _.each( params, function( value, key ){
+            newParams[ key ] = JSON.parse( value );
+        });
+        return newParams;
+    },
+
     /** instance vars and listeners */
     initialize : function( attributes, options ){
         this.debug( this + '(Job).initialize', attributes, options );
+
+        this.set( 'params', this.parseParams( this.get( 'params' ) ), { silent: true });
+
         this.outputCollection = attributes.outputCollection || new HISTORY_CONTENTS.HistoryContents([]);
         this._setUpListeners();
     },
@@ -62,7 +80,7 @@ var Job = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     /** Does this model already contain detailed data (as opposed to just summary level data)? */
     hasDetails : function(){
         //?? this may not be reliable
-        return _.isEmpty( this.get( 'outputs' ) );
+        return !_.isEmpty( this.get( 'outputs' ) );
     },
 
     // ........................................................................ ajax
@@ -73,9 +91,9 @@ var Job = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     // ........................................................................ searching
     // see base-mvc, SearchableModelMixin
     /** what attributes of an Job will be used in a text search */
-    searchAttributes : [
-        'tool'
-    ],
+    //searchAttributes : [
+    //    'tool'
+    //],
 
     // ........................................................................ misc
     /** String representation */

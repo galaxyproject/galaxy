@@ -1,79 +1,184 @@
 define([
+    'mvc/history/job-dag',
     'mvc/job/job-model',
     'mvc/job/job-li',
     'mvc/history/history-content-model',
-    'mvc/history/job-dag',
+    'mvc/dataset/dataset-li',
     'mvc/base-mvc',
     'utils/localization',
     'libs/d3'
-], function( JOB, JOB_LI, HISTORY_CONTENT, JobDAG, BASE_MVC, _l ){
+], function( JobDAG, JOB, JOB_LI, HISTORY_CONTENT, DATASET_LI, BASE_MVC, _l ){
 // ============================================================================
-/* TODO:
-change component = this to something else
+/*
+TODO:
+    disruptive:
+        handle collections
+        retain contents to job relationships (out/input name)
+
+    display when *only* copied datasets
+        need to change when/how joblessVertices are created
+
+    components should be full height containers that scroll individually
+
+    use history contents views for job outputCollection, not vanilla datasets
+         need hid
+
+    show datasets when job not expanded
+        make them external to the job display
+    connect jobs by dataset
+        which datasets from job X are which inputs in job Y?
+
+    make job data human readable (needs tool data)
+        show only tool.inputs with labels (w/ job.params as values)
+        input datasets are special
+            they don't appear in job.params
+            have to connect to datasets in the dag
+                connect job.inputs to any tool.inputs by tool.input.name (in params)
+
+API: seems like this could be handled there - duplicating the input data in the proper param space
+
+    collections
+
+    use cases:
+        operations by thread:
+            copy to new history
+            rerun
+            to workflow
+        operations by branch (all descendants):
+            copy to new history
+            rerun
+            to workflow
+        signal to noise:
+            collapse/expand branch
+            hide jobs
+            visually isolate branch (hide other jobs) of thread
+            zoom (somehow)
+
+            layout changes:
+                move branch to new column in component
+                    complicated
+                pyramid
+                circular
+                    sources on inner radius
+            expansion in vertical:
+                obscures relations due to height
+                    could move details to side panel
+                difficult to compare two+ jobs/datasets when at different points in the topo
+
+    (other) controls:
+        (optionally) filter all deleted
+        (optionally) filter all hidden
+        //(optionally) filter __SET_METADATA__
+        //(optionally) filter error'd jobs
+        help and explanation
+        filtering/searching of jobs
+
+    challenges:
+        difficult to scale dom (for zoomout)
+            possible to use css transforms?
+                transform svg and dom elements
+                it is possible to use css transforms on svg nodes
+                use transform-origin to select origin to top left
+        on larger histories the svg section may become extremely large due to distance from output to input
+
+    how-to:
+        descendant ids: _.keys( component.depth/breadthFirstSearchTree( start ).vertices )
+
+    in-panel view of anc desc
+
 
 */
 // ============================================================================
 /**
  *
  */
+window.JobDAG = JobDAG;
 var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 
     //logger : console,
 
     className : 'history-structure-component',
 
+    _INITIAL_ZOOM_LEVEL     : 1.0,
+    _MIN_ZOOM_LEVEL         : 0.25,
+    _LINK_ID_SEP            : '-to-',
+    _VERTEX_NAME_DATA_KEY   : 'vertex-name',
+
+    JobItemClass        : JOB_LI.JobListItemView,
+    ContentItemClass    : DATASET_LI.DatasetListItemView,
+
     initialize : function( attributes ){
         this.log( this + '(HistoryStructureComponent).initialize:', attributes );
         this.component = attributes.component;
 
-        this._jobLiMap = {};
-        this._createJobModels();
+        this._liMap = {};
+        this._createVertexItems();
+
+        this.zoomLevel = attributes.zoomLevel || this._INITIAL_ZOOM_LEVEL;
 
         this.layout = this._createLayout( attributes.layoutOptions );
     },
 
-    _createJobModels : function(){
+    _createVertexItems : function(){
         var view = this;
         view.component.eachVertex( function( vertex ){
-            var jobJSON = vertex.data.job,
-                job = new JOB.Job( jobJSON );
-
-            // get the models of the outputs for this job from the history
-            var outputModels = _.map( job.get( 'outputs' ), function( output ){
-                //note: output is { src: 'hda/dataset_collection', id: <some id> }
-                // job output doesn't *quite* match up to normal typeId
-                var type = output.src === 'hda'? 'dataset' : 'dataset_collection',
-                    typeId = HISTORY_CONTENT.typeIdStr( type, output.id );
-                return view.model.contents.get( typeId );
-            });
-            // set the collection (HistoryContents) for the job to that json (setting historyId for proper ajax urls)
-            job.outputCollection.reset( outputModels );
-            job.outputCollection.historyId = view.model.id;
-            //this.debug( job.outputCollection );
-
-            // create the bbone view for the job (to be positioned later accrd. to the layout) and cache
-            var li = new JOB_LI.JobListItemView({ model: job });
-            //var li = new JOB_LI.JobListItemView({ model: job });
-            li.render( 0 ).$el.appendTo( view.$el );
-            view._jobLiMap[ job.id ] = li;
-            view._setUpJobListeners( li );
-
+//TODO: hack
+            var type = vertex.data.job? 'job' : 'copy',
+                li;
+            if( type === 'job' ){
+                li = view._createJobListItem( vertex );
+            } else if( type === 'copy' ){
+                li = view._createContentListItem( vertex );
+            }
+            view._liMap[ vertex.name ] = li;
         });
-        return view.jobs;
+        view.debug( '_liMap:', view._liMap );
     },
 
-    _setUpJobListeners : function( jobLi ){
-        // update the layout during expansion and collapsing of job and output li's
-        jobLi.on( 'expanding expanded collapsing collapsed', this.render, this );
-        jobLi.foldout.on( 'view:expanding view:expanded view:collapsing view:collapsed', this.render, this );
+    _createJobListItem : function( vertex ){
+        this.debug( '_createJobListItem:', vertex );
+        var view = this,
+            jobData = vertex.data,
+            job = new JOB.Job( jobData.job );
+
+        // get the models of the outputs for this job from the history
+        var outputModels = _.map( job.get( 'outputs' ), function( output ){
+            //note: output is { src: 'hda/dataset_collection', id: <some id> }
+            // job output doesn't *quite* match up to normal typeId
+            var type = output.src === 'hda'? 'dataset' : 'dataset_collection',
+                typeId = HISTORY_CONTENT.typeIdStr( type, output.id );
+            return view.model.contents.get( typeId );
+        });
+        // set the collection (HistoryContents) for the job to that json (setting historyId for proper ajax urls)
+        job.outputCollection.reset( outputModels );
+        job.outputCollection.historyId = view.model.id;
+        //this.debug( job.outputCollection );
+
+        // create the bbone view for the job (to be positioned later accrd. to the layout) and cache
+        var li = new view.JobItemClass({ model: job, tool: jobData.tool, jobData: jobData });
+        li.on( 'expanding expanded collapsing collapsed', view.renderGraph, view );
+        li.foldout.on( 'view:expanding view:expanded view:collapsing view:collapsed', view.renderGraph, view );
+        return li;
+    },
+
+    _createContentListItem : function( vertex ){
+        this.debug( '_createContentListItem:', vertex );
+        var view = this,
+            content = vertex.data,
+            typeId = HISTORY_CONTENT.typeIdStr( content.history_content_type, content.id );
+            content = view.model.contents.get( typeId );
+        var li = new view.ContentItemClass({ model: content });
+        li.on( 'expanding expanded collapsing collapsed', view.renderGraph, view );
+        return li;
     },
 
     layoutDefaults : {
-        paddingTop      : 8,
-        paddingLeft     : 20,
         linkSpacing     : 16,
-        jobHeight       : 308,
-        jobWidthSpacing : 320,
+        linkWidth       : 0,
+        linkHeight      : 0,
+        jobWidth        : 300,
+        jobHeight       : 300,
+        jobSpacing      : 12,
         linkAdjX        : 4,
         linkAdjY        : 0
     },
@@ -85,8 +190,7 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
             layout = _.extend( options, {
                 nodeMap         : {},
                 links           : [],
-                el              : { width: 0, height: 0 },
-                svg             : { width: 0, height: 0, top: 0, left: 0 }
+                svg             : { width: 0, height: 0 }
             });
 
         vertices.forEach( function( v, j ){
@@ -105,56 +209,50 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
         return layout;
     },
 
-    _updateLayout : function(){
-        var view = this,
-            layout = view.layout;
-
-        layout.svg.height = layout.paddingTop + ( layout.linkSpacing * _.size( layout.nodeMap ) );
-        layout.el.height = layout.svg.height + layout.jobHeight;
-
-//TODO:?? can't we just alter the component v and e's directly?
-        // layout the job views putting jobWidthSpacing btwn each
-        var x = layout.paddingLeft,
-            y = layout.svg.height;
-        _.each( layout.nodeMap, function( node, jobId ){
-            //this.debug( node, jobId );
-            node.x = x;
-            node.y = y;
-            x += layout.jobWidthSpacing;
-        });
-        layout.el.width = layout.svg.width = Math.max( layout.el.width, x );
-
-        // layout the links - connecting each job by it's main coords (currently)
-//TODO: somehow adjust the svg height based on the largest distance the longest connection needs
-        layout.links.forEach( function( link ){
-            var source = layout.nodeMap[ link.source ],
-                target = layout.nodeMap[ link.target ];
-            link.x1 = source.x + layout.linkAdjX;
-            link.y1 = source.y + layout.linkAdjY;
-            link.x2 = target.x + layout.linkAdjX;
-            link.y2 = target.y + layout.linkAdjY;
-        });
-        //this.debug( JSON.stringify( layout, null, '  ' ) );
-        return this.layout;
-    },
-
     render : function( options ){
         this.debug( this + '.render:', options );
         var view = this;
+        view.$el.html([
+            '<header></header>',
+            '<nav class="controls"></nav>',
+            '<figure class="graph"></figure>',
+            '<footer></footer>'
+        ].join( '' ) );
+
+        var $graph = view.$graph();
+        view.component.eachVertex( function( vertex ){
+            view._liMap[ vertex.name ].render( 0 ).$el.appendTo( $graph )
+                // store the name in the DOM and cache by that name
+                .data( view._VERTEX_NAME_DATA_KEY, vertex.name );
+        });
+        view.renderGraph();
+        return this;
+    },
+
+    $graph : function(){
+        return this.$( '.graph' );
+    },
+
+    renderGraph : function( options ){
+        this.debug( this + '.renderGraph:', options );
+        var view = this;
 
         function _render(){
+
             view._updateLayout();
             // set up the display containers
-            view.$el
-                .width( view.layout.el.width )
-                .height( view.layout.el.height );
+            view.$graph()
+                // use css3 transform to scale component graph
+                .css( 'transform', [ 'scale(', view.zoomLevel, ',', view.zoomLevel, ')' ].join( '' ) )
+                .width( view.layout.svg.width )
+                .height( view.layout.svg.height );
             view.renderSVG();
 
             // position the job views accrd. to the layout
             view.component.eachVertex( function( v ){
-//TODO:? liMap needed - can't we attach to vertex?
-                var li = view._jobLiMap[ v.name ],
-                    position = view.layout.nodeMap[ li.model.id ];
+//TODO:?? liMap needed - can't we attach to vertex?
+                var li = view._liMap[ v.name ],
+                    position = view.layout.nodeMap[ v.name ];
                 //this.debug( position );
                 li.$el.css({ top: position.y, left: position.x });
             });
@@ -168,13 +266,52 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
         return this;
     },
 
-    renderSVG : function(){
+    _updateLayout : function(){
+        this.debug( this + '._updateLayout:' );
         var view = this,
             layout = view.layout;
 
-        var svg = d3.select( this.el ).select( 'svg' );
+        layout.linkHeight = layout.linkSpacing * _.size( layout.nodeMap );
+        layout.svg.height = layout.linkHeight + layout.jobHeight;
+
+        // reset for later max comparison
+        layout.svg.width = 0;
+
+//TODO:?? can't we just alter the component v and e's directly?
+        // layout the job views putting jobSpacing btwn each
+        var x = 0,
+            y = layout.linkHeight;
+        _.each( layout.nodeMap, function( node, jobId ){
+            //this.debug( node, jobId );
+            node.x = x;
+            node.y = y;
+            x += layout.jobWidth + layout.jobSpacing;
+        });
+        layout.svg.width = layout.linkWidth = Math.max( layout.svg.width, x );
+
+        // layout the links - connecting each job by it's main coords (currently)
+//TODO: somehow adjust the svg height based on the largest distance the longest connection needs
+        layout.links.forEach( function( link ){
+            var source = layout.nodeMap[ link.source ],
+                target = layout.nodeMap[ link.target ];
+            link.x1 = source.x + layout.linkAdjX;
+            link.y1 = source.y + layout.linkAdjY;
+            link.x2 = target.x + layout.linkAdjX;
+            link.y2 = target.y + layout.linkAdjY;
+        });
+
+        this.debug( JSON.stringify( layout, null, '  ' ) );
+        return this.layout;
+    },
+
+    renderSVG : function(){
+        this.debug( this + '.renderSVG:' );
+        var view = this,
+            layout = view.layout;
+
+        var svg = d3.select( this.$graph().get(0) ).select( 'svg' );
         if( svg.empty() ){
-            svg = d3.select( this.el ).append( 'svg' );
+            svg = d3.select( this.$graph().get(0) ).append( 'svg' );
         }
 
         svg
@@ -183,14 +320,14 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
 
         function highlightConnect( d ){
             d3.select( this ).classed( 'highlighted', true );
-            view._jobLiMap[ d.source ].$el.addClass( 'highlighted' );
-            view._jobLiMap[ d.target ].$el.addClass( 'highlighted' );
+            view._liMap[ d.source ].$el.addClass( 'highlighted' );
+            view._liMap[ d.target ].$el.addClass( 'highlighted' );
         }
 
         function unhighlightConnect( d ){
             d3.select( this ).classed( 'highlighted', false );
-            view._jobLiMap[ d.source ].$el.removeClass( 'highlighted' );
-            view._jobLiMap[ d.target ].$el.removeClass( 'highlighted' );
+            view._liMap[ d.source ].$el.removeClass( 'highlighted' );
+            view._liMap[ d.target ].$el.removeClass( 'highlighted' );
         }
 
         var connections = svg.selectAll( '.connection' )
@@ -199,21 +336,19 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
         connections
             .enter().append( 'path' )
                 .attr( 'class', 'connection' )
-                .attr( 'id', function( d ){ return d.source + '-' + d.target; })
+                .attr( 'id', function( d ){ return [ d.source, d.target ].join( view._LINK_ID_SEP ); })
                 .on( 'mouseover', highlightConnect )
                 .on( 'mouseout', unhighlightConnect );
 
         connections
                 .attr( 'd', function( d ){ return view._connectionPath( d ); });
 
-//TODO: ? can we use tick here to update the links?
-                
         return svg.node();
     },
 
     _connectionPath : function( d ){
         var CURVE_X = 0,
-            controlY = ( ( d.x2 - d.x1 ) / this.layout.svg.width ) * this.layout.svg.height;
+            controlY = ( ( d.x2 - d.x1 ) / this.layout.svg.width ) * this.layout.linkHeight;
         return [
             'M', d.x1, ',', d.y1, ' ',
             'C',
@@ -224,11 +359,12 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
     },
 
     events : {
-        'mouseover .job.list-item'  : function( ev ){ this.highlightConnected( ev.currentTarget, true ); },
-        'mouseout .job.list-item'   : function( ev ){ this.highlightConnected( ev.currentTarget, false ); }
+        'mouseover .graph > .list-item'  : function( ev ){ this.highlightConnected( ev.currentTarget, true ); },
+        'mouseout  .graph > .list-item'  : function( ev ){ this.highlightConnected( ev.currentTarget, false ); }
     },
 
     highlightConnected : function( jobElement, highlight ){
+        this.debug( 'highlightConnected', jobElement, highlight );
         highlight = highlight !== undefined? highlight : true;
 
         var view = this,
@@ -237,19 +373,30 @@ var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).e
             connectionClass = highlight? 'connection highlighted' : 'connection';
 
         //console.debug( 'mouseover', this );
-        var $jobs = jobClassFn.call( $( jobElement ), 'highlighted' ),
-            id = $jobs.attr( 'id' ).replace( 'job-', '' );
+        var $hoverTarget = jobClassFn.call( $( jobElement ), 'highlighted' ),
+            id = $hoverTarget.data( view._VERTEX_NAME_DATA_KEY );
 
         // immed. ancestors
         component.edges({ target: id }).forEach( function( edge ){
-            jobClassFn.call( view.$( '#job-' + edge.source ), 'highlighted' );
-            view.$( '#' + edge.source + '-' + id ).attr( 'class', connectionClass );
+            var ancestorId = edge.source,
+                ancestorLi = view._liMap[ ancestorId ];
+            //view.debug( '\t ancestor:', ancestorId, ancestorLi );
+            jobClassFn.call( ancestorLi.$el, 'highlighted' );
+            view.$( '#' + ancestorId + view._LINK_ID_SEP + id ).attr( 'class', connectionClass );
         });
         // descendants
         component.vertices[ id ].eachEdge( function( edge ){
-            jobClassFn.call( view.$( '#job-' + edge.target ), 'highlighted' );
-            view.$( '#' + id + '-' + edge.target ).attr( 'class', connectionClass );
+            var descendantId = edge.target,
+                descendantLi = view._liMap[ descendantId ];
+            //view.debug( '\t descendant:', descendantId, descendantLi );
+            jobClassFn.call( descendantLi.$el, 'highlighted' );
+            view.$( '#' + id + view._LINK_ID_SEP + descendantId ).attr( 'class', connectionClass );
         });
+    },
+
+    zoom : function( level ){
+        this.zoomLevel = Math.min( 1.0, Math.max( this._MIN_ZOOM_LEVEL, level ) );
+        return this.renderGraph();
     },
 
     toString : function(){
@@ -268,45 +415,34 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
 
     className : HistoryStructureComponent.prototype.className + ' vertical',
 
-    layoutDefaults : {
-        paddingTop      : 8,
-        paddingLeft     : 20,
-        linkSpacing     : 16,
-        jobWidth        : 308,
-        jobHeight       : 308,
-        initialSpacing  : 64,
-        jobSpacing      : 16,
+    layoutDefaults : _.extend( _.clone( HistoryStructureComponent.prototype.layoutDefaults ), {
         linkAdjX        : 0,
         linkAdjY        : 4
-    },
+    }),
 
 //TODO: how can we use the dom height of the job li's - they're not visible when this is called?
     _updateLayout : function(){
+        this.debug( this + '._updateLayout:' );
         var view = this,
             layout = view.layout;
         //this.info( this.cid, '_updateLayout' )
 
-        layout.svg.width = layout.paddingLeft + ( layout.linkSpacing * _.size( layout.nodeMap ) );
-        layout.el.width = layout.svg.width + layout.jobWidth;
+        layout.linkWidth = layout.linkSpacing * _.size( layout.nodeMap );
+        layout.svg.width = layout.linkWidth + layout.jobWidth;
 
         // reset height - we'll get the max Y below to assign to it
-        layout.el.height = 0;
+        layout.svg.height = 0;
 
-//TODO:?? can't we just alter the component v and e's directly?
-        var x = layout.svg.width,
-            y = layout.paddingTop;
-        _.each( layout.nodeMap, function( node, jobId ){
-            //this.debug( node, jobId );
+        //TODO:?? can't we just alter the component v and e's directly?
+        var x = layout.linkWidth,
+            y = 0;
+        _.each( layout.nodeMap, function( node, nodeId ){
             node.x = x;
             node.y = y;
-            var li = view._jobLiMap[ jobId ];
-            if( li.$el.is( ':visible' ) ){
-                y += li.$el.height() + layout.jobSpacing;
-            } else {
-                y += layout.initialSpacing + layout.jobSpacing;
-            }
+            var li = view._liMap[ nodeId ];
+            y += li.$el.height() + layout.jobSpacing;
         });
-        layout.el.height = layout.svg.height = Math.max( layout.el.height, y );
+        layout.linkHeight = layout.svg.height = Math.max( layout.svg.height, y );
 
         // layout the links - connecting each job by it's main coords (currently)
         layout.links.forEach( function( link ){
@@ -316,17 +452,16 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
             link.y1 = source.y + layout.linkAdjY;
             link.x2 = target.x + layout.linkAdjX;
             link.y2 = target.y + layout.linkAdjY;
-            view.debug( 'link:', link.x1, link.y1, link.x2, link.y2, link );
+            //view.debug( 'link:', link.x1, link.y1, link.x2, link.y2, link );
         });
-        //this.debug( JSON.stringify( layout, null, '  ' ) );
-        view.debug( 'el:', layout.el );
-        view.debug( 'svg:', layout.svg );
+
+        this.debug( JSON.stringify( layout, null, '  ' ) );
         return layout;
     },
 
     _connectionPath : function( d ){
         var CURVE_Y = 0,
-            controlX = ( ( d.y2 - d.y1 ) / this.layout.svg.height ) * this.layout.svg.width;
+            controlX = ( ( d.y2 - d.y1 ) / this.layout.svg.height ) * this.layout.linkWidth;
         return [
             'M', d.x1, ',', d.y1, ' ',
             'C',
@@ -352,40 +487,60 @@ var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
 
     className : 'history-structure',
 
+    _layoutToComponentClass : {
+        'horizontal'    : HistoryStructureComponent,
+        'vertical'      : VerticalHistoryStructureComponent
+    },
+    //_DEFAULT_LAYOUT : 'horizontal',
+    _DEFAULT_LAYOUT : 'vertical',
+
     initialize : function( attributes ){
+        this.layout = _.contains( attributes.layout, _.keys( this._layoutToComponentClass ) )?
+            attributes.layout : this._DEFAULT_LAYOUT;
         this.log( this + '(HistoryStructureView).initialize:', attributes, this.model );
-//TODO: to model
-        this.jobs = attributes.jobs;
+        //TODO:?? to model - maybe glom jobs onto model in order to persist
+        // cache jobs since we need to re-create the DAG if settings change
+        this._processTools( attributes.tools );
+        this._processJobs( attributes.jobs );
         this._createDAG();
+    },
+
+    _processTools : function( tools ){
+        this.tools = tools || {};
+        return this.tools;
+    },
+
+    _processJobs : function( jobs ){
+        this.jobs = jobs || [];
+        return this.jobs;
     },
 
     _createDAG : function(){
         this.dag = new JobDAG({
             historyContents     : this.model.contents.toJSON(),
+            tools               : this.tools,
             jobs                : this.jobs,
             excludeSetMetadata  : true,
             excludeErroredJobs  : true
         });
-//window.dag = this.dag;
-        this.log( this + '.dag:', this.dag );
-
+        this.debug( this + '.dag:', this.dag );
         this._createComponents();
     },
 
     _createComponents : function(){
         this.log( this + '._createComponents' );
         var structure = this;
-//window.structure = structure;
 
         structure.componentViews = structure.dag.weakComponentGraphArray().map( function( componentGraph ){
             return structure._createComponent( componentGraph );
         });
+        return structure.componentViews;
     },
 
     _createComponent : function( component ){
         this.log( this + '._createComponent:', component );
-        //return new HistoryStructureComponent({
-        return new VerticalHistoryStructureComponent({
+        var ComponentClass = this._layoutToComponentClass[ this.layout ];
+        return new ComponentClass({
                 model       : this.model,
                 component   : component
             });
@@ -395,7 +550,7 @@ var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
         this.log( this + '.render:', options );
         var structure = this;
 
-        structure.$el.html([
+        structure.$el.addClass( 'clear' ).html([
             '<div class="controls"></div>',
             '<div class="components"></div>'
         ].join( '' ));
@@ -410,8 +565,17 @@ var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend
         return this.$( '.components' );
     },
 
+    changeLayout : function( layout ){
+        if( !( layout in this._layoutToComponentClass ) ){
+            throw new Error( this + ': unknown layout: ' + layout );
+        }
+        this.layout = layout;
+        this._createComponents();
+        return this.render();
+    },
+
     toString : function(){
-        return 'HistoryStructureView(' + ')';
+        return 'HistoryStructureView(' + this.model.id + ')';
     }
 });
 

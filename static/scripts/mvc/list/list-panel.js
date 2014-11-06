@@ -514,6 +514,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 
     /** get views based on model */
     viewFromModel : function( model ){
+        if( !model ){ return undefined; }
         return this.viewFromModelId( model.id );
     },
 

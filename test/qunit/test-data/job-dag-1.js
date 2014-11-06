@@ -1,5 +1,15 @@
 define([], function(){
 // ============================================================================
+var tools = {
+    "upload1": {},
+    "Show beginning1": {},
+    "Show tail1": {},
+    "random_lines1": {},
+    "__SET_METADATA__": {},
+    "cat1": {}
+};
+
+// ============================================================================
 // plain 3 step job chain
 var jobs1 = [
     {
@@ -424,14 +434,101 @@ var historyContents3 = [
 ];
 
 
+var jobs4 = [
+    {
+        "tool_id": "cat1",
+        "update_time": "2014-10-21T17:33:36.960857",
+        "inputs": {
+            "input1": {
+                "src": "hda",
+                "id": "422eef6b1b545329",
+                "name": "input1"
+            },
+            "queries_0|input2": {
+                "src": "hda",
+                "id": "c86c1b73aa7102dd",
+                "name": "queries_0|input2"
+            }
+        },
+        "outputs": {
+            "out_file1": {
+                "src": "hda",
+                "id": "52d6bdfafedbb5e5",
+                "name": "out_file1"
+            }
+        },
+        "exit_code": 0,
+        "state": "ok",
+        "create_time": "2014-10-21T17:33:34.302245",
+        "params": {
+            // ...
+        },
+        "model_class": "Job",
+        "id": "92b83968e0b52980"
+    }
+];
+
+var historyContents4 = [
+  {
+    "dataset_id": 29,
+    "deleted": false,
+    "extension": "vcf",
+    "hid": 1,
+    "history_content_type": "dataset",
+    "history_id": "c24141d7e4e77705",
+    "id": "422eef6b1b545329",
+    "name": "1.vcf",
+    "purged": false,
+    "resubmitted": false,
+    "state": "ok",
+    "type": "file",
+    "url": "/api/histories/c24141d7e4e77705/contents/datasets/422eef6b1b545329",
+    "visible": true
+  },
+  {
+    "dataset_id": 56,
+    "deleted": false,
+    "extension": "maf",
+    "hid": 2,
+    "history_content_type": "dataset",
+    "history_id": "c24141d7e4e77705",
+    "id": "c86c1b73aa7102dd",
+    "name": "3.maf",
+    "purged": false,
+    "resubmitted": false,
+    "state": "ok",
+    "type": "file",
+    "url": "/api/histories/c24141d7e4e77705/contents/datasets/c86c1b73aa7102dd",
+    "visible": true
+  },
+  {
+    "dataset_id": 131,
+    "deleted": false,
+    "extension": "maf",
+    "hid": 3,
+    "history_content_type": "dataset",
+    "history_id": "c24141d7e4e77705",
+    "id": "52d6bdfafedbb5e5",
+    "name": "Concatenate datasets on data 1 and data 2",
+    "purged": false,
+    "resubmitted": false,
+    "state": "ok",
+    "type": "file",
+    "url": "/api/histories/c24141d7e4e77705/contents/datasets/52d6bdfafedbb5e5",
+    "visible": true
+  }
+];
 
 // ============================================================================
     return {
+        tools               : tools,
         jobs1               : jobs1,
         historyContents1    : historyContents1,
         jobs2               : jobs2,
         historyContents2    : historyContents2,
         jobs3               : jobs3,
-        historyContents3    : historyContents3
+        historyContents3    : historyContents3,
+        jobs4               : jobs4,
+        historyContents4    : historyContents4
     };
 });
