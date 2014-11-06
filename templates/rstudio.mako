@@ -33,9 +33,9 @@ ie_request.attr.notebook_pw = PASSWORD
 # Access URLs for the notebook from within galaxy.
 # TODO: Make this work without pointing directly to IE. Currently does not work
 # through proxy.
-notebook_pubkey_url = ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/auth-public-key')
-notebook_access_url = ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/')
-notebook_login_url =  ie_request.url_template('http://localhost:${PORT}/rstudio/${PORT}/auth-do-sign-in')
+notebook_pubkey_url = ie_request.url_template('http://localhost/rstudio/${PORT}/auth-public-key')
+notebook_access_url = ie_request.url_template('http://localhost/rstudio/${PORT}/')
+notebook_login_url =  ie_request.url_template('http://localhost/rstudio/${PORT}/auth-do-sign-in')
 
 import re
 docker_cmd = ie_request.docker_cmd(temp_dir)
@@ -49,7 +49,7 @@ print docker_cmd
 <head>
 ${ ie.load_default_js() }
 </head>
-<body>
+<body style="margin:0px">
 <script type="text/javascript">
 ${ ie.default_javascript_variables() }
 var notebook_login_url = '${ notebook_login_url }';
@@ -76,16 +76,7 @@ requirejs([
     load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url, "${ USERNAME }");
 });
 </script>
-
-<!--
-<form action="auth-do-sign-in" name="realform" id="realform" method="POST">
-   <input name="persist" id="persist" value="1" type="hidden">
-   <input name="appUri" value="" type="hidden">
-   <input name="clientPath" id="clientPath" value="/rstudio/auth-sign-in" type="hidden">
-   <input id="package" name="v" value="" type="hidden">
-</form>
--->
-<div id="main" width="100%" height="100%">
+<div id="main">
 </div>
 </body>
 </html>

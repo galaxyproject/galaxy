@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
 <interactive_environment name="RStudio">
     <data_sources>
         <data_source>
