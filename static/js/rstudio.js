@@ -79,9 +79,16 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
             },
             error: function(jqxhr, status, error){
                 if(ie_password_auth && !ie_apache_urls){
-                    // Failure happens due to CORS, can't use `password` because that's actually
-                    // encrypted for rstudio
-                    message_failed_auth(ie_password);
+                    // Failure now happens because the redirect that RStudio gives us includes the
+                    // port internal to nginx. (E.g. localhost:NNNN/rstudio/NNNN/)
+                    // so disabling the message here makes sense as long as it's working correctly
+                    //
+                    // Additionally:
+                    // XMLHttpRequest cannot load http://localhost:46725/rstudio/46725/. The
+                    // 'Access-Control-Allow-Origin' header has a value 'http://localhost:8081' that
+                    // is not equal to the supplied origin. Origin 'null' is therefore not allowed
+                    // access.
+                    // message_failed_auth(ie_password);
                     append_notebook(notebook_access_url);
                 }else{
                     message_failed_connection();
