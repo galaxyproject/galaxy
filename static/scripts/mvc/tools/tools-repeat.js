@@ -40,11 +40,11 @@ var View = Backbone.View.extend({
             content : ''
         });
         
-        // add button
-        this.$el.append(Utils.wrap(this.button_new.$el));
-        
         // append button
         this.$el.append(this.table.$el);
+        
+        // add button
+        this.$el.append(Utils.wrap(this.button_new.$el));
         
         // clear list
         this.list = {};
@@ -97,7 +97,7 @@ var View = Backbone.View.extend({
         
         // append to dom
         this.table.add(portlet.$el);
-        this.table.prepend('row_' + options.id, true);
+        this.table.append('row_' + options.id, true);
         
         // validate maximum
         if (this.options.max > 0 && this.size() >= this.options.max) {
