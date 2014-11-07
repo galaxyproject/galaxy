@@ -10,7 +10,7 @@ from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import dumps
 from galaxy.visualization.data_providers.genome import *
-from galaxy.tools.parameters import params_to_incoming
+from galaxy.tools.parameters import params_to_incoming, check_param
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
@@ -574,7 +574,62 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             # update and return
             dict['value'] = value
             return dict
-
+        
+        # populate state
+        def initialize_state(trans, inputs, state, context=None):
+            context = ExpressionContext(state, context)
+            for input in inputs.itervalues():
+                state[input.name] = input.get_initial_value(trans, context)
+        def populate_state(trans, inputs, state, incoming, prefix="", context=None ):
+            errors = dict()
+            context = ExpressionContext(state, context)
+            for input in inputs.itervalues():
+                key = prefix + input.name
+                if input.type == 'repeat':
+                    group_state = state[input.name]
+                    group_errors = []
+                    rep_index = 0
+                    del group_state[:]
+                    while True:
+                        rep_name = "%s_%d" % (key, rep_index)
+                        if not any([incoming_key.startswith(rep_name) for incoming_key in incoming.keys()]):
+                            break
+                        if rep_index < input.max:
+                            new_state = {}
+                            new_state['__index__'] = rep_index
+                            initialize_state(trans, input.inputs, new_state, context)
+                            group_state.append(new_state)
+                            group_errors.append({})
+                            rep_errors = populate_state(trans, input.inputs, new_state, incoming, prefix=rep_name + "|", context=context)
+                            if rep_errors:
+                                group_errors[rep_index].update( rep_errors )
+                        else:
+                            group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
+                        rep_index += 1
+                elif input.type == 'conditional':
+                    group_state = state[input.name]
+                    group_prefix = "%s|" % ( key )
+                    test_param_key = group_prefix + input.test_param.name
+                    default_value = incoming.get(test_param_key, group_state.get(input.test_param.name, None))
+                    value, test_param_error = check_param( trans, input.test_param, default_value, context)
+                    if test_param_error:
+                        errors[input.name] = [test_param_error]
+                    else:
+                        current_case = input.get_current_case(value, trans)
+                        group_state = state[input.name] = {}
+                        initialize_state(trans, input.cases[current_case].inputs, group_state, context)
+                        group_errors = populate_state( trans, input.cases[current_case].inputs, group_state, incoming, prefix=group_prefix, context=context)
+                        if group_errors:
+                            errors[input.name] = group_errors
+                        group_state['__current_case__'] = current_case
+                    group_state[ input.test_param.name ] = value
+                else:
+                    value, error = check_param(trans, input, incoming.get(key, state.get(input.name, None)), context)
+                    if error:
+                        errors[input.name] = error
+                    state[input.name] = value
+            return errors
+        
         # build model
         def iterate(group_inputs, inputs, tool_state, errors, other_values=None):
             other_values = ExpressionContext( tool_state, other_values )
@@ -593,7 +648,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                         group_errors = errors[input.name][i] if input.name in errors else dict()
                         iterate( group_cache[i], input.inputs, group_state[i], group_errors, other_values )
                 elif input.type == 'conditional':
-                    # TODO: loop over all cases
                     try:
                         test_param = group_inputs[input_index]['test_param']
                         test_param['value'] = convert(group_state[test_param['name']])
@@ -622,17 +676,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         # do param translation here, used by datasource tools
         if tool.input_translator:
             tool.input_translator.translate( params )
-
+        
         # create tool state
-        state = tool.new_state(trans, all_pages=True)
-        errors = tool.populate_state( trans, tool.inputs, state.inputs, params.__dict__ )
+        state_inputs = {}
+        initialize_state(trans, tool.inputs, state_inputs)
+        errors = populate_state(trans, tool.inputs, state_inputs, params.__dict__)
 
         # create basic tool model
         tool_model = tool.to_dict(trans)
         tool_model['inputs'] = {}
 
         # build tool model
-        iterate(tool_model['inputs'], tool.inputs, state.inputs, errors, '')
+        iterate(tool_model['inputs'], tool.inputs, state_inputs, errors, '')
 
         # load tool help
         tool_help = ''
