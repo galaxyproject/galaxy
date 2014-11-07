@@ -13,6 +13,7 @@ from elementtree.ElementTree import Element
 import galaxy.tools
 from galaxy import exceptions
 from galaxy import model
+from galaxy import web
 from galaxy.dataset_collections import matching
 from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
@@ -486,7 +487,7 @@ class ToolModule( WorkflowModule ):
 
     def get_tooltip( self, static_path='' ):
         if self.tool.help:
-            return self.tool.help.render( host_url='', static_path=static_path )
+            return self.tool.help.render( host_url=web.url_for('/'), static_path=static_path )
         else:
             return None
 
