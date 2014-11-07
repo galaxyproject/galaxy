@@ -541,6 +541,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                     'id'  : trans.security.encode_id(v.id),
                     'src' : 'hda'
                 }
+            elif isinstance(v, bool):
+                if v is True:
+                    return 'true'
+                else:
+                    return 'false'
             elif isinstance(v, basestring) or isnumber:
                 return v
             else:
@@ -591,7 +596,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                     # TODO: loop over all cases
                     try:
                         test_param = group_inputs[input_index]['test_param']
-                        test_param['value'] = group_state[test_param['name']]
+                        test_param['value'] = convert(group_state[test_param['name']])
                     except Exception:
                         pass
                     i = group_state['__current_case__']
