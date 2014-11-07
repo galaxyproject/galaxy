@@ -448,14 +448,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def login( self, trans, refresh_frames=[], **kwd ):
-        '''Handle Galaxy Log in'''
+        """Handle Galaxy login"""
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         root_url = url_for( '/', qualified=True )
-        redirect_url = ''  # always start with redirect_url being empty
-        # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
-        # or to enter a logout/login loop
+        # Always start with redirect_url being empty.
+        redirect_url = ''
+        # Compare urls, to prevent a redirect from pointing (directly)
+        # outside of galaxy or to enter a logout/login loop.
         if not util.compare_urls( root_url, redirect, compare_path=False ) or util.compare_urls( url_for( controller='user', action='logout', qualified=True ), redirect ):
             redirect = root_url
+        if kwd.get( 'noredirect', False ):
+            # The referrer is explicitly asking not to redirect.
+            redirect = ''
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
@@ -463,7 +467,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         user = trans.user
         email = kwd.get( 'email', '' )
         if user:
-            # already logged in
+            # Already logged in.
             redirect_url = redirect
             message = 'You are already logged in.'
             status = 'info'
@@ -503,9 +507,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     active_view="user" )
 
     def __validate_login( self, trans, **kwd ):
-        """
-        Function validates numerous cases that might happen during the login time.
-        """
+        """Validates numerous cases that might happen during the login time."""
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'error' )
         email = kwd.get( 'email', '' )
@@ -1114,12 +1116,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
-        """
-        Reset the user's password. Send him/her an email with the new password.
-        """
+        """Reset the user's password. Send an email with the new password."""
         if trans.app.config.smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact your local Galaxy administrator." )
-        message = util.sanitize_text(util.restore_text( kwd.get( 'message', '' ) ))
+            return trans.show_error_message( "Mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator." )
+        message = util.sanitize_text( util.restore_text( kwd.get( 'message', '' ) ) )
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
@@ -1138,23 +1138,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     if host == 'localhost':
                         host = socket.getfqdn()
                     body = 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass )
-                    to = email
                     frm = 'galaxy-no-reply@' + host
                     subject = 'Galaxy Password Reset'
                     try:
-                        util.send_mail( frm, to, subject, body, trans.app.config )
+                        util.send_mail( frm, email, subject, body, trans.app.config )
                         reset_user.set_password_cleartext( new_pass )
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
                         trans.log_event( "User reset password: %s" % email )
-                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( controller='user', action='login' ) )
+                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( controller='user', action='login', noredirect='true' ) )
                     except Exception, e:
                         message = 'Failed to reset password: %s' % str( e )
                         status = 'error'
-                    return trans.response.send_redirect( web.url_for( controller='user',
-                                                                      action='reset_password',
-                                                                      message=message,
-                                                                      status=status ) )
             elif email is not None:
                 message = "The specified user does not exist"
                 status = 'error'
