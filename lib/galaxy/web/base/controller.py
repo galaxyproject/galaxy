@@ -1596,6 +1596,8 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         else:
             name = data['name']
         workflow.name = name
+        if 'uuid' in data:
+            workflow.uuid = data['uuid']
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
         # Create each step
