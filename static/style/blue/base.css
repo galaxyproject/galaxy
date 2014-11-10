@@ -1980,9 +1980,7 @@ div.permissionContainer{padding-left:20px}
 .annotated-history-panel table.list-items>tbody>tr>td:nth-child(2){padding:8px 16px 8px 16px;white-space:pre-wrap}
 .annotated-history-panel table.list-items>tbody>tr>td>.list-item{border:0px}
 .annotated-history-panel .empty-message{margin-top:8px}
-.current-history-panel .list-item.history-content.current-content{border:2px solid #333;border-bottom-width:2px}.current-history-panel .list-item.history-content.current-content .primary-actions{margin:5px 8px 0px 0px}
-.current-history-panel .list-item.history-content.current-content .title-bar{padding:5px 8px 5px 6px}
-.current-history-panel .list-item.history-content.current-content .details{padding:0px 8px 5px 6px}
+.current-history-panel .list-item.history-content.current-content{border-left:5px solid #4E5777}
 body.historyPage{background:#dfe5f9;color:#000;margin:5px;border:0;padding:0}
 div.historyLinks{margin:5px 5px}
 div.historyItem{margin:0 -5px;padding:8px 10px;border-top:solid #bfbfbf 1px;border-right:none;word-wrap:break-word;background:#eee}div.historyItem .state-icon{display:inline-block;vertical-align:middle;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat}

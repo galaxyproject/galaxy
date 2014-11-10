@@ -595,19 +595,11 @@
 
 // ---------------------------------------------------------------------------- current-history-panel
 .current-history-panel {
+    // .current-content is added to dataset/collection when displayed/edited/visualized, etc.
+    //  (roughly: when it's being used in the center panel)
     .list-item.history-content.current-content {
-
-        border: 2px solid #333;
-        border-bottom-width: 2px;
-        .primary-actions {
-            margin: 5px 8px 0px 0px;
-        }
-        .title-bar {
-            padding: 5px 8px 5px 6px;
-        }
-        .details {
-            padding: 0px 8px 5px 6px;
-        }
+        //TODO: Galaxy's 'bs-primary' color - not sure where this is defined
+        border-left: 5px solid #4E5777;
     }
 }
 
