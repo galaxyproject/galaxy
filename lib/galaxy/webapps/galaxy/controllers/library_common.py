@@ -162,6 +162,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           default_action=default_action,
                                                           message=util.sanitize_text( message ),
                                                           status=status ) )
+
     @web.expose
     def library_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -222,6 +223,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     inherited=inherited,
                                     message=message,
                                     status=status )
+
     @web.expose
     def library_permissions( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -269,6 +271,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )
+
     @web.expose
     def create_folder( self, trans, cntrller, parent_id, library_id, **kwd ):
         params = util.Params( kwd )
@@ -346,6 +349,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )
+
     @web.expose
     def folder_info( self, trans, cntrller, id, library_id, **kwd ):
         params = util.Params( kwd )
@@ -403,6 +407,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     inherited=inherited,
                                     message=message,
                                     status=status )
+
     @web.expose
     def folder_permissions( self, trans, cntrller, id, library_id, **kwd ):
         params = util.Params( kwd )
@@ -453,6 +458,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )
+
     @web.expose
     def ldda_edit_info( self, trans, cntrller, library_id, folder_id, id, **kwd ):
         params = util.Params( kwd )
@@ -606,6 +612,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     inherited=inherited,
                                     message=message,
                                     status=status )
+
     @web.expose
     def ldda_info( self, trans, cntrller, library_id, folder_id, id, **kwd ):
         params = util.Params( kwd )
@@ -655,6 +662,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     inherited=inherited,
                                     message=message,
                                     status=status )
+
     @web.expose
     def ldda_permissions( self, trans, cntrller, library_id, folder_id, id, **kwd ):
         params = util.Params( kwd )
@@ -793,6 +801,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )
+
     @web.expose
     def upload_library_dataset( self, trans, cntrller, library_id, folder_id, **kwd ):
         params = util.Params( kwd )
@@ -1042,6 +1051,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     ldda_message=ldda_message,
                                     message=message,
                                     status=status )
+
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
         # Set up the traditional tool state/params
         tool_id = 'upload1'
@@ -1132,6 +1142,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output
+
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         link_data_only = params.get( 'link_data_only', 'copy_files' )
         uuid_str =  params.get( 'uuid', None )
@@ -1166,6 +1177,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             trans.sa_session.add_all( ( uploaded_dataset.data, uploaded_dataset.data.dataset ) )
             trans.sa_session.flush()
         return uploaded_dataset
+
     def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message ):
         dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
         files = dir_response[0]
@@ -1176,6 +1188,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             name = os.path.basename( file )
             uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, file, 'server_dir', library_bunch ) )
         return uploaded_datasets, 200, None
+
     def _get_server_dir_files( self, params, full_dir, import_dir_desc ):
         files = []
         try:
@@ -1212,6 +1225,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             response_code = 400
             return None, response_code, message
         return files, None, None
+
     def get_path_paste_uploaded_datasets( self, trans, cntrller, params, library_bunch, response_code, message ):
         preserve_dirs = util.string_as_bool( params.get( 'preserve_dirs', False ) )
         uploaded_datasets = []
@@ -1246,6 +1260,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     in_folder = None
                 files_and_folders.append((file_path, file, in_folder))
         return files_and_folders
+
     def _paths_list(self, params):
         return [ (l.strip(), os.path.abspath(l.strip())) for l in params.filesystem_paths.splitlines() if l.strip() ]
 
@@ -1463,6 +1478,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             ldda_message=ldda_message,
                                             message=message,
                                             status=status )
+
     def _build_roles_select_list( self, trans, cntrller, library, selected_role_ids=[] ):
         # Get the list of legitimate roles to display on the upload form.  If the library is public,
         # all active roles are legitimate.  If the library is restricted by the LIBRARY_ACCESS permission, only
@@ -1478,10 +1494,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             return roles_select_list
         else:
             return None
+
     def _build_upload_option_select_list( self, trans, upload_option, is_admin, do_not_include_values=[] ):
         # Build the upload_option select list.  The do_not_include_values param can contain options that
         # should not be included in the list.  For example, the 'upload_directory' option should not be
-        # included if uploading a new version of a librar dataset.
+        # included if uploading a new version of a library dataset.
         upload_refresh_on_change_values = []
         for option_value, option_label in trans.model.LibraryDataset.upload_options:
             if option_value not in do_not_include_values:
@@ -1508,6 +1525,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         continue
                 upload_option_select_list.add_option( option_label, option_value, selected=option_value==upload_option )
         return upload_option_select_list
+
     def _get_populated_widgets( self, folder ):
         # See if we have any inherited templates.
         info_association, inherited = folder.get_info_association( inherited=True )
@@ -1517,6 +1535,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             return self.populate_widgets_from_kwd( trans, widgets, **kwd )
         else:
             return []
+
     @web.expose
     def download_dataset_from_folder( self, trans, cntrller, id, library_id=None, **kwd ):
         """Catches the dataset id and displays file contents as directed"""
@@ -1557,6 +1576,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           show_deleted=show_deleted,
                                                           message=util.sanitize_text( message ),
                                                           status='error' ) )
+
     @web.expose
     def library_dataset_info( self, trans, cntrller, id, library_id, **kwd ):
         params = util.Params( kwd )
@@ -1606,6 +1626,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )
+
     @web.expose
     def library_dataset_permissions( self, trans, cntrller, id, library_id, **kwd ):
         params = util.Params( kwd )
@@ -1654,6 +1675,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     message=message,
                                     status=status )
+
     @web.expose
     def make_library_item_public( self, trans, cntrller, library_id, item_type, id, **kwd ):
         params = util.Params( kwd )
@@ -1696,6 +1718,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           show_deleted=show_deleted,
                                                           message=util.sanitize_text( message ),
                                                           status=status ) )
+
     @web.expose
     def act_on_multiple_datasets( self, trans, cntrller, library_id=None, ldda_ids='', **kwd ):
         # This method is called from 1 of 3 places:
@@ -2113,6 +2136,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     use_panels=use_panels,
                                     message=message,
                                     status=status )
+
     @web.expose
     def manage_template_inheritance( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
         params = util.Params( kwd )
@@ -2159,6 +2183,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           show_deleted=show_deleted,
                                                           message=util.sanitize_text( message ),
                                                           status='done' ) )
+
     @web.expose
     def move_library_item( self, trans, cntrller, item_type, item_id, source_library_id='', make_target_current=True, **kwd ):
         # This method is called from one of the following places:
@@ -2374,6 +2399,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     use_panels=use_panels,
                                     message=message,
                                     status=status )
+
     @web.expose
     def delete_library_item( self, trans, cntrller, library_id, item_id, item_type, **kwd ):
         # This action will handle deleting all types of library items.  State is saved for libraries and
@@ -2441,6 +2467,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               show_deleted=show_deleted,
                                                               message=message,
                                                               status=status ) )
+
     @web.expose
     def undelete_library_item( self, trans, cntrller, library_id, item_id, item_type, **kwd ):
         # This action will handle undeleting all types of library items
@@ -2509,6 +2536,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               show_deleted=show_deleted,
                                                               message=message,
                                                               status=status ) )
+
     def _check_access( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         can_access = True
         if isinstance( item, trans.model.HistoryDatasetAssociation ):
@@ -2551,6 +2579,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
+
     def _check_add( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
         if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, item ) ):
@@ -2566,6 +2595,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               show_deleted=show_deleted,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
+
     def _check_manage( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         if isinstance( item, trans.model.LibraryDataset ):
             # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
@@ -2594,6 +2624,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               use_panels=use_panels,
                                                               message=util.sanitize_text( message ),
                                                               status='error' ) )
+
     def _check_modify( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission.
         if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
@@ -2619,6 +2650,7 @@ def active_folders( trans, folder ):
                            .options( eagerload_all( "actions" ) ) \
                            .order_by( trans.app.model.LibraryFolder.table.c.name ) \
                            .all()
+
 def activatable_folders( trans, folder ):
     return trans.sa_session.query( trans.app.model.LibraryFolder ) \
                            .filter_by( parent=folder, purged=False ) \
@@ -2685,6 +2717,7 @@ def branch_deleted( folder ):
     if folder.parent:
         return branch_deleted( folder.parent )
     return False
+
 def get_containing_library_from_library_dataset( trans, library_dataset ):
     """Given a library_dataset, get the containing library"""
     folder = library_dataset.folder
@@ -2698,6 +2731,7 @@ def get_containing_library_from_library_dataset( trans, library_dataset ):
         if library.root_folder == folder:
             return library
     return None
+
 def get_comptypes( trans ):
     comptypes_t = comptypes
     if trans.app.config.nginx_x_archive_files_base:
@@ -2710,6 +2744,7 @@ def get_comptypes( trans ):
         except:
             pass
     return comptypes_t
+
 def get_sorted_accessible_library_items( trans, cntrller, items, sort_attr ):
     is_admin = trans.user_is_admin() and cntrller == 'library_admin'
     if is_admin:
@@ -2723,6 +2758,7 @@ def get_sorted_accessible_library_items( trans, cntrller, items, sort_attr ):
                 accessible_items.append( item )
     # Sort by name
     return sort_by_attr( [ item for item in accessible_items ], sort_attr )
+
 def sort_by_attr( seq, attr ):
     """
     Sort the sequence of objects by object's attribute
@@ -2738,6 +2774,7 @@ def sort_by_attr( seq, attr ):
     intermed = map( None, map( getattr, seq, ( attr, ) * len( seq ) ), xrange( len( seq ) ), seq )
     intermed.sort()
     return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
+
 def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     """Return display of results from a full-text lucene search of data libraries."""
     params = util.Params( kwd )
@@ -2749,6 +2786,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     response.close()
     lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
+
 def whoosh_search( trans, cntrller, search_term, **kwd ):
     """Return display of results from a full-text whoosh search of data libraries."""
     params = util.Params( kwd )
