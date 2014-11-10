@@ -12,6 +12,7 @@ import tempfile
 import subprocess
 import json
 import os
+import re
 
 import logging
 log = logging.getLogger(__name__)
@@ -119,3 +120,37 @@ class Ipynb( Json ):
         Set the number of models in dataset.
         """
         pass
+
+
+class Obo( Text ):
+    """
+        OBO file format description
+        http://www.geneontology.org/GO.format.obo-1_2.shtml
+    """
+    file_ext = "obo"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = "Open Biomedical Ontology (OBO)"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff( self, filename ):
+        """
+            Try to load the string with the json module. If successful it's a json file.
+        """
+        stanza = re.compile(r'^\[.*\]$')
+        with open( filename ) as handle:
+            first_line = handle.readline()
+            if not first_line.startswith('format-version:'):
+                return False
+
+            for line in handle:
+                if stanza.match(line.strip()):
+                    # a stanza needs to begin with an ID tag
+                    if handle.next().startswith('id:'):
+                        return True
+        return False
+

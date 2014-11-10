@@ -1,6 +1,7 @@
 """
 XML format classes
 """
+import re
 import data
 import logging
 from galaxy.datatypes.sniff import *
@@ -116,3 +117,32 @@ class Phyloxml( GenericXml ):
         """
 
         return [ 'phyloviz' ]
+
+
+class Owl( GenericXml ):
+    """
+        Web Ontology Language OWL format description
+        http://www.w3.org/TR/owl-ref/
+    """
+    file_ext = "owl"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = "Web Ontology Language OWL"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff( self, filename ):
+        """
+            Try to load the string with the json module. If successful it's a json file.
+        """
+        owl_marker = re.compile(r'\<owl:')
+        with open( filename ) as handle:
+            # Check first 200 lines for the string "<owl:"
+            first_lines = handle.readlines(200)
+            for line in first_lines:
+                if owl_marker.search( line ):
+                    return True
+        return False
