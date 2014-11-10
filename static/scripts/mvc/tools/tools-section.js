@@ -352,7 +352,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     }
                     
                     // log
-                    console.debug('tools-form::_addRow() : Auto matched field type (' + field_type + ').');
+                    console.debug('tools-form::_addRow() : Auto matched field type (' + input_def.type + ').');
             }
             
             // set field value
