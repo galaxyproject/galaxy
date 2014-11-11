@@ -2268,6 +2268,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             subcollection_type = self._history_query( trans ).collection_type_description.collection_type
             pass
 
+        return d
+
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     """
