@@ -2066,11 +2066,25 @@ class DataToolParameter( BaseDataToolParameter ):
             ref = ref()
         return ref
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         d = super( DataToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
+        if other_values is None:
+            # No need to produce lists of datasets for history.
+            return d
+
+        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
+        history = trans.history
+        multiple = self.multiple
+        for hda_match, hid in self.match_datasets( history, dataset_matcher ):
+            # hda_match not an hda - it is a description of the match, may
+            # describe match after implicit conversion.
+            pass
+        for history_dataset_collection in self.match_collections( history, dataset_matcher, reduction=multiple ):
+            pass
         return d
+
 
 class DataCollectionToolParameter( BaseDataToolParameter ):
     """
@@ -2237,6 +2251,22 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def validate( self, value, history=None ):
         return True  # TODO
+
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+        d = super( DataCollectionToolParameter, self ).to_dict( trans )
+        if other_values is None:
+            # No need to produce lists of datasets for history.
+            return d
+
+        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
+        history = trans.history
+
+        for hdca in self.match_collections( trans, history, dataset_matcher ):
+            pass
+
+        for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
+            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
+            pass
 
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
