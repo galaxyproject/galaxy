@@ -1796,26 +1796,52 @@ class DataToolParameter( BaseDataToolParameter ):
         field_name = "%s%s" % ( self.name, suffix )
         field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
 
-        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
-
-        for history_dataset_collection in history.active_dataset_collections:
-            if dataset_collection_matcher.hdca_match( history_dataset_collection, reduction=reduction ):
-                name = history_dataset_collection.name
-                hid = str( history_dataset_collection.hid )
-                hidden_text = ""  # TODO
-                id = value_modifier( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ) )
-                selected = value and history_dataset_collection in value
-                text = "%s:%s %s" % ( hid, hidden_text, name )
-                field.add_option( text, id, selected )
+        for history_dataset_collection in self.match_collections( history, dataset_matcher, reduction=reduction ):
+            name = history_dataset_collection.name
+            hid = str( history_dataset_collection.hid )
+            hidden_text = ""  # TODO
+            id = value_modifier( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ) )
+            selected = value and history_dataset_collection in value
+            text = "%s:%s %s" % ( hid, hidden_text, name )
+            field.add_option( text, id, selected )
 
         return field
 
     def _get_select_dataset_field( self, history, dataset_matcher, multiple=False, suffix="" ):
+        field_name = "%s%s" % ( self.name, suffix )
+        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
 
-        # CRUCIAL: the dataset_collector function needs to be local to DataToolParameter.get_html_field()
+        for hda_match, hid in self.match_datasets( history, dataset_matcher ):
+            if not hda_match.implicit_conversion:
+                hda = hda_match.hda
+                hda_name = hda.name
+                selected = dataset_matcher.selected( hda )
+                if hda.visible:
+                    hidden_text = ""
+                else:
+                    hidden_text = " (hidden)"
+                field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
+            else:
+                hda_name = hda_match.original_hda.name
+                hda = hda_match.hda  # Get converted dataset
+                target_ext = hda_match.target_ext
+                selected = dataset_matcher.selected( hda )
+                field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
+
+        self._ensure_selection( field )
+        return field
+
+    def match_collections( self, history, dataset_matcher, reduction=True ):
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+
+        for history_dataset_collection in history.active_dataset_collections:
+            if dataset_collection_matcher.hdca_match( history_dataset_collection, reduction=reduction ):
+                yield history_dataset_collection
+
+    def match_datasets( self, history, dataset_matcher ):
+
         def dataset_collector( hdas, parent_hid ):
             for i, hda in enumerate( hdas ):
-                hda_name = hda.name
                 if parent_hid is not None:
                     hid = "%s.%d" % ( parent_hid, i + 1 )
                 else:
@@ -1823,27 +1849,13 @@ class DataToolParameter( BaseDataToolParameter ):
                 hda_match = dataset_matcher.hda_match( hda )
                 if not hda_match:
                     continue
-                if not hda_match.implicit_conversion:
-                    selected = dataset_matcher.selected( hda )
-                    if hda.visible:
-                        hidden_text = ""
-                    else:
-                        hidden_text = " (hidden)"
-                    field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
-                else:
-                    hda = hda_match.hda  # Get converted dataset
-                    target_ext = hda_match.target_ext
-                    selected = dataset_matcher.selected( hda )
-                    field.add_option( "%s: (as %s) %s" % ( hid, target_ext, hda_name ), hda.id, selected )
+                yield (hda_match, hid)
                 # Also collect children via association object
-                dataset_collector( hda.children, hid )
+                for item in dataset_collector( hda.children, hid ):
+                    yield item
 
-        field_name = "%s%s" % ( self.name, suffix )
-        field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-
-        dataset_collector( history.active_datasets_children_and_roles, None )
-        self._ensure_selection( field )
-        return field
+        for item in dataset_collector( history.active_datasets_children_and_roles, None ):
+            yield item
 
     def get_initial_value( self, trans, context, history=None ):
         return self.get_initial_value_from_history_prevent_repeats(trans, context, None, history=history)
@@ -2098,15 +2110,31 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         return self._switch_fields( fields, default_field=default_field )
 
-    def _get_single_collection_field( self, trans, history, value, other_values ):
-        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+    def match_collections( self, trans, history, dataset_matcher ):
         dataset_collections = trans.app.dataset_collections_service.history_dataset_collections( history, self._history_query( trans ) )
-        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
         for dataset_collection_instance in dataset_collections:
             if not dataset_collection_matcher.hdca_match( dataset_collection_instance ):
                 continue
+            yield dataset_collection_instance
+
+    def match_multirun_collections( self, trans, history, dataset_matcher ):
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+
+        for history_dataset_collection in history.active_dataset_collections:
+            if not self._history_query( trans ).can_map_over( history_dataset_collection ):
+                continue
+
+            datasets_match = dataset_collection_matcher.hdca_match( history_dataset_collection )
+            if datasets_match:
+                yield history_dataset_collection
+
+    def _get_single_collection_field( self, trans, history, value, other_values ):
+        field = form_builder.SelectField( self.name, self.multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
+        dataset_matcher = DatasetMatcher( trans, self, value, other_values )
+
+        for dataset_collection_instance in self.match_collections( trans, history, dataset_matcher ):
             instance_id = dataset_collection_instance.hid
             instance_name = dataset_collection_instance.name
             selected = ( value and ( dataset_collection_instance == value ) )
@@ -2122,22 +2150,16 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         field_name = "%s%s" % ( self.name, suffix )
         field = form_builder.SelectField( field_name, multiple, None, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
         dataset_matcher = DatasetMatcher( trans, self, value, other_values )
-        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
 
-        for history_dataset_collection in history.active_dataset_collections:
-            if not self._history_query( trans ).can_map_over( history_dataset_collection ):
-                continue
+        for history_dataset_collection in self.match_multirun_collections( trans, history, dataset_matcher ):
+            name = history_dataset_collection.name
+            hid = str( history_dataset_collection.hid )
+            hidden_text = ""  # TODO
+            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
+            id = "%s|%s" % ( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
+            text = "%s:%s %s" % ( hid, hidden_text, name )
 
-            datasets_match = dataset_collection_matcher.hdca_match( history_dataset_collection )
-            if datasets_match:
-                name = history_dataset_collection.name
-                hid = str( history_dataset_collection.hid )
-                hidden_text = ""  # TODO
-                subcollection_type = self._history_query( trans ).collection_type_description.collection_type
-                id = "%s|%s" % ( dataset_matcher.trans.security.encode_id( history_dataset_collection.id ), subcollection_type )
-                text = "%s:%s %s" % ( hid, hidden_text, name )
-
-                field.add_option( text, id, False )
+            field.add_option( text, id, False )
 
         return field
 
