@@ -2067,22 +2067,49 @@ class DataToolParameter( BaseDataToolParameter ):
         return ref
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+        # create dictionary and fill default parameters
         d = super( DataToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
+        d['is_dynamic'] = True
+        d['options'] = {'hda': [], 'hdca': []}
+        
+        # return default content if context is not available
         if other_values is None:
-            # No need to produce lists of datasets for history.
             return d
 
+        # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         history = trans.history
         multiple = self.multiple
-        for hda_match, hid in self.match_datasets( history, dataset_matcher ):
-            # hda_match not an hda - it is a description of the match, may
-            # describe match after implicit conversion.
-            pass
-        for history_dataset_collection in self.match_collections( history, dataset_matcher, reduction=multiple ):
-            pass
+        
+        # add datasets
+        for hda in history.active_datasets_children_and_roles:
+            if dataset_matcher.hda_match( hda ):
+                d['options']['hda'].append({
+                    'id'            : trans.security.encode_id( hda.id ),
+                    'hid'           : hda.hid,
+                    'name'          : hda.name,
+                    'src'           : 'hda',
+                    'dataset_id'    : hda.dataset_id
+                })
+        
+        # add dataset collections
+        dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
+        for hdca in history.active_dataset_collections:
+            if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
+                d['options']['hdca'].append({
+                    'id'            : trans.security.encode_id( hdca.id ),
+                    'hid'           : hdca.hid,
+                    'name'          : hdca.name,
+                    'src'           : 'hdca'
+                })
+
+        # sort both lists
+        d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+
+        # return final dictionary
         return d
 
 

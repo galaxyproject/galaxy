@@ -372,6 +372,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
+                data        : input_def.options,
                 onchange    : function() {
                     self.app.refresh();
                 }

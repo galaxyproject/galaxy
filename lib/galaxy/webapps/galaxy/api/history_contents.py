@@ -131,12 +131,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         api_type = "file"
         encoded_id = trans.security.encode_id( hda.id )
+        encoded_dataset_id = trans.security.encode_id( hda.dataset_id );
         
         # TODO: handle failed_metadata here as well
         return {
             'id'    : encoded_id,
             'history_id' : encoded_history_id,
-            'dataset_id' : hda.dataset_id,
+            'dataset_id' : encoded_dataset_id,
             'name'  : hda.name,
             'type'  : api_type,
             'state'  : hda.dataset.state,

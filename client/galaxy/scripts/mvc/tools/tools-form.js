@@ -21,10 +21,18 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             var self = this;
             
             // link galaxy modal or create one
-            if (parent.Galaxy && parent.Galaxy.modal) {
-                this.modal = parent.Galaxy.modal;
+            var galaxy = parent.Galaxy;
+            if (galaxy && galaxy.modal) {
+                this.modal = galaxy.modal;
             } else {
                 this.modal = new Ui.Modal.View();
+            }
+    
+            // check if the user is an admin
+            if (galaxy && galaxy.currUser) {
+                this.is_admin = galaxy.currUser.get('is_admin')
+            } else {
+                this.is_admin = false;
             }
             
             // link options
@@ -47,12 +55,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.job_handler = new ToolJobs(this);
 
             // request history content and build form
-            this.content = new ToolContent({
-                history_id  : self.options.history_id,
-                success     : function() {
-                    self._buildForm(self.options);
-                }
-            });
+            this.content = new ToolContent(this);
+            
+            // build this form
+            this._buildForm(options);
         },
         
         // message
@@ -72,7 +78,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         // this happens i.e. when repeat blocks are added or removed and on initialization
         rebuild: function() {
             this.tree.refresh();
-            console.debug('tools-form::refresh() - Refreshed form structure.');
+            console.debug('tools-form::rebuild() - Rebuilding data structures.');
         },
         
         // refreshes input states i.e. for dynamic parameters
@@ -142,7 +148,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             var current_state = this.tree.finalize({
                 data : function(dict) {
                     if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
-                        return self.content.get({id: dict.values[0].id}).dataset_id;
+                        return self.content.get({id: dict.values[0].id, src: 'hda'}).dataset_id;
                     }
                     return null;
                 }
@@ -215,16 +221,22 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         
                         // get/update field
                         var field = self.field_list[input_id];
-                        if (field.update && input.type != 'data') {
+                        if (field.update) {
                             var new_options = [];
-                            for (var i in node.options) {
-                                var opt = node.options[i];
-                                if (opt.length > 2) {
-                                    new_options.push({
-                                        'label': opt[0],
-                                        'value': opt[1]
-                                    });
-                                }
+                            switch (input.type) {
+                                case 'data':
+                                    new_options = input.options;
+                                    break;
+                                default:
+                                    for (var i in node.options) {
+                                        var opt = node.options[i];
+                                        if (opt.length > 2) {
+                                            new_options.push({
+                                                'label': opt[0],
+                                                'value': opt[1]
+                                            });
+                                        }
+                                    }
                             }
                             field.update(new_options);
                             console.debug('Updating options for ' + input_id);
@@ -292,7 +304,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // add admin operations
-            if (Galaxy.currUser.get('is_admin')) {
+            if (this.is_admin) {
                 // create download button
                 menu.addMenu({
                     icon    : 'fa-download',

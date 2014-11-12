@@ -4,7 +4,8 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-temp
 var View = Backbone.View.extend({
     // initialize
     initialize : function(app, options) {
-        // configure options
+        // link app and options
+        this.app = app;
         this.options = options;
         
         // link this
@@ -14,13 +15,14 @@ var View = Backbone.View.extend({
         this.setElement('<div/>');
         
         // current selection
-        this.current = 'hda';
+        this.current = 'single';
         
         // create button
-        this.button_new = new Ui.RadioButton.View({
+        this.button_type = new Ui.RadioButton.View({
             value   : this.current,
-            data    : [ { icon: 'fa-file-o', label : 'Select datasets', value : 'hda'  },
-                        { icon: 'fa-files-o', label : 'Select a collection',  value : 'hdca' }],
+            data    : [ { icon: 'fa-file-o', label : 'Single dataset', value : 'single'  },
+                        { icon: 'fa-files-o', label : 'Multiple datasets', value : 'multiple'  },
+                        { icon: 'fa-folder-o', label : 'List of datasets',  value : 'collection' }],
             onchange: function(value) {
                 self.current = value;
                 self.refresh();
@@ -28,68 +30,56 @@ var View = Backbone.View.extend({
             }
         });
         
-        //
-        // datasets
-        //
-        var datasets = app.content.filterType({
-            src             : 'hda',
-            extensions      : options.extensions
+        // single dataset select field
+        this.select_single = new Ui.Select.View({
+            onchange    : function() {
+                self.trigger('change');
+            }
         });
-
-        // configure options fields
-        var dataset_options = [];
-        for (var i in datasets) {
-            dataset_options.push({
-                label: datasets[i].hid + ': ' + datasets[i].name,
-                value: datasets[i].id
-            });
-        }
         
-        // select field
-        this.select_datasets = new Ui.Select.View({
+        // multiple datasets select field
+        this.select_multiple = new Ui.Select.View({
             multiple    : true,
-            data        : dataset_options,
-            value       : dataset_options[0] && dataset_options[0].value,
             onchange    : function() {
                 self.trigger('change');
             }
         });
         
-        //
-        // collections
-        //
-        var collections = app.content.filterType({
-            src             : 'hdca',
-            extensions      : options.extensions
-        });
-        
-        // configure options fields
-        var collection_options = [];
-        for (var i in collections) {
-            collection_options.push({
-                label: collections[i].hid + ': ' + collections[i].name,
-                value: collections[i].id
-            });
-        }
-        
-        // create select field for collections
+        // collection select field
         this.select_collection = new Ui.Select.View({
-            data        : collection_options,
-            value       : collection_options[0] && collection_options[0].value,
             onchange    : function() {
                 self.trigger('change');
             }
         });
+        
+        // list of all select fields
+        this.list = {
+            'single' : {
+                field: this.select_single,
+                type : 'hda'
+            },
+            'multiple' : {
+                field: this.select_multiple,
+                type : 'hda'
+            },
+            'collection' : {
+                field: this.select_collection,
+                type : 'hdca'
+            }
+        };
+        
+        // add batch mode information
+        this.$batch = $(ToolTemplate.batchMode());
         
         // add elements to dom
-        this.$el.append(Utils.wrap(this.button_new.$el));
-        this.$el.append(this.select_datasets.$el);
-        this.$el.append(this.select_collection.$el);
-        
-        // check for batch mode
-        if (!this.options.multiple) {
-            this.$el.append(ToolTemplate.batchMode());
+        this.$el.append(Utils.wrap(this.button_type.$el));
+        for (var i in this.list) {
+            this.$el.append(this.list[i].field.$el);
         }
+        this.$el.append(this.$batch);
+        
+        // update options
+        this.update(options.data);
         
         // refresh view
         this.refresh();
@@ -102,31 +92,77 @@ var View = Backbone.View.extend({
         });
     },
     
+    /** Indicate that select fields are being updated */
+    wait: function() {
+        for (var i in this.list) {
+            this.list[i].field.wait();
+        }
+    },
+    
+    /** Indicate that the options update has been completed */
+    unwait: function() {
+        for (var i in this.list) {
+            this.list[i].field.unwait();
+        }
+    },
+    
+    /** Update content selector */
+    update: function(options) {
+        // identify dataset options
+        var dataset_options = [];
+        for (var i in options.hda) {
+            var hda = options.hda[i];
+            dataset_options.push({
+                label: hda.hid + ': ' + hda.name,
+                value: hda.id
+            });
+        }
+        
+        // identify collection options
+        var collection_options = [];
+        for (var i in options.hdca) {
+            var hdca = options.hdca[i];
+            collection_options.push({
+                label: hdca.hid + ': ' + hdca.name,
+                value: hdca.id
+            });
+        }
+        
+        // update selection fields
+        this.select_single.update(dataset_options);
+        this.select_multiple.update(dataset_options);
+        this.select_collection.update(collection_options);
+        
+        // add to content list
+        this.app.content.add(options);
+    },
+    
     /** Return the currently selected dataset values */
     value : function (dict) {
         // update current value
         if (dict !== undefined) {
             try {
-                // set source
-                this.current = dict.values[0].src;
-                this.refresh();
-                
                 // create list
                 var list = [];
                 for (var i in dict.values) {
                     list.push(dict.values[i].id);
                 }
                 
-                // identify select element
-                switch(this.current) {
-                    case 'hda':
-                        this.select_datasets.value(list);
-                        break;
-                    case 'hdca':
-                        this.select_collection.value(list[0]);
-                        break;
+                // identify suitable select field
+                if (dict && dict.values.length > 0 && dict.values[0].src == 'hcda') {
+                    this.current = 'collection';
+                    this.select_collection.value(list[0]);
+                } else {
+                    if (list.length > 1) {
+                        this.current = 'multiple';
+                        this.select_multiple.value(list);
+                    } else {
+                        this.current = 'single';
+                        this.select_single.value(list[0]);
+                    }
                 }
-                
+                this.refresh();
+        
                 // check if value has been set
                 var select = this._select();
                 if (!select.validate()) {
@@ -153,7 +189,7 @@ var View = Backbone.View.extend({
         for (var i in id_list) {
             result.values.push({
                 id  : id_list[i],
-                src : this.current
+                src : this.list[this.current].type
             });
         }
         
@@ -169,26 +205,24 @@ var View = Backbone.View.extend({
     
     /** Refreshes data selection view */
     refresh: function() {
-        switch (this.current) {
-            case 'hda':
-                this.select_datasets.$el.fadeIn();
-                this.select_collection.$el.hide();
-                break;
-            case 'hdca':
-                this.select_datasets.$el.hide();
-                this.select_collection.$el.fadeIn();
-                break;
+        for (var i in this.list) {
+            var $el = this.list[i].field.$el;
+            if (this.current == i) {
+                $el.show();
+            } else {
+                $el.hide();
+            }
+        }
+        if (this.current != 'single' && !this.options.multiple) {
+            this.$batch.show();
+        } else {
+            this.$batch.hide();
         }
     },
     
     /** Assists in selecting the current field */
     _select: function() {
-        switch(this.current) {
-            case 'hdca':
-                return this.select_collection;
-            default:
-                return this.select_datasets;
-        }
+        return this.list[this.current].field;
     }
 });
 

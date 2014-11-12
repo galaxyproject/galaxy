@@ -575,11 +575,13 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             dict['value'] = value
             return dict
         
-        # populate state
+        # initialize state using default parameters
         def initialize_state(trans, inputs, state, context=None):
             context = ExpressionContext(state, context)
             for input in inputs.itervalues():
                 state[input.name] = input.get_initial_value(trans, context)
+    
+        # populates state with incoming url parameters
         def populate_state(trans, inputs, state, incoming, prefix="", context=None ):
             errors = dict()
             context = ExpressionContext(state, context)
@@ -630,12 +632,14 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                     state[input.name] = value
             return errors
         
-        # build model
+        # builds tool model including all attributes
         def iterate(group_inputs, inputs, tool_state, errors, other_values=None):
             other_values = ExpressionContext( tool_state, other_values )
             for input_index, input in enumerate( inputs.itervalues() ):
                 # create model dictionary
                 group_inputs[input_index] = input.to_dict(trans)
+                if group_inputs[input_index] is None:
+                    continue
 
                 # identify stat for subsection/group
                 group_state = tool_state[input.name]
