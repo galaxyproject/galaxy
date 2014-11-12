@@ -2088,10 +2088,10 @@ class DataToolParameter( BaseDataToolParameter ):
             if dataset_matcher.hda_match( hda ):
                 d['options']['hda'].append({
                     'id'            : trans.security.encode_id( hda.id ),
+                    'id_uncoded'    : hda.id,
                     'hid'           : hda.hid,
                     'name'          : hda.name,
-                    'src'           : 'hda',
-                    'dataset_id'    : hda.dataset_id
+                    'src'           : 'hda'
                 })
         
         # add dataset collections
@@ -2100,6 +2100,7 @@ class DataToolParameter( BaseDataToolParameter ):
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
                 d['options']['hdca'].append({
                     'id'            : trans.security.encode_id( hdca.id ),
+                    'id_uncoded'    : hda.id,
                     'hid'           : hdca.hid,
                     'name'          : hdca.name,
                     'src'           : 'hdca'

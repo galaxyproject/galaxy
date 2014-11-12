@@ -148,7 +148,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             var current_state = this.tree.finalize({
                 data : function(dict) {
                     if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
-                        return self.content.get({id: dict.values[0].id, src: 'hda'}).dataset_id;
+                        return self.content.get({id: dict.values[0].id, src: 'hda'}).id_uncoded;
                     }
                     return null;
                 }
