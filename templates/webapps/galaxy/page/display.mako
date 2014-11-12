@@ -10,7 +10,8 @@
             //  (b) ...
             $('.embedded-item').each( function() {
                 var container = $(this);
-                if( container.hasClass( 'history' ) ){ return; }
+                if( container.hasClass( 'history' )
+                ||  container.hasClass( 'visualization' ) ){ return; }
             
                 // Show embedded item.
                 var show_embedded_item = function() {
@@ -119,10 +120,6 @@
         .embedded-item.history .toggle {
             display: inline;
         }
-        .embedded-item.history .expanded-content {
-            /* generates a fake wide border */
-            padding: 4px;
-        }
         /** wraps around the history */
         .embedded-item.history .item-content {
             background-color: white;
@@ -137,6 +134,11 @@
         }
         .annotated-history-panel .history-controls {
             margin: 0px 0px 16px 0px;
+        }
+
+        /* ---------------------------- visualizations */
+        .embedded-item.visualization .item-content {
+            max-height: none;
         }
     </style>
 </%def>
