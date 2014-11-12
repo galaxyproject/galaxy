@@ -14,59 +14,68 @@ var View = Backbone.View.extend({
         // add element
         this.setElement('<div/>');
         
-        // current selection
-        this.current = 'single';
+        // list of select fields
+        this.list = {};
         
-        // create button
-        this.button_type = new Ui.RadioButton.View({
-            value   : this.current,
-            data    : [ { icon: 'fa-file-o', label : 'Single dataset', value : 'single'  },
-                        { icon: 'fa-files-o', label : 'Multiple datasets', value : 'multiple'  },
-                        { icon: 'fa-folder-o', label : 'List of datasets',  value : 'collection' }],
-            onchange: function(value) {
-                self.current = value;
-                self.refresh();
-                self.trigger('change');
-            }
-        });
+        // radio button options
+        var radio_buttons = [];
         
-        // single dataset select field
-        this.select_single = new Ui.Select.View({
-            onchange    : function() {
-                self.trigger('change');
-            }
-        });
+        // set initial state
+        if (!options.multiple) {
+            this.current = 'single';
+        } else {
+            this.current = 'multiple';
+        }
+         
+        // add single dataset selector
+        if (!options.multiple) {
+            radio_buttons.push({icon: 'fa-file-o', label : 'Single dataset', value : 'single'});
+            this.select_single = new Ui.Select.View({
+                onchange    : function() {
+                    self.trigger('change');
+                }
+            });
+            this.list['single'] = {
+                field: this.select_single,
+                type : 'hda'
+            };
+        }
         
-        // multiple datasets select field
+        // add multiple dataset selector
+        radio_buttons.push({icon: 'fa-files-o', label : 'Multiple datasets', value : 'multiple'  });
         this.select_multiple = new Ui.Select.View({
             multiple    : true,
             onchange    : function() {
                 self.trigger('change');
             }
         });
+        this.list['multiple'] = {
+            field: this.select_multiple,
+            type : 'hda'
+        };
         
-        // collection select field
+        // add collection selector
+        radio_buttons.push({icon: 'fa-folder-o', label : 'List of datasets',  value : 'collection' });
         this.select_collection = new Ui.Select.View({
             onchange    : function() {
                 self.trigger('change');
             }
         });
-        
-        // list of all select fields
-        this.list = {
-            'single' : {
-                field: this.select_single,
-                type : 'hda'
-            },
-            'multiple' : {
-                field: this.select_multiple,
-                type : 'hda'
-            },
-            'collection' : {
-                field: this.select_collection,
-                type : 'hdca'
-            }
+        this.list['collection'] = {
+            field: this.select_collection,
+            type : 'hdca'
         };
+        
+        // create button
+        this.button_type = new Ui.RadioButton.View({
+            value   : this.current,
+            data    : radio_buttons,
+            onchange: function(value) {
+                self.current = value;
+                self.refresh();
+                self.trigger('change');
+            }
+        });
         
         // add batch mode information
         this.$batch = $(ToolTemplate.batchMode());
@@ -129,7 +138,7 @@ var View = Backbone.View.extend({
         }
         
         // update selection fields
-        this.select_single.update(dataset_options);
+        this.select_single && this.select_single.update(dataset_options);
         this.select_multiple.update(dataset_options);
         this.select_collection.update(collection_options);
         
@@ -153,7 +162,7 @@ var View = Backbone.View.extend({
                     this.current = 'collection';
                     this.select_collection.value(list[0]);
                 } else {
-                    if (list.length > 1) {
+                    if (list.length > 1 || this.options.multiple) {
                         this.current = 'multiple';
                         this.select_multiple.value(list);
                     } else {
