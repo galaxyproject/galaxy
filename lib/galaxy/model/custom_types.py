@@ -65,6 +65,13 @@ class JSONType( TypeDecorator ):
     def is_mutable( self ):
         return True
 
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "mysql":
+            return dialect.type_descriptor(sqlalchemy.dialects.mysql.MEDIUMBLOB)
+        else:
+            return self.impl
+
+
 metadata_pickler = AliasPickleModule( {
     ( "cookbook.patterns", "Bunch" ) : ( "galaxy.util.bunch" , "Bunch" )
 } )
