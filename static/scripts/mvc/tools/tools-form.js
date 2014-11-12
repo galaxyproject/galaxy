@@ -239,6 +239,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                                     }
                             }
                             field.update(new_options);
+                            field.trigger('change');
                             console.debug('Updating options for ' + input_id);
                         }
                     }
