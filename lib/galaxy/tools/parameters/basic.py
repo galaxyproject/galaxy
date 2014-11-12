@@ -2100,7 +2100,7 @@ class DataToolParameter( BaseDataToolParameter ):
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
                 d['options']['hdca'].append({
                     'id'            : trans.security.encode_id( hdca.id ),
-                    'id_uncoded'    : hda.id,
+                    'id_uncoded'    : hdca.id,
                     'hid'           : hdca.hid,
                     'name'          : hdca.name,
                     'src'           : 'hdca'
