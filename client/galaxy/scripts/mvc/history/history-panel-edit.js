@@ -354,20 +354,20 @@ var HistoryPanelEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaDeletionChange : function( itemModel ){
-        this._renderCounts();
         if( itemModel.get( 'deleted' ) && !this.showDeleted ){
             this.removeItemView( itemModel );
         }
+        this._renderCounts();
     },
 
     /** If this item is hidden and we're not showing hidden items, remove the view
      *  @param {Model} the item model to check
      */
     _handleHdaVisibleChange : function( itemModel ){
-        this._renderCounts();
         if( itemModel.hidden() && !this.storage.showHidden ){
             this.removeItemView( itemModel );
         }
+        this._renderCounts();
     },
 
     /** toggle the visibility of each content's tagsEditor applying all the args sent to this function */
