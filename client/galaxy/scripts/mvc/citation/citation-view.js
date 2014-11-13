@@ -58,11 +58,11 @@ var CitationView = Backbone.View.extend({
         var doiUrl = "";
         if( fields.doi ) {
             doiUrl = 'http://dx.doi.org/' + fields.doi;
-            ref += '[<a href="' + doiUrl + '">doi:' + fields.doi + "</a>]";
+            ref += '[<a href="' + doiUrl + '" target="_blank">doi:' + fields.doi + "</a>]";
         }
         var url = fields.url || doiUrl;
         if( url ) {
-            ref += '[<a href="' + url + '">Link</a>]';
+            ref += '[<a href="' + url + '" target="_blank">Link</a>]';
         }
         return ref;
     },
