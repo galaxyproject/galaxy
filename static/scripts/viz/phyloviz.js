@@ -199,6 +199,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
         this.set("dataset", new data_mod.Dataset({
             id: options.dataset_id
         }));
+        
     },
 
     root : {}, // Root has to be its own independent object because it is not part of the viz_config
@@ -267,16 +268,14 @@ var PhyloTree = visualization_mod.Visualization.extend({
         show_message("Saving to Galaxy", "progress");
 
         return $.ajax({
-            url     : this.url,
+            url     : this.url(),
             type    : "POST",
             dataType: "json",
             data    : {
-                vis_json: JSON.stringify(config)
+                config  : JSON.stringify( config ),
+                type    : 'phyloviz'
             },
             success: function(res){
-                var viz_id = res.url.split("id=")[1].split("&")[0],
-                    viz_url = "/visualization?id=" + viz_id;
-                window.history.pushState({}, "", viz_url + window.location.hash);
                 hide_modal();
             }
         });
