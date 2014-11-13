@@ -680,11 +680,11 @@ class JobHandlerStopQueue( object ):
         except Empty:
             pass
         for job, error_msg in jobs_to_check:
+            final_state = job.states.DELETED
             if error_msg is not None:
-                job.state = job.states.ERROR
+                final_state = job.states.ERROR
                 job.info = error_msg
-            else:
-                job.state = job.states.DELETED
+            job.set_final_state( final_state )
             self.sa_session.add( job )
             self.sa_session.flush()
             if job.job_runner_name is not None:

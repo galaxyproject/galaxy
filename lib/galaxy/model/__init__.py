@@ -28,6 +28,7 @@ import galaxy.datatypes.registry
 import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
+import galaxy.model.orm.now
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util import ready_name_for_url
@@ -550,6 +551,11 @@ class Job( object, HasJobMetrics, Dictifiable ):
             rval['outputs'] = output_dict
 
         return rval
+
+    def set_final_state( self, final_state ):
+        self.state = final_state
+        if self.workflow_invocation_step:
+            self.workflow_invocation_step.update()
 
 
 class Task( object, HasJobMetrics ):
@@ -3188,10 +3194,16 @@ class WorkflowInvocation( object, Dictifiable ):
             rval['inputs'] = inputs
         return rval
 
+    def update( self ):
+        self.update_time = galaxy.model.orm.now.now()
+
 
 class WorkflowInvocationStep( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id', 'action' )
     dict_element_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id', 'action' )
+
+    def update( self ):
+        self.workflow_invocation.update()
 
     def to_dict( self, view='collection', value_mapper=None ):
         rval = super( WorkflowInvocationStep, self ).to_dict( view=view, value_mapper=value_mapper )

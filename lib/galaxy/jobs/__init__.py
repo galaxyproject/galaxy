@@ -918,7 +918,7 @@ class JobWrapper( object ):
                     self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
-            job.state = job.states.ERROR
+            job.set_final_state( job.states.ERROR )
             job.command_line = self.command_line
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
@@ -1243,7 +1243,7 @@ class JobWrapper( object ):
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.state = final_job_state
+        job.set_final_state( final_job_state )
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statisitcs
             self._collect_metrics( job )
