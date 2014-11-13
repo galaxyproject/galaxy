@@ -3208,6 +3208,7 @@ class WorkflowInvocationStep( object, Dictifiable ):
     def to_dict( self, view='collection', value_mapper=None ):
         rval = super( WorkflowInvocationStep, self ).to_dict( view=view, value_mapper=value_mapper )
         rval['order_index'] = self.workflow_step.order_index
+        rval['state'] = self.job.state if self.job is not None else None
         return rval
 
 
