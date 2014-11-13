@@ -47,7 +47,7 @@ python lib/tool_shed/scripts/bootstrap_tool_shed/create_user_with_api_key.py ${T
 
 echo " done."
 
-sed -i "s/#admin_users = user1@example.org,user2@example.org/admin_users = $admin_user_email/" ${TOOL_SHED_CONFIG_FILE}
+sed -i"bak" "s/#admin_users = user1@example.org,user2@example.org/admin_users = $admin_user_email/" "${TOOL_SHED_CONFIG_FILE}"
 echo -n "Starting tool shed in order to populate users and categories... "
 
 if [ -f tool_shed_bootstrap.pid ] ; then
@@ -76,7 +76,7 @@ while : ; do
 done
 
 echo -n "Retrieving admin user's API key from $local_shed_url..."
-api_key=`curl -s --user $admin_user_email:$admin_user_password $local_shed_url/api/authenticate/baseauth/ | sed 's/.\+api_key[^0-9a-f]\+\([0-9a-f]\+\).\+/\1/'`
+api_key=`curl -s --user $admin_user_email:$admin_user_password $local_shed_url/api/authenticate/baseauth/ | sed 's/..*api_key[^0-9a-f][^0-9a-f]*\([0-9a-f]*\)..*/\1/'`
 
 if [[ -z $api_key && ${api_key+x} ]] ; then
 		stop_err "Error getting API key for user $admin_user_email."
