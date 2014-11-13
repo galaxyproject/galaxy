@@ -192,6 +192,11 @@ class Configuration( object ):
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
+        # These workflow modules should not be considered part of Galaxy's
+        # public API yet - the module state definitions may chnage and
+        # workflows built using these modules may not function in the
+        # future.
+        self.enable_beta_workflow_modules = string_as_bool( kwargs.get( 'enable_beta_workflow_modules', 'False' ) )
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )
         self.user_job_limit = int( kwargs.get( 'user_job_limit', 0 ) )

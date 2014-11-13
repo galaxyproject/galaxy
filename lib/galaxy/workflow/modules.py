@@ -187,7 +187,7 @@ class WorkflowModule( object ):
         raise TypeError( "Abstract method" )
 
 
-class InputModule( WorkflowModule ):
+class SimpleWorkflowModule( WorkflowModule ):
 
     @classmethod
     def new( Class, trans, tool_id=None ):
@@ -215,45 +215,16 @@ class InputModule( WorkflowModule ):
         """
         raise TypeError( "Abstract method" )
 
-    def get_runtime_input_dicts( self, step_annotation ):
-        name = self.state.get( "name", self.default_name )
-        return [ dict( name=name, description=step_annotation ) ]
-
-    def recover_state( self, state, **kwds ):
-        """ Recover state `dict` from simple dictionary describing configuration
-        state (potentially from persisted step state).
-
-        Sub-classes should supply `default_state` method and `state_fields`
-        attribute which are used to build up the state `dict`.
-        """
-        self.state = self.default_state()
-        for key in self.state_fields:
-            if state and key in state:
-                self.state[ key ] = state[ key ]
-
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = None
         step.tool_inputs = self.state
-
-    def get_data_inputs( self ):
-        return []
-
-    def get_config_form( self ):
-        form = self._abstract_config_form( )
-        return self.trans.fill_template( "workflow/editor_generic_form.mako",
-                                         module=self, form=form )
 
     def get_state( self, secure=True ):
         return dumps( self.state )
 
     def update_state( self, incoming ):
         self.recover_state( incoming )
-
-    def get_runtime_state( self ):
-        state = galaxy.tools.DefaultToolState()
-        state.inputs = dict( input=None )
-        return state
 
     def recover_runtime_state( self, runtime_state ):
         """ Take secure runtime state from persisted invocation and convert it
@@ -275,7 +246,8 @@ class InputModule( WorkflowModule ):
     def decode_runtime_state( self, trans, string ):
         fake_tool = Bunch( inputs=self.get_runtime_inputs() )
         state = galaxy.tools.DefaultToolState()
-        state.decode( string, fake_tool, trans.app )
+        if string:
+            state.decode( string, fake_tool, trans.app )
         return state
 
     def update_runtime_state( self, trans, state, values ):
@@ -288,7 +260,7 @@ class InputModule( WorkflowModule ):
         return errors
 
     def compute_runtime_state( self, trans, step_updates=None ):
-        if step_updates:
+        if step_updates and "tool_state" in step_updates:
             # Fix this for multiple inputs
             state = self.decode_runtime_state( trans, step_updates.pop( "tool_state" ) )
             step_errors = self.update_runtime_state( trans, state, step_updates )
@@ -297,6 +269,38 @@ class InputModule( WorkflowModule ):
             step_errors = {}
 
         return state, step_errors
+
+    def recover_state( self, state, **kwds ):
+        """ Recover state `dict` from simple dictionary describing configuration
+        state (potentially from persisted step state).
+
+        Sub-classes should supply `default_state` method and `state_fields`
+        attribute which are used to build up the state `dict`.
+        """
+        self.state = self.default_state()
+        for key in self.state_fields:
+            if state and key in state:
+                self.state[ key ] = state[ key ]
+
+    def get_config_form( self ):
+        form = self._abstract_config_form( )
+        return self.trans.fill_template( "workflow/editor_generic_form.mako",
+                                         module=self, form=form )
+
+
+class InputModule( SimpleWorkflowModule ):
+
+    def get_runtime_state( self ):
+        state = galaxy.tools.DefaultToolState()
+        state.inputs = dict( input=None )
+        return state
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        name = self.state.get( "name", self.default_name )
+        return [ dict( name=name, description=step_annotation ) ]
+
+    def get_data_inputs( self ):
+        return []
 
     def execute( self, trans, progress, invocation, step ):
         job, step_outputs = None, dict( output=step.state.inputs['input'])
@@ -387,6 +391,76 @@ class InputDataCollectionModule( InputModule ):
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input_collection'], collection_type=self.state[ 'collection_type' ] ) ]
+
+
+class PauseModule( SimpleWorkflowModule ):
+    """ Initially this module will unconditionally pause a workflow - will aim
+    to allow conditional pausing later on.
+    """
+    type = "pause"
+    name = "Pause for dataset review"
+    default_name = "Pause for Dataset Review"
+    state_fields = [ "name" ]
+
+    @classmethod
+    def default_state( Class ):
+        return dict( name=Class.default_name )
+
+    def get_data_inputs( self ):
+        input = dict(
+            name="input",
+            label="Dataset for Review",
+            multiple=False,
+            extensions='input',
+            input_type="dataset",
+        )
+        return [ input ]
+
+    def get_data_outputs( self ):
+        return [ dict( name="output", label="Reviewed Dataset", extensions=['input'] ) ]
+
+    def _abstract_config_form( self ):
+        form = formbuilder.FormBuilder(
+            title=self.name
+        ).add_text( "name", "Name", value=self.state['name'] )
+        return form
+
+    def get_runtime_inputs( self, **kwds ):
+        return dict( )
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        return []
+
+    def get_runtime_state( self ):
+        state = galaxy.tools.DefaultToolState()
+        state.inputs = dict( )
+        return state
+
+    def execute( self, trans, progress, invocation, step ):
+        progress.mark_step_outputs_delayed( step )
+        return None
+
+    def recover_mapping( self, step, step_invocations, progress ):
+        if step_invocations:
+            step_invocation = step_invocations[0]
+            action = step_invocation.action
+            if action:
+                connection = step.input_connections_by_name[ "input" ][ 0 ]
+                replacement = progress.replacement_for_connection( connection )
+                progress.set_step_outputs( step, { 'output': replacement } )
+                return
+            elif action is False:
+                raise CancelWorkflowEvaluation()
+        raise DelayedWorkflowEvaluation()
+
+    def do_invocation_step_action( self, step, action ):
+        """ Update or set the workflow invocation state action - generic
+        extension point meant to allows users to interact with interactive
+        workflow modules. The action object returned from this method will
+        be attached to the WorkflowInvocationStep and be available the next
+        time the workflow scheduler visits the workflow.
+        """
+        return bool( action )
 
 
 class ToolModule( WorkflowModule ):
@@ -828,6 +902,7 @@ def is_tool_module_type( module_type ):
 module_types = dict(
     data_input=InputDataModule,
     data_collection_input=InputDataCollectionModule,
+    pause=PauseModule,
     tool=ToolModule,
 )
 module_factory = WorkflowModuleFactory( module_types )
@@ -848,6 +923,16 @@ def load_module_sections( trans ):
     module_sections = [
         inputs_section
     ]
+    if trans.app.config.enable_beta_workflow_modules:
+        experimental_modules = {
+            "name": "experimental",
+            "title": "Experimental",
+            "modules": [
+                {"name": "pause", "title": "Pause Workflow for Dataset Review", "description": "Pause for Review"},
+            ],
+        }
+        module_sections.append(experimental_modules)
+
     return module_sections
 
 
@@ -901,7 +986,6 @@ class WorkflowModuleInjector(object):
         # Populate module.
         module = step.module = module_factory.from_workflow_step( trans, step )
 
-        # Calculating step errors and state depends on whether step is a tool step or not.
         if not module:
             step.module = None
             step.state = None

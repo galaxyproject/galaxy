@@ -9,6 +9,7 @@ from .helpers import DatasetCollectionPopulator
 from .helpers import skip_without_tool
 
 from requests import delete
+from requests import put
 
 from galaxy.exceptions import error_codes
 
@@ -146,9 +147,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
-        # TODO: This should really be a post to workflows/<workflow_id>/run or
-        # something like that.
-        url = "workflows/%s/request" % ( workflow_request[ "workflow_id" ] )
+        url = "workflows/%s/usage" % ( workflow_request[ "workflow_id" ] )
         del workflow_request[ "workflow_id" ]
         run_workflow_response = self._post( url, data=workflow_request )
 
@@ -156,6 +155,110 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         # Give some time for workflow to get scheduled before scanning the history.
         time.sleep( 5 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+
+    def test_workflow_pause( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_pause" )
+        uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
+        index_map = {
+            '0': self._ds_entry(hda1),
+        }
+        invocation_id = self.__invoke_workflow( history_id, uploaded_workflow_id, index_map )
+        # Give some time for workflow to get scheduled before scanning the history.
+        time.sleep( 5 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+
+        # Wait for all the datasets to complete, make sure the workflow invocation
+        # is not complete.
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        assert invocation[ 'state' ] != 'scheduled', invocation
+
+        self.__review_paused_steps( uploaded_workflow_id, invocation_id, order_index=2, action=True )
+
+        time.sleep( 5 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        assert invocation[ 'state' ] == 'scheduled', invocation
+
+    def test_workflow_pause_cancel( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_pause" )
+        uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
+        index_map = {
+            '0': self._ds_entry(hda1),
+        }
+        invocation_id = self.__invoke_workflow( history_id, uploaded_workflow_id, index_map )
+        # Give some time for workflow to get scheduled before scanning the history.
+        time.sleep( 5 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+
+        # Wait for all the datasets to complete, make sure the workflow invocation
+        # is not complete.
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        assert invocation[ 'state' ] != 'scheduled'
+
+        self.__review_paused_steps( uploaded_workflow_id, invocation_id, order_index=2, action=False )
+        # Not immediately cancelled, must wait until workflow scheduled again.
+        time.sleep( 4 )
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        assert invocation[ 'state' ] == 'cancelled', invocation
+
+    def test_workflow_map_reduce_pause( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_map_reduce_pause" )
+        uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset( history_id, content="reviewed\nunreviewed" )
+        hdca1 = self.dataset_collection_populator.create_list_in_history( history_id, contents=["1\n2\n3", "4\n5\n6"] ).json()
+        index_map = {
+            '0': self._ds_entry(hda1),
+            '1': self._ds_entry(hdca1),
+        }
+        invocation_id = self.__invoke_workflow( history_id, uploaded_workflow_id, index_map )
+        # Give some time for workflow to get scheduled before scanning the history.
+        time.sleep( 5 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+
+        # Wait for all the datasets to complete, make sure the workflow invocation
+        # is not complete.
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        assert invocation[ 'state' ] != 'scheduled'
+
+        self.__review_paused_steps( uploaded_workflow_id, invocation_id, order_index=4, action=True )
+
+        time.sleep( 5 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        assert invocation[ 'state' ] == 'scheduled'
+        self.assertEquals("reviewed\n1\nreviewed\n4\n", self.dataset_populator.get_history_dataset_content( history_id ) )
+
+    def test_cancel_workflow_invocation( self ):
+        workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_pause" )
+        uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
+        index_map = {
+            '0': self._ds_entry(hda1),
+        }
+        invocation_id = self.__invoke_workflow( history_id, uploaded_workflow_id, index_map )
+        # Give some time for workflow to get scheduled before scanning the history.
+        time.sleep( 5 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+
+        # Wait for all the datasets to complete, make sure the workflow invocation
+        # is not complete.
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        assert invocation[ 'state' ] != 'scheduled'
+
+        invocation_url = self._api_url( "workflows/%s/usage/%s" % (uploaded_workflow_id, invocation_id), use_key=True )
+        delete_response = delete( invocation_url )
+        self._assert_status_code_is( delete_response, 200 )
+
+        # Wait for all the datasets to complete, make sure the workflow invocation
+        # is not complete.
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        assert invocation[ 'state' ] == 'cancelled'
 
     def test_cannot_run_inaccessible_workflow( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run_cannot_access" )
@@ -601,6 +704,21 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         invocation_details = invocation_details_response.json()
         return invocation_details
 
+    def _invocation_step_details( self, workflow_id, invocation_id, step_id ):
+        invocation_step_response = self._get( "workflows/%s/usage/%s/steps/%s" % ( workflow_id, invocation_id, step_id ) )
+        self._assert_status_code_is( invocation_step_response, 200 )
+        invocation_step_details = invocation_step_response.json()
+        return invocation_step_details
+
+    def _execute_invocation_step_action( self, workflow_id, invocation_id, step_id, action ):
+        raw_url = "workflows/%s/usage/%s/steps/%s" % ( workflow_id, invocation_id, step_id )
+        url = self._api_url( raw_url, use_key=True )
+        payload = dumps( dict( action=action ) )
+        action_response = put( url, data=payload )
+        self._assert_status_code_is( action_response, 200 )
+        invocation_step_details = action_response.json()
+        return invocation_step_details
+
     def _run_workflow_once_get_invocation( self, name ):
         workflow = self.workflow_populator.load_workflow( name=name )
         workflow_request, history_id = self._setup_workflow_run( workflow )
@@ -689,6 +807,15 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         names = self.__workflow_names()
         assert name in names, "No workflows with name %s in users workflows <%s>" % ( name, names )
 
+    def __review_paused_steps( self, uploaded_workflow_id, invocation_id, order_index, action=True ):
+        invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
+        invocation_steps = invocation[ "steps" ]
+        pause_steps = [ s for s in invocation_steps if s[ 'order_index' ] == order_index ]
+        for pause_step in pause_steps:
+            pause_step_id = pause_step[ 'id' ]
+
+            self._execute_invocation_step_action( uploaded_workflow_id, invocation_id, pause_step_id, action=action )
+
     def __assert_lines_hid_line_count_is( self, history, hid, lines ):
         contents_url = "histories/%s/contents" % history
         history_contents_response = self._get( contents_url )
@@ -697,6 +824,22 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         hda_info_response = self._get( "%s/%s" % ( contents_url, hda_summary[ "id" ] ) )
         self._assert_status_code_is( hda_info_response, 200 )
         self.assertEquals( hda_info_response.json()[ "metadata_data_lines" ], lines )
+
+    def __invoke_workflow( self, history_id, workflow_id, inputs, assert_ok=True ):
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+        )
+        workflow_request[ "inputs" ] = dumps( inputs )
+        workflow_request[ "inputs_by" ] = 'step_index'
+        url = "workflows/%s/usage" % ( workflow_id )
+
+        invocation_response = self._post( url, data=workflow_request )
+        if assert_ok:
+            self._assert_status_code_is( invocation_response, 200 )
+            invocation_id = invocation_response.json()[ "id" ]
+            return invocation_id
+        else:
+            return invocation_response
 
     def __workflow_names( self ):
         index_response = self._get( "workflows" )
