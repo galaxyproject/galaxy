@@ -135,7 +135,26 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         # TODO: This should really be a post to workflows/<workflow_id>/run or
         # something like that.
         run_workflow_response = self._post( "workflows", data=workflow_request )
+
+        invocation_id = run_workflow_response.json()[ "id" ]
+        invocation = self._invocation_details( workflow_request[ "workflow_id" ], invocation_id )
+        assert invocation[ "state" ] == "scheduled", invocation
+
         self._assert_status_code_is( run_workflow_response, 200 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+
+    def test_workflow_request( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
+        workflow_request, history_id = self._setup_workflow_run( workflow )
+        # TODO: This should really be a post to workflows/<workflow_id>/run or
+        # something like that.
+        url = "workflows/%s/request" % ( workflow_request[ "workflow_id" ] )
+        del workflow_request[ "workflow_id" ]
+        run_workflow_response = self._post( url, data=workflow_request )
+
+        self._assert_status_code_is( run_workflow_response, 200 )
+        # Give some time for workflow to get scheduled before scanning the history.
+        time.sleep( 5 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
 
     def test_cannot_run_inaccessible_workflow( self ):
@@ -563,11 +582,18 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
     @skip_without_tool( "cat1" )
     def test_invocation_usage( self ):
         workflow_id, usage = self._run_workflow_once_get_invocation( "test_usage")
-        usage_details = self._invocation_details( workflow_id, usage[ "id" ] )
+        invocation_id = usage[ "id" ]
+        usage_details = self._invocation_details( workflow_id, invocation_id )
         # Assert some high-level things about the structure of data returned.
         self._assert_has_keys( usage_details, "inputs", "steps" )
-        for step in usage_details[ "steps" ]:
+        invocation_steps = usage_details[ "steps" ]
+        for step in invocation_steps:
             self._assert_has_keys( step, "workflow_step_id", "order_index", "id" )
+        an_invocation_step = invocation_steps[ 0 ]
+        step_id = an_invocation_step[ "id" ]
+        step_response = self._get( "workflows/%s/usage/%s/steps/%s" % ( workflow_id, invocation_id, step_id ) )
+        self._assert_status_code_is( step_response, 200 )
+        self._assert_has_keys( step_response.json(), "id", "order_index" )
 
     def _invocation_details( self, workflow_id, invocation_id ):
         invocation_details_response = self._get( "workflows/%s/usage/%s" % ( workflow_id, invocation_id ) )

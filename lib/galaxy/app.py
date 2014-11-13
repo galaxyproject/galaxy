@@ -142,6 +142,11 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.proxy_manager = ProxyManager( self.config )
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
+
+        from galaxy.workflow import scheduling_manager
+        # Must be initialized after job_config.
+        self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager( self )
+
         self.model.engine.dispose()
         self.control_worker = GalaxyQueueWorker(self,
                                                 galaxy.queues.control_queue_from_config(self.config),
@@ -150,6 +155,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.control_worker.start()
 
     def shutdown( self ):
+        self.workflow_scheduling_manager.shutdown()
         self.job_manager.shutdown()
         self.object_store.shutdown()
         if self.heartbeat:
@@ -171,3 +177,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port )
         else:
             self.trace_logger = None
+
+    def is_job_handler( self ):
+        return (self.config.track_jobs_in_database and self.job_config.is_handler(self.config.server_name)) or not self.config.track_jobs_in_database
