@@ -10,8 +10,11 @@
             //  (b) ...
             $('.embedded-item').each( function() {
                 var container = $(this);
-                if( container.hasClass( 'history' )
-                ||  container.hasClass( 'visualization' ) ){ return; }
+                if( container.hasClass( 'history' ) ){ return; }
+                //note: we can't do the same override for visualizations
+                // bc builtins (like trackster) need the handlers/ajax below to work.
+                // instead: (for registry visualizations) we'll clear the handlers below
+                //  and add new ones (in embed_in_frame.mako) ...ugh.
             
                 // Show embedded item.
                 var show_embedded_item = function() {

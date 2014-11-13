@@ -61,7 +61,7 @@
     /** 4 elements change when expanding - toggle them all, add the iframe and prevent the url change */
     function toggleExpanded( ev ){
         var $embeddedObj = $( thisScript ).prev();
-        $embeddedObj.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
+        $embeddedObj.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' ).show();
         $embeddedObj.find( ".summary-content" ).slideToggle( "fast" );
         $embeddedObj.find( ".annotation" ).slideToggle( "fast" );
         $embeddedObj.find( ".expanded-content" ).slideToggle( "fast" );
@@ -71,8 +71,10 @@
 
     // add expansion to +/- btn and title
     $(function(){
-        $embeddedObj.find( '.expand-content-btn' ).click( toggleExpanded );
-        $embeddedObj.find( '.toggle-embed' ).click( toggleExpanded );
+        var $embeddedObj = $( thisScript ).prev();
+        // clear the handlers (w/ off) created in page/display/mako for visualizations
+        $embeddedObj.find( '.expand-content-btn' ).off().click( toggleExpanded );
+        $embeddedObj.find( '.toggle-embed' ).off().click( toggleExpanded );
     });
 })();
 </script>
