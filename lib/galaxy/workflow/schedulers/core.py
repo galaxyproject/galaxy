@@ -36,7 +36,7 @@ class CoreWorkflowSchedulingPlugin( ActiveWorkflowSchedulingPlugin ):
             request_context,
             workflow_invocation
         )
-        run.invoke(
+        run.schedule(
             trans=request_context,
             workflow=workflow,
             workflow_run_config=workflow_run_config,

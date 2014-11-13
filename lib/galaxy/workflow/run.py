@@ -12,7 +12,48 @@ import logging
 log = logging.getLogger( __name__ )
 
 
+# Entry point for direct invoke via controllers. Deprecated to some degree.
 def invoke( trans, workflow, workflow_run_config, workflow_invocation=None, populate_state=False ):
+    if force_queue( trans, workflow ):
+        invocation = queue_invoke( trans, workflow, workflow_run_config, populate_state=populate_state )
+        return [], invocation
+    else:
+        return __invoke( trans, workflow, workflow_run_config, workflow_invocation, populate_state )
+
+
+# Entry point for core workflow scheduler.
+def schedule( trans, workflow, workflow_run_config, workflow_invocation ):
+    return __invoke( trans, workflow, workflow_run_config, workflow_invocation )
+
+
+BASIC_WORKFLOW_STEP_TYPES = [ None, "tool", "data_input", "data_collection_input" ]
+
+
+def force_queue( trans, workflow ):
+    # Default behavior is still to just schedule workflows completley right
+    # away. This can be modified here in various ways.
+    config = trans.app.config
+    force_for_collection = config.force_beta_workflow_scheduled_for_collections
+    force_min_steps = config.force_beta_workflow_scheduled_min_steps
+
+    step_count = len( workflow.steps )
+    if step_count > force_min_steps:
+        log.info("Workflow has many steps %d, backgrounding execution" % step_count)
+        return True
+    for step in workflow.steps:
+        if step.type not in BASIC_WORKFLOW_STEP_TYPES:
+            log.info("Found non-basic workflow step type - backgrounding execution")
+            # Force all new beta modules types to be use force queueing of
+            # workflow.
+            return True
+        if step.type == "data_collection_input" and force_for_collection:
+            log.info("Found collection input step - backgrounding execution")
+            return True
+
+    return False
+
+
+def __invoke( trans, workflow, workflow_run_config, workflow_invocation=None, populate_state=False ):
     """ Run the supplied workflow in the supplied target_history.
     """
     if populate_state:
@@ -51,8 +92,9 @@ def invoke( trans, workflow, workflow_run_config, workflow_invocation=None, popu
     return outputs, invoker.workflow_invocation
 
 
-def queue_invoke( trans, workflow, workflow_run_config, request_params ):
-    modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map )
+def queue_invoke( trans, workflow, workflow_run_config, request_params={}, populate_state=True ):
+    if populate_state:
+        modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map )
     workflow_invocation = workflow_run_config_to_request( trans, workflow_run_config, workflow )
     workflow_invocation.workflow = workflow
     return trans.app.workflow_scheduling_manager.queue(

@@ -1250,6 +1250,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         try:  # use a try/finally block to restore the user's current history
             default_target_history = trans.get_history()
             module_injector = WorkflowModuleInjector( trans )
+            scheduled = True
             if kwargs:
                 # If kwargs were provided, the states for each step should have
                 # been POSTed
@@ -1300,13 +1301,18 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             workflow=workflow,
                             workflow_run_config=run_config
                         )
-
+                        invocation_state = invocation.state
+                        # Just use last invocation - right now not really
+                        # possible to have some invocations scheduled and not
+                        # others.
+                        scheduled = invocation_state == model.WorkflowInvocation.states.SCHEDULED
                         invocations.append({'outputs': outputs,
                                             'new_history': new_history})
                         trans.sa_session.flush()
                 if invocations:
                     return trans.fill_template( "workflow/run_complete.mako",
                                                 workflow=stored,
+                                                scheduled=scheduled,
                                                 invocations=invocations )
             else:
                 # Prepare each step
