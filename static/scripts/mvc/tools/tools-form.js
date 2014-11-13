@@ -334,6 +334,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.portlet = new Portlet.View({
                 icon : 'fa-wrench',
                 title: '<b>' + this.model.name + '</b> ' + this.model.description,
+                cls  : 'ui-portlet-short',
                 operations: {
                     menu    : menu
                 },

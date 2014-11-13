@@ -200,6 +200,13 @@
     }
 }
 
+.ui-portlet-short {
+    &:extend(.ui-portlet all);
+    .portlet-content {
+        max-width: 600px;
+    }
+}
+
 .ui-portlet-repeat {
     &:extend(.ui-portlet);
     border: none;
