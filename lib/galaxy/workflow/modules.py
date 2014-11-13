@@ -773,6 +773,24 @@ module_types = dict(
 module_factory = WorkflowModuleFactory( module_types )
 
 
+def load_module_sections( trans ):
+    """ Get abstract description of the workflow modules this Galaxy instance
+    is configured with.
+    """
+    inputs_section = {
+        "name": "inputs",
+        "title": "Inputs",
+        "modules": [
+            {"name": "data_input", "title": "Input Dataset", "description": "Input dataset"},
+            {"name": "data_collection_input", "title": "Input Dataset Collection", "description": "Input dataset collection"},
+        ],
+    }
+    module_sections = [
+        inputs_section
+    ]
+    return module_sections
+
+
 class MissingToolException( Exception ):
     """ WorkflowModuleInjector will raise this if the tool corresponding to the
     module is missing. """

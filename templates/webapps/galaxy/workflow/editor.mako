@@ -332,19 +332,27 @@
                 <em><strong>Search did not match any tools.</strong></em>
             </div>
             <div>&nbsp;</div>
+
             <div class="toolMenuGroupHeader">Workflow control</div>
-            <div class="toolSectionTitle" id="title___workflow__input__">
-                <span>Inputs</span>
-            </div>
-            <div id="__workflow__input__" class="toolSectionBody">
-                <div class="toolSectionBg">
-                    <div class="toolTitle">
-                        <a href="#" onclick="add_node_for_module( 'data_input', 'Input Dataset' )">Input dataset</a>
-                    </div>
-                    <div class="toolTitle">
-                        <a href="#" onclick="add_node_for_module( 'data_collection_input', 'Input Dataset Collection' )">Input dataset collection</a>
-                    </div>
+            <%
+                from galaxy.workflow.modules import load_module_sections
+            %>
+            %for module_section in load_module_sections( trans ):
+                <% section_title = module_section["title"] %>
+                <% section_name = module_section["name"] %>
+                <div class="toolSectionTitle" id="title___workflow__${section_name}__">
+                <span>${section_title}</span>
                 </div>
+                <div id="__workflow__${section_name}__" class="toolSectionBody">
+                <div class="toolSectionBg">
+                %for module in module_section["modules"]:
+                    <div class="toolTitle">
+                        <a href="#" onclick="add_node_for_module( '${module['name']}', '${module['title']}' )">${module['description']}</a>
+                    </div><!-- end toolTitle -->
+                %endfor
+                </div>
+                </div>
+            %endfor
             </div>
         </div>
     </div>
