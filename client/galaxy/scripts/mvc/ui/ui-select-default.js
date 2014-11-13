@@ -109,7 +109,7 @@ var View = Backbone.View.extend({
     show: function() {
         this.unwait();
         this.$select.show();
-        this.$el.show();
+        this.$el.css('display', 'inline-block');
     },
     
     /** Hide the select field
@@ -247,10 +247,10 @@ var View = Backbone.View.extend({
     */
     _template: function(options) {
         return  '<div id="' + options.id + '">' +
+                    '<select id="select" class="select ' + options.cls + ' ' + options.id + '"></select>' +
                     '<div class="button">' +
                         '<i id="icon"/>' +
                     '</div>' +
-                    '<select id="select" class="select ' + options.cls + ' ' + options.id + '"></select>' +
                 '</div>';
     }
 });

@@ -252,6 +252,7 @@ class TextToolParameter( ToolParameter ):
     def to_dict( self, trans, view='collection', value_mapper=None ):
         d = super(TextToolParameter, self).to_dict(trans)
         d['area'] = self.area
+        d['size'] = self.size
         return d
 
 class IntegerToolParameter( TextToolParameter ):
