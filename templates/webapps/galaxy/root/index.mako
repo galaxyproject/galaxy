@@ -147,8 +147,7 @@
                         linkTarget      : 'galaxy_main',
                         $scrollContainer: function(){ return this.$el.parent(); }
                     });
-                    currPanel
-                        .connectToQuotaMeter( Galaxy.quotaMeter );
+                    currPanel.connectToQuotaMeter( Galaxy.quotaMeter );
                     currPanel.loadCurrentHistory();
                     Galaxy.currHistoryPanel = currPanel;
                 });

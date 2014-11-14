@@ -107,15 +107,21 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 details = util.listify( details )
 
         for content in history.contents_iter( **contents_kwds ):
+            encoded_content_id = trans.security.encode_id( content.id )
+            detailed = details == 'all' or ( encoded_content_id in details )
+
             if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
-                encoded_content_id = trans.security.encode_id( content.id )
-                detailed = details == 'all' or ( encoded_content_id in details )
                 if detailed:
                     rval.append( self._detailed_hda_dict( trans, content ) )
                 else:
                     rval.append( self._summary_hda_dict( trans, history_id, content ) )
+
             elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
-                rval.append( self.__collection_dict( trans, content ) )
+                if detailed:
+                    rval.append( self.__collection_dict( trans, content, view="element" ) )
+                else:
+                    rval.append( self.__collection_dict( trans, content ) )
+
         return rval
 
     #TODO: move to model or Mixin
