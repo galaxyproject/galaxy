@@ -6,6 +6,8 @@ from __future__ import absolute_import
 
 import os
 import re
+import socket
+import string
 import sys
 import tempfile
 import logging
@@ -329,6 +331,10 @@ class Configuration( object ):
             if port:
                 galaxy_infrastructure_url += ":%s" % (port)
             galaxy_infrastructure_url_set = False
+        if "HOST_IP" in galaxy_infrastructure_url:
+            galaxy_infrastructure_url = string.Template(galaxy_infrastructure_url).safe_substitute({
+                'HOST_IP': socket.gethostbyname(socket.gethostname())
+            })
         self.galaxy_infrastructure_url = galaxy_infrastructure_url
         self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
 
