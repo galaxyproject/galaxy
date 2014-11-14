@@ -136,7 +136,7 @@ class Owl( GenericXml ):
 
     def sniff( self, filename ):
         """
-            Try to load the string with the json module. If successful it's a json file.
+            Checking for keyword - '<owl' in the first 200 lines.
         """
         owl_marker = re.compile(r'\<owl:')
         with open( filename ) as handle:
