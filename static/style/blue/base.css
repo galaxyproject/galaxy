@@ -1307,7 +1307,7 @@ label{font-weight:normal}
 .ui-portlet .portlet-buttons{height:50px;padding:10px}
 .ui-portlet .portlet-content{height:inherit;padding:10px;clear:both}.ui-portlet .portlet-content .content{padding:10px;height:100%;width:100%}.ui-portlet .portlet-content .content .buttons{height:50px;padding:10px}
 .ui-portlet .no-scroll{height:calc(100% - 80px)}
-.ui-portlet-repeat{border:none;border-left:solid 3px #ebd9b2;border-radius:5px}.ui-portlet-repeat .portlet-header{background:#ebd9b2;border-radius:3px;border-bottom-left-radius:0px;padding:0px 2px}
+.ui-portlet-repeat{border:none;border-left:solid 3px #ebd9b2;border-radius:5px;display:inline-block}.ui-portlet-repeat .portlet-header{background:#ebd9b2;border-radius:3px;border-bottom-left-radius:0px;padding:0px 2px}
 .ui-portlet-repeat .portlet-content{padding:0px}.ui-portlet-repeat .portlet-content .content{padding:0px;padding-left:10px}
 .ui-popover{max-width:700px;display:none}.ui-popover .popover-close{position:absolute;right:10px;top:7px;font-size:1.2em;cursor:pointer}
 .ui-popover .popover-title{padding:4px 10px}

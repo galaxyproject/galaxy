@@ -8,15 +8,16 @@ var View = Backbone.View.extend({
     
     // defaults options
     optionsDefault: {
-        title       : '',
-        icon        : '',
-        buttons     : null,
-        body        : null,
-        scrollable  : true,
-        nopadding   : false,
-        operations  : null,
-        placement   : 'bottom',
-        cls         : 'ui-portlet'
+        title           : '',
+        icon            : '',
+        buttons         : null,
+        body            : null,
+        scrollable      : true,
+        nopadding       : false,
+        operations      : null,
+        placement       : 'bottom',
+        cls             : 'ui-portlet',
+        operations_flt  : 'right'
     },
     
     // elements
@@ -157,7 +158,7 @@ var View = Backbone.View.extend({
         
         if (options.title) {
             tmpl +=     '<div id="portlet-header" class="portlet-header">' +
-                            '<div id="operations" style="float: right;"></div>' +
+                            '<div id="operations" style="float: ' + options.operations_flt + ';"></div>' +
                             '<div class="portlet-title">';
                             
             if (options.icon)

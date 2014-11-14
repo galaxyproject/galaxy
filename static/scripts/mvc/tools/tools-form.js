@@ -362,15 +362,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // append citations
             if (options.citations) {
-                // fetch citations
+                var $citations = $('<div/>');
                 var citations = new CitationModel.ToolCitationCollection();
                 citations.tool_id = options.id;
-                var citation_list_view = new CitationView.CitationListView({ collection: citations } );
+                var citation_list_view = new CitationView.CitationListView({ el: $citations, collection: citations } );
                 citation_list_view.render();
                 citations.fetch();
-                
-                // append to element
-                this.$el.append(citation_list_view.$el);
+                this.$el.append($citations);
             }
             
             // append tool section

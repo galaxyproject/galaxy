@@ -46,7 +46,7 @@ var View = Backbone.View.extend({
             this.$el.find('.ui-form-slider-text').css('width', '100%');
         }
         
-        // backup integer field
+        // link text input field
         this.$text = this.$el.find('#text');
         
         // add text field event
@@ -55,10 +55,17 @@ var View = Backbone.View.extend({
         });
         
         // add text field event
-        this.$text.on('keydown', function (event) {
-            var v = event.which;
-            if (!(v == 8 || v == 9 || v == 13 || v == 37 || v == 39 || v == 189 || (v >= 48 && v <= 57)
-                || (self.options.precise && $(this).val().indexOf('.') == -1) && v == 190)) {
+        var pressed = [];
+        this.$text.on('keyup', function(e) {
+            pressed[e.which] = false;
+        });
+        this.$text.on('keydown', function (e) {
+            var v = e.which;
+            pressed[v] = true;
+            if (!(v == 8 || v == 9 || v == 13 || v == 37 || v == 39 || (v >= 48 && v <= 57)
+                || (v == 190 && $(this).val().indexOf('.') == -1 && self.options.precise)
+                || (v == 189 && $(this).val().indexOf('-') == -1)
+                || pressed[91] || pressed[17])) {
                 event.preventDefault();
             }
         });
@@ -67,6 +74,11 @@ var View = Backbone.View.extend({
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
+            // check if its a number
+            if (isNaN(new_val)) {
+                new_val = 0;
+            }
+            
             // apply limit
             if (this.options.max !== null) {
                 new_val = Math.min(new_val, this.options.max);
