@@ -396,25 +396,6 @@ var CurrentHistoryPanel = _super.extend(
         if( !msg.is( ':hidden' ) ){ msg.slideUp( this.fxSpeed ); }
     },
 
-//TODO: move show_deleted/hidden into panel from opt menu and remove this
-    /** add listeners to an external options menu (templates/webapps/galaxy/root/index.mako) */
-    connectToOptionsMenu : function( optionsMenu ){
-        var panel = this;
-        if( !optionsMenu ){
-            return panel;
-        }
-        // set a visible indication in the popupmenu for show_hidden/deleted based on the currHistoryPanel's settings
-        this.on( 'new-storage show-deleted show-hidden', function(){
-//TODO: global
-            var menu = ( Galaxy && Galaxy.historyOptionsMenu )? Galaxy.historyOptionsMenu : undefined;
-            if( menu ){
-                menu.findItemByHtml( _l( 'Include Deleted Datasets' ) ).checked = panel.showDeleted;
-                menu.findItemByHtml( _l( 'Include Hidden Datasets' ) ).checked = panel.showHidden;
-            }
-        });
-        return this;
-    },
-
     /** Return a string rep of the history
      */
     toString    : function(){
