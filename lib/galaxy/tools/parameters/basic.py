@@ -2086,15 +2086,17 @@ class DataToolParameter( BaseDataToolParameter ):
         
         # add datasets
         for hda in history.active_datasets_children_and_roles:
-            if dataset_matcher.hda_match( hda ):
+            match = dataset_matcher.hda_match( hda )
+            if match:
+                m = match.hda
                 d['options']['hda'].append({
-                    'id'            : trans.security.encode_id( hda.id ),
-                    'id_uncoded'    : hda.id,
-                    'hid'           : hda.hid,
-                    'name'          : hda.name,
+                    'id'            : trans.security.encode_id( m.id ),
+                    'id_uncoded'    : m.id,
+                    'hid'           : m.hid,
+                    'name'          : m.name,
                     'src'           : 'hda'
                 })
-        
+            
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
