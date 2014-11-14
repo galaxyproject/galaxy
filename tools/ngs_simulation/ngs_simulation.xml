@@ -1,6 +1,9 @@
 <tool id="ngs_simulation" name="Simulate" version="1.0.0">
 <!--<tool id="ngs_simulation" name="Simulate" force_history_refresh="True" version="1.0.0">-->
   <description>Illumina runs</description>
+  <requirements>
+    <requirement type="package" version="1.0.3">rpy</requirement>
+  </requirements>
   <command interpreter="python">
     ngs_simulation.py
       #if $in_type.input_type == "built-in"
