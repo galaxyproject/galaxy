@@ -139,7 +139,8 @@ class Obo( Text ):
 
     def sniff( self, filename ):
         """
-            Try to load the string with the json module. If successful it's a json file.
+            Try to guess the Obo filetype. 
+            It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
         """
         stanza = re.compile(r'^\[.*\]$')
         with open( filename ) as handle:
