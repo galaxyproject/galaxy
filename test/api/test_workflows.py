@@ -650,12 +650,8 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
 
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_steps( self ):
-        workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_step_params" )
-        workflow_summary_response = self._get( "workflows/%s" % workflow_request[ "workflow_id" ] )
-        self._assert_status_code_is( workflow_summary_response, 200 )
-        steps = workflow_summary_response.json()[ "steps" ]
-        last_step_id = str( max( map( int, steps.keys() ) ) )
-        params = dumps( { last_step_id: dict( num_lines=5 ) } )
+        workflow_request, history_id, steps = self._setup_random_x2_workflow_steps( "test_for_replace_step_params" )
+        params = dumps( { str(steps[1]["id"]): dict( num_lines=5 ) } )
         workflow_request[ "parameters" ] = params
         run_workflow_response = self._post( "workflows", data=workflow_request )
         self._assert_status_code_is( run_workflow_response, 200 )
@@ -663,6 +659,21 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is( history_id, 2, 8 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
+
+    @skip_without_tool( "random_lines1" )
+    def test_run_replace_params_nested( self ):
+        workflow_request, history_id, steps = self._setup_random_x2_workflow_steps( "test_for_replace_step_params_nested" )
+        seed_source = dict(
+            seed_source_selector="set_seed",
+            seed="moo",
+        )
+        params = dumps( { str(steps[0]["id"]): dict( num_lines=1, seed_source=seed_source ),
+                          str(steps[1]["id"]): dict( num_lines=1, seed_source=seed_source ) } )
+        workflow_request[ "parameters" ] = params
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.assertEquals("3\n", self.dataset_populator.get_history_dataset_content( history_id ) )
 
     def test_pja_import_export( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_pja_import", add_pja=True )
@@ -773,6 +784,17 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             if label in label_map:
                 ds_map[ key ] = label_map[ label ]
         return dumps( ds_map )
+
+    def _setup_random_x2_workflow_steps( self, name ):
+        workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_step_params" )
+        random_line_steps = self._random_lines_steps( workflow_request )
+        return workflow_request, history_id, random_line_steps
+
+    def _random_lines_steps( self, workflow_request ):
+        workflow_summary_response = self._get( "workflows/%s" % workflow_request[ "workflow_id" ] )
+        self._assert_status_code_is( workflow_summary_response, 200 )
+        steps = workflow_summary_response.json()[ "steps" ]
+        return sorted( filter(lambda step: step["tool_id"] == "random_lines1", steps.values()), key=lambda step: step["id"] )
 
     def _setup_random_x2_workflow( self, name ):
         workflow = self.workflow_populator.load_random_x2_workflow( name )
