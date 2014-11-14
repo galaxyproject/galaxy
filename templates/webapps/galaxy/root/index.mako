@@ -93,7 +93,7 @@
 <%def name="right_panel()">
     <!-- current history panel -->
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner">
+        <div class="unified-panel-header-inner history-panel-header">
             <div style="float: right">
                 <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)"
                    title="${ _( 'Refresh history' ) }">
@@ -104,6 +104,13 @@
                    title="${ _( 'History options' ) }">
                     <span class="fa fa-cog"></span>
                 </a>
+                %if trans.user:
+                <a id="history-view-multi-button" class='panel-header-button'
+                   href="${h.url_for( controller='history', action='view_multiple' )}"
+                   title="${ _( 'View all histories' ) }">
+                    <span class="fa fa-caret-square-o-right"></span>
+                </a>
+                %endif
             </div>
             <div class="panel-header-text">${_('History')}</div>
         </div>
