@@ -25,7 +25,8 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 PASSWORD = ie_request.generate_password(length=36)
 USERNAME = "galaxy"
 # Write out conf file...needs work
-ie_request.write_conf_file(temp_dir, {'notebook_username': 'galaxy', 'notebook_password': PASSWORD})
+ie_request.write_conf_file(temp_dir, {'notebook_username': 'galaxy', 'notebook_password': PASSWORD,
+                                      'cors_origin': ie_request.attr.proxy_url})
 # This is overwritten at the end of the above function call, so we need to re-overwrite it.
 ie_request.attr.notebook_pw = PASSWORD
 
@@ -33,9 +34,9 @@ ie_request.attr.notebook_pw = PASSWORD
 # Access URLs for the notebook from within galaxy.
 # TODO: Make this work without pointing directly to IE. Currently does not work
 # through proxy.
-notebook_pubkey_url = ie_request.url_template('http://localhost/rstudio/${PORT}/auth-public-key')
-notebook_access_url = ie_request.url_template('http://localhost/rstudio/${PORT}/')
-notebook_login_url =  ie_request.url_template('http://localhost/rstudio/${PORT}/auth-do-sign-in')
+notebook_pubkey_url = ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth-public-key')
+notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/')
+notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth-do-sign-in')
 
 # Did the user give us an RData file?
 if hda.datatype.__class__.__name__ == "RData":
