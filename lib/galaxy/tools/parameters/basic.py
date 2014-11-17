@@ -195,7 +195,7 @@ class ToolParameter( object, Dictifiable ):
         tool_dict = super( ToolParameter, self ).to_dict()
         #TODO: wrapping html as it causes a lot of errors on subclasses - needs histories, etc.
         try:
-            tool_dict[ 'html' ] = urllib.quote( self.get_html( trans ) )
+            tool_dict[ 'html' ] = urllib.quote( util.smart_str( self.get_html( trans ) ) )
         except AssertionError, e:
             pass #HACK for assert trans.history, 'requires a history'
 
