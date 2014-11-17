@@ -244,7 +244,7 @@ class DockerContainer(Container):
             working_directory=working_directory,
             net=prop("net", "none"),  # By default, docker instance has networking disabled
             auto_rm=asbool(prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
-            set_user=asbool(prop("set_user", docker_util.DEFAULT_SET_USER)),
+            set_user=prop("set_user", docker_util.DEFAULT_SET_USER),
             **docker_host_props
         )
         return "%s\n%s" % (cache_command, run_command)

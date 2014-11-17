@@ -199,7 +199,11 @@
                will be removed automatically after the program is complete.
           -->
           <!-- <param id="docker_auto_rm">true</param> -->
-          <!-- <param id="docker_set_user">true</param> -->
+          <!-- Override which user to launch Docker container as - defaults to 
+               Galaxy's user id. For remote job execution (e.g. Pulsar) set to
+               remote job user. Leave empty to not use the -u argument with
+               Docker. -->
+          <!-- <param id="docker_set_user">$UID</param> -->
           <!-- Following command can be used to tweak docker command. -->
           <!-- <param id="docker_cmd">/usr/local/custom_docker/docker</param> -->
           <!-- Following can be used to connect to docke server in different

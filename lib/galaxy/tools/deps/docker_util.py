@@ -10,7 +10,7 @@ DEFAULT_NET = None
 DEFAULT_MEMORY = None
 DEFAULT_VOLUMES_FROM = None
 DEFAULT_AUTO_REMOVE = True
-DEFAULT_SET_USER = True
+DEFAULT_SET_USER = "$UID"
 
 
 class DockerVolume(object):
@@ -149,7 +149,10 @@ def build_docker_run_command(
     if auto_rm:
         command_parts.append("--rm")
     if set_user:
-        command_parts.extend(["-u", str(os.geteuid())])
+        user = set_user
+        if set_user == DEFAULT_SET_USER:
+            user = str(os.geteuid())
+        command_parts.extend(["-u", user])
     full_image = image
     if tag:
         full_image = "%s:%s" % (full_image, tag)
