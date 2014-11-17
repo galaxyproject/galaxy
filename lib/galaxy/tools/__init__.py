@@ -2615,14 +2615,20 @@ class Tool( object, Dictifiable ):
                             history = None
                         value = input.test_param.get_initial_value( trans, context, history=history )
                         current_case = input.get_current_case( value, trans )
-                if current_case != old_current_case:
+                case_changed = current_case != old_current_case
+                if case_changed:
                     # Current case has changed, throw away old state
                     group_state = state[input.name] = {}
                     # TODO: we should try to preserve values if we can
                     self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context )
                     group_errors = dict()
                     group_old_errors = dict()
-                else:
+
+                # If we didn't just change the current case and are coming from HTML - the values
+                # in incoming represent the old values and should not be replaced. If being updated
+                # from the API (json) instead of HTML - form values below the current case
+                # may also be supplied and incoming should be preferred to case defaults.
+                if (not case_changed) or (source != "html"):
                     # Current case has not changed, update children
                     group_errors = self.update_state( trans,
                                                       input.cases[current_case].inputs,

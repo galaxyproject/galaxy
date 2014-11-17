@@ -117,7 +117,32 @@ def _step_parameters(step, param_map):
             param_dict[param_dict['param']] = param_dict['value']
             del param_dict[ 'param' ]
             del param_dict[ 'value' ]
-    return param_dict
+    # Inputs can be nested dict, but Galaxy tool code wants nesting of keys (e.g.
+    # cond1|moo=4 instead of cond1: {moo: 4} ).
+    new_params = _flatten_step_params( param_dict )
+    return new_params
+
+
+def _flatten_step_params( param_dict, prefix="" ):
+    # TODO: Temporary work around until tool code can process nested data
+    # structures. This should really happen in there so the tools API gets
+    # this functionality for free and so that repeats can be handled
+    # properly. Also the tool code walks the tool inputs so it nows what is
+    # a complex value object versus something that maps to child parameters
+    # better than the hack or searching for src and id here.
+    new_params = {}
+    keys = param_dict.keys()[:]
+    for key in keys:
+        if prefix:
+            effective_key = "%s|%s" % ( prefix, key )
+        else:
+            effective_key = key
+        value = param_dict[key]
+        if isinstance(value, dict) and not ('src' in value and 'id' in value):
+            new_params.update(_flatten_step_params( value, effective_key) )
+        else:
+            new_params[effective_key] = value
+    return new_params
 
 
 def build_workflow_run_config( trans, workflow, payload ):

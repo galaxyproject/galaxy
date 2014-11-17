@@ -727,7 +727,7 @@ class ToolModule( WorkflowModule ):
             old_errors = state.inputs.pop( "__errors__", {} )
             # Update the state
             step_errors = tool.update_state( trans, tool.inputs, state.inputs, step_updates,
-                                             update_only=True, old_errors=old_errors )
+                                             update_only=True, old_errors=old_errors, source="json" )
         return state, step_errors
 
     def execute( self, trans, progress, invocation, step ):
