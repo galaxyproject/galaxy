@@ -110,6 +110,6 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     if bof:
                         break
         except:
-            log.exception('Error reading end of %s:', path)
+            log.exception('Error reading end of %s:', efile_path)
 
         return False
