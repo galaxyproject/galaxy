@@ -11,9 +11,10 @@
         params['dataset_id'] = params['id']
     self.form_config = controller._build_dict(trans, tool, params)
     self.form_config.update({
-        'id'            : tool.id,
-        'job_id'        : trans.security.encode_id( job.id ) if job else None,
-        'history_id'    : trans.security.encode_id( trans.history.id )
+        'id'                : tool.id,
+        'job_id'            : trans.security.encode_id( job.id ) if job else None,
+        'history_id'        : trans.security.encode_id( trans.history.id ),
+        'toolform_upgrade'  : trans.app.config.get('toolform_upgrade',  False)
     })
 %>
 ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}

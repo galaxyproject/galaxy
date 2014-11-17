@@ -324,7 +324,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // switch to classic tool form mako if the form definition is incompatible
-            if (this.incompatible) {
+            if (this.incompatible || !this.options.toolform_upgrade) {
                 this.$el.hide();
                 $('#tool-form-classic').show();
                 return;

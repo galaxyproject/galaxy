@@ -742,6 +742,9 @@ use_interactive = True
 
 # -- Beta features
 
+# Use new tool form
+#toolform_upgrade = False
+
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
