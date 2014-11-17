@@ -8,10 +8,7 @@ import subprocess
 
 # Sets ID and sets up a lot of other variables
 ie_request.load_deploy_config()
-# In order to keep 302 redirects happy, nginx needs to be aware there's a proxy
-# in front of it, which may be using a different port. As a result, we have to
-# start nginx on whichever port it is we plan to use.
-ie_request.attr.docker_port = ie_request.attr.PORT
+ie_request.attr.docker_port = 80
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 # We have to do some special things with the password here. Currently there's
