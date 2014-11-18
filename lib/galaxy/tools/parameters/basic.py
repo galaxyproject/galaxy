@@ -1143,7 +1143,7 @@ class ColumnListParameter( SelectToolParameter ):
         """
         if self.multiple:
             #split on newline and ,
-            if value:
+            if isinstance( value, list ) or isinstance( value, basestring ):
                 column_list = []
                 if not isinstance( value, list ):
                     value = value.split( '\n' )
