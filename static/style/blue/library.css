@@ -12,7 +12,7 @@ td.right-center{vertical-align:middle !important;text-align:right}
 .library_table td{border-top:1px solid #5f6990 !important}
 .library_table th{border-bottom:2px solid #5f6990 !important}
 .library_table a{color:#0A143D}.library_table a:hover{color:maroon}
-.library_style_container{width:95%;margin:auto;margin-top:2em;overflow:auto !important}
+.library_style_container{width:95%;margin:auto;margin-top:2em;overflow:auto !important}.library_style_container tr{height:32px}
 tr.light td{background-color:white;color:black}
 tr.light:hover td{background-color:#f5e8cc}
 tr.dark td{background-color:#d6b161;color:white}
@@ -42,3 +42,5 @@ span.expandLink{padding-left:12px;display:inline-block;vertical-align:middle;bac
 .libraryItem-queued{margin-right:2px;padding:0 2px 0 2px;border:1px solid #bfbfbf;background:#eee}
 .libraryItem-running{margin-right:2px;padding:0 2px 0 2px;border:1px solid #aa6;background:#ffc}
 .libraryItem-upload{margin-right:2px;padding:0 2px 0 2px;border:1px solid #1197c0;background:#a6e4f7}
+.pagination-sm{height:15px}
+.library-paginator{margin-left:2em}

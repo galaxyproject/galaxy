@@ -585,7 +585,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, visualization )
 
-        # Display.
+        # Fork to template based on visualization.type (registry or builtin).
         if( ( trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins )
         and ( visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS ) ):
             # if a registry visualization, load a version of display.mako that will load the vis into an iframe :(

@@ -1,4 +1,3 @@
-##<%inherit file="/embed_base.mako"/>
 <%namespace file="/display_common.mako" import="*" />
 
 ## Some duplication with embed_base here, needed a way to override the main embedded-item html for histories

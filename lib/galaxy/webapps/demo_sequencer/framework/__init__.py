@@ -116,10 +116,7 @@ class DemoWebTransaction( galaxy.web.framework.base.DefaultWebTransaction ):
     @galaxy.web.framework.base.lazy_property
     def template_context( self ):
         return dict()
-    def make_form_data( self, name, **kwargs ):
-        rval = self.template_context[name] = FormData()
-        rval.values.update( kwargs )
-        return rval
+
     def set_message( self, message, type=None ):
         """
         Convenience method for setting the 'message' and 'message_type'

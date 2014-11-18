@@ -137,6 +137,35 @@ Painter.prototype.default_prefs = {};
  */
 Painter.prototype.draw = function(ctx, width, height, w_scale) {};
 
+/**
+ * Get starting drawing position, which is offset a half-base left of coordinate.
+ */
+Painter.prototype.get_start_draw_pos = function(chrom_pos, w_scale) {
+    return this._chrom_pos_to_draw_pos(chrom_pos, w_scale, -0.5);
+};
+
+/**
+ * Get end drawing position, which is offset a half-base right of coordinate.
+ */
+Painter.prototype.get_end_draw_pos = function(chrom_pos, w_scale) {
+    return this._chrom_pos_to_draw_pos(chrom_pos, w_scale, 0.5);
+};
+
+/**
+ * Get drawing position.
+ */
+Painter.prototype.get_draw_pos = function(chrom_pos, w_scale) {
+    return this._chrom_pos_to_draw_pos(chrom_pos, w_scale, 0);
+};
+
+/**
+ * Convert chromosome position to drawing position.
+ */
+Painter.prototype._chrom_pos_to_draw_pos = function(chrom_pos, w_scale, offset) {
+    return Math.floor( w_scale * ( Math.max(0, chrom_pos - this.view_start) + offset) );
+};
+
+
 var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
     if ( this.prefs.min_value === undefined ) {
@@ -1402,32 +1431,38 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
     draw: function(ctx, width, height, w_scale) {
         ctx.save();
 
-        // Functions for detection insertions (TODO) and deletions.
-
-        /** Returns dictionary of information about a deletion; returns null if there no deletion.
+        var 
+        /** 
+         * Returns dictionary of information about an indel; returns empty if there no indel. Assumes indel is left-aligned.
          * Dict attributes:
+         *    -type: 'insertion' or 'deletion'
          *    -start: where the deletion starts relative to reference start
          *    -len: how long the deletion is
          */
-        var get_deletion_info = function(ref, alt) {
-                var ref_len = ref.length,
-                    alt_len = alt.length,
-                    start = 0,
-                    len = 1,
-                    is_delete = false;
-                if (alt === '-') {
-                    is_delete = true;
-                    len = ref.length;
-                }
-                else if (ref.indexOf(alt) === 0 && ref_len > alt_len) {
-                    is_delete = true;
-                    len = ref_len = alt_len;
-                    start += alt_len;
-                }
+        get_indel_info = function(ref, alt) {
+            var ref_len = ref.length,
+                alt_len = alt.length,
+                start = 0,
+                len = 1,
+                type = null;
+            if (alt === '-') {
+                type = 'deletion';
+                len = ref.length;
+            }
+            else if (ref.indexOf(alt) === 0 && ref_len > alt_len) {
+                type = 'deletion';
+                len = ref_len - alt_len;
+                start = alt_len;
+            }
+            else if (alt.indexOf(ref) === 0 && ref_len < alt_len) {
+                // Insertion.
+                type = 'insertion';
+                len = alt_len - ref_len;
+                start = alt_len;
+            }
 
-                return ( is_delete ? { start: start, len: len } : null );
-            };
-
+            return ( type !== null ? { type: type, start: start, len: len } : {} );
+        };
 
         // Draw.
         var locus_data,
@@ -1441,7 +1476,6 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             allele_counts,
             variant,
             draw_x_start,
-            char_x_start,   
             draw_y_start,
             genotype,
             // Always draw variants at least 1 pixel wide.
@@ -1485,25 +1519,17 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             alt = [ locus_data[4].split(',') ];
             sample_gts = locus_data[7].split(',');
             allele_counts = locus_data.slice(8);
-
+            
             // Process alterate values to derive information about each alt.
             alt = _.map(_.flatten(alt), function(a) {
-                var type,
-                    alt_info = {},
-                    delete_info = get_deletion_info(ref, a);
-                if (delete_info) {
-                    type = 'deletion';
-                    _.extend(alt_info, delete_info);
-                }
-                // TODO: test for insertion.
-                else { // SNP.
-                    type = 'snp';
-                }
-
-                return _.extend(alt_info, {
-                    type: type,
-                    value: a,
-                });
+                var alt_info = {
+                        type: 'snp',
+                        value: a,
+                        start: 0
+                    },
+                    indel_info = get_indel_info(ref, a);
+                
+                return _.extend(alt_info, indel_info);
             });
 
             // Only draw locus data if it's in viewing region.
@@ -1511,24 +1537,23 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
                 continue;
             }
 
-            // Compute start for drawing variants marker, text.            
-            draw_x_start = Math.floor( Math.max(-0.5 * w_scale, (pos - this.view_start - 0.5) * w_scale) );
-            char_x_start = Math.floor( Math.max(0, (pos - this.view_start) * w_scale) );
-            
-            // Draw summary.
+            // Draw summary for alleles.
             if (draw_summary) {
                 ctx.fillStyle = '#999999';
                 ctx.globalAlpha = 1;
-                // Draw background for summary.
-                ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
-                draw_y_start = this.prefs.summary_height;
-                // Draw allele fractions onto summary.
-                for (j = 0; j < alt.length; j++) {
-                    ctx.fillStyle = ( alt[j].type === 'deletion' ? 'black' : this.base_color_fn(alt[j].value) );
-                    allele_frac = allele_counts / sample_gts.length;
-                    draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
-                    ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
-                    draw_y_start -= draw_height;
+                for (j = 0; j < alt.length; j++) {    
+                    // Draw background for summary.
+                    draw_x_start = this.get_start_draw_pos(pos + alt[j].start, w_scale);
+                    ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
+                    draw_y_start = this.prefs.summary_height;
+                    // Draw allele fractions onto summary.
+                    for (j = 0; j < alt.length; j++) {
+                        ctx.fillStyle = ( alt[j].type === 'deletion' ? 'black' : this.base_color_fn(alt[j].value) );
+                        allele_frac = allele_counts / sample_gts.length;
+                        draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
+                        ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
+                        draw_y_start -= draw_height;
+                    }
                 }
             }
 
@@ -1561,18 +1586,19 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
 
                 // If there's a variant, draw it.
                 if (variant) {
+                    draw_x_start = this.get_start_draw_pos(pos + variant.start, w_scale);
                     if (variant.type === 'snp') {
                         var snp = variant.value;
                         ctx.fillStyle = this.base_color_fn(snp);
                         if (paint_utils.draw_details) {
-                            ctx.fillText(snp, char_x_start, draw_y_start + row_height);
+                            ctx.fillText(snp, this.get_draw_pos(pos, w_scale), draw_y_start + row_height);
                         }
                         else {
                             ctx.fillRect(draw_x_start, draw_y_start + 1, base_px, feature_height);
                         }
                     }
                     else if (variant.type === 'deletion') {
-                        paint_utils.draw_deletion(draw_x_start + base_px * variant.start, draw_y_start + 1, variant.len);
+                        paint_utils.draw_deletion(draw_x_start, draw_y_start + 1, variant.len);
                     }
                     else {
                         // TODO: handle insertions.

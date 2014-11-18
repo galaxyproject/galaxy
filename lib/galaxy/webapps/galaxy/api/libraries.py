@@ -39,7 +39,7 @@ class LibrariesController( BaseAPIController ):
         .. seealso:: :attr:`galaxy.model.Library.dict_collection_visible_keys`
 
         """
-        deleted = kwd.get( 'deleted', None )
+        deleted = util.string_as_bool_or_none( kwd.get( 'deleted', None ) )
         query = self.library_manager.list( trans, deleted )
         libraries = []
         for library in query:

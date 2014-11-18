@@ -18,7 +18,7 @@ class JobManager( object ):
     """
     def __init__( self, app ):
         self.app = app
-        if (self.app.config.track_jobs_in_database and self.app.job_config.is_handler(self.app.config.server_name)) or not self.app.config.track_jobs_in_database:
+        if self.app.is_job_handler():
             log.debug("Starting job handler")
             self.job_handler = handler.JobHandler( app )
             self.job_queue = self.job_handler.job_queue
@@ -26,6 +26,9 @@ class JobManager( object ):
         else:
             self.job_handler = NoopHandler()
             self.job_queue = self.job_stop_queue = NoopQueue()
+        self.job_lock = False
+
+    def start( self ):
         self.job_handler.start()
 
     def shutdown( self ):

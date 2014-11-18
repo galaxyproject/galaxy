@@ -3,16 +3,16 @@ Galaxy API Documentation
 
 Background
 ==========
-In addition to being accessible through a web interface, Galaxy can now also be
+In addition to being accessible through a web interface, Galaxy can also be
 accessed programmatically, through shell scripts and other programs. The web
 interface is appropriate for things like exploratory analysis, visualization,
 construction of workflows, and rerunning workflows on new datasets.
 
 The web interface is less suitable for things like
     - Connecting a Galaxy instance directly to your sequencer and running
-      workflows whenever data is ready
+      workflows whenever data is ready.
     - Running a workflow against multiple datasets (which can be done with the
-      web interface, but is tedious)
+      web interface, but is tedious).
     - When the analysis involves complex control, such as looping and
       branching.
 
@@ -132,7 +132,7 @@ key to your clipboard and then use these scripts::
         description: API Test Library
         name: api_test
 
-        % ./display.py my_key http://localhost:4096/api/libraries/f3f73e481f432006/contents 
+        % ./display.py my_key http://localhost:4096/api/libraries/f3f73e481f432006/contents
         Collection Members
         ------------------
         /api/libraries/f3f73e481f432006/contents/28202595c0d2591f61ddda595d2c3670
@@ -205,208 +205,6 @@ used in the web form, like 'link_data_only' and etc.
 
 The request and response format should be considered alpha and are subject to change.
 
-API Return Codes and Formats
-==================
-
-A set of error codes for API requests is being established and will be
-documented here. This is a long-term project however so stayed tuned.
-
-API Controllers
-===============
-
-:mod:`datasets` Module
-----------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.datasets
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`folder_contents` Module
------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.folder_contents
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`folders` Module
----------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.folders
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`forms` Module
--------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.forms
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`genomes` Module
----------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.genomes
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`group_roles` Module
--------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.group_roles
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`group_users` Module
--------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.group_users
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`groups` Module
---------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.groups
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`histories` Module
------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.histories
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`history_contents` Module
-------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.history_contents
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`item_tags` Module
------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.item_tags
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`lda_datasets` Module
---------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.lda_datasets
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`libraries` Module
------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.libraries
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`library_contents` Module
-------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.library_contents
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`permissions` Module
--------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.permissions
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`quotas` Module
---------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.quotas
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`request_types` Module
----------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.request_types
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`requests` Module
-----------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.requests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`roles` Module
--------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.roles
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`samples` Module
----------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.samples
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`tools` Module
--------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.tools
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`users` Module
--------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.users
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`visualizations` Module
-----------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.visualizations
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`workflows` Module
------------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.workflows
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
 API Design Guidelines
 =====================
 
@@ -418,26 +216,34 @@ these guidelines.
 
     - API functionality should include docstring documentation for consumption
       by readthedocs.org.
-    - Developers should familarize themselves with the HTTP status code definitions
+    - Developers should familiarize themselves with the HTTP status code definitions
       http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html. The API responses
       should properly set the status code according to the result - in particular
       2XX responses should be used for successful requests, 4XX for various
-      kinds of client errors, and 5XX for errors on the server side.
+      kinds of client errors, and 5XX for the errors on the server side.
     - If there is an error processing some part of request (one item in a list
       for instance), the status code should be set to reflect the error and the
       partial result may or may not be returned depending on the controller -
       this behavior should be documented.
-    - (TODO) API methods should throw a finite number of exceptions (defined in)
-      `galaxy.exceptions` and these should subclass `MessageException` and not
-      paste/wsgi HTTP exceptions. When possible, the framework itself should be
-      responsible catching these exceptions, setting the status code, and
-      building an error response.
+    - API methods should throw a finite number of exceptions 
+      (defined in :doc:`galaxy.exceptions`) and these should subclass 
+      `MessageException` and not paste/wsgi HTTP exceptions. When possible, 
+      the framework itself should be responsible catching these exceptions, 
+      setting the status code, and building an error response.
     - Error responses should not consist of plain text strings - they should be
-      dictionaries describing the error and containing the following keys (TODO:
-      spell out nature of this.) Various error conditions (once a format has
-      been chosen and framework to enforce it in place) should be spelled out
-      in this document.
-    - Backward compatibility is important and should maintained when possible.
+      dictionaries describing the error and containing the following::
+
+          {
+            "status_code": 400,
+            "err_code": 400007,
+            "err_msg": "Request contained invalid parameter, action could not be completed.",
+            "type": "error",
+            "extra_error_info": "Extra information."
+          }
+
+      Various error conditions (once a format has been chosen and framework to
+      enforce it in place) should be spelled out in this document.
+    - Backward compatibility is important and should be maintained when possible.
       If changing behavior in a non-backward compatibile way please ensure one
       of the following holds - there is a strong reason to believe no consumers
       depend on a behavior, the behavior is effectively broken, or the API
@@ -448,7 +254,8 @@ consider them when modifying the API.
 
     - Functionality should not be copied and pasted between controllers -
       consider refactoring functionality into associated classes or short of
-      that into Mixins (http://en.wikipedia.org/wiki/Composition_over_inheritance).
+      that into Mixins (http://en.wikipedia.org/wiki/Composition_over_inheritance)
+      or into Managers (:doc:`galaxy.managers`).
     - API additions are more permanent changes to Galaxy than many other potential
       changes and so a second opinion on API changes should be sought. (Consider a
       pull request!)
@@ -457,16 +264,252 @@ consider them when modifying the API.
       `test/functional/api`. (Once such a framework is in place - it is not
       right now).
     - Changes to reflect modifications to the API should be pushed upstream to
-      the BioBlend project possible.
+      the BioBlend project if possible.
 
 Longer term goals/notes.
 
     - It would be advantageous to have a clearer separation of anonymous and
       admin handling functionality.
     - If at some point in the future, functionality needs to be added that
-      breaks backward compatibility in a significant way to a compontent used by
-      the community should be alerted  - a "dev" variant of the API will be
-      established and the community should be alerted and given a timeframe
-      for when the old behavior will be replaced with the new behavior.
+      breaks backward compatibility in a significant way to a component used by
+      the community - a "dev" variant of the API will be established and
+      the community should be alerted and given a timeframe for when the old
+      behavior will be replaced with the new behavior.
     - Consistent standards for range-based requests, batch requests, filtered
       requests, etc... should be established and documented here.
+
+API Controllers
+===============
+
+Galaxy offers the following API controllers:
+
+:mod:`annotations` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.annotations
+
+:mod:`authenticate` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.authenticate
+
+:mod:`configuration` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.configuration
+
+:mod:`dataset_collections` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.dataset_collections
+
+
+:mod:`datasets` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.datasets
+
+
+:mod:`datatypes` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.datatypes
+
+
+:mod:`extended_metadata` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.extended_metadata
+
+
+:mod:`folder_contents` Module
+-----------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.folder_contents
+
+
+:mod:`folders` Module
+---------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.folders
+
+
+:mod:`forms` Module
+-------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.forms
+
+
+:mod:`ftp_files` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.ftp_files
+
+
+:mod:`genomes` Module
+---------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.genomes
+
+
+:mod:`group_roles` Module
+-------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.group_roles
+
+
+:mod:`group_users` Module
+-------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.group_users
+
+
+:mod:`groups` Module
+--------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.groups
+
+
+:mod:`histories` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.histories
+
+
+:mod:`history_contents` Module
+------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.history_contents
+
+
+:mod:`item_tags` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.item_tags
+
+
+:mod:`job_files` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.job_files
+
+
+:mod:`jobs` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.jobs
+
+
+:mod:`lda_datasets` Module
+--------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.lda_datasets
+
+
+:mod:`libraries` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.libraries
+
+
+:mod:`library_contents` Module
+------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.library_contents
+
+
+:mod:`metrics` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.metrics
+
+
+:mod:`page_revisions` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.page_revisions
+
+
+:mod:`pages` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.pages
+
+
+:mod:`provenance` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.provenance
+
+
+:mod:`quotas` Module
+--------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.quotas
+
+
+:mod:`request_types` Module
+---------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.request_types
+
+
+:mod:`requests` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.requests
+
+
+:mod:`roles` Module
+-------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.roles
+
+
+:mod:`samples` Module
+---------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.samples
+
+
+:mod:`search` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.search
+
+
+:mod:`tool_data` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tool_data
+
+
+:mod:`tool_shed_repositories` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tool_shed_repositories
+
+
+:mod:`tools` Module
+-------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tools
+
+
+:mod:`users` Module
+-------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.users
+
+
+:mod:`visualizations` Module
+----------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.visualizations
+
+
+:mod:`workflows` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.workflows
+

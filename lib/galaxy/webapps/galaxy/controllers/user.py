@@ -448,14 +448,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def login( self, trans, refresh_frames=[], **kwd ):
-        '''Handle Galaxy Log in'''
+        """Handle Galaxy login"""
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         root_url = url_for( '/', qualified=True )
-        redirect_url = ''  # always start with redirect_url being empty
-        # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
-        # or to enter a logout/login loop
+        # Always start with redirect_url being empty.
+        redirect_url = ''
+        # Compare urls, to prevent a redirect from pointing (directly)
+        # outside of galaxy or to enter a logout/login loop.
         if not util.compare_urls( root_url, redirect, compare_path=False ) or util.compare_urls( url_for( controller='user', action='logout', qualified=True ), redirect ):
             redirect = root_url
+        if kwd.get( 'noredirect', False ):
+            # The referrer is explicitly asking not to redirect.
+            redirect = ''
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
@@ -463,7 +467,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         user = trans.user
         email = kwd.get( 'email', '' )
         if user:
-            # already logged in
+            # Already logged in.
             redirect_url = redirect
             message = 'You are already logged in.'
             status = 'info'
@@ -503,9 +507,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     active_view="user" )
 
     def __validate_login( self, trans, **kwd ):
-        """
-        Function validates numerous cases that might happen during the login time.
-        """
+        """Validates numerous cases that might happen during the login time."""
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'error' )
         email = kwd.get( 'email', '' )
@@ -573,7 +575,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             email = trans.user.email
         if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
-        is_activation_sent = self.send_verification_email( trans, email, username)
+        is_activation_sent = self.send_verification_email( trans, email, username )
         if is_activation_sent:
             message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % ( email, url_for( '/' ) )
             status = 'error'
@@ -819,7 +821,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def prepare_activation_link( self, trans, email ):
         """
-        Prepares the account activation link for the user.
+        Prepare the account activation link for the user.
         """
         activation_token = self.get_activation_token( trans, email )
         activation_link = url_for( controller='user', action='activate', activation_token=activation_token, email=email, qualified=True  )
@@ -827,7 +829,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def get_activation_token( self, trans, email ):
         """
-        Checks for the activation token. Creates new activation token and stores it in the database if none found.
+        Check for the activation token. Create new activation token and store it in the database if no token found.
         """
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
         activation_token = user.activation_token
@@ -841,7 +843,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def activate( self, trans, **kwd ):
         """
-        Function checks whether token fits the user and then activates the user's account.
+        Check whether token fits the user and then activate the user's account.
         """
         params = util.Params( kwd, sanitize=False )
         email = urllib.unquote( params.get( 'email', None ) )
@@ -849,7 +851,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
         if email is None or activation_token is None:
             #  We don't have the email or activation_token, show error.
-            return trans.show_error_message( "You are using wrong activation link. Try to log-in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
+            return trans.show_error_message( "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
         else:
             # Find the user
             user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
@@ -859,12 +861,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if user.activation_token == activation_token:
                 user.activation_token = None
                 user.active = True
-                trans.sa_session.add(user)
+                trans.sa_session.add( user )
                 trans.sa_session.flush()
                 return trans.show_ok_message( "Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
             else:
                 #  Tokens don't match. Activation is denied.
-                return trans.show_error_message( "You are using wrong activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+                return trans.show_error_message( "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
         return
 
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
@@ -984,6 +986,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def edit_info( self, trans, cntrller, **kwd ):
+        """
+        Edit user information = username, email or password.
+        """
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1001,6 +1006,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             # Editing email and username
             email = util.restore_text( params.get( 'email', '' ) )
             username = util.restore_text( params.get( 'username', '' ) ).lower()
+
             # Validate the new values for email and username
             message = validate_email( trans, email, user )
             if not message and username:
@@ -1008,15 +1014,32 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if message:
                 status = 'error'
             else:
-                # The user's private role name must match the user's login ( email )
-                private_role = trans.app.security_agent.get_private_user_role( user )
-                private_role.name = email
-                private_role.description = 'Private role for ' + email
-                # Now change the user info
-                user.email = email
-                user.username = username
-                trans.sa_session.add_all( ( user, private_role ) )
-                trans.sa_session.flush()
+                if ( user.email != email ):
+                    # The user's private role name must match the user's login ( email )
+                    private_role = trans.app.security_agent.get_private_user_role( user )
+                    private_role.name = email
+                    private_role.description = 'Private role for ' + email
+                    # Change the email itself
+                    user.email = email
+                    trans.sa_session.add_all( ( user, private_role ) )
+                    trans.sa_session.flush()
+                    if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                        user.active = False
+                        trans.sa_session.add( user )
+                        trans.sa_session.flush()
+                        is_activation_sent = self.send_verification_email( trans, user.email, user.username )
+                        if is_activation_sent:
+                            message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                            success = True
+                        else:
+                            message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                            if trans.app.config.error_email_to is not None:
+                                message += ' Contact: %s' % trans.app.config.error_email_to
+                            success = False
+                if ( user.username != username ):
+                    user.username = username
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
         elif user and params.get( 'change_password_button', False ):
             # Editing password.  Do not sanitize passwords, so get from kwd
@@ -1093,9 +1116,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
+        """Reset the user's password. Send an email with the new password."""
         if trans.app.config.smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact your local Galaxy administrator." )
-        message = util.sanitize_text(util.restore_text( kwd.get( 'message', '' ) ))
+            return trans.show_error_message( "Mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator." )
+        message = util.sanitize_text( util.restore_text( kwd.get( 'message', '' ) ) )
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
@@ -1114,23 +1138,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     if host == 'localhost':
                         host = socket.getfqdn()
                     body = 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass )
-                    to = email
                     frm = 'galaxy-no-reply@' + host
                     subject = 'Galaxy Password Reset'
                     try:
-                        util.send_mail( frm, to, subject, body, trans.app.config )
+                        util.send_mail( frm, email, subject, body, trans.app.config )
                         reset_user.set_password_cleartext( new_pass )
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
                         trans.log_event( "User reset password: %s" % email )
-                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( controller='user', action='login' ) )
+                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( controller='user', action='login', noredirect='true' ) )
                     except Exception, e:
                         message = 'Failed to reset password: %s' % str( e )
                         status = 'error'
-                    return trans.response.send_redirect( web.url_for( controller='user',
-                                                                      action='reset_password',
-                                                                      message=message,
-                                                                      status=status ) )
             elif email is not None:
                 message = "The specified user does not exist"
                 status = 'error'
@@ -1162,7 +1181,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def set_default_permissions( self, trans, cntrller, **kwd ):
-        """Sets the user's default permissions for the new histories"""
+        """Set the user's default permissions for the new histories"""
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )

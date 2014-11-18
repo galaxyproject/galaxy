@@ -1179,28 +1179,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     use_panels=True,
                                     myexperiment_target_url=myexperiment_target_url )
 
-    @web.json
-    def get_datatypes( self, trans ):
-        ext_to_class_name = dict()
-        classes = []
-        for k, v in trans.app.datatypes_registry.datatypes_by_extension.iteritems():
-            c = v.__class__
-            ext_to_class_name[k] = c.__module__ + "." + c.__name__
-            classes.append( c )
-        class_to_classes = dict()
-
-        def visit_bases( types, cls ):
-            for base in cls.__bases__:
-                if issubclass( base, Data ):
-                    types.add( base.__module__ + "." + base.__name__ )
-                visit_bases( types, base )
-        for c in classes:
-            n = c.__module__ + "." + c.__name__
-            types = set( [ n ] )
-            visit_bases( types, c )
-            class_to_classes[ n ] = dict( ( t, True ) for t in types )
-        return dict( ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes )
-
     @web.expose
     def build_from_current_history( self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None ):
         user = trans.get_user()
@@ -1272,6 +1250,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         try:  # use a try/finally block to restore the user's current history
             default_target_history = trans.get_history()
             module_injector = WorkflowModuleInjector( trans )
+            scheduled = True
             if kwargs:
                 # If kwargs were provided, the states for each step should have
                 # been POSTed
@@ -1317,18 +1296,23 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             copy_inputs_to_history=new_history is not None
                         )
 
-                        outputs = invoke(
+                        outputs, invocation = invoke(
                             trans=trans,
                             workflow=workflow,
                             workflow_run_config=run_config
                         )
-
+                        invocation_state = invocation.state
+                        # Just use last invocation - right now not really
+                        # possible to have some invocations scheduled and not
+                        # others.
+                        scheduled = invocation_state == model.WorkflowInvocation.states.SCHEDULED
                         invocations.append({'outputs': outputs,
                                             'new_history': new_history})
                         trans.sa_session.flush()
                 if invocations:
                     return trans.fill_template( "workflow/run_complete.mako",
                                                 workflow=stored,
+                                                scheduled=scheduled,
                                                 invocations=invocations )
             else:
                 # Prepare each step

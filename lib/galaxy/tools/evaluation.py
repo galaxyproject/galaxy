@@ -362,6 +362,11 @@ class ToolEvaluator( object ):
         try:
             # Substituting parameters into the command
             command_line = fill_template( command, context=param_dict )
+            cleaned_command_line = []
+            # Remove leading and trailing whitespace from each line for readability.
+            for line in command_line.split( '\n' ):
+                cleaned_command_line.append( line.strip() )
+            command_line = '\n'.join( cleaned_command_line )
             # Remove newlines from command line, and any leading/trailing white space
             command_line = command_line.replace( "\n", " " ).replace( "\r", " " ).strip()
         except Exception:

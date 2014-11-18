@@ -53,11 +53,12 @@ class DatasetMatcher( object ):
             return False
         target_ext, converted_dataset = hda.find_conversion_destination( formats )
         if target_ext:
+            original_hda = hda
             if converted_dataset:
                 hda = converted_dataset
             if check_security and not self.__can_access_dataset( hda.dataset ):
                 return False
-            return HdaImplicitMatch( hda, target_ext )
+            return HdaImplicitMatch( hda, target_ext, original_hda )
         return False
 
     def hda_match( self, hda, check_implicit_conversions=True, ensure_visible=True ):
@@ -117,7 +118,8 @@ class HdaImplicitMatch( object ):
     conversion).
     """
 
-    def __init__( self, hda, target_ext ):
+    def __init__( self, hda, target_ext, original_hda ):
+        self.original_hda = original_hda
         self.hda = hda
         self.target_ext = target_ext
 

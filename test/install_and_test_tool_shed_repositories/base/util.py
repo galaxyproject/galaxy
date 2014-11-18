@@ -115,13 +115,17 @@ else:
     additional_tool_data_tables = None
     additional_tool_data_path = None
 
-# Set up default tool data tables.
-if os.path.exists( 'tool_data_table_conf.xml' ):
-    tool_data_table_conf = 'tool_data_table_conf.xml'
-elif os.path.exists( 'tool_data_table_conf.xml.sample' ):
-    tool_data_table_conf = 'tool_data_table_conf.xml.sample'
-else:
-    tool_data_table_conf = None
+tool_data_table_conf = None
+# Set up default tool data tables. If a non-sample version is in config/, use that. Otherwise iterate through lower
+# priority versions.
+for conf in [ 'tool_data_table_conf.test.xml',
+              'config/tool_data_table_conf.xml',
+              'config/tool_data_table_conf.xml.sample',
+              'tool_data_table_conf.xml',
+              'tool_data_table_conf.xml.sample' ]:
+    if os.path.exists( conf ):
+        tool_data_table_conf = conf
+        break
 
 # The GALAXY_INSTALL_TEST_TOOL_SHED_URL and GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY environment variables must be
 # set for this script to work correctly.  If the value of GALAXY_INSTALL_TEST_TOOL_SHED_URL does not refer to one

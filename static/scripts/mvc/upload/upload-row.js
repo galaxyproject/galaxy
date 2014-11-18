@@ -162,8 +162,7 @@ return Backbone.View.extend({
                         .addClass('mode');
         
         // activate text field if file is new
-        if (file_mode == 'new')
-        {
+        if (file_mode == 'new') {
             // get text component
             var text = it.find('#text');
             

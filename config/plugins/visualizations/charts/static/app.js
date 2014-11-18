@@ -1,6 +1,6 @@
 // dependencies
 define(['mvc/ui/ui-modal', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'utils/utils',
-        'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage', 'plugin/library/deferred',
+        'plugin/library/jobs', 'plugin/library/datasets', 'plugin/library/storage', 'utils/deferred',
         'plugin/views/viewer', 'plugin/views/editor',
         'plugin/models/config', 'plugin/models/chart',
         'plugin/charts/types'],

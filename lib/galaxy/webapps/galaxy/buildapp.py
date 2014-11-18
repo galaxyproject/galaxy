@@ -170,6 +170,7 @@ def populate_api_routes( webapp, app ):
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
+    webapp.mapper.resource( 'tool_data', 'tool_data', path_prefix='/api' )
     webapp.mapper.resource( 'dataset_collection', 'dataset_collections', path_prefix='/api/')
     webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
     webapp.mapper.resource( 'request', 'requests', path_prefix='/api' )
@@ -179,7 +180,10 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'ftp_file', 'ftp_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/build', action='build', controller="tools" )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/reload', action='reload', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/citations', action='citations', controller="tools" )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
@@ -192,7 +196,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping' : 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
@@ -223,7 +227,12 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( 'import_shared_workflow_deprecated', '/api/workflows/import', controller='workflows', action='import_shared_workflow_deprecated', conditions=dict( method=['POST'] ) )
     webapp.mapper.connect( 'workflow_usage', '/api/workflows/{workflow_id}/usage', controller='workflows', action='workflow_usage', conditions=dict(method=['GET']))
     webapp.mapper.connect( 'workflow_usage_contents', '/api/workflows/{workflow_id}/usage/{usage_id}', controller='workflows', action='workflow_usage_contents', conditions=dict(method=['GET']))
+    webapp.mapper.connect( 'cancel_workflow_invocation', '/api/workflows/{workflow_id}/usage/{usage_id}', controller='workflows', action='cancel_workflow_invocation', conditions=dict(method=['DELETE']))
 
+    webapp.mapper.connect( 'workflow_invocation_step', '/api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}', controller='workflows', action='workflow_invocation_step', conditions=dict(method=['GET']))
+    webapp.mapper.connect( 'workflow_invocation_step_update', '/api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}', controller='workflows', action='workflow_invocation_step_update', conditions=dict(method=['PUT']))
+
+    webapp.mapper.connect( 'workflow_request', '/api/workflows/{workflow_id}/usage', controller='workflows', action='workflow_request', conditions=dict( method=['POST'] ) )
     # ============================
     # ===== AUTHENTICATE API =====
     # ============================

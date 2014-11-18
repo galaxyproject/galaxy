@@ -6,59 +6,94 @@
 // dependencies
 define(["libs/underscore"], function(_) {
 
-// generic function to recieve json from url
-function get (url, success, error) {
-    request('GET', url, {}, success, error);
-};
-
-// generic function to send json to url
-function request (method, url, data, success, error) {
-
-    // encode data into url
-    if (method == 'GET' || method == 'DELETE') {
-        if (url.indexOf('?') == -1) {
-            url += '?';
-        } else {
-            url += '&';
-        }
-        url += $.param(data)
-    }
-    
-    // prepare request
-    var xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
-    xhr.setRequestHeader('Accept', 'application/json');
-    xhr.setRequestHeader('Cache-Control', 'no-cache');
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onloadend = function() {
-        // get status
-        var status = xhr.status;
-       
-        // read response
-        try {
-            response = jQuery.parseJSON(xhr.responseText);
-        } catch (e) {
-            response = xhr.responseText;
-        }
-   
-        // parse response
-        if (status == 200) {
-            success && success(response);
-        } else {
-            error && error(response);
-        }
-    };
-    
-    // make request
-    if (method == 'GET' || method == 'DELETE') {
-        xhr.send();
+/**
+ * Request handler for GET
+ * @param{String}   url     - Url request is made to
+ * @param{Function} success - Callback on success
+ * @param{Function} error   - Callback on error
+ * @param{Boolean}  cache   - Use cached data if available
+ */
+function get (options) {
+    top.__utils__get__ = top.__utils__get__ || {};
+    if (options.cache && top.__utils__get__[options.url]) {
+        options.success && options.success(top.__utils__get__[options.url]);
+        console.debug('utils.js::get() - Fetching from cache [' + options.url + '].');
     } else {
-        xhr.send(JSON.stringify(data));
+        request({
+            url     : options.url,
+            data    : options.data,
+            success : function(response) {
+                top.__utils__get__[options.url] = response;
+                options.success && options.success(response);
+            },
+            error : function(response) {
+                options.error && options.error(response);
+            }
+        });
     }
 };
 
-// get css value
+/**
+ * Request handler
+ * @param{String}   method  - Request method ['GET', 'POST', 'DELETE', 'PUT']
+ * @param{String}   url     - Url request is made to
+ * @param{Object}   data    - Data send to url
+ * @param{Function} success - Callback on success
+ * @param{Function} error   - Callback on error
+ */
+function request (options) {
+    // prepare ajax
+    var ajaxConfig = {
+        contentType : 'application/json',
+        type        : options.type || 'GET',
+        data        : options.data || {},
+        url         : options.url
+    }
+    
+    // encode data into url
+    if (ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE') {
+        if (ajaxConfig.url.indexOf('?') == -1) {
+            ajaxConfig.url += '?';
+        } else {
+            ajaxConfig.url += '&';
+        }
+        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data);
+        ajaxConfig.data     = null;
+    } else {
+        ajaxConfig.dataType = 'json';
+        ajaxConfig.url      = ajaxConfig.url;
+        ajaxConfig.data     = JSON.stringify(ajaxConfig.data);
+    }
+
+    // make request
+    $.ajax(ajaxConfig)
+    .done(function(response) {
+        if (typeof response === 'string') {
+            try {
+                response = response.replace('Infinity,', '"Infinity",');
+                response = jQuery.parseJSON(response);
+            } catch (e) {
+                console.debug(e);
+            }
+        }
+        options.success && options.success(response);
+    })
+    .fail(function(response) {
+        var response_text = null;
+        try {
+            response_text = jQuery.parseJSON(response.responseText);
+        } catch (e) {
+            response_text = response.responseText;
+        }
+        options.error && options.error(response_text, response);
+    });
+};
+
+/** 
+ * Read a property value from CSS
+ * @param{String}   classname   - CSS class
+ * @param{String}   name        - CSS property
+ */
 function cssGetAttribute (classname, name) {
     // place dummy element
     var el = $('<div class="' + classname + '"></div>');
@@ -76,14 +111,21 @@ function cssGetAttribute (classname, name) {
     return value;
 };
     
-// load css
+/**
+ * Load a CSS file
+ * @param{String}   url - Url of CSS file
+ */
 function cssLoadFile (url) {
     // check if css is already available
     if (!$('link[href^="' + url + '"]').length)
         $('<link href="' + galaxy_config.root + url + '" rel="stylesheet">').appendTo('head');
 };
 
-// merge
+/**
+ * Safely merge to dictionaries
+ * @param{Object}   options         - Target dictionary
+ * @param{Object}   optionsDefault  - Source dictionary
+ */
 function merge (options, optionsDefault) {
     if (options)
         return _.defaults(options, optionsDefault);
@@ -91,7 +133,11 @@ function merge (options, optionsDefault) {
         return optionsDefault;
 };
 
-// to string
+/**
+ * Format byte size to string with units
+ * @param{Integer}   size           - Size in bytes
+ * @param{Boolean}   normal_font    - Switches font between normal and bold
+ */
 function bytesToString (size, normal_font) {
     // identify unit
     var unit = "";
@@ -111,19 +157,26 @@ function bytesToString (size, normal_font) {
     }
 };
 
-// unique ide
+/**
+ * Create a unique id
+ */
 function uuid(){
     return 'x' + Math.random().toString(36).substring(2, 9);
 };
 
-// wrap
+/**
+ * Wrap an dom element into a paragraph
+ * @param{Element}  $el - DOM element to be wrapped
+ */
 function wrap($el) {
     var wrapper = $('<p></p>');
     wrapper.append($el);
     return wrapper;
 };
 
-// time
+/**
+ * Create a time stamp
+ */
 function time() {
     // get date object
     var d = new Date();
@@ -141,7 +194,6 @@ function time() {
     return datetime;
 };
 
-// return
 return {
     cssLoadFile   : cssLoadFile,
     cssGetAttribute : cssGetAttribute,

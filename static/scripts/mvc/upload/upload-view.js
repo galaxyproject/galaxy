@@ -83,12 +83,6 @@ return Backbone.View.extend({
             this.options = _.defaults(options, this.options);
         }
         
-        // wait for galaxy history panel (workaround due to the use of iframes)
-        if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
-            window.setTimeout(function() { self.initialize() }, 500)
-            return;
-        }
-        
         // create model
         this.ui_button = new UploadButton.Model({
             icon        : 'fa-upload',
@@ -96,7 +90,11 @@ return Backbone.View.extend({
             label       : 'Load Data',
             onclick     : function(e) {
                 if (e) {
-                    self._eventShow(e)
+                    // prevent default
+                    e.preventDefault();
+        
+                    // show
+                    self.show()
                 }
             },
             onunload    : function() {
@@ -111,8 +109,9 @@ return Backbone.View.extend({
         
         // load extension
         var self = this;
-        Utils.get(galaxy_config.root + "api/datatypes?extension_only=False",
-            function(datatypes) {
+        Utils.get({
+            url     : galaxy_config.root + "api/datatypes?extension_only=False",
+            success : function(datatypes) {
                 for (key in datatypes) {
                     self.list_extensions.push({
                         id              : datatypes[key].extension,
@@ -131,11 +130,13 @@ return Backbone.View.extend({
                 if (!self.options.datatypes_disable_auto) {
                     self.list_extensions.unshift(self.auto);
                 }
-            });
+            }
+        });
             
         // load genomes
-        Utils.get(galaxy_config.root + "api/genomes",
-            function(genomes) {
+        Utils.get({
+            url     : galaxy_config.root + "api/genomes",
+            success : function(genomes) {
                 for (key in genomes) {
                     self.list_genomes.push({
                         id      : genomes[key][1],
@@ -147,7 +148,8 @@ return Backbone.View.extend({
                 self.list_genomes.sort(function(a, b) {
                     return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                 });
-            });
+            }
+        });
             
         // events
         this.collection.on('remove', function(item) {
@@ -168,9 +170,13 @@ return Backbone.View.extend({
     //
     
     // show/hide upload frame
-    _eventShow : function (e) {
-        // prevent default
-        e.preventDefault();
+    show: function () {
+        // wait for galaxy history panel
+        var self = this;
+        if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
+            window.setTimeout(function() { self.show() }, 500)
+            return;
+        }
         
         // create modal
         if (!this.modal) {
@@ -437,8 +443,7 @@ return Backbone.View.extend({
     },
 
     // create a new file
-    _eventCreate : function ()
-    {
+    _eventCreate : function (){
         this.uploadbox.add([{
             name    : 'New File',
             size    : 0,
@@ -497,8 +502,7 @@ return Backbone.View.extend({
     // remove all
     _eventReset : function() {
         // make sure queue is not running
-        if (this.counter.running == 0)
-        {
+        if (this.counter.running == 0){
             // reset collection
             this.collection.reset();
             
@@ -533,8 +537,7 @@ return Backbone.View.extend({
         */
         
         // check default message
-        if(this.counter.announce == 0)
-        {
+        if(this.counter.announce == 0){
             if (this.uploadbox.compatible())
                 message = 'You can Drag & Drop files into this box.';
             else
@@ -572,8 +575,7 @@ return Backbone.View.extend({
             this.modal.disableButton('Pause');
         
         // select upload button
-        if (this.counter.running == 0)
-        {
+        if (this.counter.running == 0){
             this.modal.enableButton('Choose local file');
             this.modal.enableButton('Choose FTP file');
             this.modal.enableButton('Paste/Fetch data');
@@ -591,10 +593,11 @@ return Backbone.View.extend({
         }
         
         // table visibility
-        if (this.counter.announce + this.counter.success + this.counter.error > 0)
+        if (this.counter.announce + this.counter.success + this.counter.error > 0) {
             $(this.el).find('#upload-table').show();
-        else
+        } else {
             $(this.el).find('#upload-table').hide();
+        }
     },
 
     // calculate percentage of all queued uploads

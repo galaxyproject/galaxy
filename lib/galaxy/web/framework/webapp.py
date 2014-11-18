@@ -23,6 +23,7 @@ from babel import Locale
 eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import joinedload
 
 from galaxy.exceptions import MessageException
 
@@ -337,7 +338,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 # Retrieve the galaxy_session id via the unique session_key
                 galaxy_session = self.sa_session.query( self.app.model.GalaxySession ) \
                                                 .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key, #noqa
-                                                               self.app.model.GalaxySession.table.c.is_valid==True ) ).first() #noqa
+                                                               self.app.model.GalaxySession.table.c.is_valid==True ) ).options( joinedload( "user" ) ).first() #noqa
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to to check some
         # things now.
@@ -503,9 +504,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             for char in filter( lambda x: x not in string.ascii_lowercase + string.digits + '-', username ):
                 username = username.replace( char, '-' )
             # Find a unique username - user can change it later
-            if ( self.sa_session.query( self.app.model.User ).filter_by( username=username ).first() ):
+            if self.sa_session.query( self.app.model.User ).filter_by( username=username ).first():
                 i = 1
-                while ( self.sa_session.query( self.app.model.User ).filter_by( username=(username + '-' + str(i) ) ).first() ):
+                while self.sa_session.query( self.app.model.User ).filter_by( username=(username + '-' + str(i) ) ).first():
                     i += 1
                 username += '-' + str(i)
             user.username = username
@@ -699,11 +700,6 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
     @base.lazy_property
     def template_context( self ):
         return dict()
-
-    def make_form_data( self, name, **kwargs ):
-        rval = self.template_context[name] = FormData()
-        rval.values.update( kwargs )
-        return rval
 
     def set_message( self, message, type=None ):
         """

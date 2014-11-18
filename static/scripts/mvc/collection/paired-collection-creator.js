@@ -1298,7 +1298,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     _clickPairName : function( ev ){
         ev.stopPropagation();
         var $control = $( ev.currentTarget ),
-            pair = this.paired[ $control.parent().index() ],
+            pair = this.paired[ $control.parent().parent().index() / 2 ],
             response = prompt( 'Enter a new name for the pair:', pair.name );
         if( response ){
             pair.name = response;

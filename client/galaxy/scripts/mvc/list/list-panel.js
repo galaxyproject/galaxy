@@ -80,6 +80,9 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         /** the last selected item.model.id */
         this.lastSelected = null;
 
+        /** are sub-views draggable */
+        this.dragItems = attributes.dragItems || false;
+
         /** list item view class (when passed models) */
         this.viewClass = attributes.viewClass || this.viewClass;
 
@@ -188,6 +191,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
                 if( lastSelectedView ){
                     this.selectRange( view, lastSelectedView );
                 }
+            } else if( ev && ev.altKey && !this.selecting ){
+                this.showSelectors();
             }
             this.selected.push( view.model.id );
             this.lastSelected = view.model.id;
@@ -317,6 +322,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 //TODO: free prev. views?
         panel.views = panel._filterCollection().map( function( itemModel ){
 //TODO: creates views each time - not neccessarily good
+//TODO: pass speed here
                 return panel._createItemView( itemModel ).render( 0 );
             });
         //panel.debug( item$els );
@@ -377,7 +383,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             expanded    : false,
             selectable  : this.selecting,
             selected    : _.contains( this.selected, model.id ),
-            draggable   : this.dragging
+            draggable   : this.dragItems
         };
     },
 
@@ -391,6 +397,19 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             panel.trigger.apply( panel, args );
         });
 
+        // drag multiple - hijack ev.setData to add all selected datasets
+        view.on( 'draggable:dragstart', function( ev, v ){
+            //TODO: set multiple drag data here
+            var json = {},
+                selected = this.getSelectedModels();
+            if( selected.length ){
+                json = selected.toJSON();
+            } else {
+                json = [ v.model.toJSON() ];
+            }
+            ev.dataTransfer.setData( 'text', JSON.stringify( json ) );
+        }, this );
+
         // debugging
         //if( this.logger ){
         //    view.on( 'all', function( event ){
@@ -402,6 +421,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 
     /** Attach views in this.views to the model based on $whereTo */
     _attachItems : function( $whereTo ){
+        //ASSUMES: $list has been emptied
         this.$list( $whereTo ).append( this.views.map( function( view ){
             return view.$el;
         }));
@@ -436,21 +456,26 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         var panel = this;
         if( !panel._filterItem( model ) ){ return undefined; }
 
-//TODO: sorted? position?
         var view = panel._createItemView( model );
-        panel.views.push( view );
-
         // hide the empty message if only view
         $( view ).queue( 'fx', [
+            //TODO:? could poss. pubsub this
             function( next ){ panel.$emptyMessage().fadeOut( panel.fxSpeed, next ); },
             function( next ){
-//TODO: auto render?
-// slide down?
-                panel.$list().append( view.render().$el );
+                panel._attachView( view );
                 next();
             }
         ]);
         return view;
+    },
+
+    /** internal fn to add view (to both panel.views and panel.$list) */
+    _attachView : function( view ){
+        var panel = this;
+        // override to control where the view is added, how/whether it's rendered
+        panel.views.push( view );
+        panel.$list().append( view.render( 0 ).$el.hide() );
+        view.$el.slideDown( panel.fxSpeed );
     },
 
     /** Remove a view from the panel (if found) */
@@ -459,13 +484,13 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         var panel = this,
             view = panel.viewFromModel( model );
         if( !view ){ return undefined; }
+        panel.views = _.without( panel.views, view );
 
         // potentially show the empty message if no views left
         // use anonymous queue here - since remove can happen multiple times
         $({}).queue( 'fx', [
             function( next ){ view.$el.fadeOut( panel.fxSpeed, next ); },
             function( next ){
-                panel.views = _.without( panel.views, view );
                 view.remove();
                 if( !panel.views.length ){
                     panel._renderEmptyMessage().fadeIn( panel.fxSpeed, next );
@@ -489,6 +514,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 
     /** get views based on model */
     viewFromModel : function( model ){
+        if( !model ){ return undefined; }
         return this.viewFromModelId( model.id );
     },
 
@@ -561,6 +587,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.searchFor = searchFor;
         this.trigger( 'search:searching', searchFor, this );
         this.renderItems();
+        this.$( '> .controls .search-query' ).val( searchFor );
         return this;
     },
 
@@ -570,6 +597,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.searchFor = '';
         this.trigger( 'search:clear', this );
         this.renderItems();
+        this.$( '> .controls .search-query' ).val( '' );
         return this;
     },
 

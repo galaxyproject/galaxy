@@ -13,6 +13,7 @@ import time
 from galaxy import eggs
 from galaxy import model
 from galaxy.jobs import JobDestination
+from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
 eggs.require( "drmaa" )
@@ -170,6 +171,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             # TODO: configurable max tries and sleep
             trynum = 0
             external_job_id = None
+            fail_msg = None
             while external_job_id is None and trynum < 5:
                 try:
                     external_job_id = self.ds.runJob(jt)
@@ -177,10 +179,16 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 except ( drmaa.InternalException, drmaa.DeniedByDrmException ), e:
                     trynum += 1
                     log.warning( '(%s) drmaa.Session.runJob() failed, will retry: %s', galaxy_id_tag, e )
+                    fail_msg = "Unable to run this job due to a cluster error, please retry it later"
                     time.sleep( 5 )
+                except:
+                    log.exception( '(%s) drmaa.Session.runJob() failed unconditionally', galaxy_id_tag )
+                    trynum = 5
             else:
                 log.error( "(%s) All attempts to submit job failed" % galaxy_id_tag )
-                job_wrapper.fail( "Unable to run this job due to a cluster error, please retry it later" )
+                if not fail_msg:
+                    fail_msg = DEFAULT_JOB_PUT_FAILURE_MESSAGE
+                job_wrapper.fail( fail_msg )
                 self.ds.deleteJobTemplate( jt )
                 return
         else:

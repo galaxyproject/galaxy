@@ -115,11 +115,16 @@
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Dbkey:</td><td>${hda.dbkey | h}</td></tr>
         <tr><td>Format:</td><td>${hda.ext | h}</td></tr>
-        <tr><td>Galaxy Tool Version:</td><td>${job.tool_version | h}</td></tr>
+        %if job:
+            <tr><td>Galaxy Tool ID:</td><td>${ job.tool_id | h }</td></tr>
+            <tr><td>Galaxy Tool Version:</td><td>${ job.tool_version | h }</td></tr>
+        %endif
         <tr><td>Tool Version:</td><td>${hda.tool_version | h}</td></tr>
         <tr><td>Tool Standard Output:</td><td><a href="${h.url_for( controller='dataset', action='stdout', dataset_id=encoded_hda_id )}">stdout</a></td></tr>
         <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr', dataset_id=encoded_hda_id )}">stderr</a></td></tr>
-        <tr><td>Tool Exit Code:</td><td>${job.exit_code | h}</td></tr>
+        %if job:
+            <tr><td>Tool Exit Code:</td><td>${ job.exit_code | h }</td></tr>
+        %endif
         <tr><td>API ID:</td><td>${encoded_hda_id}</td></tr>
         <tr><td>History ID:</td><td>${encoded_history_id}</td></tr>
         %if hda.dataset.uuid:

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!-- If workflow_schedulers_conf.xml exists it defines the workflow scheduling
+     plugins to load and how to configure them. Currently only the core workflow
+     scheduling is available.
+-->
+<workflow_schedulers default="core">
+  <!-- Each element in this file corresponds to a workflow scheduling plugin
+       in lib/galaxy/workflow/schedulers. -->
+
+  <!-- Core plugin schedules whole workflow at outset inside Galaxy and doesn't
+       require any external dependencies. -->
+  <core id="core" />
+
+</workflow_schedulers>

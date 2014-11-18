@@ -32,7 +32,10 @@ return Backbone.Model.extend({
 
     /** Convert dictionary representation into tool api specific flat dictionary format.
     */
-    finalize: function() {
+    finalize: function(patch) {
+        // initialize
+        patch = patch || {};
+        
         // link this
         var self = this;
         
@@ -67,11 +70,30 @@ return Backbone.Model.extend({
                     switch (input.type) {
                         // handle repeats
                         case 'repeat':
-                            var index = 0;
-                            for (var i in node) {
-                                if (i.indexOf('section') != -1) {
-                                    convert(job_input_id + '_' + index++, node[i]);
+                            // section identifier
+                            var section_label = 'section-';
+                            
+                            // collect repeat block identifiers
+                            var block_indices = [];
+                            var block_prefix = null;
+                            for (var block_label in node) {
+                                var pos = block_label.indexOf(section_label);
+                                if (pos != -1) {
+                                    pos += section_label.length;
+                                    block_indices.push(parseInt(block_label.substr(pos)));
+                                    if (!block_prefix) {
+                                        block_prefix = block_label.substr(0, pos);
+                                    }
                                 }
+                            }
+                            
+                            // sort repeat blocks
+                            block_indices.sort(function(a,b) { return a - b; });
+                            
+                            // add to response dictionary in created order
+                            var index = 0;
+                            for (var i in block_indices) {
+                                convert(job_input_id + '_' + index++, node[block_prefix + block_indices[i]]);
                             }
                             break;
                         // handle conditionals
@@ -82,53 +104,28 @@ return Backbone.Model.extend({
                             // add conditional value
                             add (job_input_id + '|' + input.test_param.name, input.id, value);
                             
-                            // find selected case
-                            for (var i in input.cases) {
-                                if (input.cases[i].value == value) {
-                                    convert(job_input_id, head[input.id + '-section-' + i]);
-                                    break;
-                                }
+                            // identify selected case
+                            var selectedCase = self.matchCase(input, value);
+                            if (selectedCase != -1) {
+                                convert(job_input_id, head[input.id + '-section-' + selectedCase]);
                             }
-                            break;
-                        // handle data inputs
-                        case 'data':
-                            // create array for dataset ids
-                            var dataset_selection = null;
-                            
-                            // collect dataset ids from input field
-                            var value = self.app.field_list[input.id].value();
-                            if (typeof value === 'string') {
-                                dataset_selection = {
-                                        id  : value,
-                                        src : 'hda'
-                                };
-                            } else {
-                                // create array of dataset dictionaries for api submission
-                                dataset_selection = [];
-                                for (var i in value) {
-                                    dataset_selection.push({
-                                        id  : value[i],
-                                        src : 'hda'
-                                    });
-                                }
-                            }
-                            
-                            // add final array to job definition
-                            add(job_input_id, input.id, dataset_selection);
-                            break;
-                        // handle boolean input
-                        case 'boolean':
-                            var value = self.app.field_list[input.id].value();
-                            if (value === 'true') {
-                                value = input.truevalue;
-                            } else {
-                                value = input.falsevalue;
-                            }
-                            add (job_input_id, input.id, value);
                             break;
                         default:
+                            // get field
+                            var field = self.app.field_list[input.id];
+                            
+                            // get value
+                            var value = field.value();
+                            
+                            // patch value
+                            if (patch[input.type]) {
+                                value = patch[input.type](value);
+                            }
+                            
                             // handle default value
-                            add (job_input_id, input.id, self.app.field_list[input.id].value());
+                            if (!field.skip) {
+                                add (job_input_id, input.id, value);
+                            }
                     }
                 }
             }
@@ -136,14 +133,89 @@ return Backbone.Model.extend({
         
         // start conversion
         convert('', this.dict);
-        console.log(this.job_def);
+        
         // return result
         return this.job_def;
     },
     
-    /** Matches identifier from api response to input element
+    /** Match job definition identifier to input element identifier
     */
-    match: function(response) {
+    match: function (job_input_id) {
+        return this.job_ids && this.job_ids[job_input_id];
+    },
+    
+    /** Match conditional values to selected cases
+    */
+    matchCase: function(input, value) {
+        // format value for boolean inputs
+        if (input.test_param.type == 'boolean') {
+            if (value == 'true') {
+                value = input.test_param.truevalue || 'true';
+            } else {
+                value = input.test_param.falsevalue || 'false';
+            }
+        }
+        
+        // find selected case
+        for (var i in input.cases) {
+            if (input.cases[i].value == value) {
+                return i;
+            }
+        }
+        
+        // selected case not found
+        return -1;
+    },
+    
+    /** Matches identifier from api model to input elements
+    */
+    matchModel: function(model, callback) {
+        // final result dictionary
+        var result = {};
+        
+        // link this
+        var self = this;
+        
+        // search throughout response
+        function search (id, head) {
+            for (var i in head) {
+                var node = head[i];
+                var index = node.name;
+                if (id != '') {
+                    index = id + '|' + index;
+                }
+                switch (node.type) {
+                    case 'repeat':
+                        for (var j in node.cache) {
+                            search (index + '_' + j, node.cache[j]);
+                        }
+                        break;
+                    case 'conditional':
+                        var value = node.test_param && node.test_param.value;
+                        var selectedCase = self.matchCase(node, value);
+                        if (selectedCase != -1) {
+                            search (index, node.cases[selectedCase].inputs);
+                        }
+                        break;
+                    default:
+                        var input_id = self.app.tree.job_ids[index];
+                        if (input_id) {
+                            callback(input_id, node);
+                        }
+                }
+            }
+        }
+        
+        // match all ids and return messages
+        search('', model.inputs);
+
+        // return matched results
+        return result;
+    },
+    
+    /** Matches identifier from api response to input elements
+    */
+    matchResponse: function(response) {
         // final result dictionary
         var result = {};
         
@@ -263,7 +335,7 @@ return Backbone.Model.extend({
             var id = $(child).attr('id');
             
             // create new branch
-            if ($(child).hasClass('section-row') || $(child).hasClass('tab-pane')) {
+            if ($(child).hasClass('section-row')) {
                 // create sub dictionary
                 dict[id] = {};
                 

@@ -94,10 +94,7 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
                 this.trigger( 'state:ready', currModel, newState, this.previous( 'state' ) );
             }
         });
-        this.on( 'change:urls', function(){
-            console.warn( 'change:urls', arguments );
-        });
-        // the download url (currenlty) relies on having a correct file extension
+        // the download url (currently) relies on having a correct file extension
         this.on( 'change:id change:file_ext', function( currModel ){
             this._generateUrls();
         });
@@ -139,8 +136,15 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     },
 
     // ........................................................................ ajax
-    //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
+    fetch : function( options ){
+        var dataset = this;
+        return Backbone.Model.prototype.fetch.call( this, options )
+            .always( function(){
+                dataset._generateUrls();
+            });
+    },
 
+    //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
     /** save this dataset, _Mark_ing it as deleted (just a flag) */
     'delete' : function( options ){
         if( this.get( 'deleted' ) ){ return jQuery.when(); }
@@ -359,74 +363,11 @@ var DatasetAssociationCollection = Backbone.Collection.extend( BASE_MVC.Loggable
         Backbone.Collection.prototype.set.call( this, models, options );
     },
 
-//    /** Convert this ad-hoc collection of hdas to a formal collection tracked
-//        by the server.
-//    **/
-//    promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){
-////TODO: seems like this would be better in mvc/collections
-//        options = options || {};
-//        options.url = this.url();
-//        options.type = "POST";
-//        var full_collection_type = collection_type;
-//        var element_identifiers = [],
-//            name = null;
-//
-//        // This mechanism is rough - no error handling, allows invalid selections, no way
-//        // for user to pick/override element identifiers. This is only really meant
-//        if( collection_type === "list" ) {
-//            this.chain().each( function( hda ) {
-//                // TODO: Handle duplicate names.
-//                var name = hda.attributes.name;
-//                var id = hda.get('id');
-//                var content_type = hda.attributes.history_content_type;
-//                if( content_type === "dataset" ) {
-//                    if( full_collection_type !== "list" ) {
-//                        this.log( "Invalid collection type" );
-//                    }
-//                    element_identifiers.push( { name: name, src: "hda", id: id } );
-//                } else {
-//                    if( full_collection_type === "list" ) {
-//                        full_collection_type = "list:" + hda.attributes.collection_type;
-//                    } else {
-//                        if( full_collection_type !== "list:" + hda.attributes.collection_type ) {
-//                            this.log( "Invalid collection type" );
-//                        }
-//                    }
-//                    element_identifiers.push( { name: name, src: "hdca", id: id } );
-//                }
-//            });
-//            name = "New Dataset List";
-//        } else if( collection_type === "paired" ) {
-//            var ids = this.ids();
-//            if( ids.length !== 2 ){
-//                // TODO: Do something...
-//            }
-//            element_identifiers.push( { name: "forward", src: "hda", id: ids[ 0 ] } );
-//            element_identifiers.push( { name: "reverse", src: "hda", id: ids[ 1 ] } );
-//            name = "New Dataset Pair";
-//        }
-//        options.data = {
-//            type: "dataset_collection",
-//            name: name,
-//            collection_type: full_collection_type,
-//            element_identifiers: JSON.stringify( element_identifiers )
-//        };
-//
-//        var xhr = jQuery.ajax( options );
-//        xhr.done( function( message, status, responseObj ){
-//            history.refresh( );
-//        });
-//        xhr.fail( function( xhr, status, message ){
-//            if( xhr.responseJSON && xhr.responseJSON.error ){
-//                error = xhr.responseJSON.error;
-//            } else {
-//                error = xhr.responseJSON;
-//            }
-//            xhr.responseText = error;
-//            // Do something?
-//        });
-//        return xhr;
-//    },
+    ///** Convert this ad-hoc collection of hdas to a formal collection tracked
+    //    by the server.
+    //**/
+    //promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){
+    //},
 
     /** String representation. */
     toString : function(){

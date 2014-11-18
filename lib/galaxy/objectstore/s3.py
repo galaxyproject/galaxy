@@ -77,7 +77,11 @@ class S3ObjectStore(ObjectStore):
             b_xml = config_xml.findall('bucket')[0]
             self.bucket = b_xml.get('name')
             self.use_rr = b_xml.get('use_reduced_redundancy', False)
-            cn_xml = config_xml.findall('connection')[0]
+            cn_xml = config_xml.findall('connection')
+            if not cn_xml:
+                cn_xml = {}
+            else:
+                cn_xml = cn_xml[0]
             self.host = cn_xml.get('host', None)
             self.port = int(cn_xml.get('port', 6000))
             self.is_secure = cn_xml.get('is_secure', True)
@@ -163,8 +167,12 @@ class S3ObjectStore(ObjectStore):
                 log.debug("Using cloud object store with bucket '%s'" % bucket.name)
                 return bucket
             except S3ResponseError:
-                log.debug("Could not get bucket '%s', attempt %s/5" % (bucket_name, i + 1))
-                time.sleep(2)
+                try:
+                    log.debug("Bucket not found, creating s3 bucket with handle '%s'" % bucket_name)
+                    self.conn.create_bucket(bucket_name)
+                except S3ResponseError:
+                    log.exception("Could not get bucket '%s', attempt %s/5" % (bucket_name, i + 1))
+                    time.sleep(2)
         # All the attempts have been exhausted and connection was not established,
         # raise error
         raise S3ResponseError

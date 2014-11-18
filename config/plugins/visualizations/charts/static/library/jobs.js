@@ -41,9 +41,14 @@ return Backbone.Model.extend({
         // cleanup previous dataset file
         var previous =  chart.get('dataset_id_job');
         if (previous != '') {
-            Utils.request('PUT', config.root + 'api/histories/none/contents/' + previous, { deleted: true }, function() {
-                // update galaxy history
-                self._refreshHdas();
+            Utils.request({
+                type    : 'PUT',
+                url     : config.root + 'api/histories/none/contents/' + previous,
+                data    : { deleted: true },
+                success : function() {
+                    // update galaxy history
+                    self._refreshHdas();
+                }
             });
             
             // reset id
@@ -81,9 +86,11 @@ return Backbone.Model.extend({
         chart.state('wait', 'Sending job request...');
         
         // post job
-        Utils.request('POST', config.root + 'api/tools', data,
-            // success handler
-            function(response) {
+        Utils.request({
+            type    : 'POST',
+            url     : config.root + 'api/tools',
+            data    : data,
+            success : function(response) {
                 if (!response.outputs || response.outputs.length == 0) {
                     chart.state('failed', 'Job submission failed. No response.');
                     
@@ -103,14 +110,13 @@ return Backbone.Model.extend({
                     chart.set('dataset_id_job', job.id);
                     
                     // save
-                    this.app.storage.save();
+                    self.app.storage.save();
                     
                     // wait for job completion
                     self._wait(chart, success, error);
                 }
             },
-            // error handler
-            function(response) {
+            error   : function(response) {
                 var message = '';
                 if (response && response.message && response.message.data && response.message.data.input) {
                     message = response.message.data.input + '.';
@@ -123,46 +129,51 @@ return Backbone.Model.extend({
                 error && error();
                       
             }
-        );
+        });
     },
     
     // request job details
     _wait: function(chart, success, error) {
         var self = this;
-        Utils.request('GET', config.root + 'api/datasets/' + chart.get('dataset_id_job'), {}, function(dataset) {
-            // check dataset state
-            var ready = false;
-            switch (dataset.state) {
-                case 'ok':
-                    // update state
-                    chart.state('wait', 'Job completed successfully...');
-                   
-                    // execute success
-                    success &&  success(dataset);
-                   
-                    // stop loop
-                    ready = true;
-                    break;
-                case 'error':
-                    // update state
-                    chart.state('failed', 'Job has failed. Please check the history for details.');
-                   
-                    // call error
-                    error && error(dataset);
-                   
-                    // stop loop
-                    ready = true;
-                    break;
-                case 'running':
-                    // wait
-                    chart.state('wait', 'Your job is running. You may close the browser window. The job will continue in the background.');
-            }
-            
-            // wait and try again
-            if (!ready) {
-                setTimeout(function() {
-                    self._wait(chart, success, error);
-                }, self.app.config.get('query_timeout'));
+        Utils.request({
+            type    : 'GET',
+            url     : config.root + 'api/datasets/' + chart.get('dataset_id_job'),
+            data    : {},
+            success : function(dataset) {
+                // check dataset state
+                var ready = false;
+                switch (dataset.state) {
+                    case 'ok':
+                        // update state
+                        chart.state('wait', 'Job completed successfully...');
+                       
+                        // execute success
+                        success &&  success(dataset);
+                       
+                        // stop loop
+                        ready = true;
+                        break;
+                    case 'error':
+                        // update state
+                        chart.state('failed', 'Job has failed. Please check the history for details.');
+                       
+                        // call error
+                        error && error(dataset);
+                       
+                        // stop loop
+                        ready = true;
+                        break;
+                    case 'running':
+                        // wait
+                        chart.state('wait', 'Your job is running. You may close the browser window. The job will continue in the background.');
+                }
+                
+                // wait and try again
+                if (!ready) {
+                    setTimeout(function() {
+                        self._wait(chart, success, error);
+                    }, self.app.config.get('query_timeout'));
+                }
             }
         });
     },

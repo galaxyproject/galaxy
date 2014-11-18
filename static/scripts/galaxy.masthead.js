@@ -1,9 +1,8 @@
 // dependencies
 define([], function() {
 
-// masthead
-var GalaxyMasthead = Backbone.View.extend(
-{
+/** Masthead **/
+var GalaxyMasthead = Backbone.View.extend({
     // base element
     el_masthead: '#everything',
     
@@ -17,8 +16,7 @@ var GalaxyMasthead = Backbone.View.extend(
     list: [],
     
     // initialize
-    initialize : function(options)
-    {
+    initialize : function(options) {
         // update options
         this.options = options;
     
@@ -51,27 +49,23 @@ var GalaxyMasthead = Backbone.View.extend(
     },
 
     // configure events
-    events:
-    {
+    events: {
         'click'     : '_click',
         'mousedown' : function(e) { e.preventDefault() }
     },
 
     // adds a new item to the masthead
-    append : function(item)
-    {
+    append : function(item) {
         return this._add(item, true);
     },
     
     // adds a new item to the masthead
-    prepend : function(item)
-    {
+    prepend : function(item) {
         return this._add(item, false);
     },
     
     // activate
-    highlight: function(id)
-    {
+    highlight: function(id) {
         var current = $(this.el).find('#' + id + '> li');
         if (current) {
             current.addClass('active');
@@ -79,11 +73,9 @@ var GalaxyMasthead = Backbone.View.extend(
     },
     
     // adds a new item to the masthead
-    _add : function(item, append)
-    {
+    _add : function(item, append) {
         var $loc = $(this.el).find('#' + item.location);
-        if ($loc)
-        {
+        if ($loc){
             // create frame for new item
             var $current = $(item.el);
             
@@ -106,8 +98,7 @@ var GalaxyMasthead = Backbone.View.extend(
     },
 
     // handle click event
-    _click: function(e)
-    {
+    _click: function(e) {
         // close all popups
         var $all = $(this.el).find('.popup');
         if ($all) {
@@ -129,8 +120,7 @@ var GalaxyMasthead = Backbone.View.extend(
     */
     
     // fill template
-    _template: function(options)
-    {
+    _template: function(options) {
         var brand_text = options.brand ? ("/ " + options.brand) : "" ;
         return  '<div><div id="masthead" class="navbar navbar-fixed-top navbar-inverse">' +
                     '<div style="position: relative; right: -50%; float: left;">' +
@@ -150,12 +140,10 @@ var GalaxyMasthead = Backbone.View.extend(
     }
 });
 
-// icon
-var GalaxyMastheadIcon = Backbone.View.extend(
-{
+/** Masthead icon **/
+var GalaxyMastheadIcon = Backbone.View.extend({
     // icon options
-    options:
-    {
+    options:{
         id              : '',
         icon            : 'fa-cog',
         tooltip         : '',
@@ -169,8 +157,7 @@ var GalaxyMastheadIcon = Backbone.View.extend(
     location: 'iconbar',
     
     // initialize
-    initialize: function (options)
-    {
+    initialize: function (options){
         // read in defaults
         if (options)
             this.options = _.defaults(options, this.options);
@@ -189,20 +176,17 @@ var GalaxyMastheadIcon = Backbone.View.extend(
     },
     
     // show
-    show: function()
-    {
+    show: function(){
         $(this.el).css({visibility : 'visible'});
     },
         
     // show
-    hide: function()
-    {
+    hide: function(){
         $(this.el).css({visibility : 'hidden'});
     },
     
     // switch icon
-    icon: function (new_icon)
-    {
+    icon: function (new_icon){
         // update icon class
         $(this.el).find('.icon').removeClass(this.options.icon)
                                 .addClass(new_icon);
@@ -212,26 +196,22 @@ var GalaxyMastheadIcon = Backbone.View.extend(
     },
     
     // toggle
-    toggle: function()
-    {
+    toggle: function(){
         $(this.el).addClass('toggle');
     },
     
     // untoggle
-    untoggle: function()
-    {
+    untoggle: function(){
         $(this.el).removeClass('toggle');
     },
     
     // set/get number
-    number: function(new_number)
-    {
+    number: function(new_number){
         $(this.el).find('.number').text(new_number);
     },
     
     // fill template icon
-    _template: function (options)
-    {
+    _template: function (options){
         var tmpl =  '<div id="' + options.id + '" class="symbol">' +
                         '<div class="icon fa fa-2x ' + options.icon + '"></div>';
         if (options.with_number)
@@ -243,12 +223,10 @@ var GalaxyMastheadIcon = Backbone.View.extend(
     }
 });
 
-// tab
-var GalaxyMastheadTab = Backbone.View.extend(
-{
+/** Masthead tab **/
+var GalaxyMastheadTab = Backbone.View.extend({
     // main options
-    options:
-    {
+    options:{
         id              : '',
         title           : '',
         target          : '_parent',
@@ -268,14 +246,12 @@ var GalaxyMastheadTab = Backbone.View.extend(
     $menu: null,
     
     // events
-    events:
-    {
+    events:{
         'click .head' : '_head'
     },
     
     // initialize
-    initialize: function (options)
-    {
+    initialize: function (options){
         // read in defaults
         if (options)
             this.options = _.defaults(options, this.options);
@@ -300,20 +276,17 @@ var GalaxyMastheadTab = Backbone.View.extend(
     },
     
     // show
-    show: function()
-    {
+    show: function(){
         $(this.el).css({visibility : 'visible'});
     },
         
     // show
-    hide: function()
-    {
+    hide: function(){
         $(this.el).css({visibility : 'hidden'});
     },
     
     // add menu item
-    add: function (options)
-    {
+    add: function (options){
         // menu option defaults
         var menuOptions = {
             title       : 'Title',
@@ -333,8 +306,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
             menuOptions.content = galaxy_config.root + menuOptions.content;
         
         // check if submenu element is available
-        if (!this.$menu)
-        {
+        if (!this.$menu){
             // insert submenu element into root
             $(this.el).find('.root').append(this._templateMenu());
             
@@ -353,8 +325,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
         
         // add events
         var self = this;
-        $item.on('click', function(e)
-        {
+        $item.on('click', function(e){
             // prevent default
             e.preventDefault();
         
@@ -372,8 +343,7 @@ var GalaxyMastheadTab = Backbone.View.extend(
     },
     
     // show menu on header click
-    _head: function(e)
-    {
+    _head: function(e){
         // prevent default
         e.preventDefault();
         
@@ -387,12 +357,11 @@ var GalaxyMastheadTab = Backbone.View.extend(
         }
     },
 
-    _attachPopover : function()
-     {
+    _attachPopover : function(){
         var $popover_element = $(this.el).find('.head');
         $popover_element.popover({
             html: true,
-            content: 'Please <a href="/user/login">log in</a> or <a href="/user/create">register</a> to use this feature.',
+            content: 'Please <a href="' + galaxy_config.root + '/user/login">log in</a> or <a href="' + galaxy_config.root + '/user/create">register</a> to use this feature.',
             placement: 'bottom'
         }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
             setTimeout(function() {
@@ -402,25 +371,21 @@ var GalaxyMastheadTab = Backbone.View.extend(
      },
 
     // fill template header
-    _templateMenuItem: function (options)
-    {
+    _templateMenuItem: function (options){
         return '<li><a href="' + options.content + '" target="' + options.target + '">' + options.title + '</a></li>';
     },
     
     // fill template header
-    _templateMenu: function ()
-    {
+    _templateMenu: function (){
         return '<ul class="popup dropdown-menu"></ul>';
     },
     
-    _templateDivider: function()
-    {
+    _templateDivider: function(){
         return '<li class="divider"></li>';
     },
     
     // fill template
-    _template: function (options)
-    {
+    _template: function (options){
         // start template
         var tmpl =  '<ul id="' + options.id + '" class="nav navbar-nav" border="0" cellspacing="0">' +
                         '<li class="root dropdown" style="">' +

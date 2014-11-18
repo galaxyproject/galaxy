@@ -26,8 +26,7 @@
     </test>
   </tests>
   <help>
-  
- .. class:: infomark
+.. class:: infomark
 
 **TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
 

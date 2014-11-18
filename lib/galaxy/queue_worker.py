@@ -110,7 +110,7 @@ def admin_job_lock(app, **kwargs):
     job_lock = kwargs.get('job_lock', False)
     # job_queue is exposed in the root app, but this will be 'fixed' at some
     # point, so we're using the reference from the handler.
-    app.job_manager.job_handler.job_queue.job_lock = job_lock
+    app.job_manager.job_lock = job_lock
     log.info("Administrative Job Lock is now set to %s. Jobs will %s dispatch."
              % (job_lock, "not" if job_lock else "now"))
 

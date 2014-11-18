@@ -89,11 +89,24 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :type   id: string
         :param  id: Specific job id
 
+        :type   full: boolean
+        :param  full: whether to return extra information
+
         :rtype:     dictionary
         :returns:   dictionary containing full description of job data
         """
         job = self.__get_job( trans, id )
-        return self.encode_all_ids( trans, job.to_dict( 'element' ), True )
+        job_dict = self.encode_all_ids( trans, job.to_dict( 'element' ), True )
+        full_output = util.asbool( kwd.get( 'full', 'false' ) )
+        if full_output:
+            job_dict.update( dict( stderr=job.stderr, stdout=job.stdout ) )
+            if trans.user_is_admin():
+
+                def metric_to_dict(metric):
+                    return dict(zip(['title', 'value'], trans.app.job_metrics.format(metric.plugin, metric.metric_name, metric.metric_value)))
+
+                job_dict['job_metrics'] = [metric_to_dict(metric) for metric in job.metrics]
+        return job_dict
 
     @expose_api
     def inputs( self, trans, id, **kwd ):
@@ -244,11 +257,11 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
             ) )
 
         for k, v in input_data.items():
-            """
-            Here we are attempting to link the inputs to the underlying dataset (not the dataset association)
-            This way, if the calulation was done using a copied HDA (copied from the library or another history)
-            the search will still find the job
-            """
+            # Here we are attempting to link the inputs to the underlying
+            # dataset (not the dataset association).
+            # This way, if the calculation was done using a copied HDA
+            # (copied from the library or another history), the search will
+            # still find the job
             a = aliased( trans.app.model.JobToInputDatasetAssociation )
             b = aliased( trans.app.model.HistoryDatasetAssociation )
             query = query.filter( and_(
@@ -260,9 +273,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
 
         out = []
         for job in query.all():
-            """
-            check to make sure none of the output files have been deleted
-            """
+            # check to make sure none of the output files have been deleted
             if all( list( a.dataset.deleted == False for a in job.output_datasets ) ):
                 out.append( self.encode_all_ids( trans, job.to_dict( 'element' ), True ) )
         return out

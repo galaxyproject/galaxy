@@ -1,8 +1,6 @@
 import logging
 import os
-import tempfile
 import urllib
-import zipfile
 
 from galaxy import datatypes, eggs, model, util, web
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
@@ -43,8 +41,8 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
             accepted_filter_labels_and_vals = { "Active" : "False", "Deleted" : "True", "All": "All" }
             accepted_filters = []
             for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
+                args = { self.key: val }
+                accepted_filters.append( grids.GridColumnFilter( label, args) )
             return accepted_filters
 
     # Grid definition
@@ -147,7 +145,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         trans.response.set_content_type( 'text/plain' )
         exit_code = ""
         try:
-            job = self._get_job_for_dataset( dataset_id )
+            job = self._get_job_for_dataset( trans, dataset_id )
             exit_code = job.exit_code
         except:
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
@@ -323,40 +321,38 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     if params.annotation:
                         annotation = sanitize_html( params.annotation, 'utf-8', 'text/html' )
                         self.add_item_annotation( trans.sa_session, trans.get_user(), data, annotation )
-                    """
                     # This block on controller code is inactive until the 'extended_metadata' edit box is added back into the UI
                     # Add or delete extended metadata
-                    if params.extended_metadata:
-                        em_string = params.extended_metadata
-                        if len(em_string):
-                            em_payload = None
-                            try:
-                                em_payload = loads(em_string)
-                            except Exception, e:
-                                message = 'Invalid JSON input'
-                                error = True
-                            if em_payload is not None:
-                                if data is not None:
-                                    ex_obj = self.get_item_extended_metadata_obj(trans, data)
-                                    if ex_obj is not None:
-                                        self.unset_item_extended_metadata_obj(trans, data)
-                                        self.delete_extended_metadata(trans, ex_obj)
-                                    ex_obj = self.create_extended_metadata(trans, em_payload)
-                                    self.set_item_extended_metadata_obj(trans, data, ex_obj)
-                                    message = "Updated Extended metadata '%s'." % data.name
-                                    status = 'done'
-                                else:
-                                    message = "data not found"
-                                    error = True
-                    else:
-                        if data is not None:
-                            ex_obj = self.get_item_extended_metadata_obj(trans, data)
-                            if ex_obj is not None:
-                                self.unset_item_extended_metadata_obj(trans, data)
-                                self.delete_extended_metadata(trans, ex_obj)
-                        message = "Deleted Extended metadata '%s'." % data.name
-                        status = 'done'
-                    """
+#                    if params.extended_metadata:
+#                        em_string = params.extended_metadata
+#                        if len(em_string):
+#                            em_payload = None
+#                            try:
+#                                em_payload = loads(em_string)
+#                            except Exception, e:
+#                                message = 'Invalid JSON input'
+#                                error = True
+#                            if em_payload is not None:
+#                                if data is not None:
+#                                    ex_obj = self.get_item_extended_metadata_obj(trans, data)
+#                                    if ex_obj is not None:
+#                                        self.unset_item_extended_metadata_obj(trans, data)
+#                                        self.delete_extended_metadata(trans, ex_obj)
+#                                    ex_obj = self.create_extended_metadata(trans, em_payload)
+#                                    self.set_item_extended_metadata_obj(trans, data, ex_obj)
+#                                    message = "Updated Extended metadata '%s'." % data.name
+#                                    status = 'done'
+#                                else:
+#                                    message = "data not found"
+#                                    error = True
+#                    else:
+#                        if data is not None:
+#                            ex_obj = self.get_item_extended_metadata_obj(trans, data)
+#                            if ex_obj is not None:
+#                                self.unset_item_extended_metadata_obj(trans, data)
+#                                self.delete_extended_metadata(trans, ex_obj)
+#                        message = "Deleted Extended metadata '%s'." % data.name
+#                        status = 'done'
 
                     # If setting metadata previously failed and all required elements have now been set, clear the failed state.
                     if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
@@ -954,13 +950,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         has_parameter_errors = False
         inherit_chain = hda.source_dataset_chain
         if inherit_chain:
-            job_dataset_association, dataset_association_container_name = inherit_chain[-1]
+            job_dataset_association = inherit_chain[-1][0]
         else:
             job_dataset_association = hda
         if job_dataset_association.creating_job_associations:
-            for assoc in job_dataset_association.creating_job_associations:
-                job = assoc.job
-                break
+            job = job_dataset_association.creating_job_associations[0].job
             if job:
                 # Get the tool object
                 try:
@@ -1024,7 +1018,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     trans.sa_session.flush()
                     target_history_ids.append( new_history.id )
                 if user:
-                    target_histories = [ hist for hist in map( trans.sa_session.query( trans.app.model.History ).get, target_history_ids ) if ( hist is not None and hist.user == user )]
+                    target_histories = [ hist for hist in map( trans.sa_session.query( trans.app.model.History ).get, target_history_ids ) if hist is not None and hist.user == user ]
                 else:
                     target_histories = [ history ]
                 if len( target_histories ) != len( target_history_ids ):

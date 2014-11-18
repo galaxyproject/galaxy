@@ -6,7 +6,6 @@ return {
     library     : '',
     tag         : '',
     keywords    : '',
-    query_limit : 0,
     settings    : {
         separator_x  : {
             title       : 'X axis',

@@ -1,6 +1,6 @@
 .viewport-container{overflow-x:hidden;overflow-y:auto;background:white}
-.trackster-nav-container{width:100%;height:0;text-align:center}
-.trackster-nav{padding:0 0;color:#333;font-weight:bold;background:#cccccc;position:relative;display:inline-block;top:-2em;background:transparent;border:none}
+.trackster-nav-container{width:100%;text-align:center}.trackster-nav-container.stand-alone{height:0}
+.trackster-nav{padding:0 0;color:#333;font-weight:bold;background:#cccccc;display:inline-block;top:-2em;background:transparent;border:none}.trackster-nav.stand-alone{position:relative}
 .chrom-nav{width:15em}
 .content{font:10px verdana;position:relative}
 .nav-controls{text-align:center;padding:1px 0}.nav-controls input{margin:0 5px}

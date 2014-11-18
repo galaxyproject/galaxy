@@ -20,6 +20,8 @@
   <tool file="parallelism_optional.xml" />
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
+  <tool file="column_param.xml" />
+  <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />

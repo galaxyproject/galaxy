@@ -1,53 +1,8 @@
-/*
-    This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _addRow() function.
+/**
+    This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _createField() function.
 */
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-dataset'],
-    function(Utils, Table, Ui, Repeat, SelectDataset) {
-
-    // input field element wrapper
-    var InputElement = Backbone.View.extend({
-        // initialize input wrapper
-        initialize: function(options) {
-            this.setElement(this._template(options));
-        },
-        
-        // set error text
-        error: function(text) {
-            // set text
-            this.$el.find('.ui-table-form-error-text').html(text);
-            this.$el.find('.ui-table-form-error').fadeIn();
-        },
-        
-        // reset
-        reset: function() {
-            this.$el.find('.ui-table-form-error').hide();
-        },
-        
-        // template
-        _template: function(options) {
-            // create table element
-            var $input = $('<div class="ui-table-element"/>');
-            
-            // add error
-            $input.append('<div class="ui-table-form-error ui-error"><span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"></div>');
-            
-            // add label
-            if (options.label) {
-                $input.append('<div class="ui-table-form-title-strong">' + options.label + '</div>');
-            }
-            
-            // add input element
-            $input.append(options.$el);
-            
-            // add help
-            if (options.help) {
-                $input.append('<div class="ui-table-form-info">' + options.help + '</div>');
-            }
-            
-            // return input element
-            return $input;
-        }
-    });
+define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content', 'mvc/tools/tools-input'],
+    function(Utils, Table, Ui, Repeat, SelectContent, InputElement) {
 
     // create form view
     var View = Backbone.View.extend({
@@ -73,7 +28,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             this.render();
         },
         
-        // update
+        /** Render section view
+        */
         render: function() {
             // reset table
             this.table.delAll();
@@ -84,7 +40,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             }
         },
         
-        // add table row
+        /** Add a new input element
+        */
         _add: function(input) {
             // link this
             var self = this;
@@ -93,7 +50,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             var input_def = jQuery.extend(true, {}, input);
             
             // create unique id
-            input_def.id = Utils.uuid();
+            input_def.id = input.id = Utils.uuid();
     
             // add to sequential list of inputs
             this.app.input_list[input_def.id] = input_def;
@@ -111,22 +68,61 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     break;
                 // default single element row
                 default:
-                    this._addRow(type, input_def);
+                    this._addRow(input_def);
             }
         },
         
-        // add conditional block
+        /** Add a conditional block
+        */
         _addConditional: function(input_def) {
-            // add label to input definition root
-            input_def.label = input_def.test_param.label;
-        
-            // add value to input definition root
-            input_def.value = input_def.test_param.value;
-        
-            // build options field
-            var table_row = this._addRow('conditional', input_def);
+            // link this
+            var self = this;
             
-            // add fields
+            // copy identifier
+            input_def.test_param.id = input_def.id;
+            
+            // build test parameter
+            var field = this._addRow(input_def.test_param);
+            
+            // set onchange event for test parameter
+            field.options.onchange = function(value) {
+                // identify the selected case
+                var selectedCase = self.app.tree.matchCase(input_def, value);
+                
+                // check value in order to hide/show options
+                for (var i in input_def.cases) {
+                    // get case
+                    var case_def = input_def.cases[i];
+                    
+                    // identify subsection name
+                    var section_id = input_def.id + '-section-' + i;
+                    
+                    // identify row
+                    var section_row = self.table.get(section_id);
+                    
+                    // check if non-hidden elements exist
+                    var nonhidden = false;
+                    for (var j in case_def.inputs) {
+                        var type = case_def.inputs[j].type;
+                        if (type && type !== 'hidden') {
+                            nonhidden = true;
+                            break;
+                        }
+                    }
+                    
+                    // show/hide sub form
+                    if (i == selectedCase && nonhidden) {
+                        section_row.fadeIn('fast');
+                    } else {
+                        section_row.hide();
+                    }
+                }
+                
+                // refresh form inputs
+                self.app.refresh();
+            };
+            
+            // add conditional sub sections
             for (var i in input_def.cases) {
                 // create id tag
                 var sub_section_id = input_def.id + '-section-' + i;
@@ -146,64 +142,44 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 // append to table
                 this.table.append(sub_section_id);
             }
+            
+            // trigger refresh on conditional input field after all input elements have been created
+            field.trigger('change');
         },
         
-        // add repeat block
+        /** Add a repeat block
+        */
         _addRepeat: function(input_def) {
             // link this
             var self = this;
             
-            //
-            // create tab field
-            //
-            var repeat = new Repeat.View({
-                title_new       : input_def.title,
-                max             : input_def.max,
-                onnew           : function() {
-                    // create id tag
-                    var sub_section_id = input_def.id + '-section-' + Utils.uuid();
-                
-                    // create sub section
-                    var sub_section = new View(self.app, {
-                        inputs  : input_def.inputs,
-                        cls     : 'ui-table-plain'
-                    });
-                    
-                    // add new tab
-                    repeat.add({
-                        id              : sub_section_id,
-                        title           : input_def.title,
-                        $el             : sub_section.$el,
-                        ondel           : function() {
-                            // delete repeat block
-                            repeat.del(sub_section_id);
-                            
-                            // retitle repeat block
-                            repeat.retitle(input_def.title);
-                            
-                            // trigger refresh
-                            self.app.refresh();
-                        }
-                    });
-                    
-                    // retitle repeat blocks
-                    repeat.retitle(input_def.title);
-                            
-                    // trigger refresh
-                    self.app.refresh();
-                }
-            });
+            // block index
+            var block_index = 0;
             
-            //
-            // add min number of repeat blocks
-            //
-            for (var i = 0; i < input_def.min; i++) {
+            // helper function to create new repeat blocks
+            function create (inputs, deleteable) {
                 // create id tag
-                var sub_section_id = input_def.id + '-section-' + Utils.uuid();
+                var sub_section_id = input_def.id + '-section-' + (block_index++);
             
+                // enable/disable repeat delete button
+                var ondel = null;
+                if (deleteable) {
+                    ondel = function() {
+                        // delete repeat block
+                        repeat.del(sub_section_id);
+                        
+                        // retitle repeat block
+                        repeat.retitle(input_def.title);
+                        
+                        // trigger refresh
+                        self.app.rebuild();
+                        self.app.refresh();
+                    }
+                }
+                    
                 // create sub section
                 var sub_section = new View(self.app, {
-                    inputs  : input_def.inputs,
+                    inputs  : inputs,
                     cls     : 'ui-table-plain'
                 });
                 
@@ -211,18 +187,53 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 repeat.add({
                     id      : sub_section_id,
                     title   : input_def.title,
-                    $el     : sub_section.$el
+                    $el     : sub_section.$el,
+                    ondel   : ondel
                 });
+                
+                // retitle repeat block
+                repeat.retitle(input_def.title);
             }
             
-            // retitle repeat block
-            repeat.retitle(input_def.title);
+            //
+            // create repeat block element
+            //
+            var repeat = new Repeat.View({
+                title_new       : input_def.title,
+                max             : input_def.max,
+                onnew           : function() {
+                    // create
+                    create(input_def.inputs, true);
+                            
+                    // trigger refresh
+                    self.app.rebuild();
+                    self.app.refresh();
+                }
+            });
+            
+            //
+            // add parsed/minimum number of repeat blocks
+            //
+            var n_min   = input_def.min;
+            var n_cache = _.size(input_def.cache);
+            for (var i = 0; i < Math.max(n_cache, n_min); i++) {
+                // select input source
+                var inputs = null;
+                if (i < n_cache) {
+                    inputs = input_def.cache[i];
+                } else {
+                    inputs = input_def.inputs;
+                }
+                
+                // create repeat block
+                create(inputs, i >= n_min);
+            }
             
             // create input field wrapper
-            var input_element = new InputElement({
+            var input_element = new InputElement(this.app, {
                 label       : input_def.title,
                 help        : input_def.help,
-                $el         : repeat.$el
+                field       : repeat
             });
             
             // displays as grouped subsection
@@ -235,89 +246,29 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             this.table.append(input_def.id);
         },
         
-        // add table row
-        _addRow: function(field_type, input_def) {
+        /** Add a single input field element
+        */
+        _addRow: function(input_def) {
             // get id
             var id = input_def.id;
+
+            // create input field
+            var field = this._createField(input_def);
             
-            // field wrapper
-            var field = null;
-            
-            // identify field type
-            switch(field_type) {
-                // text input field
-                case 'text' :
-                    field = this._field_text(input_def);
-                    break;
-                    
-                // select field
-                case 'select' :
-                    field = this._field_select(input_def);
-                    break;
-                    
-                // dataset
-                case 'data':
-                    field = this._field_data(input_def);
-                    break;
-                
-                // dataset column
-                case 'data_column':
-                    field = this._field_select(input_def);
-                    break;
-                    
-                // conditional select field
-                case 'conditional':
-                    field = this._field_conditional(input_def);
-                    break;
-                
-                // hidden field
-                case 'hidden':
-                    field = this._field_hidden(input_def);
-                    break;
-                
-                // integer field
-                case 'integer':
-                    field = this._field_slider(input_def);
-                    break;
-                
-                // float field
-                case 'float':
-                    field = this._field_slider(input_def);
-                    break;
-                                    
-                // boolean field
-                case 'boolean':
-                    field = this._field_boolean(input_def);
-                    break;
-            }
-            
-            // pick a generic field if specific mapping failed
-            if (!field) {
-                if (input_def.options) {
-                    // assign select field
-                    field = this._field_select(input_def);
-                } else {
-                    // assign text field
-                    field = this._field_text(input_def);
-                }
-                
-                // log
-                console.debug('tools-form::_addRow() : Auto matched field type (' + field_type + ').');
-            }
-            
-            // set field value
-            if (input_def.value !== undefined) {
-                field.value(input_def.value);
+            // flagging this form as dynamic will trigger api-driven refresh events
+            if (input_def.is_dynamic) {
+                this.app.is_dynamic = true;
             }
             
             // add to field list
             this.app.field_list[id] = field;
             
             // create input field wrapper
-            var input_element = new InputElement({
-                label : input_def.label,
-                help  : input_def.help,
-                $el   : field.$el
+            var input_element = new InputElement(this.app, {
+                label       : input_def.label,
+                optional    : input_def.optional,
+                help        : input_def.help,
+                field       : field
             });
             
             // add to element list
@@ -329,158 +280,108 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             // append to table
             this.table.append(id);
             
-            // return table row
-            return this.table.get(id)
+            // return created field
+            return field;
         },
         
-        // conditional input field
-        _field_conditional : function(input_def) {
-            // link this
-            var self = this;
-
-            // configure options fields
-            var options = [];
-            for (var i in input_def.test_param.options) {
-                var option = input_def.test_param.options[i];
-                options.push({
-                    label: option[0],
-                    value: option[1]
-                });
+        /** Returns an input field for a given field type
+        */
+        _createField: function(input_def) {
+            // field wrapper
+            var field = null;
+            
+            // identify field type
+            switch(input_def.type) {
+                // text input field
+                case 'text' :
+                    field = this._fieldText(input_def);
+                    break;
+                    
+                // select field
+                case 'select' :
+                    field = this._fieldSelect(input_def);
+                    break;
+                    
+                // data selector
+                case 'data':
+                    field = this._fieldData(input_def);
+                    break;
+                
+                // data column
+                case 'data_column':
+                    field = this._fieldSelect(input_def);
+                    break;
+                    
+                // hidden field
+                case 'hidden':
+                    field = this._fieldHidden(input_def);
+                    break;
+                
+                // integer field
+                case 'integer':
+                    field = this._fieldSlider(input_def);
+                    break;
+                
+                // float field
+                case 'float':
+                    field = this._fieldSlider(input_def);
+                    break;
+                                    
+                // boolean field
+                case 'boolean':
+                    field = this._fieldBoolean(input_def);
+                    break;
+                    
+                // genome field
+                case 'genomebuild':
+                    field = this._fieldSelect(input_def);
+                    break;
+                    
+                // field not found
+                default:
+                    // flag
+                    this.app.incompatible = true;
+                    
+                    // with or without options
+                    if (input_def.options) {
+                        // assign select field
+                        field = this._fieldSelect(input_def);
+                    } else {
+                        // assign text field
+                        field = this._fieldText(input_def);
+                    }
+                    
+                    // log
+                    console.debug('tools-form::_addRow() : Auto matched field type (' + input_def.type + ').');
             }
             
-            // select field
-            return new Ui.Select.View({
-                id          : 'field-' + input_def.id,
-                data        : options,
-                onchange    : function(value) {
-                    // check value in order to hide/show options
-                    for (var i in input_def.cases) {
-                        // get case
-                        var case_def = input_def.cases[i];
-                        
-                        // identify subsection name
-                        var section_id = input_def.id + '-section-' + i;
-                        
-                        // identify row
-                        var section_row = self.table.get(section_id);
-                        
-                        // check if non-hidden elements exist
-                        var nonhidden = false;
-                        for (var j in case_def.inputs) {
-                            var type = case_def.inputs[j].type;
-                            if (type && type !== 'hidden') {
-                                nonhidden = true;
-                                break;
-                            }
-                        }
-                        
-                        // show/hide sub form
-                        if (case_def.value == value && nonhidden) {
-                            section_row.fadeIn('fast');
-                        } else {
-                            section_row.hide();
-                        }
-                    }
-                }
-            });
+            // set field value
+            if (input_def.value !== undefined) {
+                field.value(input_def.value);
+            }
+            
+            // return field element
+            return field;
         },
         
-        // data input field
-        _field_data : function(input_def) {
-            // link this
+        /** Data input field
+        */
+        _fieldData : function(input_def) {
             var self = this;
-            
-            // get element id
-            var id = input_def.id;
-            
-            // select field
-            return new SelectDataset.View(this.app, {
-                id          : 'field-' + id,
+            return new SelectContent.View(this.app, {
+                id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
-                onchange    : function(value) {
-                    // pick the first dataset if multiple might be selected
-                    // TODO: iterate over all datasets and filter common/consistent columns
-                    if (value instanceof Array) {
-                        value = value[0];
-                    }
-                    
-                    // get referenced columns
-                    var column_list = self.app.tree.references(id, 'data_column');
-                    
-                    // find selected dataset
-                    var dataset = self.app.datasets.filter(value);
-        
-                    // meta data
-                    var meta = null;
-        
-                    // check dataset
-                    if (dataset && column_list.length > 0) {
-                        // log selection
-                        console.debug('tool-form::field_data() - Selected dataset ' + value + '.');
-                    
-                        // get meta data
-                        meta = dataset.get('metadata_column_types');
-                    
-                        // check meta data
-                        if (!meta) {
-                            console.debug('tool-form::field_data() - FAILED: Could not find metadata for dataset ' + value + '.');
-                        }
-                    } else {
-                        // log failure
-                        console.debug('tool-form::field_data() - FAILED: Could not find dataset ' + value + '.');
-                    }
-                    
-                    // update referenced columns
-                    for (var i in column_list) {
-                        // get column input/field
-                        var column_input = self.app.input_list[column_list[i]];
-                        var column_field = self.app.field_list[column_list[i]];
-                        if (!column_input || !column_field) {
-                            console.debug('tool-form::field_data() - FAILED: Column not found.');
-                        }
-                    
-                        // is numerical?
-                        var numerical = column_input.numerical;
-                        
-                        // identify column options
-                        var columns = [];
-                        for (var key in meta) {
-                            // get column type
-                            var column_type = meta[key];
-                            
-                            // column index
-                            var column_index = (parseInt(key) + 1);
-                            
-                            // column type label
-                            var column_label = 'Text';
-                            if (column_type == 'int' || column_type == 'float') {
-                                column_label = 'Number';
-                            }
-                            
-                            // add to selection
-                            if (column_type == 'int' || column_type == 'float' || !numerical) {
-                                columns.push({
-                                    'label' : 'Column: ' + column_index + ' [' + column_label + ']',
-                                    'value' : column_index
-                                });
-                            }
-                        }
-                        
-                        // update field
-                        if (column_field) {
-                            column_field.update(columns);
-                            if (!column_field.exists(column_field.value())) {
-                                column_field.value(column_field.first());
-                            }
-                        }
-                    }
+                data        : input_def.options,
+                onchange    : function() {
+                    self.app.refresh();
                 }
             });
         },
         
-        // select field
-        _field_select : function (input_def) {
+        /** Select/Checkbox/Radio options field
+        */
+        _fieldSelect : function (input_def) {
             // configure options fields
             var options = [];
             for (var i in input_def.options) {
@@ -503,47 +404,52 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             }
             
             // select field
+            var self = this;
             return new SelectClass.View({
                 id      : 'field-' + input_def.id,
                 data    : options,
-                multiple: input_def.multiple
+                multiple: input_def.multiple,
+                onchange: function() {
+                    self.app.refresh();
+                }
             });
         },
         
-        // text input field
-        _field_text : function(input_def) {
+        /** Text input field
+        */
+        _fieldText : function(input_def) {
+            var self = this;
             return new Ui.Input({
                 id      : 'field-' + input_def.id,
-                area    : input_def.area
+                area    : input_def.area,
+                onchange: function() {
+                    self.app.refresh();
+                }
             });
         },
         
-        // slider field
-        _field_slider: function(input_def) {
-            // calculate step size
-            var step = 1;
-            if (input_def.type == 'float') {
-                step = (input_def.max - input_def.min) / 10000;
-            }
-            
-            // create slider
+        /** Slider field
+        */
+        _fieldSlider: function(input_def) {
             return new Ui.Slider.View({
                 id      : 'field-' + input_def.id,
-                min     : input_def.min || 0,
-                max     : input_def.max || 1000,
-                step    : step
+                precise : input_def.type == 'float',
+                min     : input_def.min,
+                max     : input_def.max
             });
         },
         
-        // hidden field
-        _field_hidden : function(input_def) {
+        /** Hidden field
+        */
+        _fieldHidden : function(input_def) {
             return new Ui.Hidden({
                 id      : 'field-' + input_def.id
             });
         },
         
-        // boolean field
-        _field_boolean : function(input_def) {
+        /** Boolean field
+        */
+        _fieldBoolean : function(input_def) {
             return new Ui.RadioButton.View({
                 id      : 'field-' + input_def.id,
                 data    : [ { label : 'Yes', value : 'true'  },

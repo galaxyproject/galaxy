@@ -20,7 +20,17 @@ fi
 
 ./scripts/common_startup.sh --skip-samples
 
-GALAXY_REPORTS_CONFIG=${GALAXY_REPORTS_CONFIG:-reports_wsgi.ini}
+if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
+    if [ -f reports_wsgi.ini ]; then
+        GALAXY_REPORTS_CONFIG=reports_wsgi.ini
+    elif [ -f config/reports_wsgi.ini ]; then
+        GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini
+    else
+        GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini.sample
+    export GALAXY_REPORTS_CONFIG
+    fi
+fi
+
 GALAXY_REPORTS_PID=${GALAXY_REPORTS_PID:-reports_webapp.pid}
 GALAXY_REPORTS_LOG=${GALAXY_REPORTS_LOG:-reports_webapp.log}
 

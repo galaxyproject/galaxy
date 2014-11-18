@@ -46,10 +46,11 @@ AjaxQueue.prototype.add = function add( fn ){
     this.numToProcess += 1;
 
     this.queue.push( function(){
-        var xhr = fn();
+        var fnIndex = index,
+            xhr = fn();
         // if successful, notify using the deferred to allow tracking progress
         xhr.done( function( response ){
-            self.deferred.notify({ curr: index, total: self.numToProcess, response: response });
+            self.deferred.notify({ curr: fnIndex, total: self.numToProcess, response: response });
         });
         // (regardless of previous error or success) if not last ajax call, shift and call the next
         //  if last fn, resolve deferred
@@ -86,6 +87,8 @@ AjaxQueue.prototype.stop = function stop( causeFail, msg ){
     } else {
         this.deferred.resolve( this.responses );
     }
+    this.numToProcess = 0;
+    this.deferred = jQuery.Deferred();
     return this;
 };
 
@@ -137,6 +140,7 @@ NamedAjaxQueue.prototype.constructor = NamedAjaxQueue;
 
 /** add the obj.fn to the queue if obj.name hasn't been used before */
 NamedAjaxQueue.prototype.add = function add( obj ){
+    //console.debug( 'NamedAjaxQueue.adding:', obj )
     //console.debug( 'NamedAjaxQueue.prototype.add:', obj );
     if( !( obj.hasOwnProperty( 'name' ) && obj.hasOwnProperty( 'fn' ) ) ){
         throw new Error( 'NamedAjaxQueue.add requires an object with both "name" and "fn": ' + JSON.stringify( obj ) );
@@ -146,7 +150,14 @@ NamedAjaxQueue.prototype.add = function add( obj ){
         return;
     }
     this.names[ obj.name ] = true;
+    //console.debug( '\t names: ', this.names )
     AjaxQueue.prototype.add.call( this, obj.fn );
+    //console.debug( '\t queue: ', this.queue.length );
+};
+
+/** override to remove names */
+NamedAjaxQueue.prototype.clear = function clear(){
+    this.names = {};
 };
 
 /** shortcut constructor / fire and forget

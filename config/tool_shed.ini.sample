@@ -46,6 +46,12 @@ session_data_dir = %(here)s/database/beaker_sessions
 session_key = galaxysessions
 session_secret = changethisinproduction
 
+# -- Analytics
+
+# You can enter tracking code here to track visitor's behavior
+# through your Google Analytics account. Example: UA-XXXXXXXX-Y
+#ga_code = None
+
 # -- Users and Security
 
 # Galaxy encodes various internal values when these values will be output in

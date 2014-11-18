@@ -3,22 +3,19 @@ Provides factory methods to assemble the Galaxy web application
 """
 
 import logging, atexit
-import os, os.path, sys
+import os, os.path
 
 from inspect import isclass
 
-from paste.request import parse_formvars
-from paste.util import import_string
 from paste import httpexceptions
 
 import pkg_resources
 
 from galaxy.util import asbool
 
-import config
 import galaxy.model
 import galaxy.model.mapping
-import galaxy.web.framework
+import galaxy.web.framework.webapp
 
 log = logging.getLogger( __name__ )
 
@@ -31,7 +28,6 @@ def add_ui_controllers( webapp, app ):
     them to the webapp.
     """
     from galaxy.web.base.controller import BaseUIController
-    from galaxy.web.base.controller import ControllerUnavailable
     import galaxy.webapps.reports.controllers
     controller_dir = galaxy.webapps.reports.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):

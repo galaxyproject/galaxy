@@ -13,19 +13,28 @@ log = logging.getLogger( __name__ )
 
 __all__ = [ 'SlurmJobRunner' ]
 
+SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
+
 
 class SlurmJobRunner( DRMAAJobRunner ):
     runner_name = "SlurmRunner"
 
     def _complete_terminal_job( self, ajs, drmaa_state, **kwargs ):
         def __get_jobinfo():
-            p = subprocess.Popen( ( 'scontrol', '-o', 'show', 'job', ajs.job_id ), stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            job_id = ajs.job_id
+            cmd = [ 'scontrol', '-o' ]
+            if '.' in ajs.job_id:
+                # custom slurm-drmaa-with-cluster-support job id syntax
+                job_id, cluster = ajs.job_id.split('.', 1)
+                cmd.extend( [ '-M', cluster ] )
+            cmd.extend( [ 'show', 'job', job_id ] )
+            p = subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
             stdout, stderr = p.communicate()
             if p.returncode != 0:
                 # Will need to be more clever here if this message is not consistent
                 if stderr == 'slurm_load_jobs error: Invalid job id specified\n':
                     return dict( JobState='NOT_FOUND' )
-                raise Exception( '`scontrol -o show job %s` returned %s, stderr: %s' % ( ajs.job_id, p.returncode, stderr ) )
+                raise Exception( '`%s` returned %s, stderr: %s' % ( ' '.join( cmd ), p.returncode, stderr ) )
             return dict( [ out_param.split( '=', 1 ) for out_param in stdout.split() ] )
         if drmaa_state == self.drmaa_job_states.FAILED:
             try:
@@ -55,8 +64,14 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     except:
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
                 elif job_info['JobState'] == 'CANCELLED':
-                    log.info( '(%s/%s) Job was cancelled via slurm (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id )
-                    ajs.fail_message = "This job failed because it was cancelled by an administrator."
+                    # Check to see if the job was killed for exceeding memory consumption
+                    if self.__check_memory_limit( ajs.error_file ):
+                        log.info( '(%s/%s) Job hit memory limit', ajs.job_wrapper.get_id_tag(), ajs.job_id )
+                        ajs.fail_message = "This job was terminated because it used more memory than it was allocated."
+                        ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
+                    else:
+                        log.info( '(%s/%s) Job was cancelled via slurm (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id )
+                        ajs.fail_message = "This job failed because it was cancelled by an administrator."
                 else:
                     log.warning( '(%s/%s) Job failed due to unknown reasons, JobState was: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, job_info['JobState'] )
                     ajs.fail_message = "This job failed for reasons that could not be determined."
@@ -70,3 +85,31 @@ class SlurmJobRunner( DRMAAJobRunner ):
                 super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state = drmaa_state )
         # by default, finish as if the job was successful.
         super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state = drmaa_state )
+
+    def __check_memory_limit( self, efile_path ):
+        """
+        A very poor implementation of tail, but it doesn't need to be fancy
+        since we are only searching the last 2K
+        """
+        try:
+            log.debug( 'Checking %s for exceeded memory message from slurm', efile_path )
+            with open( efile_path ) as f:
+                pos = 2
+                bof = False
+                while pos < 2048:
+                    try:
+                        f.seek(-pos, 2)
+                        pos += 1
+                    except:
+                        f.seek(-pos + 1, 2)
+                        bof = True
+
+                    if (bof or f.read(1) == '\n') and f.readline().strip() == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
+                        return True
+
+                    if bof:
+                        break
+        except:
+            log.exception('Error reading end of %s:', efile_path)
+
+        return False

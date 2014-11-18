@@ -12,6 +12,7 @@ import struct
 import subprocess
 import tempfile
 import re
+import zipfile
 
 from galaxy import eggs
 eggs.require( "bx-python" )
@@ -278,6 +279,8 @@ class Bam( Binary ):
             return dataset.peek
         except:
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+
 
     # ------------- Dataproviders
     # pipe through samtools view
@@ -619,4 +622,20 @@ class SQlite ( Binary ):
 
 
 Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
+
+class Xlsx(Binary):
+    """Class for Excel 2007 (xlsx) files"""
+    file_ext="xlsx"
+    def sniff( self, filename ):
+        # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
+        try:
+            if zipfile.is_zipfile( filename ):
+                tempzip = zipfile.ZipFile( filename )
+                if "[Content_Types].xml" in tempzip.namelist() and tempzip.read("[Content_Types].xml").find(b'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml') != -1:
+                    return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
 

@@ -958,8 +958,7 @@ var Visualization = Backbone.Model.extend({
         type: ''
     },
 
-    // No API to create/save visualization yet, so use this path:
-    url: galaxy_config.root + "visualization/save",
+    urlRoot: galaxy_config.root + "api/visualizations",
     
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'

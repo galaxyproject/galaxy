@@ -13,7 +13,9 @@ require.config({
         // Custom paths for qunit testing dependencies...
         "QUnit": qunit_absolute_directory + "test-libs/qunit-1.14.0", // .. because baseUrl is scripts to match Galaxy.
         "sinon": qunit_absolute_directory + "test-libs/sinon-1.9.1",
-        "sinon-qunit": qunit_absolute_directory + "test-libs/sinon-qunit-1.0.0"
+        "sinon-qunit": qunit_absolute_directory + "test-libs/sinon-qunit-1.0.0",
+        // (optional) test data
+        'test-data' : qunit_absolute_directory + "test-data/"
     },
     shim: {
         // Ensure correct Qunit order in light of requirejs loading...

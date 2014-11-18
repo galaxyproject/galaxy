@@ -6,6 +6,8 @@ from __future__ import absolute_import
 
 import os
 import re
+import socket
+import string
 import sys
 import tempfile
 import logging
@@ -17,6 +19,8 @@ from galaxy.util import string_as_bool
 from galaxy.util import listify
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy import eggs
+
+import ConfigParser
 
 log = logging.getLogger( __name__ )
 
@@ -137,12 +141,14 @@ class Configuration( object ):
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
+        self.workflow_schedulers_config_file = resolve_path( kwargs.get( 'workflow_schedulers_config_file', 'config/workflow_schedulers_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
         self.cluster_files_directory = os.path.abspath( kwargs.get( "cluster_files_directory", "database/pbs" ) )
         self.job_working_directory = resolve_path( kwargs.get( "job_working_directory", "database/job_working_directory" ), self.root )
         self.cleanup_job = kwargs.get( "cleanup_job", "always" )
+        self.container_image_cache_path = self.resolve_path( kwargs.get( "container_image_cache_path", "database/container_images" ) )
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
@@ -163,6 +169,7 @@ class Configuration( object ):
         self.terms_url = kwargs.get( 'terms_url', None )
         self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
+        self.ga_code = kwargs.get( 'ga_code', None )
         #  Get the disposable email domains blacklist file and its contents
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
         self.blacklist_content = None
@@ -187,6 +194,20 @@ class Configuration( object ):
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
+        # These workflow modules should not be considered part of Galaxy's
+        # public API yet - the module state definitions may change and
+        # workflows built using these modules may not function in the
+        # future.
+        self.enable_beta_workflow_modules = string_as_bool( kwargs.get( 'enable_beta_workflow_modules', 'False' ) )
+
+        # Certain modules such as the pause module will automatically cause
+        # workflows to be scheduled in job handlers the way all workflows will
+        # be someday - the following two properties can also be used to force this
+        # behavior in under conditions - namely for workflows that have a minimum
+        # number of steps or that consume collections.
+        self.force_beta_workflow_scheduled_min_steps = int( kwargs.get( 'force_beta_workflow_scheduled_min_steps', '250' ) )
+        self.force_beta_workflow_scheduled_for_collections = string_as_bool( kwargs.get( 'force_beta_workflow_scheduled_for_collections', 'False' ) )
+
         # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )
         self.user_job_limit = int( kwargs.get( 'user_job_limit', 0 ) )
@@ -207,6 +228,7 @@ class Configuration( object ):
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
+        self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
         self.brand = kwargs.get( 'brand', None )
         self.welcome_url = kwargs.get( 'welcome_url', '/static/welcome.html' )
@@ -229,6 +251,7 @@ class Configuration( object ):
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
+        self.watch_tools = kwargs.get( 'watch_tools', False )
         # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
@@ -294,6 +317,27 @@ class Configuration( object ):
         for section in global_conf_parser.sections():
             if section.startswith('server:'):
                 self.server_names.append(section.replace('server:', '', 1))
+
+        # Default URL (with schema http/https) of the Galaxy instance within the
+        # local network - used to remotely communicate with the Galaxy API.
+        galaxy_infrastructure_url = kwargs.get( 'galaxy_infrastructure_url', None )
+        galaxy_infrastructure_url_set = True
+        if galaxy_infrastructure_url is None:
+            # Still provide a default but indicate it was not explicitly set
+            # so dependending on the context a better default can be used (
+            # request url in a web thread, Docker parent in IE stuff, etc...)
+            galaxy_infrastructure_url = "http://localhost"
+            port = self.guess_galaxy_port()
+            if port:
+                galaxy_infrastructure_url += ":%s" % (port)
+            galaxy_infrastructure_url_set = False
+        if "HOST_IP" in galaxy_infrastructure_url:
+            galaxy_infrastructure_url = string.Template(galaxy_infrastructure_url).safe_substitute({
+                'HOST_IP': socket.gethostbyname(socket.gethostname())
+            })
+        self.galaxy_infrastructure_url = galaxy_infrastructure_url
+        self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
+
         # Store advanced job management config
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
@@ -355,6 +399,19 @@ class Configuration( object ):
         # directory where the visualization/registry searches for plugins
         self.visualization_plugins_directory = kwargs.get(
             'visualization_plugins_directory', 'config/plugins/visualizations' )
+        ie_dirs = kwargs.get( 'interactive_environment_plugins_directory', None )
+        if ie_dirs and not self.visualization_plugins_directory:
+            self.visualization_plugins_directory = ie_dirs
+        elif ie_dirs:
+            self.visualization_plugins_directory += ",%s" % ie_dirs
+
+        self.proxy_session_map = self.resolve_path( kwargs.get( "dynamic_proxy_session_map", "database/session_map.sqlite" ) )
+        self.manage_dynamic_proxy = string_as_bool( kwargs.get( "dynamic_proxy_manage", "True" ) )  # Set to false if being launched externally
+        self.dynamic_proxy_debug = string_as_bool( kwargs.get( "dynamic_proxy_debug", "False" ) )
+        self.dynamic_proxy_bind_port = int( kwargs.get( "dynamic_proxy_bind_port", "8800" ) )
+        self.dynamic_proxy_bind_ip = kwargs.get( "dynamic_proxy_bind_ip", "0.0.0.0" )
+        self.dynamic_proxy_external_proxy = string_as_bool( kwargs.get( "dynamic_proxy_external_proxy", "False" ) )
+
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
 
@@ -541,6 +598,19 @@ class Configuration( object ):
         """
         return resolve_path( path, self.root )
 
+    def guess_galaxy_port(self):
+        # Code derived from IPython work ie.mako
+        config = ConfigParser.SafeConfigParser({'port': '8080'})
+        if self.config_file:
+            config.read( self.config_file )
+
+        try:
+            port = config.getint('server:%s' % self.server_name, 'port')
+        except:
+            # uWSGI galaxy installations don't use paster and only speak uWSGI not http
+            port = None
+        return port
+
 
 def get_database_engine_options( kwargs, model_prefix='' ):
     """
@@ -639,7 +709,8 @@ class ConfiguresGalaxyMixin:
         app_info = containers.AppInfo(
             galaxy_root_dir,
             default_file_path=file_path,
-            outputs_to_working_directory=self.config.outputs_to_working_directory
+            outputs_to_working_directory=self.config.outputs_to_working_directory,
+            container_image_cache_path=self.config.container_image_cache_path,
         )
         self.container_finder = galaxy.tools.deps.containers.ContainerFinder(app_info)
 

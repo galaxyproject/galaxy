@@ -1294,14 +1294,9 @@ class TwillTestCase( unittest.TestCase ):
     def get_running_datasets( self ):
         self.visit_url( '/api/histories' )
         history_id = loads( self.last_page() )[0][ 'id' ]
-        self.visit_url( '/api/histories/%s/contents' % history_id )
+        self.visit_url( '/api/histories/%s' % history_id )
         jsondata = loads( self.last_page() )
-        for history_item in jsondata:
-            self.visit_url( history_item[ 'url' ] )
-            item_json = loads( self.last_page() )
-            if item_json[ 'state' ] in [ 'queued', 'running', 'paused' ]:
-                return True
-        return False
+        return jsondata[ 'state' ] in [ 'queued', 'running' ]
 
     def get_tags( self, item_id, item_class ):
         self.visit_url( "%s/tag/get_tagging_elt_async?item_id=%s&item_class=%s" % \
@@ -2446,7 +2441,7 @@ class TwillTestCase( unittest.TestCase ):
         return self.wait_for(lambda: self.get_running_datasets(), **kwds)
 
     def wait_for( self, func, **kwd ):
-        sleep_amount = 0.1
+        sleep_amount = 0.2
         slept = 0
         walltime_exceeded = 86400
         while slept <= walltime_exceeded:
