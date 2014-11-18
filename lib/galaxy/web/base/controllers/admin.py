@@ -1084,7 +1084,7 @@ class Admin( object ):
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
                     job.stderr = error_msg
-                    job.state = trans.app.model.Job.states.DELETED_NEW
+                    job.set_state( trans.app.model.Job.states.DELETED_NEW )
                     trans.sa_session.add( job )
                 else:
                     trans.app.job_manager.job_stop_queue.put( job_id, error_msg=error_msg )

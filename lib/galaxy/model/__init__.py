@@ -473,15 +473,10 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.post_job_actions.append( PostJobActionAssociation( pja, self ) )
     def set_state( self, state ):
         """
-        This is the only set method that performs extra work. In this case, the
-        state is propagated down to datasets.
+        Save state history
         """
         self.state = state
         self.state_history.append( JobStateHistory( self ) )
-        # For historical reasons state propogates down to datasets
-        # FIXME: is this used anywhere?
-        #for da in self.output_datasets:
-        #    da.dataset.state = state
     def get_param_values( self, app, ignore_errors=False ):
         """
         Read encoded parameter values from the database and turn back into a
@@ -556,7 +551,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
         return rval
 
     def set_final_state( self, final_state ):
-        self.state = final_state
+        self.set_state( final_state )
         if self.workflow_invocation_step:
             self.workflow_invocation_step.update()
 

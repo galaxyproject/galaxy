@@ -956,7 +956,7 @@ class JobWrapper( object ):
                 dataset_assoc.dataset.dataset.state = dataset_assoc.dataset.dataset.states.PAUSED
                 dataset_assoc.dataset.info = message
                 self.sa_session.add( dataset_assoc.dataset )
-            job.state = job.states.PAUSED
+            job.set_state( job.states.PAUSED )
             self.sa_session.add( job )
 
     def mark_as_resubmitted( self ):
@@ -965,7 +965,7 @@ class JobWrapper( object ):
         for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
             dataset._state = model.Dataset.states.RESUBMITTED
             self.sa_session.add( dataset )
-        job.state = model.Job.states.RESUBMITTED
+        job.set_state( model.Job.states.RESUBMITTED )
         self.sa_session.add( job )
         self.sa_session.flush()
 
@@ -982,8 +982,6 @@ class JobWrapper( object ):
             self.sa_session.flush()
         if info:
             job.info = info
-        # FIXME:
-        #job.state = state
         job.set_state( state )
         self.sa_session.add( job )
         self.sa_session.flush()

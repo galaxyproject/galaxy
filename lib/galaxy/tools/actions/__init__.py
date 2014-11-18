@@ -377,7 +377,7 @@ class DefaultToolAction( object ):
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
             redirect_url += "&GALAXY_URL=%s" % GALAXY_URL
             # Job should not be queued, so set state to ok
-            job.state = trans.app.model.Job.states.OK
+            job.set_state( trans.app.model.Job.states.OK )
             job.info = "Redirected to: %s" % redirect_url
             trans.sa_session.add( job )
             trans.sa_session.flush()

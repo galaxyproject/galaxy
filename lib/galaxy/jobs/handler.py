@@ -127,7 +127,7 @@ class JobHandlerQueue( object ):
                 log.debug( "(%s) Job runner assigned but no external ID recorded, adding to the job handler queue" % job.id )
                 job.job_runner_name = None
                 if self.track_jobs_in_database:
-                    job.state = model.Job.states.NEW
+                    job.set_state( model.Job.states.NEW )
                 else:
                     self.queue.put( ( job.id, job.tool_id ) )
             elif job.job_runner_name is not None and job.job_runner_external_id is not None and job.destination_id is None:
@@ -143,7 +143,7 @@ class JobHandlerQueue( object ):
                 # Never (fully) dispatched
                 log.debug( "(%s) No job runner assigned and job still in '%s' state, adding to the job handler queue" % ( job.id, job.state ) )
                 if self.track_jobs_in_database:
-                    job.state = model.Job.states.NEW
+                    job.set_state( model.Job.states.NEW )
                 else:
                     self.queue.put( ( job.id, job.tool_id ) )
             else:
@@ -286,7 +286,7 @@ class JobHandlerQueue( object ):
                     log.info( "(%d) Job deleted by admin while still queued" % job.id )
                 elif job_state == JOB_USER_OVER_QUOTA:
                     log.info( "(%d) User (%s) is over quota: job paused" % ( job.id, job.user_id ) )
-                    job.state = model.Job.states.PAUSED
+                    job.set_state( model.Job.states.PAUSED )
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
                         dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
