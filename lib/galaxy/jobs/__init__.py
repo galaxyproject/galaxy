@@ -982,7 +982,9 @@ class JobWrapper( object ):
             self.sa_session.flush()
         if info:
             job.info = info
-        job.state = state
+        # FIXME:
+        #job.state = state
+        job.set_state( state )
         self.sa_session.add( job )
         self.sa_session.flush()
 
@@ -1071,7 +1073,7 @@ class JobWrapper( object ):
                         log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead" % ( dataset_path.false_path, dataset_path.real_path ) )
                     else:
                         # Prior to fail we need to set job.state
-                        job.state = final_job_state
+                        job.set_state( final_job_state )
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
 
         job_context = ExpressionContext( dict( stdout=job.stdout, stderr=job.stderr ) )

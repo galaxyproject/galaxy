@@ -334,6 +334,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.handler = None
         self.exit_code = None
         self._init_metrics()
+        self.state_history.append( JobStateHistory( self ) )
 
     @property
     def finished( self ):
@@ -476,9 +477,11 @@ class Job( object, HasJobMetrics, Dictifiable ):
         state is propagated down to datasets.
         """
         self.state = state
+        self.state_history.append( JobStateHistory( self ) )
         # For historical reasons state propogates down to datasets
-        for da in self.output_datasets:
-            da.dataset.state = state
+        # FIXME: is this used anywhere?
+        #for da in self.output_datasets:
+        #    da.dataset.state = state
     def get_param_values( self, app, ignore_errors=False ):
         """
         Read encoded parameter values from the database and turn back into a
@@ -736,6 +739,13 @@ class JobToOutputLibraryDatasetAssociation( object ):
     def __init__( self, name, dataset ):
         self.name = name
         self.dataset = dataset
+
+
+class JobStateHistory( object ):
+    def __init__( self, job ):
+        self.job = job
+        self.state = job.state
+        self.info = job.info
 
 
 class ImplicitlyCreatedDatasetCollectionInput( object ):

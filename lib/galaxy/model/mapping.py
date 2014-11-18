@@ -411,6 +411,14 @@ model.Job.table = Table( "job", metadata,
     Column( "params", TrimmedString(255), index=True ),
     Column( "handler", TrimmedString( 255 ), index=True ) )
 
+model.JobStateHistory.table = Table( "job_state_history", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "state", String( 64 ), index=True ),
+    Column( "info", TrimmedString( 255 ) ) )
+
 model.JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -1803,6 +1811,11 @@ mapper( model.JobToOutputLibraryDatasetAssociation,
         model.JobToOutputLibraryDatasetAssociation.table, properties=dict(
             job=relation( model.Job ), dataset=relation(
                 model.LibraryDatasetDatasetAssociation, lazy=False ) ) )
+
+simple_mapping(
+    model.JobStateHistory,
+    job=relation( model.Job, backref="state_history" ),
+)
 
 simple_mapping(
     model.JobMetricText,
