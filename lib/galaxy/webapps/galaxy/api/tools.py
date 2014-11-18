@@ -626,10 +626,14 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                         group_state['__current_case__'] = current_case
                     group_state[ input.test_param.name ] = value
                 else:
-                    value, error = check_param(trans, input, incoming.get(key, state.get(input.name, None)), context)
-                    if error:
-                        errors[input.name] = error
-                    state[input.name] = value
+                    try:
+                        value, error = check_param(trans, input, incoming.get(key, state.get(input.name, None)), context)
+                        if error:
+                            errors[input.name] = error
+                        state[input.name] = value
+                    except Exception:
+                        log.error('Checking parameter %s failed.', input.name)
+                        pass
             return errors
         
         # builds tool model including all attributes
