@@ -59,7 +59,7 @@ class GalaxyInteractorApi( object ):
         attributes = output_testdef.attributes
         name = output_testdef.name
         for job in jobs:
-            self.wait_for_job( job[ 'id' ], maxseconds )
+            self.wait_for_job( job[ 'id' ], history_id, maxseconds )
         hid = self.__output_id( output_data )
         fetcher = self.__dataset_fetcher( history_id )
         ## TODO: Twill version verifys dataset is 'ok' in here.
@@ -115,8 +115,8 @@ class GalaxyInteractorApi( object ):
     def wait_for_history( self, history_id, maxseconds ):
         self.twill_test_case.wait_for( lambda: not self.__history_ready( history_id ), maxseconds=maxseconds)
 
-    def wait_for_job( self, job_id, maxseconds ):
-        self.twill_test_case.wait_for( lambda: not self.__job_ready( job_id ), maxseconds=maxseconds)
+    def wait_for_job( self, job_id, history_id, maxseconds ):
+        self.twill_test_case.wait_for( lambda: not self.__job_ready( job_id, history_id ), maxseconds=maxseconds)
 
     def get_job_stdio( self, job_id ):
         job_stdio = self.__get_job_stdio( job_id ).json()
@@ -270,20 +270,14 @@ class GalaxyInteractorApi( object ):
                 pass
         return wait
 
-    def __wait_for_job( self, job_id ):
-        def wait():
-            while not self.__job_ready( job_id ):
-                pass
-        return wait
-
-    def __job_ready( self, job_id ):
+    def __job_ready( self, job_id, history_id ):
         job_json = self._get( "jobs/%s" % job_id ).json()
         state = job_json[ 'state' ]
         try:
             return self._state_ready( state, error_msg="Job in error state." )
         except Exception:
             if VERBOSE_ERRORS:
-                self._summarize_job_errors( history_id )
+                self._summarize_history_errors( history_id )
             raise
 
     def __history_ready( self, history_id ):
