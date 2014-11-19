@@ -355,6 +355,7 @@ HDAAPI.prototype.delete_ = function create( historyId, id, purge ){
     // have to attach like GET param - due to body loss in jq
     url = utils.format( this.urlTpls.update, historyId, id );
     if( purge ){
+console.debug( 'adding purge:' + purge );
         url += '?purge=True';
     }
     return this.api._ajax( url, {
@@ -489,7 +490,7 @@ ToolsAPI.prototype.uploadByPaste = function upload( historyId, options ){
 
 /** post a file to the upload1 tool over ajax */
 ToolsAPI.prototype.upload = function upload( historyId, options ){
-    this.api.spaceghost.info( 'tools.upload: ' + [ historyId, this.api.spaceghost.jsonStr( options ) ] );
+    this.api.spaceghost.info( 'api.tools.upload: ' + [ historyId, this.api.spaceghost.jsonStr( options ) ] );
     this.api.ensureId( historyId );
     options = options || {};
 
@@ -512,6 +513,7 @@ ToolsAPI.prototype.upload = function upload( historyId, options ){
     if( options.tabs ){
         inputs[ 'files_0|space_to_tab' ] = 'Yes';
     }
+
     var response = this.api.spaceghost.evaluate( function( url, historyId, inputs ){
         var file = $( 'input[name="casperjs-upload-file"]' )[0].files[0],
             formData = new FormData();
@@ -559,9 +561,6 @@ ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
         this.debug( 'uploadedId: ' + uploadedId );
     });
 
-    spaceghost.debug( '---------------------------------------------------------- timeout: ' + ( options.timeout || spaceghost.api.tools.DEFAULT_UPLOAD_TIMEOUT ) );
-    spaceghost.debug( 'timeout: ' + options.timeout );
-    spaceghost.debug( 'timeout: ' + spaceghost.api.tools.DEFAULT_UPLOAD_TIMEOUT );
     spaceghost.then( function(){
         this.waitFor(
             function testHdaState(){

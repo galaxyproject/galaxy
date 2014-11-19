@@ -34,6 +34,7 @@ var tooltipSelector     = spaceghost.data.selectors.tooltipBalloon,
 var historyFrameInfo = {},
     filenameToUpload = '1.txt',
     filepathToUpload = '../../test-data/' + filenameToUpload,
+    testUploadedId = null,
     testUploadInfo = {};
 
 
@@ -73,15 +74,24 @@ spaceghost.openHomePage().historypanel.waitForHdas( function testPanelStructure(
 spaceghost.then( function testAnonUpload(){
     this.test.comment( 'anon-user should be able to upload files' );
 
-    spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
-        this.debug( 'uploaded HDA info: ' + this.jsonStr( this.quickInfo( _uploadInfo.hdaElement ) ) );
-        var hasHda = _uploadInfo.hdaElement,
-            hasClass = _uploadInfo.hdaElement.attributes[ 'class' ],
-            hasOkClass = _uploadInfo.hdaElement.attributes[ 'class' ].indexOf( 'state-ok' ) !== -1;
-        this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + _uploadInfo.hdaElement.text );
-        testUploadInfo = _uploadInfo;
+    var currHistory = spaceghost.api.histories.index()[0];
+    spaceghost.api.tools.thenUpload( currHistory.id, {
+        filepath: filepathToUpload
+    }, function uploadCallback( uploadedId ){
+        testUploadedId = uploadedId;
     });
+});
+spaceghost.openHomePage().historypanel.waitForHdas( function testAnonUpload(){
+    this.test.comment( 'uploaded files should be well formed in the panel' );
 
+    var hdaElement = spaceghost.getElementInfo( '#dataset-' + testUploadedId );
+    this.debug( 'uploaded HDA info: ' + this.jsonStr( this.quickInfo( hdaElement ) ) );
+
+    var hasHda = hdaElement,
+        hasClass = hdaElement.attributes[ 'class' ],
+        hasOkClass = hdaElement.attributes[ 'class' ].indexOf( 'state-ok' ) !== -1;
+    this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + hdaElement.text );
+    testUploadInfo = hdaElement;
 });
 spaceghost.then( function testAnonUpload(){
     this.test.comment( "empty should be NO LONGER be displayed" );
@@ -101,7 +111,7 @@ spaceghost.user.loginOrRegisterUser( email, password ).openHomePage( function(){
         var hdaInfo = this.historypanel.hdaElementInfoByTitle( filenameToUpload );
         this.test.assert( hdaInfo !== null, "After logging in - found a matching hda by name and hid" );
         if( hdaInfo ){
-            this.test.assert( testUploadInfo.hdaElement.attributes.id === hdaInfo.attributes.id,
+            this.test.assert( testUploadInfo.attributes.id === hdaInfo.attributes.id,
                 "After logging in - found a matching hda by hda view id: " + hdaInfo.attributes.id );
         }
     });

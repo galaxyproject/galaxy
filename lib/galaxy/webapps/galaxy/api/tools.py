@@ -2,6 +2,7 @@ import urllib
 
 from galaxy import exceptions
 from galaxy import web, util
+from galaxy import managers
 from galaxy.web import _future_expose_api_anonymous
 from galaxy.web import _future_expose_api
 from galaxy.web.base.controller import BaseAPIController
@@ -28,6 +29,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
     """
     RESTful controller for interactions with tools.
     """
+
+    def __init__( self, app ):
+        super( ToolsController, self ).__init__( app )
+        self.mgrs = util.bunch.Bunch(
+            histories=managers.histories.HistoryManager()
+        )
 
     @web.expose_api
     def index( self, trans, **kwds ):
@@ -131,7 +138,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         # dataset upload.
         history_id = payload.get("history_id", None)
         if history_id:
-            target_history = self.get_history( trans, history_id )
+            target_history = self.mgrs.histories.get( trans, trans.security.decode_id( history_id ) )
         else:
             target_history = None
 

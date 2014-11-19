@@ -29,7 +29,7 @@ var workflowJSONFilepath = 'test-data/simple_test.ga',
         'id', 'input_steps', 'tool_id', 'type'
     ],
     simpleBedFilepath = '../../test-data/2.bed',
-    uploadedFile = null,
+    uploadedFileId = null,
     workflowCreateKeys = [ 'history', 'outputs' ];
 
 
@@ -154,15 +154,17 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
 });
 
 // now run the uploaded workflow
-spaceghost.tools.uploadFile( simpleBedFilepath, function( uploadInfo ){
-    uploadedFile = uploadInfo;
+spaceghost.then( function(){
+    var currHistory = spaceghost.api.histories.index()[0];
+    spaceghost.api.tools.thenUpload( currHistory.id, { filepath: simpleBedFilepath }, function( uploadedId ){
+        uploadedFileId = uploadedId;
+    });
 });
 spaceghost.then( function(){
     var currentHistory = this.api.histories.index()[0],
         firstWorkflow = this.api.workflows.show( this.api.workflows.index()[0].id );
 
     //this.debug( this.jsonStr( uploadedFile ) );
-    var uploadedFileId = uploadedFile.hdaElement.attributes.id.split( '-' )[1];
     this.debug( this.jsonStr( uploadedFileId ) );
     this.debug( this.jsonStr( this.api.hdas.show( currentHistory.id, uploadedFileId ) ) );
 

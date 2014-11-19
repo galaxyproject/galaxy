@@ -21,8 +21,6 @@ if( spaceghost.fixtureData.testUser ){
     password = spaceghost.fixtureData.testUser.password;
 }
 
-var testUploadInfo = {};
-
 // =================================================================== TESTS
 // ------------------------------------------------------------------- start a new user
 spaceghost.user.loginOrRegisterUser( email, password ).openHomePage( function(){
@@ -30,62 +28,20 @@ spaceghost.user.loginOrRegisterUser( email, password ).openHomePage( function(){
     this.test.assert( loggedInAs === email, 'loggedInAs() matches email: "' + loggedInAs + '"' );
 });
 
-// ------------------------------------------------------------------- long form
-// upload a file...
+// ------------------------------------------------------------------- api upload
 spaceghost.then( function(){
-    this.test.comment( 'Test uploading a file' );
+    this.test.comment( 'Test API function' );
 
-    var filename = '1.txt',
-        filepath = '../../test-data/' + filename;
-    this.tools._uploadFile( filepath );
-
-    // when an upload begins successfully main should reload with a infomessagelarge
-    this.withMainPanel( function mainAfterUpload(){
-        var infoInfo = this.elementInfoOrNull( this.data.selectors.messages.infolarge );
-        this.test.assert( infoInfo !== null,
-            "Found infomessagelarge after uploading file" );
-        this.test.assert( infoInfo.text.indexOf( this.data.text.upload.success ) !== -1,
-            "Found upload success message: " + this.data.text.upload.success );
-
-        testUploadInfo.name = filename;
+    var currHistoryId = spaceghost.api.histories.index()[0].id;
+    spaceghost.api.tools.thenUpload( currHistoryId, {
+        filepath : '../../test-data/1.sam'
+    }, function(){
+        var hdas = spaceghost.api.hdas.index( currHistoryId );
+        spaceghost.test.assert( hdas.length === 1, 'One dataset uploaded: ' + hdas.length );
+        spaceghost.test.assert( hdas[0].state === 'ok', 'State is: ' + hdas[0].state );
+        spaceghost.test.assert( hdas[0].name === '1.sam', 'Name is: ' + hdas[0].name );
     });
 });
-
-// ... and move to the history panel and wait for upload to finish
-spaceghost.historypanel.waitForHda( '1.txt',
-    function uploadComplete( hdaElement ){
-        this.test.pass( 'Upload completed successfully for: ' + this.jsonStr( hdaElement.attributes.id ) );
-    },
-    function timeout( hdaElement ){
-        this.debug( 'hdaElement:\n' + this.jsonStr( hdaElement ) );
-        this.test.fail( 'Test timed out for upload: ' + testUploadInfo.name );
-    },
-    30 * 1000
-);
-
-// ------------------------------------------------------------------- short form
-spaceghost.then( function(){
-    this.test.comment( 'Test convenience function' );
-
-    spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
-        this.test.assert( uploadInfo.hdaElement !== null, "Convenience function produced hda" );
-        var state = this.historypanel.getHdaState( '#' + uploadInfo.hdaElement.attributes.id );
-        this.test.assert( state === 'ok', "Convenience function produced hda in ok state" );
-    });
-});
-
-// ------------------------------------------------------------------- test conv. fn error
-/*
-//??: this error's AND waitFor()s THREE times (or more) - something to do with assertStepsRaise + waitFor
-spaceghost.then( function(){
-    this.test.comment( 'testing convenience function timeout error' );
-    this.assertStepsRaise( 'GalaxyError: Upload Error: timeout waiting', function(){
-        spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
-            this.test.fail( "Convenience function did not timeout!" );
-        }, 50 );
-    });
-});
-*/
 
 // ===================================================================
     spaceghost.run( function(){ test.done(); });

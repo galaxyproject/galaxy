@@ -26,17 +26,24 @@ if( spaceghost.fixtureData.testUser ){
 var includeDeletedOptionsLabel = spaceghost.historyoptions.data.labels.options.includeDeleted;
 
 // local
-var filepathToUpload = '../../test-data/1.txt',
-    testUploadInfo = {};
+var filenameToUpload = '1.txt',
+    filepathToUpload = '../../test-data/' + filenameToUpload,
+    testUploadId = null;
 
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- set up
 // start a new user and upload a file
 spaceghost.user.loginOrRegisterUser( email, password );
-spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
-    testUploadInfo = _uploadInfo;
+spaceghost.then( function upload(){
+    var currHistory = spaceghost.api.histories.index()[0];
+    spaceghost.api.tools.thenUpload( currHistory.id, {
+            filepath: filepathToUpload
+        }, function uploadCallback( uploadId ){
+            testUploadId = uploadId;
+        });
 });
+spaceghost.openHomePage();
 
 // ------------------------------------------------------------------- history options menu structure
 //NOTE: options menu should be functionally tested elsewhere
@@ -69,45 +76,6 @@ spaceghost.historypanel.waitForHdas().then( function checkHistoryOptions(){
         "Clicking away from the menu closes it" );
 });
 
-// ------------------------------------------------------------------- options allow showing/hiding deleted hdas
-spaceghost.then( function(){
-    this.test.comment( 'Deleting HDA' );
-    var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
-
-    this.historypanel.deleteHda( uploadSelector, function(){
-        this.test.assertNotExists( uploadSelector, "Deleted HDA is NOT in the DOM" );
-    });
-});
-
-spaceghost.then( function(){
-    this.test.comment( 'History options->' + includeDeletedOptionsLabel + ' shows deleted datasets' );
-    var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
-
-    this.historyoptions.includeDeleted( function(){
-        this.test.assertExists( uploadSelector,
-            "Deleted HDA is in the DOM (using history options -> " + includeDeletedOptionsLabel + ")" );
-        this.test.assertVisible( uploadSelector,
-            "Deleted HDA is visible again (using history options -> " + includeDeletedOptionsLabel + ")" );
-    });
-});
-
-spaceghost.then( function(){
-    this.test.comment( 'History options->' + includeDeletedOptionsLabel + ' (again) re-hides deleted datasets' );
-
-    this.historyoptions.excludeDeleted( function(){
-        this.test.assertDoesntExist( '#' + testUploadInfo.hdaElement.attributes.id,
-            "Deleted HDA is not in the DOM (using history options -> " + includeDeletedOptionsLabel + ")" );
-    });
-});
-
-spaceghost.then( function(){
-    // undelete the uploaded file
-    this.historyoptions.includeDeleted( function(){
-        this.historypanel.undeleteHda( '#' + testUploadInfo.hdaElement.attributes.id );
-        spaceghost.debug( 'undeleted' );
-    });
-
-});
 
 // ------------------------------------------------------------------- hidden hdas aren't shown
 // ------------------------------------------------------------------- history options allows showing hidden hdas
@@ -116,13 +84,13 @@ spaceghost.then( function(){
 
 // ------------------------------------------------------------------- history options collapses all expanded hdas
 spaceghost.then( function(){
-    this.historypanel.thenExpandHda( '#' + testUploadInfo.hdaElement.attributes.id );
+    this.historypanel.thenExpandHda( '#dataset-' + testUploadId );
 });
 spaceghost.then( function(){
     this.test.comment( 'History option collapses all expanded hdas' );
 
     this.historyoptions.collapseExpanded( function(){
-        var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+        var uploadedSelector = '#dataset-' + testUploadId;
         this.test.assertNotVisible( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.body,
             "Body for uploaded file is not visible" );
     });

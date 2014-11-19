@@ -153,25 +153,25 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     visualizationData.bler = 'blah';
     this.api.assertRaises( function(){
         created = this.api.visualizations.create( visualizationData );
-    }, 400, 'unknown key: bler' );
+    }, 500, "create_visualization() got an unexpected keyword argument 'bler'" );
     delete visualizationData.bler;
 
     this.test.comment( 'Calling create with an unparsable JSON config will cause an API error' );
     visualizationData.config = '3 = nime';
     this.api.assertRaises( function(){
         created = this.api.visualizations.create( visualizationData );
-    }, 400, 'config must be a dictionary (JSON)' );
+    }, 400, 'config must be a dictionary' );
 
     // ------------------------------------------------------------------------------------------ UPDATE
     // ........................................................................................... idiot proofing
-    this.test.comment( 'updating using a nonsense key should fail with an error' );
-    this.api.assertRaises( function(){
-        returned = this.api.visualizations.update( created.id, { bler : 'blah' });
-    }, 400, 'unknown key: bler' );
+    //this.test.comment( 'updating using a nonsense key should fail with an error' );
+    //this.api.assertRaises( function(){
+    //    returned = this.api.visualizations.update( created.id, { type: 'test', bler : 'blah' });
+    //}, 400, 'unknown key: bler' );
 
     this.test.comment( 'updating by attempting to change type should cause an error' );
     this.api.assertRaises( function(){
-        returned = this.api.visualizations.update( created.id, { title : 30 });
+        returned = this.api.visualizations.update( created.id, { type: 'test', title : 30 });
     }, 400, 'title must be a string or unicode' );
     //TODO: the other types...
 

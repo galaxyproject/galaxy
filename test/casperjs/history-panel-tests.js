@@ -48,7 +48,7 @@ var tooltipSelector     = spaceghost.data.selectors.tooltipBalloon,
 var newHistoryName = "Test History",
     filepathToUpload = '../../test-data/1.txt',
     historyFrameInfo = {},
-    testUploadInfo = {};
+    testUploadId = null;
 
 
 // =================================================================== TESTS
@@ -138,16 +138,15 @@ spaceghost.then( function(){
 
 // ------------------------------------------------------------------- check structure of NON empty history
 // upload file: 1.txt
-spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
-    this.test.comment( 'uploaded file should appear in history' );
-
-    this.debug( 'uploaded HDA info: ' + this.jsonStr( _uploadInfo ) );
-    var hasHda = _uploadInfo.hdaElement,
-        hasClass = _uploadInfo.hdaElement.attributes[ 'class' ],
-        hasOkClass = _uploadInfo.hdaElement.attributes[ 'class' ].indexOf( wrapperOkClassName ) !== -1;
-    this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + _uploadInfo.filename );
-    testUploadInfo = _uploadInfo;
+spaceghost.then( function upload(){
+    var currHistory = spaceghost.api.histories.index()[0];
+    spaceghost.api.tools.thenUpload( currHistory.id, {
+            filepath: filepathToUpload
+        }, function uploadCallback( uploadId ){
+            testUploadId = uploadId;
+        });
 });
+spaceghost.openHomePage();
 
 spaceghost.then( function checkPanelStructure(){
     this.test.comment( 'checking structure of non-empty panel' );
@@ -231,8 +230,7 @@ spaceghost.then( function refreshButton(){
 // broken in webkit w/ jq 1.7
 spaceghost.historypanel.waitForHdas( function(){
     this.test.comment( 'HDAs can be expanded by clicking on the name' );
-    this.debug( this.jsonStr( testUploadInfo ) );
-    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+    var uploadedSelector = '#dataset-' + testUploadId;
 
     this.click( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.title );
     this.wait( 1000, function(){
@@ -244,7 +242,7 @@ spaceghost.historypanel.waitForHdas( function(){
 // ------------------------------------------------------------------- expanded hdas are still expanded after a refresh
 spaceghost.then( function(){
     this.test.comment( 'Expanded hdas are still expanded after a refresh' );
-    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+    var uploadedSelector = '#dataset-' + testUploadId;
 
     this.click( refreshButtonSelector );
     this.historypanel.waitForHdas( function(){
@@ -257,7 +255,7 @@ spaceghost.then( function(){
 // ------------------------------------------------------------------- expanded hdas collapse by clicking name again
 spaceghost.then( function(){
     this.test.comment( 'Expanded hdas collapse by clicking name again' );
-    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+    var uploadedSelector = '#dataset-' + testUploadId;
 
     this.click( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.title );
     this.wait( 500, function(){
@@ -269,7 +267,7 @@ spaceghost.then( function(){
 // ------------------------------------------------------------------- collapsed hdas still collapsed after a refresh
 spaceghost.then( function(){
     this.test.comment( 'collapsed hdas still collapsed after a refresh' );
-    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+    var uploadedSelector = '#dataset-' + testUploadId;
 
     this.click( refreshButtonSelector );
     this.historypanel.waitForHdas( function(){

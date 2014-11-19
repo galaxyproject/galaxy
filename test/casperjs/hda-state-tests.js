@@ -25,8 +25,9 @@ if( spaceghost.fixtureData.testUser ){
 }
 
 var tooltipSelector = spaceghost.data.selectors.tooltipBalloon,
-    filepathToUpload = '../../test-data/1.txt',
-    testUploadInfo = {},
+    filenameToUpload = '1.txt',
+    filepathToUpload = '../../test-data/' + filenameToUpload,
+    testUploadId = null,
     //TODO: get from the api module - that doesn't exist yet
     summaryShouldBeArray = [ '10 lines', 'format', 'txt' ],
     infoShouldBe = 'uploaded txt file',
@@ -37,10 +38,14 @@ var tooltipSelector = spaceghost.data.selectors.tooltipBalloon,
 // start a new user and upload a file
 spaceghost.user.loginOrRegisterUser( email, password );
 spaceghost.then( function upload(){
-    spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
-        testUploadInfo = _uploadInfo;
-    });
+    var currHistory = spaceghost.api.histories.index()[0];
+    spaceghost.api.tools.thenUpload( currHistory.id, {
+            filepath: filepathToUpload
+        }, function uploadCallback( uploadId ){
+            testUploadId = uploadId;
+        });
 });
+spaceghost.openHomePage();
 
 // =================================================================== TEST HELPERS
 //NOTE: to be called with fn.call( spaceghost, ... )
@@ -278,7 +283,7 @@ function testExpandedBody( hdaSelector, expectedSummaryTextArray, expectedInfoTe
 spaceghost.then( function(){
     this.test.comment( 'HDAs in the "ok" state should be well formed' );
 
-    var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+    var uploadSelector = '#dataset-' + testUploadId;
     this.test.assertVisible( uploadSelector, 'HDA is visible' );
 
     this.test.comment( 'should have the proper state class' );
@@ -288,7 +293,7 @@ spaceghost.then( function(){
     // since we're using css there's no great way to test state icon (.state-icon is empty)
 
     this.test.comment( 'should have proper title and hid' );
-    testTitle.call( spaceghost, uploadSelector, testUploadInfo.filename );
+    testTitle.call( spaceghost, uploadSelector, filenameToUpload );
 
     this.test.comment( 'should have all of the three, main buttons' );
     testTitleButtonStructure.call( spaceghost, uploadSelector );
@@ -308,7 +313,7 @@ spaceghost.then( function(){
 // restore to collapsed
 spaceghost.then( function(){
     this.test.comment( "Collapsing hda in 'ok' state should hide body again" );
-    var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+    var uploadSelector = '#dataset-' + testUploadId;
 
     spaceghost.historypanel.thenCollapseHda( uploadSelector, function collapseOkState(){
         this.test.assertNotVisible( uploadSelector + ' ' + this.historypanel.data.selectors.hda.body,
@@ -321,16 +326,17 @@ spaceghost.then( function(){
     // set state directly through model, wait for re-render
     //TODO: not ideal to test this
     this.evaluate( function(){
-        return Galaxy.currHistoryPanel.model.contents.at( 0 ).set( 'state', 'new' );
+        console.debug( Galaxy.currHistoryPanel.model.contents.getByHid( 1 ) );
+        return Galaxy.currHistoryPanel.model.contents.getByHid( 1 ).set( 'state', 'new' );
     });
     this.wait( 1000, function(){
         this.test.comment( 'HDAs in the "new" state should be well formed' );
 
-        var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+        var uploadSelector = '#dataset-' + testUploadId;
         this.test.assertVisible( uploadSelector, 'HDA is visible' );
 
         // should have proper title and hid
-        testTitle.call( spaceghost, uploadSelector, testUploadInfo.filename );
+        testTitle.call( spaceghost, uploadSelector, filenameToUpload );
 
         this.test.comment( 'new HDA should have the new state class' );
         this.assertHasClass( uploadSelector, this.historypanel.data.selectors.hda.wrapper.stateClasses['new'],
@@ -378,7 +384,7 @@ spaceghost.then( function(){
 });
 // restore state, collapse
 spaceghost.then( function revertStateAndCollapse(){
-    var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+    var uploadSelector = '#dataset-' + testUploadId;
 
     this.historypanel.thenCollapseHda( uploadSelector, function(){
         this.evaluate( function(){

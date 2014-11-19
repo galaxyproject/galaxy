@@ -67,11 +67,13 @@ spaceghost.then( function(){
 // ------------------------------------------------------------------------------------------- hdas
 spaceghost.thenOpen( spaceghost.baseUrl ).waitForSelector( spaceghost.historypanel.data.selectors.history.name );
 spaceghost.then( function(){
-    spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
-        this.test.assert( uploadInfo.hdaElement !== null, "Convenience function produced hda" );
-        var state = this.historypanel.getHdaState( '#' + uploadInfo.hdaElement.attributes.id );
-        this.test.assert( state === 'ok', "Convenience function produced hda in ok state" );
-    });
+    var currHistory = spaceghost.api.histories.index()[0];
+    spaceghost.api.tools.thenUpload( currHistory.id, {
+            filepath: '../../test-data/1.sam'
+        }, function( uploadedId ){
+            var hda = spaceghost.api.hdas.show( currHistory.id, uploadedId );
+            this.test.assert( hda.state === 'ok', "Convenience function produced hda in ok state" );
+        });
 });
 
 spaceghost.then( function(){

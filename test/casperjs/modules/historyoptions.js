@@ -232,8 +232,6 @@ HistoryOptions.prototype.data = {
             datasetSecurity         : "Dataset Security",
             resumePausedJobs        : "Resume Paused Jobs",
             collapseExpanded        : 'Collapse Expanded Datasets',
-            includeDeleted          : 'Include Deleted Datasets',
-            includeHidden           : 'Include Hidden Datasets',
             unhideHiddenDatasets    : "Unhide Hidden Datasets",
             purgeDeletedDatasets    : "Purge Deleted Datasets",
             showStructure           : "Show Structure",
