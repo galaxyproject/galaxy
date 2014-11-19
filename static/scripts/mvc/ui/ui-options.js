@@ -224,7 +224,7 @@ Radio.View = OptionsBase.extend({
             
             // update to new selection
             for (var i in new_val) {
-                this.$el.find('input[value=' + new_val[i] + ']').prop('checked', true);
+                this.$el.find('input[value="' + new_val[i] + '"]').prop('checked', true);
             };
         }
         

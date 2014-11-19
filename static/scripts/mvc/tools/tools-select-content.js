@@ -149,7 +149,7 @@ var View = Backbone.View.extend({
     /** Return the currently selected dataset values */
     value : function (dict) {
         // update current value
-        if (dict !== undefined) {
+        if (dict && dict.values) {
             try {
                 // create list
                 var list = [];
