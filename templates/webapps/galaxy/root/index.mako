@@ -126,10 +126,12 @@
             });
             require([ 'mvc/history/options-menu' ], function( optionsMenu ){
                 $(function(){
+                    //##TODO: Galaxy is not reliably available here since index doesn't use app
                     var popupmenu = optionsMenu( $( "#history-options-button" ), {
-                        anonymous    : Galaxy.currUser.isAnonymous(),
-                        purgeAllowed : Galaxy.config.allow_user_dataset_purge
-                    });
+                            anonymous    : ${ 'true' if not trans.user else 'false' },
+                            purgeAllowed : ${ 'true' if trans.app.config.allow_user_dataset_purge else 'false' },
+                            root         : '${ h.url_for( "/" ) }'
+                        });
                     Galaxy.historyOptionsMenu = popupmenu;
                 });
             });

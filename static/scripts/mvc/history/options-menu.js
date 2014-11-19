@@ -120,8 +120,7 @@ var menu = [
     }
 ];
 
-function buildMenu( isAnon, purgeAllowed ){
-    var urlRoot = Galaxy.options.root;
+function buildMenu( isAnon, purgeAllowed, urlRoot ){
     return _.clone( menu ).filter( function( menuOption ){
         if( isAnon && !menuOption.anon ){
             return false;
@@ -150,10 +149,12 @@ var create = function( $button, options ){
     options = options || {};
     var isAnon = options.anonymous === undefined? true : options.anonymous,
         purgeAllowed = options.purgeAllowed || false,
-        menu = buildMenu( isAnon, purgeAllowed );
+        root = options.root || ( ( Galaxy && Galaxy.options )? Galaxy.options.root: '/' ),
+        menu = buildMenu( isAnon, purgeAllowed, root );
     //console.debug( 'menu:', menu );
     return new PopupMenu( $button, menu );
 };
+
 
 // ============================================================================
     return create;
