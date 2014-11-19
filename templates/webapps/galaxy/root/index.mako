@@ -108,7 +108,7 @@
                 <a id="history-view-multi-button" class='panel-header-button'
                    href="${h.url_for( controller='history', action='view_multiple' )}"
                    title="${ _( 'View all histories' ) }">
-                    <span class="fa fa-caret-square-o-right"></span>
+                    <span class="fa fa-columns"></span>
                 </a>
                 %endif
             </div>
