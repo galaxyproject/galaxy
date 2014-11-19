@@ -112,9 +112,6 @@ class GalaxyInteractorApi( object ):
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception( msg )
 
-    def wait_for_history( self, history_id, maxseconds ):
-        self.twill_test_case.wait_for( lambda: not self.__history_ready( history_id ), maxseconds=maxseconds)
-
     def wait_for_job( self, job_id, history_id, maxseconds ):
         self.twill_test_case.wait_for( lambda: not self.__job_ready( job_id, history_id ), maxseconds=maxseconds)
 
