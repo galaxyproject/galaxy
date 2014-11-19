@@ -184,6 +184,16 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
             </div>
             ${render_repository_type_select_field( repository_type_select_field, render_help=True )}
             <div class="form-row">
+                <label>Remote repository URL:</label>
+                <input name="remote_repository_url" type="textfield" value="${remote_repository_url | h}" size="80"/>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Homepage URL:</label>
+                <input name="homepage_url" type="textfield" value="${homepage_url | h}" size="80"/>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
                 <label>Synopsis:</label>
                 <input name="description" type="textfield" value="${description | h}" size="80"/>
                 <div style="clear: both"></div>

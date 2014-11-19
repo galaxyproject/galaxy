@@ -144,9 +144,9 @@ class GalaxySession( object ):
 
 
 class Repository( object, Dictifiable ):
-    dict_collection_visible_keys = ( 'id', 'name', 'type', 'description', 'user_id', 'private', 'deleted',
+    dict_collection_visible_keys = ( 'id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
                                      'times_downloaded', 'deprecated' )
-    dict_element_visible_keys = ( 'id', 'name', 'type', 'description', 'long_description', 'user_id', 'private',
+    dict_element_visible_keys = ( 'id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
                                   'deleted', 'times_downloaded', 'deprecated' )
     file_states = Bunch( NORMAL = 'n',
                          NEEDS_MERGING = 'm',
@@ -154,11 +154,14 @@ class Repository( object, Dictifiable ):
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
 
-    def __init__( self, id=None, name=None, type=None, description=None, long_description=None, user_id=None, private=False,
-                  deleted=None, email_alerts=None, times_downloaded=0, deprecated=False ):
+    def __init__( self, id=None, name=None, type=None, remote_repository_url=None, homepage_url=None,
+                    description=None, long_description=None, user_id=None, private=False,
+                    deleted=None, email_alerts=None, times_downloaded=0, deprecated=False ):
         self.id = id
         self.name = name or "Unnamed repository"
         self.type = type
+        self.remote_repository_url = remote_repository_url
+        self.homepage_url = homepage_url
         self.description = description
         self.long_description = long_description
         self.user_id = user_id

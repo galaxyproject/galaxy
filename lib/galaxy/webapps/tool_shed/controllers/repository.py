@@ -1063,6 +1063,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                               message=message,
                                                               status=status ) )
         name = kwd.get( 'name', '' ).strip()
+        remote_repository_url = kwd.get( 'remote_repository_url', '' )
+        homepage_url = kwd.get( 'homepage_url', '' )
         description = kwd.get( 'description', '' )
         long_description = kwd.get( 'long_description', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
@@ -1082,6 +1084,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 repository, message = repository_util.create_repository( trans.app,
                                                                          name,
                                                                          repository_type,
+                                                                         remote_repository_url,
+                                                                         homepage_url,
                                                                          description,
                                                                          long_description,
                                                                          user_id=trans.user.id,
@@ -1093,6 +1097,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_type_select_field = rt_util.build_repository_type_select_field( trans )
         return trans.fill_template( '/webapps/tool_shed/repository/create_repository.mako',
                                     name=name,
+                                    remote_repository_url=remote_repository_url,
+                                    homepage_url=homepage_url,
                                     description=description,
                                     long_description=long_description,
                                     selected_categories=selected_categories,
@@ -2242,6 +2248,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
         repo_name = kwd.get( 'repo_name', repository.name )
         changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
+        remote_repository_url = kwd.get( 'remote_repository_url', repository.remote_repository_url )
+        homepage_url = kwd.get( 'homepage_url', repository.homepage_url )
         description = kwd.get( 'description', repository.description )
         long_description = kwd.get( 'long_description', repository.long_description )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
@@ -2270,6 +2278,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   status='error' ) )
             if repository_type != repository.type:
                 repository.type = repository_type
+                flush_needed = True
+            if remote_repository_url != repository.remote_repository_url:
+                repository.remote_repository_url = remote_repository_url
+                flush_needed = True
+            if homepage_url != repository.homepage_url:
+                repository.homepage_url = homepage_url
                 flush_needed = True
             if description != repository.description:
                 repository.description = description
@@ -2470,6 +2484,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                    deprecated_only=True )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
+                                    remote_repository_url=remote_repository_url,
+                                    homepage_url=homepage_url,
                                     description=description,
                                     long_description=long_description,
                                     current_allow_push_list=current_allow_push_list,
