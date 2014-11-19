@@ -270,12 +270,6 @@ class GalaxyInteractorApi( object ):
                 pass
         return wait
 
-    def __wait_for_job( self, job_id ):
-        def wait():
-            while not self.__job_ready( job_id ):
-                pass
-        return wait
-
     def __job_ready( self, job_id ):
         job_json = self._get( "jobs/%s" % job_id ).json()
         state = job_json[ 'state' ]
