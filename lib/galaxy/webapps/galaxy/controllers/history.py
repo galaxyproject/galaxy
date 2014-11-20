@@ -609,6 +609,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     def view_multiple( self, trans, include_deleted_histories=False, order='update' ):
         """
         """
+        if not trans.user:
+            log_in_url = url_for( controller="user", action="login", use_panels=True )
+            log_in_link = "<a href='%s'>log in</a>" % ( log_in_url )
+            register_url = url_for( controller="user", action="create", use_panels=True )
+            register_link = "<a href='%s'>register</a>" % ( register_url )
+            return trans.show_error_message( "You need to %s or %s to use multiple histories"
+                                             % ( log_in_link, register_link ), use_panels=True )
+
         #TODO: allow specifying user_id for admin?
         include_deleted_histories = galaxy.util.string_as_bool( include_deleted_histories )
         order = order if order in ( 'update', 'name', 'size' ) else 'update'
