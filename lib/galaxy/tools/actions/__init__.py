@@ -481,6 +481,7 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
 
     #process change_format tags
     if output.change_format:
+        new_format_set = False
         for change_elem in output.change_format:
             for when_elem in change_elem.findall( 'when' ):
                 check = when_elem.get( 'input', None )
@@ -497,8 +498,26 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
                     check = when_elem.get( 'input_dataset', None )
                     if check is not None:
                         check = input_datasets.get( check, None )
-                        if check is not None:
-                            if str( getattr( check, when_elem.get( 'attribute' ) ) ) == when_elem.get( 'value', None ):
-                                ext = when_elem.get( 'format', ext )
-
+                        # At this point check is a HistoryDatasetAssociation object.
+                        check_format = when_elem.get( 'format', ext )
+                        check_value = when_elem.get( 'value', None )
+                        check_attribute = when_elem.get( 'attribute', None )
+                        if check is not None and check_value is not None and check_attribute is not None:
+                            # See if the attribute to be checked belongs to the HistoryDatasetAssociation object.
+                            if hasattr( check, check_attribute ):   
+                                if str( getattr( check, check_attribute ) ) == str( check_value ):
+                                    ext = check_format
+                                    new_format_set = True
+                                    break
+                            # See if the attribute to be checked belongs to the metadata associated with the
+                            # HistoryDatasetAssociation object.
+                            if check.metadata is not None:
+                                metadata_value = check.metadata.get( check_attribute, None )
+                                if metadata_value is not None:
+                                    if str( metadata_value ) == str( check_value ):
+                                        ext = check_format
+                                        new_format_set = True
+                                        break
+            if new_format_set:
+                break
     return ext
