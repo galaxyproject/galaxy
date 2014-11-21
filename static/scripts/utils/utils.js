@@ -6,6 +6,14 @@
 // dependencies
 define(["libs/underscore"], function(_) {
 
+/**
+ * Sanitize/escape a string
+ * @param{String}   content - Content to be sanitized
+ */
+function sanitize(content) {
+    return $('<div/>').text(content).html();
+};
+
 // generic function to recieve json from url
 function get (url, success, error) {
     request('GET', url, {}, success, error);
@@ -151,7 +159,8 @@ return {
     uuid: uuid,
     time: time,
     wrap: wrap,
-    request: request
+    request: request,
+    sanitize: sanitize
 };
 
 });
