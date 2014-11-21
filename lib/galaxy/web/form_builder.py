@@ -126,9 +126,6 @@ class CheckboxField(BaseField):
     def is_checked( value ):
         if value == True:
             return True
-        if isinstance( value, basestring ):
-            if value.lower() in [ "yes", "true", "on" ]:
-                return True
         # This may look strange upon initial inspection, but see the comments in the get_html() method
         # above for clarification.  Basically, if value is not True, then it will always be a list with
         # 2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
