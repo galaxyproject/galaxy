@@ -7,6 +7,14 @@
 define(["libs/underscore"], function(_) {
 
 /**
+ * Sanitize/escape a string
+ * @param{String}   content - Content to be sanitized
+ */
+function sanitize(content) {
+    return $('<div/>').text(content).html();
+};
+
+/**
  * Request handler for GET
  * @param{String}   url     - Url request is made to
  * @param{Function} success - Callback on success
@@ -203,7 +211,8 @@ return {
     uuid: uuid,
     time: time,
     wrap: wrap,
-    request: request
+    request: request,
+    sanitize: sanitize
 };
 
 });
