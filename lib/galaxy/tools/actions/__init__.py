@@ -504,7 +504,7 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
                         check_attribute = when_elem.get( 'attribute', None )
                         if check is not None and check_value is not None and check_attribute is not None:
                             # See if the attribute to be checked belongs to the HistoryDatasetAssociation object.
-                            if hasattr( check, check_attribute ):   
+                            if hasattr( check, check_attribute ):
                                 if str( getattr( check, check_attribute ) ) == str( check_value ):
                                     ext = check_format
                                     new_format_set = True
