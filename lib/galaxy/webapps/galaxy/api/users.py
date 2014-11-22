@@ -37,11 +37,19 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         else:
             query = query.filter( trans.app.model.User.table.c.deleted == False )  # noqa
             # special case: user can see only their own user
-            if not trans.user_is_admin():
+            # special case2: if the galaxy admin has specified that other user email/names are
+            #   exposed, we don't want special case #1
+            if not trans.user_is_admin() and not trans.app.config.expose_user_name and not trans.app.config.expose_user_email:
                 item = trans.user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
                 return [item]
         for user in query:
             item = user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
+            # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
+            # the user is an admin
+            if not trans.app.config.expose_user_name and user is not trans.user and not trans.user_is_admin():
+                del item['username']
+            if not trans.app.config.expose_user_email and user is not trans.user and not trans.user_is_admin():
+                del item['email']
             # TODO: move into api_values
             rval.append( item )
         return rval

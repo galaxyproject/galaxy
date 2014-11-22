@@ -37,9 +37,8 @@
                 <div style="clear: both"></div>
                 <div class="form-row">
                     <label>Galaxy user emails with which to share histories</label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="email" value="${email}" size="40">
-                    </div>
+                    <input type="hidden" id="email_select" name="email" style="float: left; width: 250px; margin-right: 10px;">
+                    </input>
                     <div class="toolParamHelp" style="clear: both;">
                         Enter a Galaxy user email address or a comma-separated list of addresses if sharing with multiple users
                     </div>
@@ -55,6 +54,47 @@
                     <input type="submit" name="share_button" value="Submit">
                 </div>
             </form>
+            <script type="text/javascript">
+            // stolen from templates/admin/impersonate.mako
+            /*  This should be ripped out and made generic at some point for the
+             *  various API bindings available, and once the API can filter list
+             *  queries (term, below) */
+            $("#email_select").select2({
+                placeholder: "Select a user",
+                ajax: {
+                    url: "${h.url_for(controller="/api/users", action="index")}",
+                    dataType: 'json',
+                    quietMillis: 250,
+                    matcher: function(term, text) { return text.toUpperCase().indexOf(term.toUpperCase())>=0; },
+                    data: function (term) {
+                        return {
+                            f_email: term
+                        };
+                    },
+                    results: function (data) {
+                      var results = [];
+                      $.each(data, function(index, item){
+                            var text = "";
+                            if(typeof(item.username) === "string" && typeof(item.email) === "string"){
+                                text = item.username + " <" + item.email + ">";
+                            }else if(typeof(item.username) === "string"){
+                                text = item.username;
+                            }else{
+                                text = item.email;
+                            }
+                            results.push({
+                              id: item.email,
+                              name: item.username,
+                              text: text
+                            });
+                      });
+                      return {
+                          results: results
+                      };
+                    }
+                }
+            });
+            </script>
         %else:
             ## We are sharing restricted histories
             %if no_change_needed or can_change:
