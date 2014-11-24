@@ -77,7 +77,7 @@ class InteractiveEnviornmentRequest(object):
         }
 
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
-            conf_file['galaxy_url'] = self.attr.viz_config.getstring("docker", "galaxy_url")
+            conf_file['galaxy_url'] = self.attr.viz_config.get("docker", "galaxy_url")
         elif self.attr.galaxy_config.galaxy_infrastructure_url_set:
             conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
         else:
