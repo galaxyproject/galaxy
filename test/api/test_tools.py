@@ -273,6 +273,15 @@ class ToolsTestCase( api.ApiTestCase ):
         self._check_repeat_multirun( history_id, inputs )
 
     @skip_without_tool( "cat1" )
+    def test_multirun_in_repeat_mismatch( self ):
+        history_id, common_dataset, repeat_datasets = self._setup_repeat_multirun( )
+        inputs = {
+            "input1": {'batch': False, 'values': [ common_dataset ] },
+            'queries_0|input2': { 'batch': True, 'values': repeat_datasets },
+        }
+        self._check_repeat_multirun( history_id, inputs )
+
+    @skip_without_tool( "cat1" )
     def test_multirun_on_multiple_inputs_legacy( self ):
         history_id, first_two, second_two = self._setup_two_multiruns()
         inputs = {
