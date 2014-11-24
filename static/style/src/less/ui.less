@@ -200,12 +200,16 @@
     }
 }
 
+.ui-portlet-slim {
+    &:extend(.ui-portlet all);
+    max-width: 900px;
+}
+
 .ui-portlet-repeat {
     &:extend(.ui-portlet);
     border: none;
     border-left: solid 3px @form-heading-bg;
     border-radius: 5px;
-    display: inline-block;
     .portlet-header {
         background: @form-heading-bg;
         border-radius: 3px;
@@ -290,6 +294,9 @@
         position: absolute;
         top: 5px;
         right: 5px;
+    }
+    .select2-container {
+        width: 100%;
     }
     select {
         position: relative;

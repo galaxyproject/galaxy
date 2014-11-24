@@ -108,15 +108,21 @@ return Backbone.Model.extend({
             var input_id = this.app.tree.match(job_input_id);
             var input_field = this.app.field_list[input_id];
             var input_def = this.app.input_list[input_id];
-                
-            // check basic field validation
-            if (input_def && input_field && input_field.validate && !input_field.validate()) {
+            
+            // check if objects where properly identified
+            if (!input_id || !input_def || !input_field) {
+                console.debug('tools-jobs::_validation - Retrieving input objects failed.');
+                continue;
+            }
+            
+            // validate non-optional fields
+            if (!input_def.optional && input_field.validate && !input_field.validate()) {
                 this._foundError(input_id);
                 return false;
             }
             
             // check if input field is in batch mode
-            if (input_value.batch) {
+            if (input_value && input_value.batch) {
                 // get values
                 var n = input_value.values.length;
                 
@@ -148,7 +154,6 @@ return Backbone.Model.extend({
                     }
                 }
             }
-            
         }
         
         // return validation result

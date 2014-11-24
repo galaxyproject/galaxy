@@ -334,6 +334,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     
                 // genome field
                 case 'genomebuild':
+                    input_def.searchable = true;
                     field = this._fieldSelect(input_def);
                     break;
                     
@@ -406,10 +407,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             // select field
             var self = this;
             return new SelectClass.View({
-                id      : 'field-' + input_def.id,
-                data    : options,
-                multiple: input_def.multiple,
-                onchange: function() {
+                id          : 'field-' + input_def.id,
+                data        : options,
+                multiple    : input_def.multiple,
+                searchable  : input_def.searchable,
+                onchange    : function() {
                     self.app.refresh();
                 }
             });

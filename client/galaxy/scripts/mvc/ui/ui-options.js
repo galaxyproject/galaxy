@@ -19,7 +19,7 @@ var OptionsBase = Backbone.View.extend({
         this.options = Utils.merge(options, this.optionsDefault);
     
         // create new element
-        this.setElement('<div style="display: inline-block;"/>');
+        this.setElement('<div/>');
         
         // create elements
         this.$message = $('<div/>');

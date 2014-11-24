@@ -25,12 +25,8 @@ define([], function() {
             // add field element
             this.$field.prepend(this.field.$el);
             
-            // hide optional field on initialization
-            if (options.optional) {
-                this.field.skip = true;
-            } else {
-                this.field.skip = false;
-            }
+            // start with enabled optional fields
+            this.field.skip = false;
             
             // refresh view
             this._refresh();
