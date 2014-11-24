@@ -84,14 +84,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         // refreshes input states i.e. for dynamic parameters
         refresh: function() {
             // only refresh the state if the form contains dynamic parameters
-            if (!this.is_dynamic) {
-                return;
-            }
-            
-            // place refresh process into deferred queue
-            var self = this;
-            this.deferred.reset();
-            this.deferred.execute(function(){self._updateModel()});
+            // by using/reseting the deferred ajax queue the number of redundant calls is reduced
+            if (this.is_dynamic) {
+                var self = this;
+                this.deferred.reset();
+                this.deferred.execute(function(){self._updateModel()});
+            };
         },
         
         // build tool model through api call
@@ -141,10 +139,8 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         
         // request a new model and update the form inputs
         _updateModel: function() {
-            // link this
+            // create the request dictionary
             var self = this;
-            
-            // finalize data
             var current_state = this.tree.finalize({
                 data : function(dict) {
                     if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
@@ -332,8 +328,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // create portlet
             this.portlet = new Portlet.View({
-                icon : 'fa-wrench',
-                title: '<b>' + this.model.name + '</b> ' + this.model.description,
+                icon    : 'fa-wrench',
+                title   : '<b>' + this.model.name + '</b> ' + this.model.description,
+                cls     : 'ui-portlet-slim',
                 operations: {
                     menu    : menu
                 },

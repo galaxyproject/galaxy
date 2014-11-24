@@ -1082,9 +1082,12 @@ class GenomeBuildParameter( SelectToolParameter ):
                 value = option[1]
 
         d.update({
-            'options': options,
-            'value': value
+            'options'   : options,
+            'value'     : value,
+            'display'   : self.display,
+            'multiple'  : self.multiple
         })
+        
         return d
 
     def _get_dbkey_names( self, trans=None ):

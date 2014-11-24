@@ -98,8 +98,11 @@ return Backbone.Model.extend({
                             break;
                         // handle conditionals
                         case 'conditional':
-                            // get conditional value
+                            // get and patch conditional value
                             var value = self.app.field_list[input.id].value();
+                            if (patch[input.test_param.type]) {
+                                value = patch[input.test_param.type](value);
+                            }
                             
                             // add conditional value
                             add (job_input_id + '|' + input.test_param.name, input.id, value);
@@ -114,10 +117,8 @@ return Backbone.Model.extend({
                             // get field
                             var field = self.app.field_list[input.id];
                             
-                            // get value
+                            // get and patch field value
                             var value = field.value();
-                            
-                            // patch value
                             if (patch[input.type]) {
                                 value = patch[input.type](value);
                             }
