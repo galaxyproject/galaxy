@@ -20,7 +20,7 @@
         </div>
         <h4>
             <a class="toggle-embed" href="${display_href}" title="Show or hide history contents">
-                Galaxy History | ${get_item_name( item )}
+                Galaxy History | ${get_item_name( item ) | h}
             </a>
         </h4>
         %if hasattr( item, "annotation") and item.annotation:

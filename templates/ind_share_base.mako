@@ -83,7 +83,7 @@
     %>
     
     <div class="toolForm">
-        <div class="toolFormTitle">Share ${item_class_name} '${item_name}' with Another User</div>
+        <div class="toolFormTitle">Share ${item_class_name} '${item_name | h}' with Another User</div>
             <div class="toolFormBody">
                 <form action="${h.url_for(controller=item_controller, action='share', id=trans.security.encode_id( item.id ) )}" method="POST">
                     <div class="form-row">
