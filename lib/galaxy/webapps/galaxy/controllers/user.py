@@ -1150,7 +1150,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     except Exception, e:
                         status = 'error'
                         message = 'Failed to reset password: %s' % str( e )
-                        log.exception( 'Unable to reset password: ' + str( e ) )
+                        log.exception( 'Unable to reset password.' )
             elif email is not None:
                 message = "The specified user does not exist."
                 status = 'error'
