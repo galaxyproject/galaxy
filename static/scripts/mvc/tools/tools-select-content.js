@@ -190,7 +190,7 @@ var View = Backbone.View.extend({
         
         // prepare result dict
         var result = {
-            batch   : !this.options.multiple && id_list.length > 1,
+            batch   : !this.options.multiple && (this.current == 'collection' || id_list.length > 1),
             values  : []
         }
         
