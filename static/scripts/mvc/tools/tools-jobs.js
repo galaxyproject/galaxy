@@ -145,12 +145,14 @@ return Backbone.Model.extend({
                 }
                 
                 // check number of inputs
-                if (batch_n === -1) {
-                    batch_n = n;
-                } else {
-                    if (batch_n !== n) {
-                        this._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
-                        return false;
+                if (n > 1) {
+                    if (batch_n === -1) {
+                        batch_n = n;
+                    } else {
+                        if (batch_n !== n) {
+                            this._foundError(input_id, 'Please make sure that you select the same number or a single input for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
+                            return false;
+                        }
                     }
                 }
             }
