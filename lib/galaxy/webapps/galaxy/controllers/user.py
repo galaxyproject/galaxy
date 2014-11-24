@@ -1119,22 +1119,22 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """Reset the user's password. Send an email with the new password."""
         if trans.app.config.smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator." )
-        message = util.sanitize_text( util.restore_text( kwd.get( 'message', '' ) ) )
+        message = ''
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
             user = trans.get_user()
             if reset_user:
                 if user and user.id != reset_user.id:
-                    message = "You may only reset your own password"
+                    message = "You may only reset your own password."
                     status = 'error'
                 else:
                     chars = string.letters + string.digits
                     new_pass = ""
                     reset_password_length = getattr( trans.app.config, "reset_password_length", 15 )
-                    for i in range(reset_password_length):
-                        new_pass = new_pass + random.choice(chars)
-                    host = trans.request.host.split(':')[0]
+                    for i in range( reset_password_length ):
+                        new_pass = new_pass + random.choice( chars )
+                    host = trans.request.host.split( ':' )[ 0 ]
                     if host == 'localhost':
                         host = socket.getfqdn()
                     body = 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass )
@@ -1148,10 +1148,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         trans.log_event( "User reset password: %s" % email )
                         message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( controller='user', action='login', noredirect='true' ) )
                     except Exception, e:
-                        message = 'Failed to reset password: %s' % str( e )
                         status = 'error'
+                        message = 'Failed to reset password: %s' % str( e )
+                        log.exception( 'Unable to reset password: ' + str( e ) )
             elif email is not None:
-                message = "The specified user does not exist"
+                message = "The specified user does not exist."
                 status = 'error'
             elif email is None:
                 email = ""
