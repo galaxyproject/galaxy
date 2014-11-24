@@ -1,34 +1,37 @@
 <%inherit file="/base.mako"/>
 
-## new tool form
-<%
-    ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
-    ## This avoids making two separate requests since the classic form requires the mako anyway.
-    from galaxy.webapps.galaxy.api.tools import ToolsController
-    controller = ToolsController(trans.app)
-    params = dict(trans.request.params)
-    if 'id' in params:
-        params['dataset_id'] = params['id']
-    self.form_config = controller._build_dict(trans, tool, params)
-    self.form_config.update({
-        'id'                : tool.id,
-        'job_id'            : trans.security.encode_id( job.id ) if job else None,
-        'history_id'        : trans.security.encode_id( trans.history.id ),
-        'toolform_upgrade'  : trans.app.config.get('toolform_upgrade',  False)
-    })
-%>
 ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
 ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
-<script>
-    require(['mvc/tools/tools-form'], function(ToolsForm){
-        $(function(){
-            var form = new ToolsForm.View(${ h.dumps(self.form_config) });
-        });
-    });
-</script>
 
-## classic tool form
-<div id="tool-form-classic" style="display: none;">
+## skip new tool form code if disabled
+%if trans.app.config.get('toolform_upgrade',  False):
+    <%
+        ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
+        ## This avoids making two separate requests since the classic form requires the mako anyway.
+        from galaxy.webapps.galaxy.api.tools import ToolsController
+        controller = ToolsController(trans.app)
+        params = dict(trans.request.params)
+        if 'id' in params:
+            params['dataset_id'] = params['id']
+        self.form_config = controller._build_dict(trans, tool, params)
+        self.form_config.update({
+            'id'                : tool.id,
+            'job_id'            : trans.security.encode_id( job.id ) if job else None,
+            'history_id'        : trans.security.encode_id( trans.history.id )
+        })
+    %>
+    <script>
+        require(['mvc/tools/tools-form'], function(ToolsForm){
+            $(function(){
+                var form = new ToolsForm.View(${ h.dumps(self.form_config) });
+            });
+        });
+    </script>
+    <div id="tool-form-classic" style="display: none;">
+%else:
+    <div id="tool-form-classic">
+%endif
+
     <%namespace file="/message.mako" import="render_msg" />
     <%namespace file="/base_panels.mako" import="overlay" />
 
