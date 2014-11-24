@@ -205,7 +205,7 @@
                Docker. -->
           <!-- <param id="docker_set_user">$UID</param> -->
           <!-- Pass extra arguments to the docker run command not covered by the
-               above options (e.g. --link server:server) -->
+               above options. -->
           <!-- <param id="docker_run_extra_arguments"></param> -->
           <!-- Following command can be used to tweak docker command. -->
           <!-- <param id="docker_cmd">/usr/local/custom_docker/docker</param> -->
