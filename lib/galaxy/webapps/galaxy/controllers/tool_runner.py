@@ -290,7 +290,7 @@ class ToolRunner( BaseUIController ):
             log.error( "data_source_redirect called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             trans.response.status = 404
-            return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
+            return trans.show_error_message("Tool '%s' does not exist." % ( escape(tool_id) ))
 
         if isinstance( tool, DataSourceTool ):
             link = url_for( tool.action, **tool.get_static_param_values( trans ) )
