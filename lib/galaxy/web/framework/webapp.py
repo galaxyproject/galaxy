@@ -265,6 +265,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         tstamp = time.localtime( time.time() + 3600 * 24 * age )
         self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp )
         self.response.cookies[name]['version'] = version
+        https = self.request.environ[ "wsgi.url_scheme" ] == "https"
+        if https:
+            self.response.cookies[name]['secure'] = True
         try:
             self.response.cookies[name]['httponly'] = True
         except CookieError, e:
