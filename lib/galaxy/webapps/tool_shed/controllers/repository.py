@@ -1084,12 +1084,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 repository, message = repository_util.create_repository( trans.app,
                                                                          name,
                                                                          repository_type,
-                                                                         remote_repository_url,
-                                                                         homepage_url,
                                                                          description,
                                                                          long_description,
                                                                          user_id=trans.user.id,
-                                                                         category_ids=category_ids )
+                                                                         category_ids=category_ids,
+                                                                         remote_repository_url=remote_repository_url,
+                                                                         homepage_url=homepage_url )
                 trans.response.send_redirect( web.url_for( controller='repository',
                                                            action='manage_repository',
                                                            message=message,

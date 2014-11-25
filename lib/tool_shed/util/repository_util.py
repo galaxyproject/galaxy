@@ -120,7 +120,7 @@ def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_re
                                                  tool_dependencies )
     return repo_info_dict
 
-def create_repository( app, name, type, remote_repository_url, homepage_url, description, long_description, user_id, category_ids=[] ):
+def create_repository( app, name, type, description, long_description, user_id, category_ids=[], remote_repository_url=None, homepage_url=None ):
     """Create a new ToolShed repository"""
     sa_session = app.model.context.current
     # Add the repository record to the database.
