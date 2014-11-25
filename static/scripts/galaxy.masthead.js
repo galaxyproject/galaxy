@@ -251,28 +251,31 @@ var GalaxyMastheadTab = Backbone.View.extend({
     },
     
     // initialize
-    initialize: function (options){
+    initialize: function ( options ){
         // read in defaults
-        if (options)
-            this.options = _.defaults(options, this.options);
-        
+        if ( options ){
+            this.options = _.defaults( options, this.options );
+        }
+   
         // update url
-        if (this.options.content && this.options.content.indexOf('//') === -1)
+        if ( this.options.content !== undefined && this.options.content.indexOf( '//' ) === -1 ){
             this.options.content = galaxy_config.root + this.options.content;
+        } 
         
         // add template for tab
-        this.setElement($(this._template(this.options)));
+        this.setElement( $( this._template( this.options ) ) );
         
         // disable menu items that are not available to anonymous user
         // also show title to explain why they are disabled
-        if (this.options.disabled){
-            $(this.el).find('.root').addClass('disabled');
+        if ( this.options.disabled ){
+            $( this.el ).find( '.root' ).addClass( 'disabled' );
             this._attachPopover();
         }
 
         // visiblity
-        if (!this.options.visible)
+        if ( !this.options.visible ){
             this.hide();
+        }
     },
     
     // show
