@@ -581,6 +581,21 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             for input in inputs.itervalues():
                 state[input.name] = input.get_initial_value(trans, context)
     
+        # check the current state of a value and update it if necessary
+        def check_state(trans, input, default_value, context):
+            value = default_value
+            error = 'State validation failed.'
+            try:
+                # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
+                if input.type == 'boolean':
+                    value, error = [util.string_as_bool(default_value), None]
+                else:
+                    value, error = check_param(trans, input, default_value, context)
+            except Exception:
+                log.error('Checking parameter %s failed.', input.name)
+                pass
+            return [value, error]
+    
         # populates state with incoming url parameters
         def populate_state(trans, inputs, state, incoming, prefix="", context=None ):
             errors = dict()
@@ -613,9 +628,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                     group_prefix = "%s|" % ( key )
                     test_param_key = group_prefix + input.test_param.name
                     default_value = incoming.get(test_param_key, group_state.get(input.test_param.name, None))
-                    value, test_param_error = check_param( trans, input.test_param, default_value, context)
-                    if test_param_error:
-                        errors[input.name] = [test_param_error]
+                    value, error = check_state(trans, input.test_param, default_value, context)
+                    if error:
+                        errors[input.name] = [error]
                     else:
                         current_case = input.get_current_case(value, trans)
                         group_state = state[input.name] = {}
@@ -624,16 +639,13 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                         if group_errors:
                             errors[input.name] = group_errors
                         group_state['__current_case__'] = current_case
-                    group_state[ input.test_param.name ] = value
+                    group_state[input.test_param.name] = value
                 else:
-                    try:
-                        value, error = check_param(trans, input, incoming.get(key, state.get(input.name, None)), context)
-                        if error:
-                            errors[input.name] = error
-                        state[input.name] = value
-                    except Exception:
-                        log.error('Checking parameter %s failed.', input.name)
-                        pass
+                    default_value = incoming.get(key, state.get(input.name, None))
+                    value, error = check_state(trans, input, default_value, context)
+                    if error:
+                        errors[input.name] = error
+                    state[input.name] = value
             return errors
         
         # builds tool model including all attributes
