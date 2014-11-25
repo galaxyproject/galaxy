@@ -11,8 +11,7 @@ from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesExtendedMetadataMixin
-from galaxy.web.framework.helpers import grids, iff, time_ago
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode, escape
 from galaxy.tools.errors import EmailErrorReporter
 
 eggs.require( "Paste" )
@@ -510,7 +509,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         # Set referer message.
         referer = trans.request.referer
         if referer is not "":
-            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
         # Error checking.

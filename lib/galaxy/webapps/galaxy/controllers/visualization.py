@@ -9,7 +9,7 @@ from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
-from galaxy.web.framework.helpers import time_ago, grids
+from galaxy.web.framework.helpers import time_ago, grids, escape
 from galaxy import util
 from galaxy.datatypes.interval import Bed
 from galaxy.util.json import loads
@@ -123,7 +123,7 @@ class DbKeyColumn( grids.GridColumn ):
         #                        or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
         #                        )
         #                    )
-        
+
 
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
@@ -360,7 +360,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):
-        
+
         # Handle operation
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
@@ -388,7 +388,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         kwargs[ 'embedded' ] = True
         grid = self._user_list_grid( trans, *args, **kwargs )
         return trans.fill_template( "visualization/list.mako", embedded_grid=grid, shared_by_others=shared_by_others )
-    
+
     #
     # -- Functions for operating on visualizations. --
     #
@@ -459,7 +459,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Set referer message.
         referer = trans.request.referer
         if referer is not "":
-            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % web.url_for( '/' )
 
