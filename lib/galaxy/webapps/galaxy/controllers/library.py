@@ -84,8 +84,10 @@ class Library( BaseUIController ):
         app = {
             'jscript'       : "galaxy.library"
         }
-        # fill template
-        return trans.fill_template('galaxy.panels.mako', config = {'app' : app})
+        return trans.fill_template( 'galaxy.panels.mako',
+                                    config = { 
+                                    'title': 'Galaxy Data Libraries',
+                                    'app': app } )
 
     @web.expose
     def index( self, trans, **kwd ):
