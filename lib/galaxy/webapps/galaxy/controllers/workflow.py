@@ -22,8 +22,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
 from galaxy.web.framework.formbuilder import form
-from galaxy.web.framework.helpers import grids, time_ago
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.web.framework.helpers import grids, time_ago, to_unicode, escape
 from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.modules import MissingToolException
 from galaxy.workflow.modules import module_factory, is_tool_module_type
@@ -389,7 +388,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Set referer message.
         referer = trans.request.referer
         if referer is not "":
-            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
 
