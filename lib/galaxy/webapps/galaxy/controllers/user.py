@@ -605,8 +605,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         else:
             refresh_frames = [ 'masthead' ]
         trans.handle_user_logout( logout_all=logout_all )
-        message = 'You have been logged out.<br>You can log in again, <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-            ( escape( trans.request.referer ), url_for( '/' ) )
+        message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % \
+            ( url_for( '/' ) )
         if biostar.biostar_logged_in( trans ):
             biostar_url = biostar.biostar_logout( trans )
             if biostar_url:
