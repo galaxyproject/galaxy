@@ -1,5 +1,7 @@
-import re, logging
-from sqlalchemy.sql.expression import func, and_
+import re
+import logging
+from sqlalchemy.sql.expression import func
+from sqlalchemy.sql.expression import and_
 from sqlalchemy.sql import select
 
 log = logging.getLogger( __name__ )
@@ -25,12 +27,15 @@ class TagHandler( object ):
         self.key_value_separators = "=:"
         # Initialize with known classes - add to this in subclasses.
         self.item_tag_assoc_info = {}
+
     def get_tag_assoc_class( self, item_class ):
         """Returns tag association class for item class."""
         return self.item_tag_assoc_info[item_class.__name__].tag_assoc_class
+
     def get_id_col_in_item_tag_assoc_table( self, item_class ):
         """Returns item id column in class' item-tag association table."""
         return self.item_tag_assoc_info[item_class.__name__].item_id_col
+
     def get_community_tags( self, trans, item=None, limit=None ):
         """Returns community tags for an item."""
         # Get item-tag association class.
@@ -58,6 +63,7 @@ class TagHandler( object ):
             tag_id = row[0]
             community_tags.append( self.get_tag_by_id( trans, tag_id ) )
         return community_tags
+
     def get_tool_tags( self, trans ):
         result_set = trans.sa_session.execute( select( columns=[ trans.app.model.ToolTagAssociation.table.c.tag_id ],
                                                        from_obj=trans.app.model.ToolTagAssociation.table ).distinct() )
@@ -67,6 +73,7 @@ class TagHandler( object ):
             tag_id = row[0]
             tags.append( self.get_tag_by_id( trans, tag_id ) )
         return tags
+
     def remove_item_tag( self, trans, user, item, tag_name ):
         """Remove a tag from an item."""
         # Get item tag association.
@@ -78,6 +85,7 @@ class TagHandler( object ):
             item.tags.remove( item_tag_assoc )
             return True
         return False
+
     def delete_item_tags( self, trans, user, item ):
         """Delete tags from an item."""
         # Delete item-tag associations.
@@ -85,6 +93,7 @@ class TagHandler( object ):
             trans.sa_session.delete( tag )
         # Delete tags from item.
         del item.tags[:]
+
     def item_has_tag( self, trans, user, item, tag ):
         """Returns true if item is has a given tag."""
         # Get tag name.
@@ -97,6 +106,7 @@ class TagHandler( object ):
         if item_tag_assoc:
             return True
         return False
+
     def apply_item_tag( self, trans, user, item, name, value=None ):
         # Use lowercase name for searching/creating tag.
         lc_name = name.lower()
@@ -124,6 +134,7 @@ class TagHandler( object ):
         item_tag_assoc.user_value = value
         item_tag_assoc.value = lc_value
         return item_tag_assoc
+
     def apply_item_tags( self, trans, user, item, tags_str ):
         """Apply tags to an item."""
         # Parse tags.
@@ -131,6 +142,7 @@ class TagHandler( object ):
         # Apply each tag.
         for name, value in parsed_tags.items():
             self.apply_item_tag( trans, user, item, name, value )
+
     def get_tags_str( self, tags ):
         """Build a string from an item's tags."""
         # Return empty string if there are no tags.
@@ -144,14 +156,17 @@ class TagHandler( object ):
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
         return ", ".join( tags_str_list )
+
     def get_tag_by_id( self, trans, tag_id ):
         """Get a Tag object from a tag id."""
         return trans.sa_session.query( trans.app.model.Tag ).filter_by( id=tag_id ).first()
+
     def get_tag_by_name( self, trans, tag_name ):
         """Get a Tag object from a tag name (string)."""
         if tag_name:
             return trans.sa_session.query( trans.app.model.Tag ).filter_by( name=tag_name.lower() ).first()
         return None
+
     def _create_tag( self, trans, tag_str ):
         """Create a Tag object from a tag string."""
         tag_hierarchy = tag_str.split( self.hierarchy_separator )
@@ -169,6 +184,7 @@ class TagHandler( object ):
             parent_tag = tag
             tag_prefix = tag.name + self.hierarchy_separator
         return tag
+
     def _get_or_create_tag( self, trans, tag_str ):
         """Get or create a Tag object from a tag string."""
         # Scrub tag; if tag is None after being scrubbed, return None.
@@ -181,6 +197,7 @@ class TagHandler( object ):
         if tag is None:
             tag = self._create_tag( trans, scrubbed_tag_str )
         return tag
+
     def _get_item_tag_assoc( self, user, item, tag_name ):
         """
         Return ItemTagAssociation object for a user, item, and tag string; returns None if there is
@@ -191,6 +208,7 @@ class TagHandler( object ):
             if ( item_tag_assoc.user == user ) and ( item_tag_assoc.user_tname == scrubbed_tag_name ):
                 return item_tag_assoc
         return None
+
     def parse_tags( self, tag_str ):
         """
         Returns a list of raw (tag-name, value) pairs derived from a string; method scrubs tag names and values as well.
@@ -210,6 +228,7 @@ class TagHandler( object ):
             scrubbed_value = self._scrub_tag_value( nv_pair[1] )
             name_value_pairs[scrubbed_name] = scrubbed_value
         return name_value_pairs
+
     def _scrub_tag_value( self, value ):
         """Scrub a tag value."""
         # Gracefully handle None:
@@ -219,6 +238,7 @@ class TagHandler( object ):
         reg_exp = re.compile( '\s' )
         scrubbed_value = re.sub( reg_exp, "", value )
         return scrubbed_value
+
     def _scrub_tag_name( self, name ):
         """Scrub a tag name."""
         # Gracefully handle None:
@@ -234,12 +254,14 @@ class TagHandler( object ):
         if len( scrubbed_name ) < self.min_tag_len or len( scrubbed_name ) > self.max_tag_len:
             return None
         return scrubbed_name
+
     def _scrub_tag_name_list( self, tag_name_list ):
         """Scrub a tag name list."""
         scrubbed_tag_list = list()
         for tag in tag_name_list:
             scrubbed_tag_list.append( self._scrub_tag_name( tag ) )
         return scrubbed_tag_list
+
     def _get_name_value_pair( self, tag_str ):
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
@@ -249,6 +271,7 @@ class TagHandler( object ):
         if len( name_value_pair ) < 2:
             name_value_pair.append( None )
         return name_value_pair
+
 
 class GalaxyTagHandler( TagHandler ):
     def __init__( self ):
@@ -270,6 +293,7 @@ class GalaxyTagHandler( TagHandler ):
         self.item_tag_assoc_info["Visualization"] = ItemTagAssocInfo( model.Visualization,
                                                                       model.VisualizationTagAssociation,
                                                                       model.VisualizationTagAssociation.table.c.visualization_id )
+
 
 class CommunityTagHandler( TagHandler ):
     def __init__( self ):

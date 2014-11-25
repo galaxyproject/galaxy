@@ -19,7 +19,7 @@
 ## Render HTML for a list of tags.
 <%def name="render_tagging_element_html(elt_id=None, tags=None, editable=True, use_toggle_link=True, input_size='15', in_form=False, tag_type='individual', render_add_tag_button=True)">
     ## Useful attributes.
-    <% 
+    <%
         num_tags = len( tags )
     %>
     <div class="tag-element"
@@ -50,6 +50,7 @@
                     elif isinstance( tag, ItemTagAssociation ):
                         tag_name = tag.user_tname
                         tag_value = tag.user_value
+                        
                     ## Convert tag name, value to unicode.
                     if isinstance( tag_name, str ):
                         tag_name = unicode( escape( tag_name ), 'utf-8' )
@@ -61,7 +62,7 @@
                         tag_str = tag_name
                 %>
                 <span class="tag-button">
-                    <span class="tag-name">${tag_str}</span>
+                    <span class="tag-name">${tag_str | h}</span>
                     %if editable:
                         <img class="delete-tag-img" src="${h.url_for('/static/images/delete_tag_icon_gray.png')}"/>
                     %endif
@@ -186,10 +187,11 @@
             ## Build dict of tag name, values.
             tag_names_and_values = dict()
             for tag in item_tags:
-                tag_name = tag.user_tname
+                tag_name = escape( tag.user_tname )
                 tag_value = ""
                 if tag.value is not None:
-                    tag_value = tag.user_value
+                    tag_value = escape( tag.user_value )
+
                 ## Tag names and values may be string or unicode object.
                 if isinstance( tag_name, str ):
                     tag_names_and_values[unicode(tag_name, 'utf-8')] = unicode(tag_value, 'utf-8')
