@@ -15,7 +15,7 @@
         //TODO: global...
         %for key in kwargs:
             ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (
-                ${ h.dumps( kwargs[ key ], indent=( 2 if trans.debug else 0 ) ).replace( '</', '<\\/' ) } );
+                ${ h.dumps( kwargs[ key ], indent=( 2 if trans.debug else 0 ) ) } );
         %endfor
         define( 'bootstrapped-data', function(){
             return window.bootstrapped;
