@@ -24,7 +24,7 @@ var GalaxyMenu = Backbone.Model.extend({
         var tab_analysis = new mod_masthead.GalaxyMastheadTab({
             id      : "analysis",
             title   : "Analyze Data",
-            content : "root/index",
+            content : "",
             title_attribute : 'Analysis home view'
         });
         this.masthead.append(tab_analysis);

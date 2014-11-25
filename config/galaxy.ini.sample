@@ -523,6 +523,15 @@ nglims_config_file = tool-data/nglims.yaml
 # it faster on the fly.
 #upstream_gzip = False
 
+# The following default adds a header to web request responses that will cause
+# modern web browsers to not allow Galaxy to be embedded in the frames of web
+# applications hosted at other hosts - this can help prevent a class of attack
+# called clickjacking (https://www.owasp.org/index.php/Clickjacking). If you
+# configuring a proxy to sit infront of Galaxy - please ensure this header
+# remains intact to protect your users. Uncomment and leave empty to not set
+# the `X-Frame-Options` header.
+#x_frame_options = SAMEORIGIN
+
 # nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
 # Configuration for this is complex and explained in detail in the
 # documentation linked above.  The upload store is a temporary directory in
