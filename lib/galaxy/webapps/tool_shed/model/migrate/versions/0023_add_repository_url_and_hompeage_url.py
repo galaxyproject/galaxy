@@ -43,7 +43,7 @@ def downgrade( migrate_engine ):
     # Drop type column from repository table.
     Repository_table = Table( "repository", metadata, autoload=True )
     try:
-        Repository_table.c..drop()
+        Repository_table.c.drop()
         Repository_table.c.homepage_url.drop()
     except Exception, e:
         print "Dropping columns remote_repository_url and homepage_url from the repository table failed: %s" % str( e )
