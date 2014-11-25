@@ -130,7 +130,7 @@ class User( object, Dictifiable ):
     histories, credentials, and roles.
     """
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
-    dict_collection_visible_keys = ( 'id', 'email' )
+    dict_collection_visible_keys = ( 'id', 'email', 'username' )
     # attributes that will be accessed and returned when calling to_dict( view='element' )
     dict_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
 
