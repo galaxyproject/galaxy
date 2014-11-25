@@ -15,8 +15,8 @@ from galaxy.tools.parameters.basic import DataCollectionToolParameter
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
-from galaxy.web import error
-from galaxy.web import url_for
+from galaxy.web import error, url_for
+from galaxy.web.framework.helpers import escape
 from galaxy.web.base.controller import BaseUIController
 import tool_shed.util.shed_util_common as suc
 
@@ -57,7 +57,7 @@ class ToolRunner( BaseUIController ):
             return trans.response.send_redirect( url_for( controller="root", action="welcome" ) )
         # When the tool form is initially loaded, the received kwd will not include a 'refresh'
         # entry (which only is included when another option is selected in the tool_version_select_field),
-        # so the default selected option should be the most recent version of the tool.  The following 
+        # so the default selected option should be the most recent version of the tool.  The following
         # check will mae sure this occurs.
         refreshed_on_change = kwd.get( 'refresh', False )
         tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
@@ -69,7 +69,7 @@ class ToolRunner( BaseUIController ):
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             trans.response.status = 404
-            return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
+            return trans.show_error_message("Tool '%s' does not exist." % ( escape(tool_id) ))
         if tool.require_login and not trans.user:
             message = "You must be logged in to use this tool."
             status = "info"
@@ -291,7 +291,7 @@ class ToolRunner( BaseUIController ):
             log.error( "data_source_redirect called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             trans.response.status = 404
-            return "Tool '%s' does not exist, kwd=%s " % ( tool_id, kwd )
+            return trans.show_error_message("Tool '%s' does not exist." % ( escape(tool_id) ))
 
         if isinstance( tool, DataSourceTool ):
             link = url_for( tool.action, **tool.get_static_param_values( trans ) )
