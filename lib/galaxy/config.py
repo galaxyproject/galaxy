@@ -96,6 +96,7 @@ class Configuration( object ):
         # been migrated from the Galaxy code distribution to the Tool Shed.
         self.check_migrate_tools = string_as_bool( kwargs.get( 'check_migrate_tools', True ) )
         self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
+        self.x_frame_options = kwargs.get( "x_frame_options", "SAMEORIGIN" )
         if self.shed_tool_data_path:
             self.shed_tool_data_path = resolve_path( self.shed_tool_data_path, self.root )
         else:
