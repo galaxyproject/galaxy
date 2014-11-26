@@ -77,7 +77,7 @@
         else:
             current_actions = []
             permitted_actions = {}.items()
-            obj_str = 'unknown object %s' %obj_name
+            obj_str = 'unknown object %s' % obj_name
             obj_type = ''
     %>
     <script type="text/javascript">
@@ -104,7 +104,7 @@
         });
     </script>
     <div class="toolForm">
-        <div class="toolFormTitle">Manage ${obj_type} permissions on ${obj_str}</div>
+        <div class="toolFormTitle">Manage ${obj_type} permissions on ${obj_str | h}</div>
         <div class="toolFormBody">
             <form name="edit_role_associations" id="edit_role_associations" action="${form_url}" method="post">
                 <div class="form-row"></div>
