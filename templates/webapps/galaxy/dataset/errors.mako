@@ -49,7 +49,7 @@
 
     <body>
         <h2>Dataset generation errors</h2>
-        <p><b>Dataset ${hda.hid}: ${hda.display_name()}</b></p>
+        <p><b>Dataset ${hda.hid}: ${hda.display_name() | h}</b></p>
         <% job = hda.creating_job %>
         %if job:
             
