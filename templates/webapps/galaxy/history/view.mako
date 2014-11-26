@@ -1,4 +1,4 @@
-<%namespace file="/galaxy.masthead.mako" import="get_user_json" />
+<%namespace file="/galaxy_client_app.mako" import="get_user_json" />
 
 ## ----------------------------------------------------------------------------
 <%!
@@ -166,9 +166,9 @@ ${parent.javascripts()}
     // use_panels effects where the the center_panel() is rendered:
     //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
     var hasMasthead  = ${ 'true' if use_panels else 'false' },
-        userIsOwner  = ${'true' if user_is_owner else 'false'},
-        historyJSON  = ${h.dumps( history )},
-        hdaJSON      = ${h.dumps( hdas )},
+        userIsOwner  = ${ 'true' if user_is_owner else 'false' },
+        historyJSON  = ${ h.dumps( history ) },
+        hdaJSON      = ${ h.dumps( hdas ) },
         panelToUse   = ( userIsOwner )?
 //TODO: change class names
             ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanelEdit' }):

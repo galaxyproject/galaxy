@@ -15,14 +15,12 @@
             }
         });
 
-        require(['mvc/data'], function(data) {
+        require([ 'mvc/data' ], function( data ) {
             data.createTabularDatasetChunkedView({
-                dataset_config: _.extend( ${h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )}, 
-                        {
-                            first_data_chunk: ${chunk}
-                        }
-                ),
-                parent_elt: $('body')
+                dataset_config : _.extend( ${ h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )}, {
+                        first_data_chunk: ${ chunk }
+                    }),
+                parent_elt : $( 'body' )
             });
         });
     </script>

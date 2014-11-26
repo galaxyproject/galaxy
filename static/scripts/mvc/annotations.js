@@ -56,7 +56,7 @@ var AnnotationEditor = Backbone.View
             '<label class="prompt">', _l( 'Annotation' ), '</label>',
             // set up initial tags by adding as CSV to input vals (necc. to init select2)
             '<div class="annotation" title="', _l( 'Edit annotation' ), '">',
-                annotation,
+                _.escape( annotation ),
             '</div>'
         ].join( '' );
     },

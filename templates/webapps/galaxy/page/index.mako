@@ -30,7 +30,7 @@
                         <% page = association.page %>
                         <tr>
                             <td>
-                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for(controller='page', action='display_by_username_and_slug', username=page.user.username, slug=page.slug)}">${page.title}</a>
+                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for(controller='page', action='display_by_username_and_slug', username=page.user.username, slug=page.slug)}">${page.title | h}</a>
                             </td>
                             <td>${page.user.username}</td>
                             <td>
