@@ -9,6 +9,7 @@
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
+  <tool file="multi_output_assign_primary.xml" />
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
   <tool file="output_order.xml" />
