@@ -594,7 +594,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             error = 'State validation failed.'
             try:
                 # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
-                if input.type == 'boolean':
+                if input.type == 'boolean' and isinstance(default_value, basestring):
                     value, error = [util.string_as_bool(default_value), None]
                 else:
                     value, error = check_param(trans, input, default_value, context)
