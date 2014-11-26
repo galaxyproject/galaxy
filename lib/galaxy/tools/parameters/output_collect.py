@@ -51,7 +51,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                         raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
                 if not os.path.isdir( directory ):
                     continue
-                for filename in os.listdir( directory ):
+                for filename in sorted( os.listdir( directory ) ):
                     path = os.path.join( directory, filename )
                     if not os.path.isfile( path ):
                         continue
