@@ -5,7 +5,6 @@ import re
 import glob
 import json
 
-
 from galaxy import jobs
 from galaxy import util
 from galaxy.util import odict
@@ -30,8 +29,10 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
     # Loop through output file names, looking for generated primary
     # datasets in form of:
     #     'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
+    primary_output_assigned = False
+    new_outdata_name = None
     primary_datasets = {}
-    for name, outdata in output.items():
+    for output_index, ( name, outdata ) in enumerate( output.items() ):
         dataset_collectors = tool.outputs[ name ].dataset_collectors if name in tool.outputs else [ DEFAULT_DATASET_COLLECTOR ]
         filenames = odict.odict()
         if 'new_file_path' in app.config.collect_outputs_from:
@@ -50,20 +51,26 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                         raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
                 if not os.path.isdir( directory ):
                     continue
-                for filename in os.listdir( directory ):
+                for filename in sorted( os.listdir( directory ) ):
                     path = os.path.join( directory, filename )
                     if not os.path.isfile( path ):
                         continue
                     if extra_file_collector.match( outdata, filename ):
                         filenames[ path ] = extra_file_collector
-        for filename, extra_file_collector in filenames.iteritems():
-            if not name in primary_datasets:
-                primary_datasets[name] = {}
+        for filename_index, ( filename, extra_file_collector ) in enumerate( filenames.iteritems() ):
             fields_match = extra_file_collector.match( outdata, os.path.basename( filename ) )
             if not fields_match:
                 # Before I guess pop() would just have thrown an IndexError
                 raise Exception( "Problem parsing metadata fields for file %s" % filename )
             designation = fields_match.designation
+            if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
+                new_outdata_name = fields_match.name or "%s (%s)" % ( outdata.name, designation )
+                # Move data from temp location to dataset location
+                app.object_store.update_from_file( outdata.dataset, file_name=filename, create=True )
+                primary_output_assigned = True
+                continue
+            if not name in primary_datasets:
+                primary_datasets[ name ] = {}
             visible = fields_match.visible
             ext = fields_match.ext
             if ext == "input":
@@ -145,6 +152,13 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 dataset.history.add_dataset( new_data )
                 sa_session.add( new_data )
                 sa_session.flush()
+        if primary_output_assigned:
+            outdata.name = new_outdata_name
+            outdata.init_meta()
+            outdata.set_meta()
+            outdata.set_peek()
+            sa_session.add( outdata )
+            sa_session.flush()
     return primary_datasets
 
 
@@ -178,6 +192,7 @@ class DatasetCollector( object ):
         self.default_ext = kwargs.get( "ext", None )
         self.default_visible = util.asbool( kwargs.get( "visible", None ) )
         self.directory = kwargs.get( "directory", None )
+        self.assign_primary_output = util.asbool( kwargs.get( 'assign_primary_output', False ) )
 
     def pattern_for_dataset( self, dataset_instance=None ):
         token_replacement = r'\d+'
