@@ -11,9 +11,8 @@ def test_lazy_process():
     lazy_process = LazyProcess(["bash", "-c", "touch %s; sleep 100" % t.name])
     assert not os.path.exists(t.name)
     lazy_process.start_process()
-    time.sleep(.02)
+    while not os.path.exists(t.name):
+        time.sleep(.01)
     assert lazy_process.process.poll() is None
-    assert os.path.exists(t.name)
     lazy_process.shutdown()
-    time.sleep(.02)
     assert lazy_process.process.poll()
