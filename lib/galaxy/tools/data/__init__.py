@@ -211,6 +211,13 @@ class ToolDataTable( object ):
                 self.add_entry( entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
         return self._loaded_content_version
 
+    def _remove_entry(self, values, **kwd):
+        raise NotImplementedError( "Abstract method" )
+
+    def remove_entry(self, values, **kwd):
+        self._remove_entry_and_reload( values,**kwd )
+        return self._update_version()
+
     def is_current_version( self, other_version ):
         return self._loaded_content_version == other_version
 
@@ -505,6 +512,42 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                         data_table_fh.write( '\n' )
                 data_table_fh.write( "%s\n" % ( self.separator.join( fields ) ) )
         return not is_error
+
+    def _remove_entry_and_reload( self, values):
+
+        # update every file
+        for filename in self.filenames:
+
+            if os.path.exists( filename ):
+                values = self._replace_field_separators( values )
+                self.filter_file_fields( filename, values )
+            else:
+                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
+        
+        self.reload_from_files()
+
+    def filter_file_fields( self, loc_file, values ):
+        """
+        Reads separated lines from file and print back only the lines that pass a filter.
+        """
+        separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
+
+        with open(loc_file) as reader:
+            rval = ""
+            for i, line in enumerate( reader ):
+                if line.lstrip().startswith( self.comment_char ):
+                    rval += line
+                else:
+                    line_s = line.rstrip( "\n\r" )
+                    if line_s:
+                        fields = line_s.split( self.separator )
+                        if fields != values:
+                            rval += line
+        
+        with open(loc_file, 'wb') as writer:
+            writer.write(rval)
+        
+        return rval
 
     def _replace_field_separators( self, fields, separator=None, replace=None, comment_char=None ):
         #make sure none of the fields contain separator
