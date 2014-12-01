@@ -342,6 +342,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 case 'drill_down':
                     field = this._fieldDrilldown(input_def);
                     break;
+                
+                // base url field
+                case 'baseurl':
+                    field = this._fieldHidden(input_def);
+                    break;
                         
                 // field not found
                 default:

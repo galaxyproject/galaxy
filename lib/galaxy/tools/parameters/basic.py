@@ -650,6 +650,11 @@ class BaseURLToolParameter( ToolParameter ):
     def get_label( self ):
         # BaseURLToolParameters are ultimately "hidden" parameters
         return None
+    
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super( BaseURLToolParameter, self ).to_dict( trans )
+        d['value'] = self.get_value( trans )
+        return d
 
 
 DEFAULT_VALUE_MAP = lambda x: x
@@ -1606,13 +1611,13 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         """
         return self.filtered.keys()
 
-    def to_dict( self, trans, view='collection', value_mapper=None, context={} ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
 
         options = []
         try:
-            options = self.get_options( trans, context )
+            options = self.get_options( trans=trans, other_values=other_values )
         except KeyError:
             # will sometimes error if self.is_dynamic and self.filtered
             #   bc we dont/cant fill out other_values above ({})
