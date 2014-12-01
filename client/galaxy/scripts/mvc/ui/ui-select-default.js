@@ -41,6 +41,11 @@ var View = Backbone.View.extend({
         // refresh
         this.update(this.options.data);
         
+        // set initial value
+        if (this.options.value !== undefined) {
+            this.value(this.options.value);
+        }
+        
         // show/hide
         if (!this.options.visible) {
             this.hide();

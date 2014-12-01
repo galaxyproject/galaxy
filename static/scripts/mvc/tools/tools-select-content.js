@@ -90,6 +90,11 @@ var View = Backbone.View.extend({
         // update options
         this.update(options.data);
         
+        // set initial value
+        if (this.options.value !== undefined) {
+            this.value(this.options.value);
+        }
+        
         // refresh view
         this.refresh();
         
