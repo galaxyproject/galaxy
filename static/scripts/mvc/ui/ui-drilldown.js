@@ -16,8 +16,7 @@ var View = Options.Base.extend({
     */
     _templateOption: function(name, value, selected) {
         return  '<div>' +
-                    '<input name="' + this.options.id + '" class="ui-option" type="' + this.display + '" value="' + value + '">' +
-                        Utils.sanitize(name) +
+                    '<input name="' + this.options.id + '" class="ui-option" type="' + this.display + '" value="' + value + '">' + name +
                 '<div/>';
     },
     
