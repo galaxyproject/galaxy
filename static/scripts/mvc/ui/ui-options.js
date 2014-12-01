@@ -7,7 +7,6 @@ var Base = Backbone.View.extend({
     initialize: function(options) {
         // options
         this.optionsDefault = {
-            value       : [],
             visible     : true,
             data        : [],
             id          : Utils.uuid(),
@@ -38,7 +37,7 @@ var Base = Backbone.View.extend({
         this.update(this.options.data);
         
         // set initial value
-        if (this.options.value) {
+        if (this.options.value !== undefined) {
             this.value(this.options.value);
         }
         
@@ -88,13 +87,13 @@ var Base = Backbone.View.extend({
     /** Return/Set current value
     */
     value: function (new_value) {
-        // check if its an array
-        if (typeof new_value === 'string') {
-            new_value = [new_value];
-        }
-        
-        // set new value
+        // set new value if provided
         if (new_value !== undefined) {
+            // check if its an array
+            if (!(new_value instanceof Array)) {
+                new_value = [new_value];
+            }
+            
             // reset selection
             this.$el.find('input').prop('checked', false);
             
@@ -111,12 +110,14 @@ var Base = Backbone.View.extend({
     /** Check if selected value exists (or any if multiple)
     */
     exists: function(value) {
-        if (typeof value === 'string') {
-            value = [value];
-        }
-        for (var i in value) {
-            if (this.$el.find('input[value="' + value[i] + '"]').length > 0) {
-                return true;
+        if (value !== undefined) {
+            if (!(value instanceof Array)) {
+                value = [value];
+            }
+            for (var i in value) {
+                if (this.$el.find('input[value="' + value[i] + '"]').length > 0) {
+                    return true;
+                }
             }
         }
         return false;

@@ -75,6 +75,9 @@ var View = Backbone.View.extend({
     value : function (new_value) {
         if (new_value !== undefined) {
             this.$select.val(new_value);
+            if (this.$select.select2) {
+                this.$select.select2('val', new_value);
+            }
         }
         return this.$select.val();
     },

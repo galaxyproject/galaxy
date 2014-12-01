@@ -23,7 +23,7 @@ var View = Options.Base.extend({
     
     /** Template to create options tree
     */
-    _templateOptions: function(data, current) {
+    _templateOptions: function(options) {
         // link this
         var self = this;
         
@@ -48,10 +48,10 @@ var View = Options.Base.extend({
         }
         
         // recursive function which iterates through options
-        function iterate ($tmpl, data) {
-            for (i in data) {
+        function iterate ($tmpl, options) {
+            for (i in options) {
                 // current option level in hierarchy
-                var level = data[i];
+                var level = options[i];
                 
                 // check for options
                 var has_options = level.options.length > 0;
@@ -84,7 +84,7 @@ var View = Options.Base.extend({
         
         // iterate through options and create dom
         var $tmpl = $('<div/>');
-        iterate($tmpl, data);
+        iterate($tmpl, options);
         return $tmpl;
     },
     
