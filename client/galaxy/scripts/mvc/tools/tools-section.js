@@ -337,7 +337,12 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     input_def.searchable = true;
                     field = this._fieldSelect(input_def);
                     break;
-                    
+                
+                // drill down field
+                case 'drill_down':
+                    field = this._fieldDrilldown(input_def);
+                    break;
+                        
                 // field not found
                 default:
                     // flag
@@ -411,6 +416,20 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 data        : options,
                 multiple    : input_def.multiple,
                 searchable  : input_def.searchable,
+                onchange    : function() {
+                    self.app.refresh();
+                }
+            });
+        },
+        
+        /** Drill down options field
+        */
+        _fieldDrilldown : function (input_def) {
+            var self = this;
+            return new Ui.Drilldown.View({
+                id          : 'field-' + input_def.id,
+                data        : input_def.options,
+                display     : input_def.display,
                 onchange    : function() {
                     self.app.refresh();
                 }

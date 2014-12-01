@@ -1606,19 +1606,20 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         """
         return self.filtered.keys()
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, context={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
 
         options = []
         try:
-            options = self.get_options( trans, {} )
+            options = self.get_options( trans, context )
         except KeyError:
             # will sometimes error if self.is_dynamic and self.filtered
             #   bc we dont/cant fill out other_values above ({})
             pass
-
         d[ 'options' ] = options
+        d[ 'display' ] = self.display
+        d[ 'is_dynamic' ] = self.is_dynamic
         return d
 
 
