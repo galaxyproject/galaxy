@@ -8,6 +8,7 @@ from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.json import loads
+from markupsafe import escape
 
 def format_bool( b ):
     if b:
@@ -89,9 +90,9 @@ class ItemSelectionGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, item):
             if hasattr( item, "get_display_name" ):
-                return item.get_display_name()
+                return escape(item.get_display_name())
             else:
-                return item.name
+                return escape(item.name)
 
     # Grid definition.
     show_item_checkboxes = True
