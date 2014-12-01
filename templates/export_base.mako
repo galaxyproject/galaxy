@@ -42,7 +42,7 @@
 </%def>
 
 <%def name="title()">
-    Export ${get_class_display_name( item.__class__ )} '${get_item_name( item )}'
+    Export ${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'
 </%def>
 
 <%def name="stylesheets()">
@@ -108,7 +108,7 @@
     <%
         item_name = get_item_name(item)
     %>
-    <h2>Download or Export ${self.item_class_name} '${item_name}'</h2>
+    <h2>Download or Export ${self.item_class_name} '${item_name | h}'</h2>
     
     ${self.render_download_to_file(item)}
     
