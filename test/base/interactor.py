@@ -64,6 +64,7 @@ class GalaxyInteractorApi( object ):
         fetcher = self.__dataset_fetcher( history_id )
         ## TODO: Twill version verifys dataset is 'ok' in here.
         self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        self._verify_metadata( history_id, hid, attributes )
 
         primary_datasets = attributes.get( 'primary_datasets', {} )
         if primary_datasets:
@@ -85,8 +86,6 @@ class GalaxyInteractorApi( object ):
             primary_hda_id = primary_output[ "dataset" ][ "id" ]
             self.twill_test_case.verify_hid( primary_outfile, hda_id=primary_hda_id, attributes=primary_attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
             self._verify_metadata( history_id, primary_hda_id, primary_attributes )
-
-        self._verify_metadata( history_id, hid, attributes )
 
     def _verify_metadata( self, history_id, hid, attributes ):
         metadata = attributes.get( 'metadata', {} ).copy()
