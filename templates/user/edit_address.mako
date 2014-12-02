@@ -20,7 +20,7 @@
             <div class="form-row">
                 <label>Short Description:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="short_desc" value="${address_obj.desc}" size="40">
+                    <input type="text" name="short_desc" value="${address_obj.desc | h}" size="40">
                 </div>
                 <div class="toolParamHelp" style="clear: both;">Required</div>
                 <div style="clear: both"></div>
@@ -28,7 +28,7 @@
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="name" value="${address_obj.name}" size="40">
+                    <input type="text" name="name" value="${address_obj.name | h}" size="40">
                 </div>
                 <div class="toolParamHelp" style="clear: both;">Required</div>
                 <div style="clear: both"></div>
@@ -36,7 +36,7 @@
             <div class="form-row">
                 <label>Institution:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="institution" value="${address_obj.institution}" size="40">
+                    <input type="text" name="institution" value="${address_obj.institution | h}" size="40">
                 </div>
                 <div class="toolParamHelp" style="clear: both;">Required</div>
                 <div style="clear: both"></div>
@@ -44,7 +44,7 @@
             <div class="form-row">
                 <label>Address:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="address" value="${address_obj.address}" size="40">
+                    <input type="text" name="address" value="${address_obj.address | h}" size="40">
                 </div>
                 <div class="toolParamHelp" style="clear: both;">Required</div>
                 <div style="clear: both"></div>
@@ -52,7 +52,7 @@
             <div class="form-row">
                 <label>City:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="city" value="${address_obj.city}" size="40">
+                    <input type="text" name="city" value="${address_obj.city | h}" size="40">
                 </div>
                 <div class="toolParamHelp" style="clear: both;">Required</div>
                 <div style="clear: both"></div>
@@ -60,7 +60,7 @@
             <div class="form-row">
                 <label>State/Province/Region:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="state" value="${address_obj.state}" size="40">
+                    <input type="text" name="state" value="${address_obj.state | h}" size="40">
                 </div>
                 <div class="toolParamHelp" style="clear: both;">Required</div>
                 <div style="clear: both"></div>
@@ -68,7 +68,7 @@
             <div class="form-row">
                 <label>Postal Code:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="postal_code" value="${address_obj.postal_code}" size="40">
+                    <input type="text" name="postal_code" value="${address_obj.postal_code | h}" size="40">
                 </div>
                 <div class="toolParamHelp" style="clear: both;">Required</div>
                 <div style="clear: both"></div>
@@ -76,7 +76,7 @@
             <div class="form-row">
                 <label>Country:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="country" value="${address_obj.country}" size="40">
+                    <input type="text" name="country" value="${address_obj.country | h}" size="40">
                 </div>
                 <div class="toolParamHelp" style="clear: both;">Required</div>
                 <div style="clear: both"></div>
@@ -84,7 +84,7 @@
             <div class="form-row">
                 <label>Phone:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="phone" value="${address_obj.phone}" size="40">
+                    <input type="text" name="phone" value="${address_obj.phone | h}" size="40">
                 </div>
                 <div style="clear: both"></div>
             </div>
