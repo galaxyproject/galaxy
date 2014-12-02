@@ -15,8 +15,8 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
     def test_extract_from_history( self ):
         # Run the simple test workflow and extract it back out from history
         cat1_job_id = self.__setup_and_run_cat1_workflow( history_id=self.history_id )
-        contents_response = self._get( "histories/%s/contents" % self.history_id )
-        input_hids = map( lambda c: c[ "hid" ], contents_response.json()[ 0:2 ] )
+        contents = self._history_contents()
+        input_hids = map( lambda c: c[ "hid" ], contents[ 0:2 ] )
         downloaded_workflow = self._extract_and_download_workflow(
             dataset_ids=input_hids,
             job_ids=[ cat1_job_id ],
@@ -36,10 +36,10 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         # offset = 1
 
         offset = 0
-        old_contents = self._get( "histories/%s/contents" % old_history_id ).json()
+        old_contents = self._history_contents( old_history_id )
         for old_dataset in old_contents:
             self.__copy_content_to_history( self.history_id, old_dataset )
-        new_contents = self._get( "histories/%s/contents" % self.history_id ).json()
+        new_contents = self._history_contents()
         input_hids = map( lambda c: c[ "hid" ], new_contents[ (offset + 0):(offset + 2) ] )
         cat1_job_id = self.__job_id( self.history_id, new_contents[ (offset + 2) ][ "id" ] )
         downloaded_workflow = self._extract_and_download_workflow(
@@ -61,7 +61,7 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         old_history_id = self.dataset_populator.new_history()
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair( old_history_id )
 
-        old_contents = self._get( "histories/%s/contents" % old_history_id ).json()
+        old_contents = self._history_contents( old_history_id )
         for old_content in old_contents:
             self.__copy_content_to_history( self.history_id, old_content )
         # API test is somewhat contrived since there is no good way
@@ -174,6 +174,11 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
 
         self.assertEquals( input_steps[ 0 ][ "id" ], input1[ "id" ] )
         self.assertEquals( input_steps[ 1 ][ "id" ], input2[ "id" ] )
+
+    def _history_contents( self, history_id=None ):
+        if history_id is None:
+            history_id = self.history_id
+        return self._get( "histories/%s/contents" % history_id ).json()
 
     def __copy_content_to_history( self, history_id, content ):
         if content[ "history_content_type" ] == "dataset":
