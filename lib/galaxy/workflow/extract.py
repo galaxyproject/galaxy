@@ -205,8 +205,6 @@ class WorkflowSummary( object ):
                 else:
                     dataset_collection = content
                     # TODO: Optimize db call
-                    # TODO: Ensure this is deterministic, must get same job
-                    # for each dataset collection.
                     dataset_instance = dataset_collection.collection.dataset_instances[ 0 ]
                     if not self.__check_state( dataset_instance ):
                         # Just checking the state of one instance, don't need more but
