@@ -8,10 +8,43 @@ from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
 from .helpers import skip_without_tool
 
+from .yaml_to_workflow import yaml_to_workflow
+
 from requests import delete
 from requests import put
 
 from galaxy.exceptions import error_codes
+
+
+class BaseWorkflowsApiTestCase( api.ApiTestCase ):
+    # TODO: Find a new file for this class.
+
+    def setUp( self ):
+        super( BaseWorkflowsApiTestCase, self ).setUp()
+        self.workflow_populator = WorkflowPopulator( self.galaxy_interactor )
+        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
+        self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
+
+    def _assert_user_has_workflow_with_name( self, name ):
+        names = self._workflow_names()
+        assert name in names, "No workflows with name %s in users workflows <%s>" % ( name, names )
+
+    def _workflow_names( self ):
+        index_response = self._get( "workflows" )
+        self._assert_status_code_is( index_response, 200 )
+        names = map( lambda w: w[ "name" ], index_response.json() )
+        return names
+
+    def _upload_yaml_workflow(self, has_yaml):
+        workflow = yaml_to_workflow(has_yaml)
+        workflow_str = dumps(workflow, indent=4)
+        data = {
+            'workflow': workflow_str
+        }
+        upload_response = self._post( "workflows", data=data )
+        self._assert_status_code_is( upload_response, 200 )
+        self._assert_user_has_workflow_with_name( "%s (imported from API)" % ( workflow[ "name" ] ) )
+        return upload_response.json()[ "id" ]
 
 
 # Workflow API TODO:
@@ -19,13 +52,10 @@ from galaxy.exceptions import error_codes
 # - Allow post to workflows/<workflow_id>/run in addition to posting to
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
-class WorkflowsApiTestCase( api.ApiTestCase ):
+class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
 
     def setUp( self ):
         super( WorkflowsApiTestCase, self ).setUp()
-        self.workflow_populator = WorkflowPopulator( self.galaxy_interactor )
-        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
-        self.dataset_collection_populator = DatasetCollectionPopulator( self.galaxy_interactor )
 
     def test_show_invalid_key_is_400( self ):
         show_response = self._get( "workflows/%s" % self._random_key() )
@@ -45,7 +75,7 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
         delete_response = delete( workflow_url )
         self._assert_status_code_is( delete_response, 200 )
         # Make sure workflow is no longer in index by default.
-        assert workflow_name not in self.__workflow_names()
+        assert workflow_name not in self._workflow_names()
 
     def test_other_cannot_delete( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_other_delete" )
@@ -825,10 +855,6 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             src = 'hdca'
         return dict( src=src, id=hda[ "id" ] )
 
-    def _assert_user_has_workflow_with_name( self, name ):
-        names = self.__workflow_names()
-        assert name in names, "No workflows with name %s in users workflows <%s>" % ( name, names )
-
     def __review_paused_steps( self, uploaded_workflow_id, invocation_id, order_index, action=True ):
         invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
         invocation_steps = invocation[ "steps" ]
@@ -862,12 +888,6 @@ class WorkflowsApiTestCase( api.ApiTestCase ):
             return invocation_id
         else:
             return invocation_response
-
-    def __workflow_names( self ):
-        index_response = self._get( "workflows" )
-        self._assert_status_code_is( index_response, 200 )
-        names = map( lambda w: w[ "name" ], index_response.json() )
-        return names
 
     def __import_workflow( self, workflow_id, deprecated_route=False ):
         if deprecated_route:
