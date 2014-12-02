@@ -58,13 +58,10 @@ class GalaxyInteractorApi( object ):
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
-        for job in jobs:
-            self.wait_for_job( job[ 'id' ], history_id, maxseconds )
+        self.wait_for_jobs( history_id, jobs, maxseconds )
         hid = self.__output_id( output_data )
-        fetcher = self.__dataset_fetcher( history_id )
         ## TODO: Twill version verifys dataset is 'ok' in here.
-        self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
-        self._verify_metadata( history_id, hid, attributes )
+        self.verify_output_dataset( history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, shed_tool_id=shed_tool_id )
 
         primary_datasets = attributes.get( 'primary_datasets', {} )
         if primary_datasets:
@@ -84,8 +81,16 @@ class GalaxyInteractorApi( object ):
                 raise Exception( msg_template % msg_args )
 
             primary_hda_id = primary_output[ "dataset" ][ "id" ]
-            self.twill_test_case.verify_hid( primary_outfile, hda_id=primary_hda_id, attributes=primary_attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
-            self._verify_metadata( history_id, primary_hda_id, primary_attributes )
+            self.verify_output_dataset( history_id, primary_hda_id, primary_outfile, primary_attributes, shed_tool_id=shed_tool_id )
+
+    def wait_for_jobs( self, history_id, jobs, maxseconds ):
+        for job in jobs:
+            self.wait_for_job( job[ 'id' ], history_id, maxseconds )
+
+    def verify_output_dataset( self, history_id, hda_id, outfile, attributes, shed_tool_id ):
+        fetcher = self.__dataset_fetcher( history_id )
+        self.twill_test_case.verify_hid( outfile, hda_id=hda_id, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        self._verify_metadata( history_id, hda_id, attributes )
 
     def _verify_metadata( self, history_id, hid, attributes ):
         metadata = attributes.get( 'metadata', {} ).copy()
