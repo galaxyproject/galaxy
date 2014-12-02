@@ -18,10 +18,8 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         contents_response = self._get( "histories/%s/contents" % self.history_id )
         input_hids = map( lambda c: c[ "hid" ], contents_response.json()[ 0:2 ] )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=self.history_id,
-            dataset_ids=dumps( input_hids ),
-            job_ids=dumps( [ cat1_job_id ] ),
-            workflow_name="test import from history",
+            dataset_ids=input_hids,
+            job_ids=[ cat1_job_id ],
         )
         self.assertEquals( downloaded_workflow[ "name" ], "test import from history" )
         self.__assert_looks_like_cat1_example_workflow( downloaded_workflow )
@@ -45,10 +43,8 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         input_hids = map( lambda c: c[ "hid" ], new_contents[ (offset + 0):(offset + 2) ] )
         cat1_job_id = self.__job_id( self.history_id, new_contents[ (offset + 2) ][ "id" ] )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=self.history_id,
-            dataset_ids=dumps( input_hids ),
-            job_ids=dumps( [ cat1_job_id ] ),
-            workflow_name="test import from history",
+            dataset_ids=input_hids,
+            job_ids=[ cat1_job_id ],
         )
         self.__assert_looks_like_cat1_example_workflow( downloaded_workflow )
 
@@ -56,10 +52,8 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
     def test_extract_mapping_workflow_from_history( self ):
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair( self.history_id )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=self.history_id,
-            dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
-            job_ids=dumps( [ job_id1, job_id2 ] ),
-            workflow_name="test import from mapping history",
+            dataset_collection_ids=[ hdca[ "hid" ] ],
+            job_ids=[ job_id1, job_id2 ],
         )
         self.__assert_looks_like_randomlines_mapping_workflow( downloaded_workflow )
 
@@ -74,10 +68,8 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         # to retrieve job_id1, job_id2 like this for copied dataset
         # collections I don't think.
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=self.history_id,
-            dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
-            job_ids=dumps( [ job_id1, job_id2 ] ),
-            workflow_name="test import from history",
+            dataset_collection_ids=[ hdca[ "hid" ] ],
+            job_ids=[ job_id1, job_id2 ],
         )
         self.__assert_looks_like_randomlines_mapping_workflow( downloaded_workflow )
 
@@ -103,10 +95,8 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         job_id2 = reduction_run_output[ "jobs" ][ 0 ][ "id" ]
         self.dataset_populator.wait_for_history( self.history_id, assert_ok=True, timeout=20 )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=self.history_id,
-            dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
-            job_ids=dumps( [ job_id1, job_id2 ] ),
-            workflow_name="test import reduction",
+            dataset_collection_ids=[ hdca[ "hid" ] ],
+            job_ids=[ job_id1, job_id2 ],
         )
         assert len( downloaded_workflow[ "steps" ] ) == 3
         collect_step_idx = self._assert_first_step_is_paired_input( downloaded_workflow )
@@ -133,10 +123,8 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         job_id = run_output[ "jobs" ][ 0 ][ "id" ]
         self.dataset_populator.wait_for_history( self.history_id, assert_ok=True )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=self.history_id,
-            dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
-            job_ids=dumps( [ job_id ] ),
-            workflow_name="test import from history",
+            dataset_collection_ids=[ hdca[ "hid" ] ],
+            job_ids=[ job_id ],
         )
         collection_steps = self._get_steps_of_type( downloaded_workflow, "data_collection_input", expected_len=1 )
         collection_step = collection_steps[ 0 ]
@@ -222,6 +210,18 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         return collect_step_idx
 
     def _extract_and_download_workflow( self, **extract_payload ):
+        if "from_history_id" not in extract_payload:
+            extract_payload[ "from_history_id" ] = self.history_id
+
+        if "workflow_name" not in extract_payload:
+            extract_payload[ "workflow_name" ] = "test import from history"
+
+        for key in "job_ids", "dataset_ids", "dataset_collection_ids":
+            if key in extract_payload:
+                value = extract_payload[ key ]
+                if isinstance(value, list):
+                    extract_payload[ key ] = dumps( value )
+
         create_workflow_response = self._post( "workflows", data=extract_payload )
         self._assert_status_code_is( create_workflow_response, 200 )
 
