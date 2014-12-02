@@ -451,6 +451,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     def login( self, trans, refresh_frames=[], **kwd ):
         '''Handle Galaxy Log in'''
         redirect = self.__get_redirect_url( kwd.get( 'redirect', trans.request.referer ).strip() )
+        redirect_url = ''  # always start with redirect_url being empty
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
@@ -1346,17 +1347,20 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             # User not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change your default permitted actions." )
 
+    @web.require_login( "to add addresses" )
     @web.expose
     def new_address( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = params.get( 'user_id', False )
-        if not user_id:
-            # User must be logged in to create a new address
-            return trans.show_error_message( "You must be logged in to create a new address." )
-        user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        user_id = params.get( 'id', False )
+        if is_admin:
+            if not user_id:
+                return trans.show_error_message( "You must specify a user to add a new address to." )
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
         short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
         name = util.restore_text( params.get( 'name', ''  ) )
         institution = util.restore_text( params.get( 'institution', ''  ) )
@@ -1407,10 +1411,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                         phone=phone )
                 trans.sa_session.add( user_address )
                 trans.sa_session.flush()
-                message = 'Address (%s) has been added' % user_address.desc
+                message = 'Address (%s) has been added' % escape( user_address.desc )
                 new_kwd = dict( message=message, status=status )
                 if is_admin:
-                    new_kwd[ 'user_id' ] = trans.security.encode_id( user.id )
+                    new_kwd[ 'id' ] = trans.security.encode_id( user.id )
                 return trans.response.send_redirect( web.url_for( controller='user',
                                                                   action='manage_user_info',
                                                                   cntrller=cntrller,
@@ -1428,24 +1432,29 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     postal_code=postal_code,
                                     country=country,
                                     phone=phone,
-                                    message=message,
+                                    message=escape(message),
                                     status=status )
 
+    @web.require_login( "to edit addresses" )
     @web.expose
     def edit_address( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
-        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
+        message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user_id = params.get( 'user_id', False )
-        if not user_id:
-            # User must be logged in to create a new address
-            return trans.show_error_message( "You must be logged in to create a new address." )
-        user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        user_id = params.get( 'id', False )
+        if is_admin:
+            if not user_id:
+                return trans.show_error_message( "You must specify a user to add a new address to." )
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
         address_id = params.get( 'address_id', None )
         if not address_id:
-            return trans.show_error_message( "No address id received for editing." )
+            return trans.show_error_message( "Invalid address id." )
         address_obj = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
+        if address_obj.user_id != user.id:
+            return trans.show_error_message( "Invalid address id." )
         if params.get( 'edit_address_button', False  ):
             short_desc = util.restore_text( params.get( 'short_desc', ''  ) )
             name = util.restore_text( params.get( 'name', ''  ) )
@@ -1493,10 +1502,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 address_obj.phone = phone
                 trans.sa_session.add( address_obj )
                 trans.sa_session.flush()
-                message = 'Address (%s) has been updated.' % address_obj.desc
+                message = 'Address (%s) has been updated.' % escape( address_obj.desc )
                 new_kwd = dict( message=message, status=status )
                 if is_admin:
-                    new_kwd[ 'user_id' ] = trans.security.encode_id( user.id )
+                    new_kwd[ 'id' ] = trans.security.encode_id( user.id )
                 return trans.response.send_redirect( web.url_for( controller='user',
                                                                   action='manage_user_info',
                                                                   cntrller=cntrller,
@@ -1506,45 +1515,44 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     cntrller=cntrller,
                                     user=user,
                                     address_obj=address_obj,
-                                    message=message,
+                                    message=escape( message ),
                                     status=status )
 
+    @web.require_login( "to delete addresses" )
     @web.expose
-    def delete_address( self, trans, cntrller, address_id=None, user_id=None ):
+    def delete_address( self, trans, cntrller, address_id=None, **kwd ):
+        return self.__delete_undelete_address( trans, cntrller, 'delete', address_id=address_id, **kwd )
+
+    @web.require_login( "to undelete addresses" )
+    @web.expose
+    def undelete_address( self, trans, cntrller, address_id=None, **kwd ):
+         return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id=address_id, **kwd )
+
+    def __delete_undelete_address( self, trans, cntrller, op, address_id=None, **kwd ):
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        user_id = kwd.get( 'id', False )
+        if is_admin:
+            if not user_id:
+                return trans.show_error_message( "You must specify a user to %s an address from." % op )
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
         try:
             user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
         except:
-            message = 'Invalid address is (%s)' % address_id
-            status = 'error'
+            return trans.show_error_message( "Invalid address id." )
         if user_address:
-            user_address.deleted = True
+            if user_address.user_id != user.id:
+                return trans.show_error_message( "Invalid address id." )
+            user_address.deleted = True if op == 'delete' else False
             trans.sa_session.add( user_address )
             trans.sa_session.flush()
-            message = 'Address (%s) deleted' % user_address.desc
+            message = 'Address (%s) %sd' % ( escape( user_address.desc ), op )
             status = 'done'
         return trans.response.send_redirect( web.url_for( controller='user',
                                                           action='manage_user_info',
                                                           cntrller=cntrller,
-                                                          user_id=user_id,
-                                                          message=message,
-                                                          status=status ) )
-
-    @web.expose
-    def undelete_address( self, trans, cntrller, address_id=None, user_id=None ):
-        try:
-            user_address = trans.sa_session.query( trans.app.model.UserAddress ).get( trans.security.decode_id( address_id ) )
-        except:
-            message = 'Invalid address is (%s)' % address_id
-            status = 'error'
-        if user_address:
-            user_address.deleted = False
-            trans.sa_session.flush()
-            message = 'Address (%s) undeleted' % user_address.desc
-            status = 'done'
-        return trans.response.send_redirect( web.url_for( controller='user',
-                                                          action='manage_user_info',
-                                                          cntrller=cntrller,
-                                                          user_id=user_id,
+                                                          id=trans.security.encode_id( user.id ),
                                                           message=message,
                                                           status=status ) )
 

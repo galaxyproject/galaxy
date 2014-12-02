@@ -10,14 +10,14 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button"  href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller, user_id=trans.security.encode_id( user.id) )}">
+        <a class="action-button"  href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller, id=trans.security.encode_id( user.id) )}">
         <span>Manage User Information</span></a>
     </li>
 </ul>
 <div class="toolForm">
     <div class="toolFormTitle">Add new address</div>
     <div class="toolFormBody">
-        <form name="login_info" id="login_info" action="${h.url_for( controller='user', action='new_address', cntrller=cntrller, user_id=trans.security.encode_id( user.id ) )}" method="post" >
+        <form name="login_info" id="login_info" action="${h.url_for( controller='user', action='new_address', cntrller=cntrller, id=trans.security.encode_id( user.id ) )}" method="post" >
             <div class="form-row">
                 <label>Short Description:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
