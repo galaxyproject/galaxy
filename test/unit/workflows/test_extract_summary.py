@@ -46,7 +46,7 @@ class TestWorkflowExtractSummary( unittest.TestCase ):
         assert len( job_dict ) == 1
         self.assertEquals( job_dict[ hda.job ], [ ('out1', derived_hda_2 ) ] )
 
-    def test_fake_job( self ):
+    def test_fake_job_hda( self ):
         """ Fakes job if creating_job_associations is empty.
         """
         hda = MockHda( job=UNDEFINED_JOB )
@@ -58,6 +58,28 @@ class TestWorkflowExtractSummary( unittest.TestCase ):
         assert fake_job.id.startswith( "fake_" )
         datasets = job_dict.values()[ 0 ]
         assert datasets == [ ( None, hda ) ]
+
+    def test_fake_job_hdca( self ):
+        hdca = MockHdca( )
+        self.history.active_datasets.append( hdca )
+        job_dict, warnings = extract.summarize( trans=self.trans )
+        assert not warnings
+        assert len( job_dict ) == 1
+        fake_job = job_dict.keys()[ 0 ]
+        assert fake_job.id.startswith( "fake_" )
+        assert fake_job.is_fake
+        content_instances = job_dict.values()[ 0 ]
+        assert content_instances == [ ( None, hdca ) ]
+
+    def test_implicit_map_job_hdca( self ):
+        creating_job = model.Job()
+        hdca = MockHdca( implicit_output_name="out1", job=creating_job )
+        self.history.active_datasets.append( hdca )
+        job_dict, warnings = extract.summarize( trans=self.trans )
+        assert not warnings
+        assert len( job_dict ) == 1
+        job = job_dict.keys()[ 0 ]
+        assert job is creating_job
 
     def test_warns_and_skips_datasets_if_not_finished( self ):
         hda = MockHda( state='queued' )
@@ -102,3 +124,31 @@ class MockHda( object ):
             self.creating_job_associations = [ assoc ]
         else:
             self.creating_job_associations = []
+
+
+class MockHdca( object ):
+
+    def __init__( self, implicit_output_name=None, job=None, hid=1 ):
+        self.id = 124
+        self.copied_from_history_dataset_collection_association = None
+        self.history_content_type = "dataset_collection"
+        self.implicit_output_name = implicit_output_name
+        self.hid = 1
+        self.collection = model.DatasetCollection()
+        element = model.DatasetCollectionElement(
+            collection=self.collection,
+            element=model.HistoryDatasetAssociation(),
+            element_index=0,
+            element_identifier="moocow",
+        )
+        element.dataset_instance.dataset = model.Dataset()
+        element.dataset_instance.dataset.state = "ok"
+        creating = model.JobToOutputDatasetAssociation(
+            implicit_output_name,
+            element.dataset_instance,
+        )
+        creating.job = job
+        element.dataset_instance.creating_job_associations = [
+            creating,
+        ]
+        self.collection.elements = [element]
