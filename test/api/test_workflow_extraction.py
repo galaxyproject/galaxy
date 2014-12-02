@@ -9,16 +9,16 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
 
     def setUp( self ):
         super( WorkflowExtractionApiTestCase, self ).setUp()
+        self.history_id = self.dataset_populator.new_history()
 
     @skip_without_tool( "cat1" )
     def test_extract_from_history( self ):
-        history_id = self.dataset_populator.new_history()
         # Run the simple test workflow and extract it back out from history
-        cat1_job_id = self.__setup_and_run_cat1_workflow( history_id=history_id )
-        contents_response = self._get( "histories/%s/contents" % history_id )
+        cat1_job_id = self.__setup_and_run_cat1_workflow( history_id=self.history_id )
+        contents_response = self._get( "histories/%s/contents" % self.history_id )
         input_hids = map( lambda c: c[ "hid" ], contents_response.json()[ 0:2 ] )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=history_id,
+            from_history_id=self.history_id,
             dataset_ids=dumps( input_hids ),
             job_ids=dumps( [ cat1_job_id ] ),
             workflow_name="test import from history",
@@ -31,8 +31,6 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         # Run the simple test workflow and extract it back out from history
         self.__setup_and_run_cat1_workflow( history_id=old_history_id )
 
-        history_id = self.dataset_populator.new_history()
-
         # Bug cannot mess up hids or these don't extract correctly. See Trello card here:
         # https://trello.com/c/mKzLbM2P
         # # create dummy dataset to complicate hid mapping
@@ -42,12 +40,12 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         offset = 0
         old_contents = self._get( "histories/%s/contents" % old_history_id ).json()
         for old_dataset in old_contents:
-            self.__copy_content_to_history( history_id, old_dataset )
-        new_contents = self._get( "histories/%s/contents" % history_id ).json()
+            self.__copy_content_to_history( self.history_id, old_dataset )
+        new_contents = self._get( "histories/%s/contents" % self.history_id ).json()
         input_hids = map( lambda c: c[ "hid" ], new_contents[ (offset + 0):(offset + 2) ] )
-        cat1_job_id = self.__job_id( history_id, new_contents[ (offset + 2) ][ "id" ] )
+        cat1_job_id = self.__job_id( self.history_id, new_contents[ (offset + 2) ][ "id" ] )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=history_id,
+            from_history_id=self.history_id,
             dataset_ids=dumps( input_hids ),
             job_ids=dumps( [ cat1_job_id ] ),
             workflow_name="test import from history",
@@ -56,10 +54,9 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
 
     @skip_without_tool( "random_lines1" )
     def test_extract_mapping_workflow_from_history( self ):
-        history_id = self.dataset_populator.new_history()
-        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair( history_id )
+        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair( self.history_id )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=history_id,
+            from_history_id=self.history_id,
             dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
             job_ids=dumps( [ job_id1, job_id2 ] ),
             workflow_name="test import from mapping history",
@@ -70,15 +67,14 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         old_history_id = self.dataset_populator.new_history()
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair( old_history_id )
 
-        history_id = self.dataset_populator.new_history()
         old_contents = self._get( "histories/%s/contents" % old_history_id ).json()
         for old_content in old_contents:
-            self.__copy_content_to_history( history_id, old_content )
+            self.__copy_content_to_history( self.history_id, old_content )
         # API test is somewhat contrived since there is no good way
         # to retrieve job_id1, job_id2 like this for copied dataset
         # collections I don't think.
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=history_id,
+            from_history_id=self.history_id,
             dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
             job_ids=dumps( [ job_id1, job_id2 ] ),
             workflow_name="test import from history",
@@ -88,14 +84,13 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
     @skip_without_tool( "random_lines1" )
     @skip_without_tool( "multi_data_param" )
     def test_extract_reduction_from_history( self ):
-        history_id = self.dataset_populator.new_history()
-        hdca = self.dataset_collection_populator.create_pair_in_history( history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"] ).json()
+        hdca = self.dataset_collection_populator.create_pair_in_history( self.history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"] ).json()
         hdca_id = hdca[ "id" ]
         inputs1 = {
             "input": { "batch": True, "values": [ { "src": "hdca", "id": hdca_id } ] },
             "num_lines": 2
         }
-        implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id( history_id, "random_lines1", inputs1 )
+        implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id( self.history_id, "random_lines1", inputs1 )
         inputs2 = {
             "f1": { "src": "hdca", "id": implicit_hdca1[ "id" ] },
             "f2": { "src": "hdca", "id": implicit_hdca1[ "id" ] },
@@ -103,12 +98,12 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         reduction_run_output = self.dataset_populator.run_tool(
             tool_id="multi_data_param",
             inputs=inputs2,
-            history_id=history_id,
+            history_id=self.history_id,
         )
         job_id2 = reduction_run_output[ "jobs" ][ 0 ][ "id" ]
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True, timeout=20 )
+        self.dataset_populator.wait_for_history( self.history_id, assert_ok=True, timeout=20 )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=history_id,
+            from_history_id=self.history_id,
             dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
             job_ids=dumps( [ job_id1, job_id2 ] ),
             workflow_name="test import reduction",
@@ -125,8 +120,7 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
 
     @skip_without_tool( "collection_paired_test" )
     def test_extract_workflows_with_dataset_collections( self ):
-        history_id = self.dataset_populator.new_history()
-        hdca = self.dataset_collection_populator.create_pair_in_history( history_id ).json()
+        hdca = self.dataset_collection_populator.create_pair_in_history( self.history_id ).json()
         hdca_id = hdca[ "id" ]
         inputs = {
             "f1": dict( src="hdca", id=hdca_id )
@@ -134,12 +128,12 @@ class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):
         run_output = self.dataset_populator.run_tool(
             tool_id="collection_paired_test",
             inputs=inputs,
-            history_id=history_id,
+            history_id=self.history_id,
         )
         job_id = run_output[ "jobs" ][ 0 ][ "id" ]
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.dataset_populator.wait_for_history( self.history_id, assert_ok=True )
         downloaded_workflow = self._extract_and_download_workflow(
-            from_history_id=history_id,
+            from_history_id=self.history_id,
             dataset_collection_ids=dumps( [ hdca[ "hid" ] ] ),
             job_ids=dumps( [ job_id ] ),
             workflow_name="test import from history",
