@@ -195,39 +195,48 @@ class WorkflowSummary( object ):
         # needed because cannot allow selection of individual datasets from an implicit
         # mapping during extraction - you get the collection or nothing.
         for content in self.history.active_contents:
-            if content.history_content_type == "dataset_collection":
-                hid = content.hid
-                content = self.__original_hdca( content )
-                self.collection_types[ hid ] = content.collection.collection_type
-                if not content.implicit_output_name:
-                    job = DatasetCollectionCreationJob( content )
-                    self.jobs[ job ] = [ ( None, content ) ]
+            self.__summarize_content( content )
+
+    def __summarize_content( self, content ):
+        # Update internal state for history content (either an HDA or
+        # an HDCA).
+        if content.history_content_type == "dataset_collection":
+            self.__summarize_dataset_collection( content )
+        else:
+            self.__summarize_dataset( content )
+
+    def __summarize_dataset_collection( self, content ):
+        content = self.__original_hdca( content )
+        dataset_collection = content
+        hid = content.hid
+        self.collection_types[ hid ] = content.collection.collection_type
+        if not content.implicit_output_name:
+            job = DatasetCollectionCreationJob( content )
+            self.jobs[ job ] = [ ( None, content ) ]
+        else:
+            dataset_collection = content
+            # TODO: Optimize db call
+            dataset_instance = dataset_collection.collection.dataset_instances[ 0 ]
+            if not self.__check_state( dataset_instance ):
+                # Just checking the state of one instance, don't need more but
+                # makes me wonder if even need this check at all?
+                return
+
+            job_hda = self.__original_hda( dataset_instance )
+            if not job_hda.creating_job_associations:
+                log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
+                job = DatasetCollectionCreationJob( dataset_collection )
+                self.jobs[ job ] = [ ( None, dataset_collection ) ]
+
+            for assoc in job_hda.creating_job_associations:
+                job = assoc.job
+                if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
+                    self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
+                    self.implicit_map_jobs.append( job )
                 else:
-                    dataset_collection = content
-                    # TODO: Optimize db call
-                    dataset_instance = dataset_collection.collection.dataset_instances[ 0 ]
-                    if not self.__check_state( dataset_instance ):
-                        # Just checking the state of one instance, don't need more but
-                        # makes me wonder if even need this check at all?
-                        continue
+                    self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
 
-                    job_hda = self.__original_hda( dataset_instance )
-                    if not job_hda.creating_job_associations:
-                        log.warn( "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!" )
-                        job = DatasetCollectionCreationJob( dataset_collection )
-                        self.jobs[ job ] = [ ( None, dataset_collection ) ]
-
-                    for assoc in job_hda.creating_job_associations:
-                        job = assoc.job
-                        if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
-                            self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
-                            self.implicit_map_jobs.append( job )
-                        else:
-                            self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
-            else:
-                self.__append_dataset( content )
-
-    def __append_dataset( self, dataset ):
+    def __summarize_dataset( self, dataset ):
         if not self.__check_state( dataset ):
             return
 
