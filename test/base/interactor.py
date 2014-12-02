@@ -207,12 +207,12 @@ class GalaxyInteractorApi( object ):
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
 
-        datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=inputs_tree )
-        datasets_object = datasets.json()
+        submit_response = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=inputs_tree )
+        submit_response_object = submit_response.json()
         try:
-            return self.__dictify_outputs( datasets_object ), datasets_object[ 'jobs' ]
+            return self.__dictify_outputs( submit_response_object ), submit_response_object[ 'jobs' ]
         except KeyError:
-            raise Exception( datasets_object[ 'message' ] )
+            raise Exception( submit_response_object[ 'message' ] )
 
     def _create_collection( self, history_id, collection_def ):
         create_payload = dict(
