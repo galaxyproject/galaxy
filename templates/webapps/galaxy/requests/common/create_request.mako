@@ -23,7 +23,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create a new sequencing request</div>
     %if len( request_type_select_field.options ) < 1:
-        There are no request types available for ${trans.user.email} to create sequencing requests.
+        There are no request types available for ${trans.user.email | h} to create sequencing requests.
     %else:
         <div class="toolFormBody">
             <form name="create_request" id="create_request" action="${h.url_for( controller='requests_common', action='create_request', cntrller=cntrller )}" method="post" >

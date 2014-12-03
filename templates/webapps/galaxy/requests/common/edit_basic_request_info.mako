@@ -31,7 +31,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Edit sequencing request "${request.name}"</div>
+    <div class="toolFormTitle">Edit sequencing request "${request.name | h}"</div>
     <div class="toolFormBody">
         <form name="edit_basic_request_info" id="edit_basic_request_info" action="${h.url_for( controller='requests_common', action='edit_basic_request_info', cntrller=cntrller, id=trans.security.encode_id( request.id ) )}" method="post" >
             %for i, field in enumerate( widgets ):
@@ -70,11 +70,11 @@
             %>
             <div class="form-row">
                 <label>Send to:</label>
-                <input type="checkbox" name="email_address" value="true" ${email_address}>${request.user.email} (sequencing request owner)<input type="hidden" name="email_address" value="true">
+                <input type="checkbox" name="email_address" value="true" ${email_address}>${request.user.email | h} (sequencing request owner)<input type="hidden" name="email_address" value="true">
             </div>
             <div class="form-row">
                 <label>Additional email addresses:</label>
-                <textarea name="additional_email_addresses" rows="3" cols="40">${emails}</textarea>
+                <textarea name="additional_email_addresses" rows="3" cols="40">${emails | h}</textarea>
                 <div class="toolParamHelp" style="clear: both;">
                     Enter one email address per line
                 </div>
