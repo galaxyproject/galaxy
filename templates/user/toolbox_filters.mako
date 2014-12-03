@@ -15,7 +15,7 @@
 
 %if tool_filters or section_filters or label_filters:
     <div class="toolForm">
-        <form name="toolbox_filter" id="toolbox_filter" action="${h.url_for( controller='user', action='edit_toolbox_filters', cntrller=cntrller, user_id=trans.security.encode_id( user.id ) )}" method="post" >
+        <form name="toolbox_filter" id="toolbox_filter" action="${h.url_for( controller='user', action='edit_toolbox_filters', cntrller=cntrller )}" method="post" >
             % if tool_filters:
                 <div class="toolFormTitle">Edit ToolBox filters :: Tools</div>
                 <div class="toolFormBody">
@@ -87,5 +87,5 @@
         </form>
     </div>
 %else:
-    ${render_msg( 'No filter available. Contact you system administrator or check your configuration file.', 'info' )}
+    ${render_msg( 'No filters available. Contact your system administrator or check your configuration file.', 'info' )}
 %endif

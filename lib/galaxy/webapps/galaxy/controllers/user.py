@@ -1228,57 +1228,48 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=False ) )
             return filters
 
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        saved_user_tool_filters = list()
+        saved_user_section_filters = list()
+        saved_user_label_filters = list()
 
-        user_id = params.get( 'user_id', False )
-        if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
+        for name, value in trans.user.preferences.items():
+            if name == 'toolbox_tool_filters':
+                saved_user_tool_filters = listify( value, do_strip=True )
+            elif name == 'toolbox_section_filters':
+                saved_user_section_filters = listify( value, do_strip=True )
+            elif name == 'toolbox_label_filters':
+                saved_user_label_filters = listify( value, do_strip=True )
 
-        if user:
-            saved_user_tool_filters = list()
-            saved_user_section_filters = list()
-            saved_user_label_filters = list()
+        tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
+        section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
+        label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
 
-            for name, value in user.preferences.items():
-                if name == 'toolbox_tool_filters':
-                    saved_user_tool_filters = listify( value, do_strip=True )
-                elif name == 'toolbox_section_filters':
-                    saved_user_section_filters = listify( value, do_strip=True )
-                elif name == 'toolbox_label_filters':
-                    saved_user_label_filters = listify( value, do_strip=True )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
+        status = util.restore_text( kwd.get( 'status', 'done' ) )
 
-            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
-            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
-            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
-
-            return trans.fill_template( 'user/toolbox_filters.mako',
-                                        cntrller=cntrller,
-                                        message=message,
-                                        tool_filters=tool_filters,
-                                        section_filters=section_filters,
-                                        label_filters=label_filters,
-                                        user=user,
-                                        status=status )
-        else:
-            # User not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change private toolbox filters." )
+        return trans.fill_template( 'user/toolbox_filters.mako',
+                                    cntrller=cntrller,
+                                    message=message,
+                                    tool_filters=tool_filters,
+                                    section_filters=section_filters,
+                                    label_filters=label_filters,
+                                    user=trans.user,
+                                    status=status)
 
     @web.expose
     @web.require_login( "to change the private toolbox filters" )
     def edit_toolbox_filters( self, trans, cntrller, **kwd ):
+        def validate( user_filters, filter_type ):
+            rval = []
+            config_filters = getattr( trans.app.config, 'user_%s_filters' % filter_type, [] )
+            for f in user_filters:
+                if f not in config_filters:
+                    log.warning( 'User provided filter %s which is not in user_%s_filters', f, filter_type )
+                else:
+                    rval.append( f )
+            return rval
+
         params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', '' ) )
-        user_id = params.get( 'user_id', False )
-        if not user_id:
-            # User must be logged in to create a new address
-            return trans.show_error_message( "You must be logged in to change the ToolBox filters." )
-
-        user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-
         if params.get( 'edit_toolbox_filter_button', False ):
             tool_filters = list()
             section_filters = list()
@@ -1291,13 +1282,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         label_filters.append( name[2:] )
                     elif name.startswith('s_'):
                         section_filters.append( name[2:] )
-            user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
-            user.preferences['toolbox_section_filters'] = ','.join( section_filters )
-            user.preferences['toolbox_label_filters'] = ','.join( label_filters )
+            trans.user.preferences['toolbox_tool_filters'] = ','.join( validate( tool_filters, 'tool' ) )
+            trans.user.preferences['toolbox_section_filters'] = ','.join( validate( section_filters, 'section' ) )
+            trans.user.preferences['toolbox_label_filters'] = ','.join( validate( label_filters, 'label' ) )
 
-            trans.sa_session.add( user )
+            trans.sa_session.add( trans.user )
             trans.sa_session.flush()
-            message = 'ToolBox filters has been updated.'
+            message = 'ToolBox filters have been updated.'
             kwd = dict( message=message, status='done' )
 
         # Display the ToolBox filters form with the current values filled in
