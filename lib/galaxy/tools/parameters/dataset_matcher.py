@@ -39,26 +39,30 @@ class DatasetMatcher( object ):
         return state_valid and ( not check_security or self.__can_access_dataset( dataset ) )
 
     def valid_hda_match( self, hda, check_implicit_conversions=True, check_security=False ):
-        """ Return False of this parameter can not be matched to a the supplied
+        """ Return False of this parameter can not be matched to the supplied
         HDA, otherwise return a description of the match (either a
         HdaDirectMatch describing a direct match or a HdaImplicitMatch
         describing an implicit conversion.)
         """
-        if self.filter( hda ):
-            return False
+        rval = False
         formats = self.param.formats
         if hda.datatype.matches_any( formats ):
-            return HdaDirectMatch( hda )
-        if not check_implicit_conversions:
-            return False
-        target_ext, converted_dataset = hda.find_conversion_destination( formats )
-        if target_ext:
-            if converted_dataset:
-                hda = converted_dataset
-            if check_security and not self.__can_access_dataset( hda.dataset ):
+            rval = HdaDirectMatch( hda )
+        else:
+            if not check_implicit_conversions:
                 return False
-            return HdaImplicitMatch( hda, target_ext )
-        return False
+            target_ext, converted_dataset = hda.find_conversion_destination( formats )
+            if target_ext:
+                if converted_dataset:
+                    hda = converted_dataset
+                if check_security and not self.__can_access_dataset( hda.dataset ):
+                    return False
+                rval = HdaImplicitMatch( hda, target_ext )
+            else:
+                return False
+        if self.filter( hda ):
+            return False
+        return rval
 
     def hda_match( self, hda, check_implicit_conversions=True, ensure_visible=True ):
         """ If HDA is accessible, return information about whether it could
