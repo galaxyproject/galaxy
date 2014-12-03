@@ -2222,6 +2222,10 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             raise ValueError( "History does not include a dataset collection of the correct type or containing the correct types of datasets" )
         if value in [None, "None"]:
             return None
+        # would really like to not need to handle lists in here but
+        # doing it for uniformity with DataToolParameters for now.
+        if isinstance( value, list ):
+            value = value[ 0 ]
         if isinstance( value, str ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in value.split( "," ) ]
         elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
