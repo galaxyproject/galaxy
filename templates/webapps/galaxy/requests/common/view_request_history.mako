@@ -36,7 +36,7 @@
     ${render_msg( message, status )}
 %endif
 
-<h3>History of sequencing request "${request.name}"</h3>
+<h3>History of sequencing request "${request.name | h}"</h3>
 
 <div class="toolForm">
     <table class="grid">
@@ -52,7 +52,7 @@
                 <tr>
                     <td><b>${event.state}</b></td>
                     <td>${time_ago( event.update_time )}</td>
-                    <td>${event.comment}</td>
+                    <td>${event.comment | h}</td>
                 </tr>             
             %endfor
         </tbody>
