@@ -307,6 +307,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldData(input_def);
                     break;
                 
+                // collection selector
+                //case 'data_collection':
+                //    field = this._fieldData(input_def);
+                //    break;
+                    
                 // data column
                 case 'data_column':
                     field = this._fieldSelect(input_def);
@@ -383,6 +388,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
+                type        : input_def.type,
                 data        : input_def.options,
                 onchange    : function() {
                     self.app.refresh();
