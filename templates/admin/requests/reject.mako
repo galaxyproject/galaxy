@@ -15,7 +15,7 @@
 </ul>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Reject sequencing request "${request.name}"</div>
+    <div class="toolFormTitle">Reject sequencing request "${request.name | h}"</div>
         <form name="event" action="${h.url_for( controller='requests_admin', action='reject_request', id=trans.security.encode_id( request.id ) )}" method="post" >
             <div class="form-row">
                 Rejecting this request will move the request state to <b>Rejected</b>.

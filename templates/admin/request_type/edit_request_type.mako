@@ -32,26 +32,26 @@
 
 <form name="edit_request_type" action="${h.url_for( controller='request_type', action='edit_request_type', id=trans.security.encode_id( request_type.id ) )}" method="post" >
     <div class="toolForm">
-        <div class="toolFormTitle">"Edit ${request_type.name}" request type</div>
+        <div class="toolFormTitle">"Edit ${request_type.name | h}" request type</div>
         <div class="form-row">
             <label>Name:</label>
-            <input type="text" name="name" value="${request_type.name}" size="40"/>
+            <input type="text" name="name" value="${request_type.name | }" size="40"/>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Description:</label>
-            <input type="text" name="desc" value="${request_type.desc}" size="40"/>
+            <input type="text" name="desc" value="${request_type.desc | h}" size="40"/>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Sequencing request form definition:</label>
-            <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name}</a>
+            <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name | h}</a>
             ## Hidden field needed by the __save_request_type() method
             <input type="hidden" name="request_form_id" value="${trans.security.encode_id( request_type.request_form_id )}" size="40"/>
         </div>       
         <div class="form-row">
             <label>Sample form definition:</label>
-            <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name}</a>
+            <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name | h}</a>
             ## Hidden field needed by the __save_request_type() method
             <input type="hidden" name="sample_form_id" value="${trans.security.encode_id( request_type.sample_form_id )}" size="40"/>
         </div>
@@ -63,11 +63,11 @@
             <div class="repeat-group-item">
                 <div class="form-row">
                     <label>${1+element_count}. State name:</label>
-                    <input type="text" name="state_name_${trans.security.encode_id( state.id )}" value="${state.name}" size="40"/>
+                    <input type="text" name="state_name_${trans.security.encode_id( state.id )}" value="${state.name | h}" size="40"/>
                 </div>
                 <div class="form-row">
                     <label>Description:</label>
-                    <input type="text" name="state_desc_${trans.security.encode_id( state.id )}" value="${state.desc}" size="40"/>
+                    <input type="text" name="state_desc_${trans.security.encode_id( state.id )}" value="${state.desc | h}" size="40"/>
                     <div class="toolParamHelp" style="clear: both;">
                         optional
                     </div>
