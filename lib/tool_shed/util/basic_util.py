@@ -13,7 +13,7 @@ import markupsafe
 
 log = logging.getLogger( __name__ )
 
-CHUNK_SIZE = 2**20 # 1Mb
+CHUNK_SIZE = 2**20  # 1Mb
 INSTALLATION_LOG = 'INSTALLATION.log'
 # Set no activity timeout to 20 minutes.
 NO_OUTPUT_TIMEOUT = 3600.0
@@ -47,6 +47,7 @@ SELECTED_REPOSITORIES_TEMPLATE = '''
 RUN service postgresql start && service apache2 start && ./run.sh --daemon && sleep 120 && python ./scripts/api/install_tool_shed_repositories.py --api admin -l http://localhost:8080 --url ${tool_shed_url} -o ${repository_owner} --name ${repository_name} --tool-deps --repository-deps --panel-section-name 'Docker'
 '''
 
+
 def evaluate_template( text, install_environment ):
     """
     Substitute variables defined in XML blocks from dependencies file.  The value of the received
@@ -55,6 +56,7 @@ def evaluate_template( text, install_environment ):
     the tool_dependency.
     """
     return Template( text ).safe_substitute( get_env_var_values( install_environment ) )
+
 
 def get_env_var_values( install_environment ):
     """
@@ -72,6 +74,7 @@ def get_env_var_values( install_environment ):
     env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
     return env_var_dict
 
+
 def get_file_type_str( changeset_revision, file_type ):
     if file_type == 'zip':
         file_type_str = '%s.zip' % changeset_revision
@@ -82,6 +85,7 @@ def get_file_type_str( changeset_revision, file_type ):
     else:
         file_type_str = ''
     return file_type_str
+
 
 def move_file( current_dir, source, destination, rename_to=None ):
     source_path = os.path.abspath( os.path.join( current_dir, source ) )
@@ -97,6 +101,7 @@ def move_file( current_dir, source, destination, rename_to=None ):
         os.makedirs( destination_directory )
     shutil.move( source_path, destination_path )
 
+
 def remove_dir( dir ):
     """Attempt to remove a directory from disk."""
     if dir:
@@ -106,6 +111,7 @@ def remove_dir( dir ):
             except:
                 pass
 
+
 def size_string( raw_text, size=MAX_DISPLAY_SIZE ):
     """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
     if raw_text and len( raw_text ) >= size:
@@ -113,10 +119,12 @@ def size_string( raw_text, size=MAX_DISPLAY_SIZE ):
         raw_text = '%s%s' % ( raw_text[ 0:size ], large_str )
     return raw_text or ''
 
+
 def stringify( list ):
     if list:
         return ','.join( list )
     return ''
+
 
 def strip_path( fpath ):
     """Attempt to strip the path from a file name."""
@@ -127,6 +135,7 @@ def strip_path( fpath ):
     except:
         file_name = fpath
     return file_name
+
 
 def to_html_string( text ):
     """Translates the characters in text to an html string"""
