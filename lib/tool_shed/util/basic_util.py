@@ -16,7 +16,7 @@ log = logging.getLogger( __name__ )
 CHUNK_SIZE = 2**20 # 1Mb
 INSTALLATION_LOG = 'INSTALLATION.log'
 # Set no activity timeout to 20 minutes.
-NO_OUTPUT_TIMEOUT = 1200.0
+NO_OUTPUT_TIMEOUT = 3600.0
 MAXDIFFSIZE = 8000
 MAX_DISPLAY_SIZE = 32768
 
