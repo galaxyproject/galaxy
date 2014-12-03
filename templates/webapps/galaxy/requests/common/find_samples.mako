@@ -72,7 +72,7 @@
                 %if samples:
                     %for sample in samples:
                         <div class="form-row">
-                            Sample: <b>${sample.name}</b> | Barcode: ${sample.bar_code}<br/>
+                            Sample: <b>${sample.name | h}</b> | Barcode: ${sample.bar_code | h}<br/>
                             %if sample.request.is_new or not sample.state:
                                 State: Unsubmitted<br/>
                             %else:
@@ -85,10 +85,10 @@
                             %>
                             Datasets: <a href="${h.url_for( controller='requests_common', action='view_sample_datasets', cntrller=cntrller, external_service_id=trans.security.encode_id( external_service.id ), sample_id=trans.security.encode_id( sample.id ) )}">${len( sample.datasets )}</a><br/>
                             %if is_admin:
-                               <i>User: ${sample.request.user.email}</i>
+                               <i>User: ${sample.request.user.email | h}</i>
                             %endif
                             <div class="toolParamHelp" style="clear: both;">
-                                <a href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Sequencing request: ${sample.request.name} | Type: ${sample.request.type.name} | State: ${sample.request.state}</a>
+                                <a href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Sequencing request: ${sample.request.name | h} | Type: ${sample.request.type.name} | State: ${sample.request.state}</a>
                             </div>
                         </div>
                         <br/>

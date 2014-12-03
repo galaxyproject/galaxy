@@ -96,14 +96,14 @@ $(document).ready(function(){
 
 <form id="edit_form_definition" name="edit_form_definition" action="${h.url_for( controller='forms', action='edit_form_definition', id=trans.security.encode_id( form_definition.current.id ) )}" method="post" >
     <div class="toolForm">
-       <div class="toolFormTitle">Edit form definition "${form_definition.name}" (${form_definition.type})</div>
+       <div class="toolFormTitle">Edit form definition "${form_definition.name | h}" (${form_definition.type | h})</div>
         %if response_redirect:
             <input type="hidden" name="response_redirect" value="${response_redirect}" size="40" />
         %endif
         %for label, input in form_details:
             <div class="form-row">
                 %if label != 'Type':
-                    <label>${label}</label>
+                    <label>${label | h}</label>
                 %endif
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     ${input.get_html()}

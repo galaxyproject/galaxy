@@ -58,7 +58,7 @@
 ${render_samples_messages(request, is_admin, is_submitted, message, status)}
 
 <div class="toolForm">
-    <div class="toolFormTitle">Sequencing request "${request.name}"</div>
+    <div class="toolFormTitle">Sequencing request "${request.name | h}"</div>
     <div class="toolFormBody">
         <div class="form-row">
             <label>Current state:</label>
@@ -67,12 +67,12 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
         </div>
         <div class="form-row">
             <label>Description:</label>
-            ${request.desc}
+            ${request.desc | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>User:</label>
-            ${request.user.email}
+            ${request.user.email | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -94,7 +94,7 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
                     %>
                     <div class="form-row">
                         <label>${field_label}:</label>                   
-                        ${field_value}     
+                        ${field_value | h}     
                     </div>
                     <div style="clear: both"></div>
                 %endfor
@@ -116,7 +116,7 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
                         else:
                             emails = ''
                     %>
-                    ${emails}
+                    ${emails | h}
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
