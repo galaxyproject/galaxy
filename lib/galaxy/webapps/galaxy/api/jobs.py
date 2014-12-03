@@ -73,9 +73,11 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
                 raise exceptions.ObjectAttributeInvalidException()
 
         out = []
-        for job in query.order_by(
-                trans.app.model.Job.update_time.desc()
-            ).all():
+        if kwd.get( 'order_by' ) == 'create_time':
+            order_by = trans.app.model.Job.create_time.desc()
+        else:
+            order_by = trans.app.model.Job.update_time.desc()
+        for job in query.order_by( order_by ).all():
             out.append( self.encode_all_ids( trans, job.to_dict( 'collection' ), True ) )
         return out
 
