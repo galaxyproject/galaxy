@@ -53,11 +53,12 @@ class DatasetMatcher( object ):
                 return False
             target_ext, converted_dataset = hda.find_conversion_destination( formats )
             if target_ext:
+                original_hda = hda
                 if converted_dataset:
                     hda = converted_dataset
                 if check_security and not self.__can_access_dataset( hda.dataset ):
                     return False
-                rval = HdaImplicitMatch( hda, target_ext )
+                rval = HdaImplicitMatch( hda, target_ext, original_hda )
             else:
                 return False
         if self.filter( hda ):
