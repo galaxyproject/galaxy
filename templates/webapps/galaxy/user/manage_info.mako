@@ -42,7 +42,7 @@ ${render_user_info()}
 <p/>
 
 <div class="toolForm">
-    <form name="user_addresses" id="user_addresses" action="${h.url_for( controller='user', action='new_address', cntrller=cntrller, user_id=trans.security.encode_id( user.id ) )}" method="post" >
+    <form name="user_addresses" id="user_addresses" action="${h.url_for( controller='user', action='new_address', cntrller=cntrller, id=trans.security.encode_id( user.id ) )}" method="post" >
         <div class="toolFormTitle">User Addresses</div>
         <div class="toolFormBody">
             %if user.addresses:
@@ -53,9 +53,9 @@ ${render_user_info()}
                             <span>|</span>
                         %endif
                         %if show_filter == filter:
-                            <span class="filter"><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller, show_filter=filter, user_id=trans.security.encode_id( user.id ) )}"><b>${filter}</b></a></span>
+                            <span class="filter"><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller, show_filter=filter, id=trans.security.encode_id( user.id ) )}"><b>${filter}</b></a></span>
                         %else:
-                            <span class="filter"><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller, show_filter=filter, user_id=trans.security.encode_id( user.id ) )}">${filter}</a></span>
+                            <span class="filter"><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller, show_filter=filter, id=trans.security.encode_id( user.id ) )}">${filter}</a></span>
                         %endif
                     %endfor
                 </div>
@@ -73,10 +73,10 @@ ${render_user_info()}
                                         <ul class="manage-table-actions">
                                             <li>
                                                 %if not address.deleted:
-                                                    <a class="action-button"  href="${h.url_for( controller='user', action='edit_address', cntrller=cntrller, address_id=trans.security.encode_id( address.id ), user_id=trans.security.encode_id( user.id ) )}">Edit</a>
-                                                    <a class="action-button"  href="${h.url_for( controller='user', action='delete_address', cntrller=cntrller, address_id=trans.security.encode_id( address.id ), user_id=trans.security.encode_id( user.id ) )}">Delete</a>
+                                                    <a class="action-button"  href="${h.url_for( controller='user', action='edit_address', cntrller=cntrller, address_id=trans.security.encode_id( address.id ), id=trans.security.encode_id( user.id ) )}">Edit</a>
+                                                    <a class="action-button"  href="${h.url_for( controller='user', action='delete_address', cntrller=cntrller, address_id=trans.security.encode_id( address.id ), id=trans.security.encode_id( user.id ) )}">Delete</a>
                                                 %else:
-                                                    <a class="action-button"  href="${h.url_for( controller='user', action='undelete_address', cntrller=cntrller, address_id=trans.security.encode_id( address.id ), user_id=trans.security.encode_id( user.id ) )}">Undelete</a>
+                                                    <a class="action-button"  href="${h.url_for( controller='user', action='undelete_address', cntrller=cntrller, address_id=trans.security.encode_id( address.id ), id=trans.security.encode_id( user.id ) )}">Undelete</a>
                                                 %endif
                                             </li>
                                         </ul>
