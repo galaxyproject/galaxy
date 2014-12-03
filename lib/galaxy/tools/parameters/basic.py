@@ -2310,6 +2310,47 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         return d
 
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+        # create dictionary and fill default parameters
+        d = super( DataCollectionToolParameter, self ).to_dict( trans )
+        d['multiple'] = self.multiple
+        d['is_dynamic'] = False
+        d['options'] = {'hda': [], 'hdca': []}
+        
+        # return default content if context is not available
+        if other_values is None:
+            return d
+
+        # prepare dataset/collection matching
+        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
+        history = trans.history
+        
+        # append directly matched collections
+        for hdca in self.match_collections( trans, history, dataset_matcher ):
+            d['options']['hdca'].append({
+                    'id'            : trans.security.encode_id( hdca.id ),
+                    'id_uncoded'    : hdca.id,
+                    'hid'           : hdca.hid,
+                    'name'          : hdca.name,
+                    'src'           : 'hdca'
+                })
+
+        # append matching subcollections
+        for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
+            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
+            d['options']['hdca'].append({
+                    'id'            : trans.security.encode_id( hdca.id ),
+                    'id_uncoded'    : hdca.id,
+                    'hid'           : hdca.hid,
+                    'name'          : hdca.name,
+                    'src'           : 'hdca'
+                })
+
+        # sort both lists
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+
+        # return final dictionary
+        return d
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     """
