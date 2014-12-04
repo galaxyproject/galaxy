@@ -932,7 +932,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def show_params( self, trans, dataset_id=None, from_noframe=None, **kwd ):
         """
-        Show the parameters used for an HDA
+        Show the parameters used for the job associated with an HDA
         """
         hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         if not hda:
@@ -961,19 +961,31 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     toolbox = self.get_toolbox()
                     tool = toolbox.get_tool( job.tool_id )
                     assert tool is not None, 'Requested tool has not been loaded.'
-                    #Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
+                    # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
                     try:
                         params_objects = job.get_param_values( trans.app, ignore_errors=False )
                     except:
                         params_objects = job.get_param_values( trans.app, ignore_errors=True )
-                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app, ignore_errors=True ), trans, update_values=False ) #use different param_objects here, since we want to display original values as much as possible
+                        # use different param_objects in the following line, since we want to display original values as much as possible
+                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app,
+                                                                                                     ignore_errors=True ),
+                                                                               trans,
+                                                                               update_values=False )
                         has_parameter_errors = True
                 except:
                     pass
         if job is None:
             return trans.show_error_message( "Job information is not available for this dataset." )
-        #TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
-        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects, upgrade_messages=upgrade_messages, has_parameter_errors=has_parameter_errors )
+        # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
+        return trans.fill_template( "show_params.mako",
+                                    inherit_chain=inherit_chain,
+                                    history=trans.get_history(),
+                                    hda=hda,
+                                    job=job,
+                                    tool=tool,
+                                    params_objects=params_objects,
+                                    upgrade_messages=upgrade_messages,
+                                    has_parameter_errors=has_parameter_errors )
 
     @web.expose
     def copy_datasets( self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
