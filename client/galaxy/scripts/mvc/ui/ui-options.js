@@ -10,8 +10,8 @@ var Base = Backbone.View.extend({
             visible     : true,
             data        : [],
             id          : Utils.uuid(),
-            errorText   : 'No data available.',
-            waitText    : 'Please wait...'
+            error_text  : 'No data available.',
+            wait_text   : 'Please wait...'
         };
     
         // configure options
@@ -153,7 +153,7 @@ var Base = Backbone.View.extend({
     */
     wait: function() {
         if (this._size() == 0) {
-            this._messageShow(this.options.waitText, 'info');
+            this._messageShow(this.options.wait_text, 'info');
             this.$options.hide();
         }
     },
@@ -177,7 +177,7 @@ var Base = Backbone.View.extend({
     */
     _refresh: function() {
         if (this._size() == 0) {
-            this._messageShow(this.options.errorText, 'danger');
+            this._messageShow(this.options.error_text, 'danger');
             this.$options.hide();
         } else {
             this._messageHide();

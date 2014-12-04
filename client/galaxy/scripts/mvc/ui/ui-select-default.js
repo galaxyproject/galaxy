@@ -9,7 +9,7 @@ var View = Backbone.View.extend({
     optionsDefault : {
         id          : '',
         cls         : '',
-        empty       : 'No data available',
+        error_text  : 'No data available',
         visible     : true,
         wait        : false,
         multiple    : false,
@@ -247,7 +247,7 @@ var View = Backbone.View.extend({
             this.disable();
         
             // append placeholder
-            this.$select.append(this._templateOption({value : 'null', label : this.options.empty}));
+            this.$select.append(this._templateOption({value : 'null', label : this.options.error_text}));
         } else {
             // enable select field
             this.enable();

@@ -340,7 +340,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 buttons: {
                     execute : new Ui.Button({
                         icon     : 'fa-check',
-                        tooltip  : 'Execute the tool',
+                        tooltip  : 'Execute: ' + self.model.name,
                         title    : 'Execute',
                         cls      : 'btn btn-primary',
                         floating : 'clear',
