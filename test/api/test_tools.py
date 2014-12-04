@@ -106,6 +106,20 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output )
         assert output1_content == "--ex1,ex2"
 
+    @skip_without_tool( "multi_select" )
+    def test_multi_select_optional( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            "select_ex": ["--ex1"],
+            "select_optional": None,
+        }
+        response = self._run( "multi_select", history_id, inputs, assert_ok=True )
+        output = response[ "outputs" ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
+        assert output1_content.strip() == "--ex1"
+        assert output2_content.strip() == "None", output2_content
+
     @skip_without_tool( "multi_data_param" )
     def test_multidata_param( self ):
         history_id = self.dataset_populator.new_history()
