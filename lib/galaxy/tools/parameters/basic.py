@@ -1130,7 +1130,13 @@ class ColumnListParameter( SelectToolParameter ):
         SelectToolParameter.__init__( self, tool, elem )
         self.tool = tool
         self.numerical = string_as_bool( elem.get( "numerical", False ))
-        self.force_select = string_as_bool( elem.get( "force_select", True ))
+        # Allow specifing force_select for backward compat., but probably
+        # should use optional going forward for consistency with other
+        # parameters.
+        if "force_select" in elem.attrib:
+            self.force_select = string_as_bool( elem.get( "force_select" ) )
+        else:
+            self.force_select = not string_as_bool( elem.get( "optional", False ) )
         self.accept_default = string_as_bool( elem.get( "accept_default", False ))
         self.data_ref = elem.get( "data_ref", None )
         self.ref_input = None

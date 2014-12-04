@@ -13,6 +13,21 @@ import tools_support
 
 class DataColumnParameterTestCase( TestCase, tools_support.UsesApp ):
 
+    def test_not_optional_by_default(self):
+        assert not self.__param_optional()
+
+    def test_force_select_disable(self):
+        self.other_attributes = 'force_select="false"'
+        assert self.__param_optional()
+
+    def test_optional_override(self):
+        self.other_attributes = 'optional="true"'
+        assert self.__param_optional()
+
+    def __param_optional(self):
+        # TODO: don't break abstraction, try setting null value instead
+        return not self.param.force_select
+
     def test_from_html(self):
         value = self.param.from_html("3", self.trans, { "input_tsv": self.build_ready_hda()  } )
         assert value == "3"
