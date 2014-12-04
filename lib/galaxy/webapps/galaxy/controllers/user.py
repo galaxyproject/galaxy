@@ -5,32 +5,30 @@ Contains the user interface in the Universe class
 import glob
 import logging
 import os
+import random
 import socket
 import string
-import random
 import urllib
-from galaxy import web
-from galaxy import util
-from galaxy import model
-from galaxy.model.orm import and_
-from galaxy.security.validate_user_input import validate_email
-from galaxy.security.validate_user_input import validate_publicname
-from galaxy.security.validate_user_input import validate_password
-from galaxy.security.validate_user_input import transform_publicname
-from galaxy.util.json import loads
-from galaxy.util.json import dumps
-from galaxy.util import listify
-from galaxy.util import docstring_trim
-from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController
-from galaxy.web.base.controller import UsesFormDefinitionsMixin
-from galaxy.web.base.controller import CreatesUsersMixin
-from galaxy.web.base.controller import CreatesApiKeysMixin
-from galaxy.web.form_builder import CheckboxField
-from galaxy.web.form_builder import build_select_field
-from galaxy.web.framework.helpers import time_ago, grids, escape
+
 from datetime import datetime, timedelta
-from galaxy.util import hash_util, biostar
+
+from galaxy import model
+from galaxy import util
+from galaxy import web
+from galaxy.model.orm import and_
+from galaxy.security.validate_user_input import (transform_publicname,
+                                                 validate_email,
+                                                 validate_password,
+                                                 validate_publicname)
+from galaxy.util import biostar, hash_util, docstring_trim, listify
+from galaxy.util.json import dumps, loads
+from galaxy.web import url_for
+from galaxy.web.base.controller import (BaseUIController,
+                                        CreatesApiKeysMixin,
+                                        CreatesUsersMixin,
+                                        UsesFormDefinitionsMixin)
+from galaxy.web.form_builder import build_select_field, CheckboxField
+from galaxy.web.framework.helpers import escape, grids, time_ago
 
 log = logging.getLogger( __name__ )
 
