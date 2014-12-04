@@ -7,6 +7,8 @@ import pkg_resources;
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
 
+from galaxy.web.framework.helpers import escape
+
 #set up logger
 import logging
 log = logging.getLogger( __name__ )
@@ -18,8 +20,8 @@ class DataManager( BaseUIController ):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized( "This Galaxy instance is not configured to allow non-admins to view the data manager." )
-        message = kwd.get( 'message' )
-        status = kwd.get( 'status', 'info' )
+        message = escape( kwd.get( 'message', '' ) )
+        status = escape( kwd.get( 'status', 'info' ) )
         return trans.fill_template( "data_manager/index.mako", data_managers=trans.app.data_managers, tool_data_tables=trans.app.tool_data_tables, view_only=not_is_admin, message=message, status=status )
 
     @web.expose
@@ -27,8 +29,8 @@ class DataManager( BaseUIController ):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized( "This Galaxy instance is not configured to allow non-admins to view the data manager." )
-        message = kwd.get( 'message' )
-        status = kwd.get( 'status', 'info' )
+        message = escape( kwd.get( 'message', '' ) )
+        status = escape( kwd.get( 'status', 'info' ) )
         data_manager_id = kwd.get( 'id', None )
         data_manager = trans.app.data_managers.get_manager( data_manager_id )
         if data_manager is None:
@@ -41,8 +43,8 @@ class DataManager( BaseUIController ):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized( "This Galaxy instance is not configured to allow non-admins to view the data manager." )
-        message = kwd.get( 'message' )
-        status = kwd.get( 'status', 'info' )
+        message = escape( kwd.get( 'message', '' ) )
+        status = escape( kwd.get( 'status', 'info' ) )
         job_id = kwd.get( 'id', None )
         try:
             job_id = trans.security.decode_id( job_id )
@@ -62,7 +64,7 @@ class DataManager( BaseUIController ):
                 data_manager_json = loads( open( hda.get_file_name() ).read() )
             except Exception, e:
                 data_manager_json = {}
-                error_messages.append( "Unable to obtain data_table info for hda (%s): %s" % ( hda.id, e ) )
+                error_messages.append( escape( "Unable to obtain data_table info for hda (%s): %s" % ( hda.id, e ) ) )
             values = []
             for key, value in data_manager_json.get( 'data_tables', {} ).iteritems():
                 values.append( ( key, value ) )
@@ -74,8 +76,8 @@ class DataManager( BaseUIController ):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized( "This Galaxy instance is not configured to allow non-admins to view the data manager." )
-        message = kwd.get( 'message' )
-        status = kwd.get( 'status', 'info' )
+        message = escape( kwd.get( 'message', '' ) )
+        status = escape( kwd.get( 'status', 'info' ) )
         data_table_name = kwd.get( 'table_name', None )
         if not data_table_name:
             return trans.response.send_redirect( web.url_for( controller="data_manager", action="index" ) )
