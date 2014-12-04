@@ -1022,12 +1022,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         is_activation_sent = self.send_verification_email( trans, user.email, user.username )
                         if is_activation_sent:
                             message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
-                            success = True
                         else:
                             message = 'Unable to send activation email, please contact your local Galaxy administrator.'
                             if trans.app.config.error_email_to is not None:
                                 message += ' Contact: %s' % trans.app.config.error_email_to
-                            success = False
                 if ( user.username != username ):
                     user.username = username
                     trans.sa_session.add( user )
