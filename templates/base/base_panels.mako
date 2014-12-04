@@ -45,7 +45,7 @@
         <script>
             Raven.config('${app.config.sentry_dsn_public}').install();
             %if trans.user:
-                Raven.setUser( { email: "${trans.user.email}" } );
+                Raven.setUser( { email: "${trans.user.email | h}" } );
             %endif
         </script>
     %endif
