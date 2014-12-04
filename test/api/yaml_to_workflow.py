@@ -2,6 +2,7 @@ import sys
 
 import yaml
 import json
+import uuid
 
 try:
     from collections import OrderedDict
@@ -25,7 +26,8 @@ def yaml_to_workflow(has_yaml):
         "a_galaxy_workflow": "true",
         "format-version": "0.1",
         "annotation": "",
-        "name": "Workflow"
+        "name": "Workflow",
+        "uuid": str(uuid.uuid4()),
     })
 
     steps = as_python["steps"]
@@ -107,8 +109,10 @@ def transform_tool(context, step):
 
     __ensure_defaults( step, {
         "annotation": "",
+        "post_job_actions": {},
     } )
     __ensure_inputs_connections(step)
+    post_job_actions = step["post_job_actions"]
 
     tool_state = {
         # TODO: Galaxy should not require tool state actually specify a __page__.
@@ -178,11 +182,43 @@ def transform_tool(context, step):
 
     __populate_tool_state(step, tool_state)
 
+    # Handle outputs.
+    if "outputs" in step:
+        for name, output in step.get("outputs", {}).items():
+            if output.get("hide", False):
+                action_name = "HideDatasetAction%s" % name
+                action = __action(
+                    "HideDatasetAction",
+                    name,
+                )
+                post_job_actions[action_name] = action
+
+            if output.get("rename", None):
+                new_name = output.get("rename")
+                action_name = "RenameDatasetAction%s" % name
+                arguments = dict(newname=new_name)
+                action = __action(
+                    "RenameDatasetAction",
+                    name,
+                    arguments,
+                )
+                post_job_actions[action_name] = action
+
+        del step["outputs"]
+
 
 class ConversionContext(object):
 
     def __init__(self):
         self.labels = {}
+
+
+def __action(type, name, arguments={}):
+    return {
+        "action_arguments": arguments,
+        "action_type": type,
+        "output_name": name,
+    }
 
 
 def __is_link(value):

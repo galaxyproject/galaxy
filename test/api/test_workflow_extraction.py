@@ -182,68 +182,6 @@ test_data:
         collection_step_state = loads( collection_step[ "tool_state" ] )
         self.assertEquals( collection_step_state[ "collection_type" ], u"list:paired" )
 
-    def _run_jobs( self, jobs_yaml ):
-        history_id = self.history_id
-        workflow_id = self._upload_yaml_workflow(
-            jobs_yaml
-        )
-        jobs_descriptions = yaml.load( jobs_yaml )
-        test_data = jobs_descriptions["test_data"]
-
-        label_map = {}
-        inputs = {}
-        for key, value in test_data.items():
-            if isinstance( value, dict ):
-                elements_data = value.get( "elements", [] )
-                elements = []
-                for element_data in elements_data:
-                    identifier = element_data[ "identifier" ]
-                    content = element_data["content"]
-                    elements.append( ( identifier, content ) )
-                collection_type = value["type"]
-                if collection_type == "list:paired":
-                    hdca = self.dataset_collection_populator.create_list_of_pairs_in_history( history_id ).json()
-                elif collection_type == "list":
-                    hdca = self.dataset_collection_populator.create_list_in_history( history_id, contents=elements ).json()
-                else:
-                    hdca = self.dataset_collection_populator.create_pair_in_history( history_id, contents=elements ).json()
-                label_map[key] = self._ds_entry( hdca )
-                inputs[key] = hdca
-            else:
-                hda = self.dataset_populator.new_dataset( history_id, content=value )
-                label_map[key] = self._ds_entry( hda )
-                inputs[key] = hda
-        workflow_request = dict(
-            history="hist_id=%s" % history_id,
-            workflow_id=workflow_id,
-        )
-        workflow_request[ "inputs" ] = dumps( label_map )
-        workflow_request[ "inputs_by" ] = 'name'
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        url = "workflows/%s/usage" % ( workflow_id )
-        invocation_response = self._post( url, data=workflow_request )
-        self._assert_status_code_is( invocation_response, 200 )
-        invocation = invocation_response.json()
-        invocation_id = invocation[ "id" ]
-        # Wait for workflow to become fully scheduled and then for all jobs
-        # complete.
-        self.wait_for_invocation( workflow_id, invocation_id )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        jobs = self._history_jobs( history_id )
-        return RunJobsSummary(
-            history_id=history_id,
-            workflow_id=workflow_id,
-            inputs=inputs,
-            jobs=jobs,
-        )
-
-    def wait_for_invocation( self, workflow_id, invocation_id ):
-        url = "workflows/%s/usage/%s" % ( workflow_id, invocation_id )
-        return wait_on_state( lambda: self._get( url )  )
-
-    def _history_jobs( self, history_id ):
-        return self._get("jobs", { "history_id": history_id, "order_by": "create_time" } ).json()
-
     def _job_id_for_tool( self, jobs, tool_id ):
         return self._job_for_tool( jobs, tool_id )[ "id" ]
 
