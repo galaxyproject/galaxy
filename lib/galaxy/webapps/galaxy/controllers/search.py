@@ -9,6 +9,11 @@ log = logging.getLogger( __name__ )
 
 
 class SearchController( BaseUIController ):
+
     @web.expose
     def index(self, trans):
-        return trans.fill_template( "search/index.mako" )
+        """
+        Not ready for human consumption, yet.  Power users can still use the
+        search API.
+        """
+        return trans.show_message("Sorry, the search interface isn't quite ready for use, yet.")
