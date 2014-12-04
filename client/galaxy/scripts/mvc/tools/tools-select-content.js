@@ -41,16 +41,16 @@ var View = Backbone.View.extend({
             extensions = extensions.replace(',', ', ');
             var pos = extensions.lastIndexOf(', ');
             if (pos != -1) {
-                extensions = extensions.substr(0, pos) + " or " + extensions.substr(pos+1);
+                extensions = extensions.substr(0, pos) + ' or ' + extensions.substr(pos+1);
             }
         }
-        var hda_error = 'No dataset available';
+        var hda_error = 'No dataset available.';
         if (extensions) {
-            hda_error = 'No dataset of type ' + extensions + ' available.';
+            hda_error = 'No ' + extensions + ' dataset available.';
         }
-        var hdca_error = 'No dataset list available';
+        var hdca_error = 'No dataset list available.';
         if (extensions) {
-            hdca_error = 'No dataset list of type ' + extensions + ' available.';
+            hdca_error = 'No ' + extensions + ' dataset list available.';
         }
         
         // add single dataset selector
