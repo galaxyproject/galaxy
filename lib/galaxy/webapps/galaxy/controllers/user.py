@@ -1739,7 +1739,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def __get_redirect_url( self, redirect ):
         root_url = url_for( '/', qualified=True )
-        redirect_url = ''  # always start with redirect_url being empty
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
         # or to enter a logout/login loop
         if not util.compare_urls( root_url, redirect, compare_path=False ) or util.compare_urls( url_for( controller='user', action='logout', qualified=True ), redirect ):
