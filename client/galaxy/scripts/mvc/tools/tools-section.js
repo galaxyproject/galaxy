@@ -314,7 +314,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     
                 // data column
                 case 'data_column':
-                    input_def.error_text = 'Referenced dataset has no matching columns.';
+                    input_def.error_text = 'Missing columns in referenced dataset.';
                     field = this._fieldSelect(input_def);
                     break;
                     
