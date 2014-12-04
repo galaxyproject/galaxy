@@ -13,7 +13,7 @@
     self.body_class=""
     self.require_javascript=False
 %>
-    
+
 <%def name="init()">
     ## Override
 </%def>
@@ -62,7 +62,7 @@
         'libs/require',
         "mvc/ui"
     )}
-    
+
     <script type="text/javascript">
         ## global configuration object
         var galaxy_config =
@@ -112,14 +112,14 @@
         'galaxy.panels'
     )}
     <script type="text/javascript">
-        
+
     ensure_dd_helper();
-        
+
     %if self.has_left_panel:
         var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
         force_left_panel = function( x ) { lp.force_panel( x ) };
     %endif
-        
+
     %if self.has_right_panel:
         var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
         window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
@@ -134,7 +134,7 @@
           ga('create', '${app.config.ga_code}', 'auto');
           ga('send', 'pageview');
     %endif
-    
+
     </script>
     ## Handle AJAX (actually hidden iframe) upload tool
     <script type="text/javascript">
@@ -300,7 +300,7 @@
 ## Document
 <html>
     <!--base_panels.mako-->
-    ${self.init()}    
+    ${self.init()}
     <head>
         %if app.config.brand:
             <title>${self.title()} / ${app.config.brand}</title>
@@ -316,7 +316,7 @@
         ${self.javascripts()}
         ${self.javascript_app()}
     </head>
-    
+
     <%
     body_class = self.body_class
     if self.message_box_visible:
