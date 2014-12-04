@@ -1,4 +1,3 @@
-
 """
 Contains a basic search interface for Galaxy
 """
@@ -8,7 +7,8 @@ from galaxy.web.base.controller import BaseUIController
 
 log = logging.getLogger( __name__ )
 
+
 class SearchController( BaseUIController ):
     @web.expose
     def index(self, trans):
-        return trans.fill_template( "search/index.mako")
+        return trans.fill_template( "search/index.mako" )
