@@ -934,9 +934,12 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         """
         Show the parameters used for the job associated with an HDA
         """
-        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+        try:
+            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+        except ValueError:
+            hda = None
         if not hda:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % escape( str( dataset_id ) ) )
         if not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
@@ -967,8 +970,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     except:
                         params_objects = job.get_param_values( trans.app, ignore_errors=True )
                         # use different param_objects in the following line, since we want to display original values as much as possible
-                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app,
-                                                                                                     ignore_errors=True ),
+                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app, ignore_errors=True ),
                                                                                trans,
                                                                                update_values=False )
                         has_parameter_errors = True
