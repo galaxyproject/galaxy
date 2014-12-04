@@ -35,10 +35,29 @@ var View = Backbone.View.extend({
         this.current = this.mode;
         this.list = {};
         
+        // error messages
+        var extensions = options.extensions.toString();
+        if (extensions) {
+            extensions = extensions.replace(',', ', ');
+            var pos = extensions.lastIndexOf(', ');
+            if (pos != -1) {
+                extensions = extensions.substr(0, pos) + " or " + extensions.substr(pos+1);
+            }
+        }
+        var hda_error = 'No dataset available';
+        if (extensions) {
+            hda_error = 'No dataset of type ' + extensions + ' available.';
+        }
+        var hdca_error = 'No dataset list available';
+        if (extensions) {
+            hdca_error = 'No dataset list of type ' + extensions + ' available.';
+        }
+        
         // add single dataset selector
         if (this.mode == 'single') {
             radio_buttons.push({icon: 'fa-file-o', label : 'Single dataset', value : 'single'});
             this.select_single = new Ui.Select.View({
+                error_text  : hda_error,
                 onchange    : function() {
                     self.trigger('change');
                 }
@@ -54,6 +73,7 @@ var View = Backbone.View.extend({
             radio_buttons.push({icon: 'fa-files-o', label : 'Multiple datasets', value : 'multiple'  });
             this.select_multiple = new Ui.Select.View({
                 multiple    : true,
+                error_text  : hda_error,
                 onchange    : function() {
                     self.trigger('change');
                 }
@@ -68,6 +88,7 @@ var View = Backbone.View.extend({
         if (this.mode == 'single' || this.mode == 'collection') {
             radio_buttons.push({icon: 'fa-folder-o', label : 'List of datasets',  value : 'collection' });
             this.select_collection = new Ui.Select.View({
+                error_text  : hdca_error,
                 onchange    : function() {
                     self.trigger('change');
                 }

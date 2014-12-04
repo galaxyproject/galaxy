@@ -314,6 +314,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     
                 // data column
                 case 'data_column':
+                    input_def.error_text = 'Referenced dataset contains no suitable columns';
                     field = this._fieldSelect(input_def);
                     break;
                     
@@ -425,6 +426,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             return new SelectClass.View({
                 id          : 'field-' + input_def.id,
                 data        : options,
+                error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 searchable  : input_def.searchable,
                 onchange    : function() {
