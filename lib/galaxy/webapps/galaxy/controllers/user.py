@@ -1539,7 +1539,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.require_login( "to undelete addresses" )
     @web.expose
     def undelete_address( self, trans, cntrller, address_id=None, **kwd ):
-         return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id=address_id, **kwd )
+        return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id=address_id, **kwd )
 
     def __delete_undelete_address( self, trans, cntrller, op, address_id=None, **kwd ):
         is_admin = cntrller == 'admin' and trans.user_is_admin()
