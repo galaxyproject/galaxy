@@ -21,20 +21,19 @@ var LibraryListView = Backbone.View.extend({
         'click .sort-libraries-link'    : 'sort_clicked'
     },
 
-    /**
-     * Initialize and fetch the libraries from server. 
-     * Async render afterwards.
-     * @param  {object} options an options object
-     */
     defaults: {
         page_count: null,
         show_page: null
     },
 
+    /**
+     * Initialize and fetch the libraries from server. 
+     * Async render afterwards.
+     * @param  {object} options an object with options
+     */
     initialize : function( options ){
         this.options = _.defaults( this.options || {}, this.defaults, options );
-
-        var that = this;  
+        var that = this;
         this.modal = null;
         // map of library model ids to library views = cache
         this.rowViews = {};
@@ -61,19 +60,10 @@ var LibraryListView = Backbone.View.extend({
      */
     render: function ( options ) {
         this.options = _.extend( this.options, options );
-
-        if ( ( this.options.page_size != null ) && ( this.options.page_size == parseInt( this.options.page_size ) ) ) {
-            Galaxy.libraries.preferences.set( { 'library_page_size': parseInt( this.options.page_size ) } );
-        }
-
-        $( ".tooltip" ).hide();
-        // this.options.show_page = this.options.show_page || 1;
         var template = this.templateLibraryList();
         var libraries_to_render = null;
         var models = null;
-        if ( this.options.show_page === null || this.options.show_page < 1 ){
-            this.options.show_page = 1;
-        }
+        $( ".tooltip" ).hide();
         if ( typeof options !== 'undefined' ){
             models = typeof options.models !== 'undefined' ? options.models : null;
         }
@@ -88,6 +78,10 @@ var LibraryListView = Backbone.View.extend({
             libraries_to_render = models;
         } else {
             libraries_to_render = [];
+        }
+        // pagination
+        if ( this.options.show_page === null || this.options.show_page < 1 ){
+            this.options.show_page = 1;
         }
         this.options.total_libraries_count = libraries_to_render.length
         var page_start = ( Galaxy.libraries.preferences.get( 'library_page_size' ) * ( this.options.show_page - 1 ) );

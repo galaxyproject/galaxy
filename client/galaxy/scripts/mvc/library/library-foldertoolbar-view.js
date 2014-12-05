@@ -20,7 +20,9 @@ var FolderToolbarView = Backbone.View.extend({
     'click #toolbtn_bulk_import'          : 'modalBulkImport',
     'click #include_deleted_datasets_chk' : 'checkIncludeDeleted',
     'click #toolbtn_show_libinfo'         : 'showLibInfo',
-    'click #toolbtn_bulk_delete'          : 'deleteSelectedDatasets'
+    'click #toolbtn_bulk_delete'          : 'deleteSelectedDatasets',
+    'click #page_size_prompt'             : 'showPageSizePrompt'
+
   },
 
   defaults: {
@@ -88,6 +90,22 @@ var FolderToolbarView = Backbone.View.extend({
       }
     }
     this.$el.html(toolbar_template(template_defaults));
+  },
+
+  /**
+   * Called from FolderListView when needed.
+   * @param  {object} options common options
+   */
+  renderPaginator: function( options ){
+      this.options = _.extend( this.options, options );
+      var paginator_template = this.templatePaginator();
+      this.$el.find( '#folder_paginator' ).html( paginator_template({ 
+          id: this.options.id,
+          show_page: parseInt( this.options.show_page ),
+          page_count: parseInt( this.options.page_count ),
+          total_items_count: this.options.total_items_count,
+          items_shown: this.options.items_shown
+      }));
   },
 
   configureElements: function(options){
@@ -833,11 +851,11 @@ var FolderToolbarView = Backbone.View.extend({
   var popped_item = lddas_set.pop();
   if ( typeof popped_item === "undefined" ) {
     if ( this.options.chain_call_control.failed_number === 0 ){
-      mod_toastr.success( 'Selected datasets deleted' );
+      mod_toastr.success( 'Selected datasets were deleted.' );
     } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
-      mod_toastr.error( 'There was an error and no datasets were deleted.' );
+      mod_toastr.error( 'There was an error and no datasets were deleted. Please make sure you have sufficient permissions.' );
     } else if ( this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number ){
-      mod_toastr.warning( 'Some of the datasets could not be deleted' );
+      mod_toastr.warning( 'Some of the datasets could not be deleted. Please make sure you have sufficient permissions.' );
     }
     Galaxy.modal.hide();
     return this.deleted_lddas;
@@ -976,6 +994,14 @@ var FolderToolbarView = Backbone.View.extend({
     }
   },
 
+  showPageSizePrompt: function(){
+    var folder_page_size = prompt( 'How many items per page do you want to see?', Galaxy.libraries.preferences.get( 'folder_page_size' ) );
+    if ( ( folder_page_size != null ) && ( folder_page_size == parseInt( folder_page_size ) ) ) {
+        Galaxy.libraries.preferences.set( { 'folder_page_size': parseInt( folder_page_size ) } );
+        Galaxy.libraries.folderListView.render( { id: this.options.id, show_page: 1 } );
+    }
+  },
+
   templateToolBar: function(){
     tmpl_array = [];
 
@@ -1016,7 +1042,6 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('     <button style="display:none;" data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="btn btn-default toolbtn_add_files primary-button add-library-items" type="button"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');
     tmpl_array.push('<% } %>');
 
-
     tmpl_array.push('  <button data-toggle="tooltip" data-placement="top" title="Import selected datasets into history" id="toolbtn_bulk_import" class="primary-button dataset-manipulation" style="margin-left: 0.5em; display:none;" type="button"><span class="fa fa-book"></span> to History</button>');
     tmpl_array.push('   <div id="toolbtn_dl" class="btn-group dataset-manipulation" style="margin-left: 0.5em; display:none; ">');
     tmpl_array.push('     <button title="Download selected datasets as archive" id="drop_toggle" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">');
@@ -1031,6 +1056,10 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
     tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
     tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
+
+    tmpl_array.push('          <span id="folder_paginator" class="library-paginator">');
+    // paginator will append here
+    tmpl_array.push('          </span>');
 
     tmpl_array.push(' </div>');
     // TOOLBAR END
@@ -1239,7 +1268,41 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('</ul>');
 
     return _.template(tmpl_array.join(''));
-  }
+  },
+
+  templatePaginator: function(){
+    tmpl_array = [];
+
+    tmpl_array.push('   <ul class="pagination pagination-sm">');
+    tmpl_array.push('       <% if ( ( show_page - 1 ) > 0 ) { %>');
+    tmpl_array.push('           <% if ( ( show_page - 1 ) > page_count ) { %>'); // we are on higher page than total page count
+    tmpl_array.push('               <li><a href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>');
+    tmpl_array.push('               <li class="disabled"><a href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>');
+    tmpl_array.push('           <% } else { %>');
+    tmpl_array.push('               <li><a href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>');
+    tmpl_array.push('               <li><a href="#folders/<%= id %>/page/<% print( show_page - 1 ) %>"><% print( show_page - 1 ) %></a></li>');
+    tmpl_array.push('           <% } %>');
+    tmpl_array.push('       <% } else { %>'); // we are on the first page
+    tmpl_array.push('           <li class="disabled"><a href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>');
+    tmpl_array.push('           <li class="disabled"><a href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>');
+    tmpl_array.push('       <% } %>');
+    tmpl_array.push('       <li class="active">');
+    tmpl_array.push('       <a href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page ) %></a>');
+    tmpl_array.push('       </li>');
+    tmpl_array.push('       <% if ( ( show_page ) < page_count ) { %>');
+    tmpl_array.push('           <li><a href="#folders/<%= id %>/page/<% print( show_page + 1 ) %>"><% print( show_page + 1 ) %></a></li>');
+    tmpl_array.push('           <li><a href="#folders/<%= id %>/page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>');
+    tmpl_array.push('       <% } else { %>');
+    tmpl_array.push('           <li class="disabled"><a href="#folders/<%= id %>/page/<% print( show_page  ) %>"><% print( show_page + 1 ) %></a></li>');
+    tmpl_array.push('           <li class="disabled"><a href="#folders/<%= id %>/page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>');
+    tmpl_array.push('       <% } %>');
+    tmpl_array.push('   </ul>');
+    tmpl_array.push('   <span>');
+    tmpl_array.push('       showing <a data-toggle="tooltip" data-placement="top" title="Click to change the number of items on page" id="page_size_prompt"><%- items_shown %></a> of <%- total_items_count %> items');
+    tmpl_array.push('   </span>');
+
+    return _.template(tmpl_array.join(''));
+  },
 
 });
 
