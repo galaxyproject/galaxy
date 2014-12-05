@@ -86,7 +86,7 @@ var View = Backbone.View.extend({
         
         // add collection selector
         if (this.mode == 'single' || this.mode == 'collection') {
-            radio_buttons.push({icon: 'fa-folder-o', label : 'List of datasets',  value : 'collection' });
+            radio_buttons.push({icon: 'fa-folder-o', label : 'Dataset collection',  value : 'collection' });
             this.select_collection = new Ui.Select.View({
                 error_text  : hdca_error,
                 onchange    : function() {

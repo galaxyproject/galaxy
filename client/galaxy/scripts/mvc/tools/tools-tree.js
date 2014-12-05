@@ -126,7 +126,7 @@ return Backbone.Model.extend({
                             // handle default value
                             if (!field.skip) {
                                 if (input.optional && field.validate && !field.validate()) {
-                                    value = 'None';
+                                    value = null;
                                 }
                                 add (job_input_id, input.id, value);
                             }
