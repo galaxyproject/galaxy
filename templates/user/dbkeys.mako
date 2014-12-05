@@ -148,7 +148,7 @@
                         Processing
                     % endif
                 </td>
-                <td><form action="dbkeys" method="post"><input type="hidden" name="key" value="${key}" /><input type="submit" name="delete" value="Delete" /></form></td>
+                <td><form action="dbkeys" method="post"><input type="hidden" name="key" value="${key | h}" /><input type="submit" name="delete" value="Delete" /></form></td>
             </tr>
         % endfor
         </table>
@@ -194,7 +194,7 @@
                     <div style="clear: both; padding-bottom: 0.5em"></div>
                     <select id="fasta_input" name="dataset_id">
                     %for dataset in fasta_hdas:
-                        <option value="${trans.security.encode_id( dataset.id )}">${dataset.hid}: ${dataset.name}</option>
+                        <option value="${trans.security.encode_id( dataset.id )}">${dataset.hid | h}: ${dataset.name | h}</option>
                     %endfor
                     </select>
                     <input type="file" id="len_file_input" name="len_file" /></input>

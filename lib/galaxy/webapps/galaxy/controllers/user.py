@@ -295,7 +295,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                                   message=message,
                                                                   status='info' ) )
                 if redirect:
-                    return trans.response.send_redirect( redirect )
+                    return trans.response.send_redirect( self.__get_redirect_url( redirect ) )
                 return trans.response.send_redirect( url_for( controller='user',
                                                               action='openid_manage',
                                                               use_panels=use_panels,
@@ -347,7 +347,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                                           message=message,
                                                                           status='info' ) )
                         if redirect:
-                            return trans.response.send_redirect( redirect )
+                            return trans.response.send_redirect( self.__get_redirect_url( redirect ) )
                         return trans.response.send_redirect( url_for( controller='user',
                                                                       action='openid_manage',
                                                                       use_panels=use_panels,
@@ -453,7 +453,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         redirect = self.__get_redirect_url( kwd.get( 'redirect', trans.request.referer ).strip() )
         redirect_url = ''  # always start with redirect_url being empty
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         header = ''
         user = trans.user
@@ -606,7 +606,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             refresh_frames = [ 'masthead' ]
         trans.handle_user_logout( logout_all=logout_all )
         message = 'You have been logged out.<br>You can log in again, <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-            ( trans.request.referer, url_for( '/' ) )
+            ( escape( trans.request.referer ), url_for( '/' ) )
         if biostar.biostar_logged_in( trans ):
             biostar_url = biostar.biostar_logout( trans )
             if biostar_url:
@@ -629,7 +629,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if honeypot_field != '':
             return trans.show_error_message( "You've been flagged as a possible bot. If you are not, please try registering again and fill the form out carefully. <a target=\"_top\" href=\"%s\">Go to the home page</a>." ) % url_for( '/' )
 
-        message = util.restore_text( params.get( 'message', ''  ) )
+        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
         status = params.get( 'status', 'done' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )
         email = util.restore_text( params.get( 'email', '' ) )
@@ -659,9 +659,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             # Create the user, save all the user info and login to Galaxy
             if params.get( 'create_user_button', False ):
                 # Check email and password validity
+                # Note: message does not need to be escaped (it is clean)
                 message = self.__validate( trans, params, email, password, confirm, username )
                 if not message:
                     # All the values are valid
+                    # message does not need to be escaped here either
                     message, status, user, success = self.__register( trans,
                                                                       cntrller,
                                                                       subscribe_checked,
@@ -675,7 +677,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         trans.log_event( "User created a new account" )
                         trans.log_event( "User logged in" )
                     if success and is_admin:
-                        message = 'Created new user account (%s)' % user.email
+                        message = 'Created new user account (%s)' % escape( user.email )
                         trans.response.send_redirect( web.url_for( controller='admin',
                                                                    action='users',
                                                                    cntrller=cntrller,
@@ -743,7 +745,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if subscribe_checked:
                 # subscribe user to email list
                 if trans.app.config.smtp_server is None:
-                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
+                    error = "Now logged in as " + escape( user.email ) + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
                 else:
                     body = 'Join Mailing list.\n'
                     to = trans.app.config.mailing_join_addr
@@ -752,7 +754,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     try:
                         util.send_mail( frm, to, subject, body, trans.app.config )
                     except:
-                        error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+                        error = "Now logged in as " + escape( user.email ) + ". However, subscribing to the mailing list has failed."
             if not error and not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
@@ -762,7 +764,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             elif not error:
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='users',
-                                                           message='Created new user account (%s)' % user.email,
+                                                           message='Created new user account (%s)' % escape( user.email ),
                                                            status=status ) )
         if error:
             message = error
@@ -772,7 +774,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
                 is_activation_sent = self.send_verification_email( trans, email, username )
                 if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( escape( user.email ), url_for( '/' ) )
                     success = True
                 else:
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -780,7 +782,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         message += ' Contact: %s' % trans.app.config.error_email_to
                     success = False
             else:  # User activation is OFF, proceed without sending the activation email.
-                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( escape( user.email ), url_for( '/' ) )
                 success = True
         return ( message, status, user, success )
 
@@ -970,7 +972,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 user.username = username
                 trans.sa_session.add( user )
                 trans.sa_session.flush()
-                message = 'The username has been updated with the changes.'
+                message = 'The username has been updated to: %s' % escape( username )
         return trans.fill_template( '/user/username.mako',
                                     cntrller=cntrller,
                                     user=user,
@@ -1177,7 +1179,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 message = 'Default new history permissions have been changed.'
             return trans.fill_template( 'user/permissions.mako',
                                         cntrller=cntrller,
-                                        message=message,
+                                        message=escape( message ),
                                         status=status )
         else:
             # User not logged in, history group must be only public
@@ -1228,57 +1230,48 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=False ) )
             return filters
 
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        saved_user_tool_filters = list()
+        saved_user_section_filters = list()
+        saved_user_label_filters = list()
 
-        user_id = params.get( 'user_id', False )
-        if user_id:
-            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-        else:
-            user = trans.user
+        for name, value in trans.user.preferences.items():
+            if name == 'toolbox_tool_filters':
+                saved_user_tool_filters = listify( value, do_strip=True )
+            elif name == 'toolbox_section_filters':
+                saved_user_section_filters = listify( value, do_strip=True )
+            elif name == 'toolbox_label_filters':
+                saved_user_label_filters = listify( value, do_strip=True )
 
-        if user:
-            saved_user_tool_filters = list()
-            saved_user_section_filters = list()
-            saved_user_label_filters = list()
+        tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
+        section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
+        label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
 
-            for name, value in user.preferences.items():
-                if name == 'toolbox_tool_filters':
-                    saved_user_tool_filters = listify( value, do_strip=True )
-                elif name == 'toolbox_section_filters':
-                    saved_user_section_filters = listify( value, do_strip=True )
-                elif name == 'toolbox_label_filters':
-                    saved_user_label_filters = listify( value, do_strip=True )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
+        status = util.restore_text( kwd.get( 'status', 'done' ) )
 
-            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
-            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
-            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
-
-            return trans.fill_template( 'user/toolbox_filters.mako',
-                                        cntrller=cntrller,
-                                        message=message,
-                                        tool_filters=tool_filters,
-                                        section_filters=section_filters,
-                                        label_filters=label_filters,
-                                        user=user,
-                                        status=status )
-        else:
-            # User not logged in, history group must be only public
-            return trans.show_error_message( "You must be logged in to change private toolbox filters." )
+        return trans.fill_template( 'user/toolbox_filters.mako',
+                                    cntrller=cntrller,
+                                    message=message,
+                                    tool_filters=tool_filters,
+                                    section_filters=section_filters,
+                                    label_filters=label_filters,
+                                    user=trans.user,
+                                    status=status)
 
     @web.expose
     @web.require_login( "to change the private toolbox filters" )
     def edit_toolbox_filters( self, trans, cntrller, **kwd ):
+        def validate( user_filters, filter_type ):
+            rval = []
+            config_filters = getattr( trans.app.config, 'user_%s_filters' % filter_type, [] )
+            for f in user_filters:
+                if f not in config_filters:
+                    log.warning( 'User provided filter %s which is not in user_%s_filters', f, filter_type )
+                else:
+                    rval.append( f )
+            return rval
+
         params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', '' ) )
-        user_id = params.get( 'user_id', False )
-        if not user_id:
-            # User must be logged in to create a new address
-            return trans.show_error_message( "You must be logged in to change the ToolBox filters." )
-
-        user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
-
         if params.get( 'edit_toolbox_filter_button', False ):
             tool_filters = list()
             section_filters = list()
@@ -1291,13 +1284,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         label_filters.append( name[2:] )
                     elif name.startswith('s_'):
                         section_filters.append( name[2:] )
-            user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
-            user.preferences['toolbox_section_filters'] = ','.join( section_filters )
-            user.preferences['toolbox_label_filters'] = ','.join( label_filters )
+            trans.user.preferences['toolbox_tool_filters'] = ','.join( validate( tool_filters, 'tool' ) )
+            trans.user.preferences['toolbox_section_filters'] = ','.join( validate( section_filters, 'section' ) )
+            trans.user.preferences['toolbox_label_filters'] = ','.join( validate( label_filters, 'label' ) )
 
-            trans.sa_session.add( user )
+            trans.sa_session.add( trans.user )
             trans.sa_session.flush()
-            message = 'ToolBox filters has been updated.'
+            message = 'ToolBox filters have been updated.'
             kwd = dict( message=message, status='done' )
 
         # Display the ToolBox filters form with the current values filled in
