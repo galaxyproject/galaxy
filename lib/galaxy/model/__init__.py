@@ -2192,7 +2192,7 @@ class Library( object, Dictifiable, HasName ):
         return roles
 
 class LibraryFolder( object, Dictifiable, HasName ):
-    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time' )
+    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
