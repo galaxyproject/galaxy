@@ -202,7 +202,7 @@ class ToolTestBuilder( object ):
                         for ( name, value, extra ) in collection_def.collect_inputs():
                             require_file( name, value, extra, self.required_files )
                         processed_value = collection_def
-                    elif isinstance( value, basic.SelectToolParameter ):
+                    elif isinstance( value, basic.SelectToolParameter ) and hasattr( value, 'static_options' ):
                         # Tests may specify values as either raw value or the value
                         # as they appear in the list - the API doesn't and shouldn't
                         # accept the text value - so we need to convert the text
