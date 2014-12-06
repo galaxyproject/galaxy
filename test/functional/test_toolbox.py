@@ -61,6 +61,8 @@ class ToolTestCase( TwillTestCase ):
                 messaage_template = "Incorrect number of outputs - expected %d, found %s."
                 message = messaage_template % ( expected, actual )
                 raise Exception( message )
+        found_exceptions = []
+
         for output_index, output_tuple in enumerate(testdef.outputs):
             # Get the correct hid
             name, outfile, attributes = output_tuple
@@ -78,13 +80,18 @@ class ToolTestCase( TwillTestCase ):
             self.assertTrue( output_data is not None )
             try:
                 galaxy_interactor.verify_output( history, jobs, output_data, output_testdef=output_testdef, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
-            except Exception:
-                for job in jobs:
-                    job_stdio = galaxy_interactor.get_job_stdio( job[ 'id' ] )
-                    for stream in ['stdout', 'stderr']:
-                        if stream in job_stdio:
-                            print >>sys.stderr, self._format_stream( job_stdio[ stream ], stream=stream, format=True )
-                raise
+            except Exception as e:
+                if not found_exceptions:
+                    # Only print this stuff out once.
+                    for job in jobs:
+                        job_stdio = galaxy_interactor.get_job_stdio( job[ 'id' ] )
+                        for stream in ['stdout', 'stderr']:
+                            if stream in job_stdio:
+                                print >>sys.stderr, self._format_stream( job_stdio[ stream ], stream=stream, format=True )
+                found_exceptions.append(e)
+        if found_exceptions:
+            big_message = "\n".join(map(str, found_exceptions))
+            raise AssertionError(big_message)
 
 
 @nottest
