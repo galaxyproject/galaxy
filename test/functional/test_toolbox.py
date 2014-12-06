@@ -5,6 +5,11 @@ from base.interactor import build_interactor, stage_data_in_history
 from galaxy.tools import DataManagerTool
 from galaxy.util import bunch
 import logging
+try:
+    from nose.tools import nottest
+except ImportError:
+    nottest = lambda x: x
+
 log = logging.getLogger( __name__ )
 
 toolbox = None
@@ -82,6 +87,7 @@ class ToolTestCase( TwillTestCase ):
                 raise
 
 
+@nottest
 def build_tests( app=None, testing_shed_tools=False, master_api_key=None, user_api_key=None ):
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
