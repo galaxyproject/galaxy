@@ -196,12 +196,37 @@ class ToolTestBuilder( object ):
                         if not isinstance(param_value, list):
                             param_value = [ param_value ]
                         processed_value = [ self.__add_uploaded_dataset( context.for_state(), v, param_extra, value ) for v in param_value ]
-                    if isinstance( value, basic.DataCollectionToolParameter ):
+                    elif isinstance( value, basic.DataCollectionToolParameter ):
                         assert 'collection' in param_extra
                         collection_def = param_extra[ 'collection' ]
                         for ( name, value, extra ) in collection_def.collect_inputs():
                             require_file( name, value, extra, self.required_files )
                         processed_value = collection_def
+                    elif isinstance( value, basic.SelectToolParameter ):
+                        # Tests may specify values as either raw value or the value
+                        # as they appear in the list - the API doesn't and shouldn't
+                        # accept the text value - so we need to convert the text
+                        # into the form value.
+                        def process_param_value( param_value ):
+                            found_value = False
+                            value_for_text = None
+                            if value.static_options:
+                                for (text, opt_value, selected) in value.static_options:
+                                    if param_value == opt_value:
+                                        found_value = True
+                                    if value_for_text is None and param_value == text:
+                                        value_for_text = opt_value
+                            if not found_value and value_for_text is not None:
+                                processed_value = value_for_text
+                            else:
+                                processed_value = param_value
+                            return processed_value
+                        # Do replacement described above for lists or singleton
+                        # values.
+                        if isinstance( param_value, list ):
+                            processed_value = map( process_param_value, param_value )
+                        else:
+                            processed_value = process_param_value( param_value )
                     else:
                         processed_value = param_value
                     expanded_inputs[ context.for_state() ] = processed_value
