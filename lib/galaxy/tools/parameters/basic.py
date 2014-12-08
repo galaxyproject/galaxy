@@ -767,7 +767,10 @@ class SelectToolParameter( ToolParameter ):
         if self.options:
             return self.options.get_options( trans, other_values )
         elif self.dynamic_options:
-            return eval( self.dynamic_options, self.tool.code_namespace, other_values )
+            try:
+                return eval( self.dynamic_options, self.tool.code_namespace, other_values )
+            except Exception:
+                return []
         else:
             return self.static_options
 
@@ -779,7 +782,10 @@ class SelectToolParameter( ToolParameter ):
         if self.options:
             return map( _get_UnvalidatedValue_value, set( v for _, v, _ in self.options.get_options( trans, other_values ) ) )
         elif self.dynamic_options:
-            return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
+            try:
+                return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
+            except Exception:
+                return set()
         else:
             return self.legal_values
 
