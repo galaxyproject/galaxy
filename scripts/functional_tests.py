@@ -402,11 +402,6 @@ def main():
         else:
             raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
         log.info( "Embedded web server started" )
-    # ---- Load toolbox for generated tests -----------------------------------
-    # We don't add the tests to the path until everything is up and running
-    new_path = [ os.path.join( cwd, "test" ) ]
-    new_path.extend( sys.path[1:] )
-    sys.path = new_path
 
     # ---- Find tests ---------------------------------------------------------
     if galaxy_test_proxy_port:
