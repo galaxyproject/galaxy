@@ -311,14 +311,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ( "User '%s' does not exist" % email )
+                msg = ( "User '%s' does not exist" % escape( email ) )
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ( "You cannot share a workflow with yourself" )
             elif trans.sa_session.query( model.StoredWorkflowUserShareAssociation ) \
                     .filter_by( user=other, stored_workflow=stored ).count() > 0:
                 mtype = "error"
-                msg = ( "Workflow already shared with '%s'" % email )
+                msg = ( "Workflow already shared with '%s'" % escape( email ) )
             else:
                 share = model.StoredWorkflowUserShareAssociation()
                 share.stored_workflow = stored
@@ -326,7 +326,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 session = trans.sa_session
                 session.add( share )
                 session.flush()
-                trans.set_message( "Workflow '%s' shared with user '%s'" % ( stored.name, other.email ) )
+                trans.set_message( "Workflow '%s' shared with user '%s'" % ( escape( stored.name ), escape( other.email ) ) )
                 return trans.response.send_redirect( url_for( controller='workflow', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
                                     message=msg,
