@@ -66,6 +66,7 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
+from galaxy.web.framework.helpers import escape
 from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
 from tool_shed.util import common_util
@@ -734,7 +735,7 @@ class ToolBox( object, Dictifiable ):
         success = True
         # Make sure the tool is actually loaded.
         if tool_id not in self.tools_by_id:
-            return None, False, "No tool with id %s" % tool_id
+            return None, False, "No tool with id %s" % escape( tool_id )
         else:
             tool = self.tools_by_id[ tool_id ]
             tarball_files = []
@@ -843,7 +844,7 @@ class ToolBox( object, Dictifiable ):
         replace the old tool.
         """
         if tool_id not in self.tools_by_id:
-            message = "No tool with id %s" % tool_id
+            message = "No tool with id %s" % escape( tool_id )
             status = 'error'
         else:
             old_tool = self.tools_by_id[ tool_id ]
@@ -880,7 +881,7 @@ class ToolBox( object, Dictifiable ):
         Attempt to remove the tool identified by 'tool_id'.
         """
         if tool_id not in self.tools_by_id:
-            message = "No tool with id %s" % tool_id
+            message = "No tool with id %s" % escape( tool_id )
             status = 'error'
         else:
             tool = self.tools_by_id[ tool_id ]
