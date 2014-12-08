@@ -27,10 +27,10 @@
             <tr>
                 <td>
                     <div class="rowTitle">
-                        <span class="historyItemTitle"><b>${ldd_assoc.name}</b></span>
-                        <a id="ldda-${ldd_assoc.id}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
+                        <span class="historyItemTitle"><b>${ldd_assoc.name | h}</b></span>
+                        <a id="ldda-${ldd_assoc.id | h}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                     </div>
-                    <div popupmenu="ldd_assoc-${ldd_assoc.id}-popup">
+                    <div popupmenu="ldd_assoc-${ldd_assoc.id | h}-popup">
                         <a class="action-button" href="${h.url_for( controller='library_common', action='library_dataset_info', id=trans.security.encode_id( ldd_assoc.library_dataset_id ), library_id=library_id )}">Manage this dataset's versions</a>
                     </div>
                 </td>

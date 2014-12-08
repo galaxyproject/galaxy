@@ -34,9 +34,9 @@
     <select name="datatype">
         %for ext in file_formats:
             %if ldda.ext == ext:
-                <option value="${ext}" selected="yes">${ext}</option>
+                <option value="${ext | h}" selected="yes">${ext | h}</option>
             %else:
-                <option value="${ext}">${ext}</option>
+                <option value="${ext | h}">${ext | h}</option>
             %endif
         %endfor
     </select>
@@ -44,24 +44,24 @@
 
 %if ( trans.user_is_admin() and cntrller=='library_admin' ) or trans.app.security_agent.can_modify_library_item( current_user_roles, ldda.library_dataset ):
     <div class="toolForm">
-        <div class="toolFormTitle">Edit attributes of ${util.unicodify( ldda.name )}</div>
+        <div class="toolFormTitle">Edit attributes of ${util.unicodify( ldda.name ) | h}</div>
         <div class="toolFormBody">
             <form name="edit_attributes" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
-                <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
+                <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id ) | h}"/>
                 <div class="form-row">
                     <label>Name:</label>
-                    <input type="text" name="name" value="${util.unicodify( ldda.name )}" size="40"/>
+                    <input type="text" name="name" value="${util.unicodify( ldda.name ) | h}" size="40"/>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Info:</label>
-                    <input type="text" name="info" value="${util.unicodify( ldda.info )}" size="40"/>
+                    <input type="text" name="info" value="${util.unicodify( ldda.info ) | h}" size="40"/>
                     <div style="clear: both"></div>
                 </div> 
                 <div class="form-row">
                     <label>Message:</label>
                     %if ldda.message:
-                        <textarea name="message" rows="3" cols="35">${ldda.message}</textarea>
+                        <textarea name="message" rows="3" cols="35">${ldda.message | h}</textarea>
                     %else:
                         <textarea name="message" rows="3" cols="35"></textarea>
                     %endif
@@ -73,7 +73,7 @@
                 %for name, spec in ldda.metadata.spec.items():
                     %if spec.visible:
                         <div class="form-row">
-                            <label>${spec.desc}:</label>
+                            <label>${spec.desc | h}:</label>
                             ${ldda.metadata.get_html_by_name( name, trans=trans )}
                             <div style="clear: both"></div>
                         </div>
@@ -85,7 +85,7 @@
             </form>
             <form name="auto_detect" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
                 <div class="form-row">
-                    <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
+                    <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id ) | h}"/>
                     <input type="submit" name="detect" value="Auto-detect"/>
                     <div class="toolParamHelp" style="clear: both;">
                         This will inspect the dataset and attempt to correct the above column values if they are not accurate.
@@ -101,7 +101,7 @@
             %if ldda.datatype.allow_datatype_change:
                 <form name="change_datatype" action="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=library_id, folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), use_panels=use_panels, show_deleted=show_deleted, )}" method="post">
                     <div class="form-row">
-                        <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
+                        <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id ) | h}"/>
                         <label>New Type:</label>
                         ${datatype( ldda, file_formats )}
                         <div class="toolParamHelp" style="clear: both;">
@@ -129,10 +129,10 @@
                 <div class="form-row">
                 <label>Extended Metadata:</label>
                 </div>
-                <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id )}"/>
+                <input type="hidden" name="id" value="${trans.security.encode_id( ldda.id ) | h}"/>
                 <div class="form-row">
                 %if ldda.extended_metadata:
-                    <textarea name="extended_metadata" rows="15" cols="35">${util.pretty_print_json(ldda.extended_metadata.data)}</textarea>
+                    <textarea name="extended_metadata" rows="15" cols="35">${util.pretty_print_json(ldda.extended_metadata.data) | h}</textarea>
                 %else:
                     <textarea name="extended_metadata" rows="15" cols="35"></textarea>
                 %endif
@@ -147,28 +147,28 @@
     <p/>
 %else:
     <div class="toolForm">
-        <div class="toolFormTitle">View information about ${util.unicodify( ldda.name )}</div>
+        <div class="toolFormTitle">View information about ${util.unicodify( ldda.name ) | h}</div>
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Name:</label>
-                ${util.unicodify( ldda.name )}
+                ${util.unicodify( ldda.name ) | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Info:</label>
-                ${util.unicodify( ldda.info )}
+                ${util.unicodify( ldda.info ) | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Data Format:</label>
-                ${ldda.ext}
+                ${ldda.ext | h}
                 <div style="clear: both"></div>
             </div>
             %for name, spec in ldda.metadata.spec.items():
                 %if spec.visible:
                     <div class="form-row">
-                        <label>${spec.desc}:</label>
-                        ${ldda.metadata.get( name )}
+                        <label>${spec.desc | h}:</label>
+                        ${ldda.metadata.get( name ) | h}
                         <div style="clear: both"></div>
                     </div>
                 %endif

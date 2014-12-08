@@ -31,9 +31,9 @@
 <form name="move_library_item" action="${h.url_for( controller='library_common', action='move_library_item', cntrller=cntrller, item_type=item_type, make_target_current=make_target_current, use_panels=use_panels, show_deleted=show_deleted )}" method="post">
     <div class="toolForm" style="float: left; width: 45%; padding: 0px;">
         <div class="toolFormBody">
-            <input type="hidden" name="source_library_id" value="${source_library_id}"/>
+            <input type="hidden" name="source_library_id" value="${source_library_id | h}"/>
             %if target_library:
-                <input type="hidden" name="target_library_id" value="${target_library_id}"/>
+                <input type="hidden" name="target_library_id" value="${target_library_id | h}"/>
             %endif
             %if item_type == 'ldda':
                 %for move_ldda in move_lddas:
@@ -44,15 +44,15 @@
                             checked = " checked='checked'"
                     %>
                     <div class="form-row">
-                        <input type="checkbox" name="item_id" id="dataset_${encoded_id}" value="${encoded_id}" ${checked}/>
-                        <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;">${util.unicodify( move_ldda.name )}</label>
+                        <input type="checkbox" name="item_id" id="dataset_${encoded_id | h}" value="${encoded_id | h}" ${checked}/>
+                        <label for="dataset_${encoded_id | h}" style="display: inline;font-weight:normal;">${util.unicodify( move_ldda.name ) | h}</label>
                     </div>
                 %endfor
             %elif item_type == 'folder':
                 <div class="form-row">
                     <% encoded_id = trans.security.encode_id( move_folder.id ) %>
-                    <input type="checkbox" name="item_id" id="folder_${encoded_id}" value="${encoded_id}" checked='checked'/>
-                    <label for="folder_${encoded_id}" style="display: inline;font-weight:normal;">${move_folder.name}</label>
+                    <input type="checkbox" name="item_id" id="folder_${encoded_id | h}" value="${encoded_id | h}" checked='checked'/>
+                    <label for="folder_${encoded_id | h}" style="display: inline;font-weight:normal;">${move_folder.name | h}</label>
                 </div>
             %endif
         </div>
@@ -60,7 +60,7 @@
     <div style="float: left; padding-left: 10px; font-size: 36px;">&rarr;</div>
     <div class="toolForm" style="float: right; width: 45%; padding: 0px;">
         %if target_library:
-            <div class="toolFormTitle">Select folder within data library: ${h.truncate( target_library.name, 30 )}</div>
+            <div class="toolFormTitle">Select folder within data library: ${h.truncate( target_library.name, 30 ) | h}</div>
         %else:
             <div class="toolFormTitle">Select a data library</div>
         %endif

@@ -236,29 +236,29 @@
     %if current_version and ( not ldda.library_dataset.deleted or show_deleted ):
         <tr class="datasetRow"
             %if parent is not None:
-                parent="${parent}"
+                parent="${parent | h}"
             %endif
-            id="libraryItem-${ldda.id}">
+            id="libraryItem-${ldda.id | h}">
             <td style="padding-left: ${pad+20}px;">
-                <input style="float: left;" type="checkbox" name="ldda_ids" id="${trans.security.encode_id( ldda.id )}" value="${trans.security.encode_id( ldda.id )}"
+                <input style="float: left;" type="checkbox" name="ldda_ids" id="${trans.security.encode_id( ldda.id ) | h}" value="${trans.security.encode_id( ldda.id ) | h}"
                 %if selected:
                     checked="checked"
                 %endif
                 />
                 %if simple:
-                    <label for="${trans.security.encode_id( ldda.id )}">${ util.unicodify( ldda.name )}</label>
+                    <label for="${trans.security.encode_id( ldda.id ) | h}">${ util.unicodify( ldda.name ) | h}</label>
                 %else:
-                    <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="dataset-${ldda.id}-popup">
+                    <div style="float: left; margin-left: 1px;" class="menubutton split popup" id="dataset-${ldda.id | h}-popup">
                         <a class="view-info" href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">
                             %if ldda.library_dataset.deleted:
-                                <div class="libraryItem-error">${util.unicodify( ldda.name )}</div>
+                                <div class="libraryItem-error">${util.unicodify( ldda.name ) | h}</div>
                             %else:
-                                ${util.unicodify( ldda.name )}
+                                ${util.unicodify( ldda.name ) | h}
                             %endif     
                         </a>
                     </div>
                     %if not library.deleted:
-                        <div popupmenu="dataset-${ldda.id}-popup">
+                        <div popupmenu="dataset-${ldda.id | h}-popup">
                             %if not branch_deleted( folder ) and not ldda.library_dataset.deleted and can_modify:
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='move_library_item', cntrller=cntrller, item_type='ldda', item_id=trans.security.encode_id( ldda.id ), source_library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Move this dataset</a>
@@ -287,7 +287,7 @@
                             %endif
                             %if can_modify:
                                 %if not library.deleted and not branch_deleted( folder ) and not ldda.library_dataset.deleted:
-                                    <a class="action-button" confirm="Click OK to delete dataset '${util.unicodify( ldda.name )}'." href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library_dataset.id ), item_type='library_dataset', show_deleted=show_deleted )}">Delete this dataset</a>
+                                    <a class="action-button" confirm="Click OK to delete dataset '${util.unicodify( ldda.name ) | h}'." href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library_dataset.id ), item_type='library_dataset', show_deleted=show_deleted )}">Delete this dataset</a>
                                 %elif not library.deleted and not branch_deleted( folder ) and not ldda.library_dataset.purged and ldda.library_dataset.deleted:
                                     <a class="action-button" href="${h.url_for( controller='library_common', action='undelete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library_dataset.id ), item_type='library_dataset', show_deleted=show_deleted )}">Undelete this dataset</a>
                                 %endif
@@ -298,10 +298,10 @@
             </td>
             % if not simple:
                 <td id="libraryItemInfo">${render_library_item_info( ldda )}</td>
-                <td>${ldda.extension}</td>
+                <td>${ldda.extension | h}</td>
             % endif
-            <td>${ldda.create_time.strftime( trans.app.config.pretty_datetime_format )}</td>
-            <td>${ldda.get_size( nice_size=True )}</td>
+            <td>${ldda.create_time.strftime( trans.app.config.pretty_datetime_format ) | h}</td>
+            <td>${ldda.get_size( nice_size=True ) | h}</td>
         </tr>
         <%
             my_row = row_counter.count
@@ -355,28 +355,28 @@
     %>
     %if not root_folder and ( not folder.deleted or show_deleted ):
         <% encoded_id = trans.security.encode_id( folder.id ) %>
-        <tr id="folder-${encoded_id}" class="folderRow libraryOrFolderRow"
+        <tr id="folder-${encoded_id | h}" class="folderRow libraryOrFolderRow"
             %if parent is not None:
-                parent="${parent}"
+                parent="${parent | h}"
                 style="display: none;"
             %endif
             >
-            <td style="padding-left: ${folder_pad}px;">
+            <td style="padding-left: ${folder_pad | h}px;">
                 <input type="checkbox" class="folderCheckbox"/>
-                <span class="expandLink folder-${encoded_id}-click">
-                    <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="folder_img-${folder.id}-popup">
-                        <a class="folder-${encoded_id}-click" href="javascript:void(0);">
+                <span class="expandLink folder-${encoded_id | h}-click">
+                    <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="folder_img-${folder.id | h}-popup">
+                        <a class="folder-${encoded_id | h}-click" href="javascript:void(0);">
                             <span class="rowIcon"></span>
                             %if folder.deleted:
-                                <div class="libraryItem-error">${folder.name}</div>
+                                <div class="libraryItem-error">${folder.name | h}</div>
                             %else:
-                                ${folder.name}
+                                ${folder.name | h}
                             %endif
                         </a>
                     </div>
                 </span>
                 %if not library.deleted:
-                    <div popupmenu="folder_img-${folder.id}-popup">
+                    <div popupmenu="folder_img-${folder.id | h}-popup">
                         %if not branch_deleted( folder ) and can_add:
                             <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add datasets</a>
                             <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add sub-folder</a>
@@ -407,7 +407,7 @@
                         %endif
                         %if can_modify:
                             %if not library.deleted and not folder.deleted:
-                                <a class="action-button" confirm="Click OK to delete the folder '${folder.name}.'" href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( folder.id ), item_type='folder', show_deleted=show_deleted )}">Delete this folder</a>
+                                <a class="action-button" confirm="Click OK to delete the folder '${folder.name | h}.'" href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( folder.id ), item_type='folder', show_deleted=show_deleted )}">Delete this folder</a>
                             %elif not library.deleted and folder.deleted and not folder.purged:
                                 <a class="action-button" href="${h.url_for( controller='library_common', action='undelete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( folder.id ), item_type='folder', show_deleted=show_deleted )}">Undelete this folder</a>
                             %endif
@@ -416,7 +416,7 @@
                 %endif
             <td>
             %if folder.description:
-                ${folder.description}
+                ${folder.description | h}
             %endif
             <td colspan="3"></td>
         </tr>
@@ -504,7 +504,7 @@
                 return str( self.count )
     %>
     
-    <h2>Data Library &ldquo;${library.name}&rdquo;</h2>
+    <h2>Data Library &ldquo;${library.name | h}&rdquo;</h2>
     
      <ul class="manage-table-actions">
          %if not library.deleted and ( is_admin or can_add ):
@@ -517,7 +517,7 @@
                  %if not library.deleted:
                      %if can_modify:
                          <a class="action-button" href="${h.url_for( controller='library_common', action='library_info', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
-                         <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Delete this data library</a>
+                         <a class="action-button" confirm="Click OK to delete the library named '${library.name | h}'." href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Delete this data library</a>
                          %if show_deleted:
                              <a class="action-button" href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=False )}">Hide deleted items</a>
                          %else:
@@ -555,7 +555,7 @@
 
     %if library.synopsis not in [ '', 'None', None ]:
         <div class="libraryItemBody">
-            ${library.synopsis}
+            ${library.synopsis | h}
         </div>
     %endif
     
@@ -610,6 +610,6 @@
         ${render_compression_types_help( comptypes )}
     %endif
     %if not has_accessible_folders:
-        The data library '${library.name}' does not contain any datasets that you can access.
+        The data library '${library.name | h}' does not contain any datasets that you can access.
     %endif
 </%def>
