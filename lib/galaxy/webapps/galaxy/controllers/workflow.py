@@ -1228,7 +1228,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Index page with message
             workflow_id = trans.security.encode_id( stored_workflow.id )
             return trans.show_message( 'Workflow "%s" created from current history. You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.' %
-                                       ( workflow_name, url_for( controller='workflow', action='editor', id=workflow_id ),
+                                       ( escape( workflow_name ), url_for( controller='workflow', action='editor', id=workflow_id ),
                                          url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
