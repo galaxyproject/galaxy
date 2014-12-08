@@ -10,6 +10,61 @@
     }
 
 }(function ($) {
+	//==============================================================================
+	/**
+	 *  Template function that produces a bootstrap dropdown to replace the
+	 *  vanilla HTML select input. Pass in an array of options and an initial selection:
+	 *  $( '.my-div' ).append( dropDownSelect( [ 'option1', 'option2' ], 'option2' );
+	 *
+	 *  When the user changes the selected option a 'change.dropdown-select' event will
+	 *  fire with both the jq event and the new selection text as arguments.
+	 *
+	 *  Get the currently selected choice using:
+	 *  var userChoice = $( '.my-div .dropdown-select .dropdown-select-selected' ).text();
+	 *
+	 */
+	function dropDownSelect( options, selected ){
+		// replacement for vanilla select element using bootstrap dropdowns instead
+		selected = selected || (( !_.isEmpty( options ) )?( options[0] ):( '' ));
+		var $select = $([
+				'<div class="dropdown-select btn-group">',
+					'<button type="button" class="btn btn-default">',
+						'<span class="dropdown-select-selected">' + selected + '</span>',
+					'</button>',
+				'</div>'
+			].join( '\n' ));
+
+		// if there's only one option, do not style/create as buttons, dropdown - use simple span
+		// otherwise, a dropdown displaying the current selection
+		if( options && options.length > 1 ){
+			$select.find( 'button' )
+				.addClass( 'dropdown-toggle' ).attr( 'data-toggle', 'dropdown' )
+				.append( ' <span class="caret"></span>' );
+			$select.append([
+				'<ul class="dropdown-menu" role="menu">',
+					_.map( options, function( option ){
+						return [
+							'<li><a href="javascript:void(0)">', option, '</a></li>'
+						].join( '' );
+					}).join( '\n' ),
+				'</ul>'
+			].join( '\n' ));
+		}
+
+		// trigger 'change.dropdown-select' when a new selection is made using the dropdown
+		function selectThis( event ){
+			var $this = $( this ),
+				$select = $this.parents( '.dropdown-select' ),
+				newSelection = $this.text();
+			$select.find( '.dropdown-select-selected' ).text( newSelection );
+			$select.trigger( 'change.dropdown-select', newSelection );
+		}
+
+		$select.find( 'a' ).click( selectThis );
+		return $select;
+	}
+
+	//==============================================================================
     /**
      *  Creates a three part bootstrap button group (key, op, value) meant to
      *  allow the user control of filters (e.g. { key: 'name', op: 'contains', value: 'my_history' })
