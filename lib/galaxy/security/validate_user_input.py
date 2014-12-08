@@ -1,3 +1,9 @@
+"""
+Utilities for validating inputs related to user objects.
+
+The validate_* methods in this file return simple messages that do not contain
+user inputs - so these methods do not need to be escaped.
+"""
 import logging
 import re
 

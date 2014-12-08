@@ -2581,6 +2581,8 @@ class SharableMixin:
     def set_public_username( self, trans, id, username, **kwargs ):
         """ Set user's public username and delegate to sharing() """
         user = trans.get_user()
+        # message from validate_publicname does not contain input, no need
+        # to escape.
         message = validate_publicname( trans, username, user )
         if message:
             return trans.fill_template( '/sharing_base.mako', item=self.get_item( trans, id ), message=message, status='error' )
