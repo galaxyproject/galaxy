@@ -34,8 +34,8 @@
                             checked = " checked='checked'"
                     %>
                     <div class="form-row">
-                        <input type="checkbox" name="ldda_ids" id="dataset_${encoded_id}" value="${encoded_id}" ${checked}/>
-                        <label for="dataset_${encoded_id}" style="display: inline;font-weight:normal;">${util.unicodify( source_ldda.name )}</label>
+                        <input type="checkbox" name="ldda_ids" id="dataset_${encoded_id | h}" value="${encoded_id | h}" ${checked}/>
+                        <label for="dataset_${encoded_id | h}" style="display: inline;font-weight:normal;">${util.unicodify( source_ldda.name ) | h}</label>
                     </div>
                 %endfor
             %else:
@@ -61,7 +61,7 @@
                             else:
                                 current_history_text = ""
                         %>
-                        <option value="${encoded_id}"${selected_text}>${i + 1}: ${h.truncate( util.unicodify( target_history.name ), 30 )}${current_history_text}</option>
+                        <option value="${encoded_id | h}"${selected_text}>${i + 1}: ${h.truncate( util.unicodify( target_history.name ), 30 ) | h}${current_history_text | h}</option>
                     %endfor
                 </select>
                 <br/><br/>
@@ -77,8 +77,8 @@
                             current_history_text = ""
                     %>
                     <div class="form-row">
-                        <input type="checkbox" name="target_history_ids" id="target_history_${encoded_id}" value="${encoded_id}"/>
-                        <label for="target_history_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${util.unicodify( target_history.name )}${current_history_text}</label>
+                        <input type="checkbox" name="target_history_ids" id="target_history_${encoded_id | h}" value="${encoded_id | h}"/>
+                        <label for="target_history_${encoded_id | h}" style="display: inline; font-weight:normal;">${i + 1}: ${util.unicodify( target_history.name ) | h}${current_history_text | h}</label>
                     </div>
                 %endfor
             </div>

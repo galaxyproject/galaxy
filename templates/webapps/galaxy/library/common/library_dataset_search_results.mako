@@ -85,17 +85,17 @@
         </li>
     </ul>
 
-    <h2>Results for search on &ldquo;${search_term}&rdquo;</h2>
+    <h2>Results for search on &ldquo;${search_term | h}&rdquo;</h2>
  
     %if message:
         ${render_msg( message, status )}
     %endif
  
     %if lddas:
-        <p>The string "${search_term}" was found in at least one of the following information components of the displayed library datasets.</p>
+        <p>The string "${search_term | h}" was found in at least one of the following information components of the displayed library datasets.</p>
         ${render_searched_components()}
         <form name="act_on_multiple_datasets" action="${h.url_for( controller='library_common', action='act_on_multiple_datasets', cntrller=cntrller, use_panels=use_panels, show_deleted=show_deleted )}" onSubmit="javascript:return checkForm();" method="post">
-            <input type="hidden" name="search_term" value="${search_term}"/>
+            <input type="hidden" name="search_term" value="${search_term | h}"/>
             <table cellspacing="0" cellpadding="0" border="0" width="100%" class="grid" id="library-grid">
                 <thead>
                     <tr class="libraryTitle">
@@ -131,7 +131,7 @@
         </form>
         ${render_compression_types_help( comptypes )}
     %elif status != 'error':
-        <p>The string "${search_term}" was not found in any of the following information components for any library datasets that you can access.</p>
+        <p>The string "${search_term | h}" was not found in any of the following information components for any library datasets that you can access.</p>
         ${render_searched_components()}
     %endif
 </%def>

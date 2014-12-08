@@ -25,20 +25,20 @@
 
 %if ( trans.user_is_admin() and cntrller=='library_admin' ) or trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset ):
     <div class="toolForm">
-        <div class="toolFormTitle">Edit attributes of ${util.unicodify( library_dataset.name )}</div>
+        <div class="toolFormTitle">Edit attributes of ${util.unicodify( library_dataset.name ) | h}</div>
         <div class="toolFormBody">
             <form name="edit_attributes" action="${h.url_for( controller='library_common', action='library_dataset_info', id=trans.security.encode_id( library_dataset.id ), library_id=library_id, show_deleted=show_deleted )}" method="post">
                 <div class="form-row">
                     <label>Name:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="name" value="${util.unicodify( library_dataset.name )}" size="40"/>
+                        <input type="text" name="name" value="${util.unicodify( library_dataset.name ) | h}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Info:</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="info" value="${util.unicodify( library_dataset.info )}" size="40"/>
+                        <input type="text" name="info" value="${util.unicodify( library_dataset.info ) | h}" size="40"/>
                     </div>
                     <div style="clear: both"></div>
                 </div> 
@@ -50,12 +50,12 @@
     </div>
 %else:
     <div class="toolForm">
-        <div class="toolFormTitle">View information about ${util.unicodify( library_dataset.name )}</div>
+        <div class="toolFormTitle">View information about ${util.unicodify( library_dataset.name ) | h}</div>
         <div class="toolFormBody">
             <div class="form-row">
-                <b>Name:</b> ${util.unicodify( library_dataset.name )}
+                <b>Name:</b> ${util.unicodify( library_dataset.name ) | h}
                 <div style="clear: both"></div>
-                <b>Info:</b> ${util.unicodify( library_dataset.info )}
+                <b>Info:</b> ${util.unicodify( library_dataset.info ) | h}
                 <div style="clear: both"></div>
                 <b>Dataset Versions:</b>
                 <div style="clear: both"></div>

@@ -88,19 +88,19 @@
                 else:
                     tool_form_title = 'Upload files'
             %>
-            <div class="toolFormTitle">${tool_form_title}</div>
+            <div class="toolFormTitle">${tool_form_title | h}</div>
             <div class="toolFormBody">
                 <form name="upload_library_dataset" id="upload_library_dataset" action="${action}" enctype="multipart/form-data" method="post">
                     <input type="hidden" name="tool_id" value="upload1"/>
                     <input type="hidden" name="tool_state" value="None"/>
-                    <input type="hidden" name="cntrller" value="${cntrller}"/>
-                    <input type="hidden" name="library_id" value="${library_id}"/>
-                    <input type="hidden" name="folder_id" value="${folder_id}"/>
-                    <input type="hidden" name="show_deleted" value="${show_deleted}"/>
+                    <input type="hidden" name="cntrller" value="${cntrller | h}"/>
+                    <input type="hidden" name="library_id" value="${library_id | h}"/>
+                    <input type="hidden" name="folder_id" value="${folder_id | h}"/>
+                    <input type="hidden" name="show_deleted" value="${show_deleted | h}"/>
                     %if replace_dataset not in [ None, 'None' ]:
-                        <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
+                        <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id ) | h}"/>
                         <div class="form-row">
-                            You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${util.unicodify( replace_dataset.name )}</a>'.
+                            You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${util.unicodify( replace_dataset.name ) | h}</a>'.
                             <div style="clear: both"></div>
                         </div>
                     %endif
@@ -120,7 +120,7 @@
                             <select name="file_type">
                                 <option value="auto" selected>Auto-detect</option>
                                 %for file_format in file_formats:
-                                    <option value="${file_format}">${file_format}</option>
+                                    <option value="${file_format | h}">${file_format | h}</option>
                                 %endfor
                             </select>
                         </div>
@@ -176,23 +176,23 @@
                                         %for entry in os.listdir( import_dir ):
                                             ## Do not include entries that are not directories
                                             %if os.path.isdir( os.path.join( import_dir, entry ) ):
-                                                <option>${entry}</option>
+                                                <option>${entry | h}</option>
                                             %endif
                                         %endfor
                                     %else:
                                         %if ( trans.user_is_admin() and cntrller == 'library_admin' ):
-                                            <option>${import_dir}</option>
+                                            <option>${import_dir | h}</option>
                                         %else:
-                                            <option>${trans.user.email}</option>
+                                            <option>${trans.user.email | h}</option>
                                         %endif
                                     %endif
                                 </select>
                             </div>
                             <div class="toolParamHelp" style="clear: both;">
                                 %if contains_directories:
-                                    Upload all files in a sub-directory of <strong>${import_dir}</strong> on the Galaxy server.
+                                    Upload all files in a sub-directory of <strong>${import_dir | h}</strong> on the Galaxy server.
                                 %else:
-                                    Upload all files in <strong>${import_dir}</strong> on the Galaxy server.
+                                    Upload all files in <strong>${import_dir | h}</strong> on the Galaxy server.
                                 %endif
                             </div>
                             <div style="clear: both"></div>
@@ -282,9 +282,9 @@
                                 %>
                                 %for dbkey in dbkeys:
                                     %if dbkey[1] == default_selected:
-                                        <option value="${dbkey[1]}" selected>${dbkey[0]}</option>
+                                        <option value="${dbkey[1] | h}" selected>${dbkey[0] | h}</option>
                                     %else:
-                                        <option value="${dbkey[1]}">${dbkey[0]}</option>
+                                        <option value="${dbkey[1] | h}">${dbkey[0] | h}</option>
                                     %endif
                                 %endfor
                             </select>
@@ -295,7 +295,7 @@
                         <label>Message:</label>
                         <div class="form-row-input">
                             %if ldda_message:
-                                <textarea name="ldda_message" rows="3" cols="35">${ldda_message}</textarea>
+                                <textarea name="ldda_message" rows="3" cols="35">${ldda_message | h}</textarea>
                             %else:
                                 <textarea name="ldda_message" rows="3" cols="35"></textarea>
                             %endif
@@ -320,13 +320,13 @@
                     %if widgets:
                         %for i, field in enumerate( widgets ):
                             <div class="form-row">
-                                <label>${field[ 'label' ]}</label>
+                                <label>${field[ 'label' ] | h}</label>
                                 <div class="form-row-input">
                                     ${field[ 'widget' ].get_html()}
                                 </div>
                                 <div class="toolParamHelp" style="clear: both;">
                                     %if field[ 'helptext' ]:
-                                        ${field[ 'helptext' ]}<br/>
+                                        ${field[ 'helptext' ] | h}<br/>
                                     %endif
                                     *Inherited template field
                                 </div>
@@ -342,14 +342,14 @@
         </div>
     %elif upload_option == 'import_from_history':
         <div class="toolForm">
-            <div class="toolFormTitle">Active datasets in your current history (${ util.unicodify( history.name )})</div>
+            <div class="toolFormTitle">Active datasets in your current history (${ util.unicodify( history.name ) | h})</div>
             <div class="toolFormBody">
                 %if history and history.active_datasets:
                     <form name="add_history_datasets_to_library" action="${h.url_for( controller='library_common', action='add_history_datasets_to_library', cntrller=cntrller, library_id=library_id )}" enctype="multipart/form-data" method="post">
-                        <input type="hidden" name="folder_id" value="${folder_id}"/>
-                        <input type="hidden" name="show_deleted" value="${show_deleted}"/>
+                        <input type="hidden" name="folder_id" value="${folder_id | h}"/>
+                        <input type="hidden" name="show_deleted" value="${show_deleted | h}"/>
                         <input type="hidden" name="upload_option" value="import_from_history"/>
-                        <input type="hidden" name="ldda_message" value="${ldda_message}"/>
+                        <input type="hidden" name="ldda_message" value="${ldda_message | h}"/>
                         <%
                             role_ids_selected = ''
                             if roles_select_list:
@@ -357,32 +357,32 @@
                                 if selected:
                                     role_ids_selected = ','.join( selected )
                         %>
-                        <input type="hidden" name="roles" value="${role_ids_selected}"/>
+                        <input type="hidden" name="roles" value="${role_ids_selected | h}"/>
                         %if replace_dataset not in [ None, 'None' ]:
-                            <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id )}"/>
+                            <input type="hidden" name="replace_id" value="${trans.security.encode_id( replace_dataset.id ) | h}"/>
                             <div class="form-row">
-                                You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${ util.unicodify( replace_dataset.name )}</a>'.
+                                You are currently selecting a new file to replace '<a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=library_id, folder_id=folder_id, id=trans.security.encode_id( replace_dataset.library_dataset_dataset_association.id ) )}">${ util.unicodify( replace_dataset.name ) | h}</a>'.
                                 <div style="clear: both"></div>
                             </div>
                         %endif
                         %for hda in history.visible_datasets:
                             <% encoded_id = trans.security.encode_id( hda.id ) %>
                             <div class="form-row">
-                                <input name="hda_ids" id="hist_${encoded_id}" value="${encoded_id}" type="checkbox"/>
-                                <label for="hist_${encoded_id}" style="display: inline;font-weight:normal;">${hda.hid}: ${ util.unicodify( hda.name )}</label>
+                                <input name="hda_ids" id="hist_${encoded_id | h}" value="${encoded_id | h}" type="checkbox"/>
+                                <label for="hist_${encoded_id | h}" style="display: inline;font-weight:normal;">${hda.hid | h}: ${ util.unicodify( hda.name ) | h}</label>
                             </div>
                         %endfor
                         %if widgets:
-                            <input type="hidden" name="template_id" value="${template_id}"/>
+                            <input type="hidden" name="template_id" value="${template_id | h}"/>
                             %for i, field in enumerate( widgets ):
                                 <div class="form-row">
-                                    <label>${field[ 'label' ]}</label>
+                                    <label>${field[ 'label' ] | h}</label>
                                     <div class="form-row-input">
                                         ${field[ 'widget' ].get_html()}
                                     </div>
                                     <div class="toolParamHelp" style="clear: both;">
                                         %if field[ 'helptext' ]:
-                                            ${field[ 'helptext' ]}<br/>
+                                            ${field[ 'helptext' ] | h}<br/>
                                         %endif
                                         *Inherited template field
                                     </div>
