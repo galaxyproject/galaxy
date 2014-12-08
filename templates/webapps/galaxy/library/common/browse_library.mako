@@ -376,7 +376,7 @@
                     </div>
                 </span>
                 %if not library.deleted:
-                    <div popupmenu="folder_img-${ 'F' + trans.security.encode_id( folder.id ) } | h}-popup">
+                    <div popupmenu="folder_img-${ 'F' + trans.security.encode_id( folder.id ) }-popup">
                         %if not branch_deleted( folder ) and can_add:
                             <a class="action-button" href="${h.url_for( controller='library_common', action='upload_library_dataset', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( folder.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add datasets</a>
                             <a class="action-button" href="${h.url_for( controller='library_common', action='create_folder', cntrller=cntrller, parent_id=trans.security.encode_id( folder.id ), library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Add sub-folder</a>
