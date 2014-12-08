@@ -372,7 +372,7 @@ if wf_parms:
         <% cls = "form-row" %>
     %endif
     <div class="${cls}">
-        <label>${param.get_label()}</label>
+        <label>${param.get_label() | h}</label>
         <div>
             %if isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
                 %if ( prefix + param.name ) in step.input_connections_by_name:
@@ -474,7 +474,7 @@ if wf_parms:
     <span class="action-button" id="hide_all_tool_body">Collapse</span>
 </div>
 
-<h2>Running workflow "${h.to_unicode( workflow.name )}"</h2>
+<h2>Running workflow "${h.to_unicode( workflow.name ) | h}"</h2>
 
 %if has_upgrade_messages:
 <div class="warningmessage">
@@ -586,7 +586,7 @@ if wf_parms:
         %else:
           <div class="toolForm">
               <div class="toolFormTitle">
-                  <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name}</span>
+                  <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name | h}</span>
                   % if step.annotations:
                     <div class="step-annotation">${step.annotations[0].annotation}</div>
                   % endif
