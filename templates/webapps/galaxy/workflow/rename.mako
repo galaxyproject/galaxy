@@ -15,7 +15,7 @@ else:
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Rename workflow '${stored.name}'</div>
+    <div class="toolFormTitle">Rename workflow '${stored.name | h}'</div>
         <div class="toolFormBody">
             <form action="${h.url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id) )}" method="POST">
                 <div class="form-row">
@@ -23,7 +23,7 @@ else:
                         New name
                     </label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="new_name" value="${stored.name}" size="40">
+                        <input type="text" name="new_name" value="${stored.name | h}" size="40">
                     </div>
                     <div style="clear: both"></div>
                 </div>

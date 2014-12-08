@@ -437,7 +437,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
             # For current workflows grid:
-            trans.set_message( "Workflow renamed to '%s'." % new_name )
+            trans.set_message( "Workflow renamed to '%s'." % san_new_name )
             return self.list( trans )
             # For new workflows grid:
             #message = "Workflow renamed to '%s'." % new_name
@@ -557,7 +557,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         session.add( new_stored )
         session.flush()
         # Display the management page
-        trans.set_message( 'Created new workflow with name "%s"' % new_stored.name )
+        trans.set_message( 'Created new workflow with name "%s"' % escape( new_stored.name ) )
         return self.list( trans )
 
     @web.expose
@@ -604,7 +604,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.sa_session.add( stored )
         trans.sa_session.flush()
         # Display the management page
-        trans.set_message( "Workflow '%s' deleted" % stored.name )
+        trans.set_message( "Workflow '%s' deleted" % escape( stored.name ) )
         return self.list( trans )
 
     @web.expose
