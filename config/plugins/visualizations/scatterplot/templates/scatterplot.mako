@@ -27,12 +27,12 @@ ${h.js( 'libs/jquery/jquery',
         'libs/jquery/jquery.migrate',
         'libs/jquery/jquery-ui',
         'libs/bootstrap',
-        'libs/require',
         'libs/underscore',
         'libs/backbone/backbone',
         'libs/d3',
         'libs/handlebars.runtime',
         'mvc/ui',
+        'jq-plugins/ui/peek-column-selector',
         'mvc/visualization/visualization-model' )}
 
 ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot-edit.js' )}

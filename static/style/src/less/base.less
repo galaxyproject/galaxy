@@ -545,77 +545,6 @@ div.unified-panel-body {
 }
 
 
-// ---------------------------------------------------------------------------- peek-based column chooser
-.peek-control {
-    border-radius: 3px;
-    border: 1px solid rgb(95, 105, 144);
-}
-
-.peek-control td,
-.peek-control th {
-    padding: 4px 10px 4px 4px;
-}
-
-.peek-control th:last-child {
-    width: 100%;
-}
-
-.peek-control .top-left {
-    width: 10%;
-    white-space: normal;
-    vertical-align: top;
-    text-align: right;
-    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
-    font-weight: normal;
-}
-
-.peek-control .renamable-header:hover {
-    background-color: black;
-}
-
-.peek-control .control td.control-prompt {
-    background-color: rgb(95, 105, 144);
-    padding: 0px 4px 0px 8px;
-    text-align: right;
-    color: white;
-}
-
-.peek-control .control td {
-    padding: 1px;
-    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
-    color: grey;
-}
-
-.peek-control .control td .button {
-    min-width: 28px;
-    border: 1px solid grey;
-    border-radius: 3px;
-    padding: 4px;
-    color: grey;
-}
-
-.peek-control .control td:hover .button {
-    background-color: #EEE;
-    border: 1px solid black;
-    cursor: pointer;
-    color: black;
-}
-
-.peek-control .control td.disabled .button,
-.peek-control .control td.disabled:hover .button {
-    background-color: transparent;
-    border: 1px solid #CCC;
-    cursor: not-allowed;
-    color: #CCC;
-}
-
-.peek-control .control td.selected .button {
-    background-color: black;
-    border: 1px solid black;
-    color: white;
-}
-
-
 // ==== Tool form styles ====
 
 div.metadataForm {
@@ -1565,6 +1494,7 @@ div.permissionContainer {
 @import "ui/paired-collection-creator.less";
 
 @import "ui/dataset-choice.less";
+@import "ui/peek-column-selector.less";
 
 
 // ==== Tool menu styles 
