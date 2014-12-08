@@ -107,7 +107,7 @@ class TestLibraryFeatures( TwillTestCase ):
         assert subfolder1 is not None, 'Problem retrieving subfolder1 from the database'
         self.browse_library( cntrller='library_admin',
                              library_id=self.security.encode_id( library1.id ),
-                             strings_displayed=[ subfolder1.name, subfolder1.description ] )
+                             strings_displayed=[ escape( subfolder1.name ), escape( subfolder1.description ) ] )
 
     def test_040_add_2nd_folder_to_library1( self ):
         """Testing adding a 2nd folder to a library1"""
@@ -578,7 +578,7 @@ class TestLibraryFeatures( TwillTestCase ):
                         library_id=self.security.encode_id( library2.id ),
                         folder_id=self.security.encode_id( library2.root_folder.id ),
                         ldda_id=self.security.encode_id( ldda8.id ),
-                        strings_displayed=[ 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be' ] )
+                        strings_displayed=[ 'The uploaded files need grooming, so change your' ] )
 
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to pass"""
