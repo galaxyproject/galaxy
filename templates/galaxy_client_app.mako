@@ -15,7 +15,7 @@
         //TODO: global...
         %for key in kwargs:
             ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (
-                ${ h.dumps( kwargs[ key ], indent=( 2 if trans.debug else 0 ) )} );
+                ${ h.dumps( kwargs[ key ], indent=( 2 if trans.debug else 0 ) ) } );
         %endfor
         define( 'bootstrapped-data', function(){
             return window.bootstrapped;
@@ -76,11 +76,17 @@ ${ h.dumps( get_config_dict() )}
                 user_dict = trans.user.to_dict( view='element',
                     value_mapper={ 'id': trans.security.encode_id, 'total_disk_usage': float } )
                 user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
+                user_dict[ 'is_admin' ] = trans.user_is_admin()
 
                 # tags used
                 users_api_controller = trans.webapp.api_controllers[ 'users' ]
-                user_dict[ 'tags_used' ] = users_api_controller.get_user_tags_used( trans, user=trans.user )
-                user_dict[ 'is_admin' ] = trans.user_is_admin()
+                tags_used = []
+                for tag in users_api_controller.get_user_tags_used( trans, user=trans.user ):
+                    tag = tag | h
+                    if tag:
+                        tags_used.append( tag )
+                user_dict[ 'tags_used' ] = tags_used
+
                 return user_dict
 
             usage = 0

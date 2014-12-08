@@ -64,7 +64,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         trans.log_action( user, unicode( "untag" ), context, params )
 
     # Retag an item. All previous tags are deleted and new tags are applied.
-    #@web.expose
+    @web.expose
     @web.require_login( "Apply a new set of tags to an item; previous tags are deleted." )
     def retag_async( self, trans, item_id=None, item_class=None, new_tags=None ):
         """
@@ -73,7 +73,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         # Apply tags.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
-        self.get_tag_handler( trans ).delete_item_tags( trans, item )
+        self.get_tag_handler( trans ).delete_item_tags( trans, user, item )
         self.get_tag_handler( trans ).apply_item_tags( trans, user, item, new_tags.encode( 'utf-8' ) )
         trans.sa_session.flush()
 
