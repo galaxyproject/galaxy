@@ -1771,20 +1771,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.submit( "reset_user_password_button" )
         self.check_page_for_string( "Passwords reset for 1 user." )
 
-    def run_tool( self, tool_id, repeat_name=None, **kwd ):
-        """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
-        params = dict( tool_id=tool_id )
-        self.visit_url( "/tool_runner/index", params )
-        # Must click somewhere in tool_form, to disambiguate what form
-        # is being targetted.
-        tc.browser.clicked( tc.browser.get_form( 'tool_form' ), None )
-        if repeat_name is not None:
-            repeat_button = '%s_add' % repeat_name
-            # Submit the "repeat" form button to add an input)
-            tc.submit( repeat_button )
-        tc.find( 'runtool_btn' )
-        self.submit_form( **kwd )
-
     def run_ucsc_main( self, track_params, output_params ):
         """Gets Data From UCSC"""
         tool_id = "ucsc_table_direct1"
