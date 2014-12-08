@@ -1671,7 +1671,8 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         stored.user = trans.user
         stored.published = publish
         if data[ 'annotation' ]:
-            self.add_item_annotation( trans.sa_session, stored.user, stored, data[ 'annotation' ] )
+            annotation = sanitize_html( data[ 'annotation' ], 'utf-8', 'text/html' )
+            self.add_item_annotation( trans.sa_session, stored.user, stored, annotation )
 
         # Persist
         trans.sa_session.add( stored )
