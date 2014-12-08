@@ -574,6 +574,7 @@ if wf_parms:
                     <%
                     pja_ss_all = []
                     for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
+                        pja_ss = h.escape( pja_ss )
                         for rematch in re.findall('\$\{.+?\}', pja_ss):
                             pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
                         pja_ss_all.append(pja_ss)
