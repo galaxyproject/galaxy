@@ -103,9 +103,20 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         if full_output:
             job_dict.update( dict( stderr=job.stderr, stdout=job.stdout ) )
             if trans.user_is_admin():
+                job_dict['command_line'] = job.command_line
 
                 def metric_to_dict(metric):
-                    return dict(zip(['title', 'value'], trans.app.job_metrics.format(metric.plugin, metric.metric_name, metric.metric_value)))
+                    metric_name = metric.metric_name
+                    metric_value = metric.metric_value
+                    metric_plugin = metric.plugin
+                    title, value = trans.app.job_metrics.format(metric_plugin, metric_name, metric_value)
+                    return dict(
+                        title=title,
+                        value=value,
+                        plugin=metric_plugin,
+                        name=metric_name,
+                        raw_value=str(metric_value),
+                    )
 
                 job_dict['job_metrics'] = [metric_to_dict(metric) for metric in job.metrics]
         return job_dict
