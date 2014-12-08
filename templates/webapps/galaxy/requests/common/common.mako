@@ -694,11 +694,11 @@
                         <td>
                             %if is_admin:
                                 <span class="expandLink dataset-${dataset}-click"><span class="rowIcon"></span>
-                                    <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="dataset-${dataset.id}-popup">
+                                    <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="dataset-${ trans.security.encode_id( dataset.id ) }-popup">
                                         <a class="dataset-${encoded_id}-click" href="${h.url_for( controller='requests_admin', action='manage_datasets', operation='view', id=trans.security.encode_id( dataset.id ) )}">${dataset.name | h}</a>
                                     </div>
                                 </span>
-                                <div popupmenu="dataset-${dataset.id}-popup">
+                                <div popupmenu="dataset-${ trans.security.encode_id( dataset.id ) }-popup">
                                     %if can_transfer_datasets and dataset in sample.untransferred_dataset_files:
                                         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='initiate_data_transfer', sample_id=trans.security.encode_id( sample.id ), sample_dataset_id=trans.security.encode_id( dataset.id ) )}">Transfer</a></li>
                                     %endif
