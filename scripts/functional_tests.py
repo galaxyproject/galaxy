@@ -54,6 +54,7 @@ from galaxy.util.json import dumps
 from functional import database_contexts
 from base.api_util import get_master_api_key
 from base.api_util import get_user_api_key
+from base.nose_util import run
 
 import nose.core
 import nose.config
@@ -160,18 +161,7 @@ def generate_config_file( input_filename, output_filename, config_items ):
 
 
 def run_tests( test_config ):
-    loader = nose.loader.TestLoader( config=test_config )
-    plug_loader = test_config.plugins.prepareTestLoader( loader )
-    if plug_loader is not None:
-        loader = plug_loader
-    tests = loader.loadTestsFromNames( test_config.testNames )
-    test_runner = nose.core.TextTestRunner( stream=test_config.stream,
-                                            verbosity=test_config.verbosity,
-                                            config=test_config )
-    plug_runner = test_config.plugins.prepareTestRunner( test_runner )
-    if plug_runner is not None:
-        test_runner = plug_runner
-    return test_runner.run( tests )
+    return run( test_config )
 
 
 def __copy_database_template( source, db_path ):
