@@ -256,78 +256,33 @@ def main():
     database_auto_migrate = False
 
     galaxy_test_proxy_port = None
-    psu_production = False
     if start_server:
-        if 'GALAXY_TEST_PSU_PRODUCTION' in os.environ:
-            if not galaxy_test_port:
-                raise Exception( 'Please set GALAXY_TEST_PORT to the port to which the proxy server will proxy' )
-            galaxy_test_proxy_port = os.environ.get( 'GALAXY_TEST_PROXY_PORT', None )
-            if not galaxy_test_proxy_port:
-                raise Exception( 'Please set GALAXY_TEST_PROXY_PORT to the port on which the proxy server is listening' )
-            base_file_path = os.environ.get( 'GALAXY_TEST_BASE_FILE_PATH', None )
-            if not base_file_path:
-                raise Exception( 'Please set GALAXY_TEST_BASE_FILE_PATH to the directory which will contain the dataset files directory' )
-            base_new_file_path = os.environ.get( 'GALAXY_TEST_BASE_NEW_FILE_PATH', None )
-            if not base_new_file_path:
-                raise Exception( 'Please set GALAXY_TEST_BASE_NEW_FILE_PATH to the directory which will contain the temporary directory' )
-            database_connection = os.environ.get( 'GALAXY_TEST_DBURI', None )
-            if not database_connection:
-                raise Exception( 'Please set GALAXY_TEST_DBURI to the URI of the database to be used for tests' )
-            nginx_upload_store = os.environ.get( 'GALAXY_TEST_NGINX_UPLOAD_STORE', None )
-            if not nginx_upload_store:
-                raise Exception( 'Please set GALAXY_TEST_NGINX_UPLOAD_STORE to the path where the nginx upload module places uploaded files' )
-            tool_config_file = 'tool_conf.xml.main'
-            default_cluster_job_runner = os.environ.get( 'GALAXY_TEST_DEFAULT_CLUSTER_JOB_RUNNER', 'pbs:///' )
-            file_path = tempfile.mkdtemp( dir=base_file_path )
-            new_file_path = tempfile.mkdtemp( dir=base_new_file_path )
-            cluster_files_directory = os.path.join( new_file_path, 'pbs' )
-            job_working_directory = os.path.join( new_file_path, 'job_working_directory' )
-            os.mkdir( cluster_files_directory )
-            os.mkdir( job_working_directory )
-            kwargs = dict( database_engine_option_pool_size='10',
-                           database_engine_option_max_overflow='20',
-                           database_engine_option_strategy='threadlocal',
-                           nginx_x_accel_redirect_base='/_x_accel_redirect',
-                           nginx_upload_store=nginx_upload_store,
-                           nginx_upload_path='/_upload',
-                           allow_library_path_paste='True',
-                           cluster_files_directory=cluster_files_directory,
-                           job_working_directory=job_working_directory,
-                           outputs_to_working_directory='True',
-                           static_enabled='False',
-                           debug='False',
-                           track_jobs_in_database='True',
-                           job_scheduler_policy='FIFO',
-                           start_job_runners='pbs',
-                           default_cluster_job_runner=default_cluster_job_runner )
-            psu_production = True
+        tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
+        # Configure the database path.
+        if 'GALAXY_TEST_DBPATH' in os.environ:
+            galaxy_db_path = os.environ[ 'GALAXY_TEST_DBPATH' ]
         else:
-            tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
-            # Configure the database path.
-            if 'GALAXY_TEST_DBPATH' in os.environ:
-                galaxy_db_path = os.environ[ 'GALAXY_TEST_DBPATH' ]
-            else:
-                galaxy_db_path = os.path.join( tempdir, 'database' )
-            # Configure the paths Galaxy needs to  test tools.
-            file_path = os.path.join( galaxy_db_path, 'files' )
-            new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
-            job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
-            install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
-            if 'GALAXY_TEST_DBURI' in os.environ:
-                database_connection = os.environ['GALAXY_TEST_DBURI']
-            else:
-                db_path = os.path.join( galaxy_db_path, 'universe.sqlite' )
-                if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
-                    # Middle ground between recreating a completely new
-                    # database and pointing at existing database with
-                    # GALAXY_TEST_DBURI. The former requires a lot of setup
-                    # time, the latter results in test failures in certain
-                    # cases (namely tool shed tests expecting clean database).
-                    log.debug( "Copying database template from %s.", os.environ['GALAXY_TEST_DB_TEMPLATE'] )
-                    __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
-                    database_auto_migrate = True
-                database_connection = 'sqlite:///%s' % db_path
-            kwargs = {}
+            galaxy_db_path = os.path.join( tempdir, 'database' )
+        # Configure the paths Galaxy needs to  test tools.
+        file_path = os.path.join( galaxy_db_path, 'files' )
+        new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
+        job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
+        install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
+        if 'GALAXY_TEST_DBURI' in os.environ:
+            database_connection = os.environ['GALAXY_TEST_DBURI']
+        else:
+            db_path = os.path.join( galaxy_db_path, 'universe.sqlite' )
+            if 'GALAXY_TEST_DB_TEMPLATE' in os.environ:
+                # Middle ground between recreating a completely new
+                # database and pointing at existing database with
+                # GALAXY_TEST_DBURI. The former requires a lot of setup
+                # time, the latter results in test failures in certain
+                # cases (namely tool shed tests expecting clean database).
+                log.debug( "Copying database template from %s.", os.environ['GALAXY_TEST_DB_TEMPLATE'] )
+                __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
+                database_auto_migrate = True
+            database_connection = 'sqlite:///%s' % db_path
+        kwargs = {}
         for dir in file_path, new_file_path:
             try:
                 if not os.path.exists( dir ):
@@ -376,8 +331,6 @@ def main():
         )
         if install_database_connection is not None:
             kwargs[ 'install_database_connection' ] = install_database_connection
-        if psu_production:
-            kwargs[ 'global_conf' ] = None
         if not database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
             kwargs[ 'database_engine_option_pool_size' ] = '10'
@@ -448,12 +401,6 @@ def main():
             time.sleep( 0.1 )
         else:
             raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
-        # Test if the proxy server is up
-        if psu_production:
-            conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_proxy_port )  # directly test the app, not the proxy
-            conn.request( "GET", "/" )
-            if not conn.getresponse().status == 200:
-                raise Exception( "Test HTTP proxy server did not return '200 OK'" )
         log.info( "Embedded web server started" )
     # ---- Load toolbox for generated tests -----------------------------------
     # We don't add the tests to the path until everything is up and running
@@ -571,14 +518,6 @@ def main():
             log.info( "GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir )
     except:
         pass
-    if psu_production and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
-        for dir in ( file_path, new_file_path ):
-            try:
-                if os.path.exists( dir ):
-                    log.info( 'Cleaning up temporary files in %s' % dir )
-                    shutil.rmtree( dir )
-            except:
-                pass
     if success:
         return 0
     else:
