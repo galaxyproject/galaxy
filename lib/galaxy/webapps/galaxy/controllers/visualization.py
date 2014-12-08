@@ -535,14 +535,14 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ( "User '%s' does not exist" % email )
+                msg = ( "User '%s' does not exist" % escape( email ) )
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ( "You cannot share a visualization with yourself" )
             elif trans.sa_session.query( model.VisualizationUserShareAssociation ) \
                     .filter_by( user=other, visualization=visualization ).count() > 0:
                 mtype = "error"
-                msg = ( "Visualization already shared with '%s'" % email )
+                msg = ( "Visualization already shared with '%s'" % escape( email ) )
             else:
                 share = model.VisualizationUserShareAssociation()
                 share.visualization = visualization
@@ -551,7 +551,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 session.add( share )
                 self.create_item_slug( session, visualization )
                 session.flush()
-                trans.set_message( "Visualization '%s' shared with user '%s'" % ( visualization.title, other.email ) )
+                viz_title = escape( visualization.title )
+                other_email = escape( other.email )
+                trans.set_message( "Visualization '%s' shared with user '%s'" % ( viz_title, other_email ) )
                 return trans.response.send_redirect( web.url_for(controller='visualization', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,
