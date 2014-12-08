@@ -33,6 +33,7 @@ ${h.js( 'libs/jquery/jquery',
         'libs/handlebars.runtime',
         'mvc/ui',
         'jq-plugins/ui/peek-column-selector',
+        'jq-plugins/ui/pagination',
         'mvc/visualization/visualization-model' )}
 
 ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot-edit.js' )}

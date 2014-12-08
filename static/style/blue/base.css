@@ -1642,12 +1642,6 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%}
 .quota-meter-bar-warn{background-color:#bf822c}
 .quota-meter-bar-error{background-color:#b93e3a}
 .quota-meter-text{position:absolute;top:50%;left:0;width:100px;height:16px;margin-top:-6px;text-align:center;z-index:9001;color:#000;white-space:nowrap}
-.pagination{margin:0px}
-.pagination-scroll-container{display:inline-block;background-color:#F8F8F8;border-radius:3px;border:1px solid #BFBFBF;overflow:auto}
-.pagination-scroll-container .pagination-page-list{margin:3px 0px 3px 0px}
-.pagination-scroll-container .pagination-page-list>li:first-child>a,.pagination-scroll-container .pagination-page-list>li:first-child>span{border-radius:0px;border-left:0px}
-.pagination-scroll-container .pagination-page-list>li:last-child>a,.pagination-scroll-container .pagination-page-list>li:last-child>span{border-radius:0px}
-.pagination-scroll-container .pagination-page-list>li>a{float:none;position:static;border:1px solid #BFBFBF;border-width:0px 0px 0px 1px}
 div.metadataForm{border:solid #aaaaaa 1px}
 div.metadataFormTitle{font-weight:bold;padding:5px;padding-left:10px;padding-right:10px;background:#cccccc;background-repeat:repeat-x;background-position:top;border-bottom:solid #aaaaaa 1px}
 div.metadataFormBody{background:#FFFFFF;padding:5px 0}
@@ -2112,6 +2106,12 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .peek-column-selector .control td:hover .button{background-color:#EEE;border:1px solid black;cursor:pointer;color:black}
 .peek-column-selector .control td.disabled .button,.peek-column-selector .control td.disabled:hover .button{background-color:transparent;border:1px solid #CCC;cursor:not-allowed;color:#CCC}
 .peek-column-selector .control td.selected .button{background-color:black;border:1px solid black;color:white}
+.pagination{margin:0px}
+.pagination-scroll-container{display:inline-block;background-color:#F8F8F8;border-radius:3px;border:1px solid #BFBFBF;overflow:auto}
+.pagination-scroll-container .pagination-page-list{margin:3px 0px 3px 0px}
+.pagination-scroll-container .pagination-page-list>li:first-child>a,.pagination-scroll-container .pagination-page-list>li:first-child>span{border-radius:0px;border-left:0px}
+.pagination-scroll-container .pagination-page-list>li:last-child>a,.pagination-scroll-container .pagination-page-list>li:last-child>span{border-radius:0px}
+.pagination-scroll-container .pagination-page-list>li>a{float:none;position:static;border:1px solid #BFBFBF;border-width:0px 0px 0px 1px}
 .toolMenuContainer{color:#000;background:#dfe5f9;min-height:100%;padding:5px 10px}
 div.toolSectionPad{margin:0;padding:0;height:5px;font-size:0px}
 div.toolSectionWrapper{margin-bottom:5px}
