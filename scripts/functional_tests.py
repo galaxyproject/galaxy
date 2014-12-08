@@ -55,6 +55,7 @@ from functional import database_contexts
 from base.api_util import get_master_api_key
 from base.api_util import get_user_api_key
 from base.nose_util import run
+from base.instrument import StructuredTestDataPlugin
 
 import nose.core
 import nose.config
@@ -439,6 +440,7 @@ def main():
                     user_api_key=get_user_api_key(),
                 )
             test_config = nose.config.Config( env=os.environ, ignoreFiles=ignore_files, plugins=nose.plugins.manager.DefaultPluginManager() )
+            test_config.plugins.addPlugin( StructuredTestDataPlugin() )
             test_config.configure( sys.argv )
             result = run_tests( test_config )
             success = result.wasSuccessful()

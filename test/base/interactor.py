@@ -6,6 +6,7 @@ from galaxy import eggs
 eggs.require( "requests" )
 from galaxy import util
 from galaxy.util.odict import odict
+from galaxy.util.bunch import Bunch
 from requests import get
 from requests import post
 from json import dumps
@@ -210,10 +211,14 @@ class GalaxyInteractorApi( object ):
         submit_response = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=inputs_tree )
         submit_response_object = submit_response.json()
         try:
-            return self.__dictify_outputs( submit_response_object ), submit_response_object[ 'jobs' ]
+            return Bunch(
+                inputs=inputs_tree,
+                outputs=self.__dictify_outputs( submit_response_object ),
+                jobs=submit_response_object[ 'jobs' ],
+            )
         except KeyError:
             message = "Error creating a job for these tool inputs - %s" % submit_response_object[ 'message' ]
-            raise Exception( message )
+            raise RunToolException( message, inputs_tree )
 
     def _create_collection( self, history_id, collection_def ):
         create_payload = dict(
@@ -402,6 +407,13 @@ class GalaxyInteractorApi( object ):
             path = path[ len("/api"): ]
         url = "%s/%s" % (self.api_url, path)
         return get( url, params=data )
+
+
+class RunToolException(Exception):
+
+    def __init__(self, message, inputs=None):
+        super(RunToolException, self).__init__(message)
+        self.inputs = inputs
 
 
 GALAXY_INTERACTORS = {
