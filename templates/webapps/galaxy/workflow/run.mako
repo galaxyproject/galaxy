@@ -444,7 +444,7 @@ if wf_parms:
                 %else:
                 <span class="workflow_parameters">
                     <span class="uneditable_field">
-                        ${param.value_to_display_text( value, app )}
+                        ${param.value_to_display_text( value, app ) | h}
                     </span>
                     <span class="editable_field">
                         <span class="editable">
