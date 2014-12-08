@@ -1135,7 +1135,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                         url += '&tool_id='
                                     for missing_tool_tup in missing_tool_tups:
                                         missing_tool_id = missing_tool_tup[0]
-                                        url += '%s,' % missing_tool_id
+                                        url += '%s,' % escape( missing_tool_id )
                                 message += '<a href="%s">%s</a><br/>' % ( url, shed_name )
                                 status = 'error'
                             if installed_repository_file or tool_shed_url:
