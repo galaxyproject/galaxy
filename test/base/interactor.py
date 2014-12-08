@@ -212,7 +212,8 @@ class GalaxyInteractorApi( object ):
         try:
             return self.__dictify_outputs( submit_response_object ), submit_response_object[ 'jobs' ]
         except KeyError:
-            raise Exception( submit_response_object[ 'message' ] )
+            message = "Error creating a job for these tool inputs - %s" % submit_response_object[ 'message' ]
+            raise Exception( message )
 
     def _create_collection( self, history_id, collection_def ):
         create_payload = dict(
