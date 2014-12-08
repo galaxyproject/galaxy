@@ -659,7 +659,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     for husa in husas:
                         trans.sa_session.delete( husa )
                 if not deleted_sharing_relation:
-                    message = "History '%s' does not seem to be shared with user '%s'" % ( history.name, user.email )
+                    history_name = escape( history.name )
+                    user_email = escape( user.email )
+                    message = "History '%s' does not seem to be shared with user '%s'" % ( history_name, user_email )
                     return trans.fill_template( '/sharing_base.mako', item=history,
                                                 message=message, status='error' )
 
