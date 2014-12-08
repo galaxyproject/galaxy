@@ -5,7 +5,7 @@ import galaxy.util
 
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.web.framework.helpers import escape, grids, time_ago
 from library_common import get_comptypes, lucene_search, whoosh_search
 # from galaxy.model.orm import *
 
@@ -141,20 +141,19 @@ class LibraryAdmin( BaseUIController ):
                                             lddas=lddas,
                                             show_deleted=show_deleted,
                                             use_panels=use_panels,
-                                            message=message,
-                                            status=status )
+                                            message=escape( message ),
+                                            status=escape( status ) )
         # Render the list view
         return self.library_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def create_library( self, trans, **kwd ):
-        params = galaxy.util.Params( kwd )
-        message = galaxy.util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        if params.get( 'create_library_button', False ):
-            name = galaxy.util.restore_text( params.get( 'name', 'No name' ) )
-            description = galaxy.util.restore_text( params.get( 'description', '' ) )
-            synopsis = galaxy.util.restore_text( params.get( 'synopsis', '' ) )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        if kwd.get( 'create_library_button', False ):
+            name = kwd.get( 'name', 'No name' )
+            description = kwd.get( 'description', '' )
+            synopsis = kwd.get( 'synopsis', '' )
             if synopsis in [ 'None', None ]:
                 synopsis = ''
             library = trans.app.model.Library( name=name, description=description, synopsis=synopsis )
@@ -167,9 +166,9 @@ class LibraryAdmin( BaseUIController ):
                                                               action='browse_library',
                                                               cntrller='library_admin',
                                                               id=trans.security.encode_id( library.id ),
-                                                              message=galaxy.util.sanitize_text( message ),
+                                                              message=message,
                                                               status='done' ) )
-        return trans.fill_template( '/admin/library/new_library.mako', message=message, status=status )
+        return trans.fill_template( '/admin/library/new_library.mako', message=escape( message ), status=escape( status ) )
     @web.expose
     @web.require_admin
     def delete_library( self, trans, id, **kwd  ):
@@ -196,8 +195,7 @@ class LibraryAdmin( BaseUIController ):
         # TODO: change this function to purge_library_item, behaving similar to delete_library_item
         # assuming we want the ability to purge libraries.
         # This function is currently only used by the functional tests.
-        params = galaxy.util.Params( kwd )
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( params.id ) )
+        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( kwd.get( 'id' ) ) )
         def purge_folder( library_folder ):
             for lf in library_folder.folders:
                 purge_folder( lf )
@@ -226,7 +224,7 @@ class LibraryAdmin( BaseUIController ):
             message = "Library '%s' has not been marked deleted, so it cannot be purged" % ( library.name )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
-                                                              message=galaxy.util.sanitize_text( message ),
+                                                              message=message,
                                                               status='error' ) )
         else:
             purge_folder( library.root_folder )
@@ -236,5 +234,5 @@ class LibraryAdmin( BaseUIController ):
             message = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
-                                                              message=galaxy.util.sanitize_text( message ),
+                                                              message=message,
                                                               status='done' ) )
