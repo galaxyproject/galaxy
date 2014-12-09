@@ -362,7 +362,7 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
                 <a href="#" class="icon-btn" title="Underlying versions" tabindex="0" data-toggle="popover" data-placement="bottom" data-content=
                 "
                 %for i, requirement in enumerate( tool.requirements ):
-                ${ requirement.name } v ${ requirement.version } ${ '' if i + 1 == len( tool.requirements ) else ' | ' } 
+                    ${ requirement.name } ${ ('v ' + requirement.version ) if requirement.version else ' ' } ${ '' if i + 1 == len( tool.requirements ) else ' | ' } 
                 %endfor
                 "
                  onclick="$(function () {
