@@ -17,7 +17,7 @@ from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHist
 from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
-from galaxy.web.framework.helpers import grids, iff, time_ago
+from galaxy.web.framework.helpers import grids, iff, time_ago, escape
 
 log = logging.getLogger( __name__ )
 
@@ -1234,7 +1234,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         else:
             referer = trans.request.referer
         if referer is not "":
-            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
 
