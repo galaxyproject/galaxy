@@ -7,6 +7,7 @@ define([
     "mvc/history/hdca-li-edit",
     "mvc/tags",
     "mvc/annotations",
+    "jq-plugins/ui/fa-icon-button",
     "utils/localization"
 ], function(
     HPANEL,
@@ -17,6 +18,7 @@ define([
     HDCA_LI_EDIT,
     TAGS,
     ANNOTATIONS,
+    faIconButton,
     _l
 ){
 /* =============================================================================

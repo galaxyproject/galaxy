@@ -3,9 +3,10 @@ define([
     "mvc/dataset/dataset-li",
     "mvc/tags",
     "mvc/annotations",
+    "jq-plugins/ui/fa-icon-button",
     "mvc/base-mvc",
     "utils/localization"
-], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, BASE_MVC, _l ){
+], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l ){
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
 /** @class Editing view for DatasetAssociation.

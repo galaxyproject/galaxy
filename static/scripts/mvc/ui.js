@@ -486,31 +486,3 @@ PopupMenu.make_popup_menus = function( parent, menuSelector, buttonSelectorBuild
     });
     return popupMenusCreated;
 };
-
-
-//==============================================================================
-var faIconButton = function( options ){
-//TODO: move out of global
-    options = options || {};
-    options.tooltipConfig = options.tooltipConfig || { placement: 'bottom' };
-
-    options.classes = [ 'icon-btn' ].concat( options.classes || [] );
-    if( options.disabled ){
-        options.classes.push( 'disabled' );
-    }
-
-    var html = [
-        '<a class="', options.classes.join( ' ' ), '"',
-                (( options.title )?( ' title="' + options.title + '"' ):( '' )),
-                (( !options.disabled && options.target )?  ( ' target="' + options.target + '"' ):( '' )),
-                ' href="', (( !options.disabled && options.href )?( options.href ):( 'javascript:void(0);' )), '">',
-            // could go with something less specific here - like 'html'
-            '<span class="fa ', options.faIcon, '"></span>',
-        '</a>'
-    ].join( '' );
-    var $button = $( html ).tooltip( options.tooltipConfig );
-    if( _.isFunction( options.onclick ) ){
-        $button.click( options.onclick );
-    }
-    return $button;
-};
