@@ -7,7 +7,8 @@ define([
     "mvc/collection/collection-panel",
     "mvc/user/user-model",
     "mvc/base-mvc",
-    "utils/localization"
+    "utils/localization",
+    "jq-plugins/ui/search-input"
 ], function(
     LIST_PANEL,
     HISTORY_MODEL,

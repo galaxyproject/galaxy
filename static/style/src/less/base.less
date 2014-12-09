@@ -15,11 +15,11 @@
 }
 
 @import "select2.less";
-
  /* fix for zero width select2 - remove when fixed there */
 .select2-minwidth {
      min-width: 256px;
 }
+
 // galaxy sub-components
 @import "frame.less";
 @import "upload.less";
@@ -30,12 +30,6 @@
 
 
 // Mixins
-
-/* fix for zero width select2 - remove when fixed there */
-.select2-minwidth {
-    min-width: 256px;
-}
-
 .unselectable {
     .user-select(none);
 }
@@ -1457,6 +1451,7 @@ div.permissionContainer {
 
 @import "ui/paired-collection-creator.less";
 
+@import "ui/search-input.less";
 @import "ui/dataset-choice.less";
 @import "ui/peek-column-selector.less";
 @import "ui/pagination.less";

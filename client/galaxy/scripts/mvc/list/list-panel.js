@@ -1,7 +1,8 @@
 define([
     "mvc/list/list-item",
     "mvc/base-mvc",
-    "utils/localization"
+    "utils/localization",
+    "jq-plugins/ui/search-input"
 ], function( LIST_ITEM, BASE_MVC, _l ){
 /* ============================================================================
 TODO:
