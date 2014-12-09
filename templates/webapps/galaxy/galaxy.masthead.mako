@@ -1,4 +1,4 @@
-<%namespace file="/galaxy_client_app.mako" import="get_user_json" />
+<%namespace file="/galaxy_client_app.mako" import="get_user_dict" />
 
 ## masthead head generator
 <%def name="load(active_view = None)">
@@ -34,7 +34,7 @@
                 'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),
                 'email'     : trans.user.email if (trans.user) else "",
                 'valid'     : bool(trans.user != None),
-                'json'      : get_user_json()
+                'json'      : get_user_dict()
             }
         }
     %>
