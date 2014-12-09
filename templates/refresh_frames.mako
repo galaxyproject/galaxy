@@ -21,7 +21,7 @@
         ## Refresh masthead == user changes (backward compatibility)
         if ( parent.user_changed ) {
             %if trans.user:
-                parent.user_changed( "${trans.user.email}", ${int( app.config.is_admin_user( trans.user ) )} );
+                parent.user_changed( "${trans.user.email | h }", ${int( app.config.is_admin_user( trans.user ) )} );
             %else:
                 parent.user_changed( null, false );
             %endif
