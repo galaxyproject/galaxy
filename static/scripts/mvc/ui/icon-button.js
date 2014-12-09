@@ -1,7 +1,8 @@
-/**
- * functions for creating major ui elements
- */
-
+define([
+    //jquery
+    //backbone
+], function(){
+//=============================================================================
 /**
  * backbone model for icon buttons
  */
@@ -35,7 +36,7 @@ var IconButtonView = Backbone.View.extend({
     render : function( ){
         // hide tooltip
         this.$el.tooltip( 'hide' );
-        
+
         var new_elem = this.template( this.model.toJSON() );
         // configure tooltip
         new_elem.tooltip( this.model.get( 'tooltip_config' ));
@@ -43,11 +44,11 @@ var IconButtonView = Backbone.View.extend({
         this.setElement( new_elem );
         return this;
     },
-    
+
     events : {
         'click' : 'click'
     },
-    
+
     click : function( event ){
         // if on_click pass to that function
         if( _.isFunction( this.model.get( 'on_click' ) ) ){
@@ -57,28 +58,28 @@ var IconButtonView = Backbone.View.extend({
         // otherwise, bubble up ( to href or whatever )
         return true;
     },
-    
+
     // generate html element
     template: function( options ){
         var buffer = 'title="' + options.title + '" class="icon-button';
-    
+
         if( options.is_menu_button ){
             buffer += ' menu-button';
         }
-        
+
         buffer += ' ' + options.icon_class;
-    
+
         if( !options.enabled ){
             buffer += '_disabled';
         }
-        
+
         // close class tag
         buffer += '"';
-    
+
         if( options.id ){
             buffer += ' id="' + options.id + '"';
         }
-        
+
         buffer += ' href="' + options.href + '"';
         // add target for href
         if( options.target ){
@@ -88,14 +89,14 @@ var IconButtonView = Backbone.View.extend({
         if( !options.visible ){
             buffer += ' style="display: none;"';
         }
-    
+
         // enabled/disabled
         if ( options.enabled ){
             buffer = '<a ' + buffer + '/>';
         } else {
             buffer = '<span ' + buffer + '/>';
         }
-            
+
         // return element
         return $( buffer );
     }
@@ -117,7 +118,7 @@ var IconButtonMenuView = Backbone.View.extend({
     initialize: function(){
         this.render();
     },
-    
+
     render: function(){
         // initialize icon buttons
         var self = this;
@@ -142,7 +143,7 @@ var IconButtonMenuView = Backbone.View.extend({
                 make_popupmenu(elt, menu_options);
             }
         });
-        
+
         // return
         return this;
     }
@@ -160,12 +161,23 @@ var create_icon_buttons_menu = function(config, global_config)
     if (!global_config) global_config = {};
 
     // create and initialize menu
-    var buttons = new IconButtonCollection( 
+    var buttons = new IconButtonCollection(
         _.map(config, function(button_config){
             return new IconButton(_.extend(button_config, global_config));
         })
     );
-    
+
     // return menu
     return new IconButtonMenuView( {collection: buttons} );
 };
+
+
+//=============================================================================
+    return {
+        IconButton              : IconButton,
+        IconButtonView          : IconButtonView,
+        IconButtonCollection    : IconButtonCollection,
+        IconButtonMenuView      : IconButtonMenuView,
+        create_icon_buttons_menu: create_icon_buttons_menu
+    };
+})

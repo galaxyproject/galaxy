@@ -1,5 +1,5 @@
 // Additional dependencies: jQuery, underscore.
-define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames'], function(Modal, Frames) {
+define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames', 'mvc/ui/icon-button'], function(Modal, Frames, mod_icon_btn) {
 
 /**
  * Dataset metedata.
@@ -447,8 +447,8 @@ var TabularButtonTracksterView = Backbone.View.extend({
         }
 
         // create the icon
-        var btn_viz = new IconButtonView({
-            model : new IconButton({
+        var btn_viz = new mod_icon_btn.IconButtonView({
+            model : new mod_icon_btn.IconButton({
                 title       : 'Visualize',
                 icon_class  : 'chart_curve',
                 id          : 'btn_viz'

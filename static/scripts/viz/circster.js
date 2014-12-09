@@ -2,8 +2,9 @@
 require(
 [
     'utils/utils',
+    'mvc/ui/icon-button',
     'libs/farbtastic',
-], function(mod_utils)
+], function(mod_utils, mod_icon_btn)
 {
     // load css
     mod_utils.cssLoadFile("static/style/circster.css");
@@ -1075,7 +1076,7 @@ var Circster = Backbone.View.extend(
         $('#center .unified-panel-header-inner').append(galaxy_config.app.viz_config.title + " " + galaxy_config.app.viz_config.dbkey);
     
         // setup menu
-        var menu = create_icon_buttons_menu([
+        var menu = mod_icon_btn.create_icon_buttons_menu([
         {
             icon_class: 'plus-button', title: 'Add tracks', on_click: function()
             {
