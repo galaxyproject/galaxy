@@ -8,6 +8,7 @@ define([
     "mvc/tags",
     "mvc/annotations",
     "jq-plugins/ui/fa-icon-button",
+    "mvc/ui/popup-menu",
     "utils/localization"
 ], function(
     HPANEL,
@@ -19,6 +20,7 @@ define([
     TAGS,
     ANNOTATIONS,
     faIconButton,
+    PopupMenu,
     _l
 ){
 /* =============================================================================
