@@ -61,7 +61,7 @@
   ${jobs_str} been successfully added to the queue - resulting in the following ${datasets_str}:
 </p>
 %for _, data in out_data:
-   <div style="padding: 10px"><b> ${data.hid}: ${data.name}</b></div>
+   <div style="padding: 10px"><b> ${data.hid}: ${data.name | h}</b></div>
 %endfor
 
 <p>
@@ -83,7 +83,7 @@ successfully or 'error' if problems were encountered.
   <ul>
   <!-- Styling on this list is a little flat. Consider identing these error messages. -->
   %for job_error in job_errors:
-    <li><b>${job_error}</b></li>
+    <li><b>${job_error | h}</b></li>
   %endfor
   </ul>
 </div>

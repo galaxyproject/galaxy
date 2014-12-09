@@ -1664,7 +1664,8 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         stored.user = trans.user
         stored.published = publish
         if data[ 'annotation' ]:
-            self.add_item_annotation( trans.sa_session, stored.user, stored, data[ 'annotation' ] )
+            annotation = sanitize_html( data[ 'annotation' ], 'utf-8', 'text/html' )
+            self.add_item_annotation( trans.sa_session, stored.user, stored, annotation )
 
         # Persist
         trans.sa_session.add( stored )
@@ -2571,6 +2572,8 @@ class SharableMixin:
     def set_public_username( self, trans, id, username, **kwargs ):
         """ Set user's public username and delegate to sharing() """
         user = trans.get_user()
+        # message from validate_publicname does not contain input, no need
+        # to escape.
         message = validate_publicname( trans, username, user )
         if message:
             return trans.fill_template( '/sharing_base.mako', item=self.get_item( trans, id ), message=message, status='error' )

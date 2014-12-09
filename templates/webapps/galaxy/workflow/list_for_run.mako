@@ -23,7 +23,7 @@
         %for i, workflow in enumerate( workflows ):
             <tr>
                 <td>
-                    <a href="${h.url_for(controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name )}</a>
+                    <a href="${h.url_for(controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name ) | h}</a>
                     <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
                 <td>${len(workflow.latest_workflow.steps)}</td>
@@ -51,10 +51,10 @@
             <% workflow = association.stored_workflow %>
             <tr>
                 <td>
-                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
+                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name | h}</a>
                     <a id="shared-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
-                <td>${workflow.user.email}</td>
+                <td>${workflow.user.email | h}</td>
                 <td>${len(workflow.latest_workflow.steps)}</td>
             </tr>    
         %endfor

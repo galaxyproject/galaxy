@@ -1,4 +1,5 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
+<%page expression_filter="h"/>
 
 <%def name="init()">
 <%

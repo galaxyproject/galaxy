@@ -9,7 +9,7 @@
 ## Generate request.
 <?xml version="1.0"?>
 <workflow>
-  <title>${workflow_name}</title>
+  <title>${workflow_name | h}</title>
   <description>${workflow_description}</description>
   <type>Galaxy</type>
   <content encoding="base64" type="binary">
