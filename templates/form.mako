@@ -53,7 +53,7 @@
     %endif
     
     <div class="form" style="margin: 1em">
-        <div class="form-title">${util.unicodify( form.title ) | h}</div>
+        <div class="form-title">${util.unicodify( form.title ) | h }</div>
         <div class="form-body">
         <%
             has_file_input = False
@@ -62,7 +62,7 @@
                     has_file_input = True
                     break
         %>
-        <form name="${form.name | h}" action="${form.action}" method="post" 
+        <form name="${form.name | h }" action="${form.action}" method="post" 
         %if has_file_input:
              enctype="multipart/form-data"
         %endif
@@ -76,28 +76,28 @@
                 <div class="${cls}">
                 %if input.use_label:
                   <label>
-                      ${_(input.label)}:
+                      ${_(input.label) | h }:
                   </label>
                 %endif
                 <div class="form-row-input">
                     %if input.type == 'textarea':
-                        <textarea name="${input.name}">${input.value}</textarea>
+                        <textarea name="${input.name | h }">${input.value | h }</textarea>
                     %elif input.type == 'select':
-                        <select name="${input.name}">
+                        <select name="${input.name | h}">
                             %for (name, value) in input.options:
-                                <option value="${value}">${name}</option>
+                                <option value="${value | h }">${name | h }</option>
                             %endfor
                         </select>
                     %else:
-                        <input type="${input.type}" name="${input.name}" value="${input.value}">
+                        <input type="${input.type}" name="${input.name | h }" value="${input.value | h }">
                     %endif      
                 </div>
                 %if input.error:
-                    <div class="form-row-error-message">${input.error}</div>
+                    <div class="form-row-error-message">${input.error | h }</div>
                 %endif
                 %if input.help:
                     <div class="toolParamHelp" style="clear: both;">
-                        ${input.help}
+                        ${input.help | h}
                     </div>
                 %endif
                 <div style="clear: both"></div>
