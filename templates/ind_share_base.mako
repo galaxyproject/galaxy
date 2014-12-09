@@ -91,7 +91,7 @@
                             Email address of user to share with
                         </label>
                         <div style="float: left; width: 250px; margin-right: 10px;">
-                            <input type="text" name="email" value="${email}" size="40">
+                            <input type="text" name="email" value="${email | h}" size="40">
                         </div>
                         <div style="clear: both"></div>
                     </div>

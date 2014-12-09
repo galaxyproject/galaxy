@@ -48,13 +48,13 @@
             The following OpenIDs will be associated with the account chosen or created below.
             <ul>
             %for openid in openids:
-                <li>${openid.openid}</li>
+                <li>${openid.openid | h}</li>
             %endfor
             </ul>
         </div>
     %else:
         <div>
-            The OpenID <strong>${openids[0].openid}</strong> will be associated with the account chosen or created.
+            The OpenID <strong>${openids[0].openid | h}</strong> will be associated with the account chosen or created.
         </div>
     %endif
     <br/>

@@ -180,7 +180,6 @@
 
 
 <%def name="center_panel()">
-
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float:left;" id="title"></div>

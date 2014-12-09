@@ -1,5 +1,9 @@
+import logging
 from galaxy.util import listify
 from copy import deepcopy
+
+log = logging.getLogger( __name__ )
+
 
 class FilterFactory( object ):
     """
@@ -37,17 +41,21 @@ class FilterFactory( object ):
                     elif name == 'toolbox_label_filters':
                         category = "label"
                     if category:
-                        self.__init_filters( category, user_filters, filters )
+                        validate = getattr( trans.app.config, 'user_%s_filters' % category, [] )
+                        self.__init_filters( category, user_filters, filters, validate=validate )
         else:
             if kwds.get( "trackster", False ):
                 filters[ "tool" ].append( _has_trackster_conf )
 
         return filters
 
-    def __init_filters( self, key, filters, toolbox_filters ):
+    def __init_filters( self, key, filters, toolbox_filters, validate=None ):
         for filter in filters:
-            filter_function = self.__build_filter_function( filter )
-            toolbox_filters[ key ].append( filter_function )
+            if validate is None or filter in validate or filter in self.default_filters:
+                filter_function = self.__build_filter_function( filter )
+                toolbox_filters[ key ].append( filter_function )
+            else:
+                log.warning( "Refusing to load %s filter '%s' which is not defined in config", key, filter )
         return toolbox_filters
 
     def __build_filter_function( self, filter_name ):

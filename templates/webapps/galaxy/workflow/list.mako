@@ -94,7 +94,7 @@
                         <% workflow = association.stored_workflow %>
                         <tr>
                             <td>
-                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name )}</a>
+                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name ) | h}</a>
                             </td>
                             <td>${workflow.user.email}</td>
                             <td>${len(workflow.latest_workflow.steps)}</td>

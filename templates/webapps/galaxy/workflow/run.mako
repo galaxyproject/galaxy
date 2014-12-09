@@ -372,7 +372,7 @@ if wf_parms:
         <% cls = "form-row" %>
     %endif
     <div class="${cls}">
-        <label>${param.get_label()}</label>
+        <label>${param.get_label() | h}</label>
         <div>
             %if isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
                 %if ( prefix + param.name ) in step.input_connections_by_name:
@@ -444,7 +444,7 @@ if wf_parms:
                 %else:
                 <span class="workflow_parameters">
                     <span class="uneditable_field">
-                        ${param.value_to_display_text( value, app )}
+                        ${param.value_to_display_text( value, app ) | h}
                     </span>
                     <span class="editable_field">
                         <span class="editable">
@@ -474,7 +474,7 @@ if wf_parms:
     <span class="action-button" id="hide_all_tool_body">Collapse</span>
 </div>
 
-<h2>Running workflow "${h.to_unicode( workflow.name )}"</h2>
+<h2>Running workflow "${h.to_unicode( workflow.name ) | h}"</h2>
 
 %if has_upgrade_messages:
 <div class="warningmessage">
@@ -574,6 +574,7 @@ if wf_parms:
                     <%
                     pja_ss_all = []
                     for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
+                        pja_ss = h.escape( pja_ss )
                         for rematch in re.findall('\$\{.+?\}', pja_ss):
                             pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
                         pja_ss_all.append(pja_ss)
@@ -586,7 +587,7 @@ if wf_parms:
         %else:
           <div class="toolForm">
               <div class="toolFormTitle">
-                  <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name}</span>
+                  <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${module.name | h}</span>
                   % if step.annotations:
                     <div class="step-annotation">${step.annotations[0].annotation}</div>
                   % endif

@@ -82,7 +82,7 @@
                         %if t.user.stored_workflow_menu_entries:
                             %for m in t.user.stored_workflow_menu_entries:
                                 <div class="toolTitle">
-                                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${ util.unicodify( m.stored_workflow.name ) }</a>
+                                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${ util.unicodify( m.stored_workflow.name ) | h}</a>
                                 </div>
                             %endfor
                         %endif
