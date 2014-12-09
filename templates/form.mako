@@ -22,7 +22,7 @@
 </%def>
 
 
-<%def name="title()">${form.title}</%def>
+<%def name="title()">${form.title | h}</%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -53,7 +53,7 @@
     %endif
     
     <div class="form" style="margin: 1em">
-        <div class="form-title">${util.unicodify( form.title )}</div>
+        <div class="form-title">${util.unicodify( form.title ) | h}</div>
         <div class="form-body">
         <%
             has_file_input = False
@@ -62,7 +62,7 @@
                     has_file_input = True
                     break
         %>
-        <form name="${form.name}" action="${form.action}" method="post" 
+        <form name="${form.name | h}" action="${form.action}" method="post" 
         %if has_file_input:
              enctype="multipart/form-data"
         %endif
