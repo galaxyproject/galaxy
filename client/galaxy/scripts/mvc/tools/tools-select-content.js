@@ -20,17 +20,44 @@ var View = Backbone.View.extend({
         // radio button options
         var radio_buttons = [];
         
-        // set initial state
-        if (!options.multiple) {
-            this.current = 'single';
+        // identify selector type
+        if (options.type == 'data_collection') {
+            this.mode = 'collection';
         } else {
-            this.current = 'multiple';
+            if (options.multiple) {
+                this.mode = 'multiple';
+            } else {
+                this.mode = 'single';
+            }
         }
-         
+        
+        // set initial state
+        this.current = this.mode;
+        this.list = {};
+        
+        // error messages
+        var extensions = options.extensions.toString();
+        if (extensions) {
+            extensions = extensions.replace(',', ', ');
+            var pos = extensions.lastIndexOf(', ');
+            if (pos != -1) {
+                extensions = extensions.substr(0, pos) + ' or ' + extensions.substr(pos+1);
+            }
+        }
+        var hda_error = 'No dataset available.';
+        if (extensions) {
+            hda_error = 'No ' + extensions + ' dataset available.';
+        }
+        var hdca_error = 'No dataset list available.';
+        if (extensions) {
+            hdca_error = 'No ' + extensions + ' dataset list available.';
+        }
+        
         // add single dataset selector
-        if (!options.multiple) {
+        if (this.mode == 'single') {
             radio_buttons.push({icon: 'fa-file-o', label : 'Single dataset', value : 'single'});
             this.select_single = new Ui.Select.View({
+                error_text  : hda_error,
                 onchange    : function() {
                     self.trigger('change');
                 }
@@ -42,29 +69,35 @@ var View = Backbone.View.extend({
         }
         
         // add multiple dataset selector
-        radio_buttons.push({icon: 'fa-files-o', label : 'Multiple datasets', value : 'multiple'  });
-        this.select_multiple = new Ui.Select.View({
-            multiple    : true,
-            onchange    : function() {
-                self.trigger('change');
-            }
-        });
-        this.list['multiple'] = {
-            field: this.select_multiple,
-            type : 'hda'
-        };
+        if (this.mode == 'single' || this.mode == 'multiple') {
+            radio_buttons.push({icon: 'fa-files-o', label : 'Multiple datasets', value : 'multiple'  });
+            this.select_multiple = new Ui.Select.View({
+                multiple    : true,
+                error_text  : hda_error,
+                onchange    : function() {
+                    self.trigger('change');
+                }
+            });
+            this.list['multiple'] = {
+                field: this.select_multiple,
+                type : 'hda'
+            };
+        }
         
         // add collection selector
-        radio_buttons.push({icon: 'fa-folder-o', label : 'List of datasets',  value : 'collection' });
-        this.select_collection = new Ui.Select.View({
-            onchange    : function() {
-                self.trigger('change');
-            }
-        });
-        this.list['collection'] = {
-            field: this.select_collection,
-            type : 'hdca'
-        };
+        if (this.mode == 'single' || this.mode == 'collection') {
+            radio_buttons.push({icon: 'fa-folder-o', label : 'List of datasets',  value : 'collection' });
+            this.select_collection = new Ui.Select.View({
+                error_text  : hdca_error,
+                onchange    : function() {
+                    self.trigger('change');
+                }
+            });
+            this.list['collection'] = {
+                field: this.select_collection,
+                type : 'hdca'
+            };
+        }
         
         // create button
         this.button_type = new Ui.RadioButton.View({
@@ -81,7 +114,9 @@ var View = Backbone.View.extend({
         this.$batch = $(ToolTemplate.batchMode());
         
         // add elements to dom
-        this.$el.append(Utils.wrap(this.button_type.$el));
+        if (_.size(this.list) > 1) {
+            this.$el.append(Utils.wrap(this.button_type.$el));
+        }
         for (var i in this.list) {
             this.$el.append(this.list[i].field.$el);
         }
@@ -89,6 +124,11 @@ var View = Backbone.View.extend({
         
         // update options
         this.update(options.data);
+        
+        // set initial value
+        if (this.options.value !== undefined) {
+            this.value(this.options.value);
+        }
         
         // refresh view
         this.refresh();
@@ -139,8 +179,8 @@ var View = Backbone.View.extend({
         
         // update selection fields
         this.select_single && this.select_single.update(dataset_options);
-        this.select_multiple.update(dataset_options);
-        this.select_collection.update(collection_options);
+        this.select_multiple && this.select_multiple.update(dataset_options);
+        this.select_collection && this.select_collection.update(collection_options);
         
         // add to content list
         this.app.content.add(options);
@@ -162,7 +202,7 @@ var View = Backbone.View.extend({
                     this.current = 'collection';
                     this.select_collection.value(list[0]);
                 } else {
-                    if (list.length > 1 || this.options.multiple) {
+                    if (this.mode == 'multiple') {
                         this.current = 'multiple';
                         this.select_multiple.value(list);
                     } else {
@@ -190,7 +230,7 @@ var View = Backbone.View.extend({
         
         // prepare result dict
         var result = {
-            batch   : !this.options.multiple && this.current != 'single',
+            batch   : this.mode == 'single' && this.current != 'single',
             values  : []
         }
         
@@ -222,7 +262,7 @@ var View = Backbone.View.extend({
                 $el.hide();
             }
         }
-        if (this.current != 'single' && !this.options.multiple) {
+        if (this.mode == 'single' && this.current != 'single') {
             this.$batch.show();
         } else {
             this.$batch.hide();

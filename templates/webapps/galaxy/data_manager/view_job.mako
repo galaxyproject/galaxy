@@ -26,8 +26,8 @@
     </thead>
     <tbody>
         <tr><td>Name:</td><td>${hda.name | h}</td></tr>
-        <tr><td>Created:</td><td>${hda.create_time.strftime(trans.app.config.pretty_datetime_format)}</td></tr>
-        <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
+        <tr><td>Created:</td><td>${hda.create_time.strftime(trans.app.config.pretty_datetime_format) | h}</td></tr>
+        <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size) | h}</td></tr>
         <tr><td>Tool Exit Code:</td><td>${job.exit_code | h}</td></tr>
         <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
         <tr><td>View complete info:</td><td><a href="${h.url_for( controller='dataset', action='show_params', dataset_id=trans.security.encode_id( hda.id ))}">${ hda.id | h }</a></td></tr>
@@ -47,7 +47,7 @@
         %for j, table_row in enumerate( json_table ):
         <tbody>
         %if len_json_table > 1:
-        <tr><td><strong>Entry &#35;${j}</strong></td><td> </td></tr>
+        <tr><td><strong>Entry &#35;${j | h}</strong></td><td> </td></tr>
         %endif
         %for name, value in table_row.iteritems():
         <tr><td>${name | h}:</td><td>${value | h}</td></tr>

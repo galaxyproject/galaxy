@@ -9,7 +9,7 @@ var View = Backbone.View.extend({
     optionsDefault : {
         id          : '',
         cls         : '',
-        empty       : 'No data available',
+        error_text  : 'No data available',
         visible     : true,
         wait        : false,
         multiple    : false,
@@ -41,6 +41,11 @@ var View = Backbone.View.extend({
         // refresh
         this.update(this.options.data);
         
+        // set initial value
+        if (this.options.value !== undefined) {
+            this.value(this.options.value);
+        }
+        
         // show/hide
         if (!this.options.visible) {
             this.hide();
@@ -70,6 +75,9 @@ var View = Backbone.View.extend({
     value : function (new_value) {
         if (new_value !== undefined) {
             this.$select.val(new_value);
+            if (this.$select.select2) {
+                this.$select.select2('val', new_value);
+            }
         }
         return this.$select.val();
     },
@@ -239,7 +247,7 @@ var View = Backbone.View.extend({
             this.disable();
         
             // append placeholder
-            this.$select.append(this._templateOption({value : 'null', label : this.options.empty}));
+            this.$select.append(this._templateOption({value : 'null', label : this.options.error_text}));
         } else {
             // enable select field
             this.enable();

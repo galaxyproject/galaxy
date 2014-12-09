@@ -650,6 +650,11 @@ class BaseURLToolParameter( ToolParameter ):
     def get_label( self ):
         # BaseURLToolParameters are ultimately "hidden" parameters
         return None
+    
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        d = super( BaseURLToolParameter, self ).to_dict( trans )
+        d['value'] = self.get_value( trans )
+        return d
 
 
 DEFAULT_VALUE_MAP = lambda x: x
@@ -762,7 +767,10 @@ class SelectToolParameter( ToolParameter ):
         if self.options:
             return self.options.get_options( trans, other_values )
         elif self.dynamic_options:
-            return eval( self.dynamic_options, self.tool.code_namespace, other_values )
+            try:
+                return eval( self.dynamic_options, self.tool.code_namespace, other_values )
+            except Exception:
+                return []
         else:
             return self.static_options
 
@@ -774,7 +782,10 @@ class SelectToolParameter( ToolParameter ):
         if self.options:
             return map( _get_UnvalidatedValue_value, set( v for _, v, _ in self.options.get_options( trans, other_values ) ) )
         elif self.dynamic_options:
-            return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
+            try:
+                return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
+            except Exception:
+                return set()
         else:
             return self.legal_values
 
@@ -1125,7 +1136,13 @@ class ColumnListParameter( SelectToolParameter ):
         SelectToolParameter.__init__( self, tool, elem )
         self.tool = tool
         self.numerical = string_as_bool( elem.get( "numerical", False ))
-        self.force_select = string_as_bool( elem.get( "force_select", True ))
+        # Allow specifing force_select for backward compat., but probably
+        # should use optional going forward for consistency with other
+        # parameters.
+        if "force_select" in elem.attrib:
+            self.force_select = string_as_bool( elem.get( "force_select" ) )
+        else:
+            self.force_select = not string_as_bool( elem.get( "optional", False ) )
         self.accept_default = string_as_bool( elem.get( "accept_default", False ))
         self.data_ref = elem.get( "data_ref", None )
         self.ref_input = None
@@ -1606,19 +1623,20 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         """
         return self.filtered.keys()
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
 
         options = []
         try:
-            options = self.get_options( trans, {} )
+            options = self.get_options( trans=trans, other_values=other_values )
         except KeyError:
             # will sometimes error if self.is_dynamic and self.filtered
             #   bc we dont/cant fill out other_values above ({})
             pass
-
         d[ 'options' ] = options
+        d[ 'display' ] = self.display
+        d[ 'is_dynamic' ] = self.is_dynamic
         return d
 
 
@@ -2304,6 +2322,47 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         return d
 
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+        # create dictionary and fill default parameters
+        d = super( DataCollectionToolParameter, self ).to_dict( trans )
+        d['multiple'] = self.multiple
+        d['is_dynamic'] = False
+        d['options'] = {'hda': [], 'hdca': []}
+        
+        # return default content if context is not available
+        if other_values is None:
+            return d
+
+        # prepare dataset/collection matching
+        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
+        history = trans.history
+        
+        # append directly matched collections
+        for hdca in self.match_collections( trans, history, dataset_matcher ):
+            d['options']['hdca'].append({
+                    'id'            : trans.security.encode_id( hdca.id ),
+                    'id_uncoded'    : hdca.id,
+                    'hid'           : hdca.hid,
+                    'name'          : hdca.name,
+                    'src'           : 'hdca'
+                })
+
+        # append matching subcollections
+        for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
+            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
+            d['options']['hdca'].append({
+                    'id'            : trans.security.encode_id( hdca.id ),
+                    'id_uncoded'    : hdca.id,
+                    'hid'           : hdca.hid,
+                    'name'          : hdca.name,
+                    'src'           : 'hdca'
+                })
+
+        # sort both lists
+        d['options']['hdca'] = sorted(d['options']['hdca'], key=lambda k: k['hid'], reverse=True)
+
+        # return final dictionary
+        return d
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     """

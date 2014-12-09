@@ -30,24 +30,24 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">"${request_type.name}" request type</div>
+    <div class="toolFormTitle">"${request_type.name | h}" request type</div>
     <div class="form-row">
         <label>Name:</label>
-        ${request_type.name}
+        ${request_type.name | h}
         <div style="clear: both"></div>
     </div>
     <div class="form-row">
         <label>Description:</label>
-        ${request_type.desc}
+        ${request_type.desc | h}
         <div style="clear: both"></div>
     </div>
     <div class="form-row">
         <label>Sequencing request form definition:</label>
-        <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name}</a>
+        <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.request_form_id ) )}">${request_type.request_form.name | h}</a>
     </div>       
     <div class="form-row">
         <label>Sample form definition:</label>
-        <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name}</a>
+        <a href="${h.url_for( controller='request_type', action='view_form_definition', id=trans.security.encode_id( request_type.sample_form_id ) )}">${request_type.sample_form.name | h}</a>
     </div>
 </div>
 <p/>
@@ -55,8 +55,8 @@
     <div class="toolFormTitle">Sample states defined for this request type</div>
     %for state in request_type.states:
         <div class="form-row">
-            <label>${state.name}</label>
-            ${state.desc}
+            <label>${state.name | h}</label>
+            ${state.desc | h}
         </div>
         <div style="clear: both"></div>
     %endfor
@@ -67,8 +67,8 @@
     %if request_type.external_services:
         %for index, external_service in enumerate( request_type.external_services ):
             <div class="form-row">
-                <label><a href="${h.url_for( controller='external_service', action='view_external_service', id=trans.security.encode_id( external_service.id ) )}">${external_service.name}</a></label> 
-                ${external_service.get_external_service_type( trans ).name}
+                <label><a href="${h.url_for( controller='external_service', action='view_external_service', id=trans.security.encode_id( external_service.id ) )}">${external_service.name | h}</a></label> 
+                ${external_service.get_external_service_type( trans ).name | h}
             </div>
         %endfor
     %else:

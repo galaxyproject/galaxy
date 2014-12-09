@@ -43,20 +43,8 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 for filename in glob.glob(os.path.join(app.config.new_file_path, "primary_%i_*" % outdata.id) ):
                     filenames[ filename ] = DEFAULT_DATASET_COLLECTOR
         if 'job_working_directory' in app.config.collect_outputs_from:
-            for extra_file_collector in dataset_collectors:
-                directory = job_working_directory
-                if extra_file_collector.directory:
-                    directory = os.path.join( directory, extra_file_collector.directory )
-                    if not util.in_directory( directory, job_working_directory ):
-                        raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
-                if not os.path.isdir( directory ):
-                    continue
-                for filename in sorted( os.listdir( directory ) ):
-                    path = os.path.join( directory, filename )
-                    if not os.path.isfile( path ):
-                        continue
-                    if extra_file_collector.match( outdata, filename ):
-                        filenames[ path ] = extra_file_collector
+            for path, extra_file_collector in walk_over_extra_files( dataset_collectors, job_working_directory, outdata ):
+                filenames[ path ] = extra_file_collector
         for filename_index, ( filename, extra_file_collector ) in enumerate( filenames.iteritems() ):
             fields_match = extra_file_collector.match( outdata, os.path.basename( filename ) )
             if not fields_match:
@@ -119,7 +107,8 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                     for root, dirs, files in os.walk( extra_files_path_joined ):
                         extra_dir = os.path.join( primary_data.extra_files_path, root.replace( extra_files_path_joined, '', 1 ).lstrip( os.path.sep ) )
                         for f in files:
-                            app.object_store.update_from_file( primary_data.dataset,
+                            app.object_store.update_from_file(
+                                primary_data.dataset,
                                 extra_dir=extra_dir,
                                 alt_name=f,
                                 file_name=os.path.join( root, f ),
@@ -127,7 +116,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                                 dir_only=True,
                                 preserve_symlinks=True
                             )
-                    # FIXME: 
+                    # FIXME:
                     # since these are placed into the job working dir, let the standard
                     # Galaxy cleanup methods handle this (for now?)
                     # there was an extra_files_path dir, attempt to remove it
@@ -161,6 +150,22 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
             sa_session.flush()
     return primary_datasets
 
+
+def walk_over_extra_files( extra_file_collectors, job_working_directory, matchable ):
+    for extra_file_collector in extra_file_collectors:
+        directory = job_working_directory
+        if extra_file_collector.directory:
+            directory = os.path.join( directory, extra_file_collector.directory )
+            if not util.in_directory( directory, job_working_directory ):
+                raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
+        if not os.path.isdir( directory ):
+            continue
+        for filename in sorted( os.listdir( directory ) ):
+            path = os.path.join( directory, filename )
+            if not os.path.isfile( path ):
+                continue
+            if extra_file_collector.match( matchable, filename ):
+                yield path, extra_file_collector
 
 # XML can describe custom patterns, but these literals describe named
 # patterns that will be replaced.

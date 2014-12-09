@@ -353,9 +353,24 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
             %if tool.has_multiple_pages:
                 <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})
             %elif not tool_version_select_field:
-                <div class="toolFormTitle">${tool.name} (version ${tool.version})
+                <div class="toolFormTitle">${tool.name} (Galaxy tool version ${tool.version})
             %else:
                 <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}
+            %endif
+            ## Show information button with underlying requirements and their versions
+            %if tool.requirements:
+                <a href="#" class="icon-btn" title="Underlying versions" tabindex="0" data-toggle="popover" data-placement="bottom" data-content=
+                "
+                %for i, requirement in enumerate( tool.requirements ):
+                ${ requirement.name } v ${ requirement.version } ${ '' if i + 1 == len( tool.requirements ) else ' | ' } 
+                %endfor
+                "
+                 onclick="$(function () {
+                              $( '[ data-toggle=\'popover\' ]' ).popover();
+                              $( this ).popover( 'show' );
+                          })">
+                    <span class="fa fa-info-circle"></span>
+                </a>
             %endif
 
             <span class="pull-right">

@@ -196,7 +196,7 @@
                 <p>Select a tree to view: &nbsp;&nbsp;
                 <select id="phylovizNexSelector">
                     % for tree, index in data["trees"]:
-                        <option value="${index}">${tree}</option>
+                        <option value="${index | h}">${tree | h}</option>
                     % endfor
                 </select>
                 </p>

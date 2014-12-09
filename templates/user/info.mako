@@ -90,7 +90,7 @@
             <div class="toolFormTitle">Login Information</div>
             <div class="form-row">
                 <label>Email address:</label>
-                <input type="text" id ="email_input" name="email" value="${email}" size="40"/>
+                <input type="text" id ="email_input" name="email" value="${email | h}" size="40"/>
                 <div class="toolParamHelp" style="clear: both;">
                     If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.
                 </div>
@@ -99,13 +99,13 @@
                 <label>Public name:</label>
                 %if t.webapp.name == 'tool_shed':
                     %if user.active_repositories:
-                        <input type="hidden" name="username" value="${username}"/>
-                        ${username}
+                        <input type="hidden" name="username" value="${username | h}"/>
+                        ${username | h}
                         <div class="toolParamHelp" style="clear: both;">
                             You cannot change your public name after you have created a repository in this tool shed.
                         </div>
                     %else:
-                        <input type="text" name="username" size="40" value="${username}"/>
+                        <input type="text" name="username" size="40" value="${username | h}"/>
                         <div class="toolParamHelp" style="clear: both;">
                             Your public name provides a means of identifying you publicly within this tool shed. Public
                             names must be at least four characters in length and contain only lower-case letters, numbers,
@@ -114,7 +114,7 @@
                         </div>
                     %endif
                 %else:
-                    <input type="text" id="name_input" name="username" size="40" value="${username}"/>
+                    <input type="text" id="name_input" name="username" size="40" value="${username | h}"/>
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name is an optional identifier that will be used to generate addresses for information
                         you share publicly. Public names must be at least four characters in length and contain only lower-case

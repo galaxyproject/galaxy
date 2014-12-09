@@ -307,8 +307,14 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldData(input_def);
                     break;
                 
+                // collection selector
+                //case 'data_collection':
+                //    field = this._fieldData(input_def);
+                //    break;
+                    
                 // data column
                 case 'data_column':
+                    input_def.error_text = 'Missing columns in referenced dataset.';
                     field = this._fieldSelect(input_def);
                     break;
                     
@@ -337,7 +343,17 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     input_def.searchable = true;
                     field = this._fieldSelect(input_def);
                     break;
-                    
+                
+                // drill down field
+                case 'drill_down':
+                    field = this._fieldDrilldown(input_def);
+                    break;
+                
+                // base url field
+                case 'baseurl':
+                    field = this._fieldHidden(input_def);
+                    break;
+                        
                 // field not found
                 default:
                     // flag
@@ -373,6 +389,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
+                type        : input_def.type,
                 data        : input_def.options,
                 onchange    : function() {
                     self.app.refresh();
@@ -409,8 +426,23 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             return new SelectClass.View({
                 id          : 'field-' + input_def.id,
                 data        : options,
+                error_text  : input_def.error_text || 'No options available',
                 multiple    : input_def.multiple,
                 searchable  : input_def.searchable,
+                onchange    : function() {
+                    self.app.refresh();
+                }
+            });
+        },
+        
+        /** Drill down options field
+        */
+        _fieldDrilldown : function (input_def) {
+            var self = this;
+            return new Ui.Drilldown.View({
+                id          : 'field-' + input_def.id,
+                data        : input_def.options,
+                display     : input_def.display,
                 onchange    : function() {
                     self.app.refresh();
                 }

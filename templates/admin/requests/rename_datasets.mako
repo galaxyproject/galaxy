@@ -3,7 +3,7 @@
 
 <% from galaxy.webapps.galaxy.controllers.requests_admin import build_rename_datasets_for_sample_select_field %>
 
-<h3>Rename datasets for Sample "${sample.name}"</h3>
+<h3>Rename datasets for Sample "${sample.name | h}"</h3>
 
 <ul class="manage-table-actions">
     <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='manage_datasets', sample_id=trans.security.encode_id( sample.id ) )}">Browse datasets</a></li>
@@ -35,7 +35,7 @@
                                 ${rename_datasets_for_sample_select_field.get_html()}
                             </td>
                             <td>
-                                <input type="text" name="new_name_${trans.security.encode_id( sample_dataset.id ) }" value="${sample_dataset.name}" size="100"/>
+                                <input type="text" name="new_name_${trans.security.encode_id( sample_dataset.id ) }" value="${sample_dataset.name | h}" size="100"/>
                             </td>
                             <td>${sample_dataset.file_path}</td>
                         </tr>

@@ -12,7 +12,7 @@
     ${render_msg( message, status )}
 %endif
 
-<h3>History of sample "${sample.name}"</h3>
+<h3>History of sample "${sample.name | h}"</h3>
 
 <div class="toolForm">
     <table class="grid">
@@ -27,10 +27,10 @@
         <tbody>
             %for event in sample.events:    
                 <tr>
-                    <td><b>${event.state.name}</b></td>
-                    <td>${event.state.desc}</td>
+                    <td><b>${event.state.name | h}</b></td>
+                    <td>${event.state.desc | h}</td>
                     <td>${time_ago( event.update_time )}</td>
-                    <td>${event.comment}</td>
+                    <td>${event.comment | h}</td>
                 </tr>             
             %endfor
         </tbody>

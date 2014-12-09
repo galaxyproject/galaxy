@@ -44,7 +44,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         :rtype:     dict
         """
         folder_id = self.folder_manager.cut_and_decode( trans, id )
-        folder = self.folder_manager.get( trans, folder_id, check_ownership=False, check_accessible=True )
+        folder = self.folder_manager.get( trans, folder_id, check_manageable=False, check_accessible=True )
         return_dict = self.folder_manager.get_folder_dict( trans, folder )
         return return_dict
 
@@ -228,6 +228,32 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
             raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
                                 'Allowed values are: "set_permissions"' )
         return self.folder_manager.get_current_roles( trans, folder )
+
+    @expose_api
+    def delete( self, trans, id, **kwd ):
+        """
+        delete( self, trans, id, **kwd )
+        * DELETE /api/folders/{id}
+            marks the folder with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
+
+        .. note:: Currently, only admin users can un/delete folders.
+
+        :param  id:     the encoded id of the folder to un/delete
+        :type   id:     an encoded id string
+
+        :param  undelete:    (optional) flag specifying whether the item should be deleted or undeleted, defaults to false:
+        :type   undelete:    bool
+
+        :returns:   detailed folder information
+        :rtype:     dictionary
+
+        :raises: ItemAccessibilityException, MalformedId, ObjectNotFound
+        """
+        folder = self.folder_manager.get( trans, self.folder_manager.cut_and_decode( trans, id ), True )
+        undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
+        folder = self.folder_manager.delete( trans, folder, undelete )
+        folder_dict = self.folder_manager.get_folder_dict( trans, folder )
+        return folder_dict
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):

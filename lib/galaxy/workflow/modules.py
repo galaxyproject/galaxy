@@ -784,7 +784,7 @@ class ToolModule( WorkflowModule ):
             workflow_invocation_uuid=invocation.uuid.hex
         )
         if collection_info:
-            step_outputs = dict( execution_tracker.created_collections )
+            step_outputs = dict( execution_tracker.implicit_collections )
         else:
             step_outputs = dict( execution_tracker.output_datasets )
         progress.set_step_outputs( step, step_outputs )

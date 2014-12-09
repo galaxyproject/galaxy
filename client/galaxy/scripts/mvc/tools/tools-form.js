@@ -211,7 +211,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.tree.matchModel(new_model, function(input_id, node) {
                 var input = self.input_list[input_id];
                 if (input && input.options) {
-                    if (JSON.stringify(input.options) != JSON.stringify(node.options)) {
+                    if (!_.isEqual(input.options, node.options)) {
                         // backup new options
                         input.options = node.options;
                         
@@ -221,6 +221,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                             var new_options = [];
                             switch (input.type) {
                                 case 'data':
+                                    new_options = input.options;
+                                    break;
+                                case 'drill_down':
                                     new_options = input.options;
                                     break;
                                 default:
@@ -337,7 +340,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 buttons: {
                     execute : new Ui.Button({
                         icon     : 'fa-check',
-                        tooltip  : 'Execute the tool',
+                        tooltip  : 'Execute: ' + self.model.name,
                         title    : 'Execute',
                         cls      : 'btn btn-primary',
                         floating : 'clear',

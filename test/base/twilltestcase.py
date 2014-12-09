@@ -18,7 +18,7 @@ from base.asserts import verify_assertions
 from galaxy.util import asbool
 from galaxy.util.json import loads
 from galaxy.web import security
-from galaxy.web.framework.helpers import iff
+from galaxy.web.framework.helpers import iff, escape
 from urlparse import urlparse
 
 from galaxy import eggs
@@ -109,7 +109,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "name", name )
         tc.fv( "1", "description", description )
         tc.submit( "new_folder_button" )
-        check_str = "The new folder named '%s' has been added to the data library." % name
+        check_str = escape( "The new folder named '%s' has been added to the data library." % name )
         self.check_page_for_string( check_str )
 
     def add_samples( self, cntrller, request_id, sample_value_tuples, folder_options=[], strings_displayed=[], strings_displayed_after_submit=[] ):
@@ -216,7 +216,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError( "String (%s) incorrectly displayed when browing library." % check_str )
+                raise AssertionError( "String (%s) incorrectly displayed when browsing library." % check_str )
             except:
                 pass
 
@@ -227,7 +227,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError( "String (%s) incorrectly displayed when browing library." % check_str )
+                raise AssertionError( "String (%s) incorrectly displayed when browsing library." % check_str )
             except:
                 pass
 
@@ -238,7 +238,7 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_not_displayed:
             try:
                 self.check_page_for_string( check_str )
-                raise AssertionError( "String (%s) incorrectly displayed when browing library." % check_str )
+                raise AssertionError( "String (%s) incorrectly displayed when browsing library." % check_str )
             except:
                 pass
 
@@ -576,7 +576,7 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "description", description )
         tc.fv( "1", "synopsis", synopsis )
         tc.submit( "create_library_button" )
-        check_str = "The new library named '%s' has been created" % name
+        check_str = escape( "The new library named '%s' has been created" % name )
         self.check_page_for_string( check_str )
 
     def create_user_with_info( self, email, password, username, user_info_values, user_type_fd_id='', cntrller='user',
@@ -1437,7 +1437,7 @@ class TwillTestCase( unittest.TestCase ):
         if new_ldda_name:
             tc.fv( '1', 'name', new_ldda_name )
             tc.submit( 'save' )
-            check_str = "Attributes updated for library dataset '%s'." % new_ldda_name
+            check_str = escape( "Attributes updated for library dataset '%s'." % new_ldda_name )
             self.check_page_for_string( check_str )
         if template_refresh_field_contents:
             # A template containing an AddressField is displayed on the upload form, so we need to refresh the form
@@ -1488,7 +1488,7 @@ class TwillTestCase( unittest.TestCase ):
             key = '%s_in' % pi
             url = "%s&%s=%s" % ( url, key, role_ids_str )
         self.visit_url( "%s/%s" % ( self.url, url ) )
-        check_str = "Permissions updated for library '%s'." % library_name
+        check_str = escape( "Permissions updated for library '%s'." % library_name )
         self.check_page_for_string( check_str )
 
     def library_wait( self, library_id, cntrller='library_admin', maxiter=90 ):
@@ -1770,20 +1770,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "confirm", password )
         tc.submit( "reset_user_password_button" )
         self.check_page_for_string( "Passwords reset for 1 user." )
-
-    def run_tool( self, tool_id, repeat_name=None, **kwd ):
-        """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
-        params = dict( tool_id=tool_id )
-        self.visit_url( "/tool_runner/index", params )
-        # Must click somewhere in tool_form, to disambiguate what form
-        # is being targetted.
-        tc.browser.clicked( tc.browser.get_form( 'tool_form' ), None )
-        if repeat_name is not None:
-            repeat_button = '%s_add' % repeat_name
-            # Submit the "repeat" form button to add an input)
-            tc.submit( repeat_button )
-        tc.find( 'runtool_btn' )
-        self.submit_form( **kwd )
 
     def run_ucsc_main( self, track_params, output_params ):
         """Gets Data From UCSC"""

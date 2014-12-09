@@ -76,7 +76,14 @@ class DatasetPopulator( object ):
         return run_response.json()["outputs"][0]
 
     def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_HISTORY_TIMEOUT ):
-        wait_on_state( lambda: self.galaxy_interactor.get( "histories/%s" % history_id ), assert_ok=assert_ok, timeout=timeout )
+        try:
+            return wait_on_state( lambda: self.galaxy_interactor.get( "histories/%s" % history_id ), assert_ok=assert_ok, timeout=timeout )
+        except AssertionError:
+            self.galaxy_interactor._summarize_history_errors( history_id )
+            raise
+
+    def wait_for_job( self, job_id, assert_ok=False, timeout=DEFAULT_HISTORY_TIMEOUT ):
+        return wait_on_state( lambda: self.galaxy_interactor.get( "jobs/%s" % job_id ), assert_ok=assert_ok, timeout=timeout )
 
     def new_history( self, **kwds ):
         name = kwds.get( "name", "API Test History" )
@@ -296,6 +303,12 @@ class DatasetCollectionPopulator( object ):
         )
         return self.__create( payload )
 
+    def create_list_of_pairs_in_history( self, history_id, **kwds ):
+        pair1 = self.create_pair_in_history( history_id, **kwds ).json()["id"]
+        #pair2 = self.create_pair_in_history( history_id, **kwds ).json()["id"]
+        #pair3 = self.create_pair_in_history( history_id, **kwds ).json()["id"]
+        return self.create_list_from_pairs( history_id, [ pair1 ] )
+
     def create_pair_in_history( self, history_id, **kwds ):
         payload = self.create_pair_payload(
             history_id,
@@ -375,13 +388,13 @@ def wait_on_state( state_func, assert_ok=False, timeout=5 ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
         state = response.json()[ "state" ]
-        if state not in [ "running", "queued", "new" ]:
+        if state not in [ "running", "queued", "new", "ready" ]:
             if assert_ok:
                 assert state == "ok", "Final state - %s - not okay." % state
             return state
         else:
             return None
-    wait_on( get_state, desc="state", timeout=timeout)
+    return wait_on( get_state, desc="state", timeout=timeout)
 
 
 def wait_on( function, desc, timeout=5 ):

@@ -20,7 +20,7 @@
                         <li>
                             
                             <a href="${h.url_for(controller='mobile', action="history_detail", id=history.id )}">
-                                ${history.name}
+                                ${history.name | h}
                             
                             <div class="secondary">${h.date.distance_of_time_in_words( history.update_time, h.date.datetime.utcnow() )} ago</div>
               

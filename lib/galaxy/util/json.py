@@ -48,6 +48,8 @@ def swap_inf_nan( val ):
             return "__Infinity__"
         elif val == float("-inf"):
             return "__-Infinity__"
+        else:
+            return val
     else:
         return val
 

@@ -35,7 +35,7 @@
 </%def>
 
 <%def name="title()">
-    Sharing and Publishing ${get_class_display_name( item.__class__ )} '${get_item_name( item )}'
+    Sharing and Publishing ${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'
 </%def>
 
 <%def name="javascripts()">
@@ -122,7 +122,7 @@
         item_name = get_item_name(item)
     %>
 
-    <h2>Share or Publish ${item_class_name} '${item_name}'</h2>
+    <h2>Share or Publish ${item_class_name} '${item_name | h}'</h2>
 
     ## Require that user have a public username before sharing or publishing an item.
     %if trans.get_user().username is None or trans.get_user().username is "":

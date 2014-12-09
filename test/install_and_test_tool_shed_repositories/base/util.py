@@ -1058,6 +1058,10 @@ def remove_protocol_from_tool_shed_url( base_url ):
     return base_url
 
 def run_tests( test_config ):
+    ## TODO: replace whole method with...
+    # from base import nose_util
+    # result = nose_util.run( test_config, plugins=[ new ReportResults() ] )
+    # return result, test_config.plugins._plugins
     loader = nose.loader.TestLoader( config=test_config )
     test_config.plugins.addPlugin( ReportResults() )
     plug_loader = test_config.plugins.prepareTestLoader( loader )

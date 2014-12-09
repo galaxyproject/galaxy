@@ -23,7 +23,7 @@
             <div class="toolFormTitle">Create a new request type</div>
             %for rt_info in rt_info_widgets:
                 <div class="form-row">
-                    <label>${rt_info['label']}</label>
+                    <label>${rt_info['label'] | h}</label>
                     <div style="float: left; width: 250px; margin-right: 10px;">
                         ${rt_info['widget'].get_html()}
                     </div>

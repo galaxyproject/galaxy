@@ -407,27 +407,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
-    def edit_attributes( self, trans, id, **kwargs ):
-        # Get workflow and do error checking.
-        stored = self.get_stored_workflow( trans, id )
-        if not stored:
-            error( "You do not own this workflow or workflow ID is invalid." )
-        # Update workflow attributes if new values submitted.
-        if 'name' in kwargs:
-            # Rename workflow.
-            stored.name = sanitize_html( kwargs['name'] )
-        if 'annotation' in kwargs:
-            # Set workflow annotation; sanitize annotation before adding it.
-            annotation = sanitize_html( kwargs[ 'annotation' ], 'utf-8', 'text/html' )
-            self.add_item_annotation( trans.sa_session, trans.get_user(), stored, annotation )
-        trans.sa_session.flush()
-        return trans.fill_template( 'workflow/edit_attributes.mako',
-                                    stored=stored,
-                                    annotation=self.get_item_annotation_str( trans.sa_session, trans.user, stored )
-                                    )
-
-    @web.expose
-    @web.require_login( "use Galaxy workflows" )
     def rename( self, trans, id, new_name=None, **kwargs ):
         stored = self.get_stored_workflow( trans, id )
         if new_name is not None:

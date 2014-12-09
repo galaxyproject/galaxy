@@ -2216,7 +2216,7 @@ class Tool( object, Dictifiable ):
                         num_jobs=len( execution_tracker.successful_jobs ),
                         job_errors=execution_tracker.execution_errors,
                         jobs=execution_tracker.successful_jobs,
-                        implicit_collections=execution_tracker.created_collections,
+                        implicit_collections=execution_tracker.implicit_collections,
                     )
                 else:
                     template = 'message.mako'

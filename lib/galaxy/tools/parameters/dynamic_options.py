@@ -301,8 +301,11 @@ class AdditionalValueFilter( Filter ):
         add_value = []
         for i in range( self.dynamic_option.largest_index + 1 ):
             add_value.append( "" )
-        add_value[self.dynamic_option.columns['value']] = self.value
-        add_value[self.dynamic_option.columns['name']] = self.name
+        value_col = self.dynamic_option.columns.get( 'value', 0 )
+        name_col = self.dynamic_option.columns.get( 'name', value_col )
+        # Set name first, then value, in case they are the same column
+        add_value[ name_col ] = self.name
+        add_value[ value_col ] = self.value
         if self.index is not None:
             rval.insert( self.index, add_value )
         else:

@@ -125,6 +125,9 @@ return Backbone.Model.extend({
                             
                             // handle default value
                             if (!field.skip) {
+                                if (input.optional && field.validate && !field.validate()) {
+                                    value = null;
+                                }
                                 add (job_input_id, input.id, value);
                             }
                     }
@@ -234,7 +237,11 @@ return Backbone.Model.extend({
                 for (var i in head) {
                     var new_id = i;
                     if (id !== '') {
-                        new_id = id + '|' + new_id;
+                        var separator = '|';
+                        if (head instanceof Array) {
+                            separator = '_';
+                        }
+                        new_id = id + separator + new_id;
                     }
                     search (new_id, head[i]);
                 }
