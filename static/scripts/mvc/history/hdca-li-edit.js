@@ -1,7 +1,7 @@
 define([
     "mvc/dataset/states",
     "mvc/history/hdca-li",
-    "jq-plugins/ui/fa-icon-button",
+    "ui/fa-icon-button",
     "utils/localization"
 ], function( STATES, HDCA_LI, faIconButton, _l ){
 //==============================================================================

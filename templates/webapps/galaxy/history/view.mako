@@ -182,7 +182,7 @@ a.btn {
         'mvc/user/user-model',
         panelToUse.location,
         'utils/localization',
-        'jq-plugins/ui/mode-button'
+        'ui/mode-button'
     ], function( user, panelMod, _l ){
         $(function(){
             setUpBehaviors();

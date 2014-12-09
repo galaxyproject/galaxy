@@ -6,10 +6,10 @@ define([
     "mvc/history/hdca-li",
     "mvc/collection/collection-panel",
     "mvc/user/user-model",
-    "jq-plugins/ui/fa-icon-button",
+    "ui/fa-icon-button",
     "mvc/base-mvc",
     "utils/localization",
-    "jq-plugins/ui/search-input"
+    "ui/search-input"
 ], function(
     LIST_PANEL,
     HISTORY_MODEL,

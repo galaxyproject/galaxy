@@ -59,8 +59,7 @@
         'libs/backbone/backbone',
         'libs/handlebars.runtime',
         'galaxy.base',
-        'libs/require',
-        "mvc/ui"
+        'libs/require'
     )}
 
     <script type="text/javascript">

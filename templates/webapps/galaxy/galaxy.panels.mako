@@ -39,8 +39,7 @@
         'libs/d3',
         'galaxy.base',
         'galaxy.panels',
-        'libs/handlebars.runtime',
-        "mvc/ui"
+        'libs/handlebars.runtime'
     )}
     
     ## send errors to Sntry server if configured

@@ -3,8 +3,8 @@ define([
     "mvc/history/history-panel-edit",
     "mvc/base-mvc",
     "utils/ajax-queue",
-    "jq-plugins/ui/mode-button",
-    "jq-plugins/ui/search-input"
+    "ui/mode-button",
+    "ui/search-input"
 ], function( HISTORY_MODEL, HPANEL_EDIT, baseMVC, ajaxQueue ){
 window.HISTORY_MODEL = HISTORY_MODEL;
 //==============================================================================

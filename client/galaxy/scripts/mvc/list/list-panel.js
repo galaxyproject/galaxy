@@ -1,9 +1,9 @@
 define([
     "mvc/list/list-item",
-    "jq-plugins/ui/loading-indicator",
+    "ui/loading-indicator",
     "mvc/base-mvc",
     "utils/localization",
-    "jq-plugins/ui/search-input"
+    "ui/search-input"
 ], function( LIST_ITEM, LoadingIndicator, BASE_MVC, _l ){
 /* ============================================================================
 TODO:

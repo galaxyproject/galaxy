@@ -1,7 +1,7 @@
 define([
     "mvc/list/list-item",
     "mvc/dataset/states",
-    "jq-plugins/ui/fa-icon-button",
+    "ui/fa-icon-button",
     "mvc/base-mvc",
     "utils/localization"
 ], function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){

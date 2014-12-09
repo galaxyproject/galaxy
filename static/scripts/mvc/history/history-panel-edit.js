@@ -7,7 +7,7 @@ define([
     "mvc/history/hdca-li-edit",
     "mvc/tags",
     "mvc/annotations",
-    "jq-plugins/ui/fa-icon-button",
+    "ui/fa-icon-button",
     "mvc/ui/popup-menu",
     "utils/localization"
 ], function(
