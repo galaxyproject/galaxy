@@ -312,7 +312,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var requirements_button = new Ui.ButtonIcon({
                 icon    : 'fa-info-circle',
-                tooltip : 'Click to show/hide the tool requirements.',
+                tooltip : 'Display tool requirements',
                 onclick : function() {
                     if (!this.visible) {
                         this.visible = true;
@@ -337,7 +337,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             var versions_button = new Ui.ButtonMenu({
                 icon    : 'fa-cubes',
                 title   : 'Versions',
-                tooltip : 'Click to view available versions.'
+                tooltip : 'Select another tool version'
             });
             if (options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
@@ -362,7 +362,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-gear',
-                tooltip : 'Click to view a list of options.'
+                tooltip : 'View available options'
             });
             
             // configure button selection
