@@ -342,20 +342,23 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             if (options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
-                    versions_button.addMenu({
-                        title   : 'Switch to ' + options.versions[i],
-                        version : options.versions[i],
-                        icon    : 'fa-cube',
-                        onclick : function() {
-                            // here we update the tool version (some tools encode the version also in the id)
-                            options.id = options.id.replace(options.version, this.version);
-                            options.version = this.version;
-                            
-                            // rebuild the model and form
-                            self.deferred.reset();
-                            self.deferred.execute(function(){self._buildModel()});
-                        }
-                    });
+                    var version = options.versions[i];
+                    if (version != options.version) {
+                        versions_button.addMenu({
+                            title   : 'Switch to ' + version,
+                            version : version,
+                            icon    : 'fa-cube',
+                            onclick : function() {
+                                // here we update the tool version (some tools encode the version also in the id)
+                                options.id = options.id.replace(options.version, this.version);
+                                options.version = this.version;
+                                
+                                // rebuild the model and form
+                                self.deferred.reset();
+                                self.deferred.execute(function(){self._buildModel()});
+                            }
+                        });
+                    }
                 }
             } else {
                 versions_button.$el.hide();
