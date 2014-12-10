@@ -312,6 +312,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var requirements_button = new Ui.ButtonIcon({
                 icon    : 'fa-info-circle',
+                title   : 'Requirements',
                 tooltip : 'Display tool requirements',
                 onclick : function() {
                     if (!this.visible) {
@@ -342,12 +343,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             if (options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
                     versions_button.addMenu({
-                        title   : options.versions[i],
+                        title   : 'Switch to ' + options.versions[i],
+                        version : options.versions[i],
                         icon    : 'fa-cube',
                         onclick : function() {
                             // here we update the tool version (some tools encode the version also in the id)
-                            options.id = options.id.replace(options.version, this.title);
-                            options.version = this.title;
+                            options.id = options.id.replace(options.version, this.version);
+                            options.version = this.version;
                             
                             // rebuild the model and form
                             self.deferred.reset();
@@ -362,6 +364,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-gear',
+                title   : 'Options',
                 tooltip : 'View available options'
             });
             
