@@ -1,15 +1,10 @@
-from unittest import TestCase
-
 from galaxy import model
 from galaxy.util import bunch
-from galaxy.tools.parameters import basic
 
-from elementtree.ElementTree import XML
-
-import tools_support
+from .test_parameter_parsing import BaseParameterTestCase
 
 
-class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
+class DataToolParameterTestCase( BaseParameterTestCase ):
 
     def test_to_python_none_values( self ):
         assert None is self.param.to_python( None, self.app )
@@ -149,11 +144,7 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
         return hda
 
     def setUp( self ):
-        self.setup_app( mock_model=False )
-        self.mock_tool = bunch.Bunch(
-            app=self.app,
-            tool_type="default",
-        )
+        super(DataToolParameterTestCase, self).setUp()
         self.test_history = model.History()
         self.app.model.context.add( self.test_history )
         self.app.model.context.flush()
@@ -187,8 +178,8 @@ class DataToolParameterTestCase( TestCase, tools_support.UsesApp ):
             if self.optional:
                 optional_text = 'optional="True"'
             template_xml = '''<param name="data2" type="data" ext="txt" %s %s></param>'''
-            self.param_xml = XML( template_xml % ( multi_text, optional_text ) )
-            self._param = basic.DataToolParameter( self.mock_tool, self.param_xml )
+            param_str = template_xml % ( multi_text, optional_text )
+            self._param = self._parameter_for( tool=self.mock_tool, xml=param_str )
 
         return self._param
 
