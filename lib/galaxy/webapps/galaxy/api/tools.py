@@ -741,13 +741,23 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         for t in tools:
             tool_versions.append(t.version)
         
+        ## add information with underlying requirements and their versions
+        tool_requirements = []
+        if tool.requirements:
+            for requirement in tool.requirements:
+                tool_requirements.append({
+                    'name'      : requirement.name,
+                    'version'   : requirement.version
+                })
+
         # add additional properties
         tool_model.update({
             'help'          : tool_help,
             'citations'     : tool_citations,
             'biostar_url'   : trans.app.config.biostar_url,
             'message'       : tool_message,
-            'versions'      : tool_versions
+            'versions'      : tool_versions,
+            'requirements'  : tool_requirements
         })
 
         # check for errors

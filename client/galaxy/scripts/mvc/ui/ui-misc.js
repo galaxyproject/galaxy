@@ -278,11 +278,15 @@ var Message = Backbone.View.extend({
             this.$el.find('.alert').append(options.message);
             this.$el.fadeIn();
             
-            // check if message is persistent
+            // clear previous timeouts
+            if (this.timeout) {
+                window.clearTimeout(this.timeout);
+            }
+            
+            // set timeout if message is not persistent
             if (!options.persistent) {
-                // set timer
                 var self = this;
-                window.setTimeout(function() {
+                this.timeout = window.setTimeout(function() {
                     if (self.$el.is(':visible')) {
                         self.$el.fadeOut();
                     } else {

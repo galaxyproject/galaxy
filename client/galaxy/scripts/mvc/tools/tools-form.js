@@ -119,6 +119,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     // build form
                     self._buildForm();
                     
+                    // notification
+                    self.message.update({
+                        status      : 'success',
+                        message     : 'Now you are using using \'' + self.options.name + '\' version ' + self.options.version + '.',
+                        persistent  : false
+                    });
+                    
                     // process completed
                     self.deferred.done(process_id);
                     
@@ -282,11 +289,55 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // link model options
             var options = this.options;
             
+            // create message view
+            this.message = new Ui.Message();
+            
+            // construct tool requirements message content
+            var requirements_message = 'This tool requires ';
+            for (var i in options.requirements) {
+                var req = options.requirements[i];
+                requirements_message += req.name;
+                if (req.version) {
+                    requirements_message += ' (Version ' + req.version + ')';
+                }
+                if (i < options.requirements.length - 2) {
+                    requirements_message += ', ';
+                }
+                if (i == options.requirements.length - 2) {
+                    requirements_message += ' and ';
+                }
+            }
+            requirements_message += '.';
+            
+            // button for version selection
+            var requirements_button = new Ui.ButtonIcon({
+                icon    : 'fa-info-circle',
+                tooltip : 'Click to show/hide the tool requirements.',
+                onclick : function() {
+                    if (!this.visible) {
+                        this.visible = true;
+                        self.message.update({
+                            persistent  : true,
+                            message     : requirements_message,
+                            status      : 'warning'
+                        });
+                    } else {
+                        this.visible = false;
+                        self.message.update({
+                            message     : ''
+                        });
+                    }
+                }
+            });
+            if (!options.requirements || options.requirements.length == 0) {
+                requirements_button.$el.hide();
+            }
+            
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
                 icon    : 'fa-cubes',
                 title   : 'Versions',
-                tooltip : 'Click to see available versions.'
+                tooltip : 'Click to view available versions.'
             });
             if (options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
@@ -311,7 +362,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-gear',
-                tooltip : 'Click to see a list of options.'
+                tooltip : 'Click to view a list of options.'
             });
             
             // configure button selection
@@ -379,8 +430,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 title   : '<b>' + options.name + '</b> ' + options.description + ' (Version ' + options.version + ')',
                 cls     : 'ui-portlet-slim',
                 operations: {
-                    menu     : menu_button,
-                    versions : versions_button
+                    requirements    : requirements_button,
+                    menu            : menu_button,
+                    versions        : versions_button
                 },
                 buttons: {
                     execute : new Ui.Button({
@@ -417,20 +469,22 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
             
             // append message
-            if (options.message) {
-                var message = new Ui.Message({
-                    persistent  : true,
-                    status      : 'warning',
-                    message     : options.message
-                });
-                this.portlet.append(message.$el);
-            }
+            this.portlet.append(this.message.$el);
             
             // append tool section
             this.portlet.append(this.section.$el);
             
             // rebuild the underlying data structure
             this.rebuild();
+            
+            // show message if available in model
+            if (options.message) {
+                this.message.update({
+                    persistent  : true,
+                    status      : 'warning',
+                    message     : options.message
+                });
+            }
         }
     });
 
