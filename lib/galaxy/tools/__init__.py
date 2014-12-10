@@ -1410,10 +1410,8 @@ class Tool( object, Dictifiable ):
             self.version = "1.0.0"
         # Support multi-byte tools
         self.is_multi_byte = string_as_bool( root.get( "is_multi_byte", False ) )
-        # Force history to fully refresh after job execution for this tool.
-        # Useful i.e. when an indeterminate number of outputs are created by
-        # a tool.
-        self.force_history_refresh = string_as_bool( root.get( 'force_history_refresh', 'False' ) )
+        # Legacy feature, ignored by UI.
+        self.force_history_refresh = False
         self.display_interface = string_as_bool( root.get( 'display_interface', str( self.display_interface ) ) )
         self.require_login = string_as_bool( root.get( 'require_login', str( self.require_login ) ) )
         # Load input translator, used by datasource tools to change names/values of incoming parameters
