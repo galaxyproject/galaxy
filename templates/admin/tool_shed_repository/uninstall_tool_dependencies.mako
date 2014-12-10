@@ -43,10 +43,10 @@ ${render_galaxy_repository_actions( repository )}
                                 install_dir = "This dependency's installation directory does not exist, click <b>Uninstall</b> to reset for installation."
                         %>
                         <tr>
-                            <td>${tool_dependency.name}</td>
-                            <td>${tool_dependency.version}</td>
-                            <td>${tool_dependency.type}</td>
-                            <td>${install_dir}</td>
+                            <td>${tool_dependency.name|h}</td>
+                            <td>${tool_dependency.version|h}</td>
+                            <td>${tool_dependency.type|h}</td>
+                            <td>${install_dir|h}</td>
                         </tr>
                     %endfor
                 </table>

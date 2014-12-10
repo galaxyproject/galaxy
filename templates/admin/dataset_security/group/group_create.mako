@@ -11,9 +11,9 @@
 </%def>
 
 <%def name="render_select( name, options )">
-    <select name="${name}" id="${name}" style="min-width: 250px; height: 150px;" multiple>
+    <select name="${name|h}" id="${name|h}" style="min-width: 250px; height: 150px;" multiple>
         %for option in options:
-            <option value="${option[0]}">${option[1]}</option>
+            <option value="${option[0]|h}">${option[1]|h}</option>
         %endfor
     </select>
 </%def>
@@ -60,7 +60,7 @@ $().ready(function() {
         <form name="associate_group_role_user" id="associate_group_role_user" action="${h.url_for(controller='admin', action='create_group' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
-                <input  name="name" type="textfield" value="${name}" size=40"/>
+                <input  name="name" type="textfield" value="${name|h}" size=40"/>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">

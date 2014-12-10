@@ -53,18 +53,18 @@
                         <td>
                             %if link_to_manage_tool_dependencies:
                                 <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', tool_dependency_ids=ids_of_tool_dependencies_missing_or_being_installed )}">
-                                    ${tool_shed_repository.name}
+                                    ${tool_shed_repository.name|h}
                                 </a>
                             %else:
                                 <a class="view-info" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=encoded_repository_id )}">
-                                    ${tool_shed_repository.name}
+                                    ${tool_shed_repository.name|h}
                                 </a>
                             %endif
                         </td>
                         <td>${tool_shed_repository.description}</td>
                         <td>${tool_shed_repository.owner}</td>
                         <td>${tool_shed_repository.changeset_revision}</td>
-                        <td><div id="RepositoryStatus-${encoded_repository_id}">${tool_shed_repository.status}</div></td>
+                        <td><div id="RepositoryStatus-${encoded_repository_id}">${tool_shed_repository.status|h}</div></td>
                     </tr>
                 %endfor
             </table>

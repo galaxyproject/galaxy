@@ -23,33 +23,33 @@ ${render_galaxy_repository_actions( repository )}
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Browse tool dependency ${tool_dependency.name} installation directory</div>
+    <div class="toolFormTitle">Browse tool dependency ${tool_dependency.name|h} installation directory</div>
     <div class="toolFormBody">
         <div class="form-row" >
             <label>Tool shed repository:</label>
-            ${repository.name}
+            ${repository.name|h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row" >
             <label>Tool shed repository changeset revision:</label>
-            ${repository.changeset_revision}
+            ${repository.changeset_revision|h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row" >
             <label>Tool dependency status:</label>
-            ${tool_dependency.status}
+            ${tool_dependency.status|h}
             <div style="clear: both"></div>
         </div>
         %if tool_dependency.in_error_state:
             <div class="form-row" >
                 <label>Tool dependency installation error:</label>
-                ${tool_dependency.error_message}
+                ${tool_dependency.error_message|h}
                 <div style="clear: both"></div>
             </div>
         %endif
         <div class="form-row" >
             <label>Tool dependency installation directory:</label>
-            ${tool_dependency.installation_directory( trans.app )}
+            ${tool_dependency.installation_directory( trans.app )|h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row" >

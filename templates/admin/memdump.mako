@@ -55,7 +55,7 @@
     <br/>
 You are here: ${breadcrumb}<br/>
     %if breadcrumb.endswith( 'theone' ):
-        ${heap}
+        ${heap|h}
     %else:
     <nobr>
 Sort:

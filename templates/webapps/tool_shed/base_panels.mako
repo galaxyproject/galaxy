@@ -91,7 +91,8 @@
                 %>
 
                 ## User tabs.
-                <%  
+                <%
+                    from markupsafe import escape 
                     # Menu for user who is not logged in.
                     menu_options = [ [ _("Login"), h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
                     if app.config.allow_user_creation:
@@ -101,7 +102,7 @@
                     tab( "user", _("User"), None, visible=visible, menu_options=menu_options )
                     # Menu for user who is logged in.
                     if trans.user:
-                        email = trans.user.email
+                        email = escape( trans.user.email )
                     else:
                         email = ""
                     menu_options = [ [ '<a>Logged in as <span id="user-email">%s</span></a>' %  email ] ]
