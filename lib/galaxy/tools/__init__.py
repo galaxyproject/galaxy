@@ -1580,11 +1580,11 @@ class Tool( object, Dictifiable ):
             # template.
             if self.nginx_upload and self.app.config.nginx_upload_path:
                 if '?' in urllib.unquote_plus( self.action ):
-                    raise Exception( 'URL parameters in a non-default tool action can not be used ' \
-                                     'in conjunction with nginx upload.  Please convert them to ' \
+                    raise Exception( 'URL parameters in a non-default tool action can not be used '
+                                     'in conjunction with nginx upload.  Please convert them to '
                                      'hidden POST parameters' )
                 self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
-                        urllib.unquote_plus(self.action))
+                               urllib.unquote_plus(self.action))
             self.target = input_elem.get( "target", self.target )
             self.method = input_elem.get( "method", self.method )
             # Parse the actual parameters
