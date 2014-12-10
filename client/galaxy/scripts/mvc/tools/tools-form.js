@@ -469,7 +469,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
             
             // append message
-            this.portlet.append(this.message.$el);
+            this.portlet.append(this.message.$el, true);
             
             // append tool section
             this.portlet.append(this.section.$el);
