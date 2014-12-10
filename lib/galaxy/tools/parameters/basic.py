@@ -837,13 +837,14 @@ class SelectToolParameter( ToolParameter ):
                         value = value.split()
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, context )
+        assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
         if isinstance( value, list ):
             if not(self.repeat):
-                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+                assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
             rval = []
             for v in value:
                 if v not in legal_values:
-                    raise ValueError( "An invalid option was selected, please verify" )
+                    raise ValueError( "An invalid option was selected for %s, %r, please verify" % (self.name, v))
                 rval.append( v )
             return rval
         else:
@@ -853,9 +854,9 @@ class SelectToolParameter( ToolParameter ):
                     if self.optional:
                         return []
                     else:
-                        raise ValueError( "No option was selected but input is not optional." )
+                        raise ValueError( "No option was selected for %s but input is not optional." % self.name)
             if value not in legal_values:
-                raise ValueError( "An invalid option was selected, please verify" )
+                raise ValueError( "An invalid option was selected for %s, %r, please verify" % (self.name, value))
             return value
 
     def to_html_value( self, value, app ):
@@ -869,7 +870,7 @@ class SelectToolParameter( ToolParameter ):
             return "None"
         if isinstance( value, list ):
             if not( self.repeat ):
-                assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+                assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
             value = map( str, value )
         else:
             value = str( value )
@@ -1522,10 +1523,13 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         if not isinstance( value, list ):
             value = [value]
         if not( self.repeat ) and len( value ) > 1:
-            assert self.multiple, "Multiple values provided but parameter is not expecting multiple values"
+            assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
         rval = []
+        legal_values = self.get_legal_values( trans, other_values )
+        assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
         for val in value:
-            if val not in self.get_legal_values( trans, other_values ): raise ValueError( "An invalid option was selected, please verify" )
+            if val not in legal_values:
+                raise ValueError( "An invalid option was selected for %s, %r, please verify" % (self.name, val))
             rval.append( val )
         return rval
 
