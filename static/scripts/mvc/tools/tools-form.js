@@ -48,21 +48,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // add to main element
             $(this.container).append(this.$el);
             
-            // creates a tree/json structure from the input form
-            this.tree = new ToolTree(this);
-            
-            // creates the job handler
-            this.job_handler = new ToolJobs(this);
-
-            // request history content and build form
-            this.content = new ToolContent(this);
-            
             // build this form
-            this._buildForm(options);
+            this._buildForm();
         },
         
-        // message
-        message: function($el) {
+        // reciept shows the final message usually upon successful job submission
+        reciept: function($el) {
             $(this.container).empty();
             $(this.container).append($el);
         },
@@ -105,6 +96,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 if (this.options.dataset_id) {
                     model_url += 'dataset_id=' + this.options.dataset_id;
                 } else {
+                    model_url += 'tool_version=' + this.options.version + '&';
                     var loc = top.location.href;
                     var pos = loc.indexOf('?');
                     if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
@@ -112,27 +104,47 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     }
                 }
             }
-        
+            
+            // register process
+            var process_id = this.deferred.register();
+            
             // get initial model
             Utils.request({
                 type    : 'GET',
                 url     : model_url,
                 success : function(response) {
                     // link model data update options
-                    self.options    = $.extend(self.options, response);
-                    self.model      = response;
-                    self.inputs     = response.inputs;
+                    self.options = response;
+                    
+                    // build form
+                    self._buildForm();
+                    
+                    // process completed
+                    self.deferred.done(process_id);
                     
                     // log success
                     console.debug('tools-form::initialize() - Initial tool model ready.');
                     console.debug(response);
-
-                    // build form
-                    self._buildForm();
                 },
                 error   : function(response) {
+                    // process completed
+                    self.deferred.done(process_id);
+                    
+                    // log error
                     console.debug('tools-form::initialize() - Initial tool model request failed.');
                     console.debug(response);
+                    
+                    // show error
+                    var error_message = response.error || 'Uncaught error.';
+                    self.modal.show({
+                        title   : 'Tool cannot be executed',
+                        body    : error_message,
+                        buttons : {
+                            'Close' : function() {
+                                self.modal.hide();
+                            }
+                        }
+                    });
                 }
             });
         },
@@ -175,10 +187,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // register process
             var process_id = this.deferred.register();
 
+            // build model url for request
+            var model_url = galaxy_config.root + 'api/tools/' + this.options.id + '/build?tool_version=' + this.options.version;
+            
             // post job
             Utils.request({
                 type    : 'GET',
-                url     : galaxy_config.root + 'api/tools/' + this.options.id + '/build',
+                url     : model_url,
                 data    : current_state,
                 success : function(response) {
                     // rebuild form
@@ -219,23 +234,18 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         var field = self.field_list[input_id];
                         if (field.update) {
                             var new_options = [];
-                            switch (input.type) {
-                                case 'data':
-                                    new_options = input.options;
-                                    break;
-                                case 'drill_down':
-                                    new_options = input.options;
-                                    break;
-                                default:
-                                    for (var i in node.options) {
-                                        var opt = node.options[i];
-                                        if (opt.length > 2) {
-                                            new_options.push({
-                                                'label': opt[0],
-                                                'value': opt[1]
-                                            });
-                                        }
+                            if ((['data', 'data_collection', 'drill_down']).indexOf(input.type) != -1) {
+                                new_options = input.options;
+                            } else {
+                                for (var i in node.options) {
+                                    var opt = node.options[i];
+                                    if (opt.length > 2) {
+                                        new_options.push({
+                                            'label': opt[0],
+                                            'value': opt[1]
+                                        });
                                     }
+                                }
                             }
                             field.update(new_options);
                             field.trigger('change');
@@ -247,7 +257,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         },
         
         // builds the tool form
-        _buildForm: function(options) {
+        _buildForm: function() {
             // link this
             var self = this;
             
@@ -260,12 +270,46 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // reset input element list, which contains the dom elements of each input element (includes also the input field)
             this.element_list = {};
             
-            // for now the initial tool model is parsed through the mako
-            this.model  = options;
-            this.inputs = options.inputs;
+            // creates a tree/json data structure from the input form
+            this.tree = new ToolTree(this);
+            
+            // creates the job handler
+            this.job_handler = new ToolJobs(this);
+
+            // request history content and build form
+            this.content = new ToolContent(this);
+            
+            // link model options
+            var options = this.options;
+            
+            // button for version selection
+            var versions_button = new Ui.ButtonMenu({
+                icon    : 'fa-cubes',
+                title   : 'Versions',
+                tooltip : 'Click to see available versions.'
+            });
+            if (options.versions && options.versions.length > 1) {
+                for (var i in options.versions) {
+                    versions_button.addMenu({
+                        title   : options.versions[i],
+                        icon    : 'fa-cube',
+                        onclick : function() {
+                            // here we update the tool version (some tools encode the version also in the id)
+                            options.id = options.id.replace(options.version, this.title);
+                            options.version = this.title;
+                            
+                            // rebuild the model and form
+                            self.deferred.reset();
+                            self.deferred.execute(function(){self._buildModel()});
+                        }
+                    });
+                }
+            } else {
+                versions_button.$el.hide();
+            }
             
             // button menu
-            var menu = new Ui.ButtonMenu({
+            var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-gear',
                 tooltip : 'Click to see a list of options.'
             });
@@ -273,52 +317,52 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // configure button selection
             if(options.biostar_url) {
                 // add question option
-                menu.addMenu({
+                menu_button.addMenu({
                     icon    : 'fa-question-circle',
                     title   : 'Question?',
                     tooltip : 'Ask a question about this tool (Biostar)',
                     onclick : function() {
-                        window.open(self.options.biostar_url + '/p/new/post/');
+                        window.open(options.biostar_url + '/p/new/post/');
                     }
                 });
                 
                 // create search button
-                menu.addMenu({
+                menu_button.addMenu({
                     icon    : 'fa-search',
                     title   : 'Search',
                     tooltip : 'Search help for this tool (Biostar)',
                     onclick : function() {
-                        window.open(self.options.biostar_url + '/t/' + self.options.id + '/');
+                        window.open(options.biostar_url + '/t/' + options.id + '/');
                     }
                 });
             };
             
             // create share button
-            menu.addMenu({
+            menu_button.addMenu({
                 icon    : 'fa-share',
                 title   : 'Share',
                 tooltip : 'Share this tool',
                 onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + galaxy_config.root + 'root?tool_id=' + self.options.id);
+                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + galaxy_config.root + 'root?tool_id=' + options.id);
                 }
             });
             
             // add admin operations
             if (this.is_admin) {
                 // create download button
-                menu.addMenu({
+                menu_button.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
                     tooltip : 'Download this tool',
                     onclick : function() {
-                        window.location.href = galaxy_config.root + 'api/tools/' + self.options.id + '/download';
+                        window.location.href = galaxy_config.root + 'api/tools/' + options.id + '/download';
                     }
                 });
             }
             
             // create tool form section
             this.section = new ToolSection.View(self, {
-                inputs : this.inputs,
+                inputs : options.inputs,
                 cls    : 'ui-table-plain'
             });
             
@@ -332,15 +376,16 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // create portlet
             this.portlet = new Portlet.View({
                 icon    : 'fa-wrench',
-                title   : '<b>' + this.model.name + '</b> ' + this.model.description,
+                title   : '<b>' + options.name + '</b> ' + options.description + ' (Version ' + options.version + ')',
                 cls     : 'ui-portlet-slim',
                 operations: {
-                    menu    : menu
+                    menu     : menu_button,
+                    versions : versions_button
                 },
                 buttons: {
                     execute : new Ui.Button({
                         icon     : 'fa-check',
-                        tooltip  : 'Execute: ' + self.model.name,
+                        tooltip  : 'Execute: ' + options.name,
                         title    : 'Execute',
                         cls      : 'btn btn-primary',
                         floating : 'clear',
@@ -369,6 +414,16 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 citation_list_view.render();
                 citations.fetch();
                 this.$el.append($citations);
+            }
+            
+            // append message
+            if (options.message) {
+                var message = new Ui.Message({
+                    persistent  : true,
+                    status      : 'warning',
+                    message     : options.message
+                });
+                this.portlet.append(message.$el);
             }
             
             // append tool section

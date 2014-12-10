@@ -79,7 +79,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         GET /api/tools/{tool_id}/build
         Returns a tool model including dynamic parameters and updated values, repeats block etc.
         """
-        tool = self._get_tool( id )
+        tool_id = urllib.unquote_plus( id )
+        tool_version = kwd.get( 'tool_version', None )
+        tool = self.app.toolbox.get_tool( tool_id, tool_version )
+        if not tool:
+            trans.response.status = 500
+            return { 'error': 'Could not find tool with id \'%s\'' % tool_id }
         return self._build_dict(trans, tool, kwd)
     
     @_future_expose_api
@@ -128,7 +133,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         # -- Execute tool. --
 
         # Get tool.
-        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] ) if 'tool_id' in payload else None
+        tool_version = payload.get( 'tool_version', None )
+        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] , tool_version ) if 'tool_id' in payload else None
         if not tool:
             trans.response.status = 404
             return { "message": { "type": "error", "text" : trans.app.model.Dataset.conversion_messages.NO_TOOL } }
@@ -219,9 +225,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
     #
     # -- Helper methods --
     #
-    def _get_tool( self, id ):
+    def _get_tool( self, id, tool_version=None ):
         id = urllib.unquote_plus( id )
-        tool = self.app.toolbox.get_tool( id )
+        tool = self.app.toolbox.get_tool( id, tool_version )
         if not tool:
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
         return tool
@@ -728,50 +734,58 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         tool_citations = False
         if tool.citations:
             tool_citations = True
-
+    
+        # get tool versions
+        tool_versions = []
+        tools = self.app.toolbox.get_loaded_tools_by_lineage(tool.id)
+        for t in tools:
+            tool_versions.append(t.version)
+        
         # add additional properties
         tool_model.update({
             'help'          : tool_help,
             'citations'     : tool_citations,
             'biostar_url'   : trans.app.config.biostar_url,
-            'message'       : tool_message
+            'message'       : tool_message,
+            'versions'      : tool_versions
         })
-        
+
+        # check for errors
+        if 'error' in tool_message:
+            return tool_message
+
         # return enriched tool model
         return tool_model
 
-    def _get_tool_components( self, trans, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
-        return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
-
     def _compare_tool_version( self, trans, tool, job ):
         """
-        Compares a tool version with the tool version from a job (from ToolRunne.
+        Compares a tool version with the tool version from a job (from ToolRunner).
         """
-        id = job.tool_id
-        version = job.tool_version
+        tool_id = job.tool_id
+        tool_version = job.tool_version
         message = ''
         try:
-            select_field, tools, tool = self._get_tool_components( trans, id, tool_version=version, get_loaded_tools_by_lineage=False, set_selected=True )
+            select_field, tools, tool = self.app.toolbox.get_tool_components( tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True )
             if tool is None:
                 trans.response.status = 500
-                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % id }
-            if ( tool.id != id and tool.old_id != id ) or tool.version != version:
-                if tool.id == id:
-                    if version == None:
+                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id }
+            if ( tool.id != tool_id and tool.old_id != tool_id ) or tool.version != tool_version:
+                if tool.id == tool_id:
+                    if tool_version == None:
                         # for some reason jobs don't always keep track of the tool version.
                         message = ''
                     else:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % version
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
                         if len( tools ) > 1:
                             message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
                         else:
                             message += 'You can re-run the job with this tool version, which is a derivation of the original tool.'
                 else:
                     if len( tools ) > 1:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % version
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
                         message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
                     else:
-                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( id, version )
+                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( tool_id, tool_version )
                         message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
         except Exception, error:
             trans.response.status = 500

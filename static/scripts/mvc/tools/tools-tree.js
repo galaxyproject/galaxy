@@ -8,7 +8,6 @@ define([], function() {
 return Backbone.Model.extend({
     // initialize
     initialize: function(app) {
-        // link app
         this.app = app;
     },
     

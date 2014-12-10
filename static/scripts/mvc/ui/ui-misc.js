@@ -248,9 +248,9 @@ var Anchor = Backbone.View.extend({
 var Message = Backbone.View.extend({
     // options
     optionsDefault: {
-        message : '',
-        status : 'info',
-        persistent : false
+        message     : null,
+        status      : 'info',
+        persistent  : false
     },
     
     // initialize
@@ -260,6 +260,11 @@ var Message = Backbone.View.extend({
         
         // create new element
         this.setElement('<div></div>');
+        
+        // show initial message
+        if (this.options.message) {
+            this.update(this.options);
+        }
     },
     
     // update

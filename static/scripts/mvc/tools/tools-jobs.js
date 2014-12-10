@@ -4,12 +4,8 @@
 define(['utils/utils', 'mvc/tools/tools-template'], function(Utils, ToolTemplate) {
 return Backbone.Model.extend({
     // initialize
-    initialize: function(app, options) {
-        // link app
+    initialize: function(app) {
         this.app = app;
-        
-        // link options
-        this.options = Utils.merge(options, this.optionsDefault);
     },
     
     /** Creates and submits a job request to the api
@@ -20,8 +16,9 @@ return Backbone.Model.extend({
         
         // create job definition for submission to tools api
         var job_def = {
-            tool_id : this.app.options.id,
-            inputs  : this.app.tree.finalize()
+            tool_id         : this.app.options.id,
+            tool_version    : this.app.options.version,
+            inputs          : this.app.tree.finalize()
         }
         
         // reset
@@ -46,7 +43,7 @@ return Backbone.Model.extend({
             data    : job_def,
             success : function(response) {
                 self.app.modal.hide();
-                self.app.message(ToolTemplate.success(response));
+                self.app.reciept(ToolTemplate.success(response));
                 self._refreshHdas();
             },
             error   : function(response, response_full) {

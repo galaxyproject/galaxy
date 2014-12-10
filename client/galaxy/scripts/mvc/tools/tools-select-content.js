@@ -38,7 +38,7 @@ var View = Backbone.View.extend({
         // error messages
         var extensions = options.extensions.toString();
         if (extensions) {
-            extensions = extensions.replace(',', ', ');
+            extensions = extensions.replace(/,/g, ', ');
             var pos = extensions.lastIndexOf(', ');
             if (pos != -1) {
                 extensions = extensions.substr(0, pos) + ' or ' + extensions.substr(pos+1);
@@ -50,7 +50,7 @@ var View = Backbone.View.extend({
         }
         var hdca_error = 'No dataset list available.';
         if (extensions) {
-            hdca_error = 'No ' + extensions + ' dataset list available.';
+            hdca_error = 'No ' + extensions + ' dataset collection available.';
         }
         
         // add single dataset selector
@@ -86,7 +86,7 @@ var View = Backbone.View.extend({
         
         // add collection selector
         if (this.mode == 'single' || this.mode == 'collection') {
-            radio_buttons.push({icon: 'fa-folder-o', label : 'List of datasets',  value : 'collection' });
+            radio_buttons.push({icon: 'fa-folder-o', label : 'Dataset collection',  value : 'collection' });
             this.select_collection = new Ui.Select.View({
                 error_text  : hdca_error,
                 onchange    : function() {
