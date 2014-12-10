@@ -11,7 +11,6 @@ from galaxy.security.validate_user_input import validate_publicname
 from galaxy.web.base.controller import BaseAPIController, UsesTagsMixin
 from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.base.controller import CreatesUsersMixin
-from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
@@ -39,10 +38,10 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             query = query.filter( trans.app.model.User.table.c.deleted == False )  # noqa
             # special case: user can see only their own user
             if not trans.user_is_admin():
-                item = trans.user.to_dict( value_mapper={ 'id': trans.security.encode_id, 'email': escape } )
+                item = trans.user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
                 return [item]
         for user in query:
-            item = user.to_dict( value_mapper={ 'id': trans.security.encode_id, 'email': escape } )
+            item = user.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             # TODO: move into api_values
             rval.append( item )
         return rval
@@ -79,9 +78,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             else:
                 raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                            'total_disk_usage': float,
-                                                            'email': escape,
-                                                            'username': escape } )
+                                                            'total_disk_usage': float } )
         # add a list of tags used by the user (as strings)
         item[ 'tags_used' ] = self.get_user_tags_used( trans, user=user )
         # TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
