@@ -122,7 +122,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     // notification
                     self.message.update({
                         status      : 'success',
-                        message     : 'Now you are using using \'' + self.options.name + '\' version ' + self.options.version + '.',
+                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
                     });
                     
