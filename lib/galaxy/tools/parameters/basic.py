@@ -1417,12 +1417,12 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         def recurse_option_elems( cur_options, option_elems ):
             for option_elem in option_elems:
                 selected = string_as_bool( option_elem.get( 'selected', False ) )
-                cur_options.append( { 'name':option_elem.get( 'name' ), 'value': option_elem.get( 'value'), 'options':[], 'selected':selected  } )
+                cur_options.append( { 'name': option_elem.get( 'name' ), 'value': option_elem.get( 'value' ), 'options': [], 'selected': selected  } )
                 recurse_option_elems( cur_options[-1]['options'], option_elem.findall( 'option' ) )
         ToolParameter.__init__( self, tool, elem )
         self.multiple = string_as_bool( elem.get( 'multiple', False ) )
         self.display = elem.get( 'display', None )
-        self.hierarchy = elem.get( 'hierarchy', 'exact' ) #exact or recurse
+        self.hierarchy = elem.get( 'hierarchy', 'exact' )  # exact or recurse
         self.separator = elem.get( 'separator', ',' )
         from_file = elem.get( 'from_file', None )
         if from_file:
@@ -1430,7 +1430,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 from_file = os.path.join( tool.app.config.tool_data_path, from_file )
             elem = XML( "<root>%s</root>" % open( from_file ).read() )
         self.is_dynamic = False
-        self.dynamic_options = elem.get( 'dynamic_options' , None )
+        self.dynamic_options = elem.get( 'dynamic_options', None )
         if self.dynamic_options:
             self.is_dynamic = True
         self.options = []
@@ -1509,17 +1509,18 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 return form_builder.TextArea( self.name, value=value )
             else:
                 return form_builder.TextField( self.name, value=(value or "") )
-        return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, self.get_options( trans, value, other_values ), value, refresh_on_change_values = self.refresh_on_change_values )
+        return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, self.get_options( trans, value, other_values ), value, refresh_on_change_values=self.refresh_on_change_values )
 
     def from_html( self, value, trans=None, other_values={} ):
         if self.need_late_validation( trans, other_values ):
             if self.multiple:
-                if value == '': #No option selected
+                if value == '':  # No option selected
                     value = None
                 else:
                     value = value.split( "\n" )
             return UnvalidatedValue( value )
-        if not value: return None
+        if not value:
+            return None
         if not isinstance( value, list ):
             value = [value]
         if not( self.repeat ) and len( value ) > 1:
@@ -1540,8 +1541,10 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     if value == option['value']:
                         return option
                     rval = get_base_option( value, option['options'] )
-                    if rval: return rval
-                return None #not found
+                    if rval:
+                        return rval
+                return None  # not found
+
             def recurse_option( option_list, option ):
                 if not option['options']:
                     option_list.append( option['value'] )
@@ -1931,7 +1934,7 @@ class DataToolParameter( BaseDataToolParameter ):
         if value in [None, "None"]:
             return None
         if isinstance( value, str ) and value.find( "," ) > 0:
-            value = [ int( value_part ) for value_part in  value.split( "," ) ]
+            value = [ int( value_part ) for value_part in value.split( "," ) ]
         if isinstance( value, list ):
             rval = []
             for single_value in value:
@@ -2367,6 +2370,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
         # return final dictionary
         return d
+
 
 class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
     """
