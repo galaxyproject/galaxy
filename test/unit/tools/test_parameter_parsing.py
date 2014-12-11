@@ -177,9 +177,11 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
                 <option value="b" selected="true">B</option>
             </param>
         """)
+        assert param.display is None
         assert param.multiple is True
         assert param.name == "selectp"
         assert param.type == "select"
+        assert param.separator == ","
 
         assert param.options is None
         assert param.dynamic_options is None
@@ -196,7 +198,7 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_select_dynamic(self):
         param = self._parameter_for(xml="""
-            <param name="selectp" type="select" dynamic_options="cow">
+            <param name="selectp" type="select" dynamic_options="cow" display="checkboxes" separator="moo">
             </param>
         """)
         assert param.multiple is False
@@ -205,6 +207,9 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         ## This should be None or something - not undefined.
         # assert not param.static_options
         assert param.is_dynamic
+
+        assert param.display == "checkboxes"
+        assert param.separator == "moo"
 
     def test_select_options_from(self):
         param = self._parameter_for(xml="""
@@ -229,8 +234,79 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         assert param.name == "genomep"
         assert param.static_options
 
-    # Column and Data have sufficient test coverage in
-    # other modules.
+    def test_column_params(self):
+        param = self._parameter_for(xml="""
+            <param name="col1" type="data_column" data_ref="input1">
+            </param>
+        """)
+        assert param.data_ref == "input1"
+        assert param.usecolnames is False
+        assert param.force_select is True
+        assert param.numerical is False
+
+        param = self._parameter_for(xml="""
+            <param name="col1" type="data_column" data_ref="input1" use_header_names="true" numerical="true" force_select="false">
+            </param>
+        """)
+        assert param.data_ref == "input1"
+        assert param.usecolnames is True
+        assert param.force_select is False
+        assert param.numerical is True
+
+    def test_data_param_no_validation(self):
+        param = self._parameter_for(xml="""
+            <param name="input" type="data">
+            </param>
+        """)
+        assert len(param.validators) == 1
+        param = self._parameter_for(xml="""
+            <param name="input" type="data" no_validation="true">
+            </param>
+        """)
+        assert len(param.validators) == 0
+
+    def test_data_param_dynamic_options(self):
+        param = self._parameter_for(xml="""
+            <param name="input" type="data" />
+        """)
+        assert param.options is None
+        assert param.options_filter_attribute is None
+
+        param = self._parameter_for(xml="""
+            <param name="input" type="data">
+                <options from_data_table="cow">
+                </options>
+            </param>
+        """)
+        assert param.options is not None
+        assert param.options_filter_attribute is None
+
+        param = self._parameter_for(xml="""
+            <param name="input" type="data">
+                <options from_data_table="cow" options_filter_attribute="cow">
+                </options>
+            </param>
+        """)
+        assert param.options is not None
+        assert param.options_filter_attribute == "cow"
+
+    def test_conversions(self):
+        param = self._parameter_for(xml="""
+            <param name="input" type="data" />
+        """)
+        assert param.conversions == []
+
+        param = self._parameter_for(xml="""
+            <param name="input" type="data">
+                <conversion name="foo" type="txt" />
+                <conversion name="foo2" type="bam" />
+            </param>
+        """)
+        assert param.conversions[0][0] == "foo"
+        assert param.conversions[0][1] == "txt"
+        assert param.conversions[1][0] == "foo2"
+        assert param.conversions[1][1] == "bam"
+
     def test_drilldown(self):
         param = self._parameter_for(xml="""
             <param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
