@@ -2171,7 +2171,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
 
     def _history_query( self, trans ):
         dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
-        return history_query.HistoryQuery.from_parameter_elem( self.elem, dataset_collection_type_descriptions )
+        return history_query.HistoryQuery.from_parameter( self, dataset_collection_type_descriptions )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         # dropped refresh values, may be needed..
