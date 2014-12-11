@@ -28,9 +28,10 @@ from galaxy.web.base.controller import CreatesUsersMixin
 from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.form_builder import build_select_field
-from galaxy.web.framework.helpers import time_ago, grids, escape
+from galaxy.web.framework.helpers import time_ago, grids
 from datetime import datetime, timedelta
 from galaxy.util import hash_util, biostar
+from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
@@ -254,7 +255,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         email = kwd.get( 'email', '' )
         username = kwd.get( 'username', '' )
@@ -502,7 +503,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """
         Function validates numerous cases that might happen during the login time.
         """
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'error' )
         email = kwd.get( 'email', '' )
         password = kwd.get( 'password', '' )
@@ -719,7 +720,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         email = util.restore_text( kwd.get( 'email', '' ) )
         password = kwd.get( 'password', '' )
         username = util.restore_text( kwd.get( 'username', '' ) )
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         user = self.create_user( trans=trans, email=email, username=username, password=password )
@@ -1093,7 +1094,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     def reset_password( self, trans, email=None, **kwd ):
         if trans.app.config.smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact your local Galaxy administrator." )
-        message = util.sanitize_text(util.restore_text( kwd.get( 'message', '' ) ))
+        message = util.sanitize_text( util.restore_text( kwd.get( 'message', '' ) ) )
         status = kwd.get( 'status', 'done' )
         if kwd.get( 'reset_password_button', False ):
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()

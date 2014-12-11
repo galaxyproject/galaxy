@@ -5,8 +5,9 @@ import galaxy.util
 
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.framework.helpers import escape, grids, time_ago
+from galaxy.web.framework.helpers import grids, time_ago
 from library_common import get_comptypes, lucene_search, whoosh_search
+from markupsafe import escape
 # from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
@@ -148,7 +149,7 @@ class LibraryAdmin( BaseUIController ):
     @web.expose
     @web.require_admin
     def create_library( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         if kwd.get( 'create_library_button', False ):
             name = kwd.get( 'name', 'No name' )

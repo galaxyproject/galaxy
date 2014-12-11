@@ -9,6 +9,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.datatypes import checkers
 from galaxy.web.base.controller import BaseUIController
+from markupsafe import escape
 
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.galaxy_install import dependency_display
@@ -34,9 +35,9 @@ class UploadController( BaseUIController ):
     @web.expose
     @web.require_login( 'upload', use_panels=True )
     def upload( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        commit_message = kwd.get( 'commit_message', 'Uploaded'  )
+        commit_message = escape( kwd.get( 'commit_message', 'Uploaded'  ) )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
         categories = suc.get_categories( trans.app )
         repository_id = kwd.get( 'repository_id', '' )

@@ -20,7 +20,7 @@ from galaxy.util.json import dumps, loads
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
-from galaxy.web.framework.helpers import escape
+from markupsafe import escape
 from galaxy.model.orm import and_, eagerload_all
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
@@ -93,7 +93,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
 
     @web.expose
     def browse_library( self, trans, cntrller='library', **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         # If use_panels is True, the library is being accessed via an external link
         # which did not originate from within the Galaxy instance, and the library will
@@ -121,7 +121,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             hidden_folder_ids = util.listify( kwd.get( 'hidden_folder_ids', '' ) )
             if created_ldda_ids and not message:
                 message = "%d datasets are uploading in the background to the library '%s' (each is selected).  "  % \
-                    ( len( created_ldda_ids.split( ',' ) ), library.name )
+                    ( len( created_ldda_ids.split( ',' ) ), escape( library.name ) )
                 message += "Don't navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the "
                 message += "message \"This job is running\" is cleared from the \"Information\" column below for each selected dataset."
                 status = "info"
@@ -152,7 +152,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                 message=escape( message ),
                                                 status=escape( status ) )
             except Exception, e:
-                message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
+                message = 'Error attempting to display contents of library (%s): %s.' % ( escape( str( library.name ) ), str( e ) )
                 status = 'error'
         default_action = kwd.get( 'default_action', None )
 
@@ -164,7 +164,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           status=status ) )
     @web.expose
     def library_info( self, trans, cntrller, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
@@ -223,7 +223,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def library_permissions( self, trans, cntrller, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
@@ -269,7 +269,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def create_folder( self, trans, cntrller, parent_id, library_id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -345,7 +345,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def folder_info( self, trans, cntrller, id, library_id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -401,7 +401,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def folder_permissions( self, trans, cntrller, id, library_id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -450,7 +450,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def ldda_edit_info( self, trans, cntrller, library_id, folder_id, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -505,7 +505,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             old_name = ldda.name
             new_name = kwd.get( 'name', '' )
             new_info = kwd.get( 'info', '' )
-            new_message = kwd.get( 'message', '' )
+            new_message = escape( kwd.get( 'message', ''  ) )
             if not new_name:
                 message = 'Enter a valid name'
                 status = 'error'
@@ -602,7 +602,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def ldda_info( self, trans, cntrller, library_id, folder_id, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         show_associated_hdas_and_lddas = util.string_as_bool( kwd.get( 'show_associated_hdas_and_lddas', False ) )
@@ -650,7 +650,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def ldda_permissions( self, trans, cntrller, library_id, folder_id, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -787,9 +787,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def upload_library_dataset( self, trans, cntrller, library_id, folder_id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        ldda_message = kwd.get( 'ldda_message', '' )
+        ldda_message = escape( kwd.get( 'ldda_message', '' ) )
         deleted = util.string_as_bool( kwd.get( 'deleted', False ) )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -1046,7 +1046,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 dataset_upload_inputs.append( input )
         # Library-specific params
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         server_dir = kwd.get( 'server_dir', '' )
         if replace_dataset not in [ None, 'None' ]:
@@ -1256,9 +1256,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
 
     @web.expose
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        ldda_message = kwd.get( 'ldda_message', '' )
+        ldda_message = escape( kwd.get( 'ldda_message', '' ) )
         show_deleted = kwd.get( 'show_deleted', False )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         replace_id = kwd.get( 'replace_id', None )
@@ -1547,7 +1547,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           status='error' ) )
     @web.expose
     def library_dataset_info( self, trans, cntrller, id, library_id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -1595,7 +1595,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def library_dataset_permissions( self, trans, cntrller, id, library_id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -1642,7 +1642,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     status=escape( status ) )
     @web.expose
     def make_library_item_public( self, trans, cntrller, library_id, item_type, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -1703,7 +1703,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     rval += '%s %i %s%s %s\r\n' % ( crc, size, self.url_base, quoted_fname, relpath )
                 return rval
         # Perform an action on a list of library datasets.
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -1979,7 +1979,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         # - a select list option for acting on multiple selected datasets within a library
         #   ( ldda_ids is a comma separated string of ldda ids )
         # - a menu option for a library dataset search result set ( ldda_ids is a comma separated string of ldda ids )
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -2102,7 +2102,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     def manage_template_inheritance( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
         current_user_roles = trans.get_current_user_roles()
@@ -2152,7 +2152,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         #   'ldda' and item_id is a comma separated string of ldda ids )
         # - a menu option for a library dataset search result set ( item_type is 'ldda' and item_id is a
         #   comma separated string of ldda ids )
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -2723,7 +2723,7 @@ def sort_by_attr( seq, attr ):
     return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
 def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     """Return display of results from a full-text lucene search of data libraries."""
-    message = kwd.get( 'message', ''  )
+    message = escape( kwd.get( 'message', '' ) )
     status = kwd.get( 'status', 'done' )
     full_url = "%s/find?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
     response = urllib2.urlopen( full_url )
@@ -2733,7 +2733,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
 def whoosh_search( trans, cntrller, search_term, **kwd ):
     """Return display of results from a full-text whoosh search of data libraries."""
-    message = kwd.get( 'message', ''  )
+    message = escape( kwd.get( 'message', '' ) )
     status = kwd.get( 'status', 'done' )
     ok = True
     if whoosh_search_enabled:
