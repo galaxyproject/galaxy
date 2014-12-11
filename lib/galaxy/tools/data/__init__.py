@@ -211,11 +211,11 @@ class ToolDataTable( object ):
                 self.add_entry( entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
         return self._loaded_content_version
 
-    def _remove_entry(self, values, **kwd):
+    def _remove_entry(self, values):
         raise NotImplementedError( "Abstract method" )
 
-    def remove_entry(self, values, **kwd):
-        self._remove_entry_and_reload( values,**kwd )
+    def remove_entry(self, values):
+        self._remove_entry( values )
         return self._update_version()
 
     def is_current_version( self, other_version ):
@@ -513,7 +513,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 data_table_fh.write( "%s\n" % ( self.separator.join( fields ) ) )
         return not is_error
 
-    def _remove_entry_and_reload( self, values):
+    def _remove_entry( self, values):
 
         # update every file
         for filename in self.filenames:

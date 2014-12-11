@@ -26,10 +26,10 @@ class ToolData( BaseAPIController ):
     def delete( self, trans, id, **kwd ):
         """
         DELETE /api/tool_data/{id}
-        Removes a role from a group
+        Removes an item from a data table
 
         :type   id:     str
-        :param  id:     the encoded id of the history to delete
+        :param  id:     the id of the data table containing the item to delete
         :type   kwd:    dict
         :param  kwd:    (required) dictionary structure containing:
 
