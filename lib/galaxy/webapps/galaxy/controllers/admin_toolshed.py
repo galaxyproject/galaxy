@@ -53,7 +53,7 @@ class AdminToolshed( AdminGalaxy ):
         try:
             trans.app.installed_repository_manager.activate_repository( repository )
         except Exception, e:
-            error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
+            error_message = "Error activating repository %s: %s" % ( escape( repository.name ), str( e ) )
             log.exception( error_message )
             message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
                 % ( error_message, web.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) ) )
@@ -63,7 +63,7 @@ class AdminToolshed( AdminGalaxy ):
                                                               id=repository_id,
                                                               message=message,
                                                               status=status ) )
-        message = 'The <b>%s</b> repository has been activated.' % repository.name
+        message = 'The <b>%s</b> repository has been activated.' % escape( repository.name )
         status = 'done'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='browse_repositories',
@@ -142,7 +142,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                               action='reselect_tool_panel_section',
                                                                               **kwd ) )
                     else:
-                        message = "Unable to get latest revision for repository <b>%s</b> from " % str( repository.name )
+                        message = "Unable to get latest revision for repository <b>%s</b> from " % escape( str( repository.name ) )
                         message += "the Tool Shed, so repository re-installation is not possible at this time."
                         status = "error"
                         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -304,14 +304,14 @@ class AdminToolshed( AdminGalaxy ):
             trans.install_model.context.add( tool_shed_repository )
             trans.install_model.context.flush()
             if remove_from_disk_checked:
-                message = 'The repository named <b>%s</b> has been uninstalled.  ' % tool_shed_repository.name
+                message = 'The repository named <b>%s</b> has been uninstalled.  ' % escape( tool_shed_repository.name )
                 if errors:
                     message += 'Attempting to uninstall tool dependencies resulted in errors: %s' % errors
                     status = 'error'
                 else:
                     status = 'done'
             else:
-                message = 'The repository named <b>%s</b> has been deactivated.  ' % tool_shed_repository.name
+                message = 'The repository named <b>%s</b> has been deactivated.  ' % escape( tool_shed_repository.name )
                 status = 'done'
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='browse_repositories',
@@ -454,7 +454,7 @@ class AdminToolshed( AdminGalaxy ):
                     workflow_name = encoding_util.tool_shed_encode( str( workflow.name ) )
                 else:
                     message += 'Unable to locate a workflow named <b>%s</b> within the installed tool shed repository named <b>%s</b>' % \
-                        ( str( workflow_name ), str( repository.name ) )
+                        ( escape( str( workflow_name ) ), escape( str( repository.name ) ) )
                     status = 'error'
             else:
                 message = 'Invalid repository id <b>%s</b> received.' % str( repository_id )
@@ -610,7 +610,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          relative_install_dir,
                                                                                          set_status=False )
                 message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % \
-                    ( str( repository.name ), updating_to_changeset_revision )
+                    ( escape( str( repository.name ) ), updating_to_changeset_revision )
                 self.initiate_tool_dependency_installation( trans, tool_dependencies, message=message, status=status )
         # Handle tool dependencies check box.
         if trans.app.config.tool_dependency_dir is None:
@@ -903,7 +903,7 @@ class AdminToolshed( AdminGalaxy ):
             # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
             # tool dependency, but they didn't check any of the available tool dependencies on which to perform the action.
             tool_shed_repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
-        self.tool_dependency_grid.title = "Tool shed repository '%s' tool dependencies"  % tool_shed_repository.name
+        self.tool_dependency_grid.title = "Tool shed repository '%s' tool dependencies"  % escape( tool_shed_repository.name )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if not tool_dependency_ids:
@@ -1031,7 +1031,7 @@ class AdminToolshed( AdminGalaxy ):
                     # The Tool Shed cannot handle the get_repository_id request, so the code must be older than the
                     # 04/2014 Galaxy release when it was introduced.  It will be safest to error out and let the
                     # Tool Shed admin update the Tool Shed to a later release.
-                    message = 'The updates available for the repository <b>%s</b> ' % str( repository.name )
+                    message = 'The updates available for the repository <b>%s</b> ' % escape( str( repository.name ) )
                     message += 'include newly defined repository or tool dependency definitions, and attempting '
                     message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
                     message += 'administrator if necessary.<br/>%s' % str( e )
@@ -1649,12 +1649,12 @@ class AdminToolshed( AdminGalaxy ):
             no_changes_check_box = CheckboxField( 'no_changes', checked=True )
             if original_section_name:
                 message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
-                    % ( tool_shed_repository.name, original_section_name )
+                    % ( escape( tool_shed_repository.name ), original_section_name )
                 message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
                 message += "different section in the tool panel.  "
                 status = 'warning'
             else:
-                message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % tool_shed_repository.name
+                message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % escape( tool_shed_repository.name )
                 message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section.  "
                 status = 'warning'
         else:
@@ -1750,13 +1750,13 @@ class AdminToolshed( AdminGalaxy ):
                 irmm.update_in_shed_tool_config()
                 trans.install_model.context.add( repository )
                 trans.install_model.context.flush()
-                message = 'Metadata has been reset on repository <b>%s</b>.' % repository.name
+                message = 'Metadata has been reset on repository <b>%s</b>.' % escape( repository.name )
                 status = 'done'
             else:
-                message = 'Metadata did not need to be reset on repository <b>%s</b>.' % repository.name
+                message = 'Metadata did not need to be reset on repository <b>%s</b>.' % escape( repository.name )
                 status = 'done'
         else:
-            message = 'Error locating installation directory for repository <b>%s</b>.' % repository.name
+            message = 'Error locating installation directory for repository <b>%s</b>.' % escape( repository.name )
             status = 'error'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='manage_repository',
@@ -1778,7 +1778,7 @@ class AdminToolshed( AdminGalaxy ):
                                            uninstalled=False,
                                            remove_from_disk=True )
             new_kwd = {}
-            new_kwd[ 'message' ] = "You can now attempt to install the repository named <b>%s</b> again." % str( repository.name )
+            new_kwd[ 'message' ] = "You can now attempt to install the repository named <b>%s</b> again." % escape( str( repository.name ) )
             new_kwd[ 'status' ] = "done"
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='browse_repositories',
@@ -1809,7 +1809,7 @@ class AdminToolshed( AdminGalaxy ):
             message = "Tool versions have been set for all included tools."
             status = 'done'
         else:
-            message = "Version information for the tools included in the <b>%s</b> repository is missing.  " % repository.name
+            message = "Version information for the tools included in the <b>%s</b> repository is missing.  " % escape( repository.name )
             message += "Reset all of this reppository's metadata in the tool shed, then set the installed tool versions "
             message ++ "from the installed repository's <b>Repository Actions</b> menu.  "
             status = 'error'
@@ -2084,7 +2084,7 @@ class AdminToolshed( AdminGalaxy ):
                 if ok:
                     success_count += 1
                 else:
-                    repository_names_not_updated.append( '<b>%s</b>' % str( repository.name ) )
+                    repository_names_not_updated.append( '<b>%s</b>' % escape( str( repository.name ) ) )
                 if updated:
                     updated_count += 1
             message = "Checked the status in the tool shed for %d repositories.  " % success_count
@@ -2099,11 +2099,11 @@ class AdminToolshed( AdminGalaxy ):
                 repository_util.check_or_update_tool_shed_status_for_installed_repository( trans.app, repository )
             if ok:
                 if updated:
-                    message = "The tool shed status for repository <b>%s</b> has been updated." % str( repository.name )
+                    message = "The tool shed status for repository <b>%s</b> has been updated." % escape( str( repository.name ) )
                 else:
-                    message = "The status has not changed in the tool shed for repository <b>%s</b>." % str( repository.name )
+                    message = "The status has not changed in the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
             else:
-                message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % str( repository.name )
+                message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
                 status = 'error'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='browse_repositories',
