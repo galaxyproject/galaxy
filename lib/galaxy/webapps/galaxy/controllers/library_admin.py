@@ -162,12 +162,12 @@ class LibraryAdmin( BaseUIController ):
             library.root_folder = root_folder
             trans.sa_session.add_all( ( library, root_folder ) )
             trans.sa_session.flush()
-            message = "The new library named '%s' has been created" % library.name
+            message = "The new library named '%s' has been created"
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller='library_admin',
                                                               id=trans.security.encode_id( library.id ),
-                                                              message=message,
+                                                              message=escape( message ),
                                                               status='done' ) )
         return trans.fill_template( '/admin/library/new_library.mako', message=escape( message ), status=escape( status ) )
     @web.expose
