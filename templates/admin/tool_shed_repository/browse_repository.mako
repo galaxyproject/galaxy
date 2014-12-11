@@ -21,7 +21,7 @@ ${render_galaxy_repository_actions( repository )}
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Browse ${repository.name} revision ${repository.changeset_revision} files</div>
+    <div class="toolFormTitle">Browse ${repository.name|h} revision ${repository.changeset_revision} files</div>
     <div class="toolFormBody">
         <div class="form-row" >
             <label>Contents:</label>

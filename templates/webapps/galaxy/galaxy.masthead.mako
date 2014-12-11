@@ -3,6 +3,7 @@
 ## masthead head generator
 <%def name="load(active_view = None)">
     <%
+        from markupsafe import escape
         ## get configuration
         masthead_config = {
             ## inject configuration
@@ -32,7 +33,7 @@
             ## user details
             'user'          : {
                 'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),
-                'email'     : trans.user.email if (trans.user) else "",
+                'email'     : escape( trans.user.email ) if (trans.user) else "",
                 'valid'     : bool(trans.user != None),
                 'json'      : get_user_dict()
             }

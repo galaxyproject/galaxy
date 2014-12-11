@@ -4,7 +4,9 @@
 %if message:
     ${render_msg( message, status )}
 %endif
-
+<%
+from markupsafe import escape
+%>
 <div class="toolForm">
     <div class="toolFormTitle">Tool migrations that can be performed on this Galaxy instance</div>
     <div class="toolFormBody">
@@ -51,7 +53,7 @@
                         repository_names.sort()
                         repository_names = ', '.join( repository_names )
                 %>
-                <tr><td bgcolor="#D8D8D8"><b>Tool migration stage ${stage} - repositories: ${repository_names}</b></td></tr>
+                <tr><td bgcolor="#D8D8D8"><b>Tool migration stage ${stage} - repositories: ${repository_names|h}</b></td></tr>
                 <tr>
                     <td bgcolor="#FFFFCC">
                         <div class="form-row">
@@ -59,11 +61,11 @@
                             <p>
                                 %if tool_dependencies:
                                     This migration stage includes tools that have tool dependencies that can be automatically installed.  To install them, run:<br/>
-                                    <b>${install_dependencies}</b><br/><br/>
+                                    <b>${install_dependencies|h}</b><br/><br/>
                                     To skip tool dependency installation run:<br/>
-                                    <b>${migration_command}</b>
+                                    <b>${migration_command|h}</b>
                                 %else:
-                                    <b>${migration_command}</b>
+                                    <b>${migration_command|h}</b>
                                 %endif
                             </p>
                         </div>
@@ -74,7 +76,7 @@
                     <tr>
                         <td bgcolor="#DADFEF">
                             <div class="form-row">
-                                <b>Repository:</b> ${repository_name}
+                                <b>Repository:</b> ${repository_name|h}
                             </div>
                         </td>
                     </tr>
@@ -88,10 +90,10 @@
                         </tr>
                         %for tool_dependencies_tup in tool_dependencies:
                             <%
-                                tool_dependency_name = tool_dependencies_tup[0]
-                                tool_dependency_version = tool_dependencies_tup[1]
-                                tool_dependency_type = tool_dependencies_tup[2]
-                                installation_requirements = tool_dependencies_tup[3].replace( '\n', '<br/>' )
+                                tool_dependency_name = escape( tool_dependencies_tup[0] )
+                                tool_dependency_version = escape( tool_dependencies_tup[1] )
+                                tool_dependency_type = escape( tool_dependencies_tup[2] )
+                                installation_requirements = escape( tool_dependencies_tup[3] ).replace( '\n', '<br/>' )
                             %>
                             <tr>
                                 <td>

@@ -11,9 +11,9 @@
 </%def>
 
 <%def name="render_select( name, options )">
-    <select name="${name}" id="${name}" style="min-width: 250px; height: 150px;" multiple>
+    <select name="${name|h}" id="${name|h}" style="min-width: 250px; height: 150px;" multiple>
         %for option in options:
-            <option value="${option[0]}">${option[1]}</option>
+            <option value="${option[0]|h}">${option[1]|h}</option>
         %endfor
     </select>
 </%def>
@@ -48,29 +48,29 @@ $().ready(function() {
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Role '${role.name}'</div>
+    <div class="toolFormTitle">Role '${role.name|h}'</div>
     <div class="toolFormBody">
         <form name="associate_role_user_group" id="associate_role_user_group" action="${h.url_for(controller='admin', action='manage_users_and_groups_for_role', id=trans.security.encode_id( role.id ) )}" method="post" >
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    <label>Users associated with '${role.name}'</label>
+                    <label>Users associated with '${role.name|h}'</label>
                     ${render_select( "in_users", in_users )}<br/>
                     <input type="submit" id="users_remove_button" value=">>"/>
                 </div>
                 <div>
-                    <label>Users not associated with '${role.name}'</label>
+                    <label>Users not associated with '${role.name|h}'</label>
                     ${render_select( "out_users", out_users )}<br/>
                     <input type="submit" id="users_add_button" value="<<"/>
                 </div>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    <label>Groups associated with '${role.name}'</label>
+                    <label>Groups associated with '${role.name|h}'</label>
                     ${render_select( "in_groups", in_groups )}<br/>
                     <input type="submit" id="groups_remove_button" value=">>"/>
                 </div>
                 <div>
-                    <label>Groups not associated with '${role.name}'</label>
+                    <label>Groups not associated with '${role.name|h}'</label>
                     ${render_select( "out_groups", out_groups )}<br/>
                     <input type="submit" id="groups_add_button" value="<<"/>
                 </div>
@@ -84,7 +84,7 @@ $().ready(function() {
 <br clear="left"/>
 <br/>
 %if len( library_dataset_actions ) > 0:
-    <h3>Data library datasets associated with role '${role.name}'</h3>
+    <h3>Data library datasets associated with role '${role.name|h}'</h3>
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr>
             <td>
@@ -92,16 +92,16 @@ $().ready(function() {
                     %for ctr, library, in enumerate( library_dataset_actions.keys() ):
                         <li>
                             <img src="${h.url_for( '/static/images/silk/book_open.png' )}" class="rowIcon"/>
-                            ${library.name}
+                            ${library.name|h}
                             <ul>
                                 %for folder_path, permissions in library_dataset_actions[ library ].items():
                                     <li>
                                         <img src="/static/images/silk/folder_page.png" class="rowIcon"/>
-                                        ${folder_path}
+                                        ${folder_path|h}
                                         <ul>
                                             % for permission in permissions:
                                                 <ul>
-                                                    <li>${permission}</li>
+                                                    <li>${permission|h}</li>
                                                 </ul>
                                             %endfor
                                         </ul>

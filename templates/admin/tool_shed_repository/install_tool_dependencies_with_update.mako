@@ -20,12 +20,12 @@ ${render_galaxy_repository_actions( repository )}
 <div class="toolForm">
     <div class="toolFormBody">
         <form name="install_tool_dependencies_with_update" id="install_tool_dependencies_with_update" action="${h.url_for( controller='admin_toolshed', action='install_tool_dependencies_with_update' )}" method="post" >
-            <input type="hidden" name="updating_repository_id" value="${updating_repository_id}"/>
-            <input type="hidden" name="updating_to_ctx_rev" value="${updating_to_ctx_rev}"/>
-            <input type="hidden" name="updating_to_changeset_revision" value="${updating_to_changeset_revision}"/>
-            <input type="hidden" name="encoded_updated_metadata" value="${encoded_updated_metadata}"/>
-            <input type="hidden" name="encoded_relative_install_dir" value="${encoded_relative_install_dir}"/>
-            <input type="hidden" name="encoded_tool_dependencies_dict" value="${encoded_tool_dependencies_dict}"/>
+            <input type="hidden" name="updating_repository_id" value="${updating_repository_id|h}"/>
+            <input type="hidden" name="updating_to_ctx_rev" value="${updating_to_ctx_rev|h}"/>
+            <input type="hidden" name="updating_to_changeset_revision" value="${updating_to_changeset_revision|h}"/>
+            <input type="hidden" name="encoded_updated_metadata" value="${encoded_updated_metadata|h}"/>
+            <input type="hidden" name="encoded_relative_install_dir" value="${encoded_relative_install_dir|h}"/>
+            <input type="hidden" name="encoded_tool_dependencies_dict" value="${encoded_tool_dependencies_dict|h}"/>
             %if tool_dependencies_dict:
                 %if install_tool_dependencies_check_box is not None:
                     <div class="form-row">
@@ -71,12 +71,12 @@ ${render_galaxy_repository_actions( repository )}
                             %>
                             %if not os.path.exists( install_dir ):
                                 <tr>
-                                    <td>${key_name}</td>
-                                    <td>${key_version}</td>
-                                    <td>${install_dir}</td>
+                                    <td>${key_name|h}</td>
+                                    <td>${key_version|h}</td>
+                                    <td>${install_dir|h}</td>
                                 </tr>
                                 %if readme_text:
-                                    <tr><td colspan="4" bgcolor="#FFFFCC">${key_name} ${key_version} requirements and installation information</td></tr>
+                                    <tr><td colspan="4" bgcolor="#FFFFCC">${key_name|h} ${key_version|h} requirements and installation information</td></tr>
                                     <tr><td colspan="4"><pre>${readme_text}</pre></td></tr>
                                 %endif
                             %endif

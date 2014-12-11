@@ -17,7 +17,7 @@
 
 <%def name="render_workflow( workflow_name, repository_id )">
     <% center_url = h.url_for( controller='admin_toolshed', action='generate_workflow_image', workflow_name=tool_shed_encode( workflow_name ), repository_id=repository_id ) %>
-    <iframe name="workflow_image" id="workflow_image" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
+    <iframe name="workflow_image" id="workflow_image" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url|h}"> </iframe>
 </%def>
 
 ${render_galaxy_repository_actions( repository )}

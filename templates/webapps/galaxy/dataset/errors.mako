@@ -95,7 +95,7 @@
                     <input type="hidden" name="id" value="${trans.security.encode_id( hda.id)}" />
                     <div class="form-row">
                         <label>Your email</label>
-                        <input type="text" name="email" size="40" value="${user_email}" />
+                        <input type="text" name="email" size="40" value="${user_email|h}" />
                     </div>
                     <div class="form-row">
                         <label>Message</label>

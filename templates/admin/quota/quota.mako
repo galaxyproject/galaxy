@@ -11,9 +11,9 @@
 </%def>
 
 <%def name="render_select( name, options )">
-    <select name="${name}" id="${name}" style="min-width: 250px; height: 150px;" multiple>
+    <select name="${name|h}" id="${name|h}" style="min-width: 250px; height: 150px;" multiple>
         %for option in options:
-            <option value="${option[0]}">${option[1]}</option>
+            <option value="${option[0]|h}">${option[1]|h}</option>
         %endfor
     </select>
 </%def>
@@ -48,29 +48,29 @@ $().ready(function() {
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Quota '${name}'</div>
+    <div class="toolFormTitle">Quota '${name|h}'</div>
     <div class="toolFormBody">
         <form name="associate_quota_user_group" id="associate_quota_user_group" action="${h.url_for(controller='admin', action='manage_users_and_groups_for_quota', id=id )}" method="post" >
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    <label>Users associated with '${name}'</label>
+                    <label>Users associated with '${name|h}'</label>
                     ${render_select( "in_users", in_users )}<br/>
                     <input type="submit" id="users_remove_button" value=">>"/>
                 </div>
                 <div>
-                    <label>Users not associated with '${name}'</label>
+                    <label>Users not associated with '${name|h}'</label>
                     ${render_select( "out_users", out_users )}<br/>
                     <input type="submit" id="users_add_button" value="<<"/>
                 </div>
             </div>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
-                    <label>Groups associated with '${name}'</label>
+                    <label>Groups associated with '${name|h}'</label>
                     ${render_select( "in_groups", in_groups )}<br/>
                     <input type="submit" id="groups_remove_button" value=">>"/>
                 </div>
                 <div>
-                    <label>Groups not associated with '${name}'</label>
+                    <label>Groups not associated with '${name|h}'</label>
                     ${render_select( "out_groups", out_groups )}<br/>
                     <input type="submit" id="groups_add_button" value="<<"/>
                 </div>
