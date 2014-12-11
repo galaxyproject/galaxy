@@ -149,8 +149,8 @@ class DatasetMatcherTestCase( TestCase, tools_support.UsesApp ):
                 option_xml = '''<options><filter type="data_meta" ref="data1" key="dbkey" /></options>'''
             param_xml = XML( '''<param name="data2" type="data" ext="txt">%s</param>''' % option_xml )
             self.param = basic.DataToolParameter(
-                tool=self.tool,
-                elem=param_xml,
+                self.tool,
+                param_xml,
             )
 
             self._test_context = dataset_matcher.DatasetMatcher(

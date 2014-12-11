@@ -1,7 +1,7 @@
 import os
 import re
 from StringIO import StringIO
-from galaxy.tools import test
+from galaxy.tools import TestCollectionDef
 from galaxy import eggs
 eggs.require( "requests" )
 from galaxy import util
@@ -194,7 +194,7 @@ class GalaxyInteractorApi( object ):
             values = [value] if not isinstance(value, list) else value
             new_values = []
             for value in values:
-                if isinstance( value, test.TestCollectionDef ):
+                if isinstance( value, TestCollectionDef ):
                     hdca_id = self._create_collection( history_id, value )
                     new_values = [ dict( src="hdca", id=hdca_id ) ]
                 elif value in self.uploads:
@@ -232,7 +232,7 @@ class GalaxyInteractorApi( object ):
     def _element_identifiers( self, collection_def ):
         element_identifiers = []
         for ( element_identifier, element ) in collection_def.elements:
-            if isinstance( element, test.TestCollectionDef ):
+            if isinstance( element, TestCollectionDef ):
                 subelement_identifiers = self._element_identifiers( element )
                 element = dict(
                     name=element_identifier,

@@ -186,6 +186,10 @@ def dataset_collectors_from_elem( elem ):
         return map( lambda elem: DatasetCollector( **elem.attrib ), primary_dataset_elems )
 
 
+def dataset_collectors_from_list( discover_datasets_dicts ):
+    return map( lambda kwds: DatasetCollector( **kwds ), discover_datasets_dicts )
+
+
 class DatasetCollector( object ):
 
     def __init__( self, **kwargs ):

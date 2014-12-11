@@ -45,6 +45,12 @@ class ContainerDescription( object ):
         return ContainerDescription( identifier=identifier, type=type )
 
 
+def parse_requirements_from_dict( root_dict ):
+    requirements = root_dict.get("requirements", [])
+    containers = root_dict.get("containers", [])
+    return map(ToolRequirement.from_dict, requirements), map(ContainerDescription.from_dict, containers)
+
+
 def parse_requirements_from_xml( xml_root ):
     """
 

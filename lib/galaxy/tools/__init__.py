@@ -44,7 +44,6 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import build_dependency_manager
-from galaxy.tools.deps.requirements import parse_requirements_from_xml
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -56,7 +55,9 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
 from galaxy.tools.filters import FilterFactory
-from galaxy.tools.test import parse_tests_elem
+from galaxy.tools.test import parse_tests
+from galaxy.tools.parser import get_tool_source
+from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
@@ -742,21 +743,23 @@ class ToolBox( object, Dictifiable ):
     def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
-        tree = load_tool( config_file )
-        root = tree.getroot()
+        tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
         # Allow specifying a different tool subclass to instantiate
-        if root.find( "type" ) is not None:
-            type_elem = root.find( "type" )
-            module = type_elem.get( 'module', 'galaxy.tools' )
-            cls = type_elem.get( 'class' )
+        tool_module = tool_source.parse_tool_module()
+        if tool_module is not None:
+            module, cls = tool_module
             mod = __import__( module, globals(), locals(), [cls] )
             ToolClass = getattr( mod, cls )
-        elif root.get( 'tool_type', None ) is not None:
-            ToolClass = tool_types.get( root.get( 'tool_type' ) )
+        elif tool_source.parse_tool_type():
+            tool_type = tool_source.parse_tool_type()
+            ToolClass = tool_types.get( tool_type )
         else:
             # Normal tool - only insert dynamic resource parameters for these
             # tools.
-            if hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
+            root = getattr( tool_source, "root", None )
+            # TODO: mucking with the XML directly like this is terrible,
+            # modify inputs directly post load if possible.
+            if root and hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
                 tool_id = root.get( 'id' ) if root else None
                 parameters = self.app.job_config.get_tool_resource_parameters( tool_id )
                 if parameters:
@@ -773,7 +776,7 @@ class ToolBox( object, Dictifiable ):
                     inputs.append( conditional_element )
 
             ToolClass = Tool
-        tool = ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
+        tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
         tool_id = tool.id
         if not tool_id.startswith("__"):
             # do not monitor special tools written to tmp directory - no reason
@@ -1238,7 +1241,7 @@ class Tool( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
     default_template = 'tool_form.mako'
 
-    def __init__( self, config_file, root, app, guid=None, repository_id=None ):
+    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None ):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
@@ -1282,7 +1285,7 @@ class Tool( object, Dictifiable ):
         #populate toolshed repository info, if available
         self.populate_tool_shed_info()
         # Parse XML element containing configuration
-        self.parse( root, guid=guid )
+        self.parse( tool_source, guid=guid )
         self.external_runJob_script = app.config.drmaa_external_runjob_script
 
     @property
@@ -1388,47 +1391,55 @@ class Tool( object, Dictifiable ):
                                     return section_id, section_name
         return None, None
 
-    def parse( self, root, guid=None ):
+    def parse( self, tool_source, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
         # Get the (user visible) name of the tool
-        self.name = root.get( "name" )
+        self.name = tool_source.parse_name()
         if not self.name:
             raise Exception( "Missing tool 'name'" )
         # Get the UNIQUE id for the tool
-        self.old_id = root.get( "id" )
+        self.old_id = tool_source.parse_id()
         if guid is None:
             self.id = self.old_id
         else:
             self.id = guid
         if not self.id:
             raise Exception( "Missing tool 'id'" )
-        self.version = root.get( "version" )
+        self.version = tool_source.parse_version()
         if not self.version:
             # For backward compatibility, some tools may not have versions yet.
             self.version = "1.0.0"
+
         # Support multi-byte tools
-        self.is_multi_byte = string_as_bool( root.get( "is_multi_byte", False ) )
+        self.is_multi_byte = tool_source.parse_is_multi_byte()
         # Legacy feature, ignored by UI.
         self.force_history_refresh = False
-        self.display_interface = string_as_bool( root.get( 'display_interface', str( self.display_interface ) ) )
-        self.require_login = string_as_bool( root.get( 'require_login', str( self.require_login ) ) )
-        # Load input translator, used by datasource tools to change names/values of incoming parameters
-        self.input_translator = root.find( "request_param_translation" )
-        if self.input_translator:
-            self.input_translator = ToolInputTranslator.from_element( self.input_translator )
+
+        self.display_interface = tool_source.parse_display_interface( default=self.display_interface )
+
+        self.require_login = tool_source.parse_require_login( self.require_login )
+
+        request_param_translation_elem = tool_source.parse_request_param_translation_elem()
+        if request_param_translation_elem is not None:
+            # Load input translator, used by datasource tools to change names/values of incoming parameters
+            self.input_translator = ToolInputTranslator.from_element( request_param_translation_elem )
+        else:
+            self.input_translator = None
+
         # Command line (template). Optional for tools that do not invoke a local program
-        command = root.find("command")
-        if command is not None and command.text is not None:
-            self.command = command.text.lstrip()  # get rid of leading whitespace
+        command = tool_source.parse_command()
+        if command is not None:
+            self.command = command.lstrip()  # get rid of leading whitespace
             # Must pre-pend this AFTER processing the cheetah command template
-            self.interpreter = command.get( "interpreter", None )
+            self.interpreter = tool_source.parse_interpreter()
         else:
             self.command = ''
             self.interpreter = None
+
         # Parameters used to build URL for redirection to external app
-        redirect_url_params = root.find( "redirect_url_params" )
+        redirect_url_params = tool_source.parse_redirect_url_params_elem()
         if redirect_url_params is not None and redirect_url_params.text is not None:
             # get rid of leading / trailing white space
             redirect_url_params = redirect_url_params.text.strip()
@@ -1437,25 +1448,26 @@ class Tool( object, Dictifiable ):
             self.redirect_url_params = redirect_url_params.replace( ' ', '**^**' )
         else:
             self.redirect_url_params = ''
+
         # Short description of the tool
-        self.description = xml_text(root, "description")
+        self.description = tool_source.parse_description()
+
         # Versioning for tools
         self.version_string_cmd = None
-        version_cmd = root.find("version_command")
-        if version_cmd is not None:
-            self.version_string_cmd = version_cmd.text.strip()
-            version_cmd_interpreter = version_cmd.get( "interpreter", None )
+        version_command = tool_source.parse_version_command()
+        if version_command is not None:
+            self.version_string_cmd = version_command.strip()
+
+            version_cmd_interpreter = tool_source.parse_version_command_interpreter()
             if version_cmd_interpreter:
                 executable = self.version_string_cmd.split()[0]
                 abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
                 command_line = self.version_string_cmd.replace(executable, abs_executable, 1)
                 self.version_string_cmd = version_cmd_interpreter + " " + command_line
+
         # Parallelism for tasks, read from tool config.
-        parallelism = root.find("parallelism")
-        if parallelism is not None and parallelism.get("method"):
-            self.parallelism = ParallelismInfo(parallelism)
-        else:
-            self.parallelism = None
+        self.parallelism = tool_source.parse_parallelism()
+
         # Get JobToolConfiguration(s) valid for this particular Tool.  At least
         # a 'default' will be provided that uses the 'default' handler and
         # 'default' destination.  I thought about moving this to the
@@ -1468,15 +1480,65 @@ class Tool( object, Dictifiable ):
         # In the toolshed context, there is no job config.
         if 'job_config' in dir(self.app):
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
+
         # Is this a 'hidden' tool (hidden in tool menu)
-        self.hidden = xml_text(root, "hidden")
-        if self.hidden:
-            self.hidden = string_as_bool(self.hidden)
+        self.hidden = tool_source.parse_hidden()
+
+        self.__parse_legacy_features(tool_source)
+
+        # Load any tool specific options (optional)
+        self.options = dict( sanitize=True, refresh=False )
+        self.__update_options_dict( tool_source )
+        self.options = Bunch(** self.options)
+
+        # Parse tool inputs (if there are any required)
+        self.parse_inputs( tool_source )
+
+        # Parse tool help
+        self.parse_help( tool_source )
+
+        # Description of outputs produced by an invocation of the tool
+        self.parse_outputs( tool_source )
+
+        # Parse result handling for tool exit codes and stdout/stderr messages:
+        self.parse_stdio( tool_source )
+        # Any extra generated config files for the tool
+        self.__parse_config_files(tool_source)
+        # Action
+        action = tool_source.parse_action_module()
+        if action is None:
+            self.tool_action = self.default_tool_action()
+        else:
+            module, cls = action
+            mod = __import__( module, globals(), locals(), [cls])
+            self.tool_action = getattr( mod, cls )()
+        # Tests
+        self.__parse_tests(tool_source)
+
+        # Requirements (dependencies)
+        requirements, containers = tool_source.parse_requirements_and_containers()
+        self.requirements = requirements
+        self.containers = containers
+
+        self.citations = self._parse_citations( tool_source )
+
+        # Determine if this tool can be used in workflows
+        self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
+        self.__parse_trackster_conf( tool_source )
+
+    def __parse_legacy_features(self, tool_source):
+        self.code_namespace = dict()
+        self.hook_map = {}
+        self.uihints = {}
+
+        if not hasattr(tool_source, 'root'):
+            return
+
+        # TODO: Move following logic into XmlToolSource.
+        root = tool_source.root
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        self.code_namespace = dict()
-        self.hook_map = {}
         for code_elem in root.findall("code"):
             for hook_elem in code_elem.findall("hook"):
                 for key, value in hook_elem.items():
@@ -1485,25 +1547,36 @@ class Tool( object, Dictifiable ):
             file_name = code_elem.get("file")
             code_path = os.path.join( self.tool_dir, file_name )
             execfile( code_path, self.code_namespace )
-        # Load any tool specific options (optional)
-        self.options = dict( sanitize=True, refresh=False )
+
+        # User interface hints
+        uihints_elem = root.find( "uihints" )
+        if uihints_elem is not None:
+            for key, value in uihints_elem.attrib.iteritems():
+                self.uihints[ key ] = value
+
+    def __update_options_dict(self, tool_source):
+        # TODO: Move following logic into ToolSource abstraction.
+        if not hasattr(tool_source, 'root'):
+            return
+
+        root = tool_source.root
         for option_elem in root.findall("options"):
             for option, value in self.options.copy().items():
                 if isinstance(value, type(False)):
                     self.options[option] = string_as_bool(option_elem.get(option, str(value)))
                 else:
                     self.options[option] = option_elem.get(option, str(value))
-        self.options = Bunch(** self.options)
-        # Parse tool inputs (if there are any required)
-        self.parse_inputs( root )
-        # Parse tool help
-        self.parse_help( root )
-        # Description of outputs produced by an invocation of the tool
-        self.parse_outputs( root )
-        # Parse result handling for tool exit codes and stdout/stderr messages:
-        self.parse_stdio( root )
-        # Any extra generated config files for the tool
+
+    def __parse_tests(self, tool_source):
+        self.__tests_source = tool_source
+        self.__tests_populated = False
+
+    def __parse_config_files(self, tool_source):
         self.config_files = []
+        if not hasattr(tool_source, 'root'):
+            return
+
+        root = tool_source.root
         conf_parent_elem = root.find("configfiles")
         if conf_parent_elem:
             for conf_elem in conf_parent_elem.findall( "configfile" ):
@@ -1511,87 +1584,65 @@ class Tool( object, Dictifiable ):
                 filename = conf_elem.get( "filename", None )
                 text = conf_elem.text
                 self.config_files.append( ( name, filename, text ) )
-        # Action
-        action_elem = root.find( "action" )
-        if action_elem is None:
-            self.tool_action = self.default_tool_action()
-        else:
-            module = action_elem.get( 'module' )
-            cls = action_elem.get( 'class' )
-            mod = __import__( module, globals(), locals(), [cls])
-            self.tool_action = getattr( mod, cls )()
-        # User interface hints
-        self.uihints = {}
-        uihints_elem = root.find( "uihints" )
-        if uihints_elem is not None:
-            for key, value in uihints_elem.attrib.iteritems():
-                self.uihints[ key ] = value
-        # Tests
-        self.__tests_elem = root.find( "tests" )
-        self.__tests_populated = False
 
-        # Requirements (dependencies)
-        requirements, containers = parse_requirements_from_xml( root )
-        self.requirements = requirements
-        self.containers = containers
+    def __parse_trackster_conf(self, tool_source):
+        self.trackster_conf = None
+        if not hasattr(tool_source, 'root'):
+            return
 
-        self.citations = self._parse_citations( root )
-
-        # Determine if this tool can be used in workflows
-        self.is_workflow_compatible = self.check_workflow_compatible(root)
         # Trackster configuration.
-        trackster_conf = root.find( "trackster_conf" )
+        trackster_conf = tool_source.root.find( "trackster_conf" )
         if trackster_conf is not None:
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
-        else:
-            self.trackster_conf = None
 
     @property
     def tests( self ):
         if not self.__tests_populated:
-            tests_elem = self.__tests_elem
-            if tests_elem:
+            tests_source = self.__tests_source
+            if tests_source:
                 try:
-                    self.__tests = parse_tests_elem( self, tests_elem )
+                    self.__tests = parse_tests( self, tests_source )
                 except:
+                    self.__tests = None
                     log.exception( "Failed to parse tool tests" )
             else:
                 self.__tests = None
             self.__tests_populated = True
         return self.__tests
 
-    def parse_inputs( self, root ):
+    def parse_inputs( self, tool_source ):
         """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
         This implementation supports multiple pages and grouping constructs.
         """
         # Load parameters (optional)
-        input_elem = root.find("inputs")
+        pages = tool_source.parse_input_pages()
         enctypes = set()
-        if input_elem is not None:
-            # Handle properties of the input form
-            self.check_values = string_as_bool( input_elem.get("check_values", self.check_values ) )
-            self.nginx_upload = string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
-            self.action = input_elem.get( 'action', self.action )
-            # If we have an nginx upload, save the action as a tuple instead of
-            # a string. The actual action needs to get url_for run to add any
-            # prefixes, and we want to avoid adding the prefix to the
-            # nginx_upload_path. This logic is handled in the tool_form.mako
-            # template.
-            if self.nginx_upload and self.app.config.nginx_upload_path:
-                if '?' in urllib.unquote_plus( self.action ):
-                    raise Exception( 'URL parameters in a non-default tool action can not be used '
-                                     'in conjunction with nginx upload.  Please convert them to '
-                                     'hidden POST parameters' )
-                self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
-                               urllib.unquote_plus(self.action))
-            self.target = input_elem.get( "target", self.target )
-            self.method = input_elem.get( "method", self.method )
-            # Parse the actual parameters
-            # Handle multiple page case
-            pages = input_elem.findall( "page" )
-            for page in ( pages or [ input_elem ] ):
-                display, inputs = self.parse_input_page( page, enctypes )
+        if pages.inputs_defined:
+            if hasattr(pages, "input_elem"):
+                input_elem = pages.input_elem
+                # Handle properties of the input form
+                self.check_values = string_as_bool( input_elem.get("check_values", self.check_values ) )
+                self.nginx_upload = string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
+                self.action = input_elem.get( 'action', self.action )
+                # If we have an nginx upload, save the action as a tuple instead of
+                # a string. The actual action needs to get url_for run to add any
+                # prefixes, and we want to avoid adding the prefix to the
+                # nginx_upload_path. This logic is handled in the tool_form.mako
+                # template.
+                if self.nginx_upload and self.app.config.nginx_upload_path:
+                    if '?' in urllib.unquote_plus( self.action ):
+                        raise Exception( 'URL parameters in a non-default tool action can not be used '
+                                         'in conjunction with nginx upload.  Please convert them to '
+                                         'hidden POST parameters' )
+                    self.action = (self.app.config.nginx_upload_path + '?nginx_redir=',
+                                   urllib.unquote_plus(self.action))
+                self.target = input_elem.get( "target", self.target )
+                self.method = input_elem.get( "method", self.method )
+                # Parse the actual parameters
+                # Handle multiple page case
+            for page_source in pages.page_sources:
+                display, inputs = self.parse_input_page( page_source, enctypes )
                 self.inputs_by_page.append( inputs )
                 self.inputs.update( inputs )
                 self.display_by_page.append( display )
@@ -1613,24 +1664,28 @@ class Tool( object, Dictifiable ):
         # thus hardcoded)  FIXME: hidden parameters aren't
         # parameters at all really, and should be passed in a different
         # way, making this check easier.
-        self.template_macro_params = template_macro_params(root)
+        template_macros = {}
+        if hasattr(tool_source, 'root'):
+            template_macros = template_macro_params(tool_source.root)
+        self.template_macro_params = template_macros
         for param in self.inputs.values():
             if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
                 self.input_required = True
                 break
 
-    def parse_help( self, root ):
+    def parse_help( self, tool_source ):
         """
         Parse the help text for the tool. Formatted in reStructuredText, but
         stored as Mako to allow for dynamic image paths.
         This implementation supports multiple pages.
         """
         # TODO: Allow raw HTML or an external link.
-        self.help = root.find("help")
+        self.help = None
         self.help_by_page = list()
         help_header = ""
         help_footer = ""
-        if self.help is not None:
+        if hasattr( tool_source, 'root' ) and tool_source.root.find( 'help' ) is not None:
+            self.help = tool_source.root.find( 'help' )
             if self.repository_id and self.help.text.find( '.. image:: ' ) >= 0:
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
                 lock = threading.Lock()
@@ -1667,203 +1722,32 @@ class Tool( object, Dictifiable ):
         while len( self.help_by_page ) < self.npages:
             self.help_by_page.append( self.help )
 
-    def parse_outputs( self, root ):
+    def parse_outputs( self, tool_source ):
         """
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
         self.outputs = odict()
-        out_elem = root.find("outputs")
-        if not out_elem:
-            return
-        for data_elem in out_elem.findall("data"):
-            output = ToolOutput( data_elem.get("name") )
-            output.format = data_elem.get("format", "data")
-            output.change_format = data_elem.findall("change_format")
-            output.format_source = data_elem.get("format_source", None)
-            output.metadata_source = data_elem.get("metadata_source", "")
-            output.parent = data_elem.get("parent", None)
-            output.label = xml_text( data_elem, "label" )
-            output.count = int( data_elem.get("count", 1) )
-            output.filters = data_elem.findall( 'filter' )
-            output.from_work_dir = data_elem.get("from_work_dir", None)
-            output.hidden = string_as_bool( data_elem.get("hidden", "") )
-            output.tool = self
-            output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
-            output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
+        for output in tool_source.parse_outputs(self):
             self.outputs[ output.name ] = output
 
     # TODO: Include the tool's name in any parsing warnings.
-    def parse_stdio( self, root ):
+    def parse_stdio( self, tool_source ):
         """
         Parse <stdio> element(s) and fill in self.return_codes,
         self.stderr_rules, and self.stdout_rules. Return codes have a range
         and an error type (fault or warning).  Stderr and stdout rules have
         a regular expression and an error level (fault or warning).
         """
-        try:
-            self.stdio_exit_codes = list()
-            self.stdio_regexes = list()
+        exit_codes, regexes = tool_source.parse_stdio()
+        self.stdio_exit_codes = exit_codes
+        self.stdio_regexes = regexes
 
-            # We should have a single <stdio> element, but handle the case for
-            # multiples.
-            # For every stdio element, add all of the exit_code and regex
-            # subelements that we find:
-            for stdio_elem in ( root.findall( 'stdio' ) ):
-                self.parse_stdio_exit_codes( stdio_elem )
-                self.parse_stdio_regexes( stdio_elem )
-        except Exception:
-            log.error( "Exception in parse_stdio! " + str(sys.exc_info()) )
+    def _parse_citations( self, tool_source ):
+        # TODO: Move following logic into ToolSource abstraction.
+        if not hasattr(tool_source, 'root'):
+            return []
 
-    def parse_stdio_exit_codes( self, stdio_elem ):
-        """
-        Parse the tool's <stdio> element's <exit_code> subelements.
-        This will add all of those elements, if any, to self.stdio_exit_codes.
-        """
-        try:
-            # Look for all <exit_code> elements. Each exit_code element must
-            # have a range/value.
-            # Exit-code ranges have precedence over a single exit code.
-            # So if there are value and range attributes, we use the range
-            # attribute. If there is neither a range nor a value, then print
-            # a warning and skip to the next.
-            for exit_code_elem in ( stdio_elem.findall( "exit_code" ) ):
-                exit_code = ToolStdioExitCode()
-                # Each exit code has an optional description that can be
-                # part of the "desc" or "description" attributes:
-                exit_code.desc = exit_code_elem.get( "desc" )
-                if None == exit_code.desc:
-                    exit_code.desc = exit_code_elem.get( "description" )
-                # Parse the error level:
-                exit_code.error_level = (
-                    self.parse_error_level( exit_code_elem.get( "level" )))
-                code_range = exit_code_elem.get( "range", "" )
-                if None == code_range:
-                    code_range = exit_code_elem.get( "value", "" )
-                if None == code_range:
-                    log.warning( "Tool stdio exit codes must have "
-                               + "a range or value" )
-                    continue
-                # Parse the range. We look for:
-                #   :Y
-                #  X:
-                #  X:Y   - Split on the colon. We do not allow a colon
-                #          without a beginning or end, though we could.
-                # Also note that whitespace is eliminated.
-                # TODO: Turn this into a single match - it should be
-                # more efficient.
-                code_range = re.sub( "\s", "", code_range )
-                code_ranges = re.split( ":", code_range )
-                if ( len( code_ranges ) == 2 ):
-                    if ( None == code_ranges[0] or '' == code_ranges[0] ):
-                        exit_code.range_start = float( "-inf" )
-                    else:
-                        exit_code.range_start = int( code_ranges[0] )
-                    if ( None == code_ranges[1] or '' == code_ranges[1] ):
-                        exit_code.range_end = float( "inf" )
-                    else:
-                        exit_code.range_end = int( code_ranges[1] )
-                # If we got more than one colon, then ignore the exit code.
-                elif ( len( code_ranges ) > 2 ):
-                    log.warning( "Invalid tool exit_code range %s - ignored"
-                               % code_range )
-                    continue
-                # Else we have a singular value. If it's not an integer, then
-                # we'll just write a log message and skip this exit_code.
-                else:
-                    try:
-                        exit_code.range_start = int( code_range )
-                    except:
-                        log.error( code_range )
-                        log.warning( "Invalid range start for tool's exit_code %s: exit_code ignored" % code_range )
-                        continue
-                    exit_code.range_end = exit_code.range_start
-                # TODO: Check if we got ">", ">=", "<", or "<=":
-                # Check that the range, regardless of how we got it,
-                # isn't bogus. If we have two infinite values, then
-                # the start must be -inf and the end must be +inf.
-                # So at least warn about this situation:
-                if ( isinf( exit_code.range_start ) and
-                     isinf( exit_code.range_end ) ):
-                    log.warning( "Tool exit_code range %s will match on "
-                               + "all exit codes" % code_range )
-                self.stdio_exit_codes.append( exit_code )
-        except Exception:
-            log.error( "Exception in parse_stdio_exit_codes! "
-                     + str(sys.exc_info()) )
-            trace = sys.exc_info()[2]
-            if ( None != trace ):
-                trace_msg = repr( traceback.format_tb( trace ) )
-                log.error( "Traceback: %s" % trace_msg )
-
-    def parse_stdio_regexes( self, stdio_elem ):
-        """
-        Look in the tool's <stdio> elem for all <regex> subelements
-        that define how to look for warnings and fatal errors in
-        stdout and stderr. This will add all such regex elements
-        to the Tols's stdio_regexes list.
-        """
-        try:
-            # Look for every <regex> subelement. The regular expression
-            # will have "match" and "source" (or "src") attributes.
-            for regex_elem in ( stdio_elem.findall( "regex" ) ):
-                # TODO: Fill in ToolStdioRegex
-                regex = ToolStdioRegex()
-                # Each regex has an optional description that can be
-                # part of the "desc" or "description" attributes:
-                regex.desc = regex_elem.get( "desc" )
-                if None == regex.desc:
-                    regex.desc = regex_elem.get( "description" )
-                # Parse the error level
-                regex.error_level = (
-                    self.parse_error_level( regex_elem.get( "level" ) ) )
-                regex.match = regex_elem.get( "match", "" )
-                if None == regex.match:
-                    # TODO: Convert the offending XML element to a string
-                    log.warning( "Ignoring tool's stdio regex element %s - "
-                                 "the 'match' attribute must exist" )
-                    continue
-                # Parse the output sources. We look for the "src", "source",
-                # and "sources" attributes, in that order. If there is no
-                # such source, then the source defaults to stderr & stdout.
-                # Look for a comma and then look for "err", "error", "out",
-                # and "output":
-                output_srcs = regex_elem.get( "src" )
-                if None == output_srcs:
-                    output_srcs = regex_elem.get( "source" )
-                if None == output_srcs:
-                    output_srcs = regex_elem.get( "sources" )
-                if None == output_srcs:
-                    output_srcs = "output,error"
-                output_srcs = re.sub( "\s", "", output_srcs )
-                src_list = re.split( ",", output_srcs )
-                # Just put together anything to do with "out", including
-                # "stdout", "output", etc. Repeat for "stderr", "error",
-                # and anything to do with "err". If neither stdout nor
-                # stderr were specified, then raise a warning and scan both.
-                for src in src_list:
-                    if re.search( "both", src, re.IGNORECASE ):
-                        regex.stdout_match = True
-                        regex.stderr_match = True
-                    if re.search( "out", src, re.IGNORECASE ):
-                        regex.stdout_match = True
-                    if re.search( "err", src, re.IGNORECASE ):
-                        regex.stderr_match = True
-                    if (not regex.stdout_match and not regex.stderr_match):
-                        log.warning( "Tool id %s: unable to determine if tool "
-                                     "stream source scanning is output, error, "
-                                     "or both. Defaulting to use both." % self.id )
-                        regex.stdout_match = True
-                        regex.stderr_match = True
-                self.stdio_regexes.append( regex )
-        except Exception:
-            log.error( "Exception in parse_stdio_exit_codes! "
-                     + str(sys.exc_info()) )
-            trace = sys.exc_info()[2]
-            if ( None != trace ):
-                trace_msg = repr( traceback.format_tb( trace ) )
-                log.error( "Traceback: %s" % trace_msg )
-
-    def _parse_citations( self, root ):
+        root = tool_source.root
         citations = []
         citations_elem = root.find("citations")
         if not citations_elem:
@@ -1877,49 +1761,18 @@ class Tool( object, Dictifiable ):
                 citations.append( citation )
         return citations
 
-    # TODO: This method doesn't have to be part of the Tool class.
-    def parse_error_level( self, err_level ):
-        """
-        Parses error level and returns error level enumeration. If
-        unparsable, returns 'fatal'
-        """
-        return_level = StdioErrorLevel.FATAL
-        try:
-            if err_level:
-                if ( re.search( "log", err_level, re.IGNORECASE ) ):
-                    return_level = StdioErrorLevel.LOG
-                elif ( re.search( "warning", err_level, re.IGNORECASE ) ):
-                    return_level = StdioErrorLevel.WARNING
-                elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
-                    return_level = StdioErrorLevel.FATAL
-                else:
-                    log.debug( "Tool %s: error level %s did not match log/warning/fatal" %
-                               ( self.id, err_level ) )
-        except Exception:
-            log.error( "Exception in parse_error_level "
-                     + str(sys.exc_info() ) )
-            trace = sys.exc_info()[2]
-            if ( None != trace ):
-                trace_msg = repr( traceback.format_tb( trace ) )
-                log.error( "Traceback: %s" % trace_msg )
-        return return_level
-
-    def parse_input_page( self, input_elem, enctypes ):
+    def parse_input_page( self, page_source, enctypes ):
         """
         Parse a page of inputs. This basically just calls 'parse_input_elem',
         but it also deals with possible 'display' elements which are supported
         only at the top/page level (not in groups).
         """
-        inputs = self.parse_input_elem( input_elem, enctypes )
+        inputs = self.parse_input_elem( page_source, enctypes )
         # Display
-        display_elem = input_elem.find("display")
-        if display_elem is not None:
-            display = xml_to_string(display_elem)
-        else:
-            display = None
+        display = page_source.parse_display()
         return display, inputs
 
-    def parse_input_elem( self, parent_elem, enctypes, context=None ):
+    def parse_input_elem( self, page_source, enctypes, context=None ):
         """
         Parse a parent element whose children are inputs -- these could be
         groups (repeat, conditional) or param elements. Groups will be parsed
@@ -1927,29 +1780,31 @@ class Tool( object, Dictifiable ):
         """
         rval = odict()
         context = ExpressionContext( rval, context )
-        for elem in parent_elem:
+        for input_source in page_source.parse_input_sources():
             # Repeat group
-            if elem.tag == "repeat":
+            input_type = input_source.parse_input_type()
+            if input_type == "repeat":
                 group = Repeat()
-                group.name = elem.get( "name" )
-                group.title = elem.get( "title" )
-                group.help = elem.get( "help", None )
-                group.inputs = self.parse_input_elem( elem, enctypes, context )
-                group.default = int( elem.get( "default", 0 ) )
-                group.min = int( elem.get( "min", 0 ) )
+                group.name = input_source.get( "name" )
+                group.title = input_source.get( "title" )
+                group.help = input_source.get( "help", None )
+                page_source = input_source.parse_nested_inputs_source()
+                group.inputs = self.parse_input_elem( page_source, enctypes, context )
+                group.default = int( input_source.get( "default", 0 ) )
+                group.min = int( input_source.get( "min", 0 ) )
                 # Use float instead of int so that 'inf' can be used for no max
-                group.max = float( elem.get( "max", "inf" ) )
+                group.max = float( input_source.get( "max", "inf" ) )
                 assert group.min <= group.max, \
                     ValueError( "Min repeat count must be less-than-or-equal to the max." )
                 # Force default to be within min-max range
                 group.default = min( max( group.default, group.min ), group.max )
                 rval[group.name] = group
-            elif elem.tag == "conditional":
+            elif input_type == "conditional":
                 group = Conditional()
-                group.name = elem.get( "name" )
-                group.value_ref = elem.get( 'value_ref', None )
-                group.value_ref_in_group = string_as_bool( elem.get( 'value_ref_in_group', 'True' ) )
-                value_from = elem.get( "value_from" )
+                group.name = input_source.get( "name" )
+                group.value_ref = input_source.get( 'value_ref', None )
+                group.value_ref_in_group = input_source.get_bool( 'value_ref_in_group', True )
+                value_from = input_source.get("value_from", None)
                 if value_from:
                     value_from = value_from.split( ':' )
                     group.value_from = locals().get( value_from[0] )
@@ -1961,24 +1816,23 @@ class Tool( object, Dictifiable ):
                         case = ConditionalWhen()
                         case.value = case_value
                         if case_inputs:
-                            case.inputs = self.parse_input_elem(
-                                ElementTree.XML( "<when>%s</when>" % case_inputs ), enctypes, context )
+                            page_source = XmlPageSource( ElementTree.XML( "<when>%s</when>" % case_inputs ) )
+                            case.inputs = self.parse_input_elem( page_source, enctypes, context )
                         else:
                             case.inputs = odict()
                         group.cases.append( case )
                 else:
                     # Should have one child "input" which determines the case
-                    input_elem = elem.find( "param" )
-                    assert input_elem is not None, "<conditional> must have a child <param>"
-                    group.test_param = self.parse_param_elem( input_elem, enctypes, context )
+                    test_param_input_source = input_source.parse_test_input_source()
+                    group.test_param = self.parse_param_elem( test_param_input_source, enctypes, context )
                     possible_cases = list( group.test_param.legal_values )  # store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
                     group.test_param.refresh_on_change = True
                     # And a set of possible cases
-                    for case_elem in elem.findall( "when" ):
+                    for (value, case_inputs_source) in input_source.parse_when_input_sources():
                         case = ConditionalWhen()
-                        case.value = case_elem.get( "value" )
-                        case.inputs = self.parse_input_elem( case_elem, enctypes, context )
+                        case.value = value
+                        case.inputs = self.parse_input_elem( case_inputs_source, enctypes, context )
                         group.cases.append( case )
                         try:
                             possible_cases.remove( case.value )
@@ -1993,7 +1847,8 @@ class Tool( object, Dictifiable ):
                         case.inputs = odict()
                         group.cases.append( case )
                 rval[group.name] = group
-            elif elem.tag == "upload_dataset":
+            elif input_type == "upload_dataset":
+                elem = input_source.elem()
                 group = UploadDataset()
                 group.name = elem.get( "name" )
                 group.title = elem.get( "title" )
@@ -2003,23 +1858,24 @@ class Tool( object, Dictifiable ):
                 rval[ group.file_type_name ].refresh_on_change = True
                 rval[ group.file_type_name ].refresh_on_change_values = \
                     self.app.datatypes_registry.get_composite_extensions()
-                group.inputs = self.parse_input_elem( elem, enctypes, context )
+                group_page_source = XmlPageSource(elem)
+                group.inputs = self.parse_input_elem( group_page_source, enctypes, context )
                 rval[ group.name ] = group
-            elif elem.tag == "param":
-                param = self.parse_param_elem( elem, enctypes, context )
+            elif input_type == "param":
+                param = self.parse_param_elem( input_source, enctypes, context )
                 rval[param.name] = param
                 if hasattr( param, 'data_ref' ):
                     param.ref_input = context[ param.data_ref ]
                 self.input_params.append( param )
         return rval
 
-    def parse_param_elem( self, input_elem, enctypes, context ):
+    def parse_param_elem( self, input_source, enctypes, context ):
         """
         Parse a single "<param>" element and return a ToolParameter instance.
         Also, if the parameter has a 'required_enctype' add it to the set
         enctypes.
         """
-        param = ToolParameter.build( self, input_elem )
+        param = ToolParameter.build( self, input_source )
         param_enctype = param.get_required_enctype()
         if param_enctype:
             enctypes.add( param_enctype )
@@ -2039,7 +1895,7 @@ class Tool( object, Dictifiable ):
                 self.repository_owner = tool_shed_repository.owner
                 self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
 
-    def check_workflow_compatible( self, root ):
+    def check_workflow_compatible( self, tool_source ):
         """
         Determine if a tool can be used in workflows. External tools and the
         upload tool are currently not supported by workflows.
@@ -2052,8 +1908,11 @@ class Tool( object, Dictifiable ):
         # right now
         if self.tool_type.startswith( 'data_source' ):
             return False
-        if not string_as_bool( root.get( "workflow_compatible", "True" ) ):
-            return False
+
+        if hasattr( tool_source, "root"):
+            root = tool_source.root
+            if not string_as_bool( root.get( "workflow_compatible", "True" ) ):
+                return False
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
@@ -3263,8 +3122,8 @@ class DataSourceTool( OutputParameterJSONTool ):
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )
 
-    def parse_inputs( self, root ):
-        super( DataSourceTool, self ).parse_inputs( root )
+    def parse_inputs( self, tool_source ):
+        super( DataSourceTool, self ).parse_inputs( tool_source )
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
             self.inputs_by_page[0][ 'GALAXY_URL' ] = self.inputs[ 'GALAXY_URL' ]
@@ -3501,6 +3360,33 @@ class ToolStdioExitCode( object ):
         # TODO: Define a common class or constant for error level:
         self.error_level = "fatal"
         self.desc = ""
+
+
+class TestCollectionDef( object ):
+
+    def __init__( self, elem, parse_param_elem ):
+        self.elements = []
+        attrib = dict( elem.attrib )
+        self.collection_type = attrib[ "type" ]
+        self.name = attrib.get( "name", "Unnamed Collection" )
+        for element in elem.findall( "element" ):
+            element_attrib = dict( element.attrib )
+            element_identifier = element_attrib[ "name" ]
+            nested_collection_elem = element.find( "collection" )
+            if nested_collection_elem:
+                self.elements.append( ( element_identifier, TestCollectionDef( nested_collection_elem, parse_param_elem ) ) )
+            else:
+                self.elements.append( ( element_identifier, parse_param_elem( element ) ) )
+
+    def collect_inputs( self ):
+        inputs = []
+        for element in self.elements:
+            value = element[ 1 ]
+            if isinstance( value, TestCollectionDef ):
+                inputs.extend( value.collect_inputs() )
+            else:
+                inputs.append( value )
+        return inputs
 
 
 def json_fix( val ):
