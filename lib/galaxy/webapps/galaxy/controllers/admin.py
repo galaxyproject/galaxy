@@ -17,6 +17,7 @@ from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
+from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
@@ -838,7 +839,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def review_tool_migration_stages( self, trans, **kwd ):
-        message = galaxy.util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
         status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         migration_stages_dict = odict()
         migration_modules = []
@@ -870,13 +871,13 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def view_datatypes_registry( self, trans, **kwd ):
-        message = galaxy.util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
         status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_datatypes_registry.mako', message=message, status=status )
 
     @web.expose
     @web.require_admin
     def view_tool_data_tables( self, trans, **kwd ):
-        message = galaxy.util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
         status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_data_tables_registry.mako', message=message, status=status )

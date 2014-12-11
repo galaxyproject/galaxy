@@ -5,8 +5,9 @@ import galaxy.util
 
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.framework.helpers import escape, grids, time_ago
+from galaxy.web.framework.helpers import grids, time_ago
 from library_common import get_comptypes, lucene_search, whoosh_search
+from markupsafe import escape
 # from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
@@ -148,7 +149,7 @@ class LibraryAdmin( BaseUIController ):
     @web.expose
     @web.require_admin
     def create_library( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         if kwd.get( 'create_library_button', False ):
             name = kwd.get( 'name', 'No name' )
@@ -161,12 +162,12 @@ class LibraryAdmin( BaseUIController ):
             library.root_folder = root_folder
             trans.sa_session.add_all( ( library, root_folder ) )
             trans.sa_session.flush()
-            message = "The new library named '%s' has been created" % library.name
+            message = "The new library named '%s' has been created"
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller='library_admin',
                                                               id=trans.security.encode_id( library.id ),
-                                                              message=message,
+                                                              message=escape( message ),
                                                               status='done' ) )
         return trans.fill_template( '/admin/library/new_library.mako', message=escape( message ), status=escape( status ) )
     @web.expose
