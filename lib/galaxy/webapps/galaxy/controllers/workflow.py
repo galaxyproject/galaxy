@@ -22,7 +22,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
 from galaxy.web.framework.formbuilder import form
-from galaxy.web.framework.helpers import grids, time_ago, to_unicode, escape
+from galaxy.web.framework.helpers import grids, time_ago, to_unicode
 from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.modules import MissingToolException
 from galaxy.workflow.modules import module_factory, is_tool_module_type
@@ -37,6 +37,7 @@ from galaxy.workflow.steps import (
     order_workflow_steps_with_levels,
 )
 from galaxy.workflow.render import WorkflowCanvas, MARGIN, LINE_SPACING
+from markupsafe import escape
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -1000,7 +1001,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         url = kwd.get( 'url', '' )
         workflow_text = kwd.get( 'workflow_text', '' )
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         import_button = kwd.get( 'import_button', False )
         # The special Galaxy integration landing page's URL on myExperiment

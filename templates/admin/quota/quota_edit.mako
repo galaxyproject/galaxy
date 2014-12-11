@@ -29,7 +29,7 @@
             <input name="id" type="hidden" value="${id}"/>
             <div class="form-row">
                 <label>Amount</label>
-                <input  name="amount" type="textfield" value="${display_amount}" size=40"/>
+                <input  name="amount" type="textfield" value="${display_amount|h}" size=40"/>
                 <div class="toolParamHelp" style="clear: both;">
                     Examples: "10000MB", "99 gb", "0.2T", "unlimited"
                 </div>

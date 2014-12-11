@@ -7,6 +7,7 @@ from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
 from string import punctuation as PUNCTUATION
 import galaxy.queue_worker
+from markupsafe import escape
 
 from tool_shed.util import shed_util_common as suc
 
@@ -28,7 +29,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def index( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
             installed_repositories = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first()
@@ -46,7 +47,7 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def center( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
             return trans.fill_template( '/webapps/galaxy/admin/center.mako',

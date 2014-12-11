@@ -9,17 +9,19 @@ import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 import logging
+from markupsafe import escape
+
 log = logging.getLogger( __name__ )
 
 class Users( BaseUIController ):
     @web.expose
     def registered_users( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         num_users = trans.sa_session.query( galaxy.model.User ).count()
         return trans.fill_template( '/webapps/reports/registered_users.mako', num_users=num_users, message=message )
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
                        from_obj = [ galaxy.model.User.table ],
@@ -36,7 +38,7 @@ class Users( BaseUIController ):
                                     message=message )
     @web.expose
     def specified_month( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
         specified_month = specified_date[ :7 ]
@@ -66,7 +68,7 @@ class Users( BaseUIController ):
                                     message=message )
     @web.expose
     def specified_date( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
         year, month, day = map( int, specified_date.split( "-" ) )
@@ -95,7 +97,7 @@ class Users( BaseUIController ):
                                     message=message )
     @web.expose
     def last_access_date( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         not_logged_in_for_days = kwd.get( 'not_logged_in_for_days', 90 )
         if not not_logged_in_for_days:
             not_logged_in_for_days = 0
@@ -120,7 +122,7 @@ class Users( BaseUIController ):
 
     @web.expose
     def user_disk_usage( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
+        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         user_cutoff = int( kwd.get( 'user_cutoff', 60 ) )
         # disk_usage isn't indexed
         users = sorted( trans.sa_session.query( galaxy.model.User ).all(), key=operator.attrgetter( 'disk_usage' ), reverse=True )

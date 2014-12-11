@@ -8,6 +8,7 @@ from galaxy import util
 from galaxy.web.form_builder import CheckboxField
 from galaxy.util import json
 from galaxy.model.orm import or_
+from markupsafe import escape
 
 import tool_shed.repository_types.util as rt_util
 
@@ -52,7 +53,7 @@ class AdminToolshed( AdminGalaxy ):
         try:
             trans.app.installed_repository_manager.activate_repository( repository )
         except Exception, e:
-            error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
+            error_message = "Error activating repository %s: %s" % ( escape( repository.name ), str( e ) )
             log.exception( error_message )
             message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
                 % ( error_message, web.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) ) )
@@ -62,7 +63,7 @@ class AdminToolshed( AdminGalaxy ):
                                                               id=repository_id,
                                                               message=message,
                                                               status=status ) )
-        message = 'The <b>%s</b> repository has been activated.' % repository.name
+        message = 'The <b>%s</b> repository has been activated.' % escape( repository.name )
         status = 'done'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='browse_repositories',
@@ -72,7 +73,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def browse_repository( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = repository_util.get_installed_tool_shed_repository( trans.app, kwd[ 'id' ] )
         return trans.fill_template( '/admin/tool_shed_repository/browse_repository.mako',
@@ -141,7 +142,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                               action='reselect_tool_panel_section',
                                                                               **kwd ) )
                     else:
-                        message = "Unable to get latest revision for repository <b>%s</b> from " % str( repository.name )
+                        message = "Unable to get latest revision for repository <b>%s</b> from " % escape( str( repository.name ) )
                         message += "the Tool Shed, so repository re-installation is not possible at this time."
                         status = "error"
                         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -169,7 +170,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def browse_tool_dependency( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         tool_dependency = tool_dependency_util.get_tool_dependency( trans.app, tool_dependency_ids[ 0 ] )
@@ -197,7 +198,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def browse_tool_sheds( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         return trans.fill_template( '/webapps/galaxy/admin/tool_sheds.mako',
                                     message=message,
@@ -230,7 +231,7 @@ class AdminToolshed( AdminGalaxy ):
         require the same entry.  For now we'll never delete entries from config.shed_tool_data_table_config,
         but we may choose to do so in the future if it becomes necessary.
         """
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         remove_from_disk = kwd.get( 'remove_from_disk', '' )
         remove_from_disk_checked = CheckboxField.is_checked( remove_from_disk )
@@ -303,14 +304,14 @@ class AdminToolshed( AdminGalaxy ):
             trans.install_model.context.add( tool_shed_repository )
             trans.install_model.context.flush()
             if remove_from_disk_checked:
-                message = 'The repository named <b>%s</b> has been uninstalled.  ' % tool_shed_repository.name
+                message = 'The repository named <b>%s</b> has been uninstalled.  ' % escape( tool_shed_repository.name )
                 if errors:
                     message += 'Attempting to uninstall tool dependencies resulted in errors: %s' % errors
                     status = 'error'
                 else:
                     status = 'done'
             else:
-                message = 'The repository named <b>%s</b> has been deactivated.  ' % tool_shed_repository.name
+                message = 'The repository named <b>%s</b> has been deactivated.  ' % escape( tool_shed_repository.name )
                 status = 'done'
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='browse_repositories',
@@ -442,7 +443,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def import_workflow( self, trans, workflow_name, repository_id, **kwd ):
         """Import a workflow contained in an installed tool shed repository into Galaxy."""
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         if workflow_name:
             workflow_name = encoding_util.tool_shed_decode( workflow_name )
@@ -453,7 +454,7 @@ class AdminToolshed( AdminGalaxy ):
                     workflow_name = encoding_util.tool_shed_encode( str( workflow.name ) )
                 else:
                     message += 'Unable to locate a workflow named <b>%s</b> within the installed tool shed repository named <b>%s</b>' % \
-                        ( str( workflow_name ), str( repository.name ) )
+                        ( escape( str( workflow_name ) ), escape( str( repository.name ) ) )
                     status = 'error'
             else:
                 message = 'Invalid repository id <b>%s</b> received.' % str( repository_id )
@@ -479,7 +480,7 @@ class AdminToolshed( AdminGalaxy ):
         tool shed repository.
         """
         # Get the tool_shed_repository from one of the tool_dependencies.
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         err_msg = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
@@ -512,7 +513,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def install_latest_repository_revision( self, trans, **kwd ):
         """Install the latest installable revision of a repository that has been previously installed."""
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         if repository_id is not None:
@@ -589,7 +590,7 @@ class AdminToolshed( AdminGalaxy ):
         updating_to_changeset_revision = kwd.get( 'updating_to_changeset_revision', None )
         updating_to_ctx_rev = kwd.get( 'updating_to_ctx_rev', None )
         encoded_updated_metadata = kwd.get( 'encoded_updated_metadata', None )
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
         if 'install_tool_dependencies_with_update_button' in kwd:
@@ -609,7 +610,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          relative_install_dir,
                                                                                          set_status=False )
                 message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % \
-                    ( str( repository.name ), updating_to_changeset_revision )
+                    ( escape( str( repository.name ) ), updating_to_changeset_revision )
                 self.initiate_tool_dependency_installation( trans, tool_dependencies, message=message, status=status )
         # Handle tool dependencies check box.
         if trans.app.config.tool_dependency_dir is None:
@@ -665,7 +666,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def manage_repositories( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         tsridslist = common_util.get_tool_shed_repository_ids( **kwd )
         if 'operation' in kwd:
@@ -744,7 +745,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def manage_repository( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         if repository_id is None:
@@ -808,7 +809,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def manage_repository_tool_dependencies( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         if tool_dependency_ids:
@@ -890,7 +891,7 @@ class AdminToolshed( AdminGalaxy ):
     def manage_tool_dependencies( self, trans, **kwd ):
         # This method is called when tool dependencies are being installed.  See the related manage_repository_tool_dependencies
         # method for managing the tool dependencies for a specified installed tool shed repository.
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         repository_id = kwd.get( 'repository_id', None )
@@ -902,7 +903,7 @@ class AdminToolshed( AdminGalaxy ):
             # The user must be on the manage_repository_tool_dependencies page and clicked the button to either install or uninstall a
             # tool dependency, but they didn't check any of the available tool dependencies on which to perform the action.
             tool_shed_repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
-        self.tool_dependency_grid.title = "Tool shed repository '%s' tool dependencies"  % tool_shed_repository.name
+        self.tool_dependency_grid.title = "Tool shed repository '%s' tool dependencies"  % escape( tool_shed_repository.name )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if not tool_dependency_ids:
@@ -978,7 +979,7 @@ class AdminToolshed( AdminGalaxy ):
             message += 'of Galaxy Tool Shed repository tools into a local Galaxy instance</a> section of the Galaxy Tool '
             message += 'Shed wiki for all of the details.'
             return trans.show_error_message( message )
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         shed_tool_conf = kwd.get( 'shed_tool_conf', None )
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
@@ -1030,7 +1031,7 @@ class AdminToolshed( AdminGalaxy ):
                     # The Tool Shed cannot handle the get_repository_id request, so the code must be older than the
                     # 04/2014 Galaxy release when it was introduced.  It will be safest to error out and let the
                     # Tool Shed admin update the Tool Shed to a later release.
-                    message = 'The updates available for the repository <b>%s</b> ' % str( repository.name )
+                    message = 'The updates available for the repository <b>%s</b> ' % escape( str( repository.name ) )
                     message += 'include newly defined repository or tool dependency definitions, and attempting '
                     message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
                     message += 'administrator if necessary.<br/>%s' % str( e )
@@ -1314,7 +1315,7 @@ class AdminToolshed( AdminGalaxy ):
         and tool dependencies of the repository.
         """
         rdim = repository_dependency_manager.RepositoryDependencyInstallManager( trans.app )
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd[ 'id' ]
         tool_shed_repository = repository_util.get_installed_tool_shed_repository( trans.app, repository_id )
@@ -1450,7 +1451,7 @@ class AdminToolshed( AdminGalaxy ):
         Inspect the repository dependency hierarchy for a specified repository and attempt to make sure they are all properly installed as well as
         each repository's tool dependencies.
         """
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         if not repository_id:
@@ -1648,12 +1649,12 @@ class AdminToolshed( AdminGalaxy ):
             no_changes_check_box = CheckboxField( 'no_changes', checked=True )
             if original_section_name:
                 message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
-                    % ( tool_shed_repository.name, original_section_name )
+                    % ( escape( tool_shed_repository.name ), original_section_name )
                 message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
                 message += "different section in the tool panel.  "
                 status = 'warning'
             else:
-                message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % tool_shed_repository.name
+                message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % escape( tool_shed_repository.name )
                 message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section.  "
                 status = 'warning'
         else:
@@ -1715,7 +1716,7 @@ class AdminToolshed( AdminGalaxy ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
             message, status = irmm.reset_metadata_on_selected_repositories( trans.user, **kwd )
         else:
-            message = kwd.get( 'message', ''  )
+            message = escape( kwd.get( 'message', '' ) )
             status = kwd.get( 'status', 'done' )
         repositories_select_field = irmm.build_repository_ids_select_field()
         return trans.fill_template( '/admin/tool_shed_repository/reset_metadata_on_selected_repositories.mako',
@@ -1749,13 +1750,13 @@ class AdminToolshed( AdminGalaxy ):
                 irmm.update_in_shed_tool_config()
                 trans.install_model.context.add( repository )
                 trans.install_model.context.flush()
-                message = 'Metadata has been reset on repository <b>%s</b>.' % repository.name
+                message = 'Metadata has been reset on repository <b>%s</b>.' % escape( repository.name )
                 status = 'done'
             else:
-                message = 'Metadata did not need to be reset on repository <b>%s</b>.' % repository.name
+                message = 'Metadata did not need to be reset on repository <b>%s</b>.' % escape( repository.name )
                 status = 'done'
         else:
-            message = 'Error locating installation directory for repository <b>%s</b>.' % repository.name
+            message = 'Error locating installation directory for repository <b>%s</b>.' % escape( repository.name )
             status = 'error'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='manage_repository',
@@ -1777,7 +1778,7 @@ class AdminToolshed( AdminGalaxy ):
                                            uninstalled=False,
                                            remove_from_disk=True )
             new_kwd = {}
-            new_kwd[ 'message' ] = "You can now attempt to install the repository named <b>%s</b> again." % str( repository.name )
+            new_kwd[ 'message' ] = "You can now attempt to install the repository named <b>%s</b> again." % escape( str( repository.name ) )
             new_kwd[ 'status' ] = "done"
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='browse_repositories',
@@ -1808,7 +1809,7 @@ class AdminToolshed( AdminGalaxy ):
             message = "Tool versions have been set for all included tools."
             status = 'done'
         else:
-            message = "Version information for the tools included in the <b>%s</b> repository is missing.  " % repository.name
+            message = "Version information for the tools included in the <b>%s</b> repository is missing.  " % escape( repository.name )
             message += "Reset all of this reppository's metadata in the tool shed, then set the installed tool versions "
             message ++ "from the installed repository's <b>Repository Actions</b> menu.  "
             status = 'error'
@@ -1852,7 +1853,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def uninstall_tool_dependencies( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         if not tool_dependency_ids:
@@ -1897,7 +1898,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def update_to_changeset_revision( self, trans, **kwd ):
         """Update a cloned repository to the latest revision possible."""
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         # Handle protocol changes over time.
@@ -2070,7 +2071,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def update_tool_shed_status_for_installed_repository( self, trans, all_installed_repositories=False, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         if all_installed_repositories:
             success_count = 0
@@ -2083,7 +2084,7 @@ class AdminToolshed( AdminGalaxy ):
                 if ok:
                     success_count += 1
                 else:
-                    repository_names_not_updated.append( '<b>%s</b>' % str( repository.name ) )
+                    repository_names_not_updated.append( '<b>%s</b>' % escape( str( repository.name ) ) )
                 if updated:
                     updated_count += 1
             message = "Checked the status in the tool shed for %d repositories.  " % success_count
@@ -2098,11 +2099,11 @@ class AdminToolshed( AdminGalaxy ):
                 repository_util.check_or_update_tool_shed_status_for_installed_repository( trans.app, repository )
             if ok:
                 if updated:
-                    message = "The tool shed status for repository <b>%s</b> has been updated." % str( repository.name )
+                    message = "The tool shed status for repository <b>%s</b> has been updated." % escape( str( repository.name ) )
                 else:
-                    message = "The status has not changed in the tool shed for repository <b>%s</b>." % str( repository.name )
+                    message = "The status has not changed in the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
             else:
-                message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % str( repository.name )
+                message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % escape( str( repository.name ) )
                 status = 'error'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='browse_repositories',
@@ -2112,7 +2113,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def view_tool_metadata( self, trans, repository_id, tool_id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = repository_util.get_installed_tool_shed_repository( trans.app, repository_id )
         repository_metadata = repository.metadata
@@ -2146,7 +2147,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def view_workflow( self, trans, workflow_name=None, repository_id=None, **kwd ):
         """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         if workflow_name:
             workflow_name = encoding_util.tool_shed_decode( workflow_name )

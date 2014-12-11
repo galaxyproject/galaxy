@@ -29,6 +29,8 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 from galaxy.web.framework.helpers import escape, grids, time_ago
+from galaxy.web.framework.helpers import time_ago, grids
+from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
@@ -252,7 +254,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         email = kwd.get( 'email', '' )
         username = kwd.get( 'username', '' )
@@ -498,7 +500,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def __validate_login( self, trans, **kwd ):
         """Validates numerous cases that might happen during the login time."""
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'error' )
         email = kwd.get( 'email', '' )
         password = kwd.get( 'password', '' )
@@ -713,7 +715,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         email = util.restore_text( kwd.get( 'email', '' ) )
         password = kwd.get( 'password', '' )
         username = util.restore_text( kwd.get( 'username', '' ) )
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         user = self.create_user( trans=trans, email=email, username=username, password=password )
