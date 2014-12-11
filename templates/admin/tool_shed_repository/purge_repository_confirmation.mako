@@ -19,14 +19,14 @@ ${render_galaxy_repository_actions( repository )}
 
 <div class="warningmessage">
     <p>
-        Purging the repository named <b>${repository.name}</b> will result in deletion of all records for the
+        Purging the repository named <b>${repository.name|h}</b> will result in deletion of all records for the
         following associated items from the database.  Click the <b>Purge</b> button to purge this repository
         and its associated items.
     </p>
 </div>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Purge tool shed repository <b>${repository.name}</b></div>
+    <div class="toolFormTitle">Purge tool shed repository <b>${repository.name|h}</b></div>
         <form name="purge_repository" id="purge_repository" action="${h.url_for( controller='admin_toolshed', action='purge_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <%
                 tool_versions = 0
@@ -59,11 +59,11 @@ ${render_galaxy_repository_actions( repository )}
                     orphan_repository_dependency_records += 1
             %>
             <table class="grid">
-                <tr><td>Tool version records</td><td>${tool_versions}</td><tr>
-                <tr><td>Tool dependency records</td><td>${tool_dependencies}</td><tr>
-                <tr><td>Repository dependency records</td><td>${required_repositories}</td><tr>
-                <tr><td>Orphan repository_repository_dependency_association records</td><td>${orphan_repository_repository_dependency_association_records}</td><tr>
-                <tr><td>Orphan repository_dependency records</td><td>${orphan_repository_dependency_records}</td><tr>
+                <tr><td>Tool version records</td><td>${tool_versions|h}</td><tr>
+                <tr><td>Tool dependency records</td><td>${tool_dependencies|h}</td><tr>
+                <tr><td>Repository dependency records</td><td>${required_repositories|h}</td><tr>
+                <tr><td>Orphan repository_repository_dependency_association records</td><td>${orphan_repository_repository_dependency_association_records|h}</td><tr>
+                <tr><td>Orphan repository_dependency records</td><td>${orphan_repository_dependency_records|h}</td><tr>
             </table>
             <div style="clear: both"></div>
             <div class="form-row">

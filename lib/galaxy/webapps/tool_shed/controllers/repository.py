@@ -6,6 +6,7 @@ from time import gmtime
 from time import strftime
 from datetime import date
 from datetime import datetime
+from markupsafe import escape
 
 from galaxy import util
 from galaxy import web
@@ -385,7 +386,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   action='reviewed_repositories_i_own' ) )
             elif operation == "repositories_by_category":
                 category_id = kwd.get( 'id', None )
-                message = kwd.get( 'message', '' )
+                message = escape( kwd.get( 'message', '' ) )
                 status = kwd.get( 'status', 'done' )
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_repositories_in_category',
@@ -721,9 +722,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        commit_message = kwd.get( 'commit_message', 'Deleted selected files' )
+        commit_message = escape( kwd.get( 'commit_message', 'Deleted selected files' ) )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
         # Update repository files for browsing.
@@ -891,7 +892,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def check_for_updates( self, trans, **kwd ):
         """Handle a request from a local Galaxy instance."""
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         # If the request originated with the UpdateRepositoryManager, it will not include a galaxy_url.
         galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
@@ -976,7 +977,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def contact_owner( self, trans, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans.app,
@@ -995,7 +996,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def create_galaxy_docker_image( self, trans, **kwd ):
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository_ids = util.listify( kwd.get( 'id', '' ) )
         if 'operation' in kwd:
@@ -1051,7 +1052,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def create_repository( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         categories = suc.get_categories( trans )
         if not categories:
@@ -1108,7 +1109,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         # Marking a repository in the tool shed as deprecated has no effect on any downloadable changeset
         # revisions that may be associated with the repository.  Revisions are not marked as not downlaodable
         # because those that have installed the repository must be allowed to get updates.
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
@@ -1164,7 +1165,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def display_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         tv = tool_validator.ToolValidator( trans.app )
@@ -1229,7 +1230,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def export( self, trans, repository_id, changeset_revision, **kwd ):
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         export_repository_dependencies = kwd.get( 'export_repository_dependencies', '' )
         repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
@@ -1309,7 +1310,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def find_tools( self, trans, **kwd ):
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
@@ -1400,7 +1401,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def find_workflows( self, trans, **kwd ):
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
@@ -2020,13 +2021,13 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def help( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         return trans.fill_template( '/webapps/tool_shed/repository/help.mako', message=message, status=status, **kwd )
 
     @web.expose
     def import_capsule( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         capsule_file_name = kwd.get( 'capsule_file_name', None )
         encoded_file_path = kwd.get( 'encoded_file_path', None )
@@ -2069,7 +2070,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def index( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         # See if there are any RepositoryMetadata records since menu items require them.
         repository_metadata = trans.sa_session.query( trans.model.RepositoryMetadata ).first()
@@ -2151,7 +2152,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'error' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         tv = tool_validator.ToolValidator( trans.app )
@@ -2203,7 +2204,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "manage email alerts" )
     def manage_email_alerts( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         new_repo_alert = kwd.get( 'new_repo_alert', '' )
         new_repo_alert_checked = CheckboxField.is_checked( new_repo_alert )
@@ -2234,7 +2235,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "manage repository" )
     def manage_repository( self, trans, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         repository_type = kwd.get( 'repository_type', str( repository.type ) )
@@ -2500,7 +2501,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "manage repository administrators" )
     def manage_repository_admins( self, trans, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
@@ -2558,7 +2559,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "multi select email alerts" )
     def multi_select_email_alerts( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
@@ -2607,7 +2608,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def preview_tools_in_changeset( self, trans, repository_id, **kwd ):
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
@@ -2714,7 +2715,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.require_login( "rate repositories" )
     def rate_repository( self, trans, **kwd ):
         """ Rate a repository and return updated rating data. """
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if not id:
@@ -2787,7 +2788,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
             message, status = rmm.reset_metadata_on_selected_repositories( **kwd )
         else:
-            message = kwd.get( 'message', ''  )
+            message = escape( kwd.get( 'message', '' ) )
             status = kwd.get( 'status', 'done' )
         repositories_select_field = rmm.build_repository_ids_select_field( name='repository_ids',
                                                                            multiple=True,
@@ -2800,9 +2801,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def select_files_to_delete( self, trans, id, **kwd ):
-        message = kwd.get( 'message', '' )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        commit_message = kwd.get( 'commit_message', 'Deleted selected files' )
+        commit_message = escape( kwd.get( 'commit_message', 'Deleted selected files' ) )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         repo_dir = repository.repo_path( trans.app )
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
@@ -3145,7 +3146,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def upload_capsule( self, trans, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         url = kwd.get( 'url', '' )
         if 'upload_capsule_button' in kwd:
@@ -3175,7 +3176,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def view_changelog( self, trans, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
@@ -3210,7 +3211,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def view_changeset( self, trans, id, ctx_str, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
@@ -3302,7 +3303,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def view_repository( self, trans, id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
@@ -3390,7 +3391,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def view_tool_metadata( self, trans, repository_id, changeset_revision, tool_id, **kwd ):
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
@@ -3471,7 +3472,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     def view_workflow( self, trans, workflow_name, repository_metadata_id, **kwd ):
         """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
-        message = kwd.get( 'message', ''  )
+        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         render_repository_actions_for = kwd.get( 'render_repository_actions_for', 'tool_shed' )
         if workflow_name:

@@ -63,12 +63,12 @@
                 </td>
                 <td>${job.id}</td>
                 %if job.history and job.history.user:
-                    <td>${job.history.user.email}</td>
+                    <td>${job.history.user.email|h}</td>
                 %else:
                     <td>anonymous</td>
                 %endif
                 <td>${last_updated[job.id]} ago</td>
-                <td>${job.tool_id}</td>
+                <td>${job.tool_id|h}</td>
                 <td>${job.state}</td>
                 <%
                     try:
@@ -77,8 +77,8 @@
                         inputs = 'Unable to determine inputs'
                 %>
                 <td>${inputs}</td>
-                <td>${job.command_line}</td>
-                <td>${job.job_runner_name}</td>
+                <td>${job.command_line|h}</td>
+                <td>${job.job_runner_name|h}</td>
                 <td>${job.job_runner_external_id}</td>
             </tr>
         %endfor
@@ -131,12 +131,12 @@
         %for job in recent_jobs:
                 <td><a href="${h.url_for( controller="admin", action="job_info" )}?jobid=${job.id}">${job.id}</a></td>
                 %if job.history and job.history.user:
-                    <td>${job.history.user.email}</td>
+                    <td>${job.history.user.email|h}</td>
                 %else:
                     <td>anonymous</td>
                 %endif
                 <td>${finished[job.id]} ago</td>
-                <td>${job.tool_id}</td>
+                <td>${job.tool_id|h}</td>
                 <td>${job.state}</td>
                 <%
                     try:
@@ -145,9 +145,9 @@
                         inputs = 'Unable to determine inputs'
                 %>
                 <td>${inputs}</td>
-                <td>${job.command_line}</td>
-                <td>${job.job_runner_name}</td>
-                <td>${job.job_runner_external_id}</td>
+                <td>${job.command_line|h}</td>
+                <td>${job.job_runner_name|h}</td>
+                <td>${job.job_runner_external_id|h}</td>
             </tr>
         %endfor
     </table>

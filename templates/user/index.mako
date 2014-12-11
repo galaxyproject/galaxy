@@ -2,7 +2,7 @@
 
 %if trans.user:
     <h2>${_('User preferences')}</h2>
-    <p>You are currently logged in as ${trans.user.email}.</p>
+    <p>You are currently logged in as ${trans.user.email|h}.</p>
     <ul>
         %if t.webapp.name == 'galaxy':
             %if not trans.app.config.use_remote_user:

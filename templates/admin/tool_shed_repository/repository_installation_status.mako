@@ -1,5 +1,6 @@
 <%def name="render_repository_status( repository )">
     <%
+        from markupsafe import escape
         if repository.status in [ trans.install_model.ToolShedRepository.installation_status.CLONING,
                                   trans.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
                                   trans.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
@@ -20,7 +21,7 @@
         else:
             bgcolor = trans.install_model.ToolShedRepository.states.ERROR
         rval = '<div class="count-box state-color-%s" id="RepositoryStatus-%s">' % ( bgcolor, trans.security.encode_id( repository.id ) )
-        rval += '%s</div>' % repository.status
+        rval += '%s</div>' % escape( repository.status )
         return rval
     %>    
     ${rval}
