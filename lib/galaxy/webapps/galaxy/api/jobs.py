@@ -24,9 +24,12 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
     @expose_api
     def index( self, trans, **kwd ):
         """
-        index( trans, state=None, tool_id=None, history_id=None )
+        index( trans, state=None, tool_id=None, history_id=None, date_range_min=None, date_range_max=None )
         * GET /api/jobs:
             return jobs for current user
+            
+            !! if user is admin and date_range_[min|max], then
+                return jobs for all galaxy users based on filtering - this is an extended service
 
         :type   state: string or list
         :param  state: limit listing of jobs to those that match one of the included states. If none, all are returned.
@@ -36,6 +39,12 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :type   tool_id: string or list
         :param  tool_id: limit listing of jobs to those that match one of the included tool_ids. If none, all are returned.
 
+        :type   date_range_min: string '2014-01-01'
+        :param  date_range_min: limit the listing of jobs to those updated on or after requested date 
+        
+        :type   date_range_max: string '2014-12-31'
+        :param  date_range_max: limit the listing of jobs to those updated on or before requested date
+
         :type   history_id: string
         :param  history_id: limit listing of jobs to those that match the history_id. If none, all are returned.
 
@@ -44,9 +53,15 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         """
 
         state = kwd.get( 'state', None )
-        query = trans.sa_session.query( trans.app.model.Job ).filter(
-            trans.app.model.Job.user == trans.user
-        )
+        if trans.user_is_admin() and (kwd.get('date_range_min', None) or kwd.get('date_range_max', None)):
+            is_extended_service = True
+        else:
+            is_extended_service = False
+                
+        if is_extended_service:
+            query = trans.sa_session.query( trans.app.model.Job )
+        else:
+            query = trans.sa_session.query( trans.app.model.Job ).filter(trans.app.model.Job.user == trans.user)
 
         def build_and_apply_filters( query, objects, filter_func ):
             if objects is not None:
@@ -63,6 +78,9 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
 
         query = build_and_apply_filters( query, kwd.get( 'tool_id', None ), lambda t: trans.app.model.Job.tool_id == t )
         query = build_and_apply_filters( query, kwd.get( 'tool_id_like', None ), lambda t: trans.app.model.Job.tool_id.like(t) )
+    
+        query = build_and_apply_filters( query, kwd.get( 'date_range_min', None ), lambda dmin: trans.app.model.Job.table.c.update_time >= dmin )
+        query = build_and_apply_filters( query, kwd.get( 'date_range_max', None ), lambda dmax: trans.app.model.Job.table.c.update_time <= dmax )
 
         history_id = kwd.get( 'history_id', None )
         if history_id is not None:
@@ -78,7 +96,24 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         else:
             order_by = trans.app.model.Job.update_time.desc()
         for job in query.order_by( order_by ).all():
-            out.append( self.encode_all_ids( trans, job.to_dict( 'collection' ), True ) )
+            j = self.encode_all_ids( trans, job.to_dict( 'collection' ), True )
+            
+            if is_extended_service:
+                def get_email_dict(trans):
+                    user_email_dict = {}
+                    user_query = trans.sa_session.query( trans.app.model.User )
+                    for user in user_query.all():
+                        u = user.to_dict()
+                        user_email_dict[u['id']] = u['email']
+                    return user_email_dict
+                
+                user_emails = get_email_dict(trans)
+                j['external_id'] = job.job_runner_external_id
+                j['job_id'] = job.id
+                if job.user_id in user_emails:
+                    j['user_email'] = user_emails[job.user_id]
+            
+            out.append(j)
         return out
 
     @expose_api
