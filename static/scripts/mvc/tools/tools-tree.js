@@ -201,7 +201,7 @@ return Backbone.Model.extend({
                         }
                         break;
                     default:
-                        var input_id = self.app.tree.job_ids[index];
+                        var input_id = self.job_ids[index];
                         if (input_id) {
                             callback(input_id, node);
                         }
@@ -228,7 +228,7 @@ return Backbone.Model.extend({
         // search throughout response
         function search (id, head) {
             if (typeof head === 'string') {
-                var input_id = self.app.tree.job_ids[id];
+                var input_id = self.job_ids[id];
                 if (input_id) {
                     result[input_id] = head;
                 }

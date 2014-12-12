@@ -491,6 +491,32 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     message     : options.message
                 });
             }
+            
+            // show errors
+            if (options.errors) {
+                this.tree.finalize();
+                var error_messages = this.tree.matchResponse(options.errors);
+                for (var input_id in error_messages) {
+                    this._foundError(input_id, error_messages[input_id], true);
+                }
+            }
+        },
+        
+        /** Highlight and scroll to error
+        */
+        _foundError: function (input_id, message, silent) {
+            // get input field
+            var input_element = this.element_list[input_id];
+            
+            // mark error
+            input_element.error(message || 'Please verify this parameter.');
+        
+            // scroll to first input element
+            if (!silent) {
+                $(this.container).animate({
+                    scrollTop: input_element.$el.offset().top - 20
+                }, 500);
+            }
         }
     });
 

@@ -51,7 +51,7 @@ return Backbone.Model.extend({
                 if (response && response.message && response.message.data) {
                     var error_messages = self.app.tree.matchResponse(response.message.data);
                     for (var input_id in error_messages) {
-                        self._foundError(input_id, error_messages[input_id]);
+                        self.app._foundError(input_id, error_messages[input_id]);
                         break;
                     }
                 } else {
@@ -69,21 +69,6 @@ return Backbone.Model.extend({
                 }
             }
         });
-    },
-    
-    /** Highlight and scroll to error
-    */
-    _foundError: function (input_id, message) {
-        // get input field
-        var input_element = this.app.element_list[input_id];
-        
-        // mark error
-        input_element.error(message || 'Please verify this parameter.');
-    
-        // scroll to first input element
-        $(this.app.container).animate({
-            scrollTop: input_element.$el.offset().top - 20
-        }, 500);
     },
     
     /** Validate job definition
@@ -114,7 +99,7 @@ return Backbone.Model.extend({
             
             // validate non-optional fields
             if (!input_def.optional && input_field.validate && !input_field.validate()) {
-                this._foundError(input_id);
+                this.app._foundError(input_id);
                 return false;
             }
             
@@ -135,7 +120,7 @@ return Backbone.Model.extend({
                         batch_src = src;
                     } else {
                         if (batch_src !== src) {
-                            this._foundError(input_id, 'Please select either dataset or dataset list fields for all batch mode fields.');
+                            this.app._foundError(input_id, 'Please select either dataset or dataset list fields for all batch mode fields.');
                             return false;
                         }
                     }
@@ -146,7 +131,7 @@ return Backbone.Model.extend({
                     batch_n = n;
                 } else {
                     if (batch_n !== n) {
-                        this._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
+                        this.app._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
                         return false;
                     }
                 }
