@@ -308,9 +308,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     break;
                 
                 // collection selector
-                //case 'data_collection':
-                //    field = this._fieldData(input_def);
-                //    break;
+                case 'data_collection':
+                    field = this._fieldData(input_def);
+                    break;
                     
                 // data column
                 case 'data_column':

@@ -570,7 +570,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             value = dict['value'] if 'value' in dict else None
 
             # identify lists
-            if dict['type'] == 'data':
+            if dict['type'] in ['data']:
                 if isinstance(value, list):
                     value = [ convert(v) for v in value ]
                 else:

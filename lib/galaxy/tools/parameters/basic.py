@@ -2262,6 +2262,12 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         elif isinstance( value, dict ) and 'src' in value and 'id' in value:
             if value['src'] == 'hdca':
                 rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
+        elif isinstance( value, list ):
+            if len( value ) > 0:
+                value = value[0]
+                if isinstance( value, dict ) and 'src' in value and 'id' in value:
+                    if value['src'] == 'hdca':
+                        rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( trans.app.security.decode_id(value['id']) )
         elif isinstance( value, basestring ):
             if value.startswith( "dce:" ):
                 rval = trans.sa_session.query( trans.app.model.DatasetCollectionElement ).get( value[ len( "dce:"): ] )
@@ -2341,6 +2347,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
+        d['extensions'] = self.extensions
         d['multiple'] = self.multiple
         d['is_dynamic'] = False
         d['options'] = {'hda': [], 'hdca': []}
