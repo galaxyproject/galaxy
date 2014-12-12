@@ -620,6 +620,16 @@ class SQlite ( Binary ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.dataset.SQliteDataProvider( dataset_source, **settings )
 
+    @dataproviders.decorators.dataprovider_factory( 'sqlite-table', dataproviders.dataset.SQliteDataTableProvider.settings )
+    def sqlite_datatableprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.dataset.SQliteDataTableProvider( dataset_source, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'sqlite-dict', dataproviders.dataset.SQliteDataDictProvider.settings )
+    def sqlite_datadictprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.dataset.SQliteDataDictProvider( dataset_source, **settings )
+
 
 Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
 
