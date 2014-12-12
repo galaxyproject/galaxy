@@ -2711,7 +2711,13 @@ class Tool( object, Dictifiable ):
                         self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Conditional ):
                     group_values = values[ input.name ]
-                    if input.test_param.name not in group_values:
+                    use_initial_value = False
+                    if '__current_case__' in group_values:
+                        if int( group_values['__current_case__'] ) >= len( input.cases ):
+                            use_initial_value = True
+                    else:
+                        use_initial_value = True
+                    if input.test_param.name not in group_values or use_initial_value:
                         # No test param invalidates the whole conditional
                         values[ input.name ] = group_values = input.get_initial_value( trans, context )
                         messages[ input.test_param.name ] = "No value found for '%s%s', used default" % ( prefix, input.test_param.label )
