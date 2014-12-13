@@ -268,7 +268,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             updates the values for the history with the given ``id``
 
         :type   id:      str
-        :param  id:      the encoded id of the history to undelete
+        :param  id:      the encoded id of the history to update
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
             fields in :func:`galaxy.model.History.to_dict` and/or the following:
@@ -300,7 +300,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             history.
 
         :type   id:     str
-        :param  id:     the encoded id of the history to undelete
+        :param  id:     the encoded id of the history to export
 
         :rtype:     dict
         :returns:   object containing url to fetch export from.
