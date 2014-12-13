@@ -238,6 +238,21 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             self._assert_status_code_is( other_import_response, 200 )
             self._assert_user_has_workflow_with_name( "imported: test_import_published_deprecated (imported from API)")
 
+    def test_import_annotations( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_import_annotations", publish=True )
+        with self._different_user():
+            other_import_response = self.__import_workflow( workflow_id )
+            self._assert_status_code_is( other_import_response, 200 )
+
+            # Test annotations preserved during upload and copied over during
+            # import.
+            other_id = other_import_response.json()["id"]
+            download_response = self._get( "workflows/%s" % other_id )
+            imported_workflow = download_response.json()
+            assert imported_workflow["annotation"] == "simple workflow", download_response.json()
+            step_annotations = set(map(lambda step: step["annotation"], imported_workflow["steps"].values()))
+            assert "input1 description" in step_annotations
+
     def test_not_importable_prevents_import( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_not_importportable" )
         with self._different_user():
