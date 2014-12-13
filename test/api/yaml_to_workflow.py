@@ -111,7 +111,6 @@ def transform_tool(context, step):
         "annotation": "",
         "post_job_actions": {},
     } )
-    __ensure_inputs_connections(step)
     post_job_actions = step["post_job_actions"]
 
     tool_state = {
@@ -163,22 +162,8 @@ def transform_tool(context, step):
             tool_state[key] = json.dumps(value)
         del step["state"]
 
-    for key, values in connect.iteritems():
-        input_connection_value = []
-        if not isinstance(values, list):
-            values = [ values ]
-        for value in values:
-            if not isinstance(value, dict):
-                value_parts = str(value).split("#")
-                if len(value_parts) == 1:
-                    value_parts.append("output")
-                id = value_parts[0]
-                if id in context.labels:
-                    id = context.labels[id]
-                value = {"id": int(id), "output_name": value_parts[1]}
-            input_connection_value.append(value)
-        # TODO: this should be a list
-        step["input_connections"][key] = input_connection_value[0]
+    # Fill in input connections
+    __populate_input_connections(context, step, connect)
 
     __populate_tool_state(step, tool_state)
 
@@ -231,6 +216,27 @@ def __join_prefix(prefix, key):
     else:
         new_key = key
     return new_key
+
+
+def __populate_input_connections(context, step, connect):
+    __ensure_inputs_connections(step)
+    input_connections = step["input_connections"]
+
+    for key, values in connect.iteritems():
+        input_connection_value = []
+        if not isinstance(values, list):
+            values = [ values ]
+        for value in values:
+            if not isinstance(value, dict):
+                value_parts = str(value).split("#")
+                if len(value_parts) == 1:
+                    value_parts.append("output")
+                id = value_parts[0]
+                if id in context.labels:
+                    id = context.labels[id]
+                value = {"id": int(id), "output_name": value_parts[1]}
+            input_connection_value.append(value)
+        input_connections[key] = input_connection_value
 
 
 def __ensure_inputs_connections(step):
