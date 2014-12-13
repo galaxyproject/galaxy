@@ -78,4 +78,27 @@ test_data:
         assert details1["name"] == "the new value", details1
         details2 = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
         assert details2["visible"]
+
+    def test_pause( self ):
+        workflow_id = self._upload_yaml_workflow("""
+- label: test_input
+  type: input
+- label: first_cat
+  tool_id: cat1
+  state:
+    input1:
+      $link: test_input
+- label: the_pause
+  type: pause
+  connect:
+    input:
+    - first_cat#out_file1
+- label: second_cat
+  tool_id: cat1
+  state:
+    input1:
+      $link: the_pause
+""")
+        print self._get("workflows/%s/download" % workflow_id).json()
         assert False
+        # TODO: fill out test...

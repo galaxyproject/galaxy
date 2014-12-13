@@ -103,6 +103,35 @@ def transform_input(context, step, default_name):
     __populate_tool_state(step, tool_state)
 
 
+def transform_pause(context, step, default_name="Pause for dataset review"):
+    default_name = step.get("label", default_name)
+    __ensure_defaults( step, {
+        "annotation": "",
+    })
+
+    __ensure_inputs_connections(step)
+
+    if not "inputs" in step:
+        step["inputs"] = [{}]
+
+    step_inputs = step["inputs"][0]
+    if "name" in step_inputs:
+        name = step_inputs["name"]
+    else:
+        name = default_name
+
+    __ensure_defaults( step_inputs, {
+        "name": name,
+    })
+    tool_state = {
+        "name": name
+    }
+
+    connect = __init_connect_dict(step)
+    __populate_input_connections(context, step, connect)
+    __populate_tool_state(step, tool_state)
+
+
 def transform_tool(context, step):
     if "tool_id" not in step:
         raise Exception("Tool steps must define a tool_id.")
@@ -118,11 +147,7 @@ def transform_tool(context, step):
         "__page__": 0,
     }
 
-    if "connect" not in step:
-        step["connect"] = {}
-
-    connect = step["connect"]
-    del step["connect"]
+    connect = __init_connect_dict(step)
 
     def append_link(key, value):
         if key not in connect:
@@ -216,6 +241,15 @@ def __join_prefix(prefix, key):
     else:
         new_key = key
     return new_key
+
+
+def __init_connect_dict(step):
+    if "connect" not in step:
+        step["connect"] = {}
+
+    connect = step["connect"]
+    del step["connect"]
+    return connect
 
 
 def __populate_input_connections(context, step, connect):
