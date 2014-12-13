@@ -247,9 +247,8 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             # Test annotations preserved during upload and copied over during
             # import.
             other_id = other_import_response.json()["id"]
-            download_response = self._get( "workflows/%s" % other_id )
-            imported_workflow = download_response.json()
-            assert imported_workflow["annotation"] == "simple workflow", download_response.json()
+            imported_workflow = self._show_workflow( other_id )
+            assert imported_workflow["annotation"] == "simple workflow"
             step_annotations = set(map(lambda step: step["annotation"], imported_workflow["steps"].values()))
             assert "input1 description" in step_annotations
 
@@ -268,9 +267,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
 
     def test_export( self ):
         uploaded_workflow_id = self.workflow_populator.simple_workflow( "test_for_export" )
-        download_response = self._get( "workflows/%s/download" % uploaded_workflow_id )
-        self._assert_status_code_is( download_response, 200 )
-        downloaded_workflow = download_response.json()
+        downloaded_workflow = self._download_workflow( uploaded_workflow_id )
         assert downloaded_workflow[ "name" ] == "test_for_export (imported from API)"
         assert len( downloaded_workflow[ "steps" ] ) == 3
         first_input = downloaded_workflow[ "steps" ][ "0" ][ "inputs" ][ 0 ]
@@ -280,8 +277,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     def test_import_export_with_runtime_inputs( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( name="test_workflow_with_runtime_input" )
         workflow_id = self.workflow_populator.create_workflow( workflow )
-        download_response = self._get( "workflows/%s/download" % workflow_id )
-        downloaded_workflow = download_response.json()
+        downloaded_workflow = self._download_workflow( workflow_id )
         assert len( downloaded_workflow[ "steps" ] ) == 2
         runtime_input = downloaded_workflow[ "steps" ][ "1" ][ "inputs" ][ 0 ]
         assert runtime_input[ "description" ].startswith( "runtime parameter for tool" )
@@ -483,8 +479,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             last_step_map = self._step_map( workflow )
             for i in range(num_tests):
                 uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
-                download_response = self._get( "workflows/%s/download" % uploaded_workflow_id )
-                downloaded_workflow = download_response.json()
+                downloaded_workflow = self._download_workflow( uploaded_workflow_id )
                 step_map = self._step_map(downloaded_workflow)
                 assert step_map == last_step_map
                 last_step_map = step_map
@@ -589,8 +584,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     def test_pja_import_export( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_pja_import", add_pja=True )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
-        download_response = self._get( "workflows/%s/download" % uploaded_workflow_id )
-        downloaded_workflow = download_response.json()
+        downloaded_workflow = self._download_workflow( uploaded_workflow_id )
         self._assert_has_keys( downloaded_workflow[ "steps" ], "0", "1", "2" )
         pjas = downloaded_workflow[ "steps" ][ "2" ][ "post_job_actions" ].values()
         assert len( pjas ) == 1, len( pjas )
@@ -726,6 +720,15 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             )
         return self._post( route, import_data )
 
+    def _download_workflow(self, workflow_id):
+        download_response = self._get( "workflows/%s/download" % workflow_id )
+        self._assert_status_code_is( download_response, 200 )
+        downloaded_workflow = download_response.json()
+        return downloaded_workflow
+
+    def _show_workflow(self, workflow_id):
+        show_response = self._get( "workflows/%s" % workflow_id )
+        self._assert_status_code_is( show_response, 200 )
+        return show_response.json()
 
 RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'inputs', 'jobs'])
-
