@@ -1688,14 +1688,10 @@ class Tool( object, Dictifiable ):
             self.help = tool_source.root.find( 'help' )
             if self.repository_id and self.help.text.find( '.. image:: ' ) >= 0:
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
-                lock = threading.Lock()
-                lock.acquire( True )
                 try:
                     self.help.text = suc.set_image_paths( self.app, self.repository_id, self.help.text )
                 except Exception, e:
                     log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
-                finally:
-                    lock.release()
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:
