@@ -3,11 +3,11 @@ from galaxy.web.framework.helpers import to_unicode
 require( "Whoosh" )
 
 from whoosh.filedb.filestore import RamStorage
-from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
-from whoosh.index import Index
+from whoosh.fields import Schema, STORED, TEXT
 from whoosh.scoring import BM25F
 from whoosh.qparser import MultifieldParser
-schema = Schema( id = STORED, title = TEXT, description = TEXT, help = TEXT )
+schema = Schema( id=STORED, title=TEXT, description=TEXT, help=TEXT )
+
 
 class ToolBoxSearch( object ):
     """
@@ -33,10 +33,12 @@ class ToolBoxSearch( object ):
 
     def search( self, query, return_attribute='id' ):
         # Change field boosts for searcher to place more weight on title, description than help.
-        searcher = self.index.searcher( \
-                        weighting=BM25F( field_B={ 'title_B' : 3, 'description_B' : 2, 'help_B' : 1 } \
-                                    ) )
+        searcher = self.index.searcher(
+            weighting=BM25F(
+                field_B={ 'title_B': 3, 'description_B': 2, 'help_B': 1 }
+            )
+        )
         # Set query to search title, description, and help.
-        parser = MultifieldParser( [ 'title', 'description', 'help' ], schema = schema )
+        parser = MultifieldParser( [ 'title', 'description', 'help' ], schema=schema )
         results = searcher.search( parser.parse( query ) )
         return [ result[ return_attribute ] for result in results ]
