@@ -203,7 +203,7 @@ class Registry( object ):
                                     try:
                                         # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
                                         fields = datatype_module.split( '.' )
-                                        module = __import__( fields.pop( 0 ) )
+                                        module = __import__( datatype_module )
                                         for mod in fields:
                                             module = getattr( module, mod )
                                         datatype_class = getattr( module, datatype_class_name )
