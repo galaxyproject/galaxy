@@ -255,7 +255,7 @@ class Configuration( object ):
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
-        self.watch_tools = kwargs.get( 'watch_tools', False )
+        self.watch_tools = string_as_bool( kwargs.get( 'watch_tools', False ) )
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool( kwargs.get( "index_tool_help", True ) )
