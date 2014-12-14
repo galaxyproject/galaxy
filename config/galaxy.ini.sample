@@ -212,8 +212,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Directory where chrom len files are kept, currently mainly used by trackster
 #len_file_path = tool-data/shared/ucsc/chrom
 
-# Datatypes config file, defines what data (file) types are available in
-# Galaxy (.sample is used if default does not exist).
+# Datatypes config file(s), defines what data (file) types are available in
+# Galaxy (.sample is used if default does not exist). If a datatype appears in
+# multiple files - the last definition is used (though the first sniffer is used
+# so limit sniffer definitions to one file).
 #datatypes_config_file = config/datatypes_conf.xml
 
 # Disable the 'Auto-detect' option for file uploads

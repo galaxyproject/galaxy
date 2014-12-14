@@ -583,8 +583,9 @@ class Configuration( object ):
         for path in tool_configs:
             if not os.path.exists( path ):
                 raise ConfigurationError("Tool config file not found: %s" % path )
-        if not os.path.isfile( self.datatypes_config ):
-            raise ConfigurationError("Datatypes config file not found: %s" % self.datatypes_config )
+        for datatypes_config in listify( self.datatypes_config ):
+            if not os.path.isfile( datatypes_config ):
+                raise ConfigurationError("Datatypes config file not found: %s" % datatypes_config )
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
@@ -746,7 +747,12 @@ class ConfiguresGalaxyMixin:
             # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
             installed_repository_manager.load_proprietary_datatypes()
         # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
-        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
+        datatypes_configs = self.config.datatypes_config
+        for datatypes_config in listify( datatypes_configs ):
+            # Setting override=False would make earlier files would take
+            # precedence - but then they wouldn't override tool shed
+            # datatypes.
+            self.datatypes_registry.load_datatypes( self.config.root, datatypes_config, override=True )
 
     def _configure_object_store( self, **kwds ):
         from galaxy.objectstore import build_object_store_from_config
