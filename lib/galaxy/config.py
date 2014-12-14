@@ -256,6 +256,9 @@ class Configuration( object ):
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
         self.watch_tools = kwargs.get( 'watch_tools', False )
+        # On can mildly speed up Galaxy startup time by disabling index of help,
+        # not needed on production systems but useful if running many functional tests.
+        self.index_tool_help = string_as_bool( kwargs.get( "index_tool_help", True ) )
         # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
@@ -705,7 +708,8 @@ class ConfiguresGalaxyMixin:
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         # Search support for tools
         import galaxy.tools.search
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
+        index_help = getattr( self.config, "index_tool_help", True )
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
 
         from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)

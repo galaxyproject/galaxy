@@ -15,20 +15,33 @@ class ToolBoxSearch( object ):
     the "whoosh" search library.
     """
 
-    def __init__( self, toolbox ):
+    def __init__( self, toolbox, index_help=True ):
         """
         Create a searcher for `toolbox`.
         """
         self.toolbox = toolbox
-        self.build_index()
+        self.build_index( index_help )
 
-    def build_index( self ):
+    def build_index( self, index_help ):
         self.storage = RamStorage()
         self.index = self.storage.create_index( schema )
         writer = self.index.writer()
         ## TODO: would also be nice to search section headers.
         for id, tool in self.toolbox.tools_by_id.iteritems():
-            writer.add_document( id=id, title=to_unicode(tool.name), description=to_unicode(tool.description), help=to_unicode(tool.help) )
+            add_doc_kwds = {
+                "id": id,
+                "title": to_unicode(tool.name),
+                "description": to_unicode(tool.description),
+                "help": to_unicode(""),
+            }
+            if index_help and tool.help:
+                try:
+                    add_doc_kwds['help'] = to_unicode(tool.help.render( host_url="", static_path="" ))
+                except Exception:
+                    # Don't fail to build index just because a help message
+                    # won't render.
+                    pass
+            writer.add_document( **add_doc_kwds )
         writer.commit()
 
     def search( self, query, return_attribute='id' ):
