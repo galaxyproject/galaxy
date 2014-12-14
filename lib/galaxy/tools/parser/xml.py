@@ -162,6 +162,10 @@ class XmlToolSource(ToolSource):
         parser = StdioParser(self.root)
         return parser.stdio_exit_codes, parser.stdio_regexes
 
+    def parse_help(self):
+        help_elem = self.root.find( 'help' )
+        return help_elem.text if help_elem is not None else None
+
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")
         tests = []

@@ -140,6 +140,12 @@ class ToolSource(object):
         """
         return [], []
 
+    @abstractmethod
+    def parse_help(self):
+        """ Return RST definition of help text for tool or None if the tool
+        doesn't define help text.
+        """
+
     def parse_tests_to_dict(self):
         return {'tests': []}
 

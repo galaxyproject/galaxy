@@ -101,6 +101,8 @@ JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
     </when>
 </conditional>"""
 
+HELP_UNINITIALIZED = threading.Lock()
+
 
 class ToolNotFoundException( Exception ):
     pass
@@ -1680,43 +1682,9 @@ class Tool( object, Dictifiable ):
         This implementation supports multiple pages.
         """
         # TODO: Allow raw HTML or an external link.
-        self.help = None
-        self.help_by_page = list()
-        help_header = ""
-        help_footer = ""
-        if hasattr( tool_source, 'root' ) and tool_source.root.find( 'help' ) is not None:
-            self.help = tool_source.root.find( 'help' )
-            if self.repository_id and self.help.text.find( '.. image:: ' ) >= 0:
-                # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
-                try:
-                    self.help.text = suc.set_image_paths( self.app, self.repository_id, self.help.text )
-                except Exception, e:
-                    log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
-            help_pages = self.help.findall( "page" )
-            help_header = self.help.text
-            try:
-                self.help = Template( rst_to_html(self.help.text), input_encoding='utf-8',
-                                      output_encoding='utf-8', default_filters=[ 'decode.utf8' ],
-                                      encoding_errors='replace' )
-            except:
-                log.exception( "error in help for tool %s" % self.name )
-            # Multiple help page case
-            if help_pages:
-                for help_page in help_pages:
-                    self.help_by_page.append( help_page.text )
-                    help_footer = help_footer + help_page.tail
-        # Each page has to rendered all-together because of backreferences allowed by rst
-        try:
-            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer ),
-                                            input_encoding='utf-8', output_encoding='utf-8',
-                                            default_filters=[ 'decode.utf8' ],
-                                            encoding_errors='replace' )
-                                  for x in self.help_by_page ]
-        except:
-            log.exception( "error in multi-page help for tool %s" % self.name )
-        # Pad out help pages to match npages ... could this be done better?
-        while len( self.help_by_page ) < self.npages:
-            self.help_by_page.append( self.help )
+        self.__help = HELP_UNINITIALIZED
+        self.__help_by_page = HELP_UNINITIALIZED
+        self.__help_source = tool_source
 
     def parse_outputs( self, tool_source ):
         """
@@ -1890,6 +1858,67 @@ class Tool( object, Dictifiable ):
                 self.repository_name = tool_shed_repository.name
                 self.repository_owner = tool_shed_repository.owner
                 self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+
+    @property
+    def help(self):
+        if self.__help is HELP_UNINITIALIZED:
+            self.__ensure_help()
+        return self.__help
+
+    @property
+    def help_by_page(self):
+        if self.__help_by_page is HELP_UNINITIALIZED:
+            self.__ensure_help()
+        return self.__help_by_page
+
+    def __ensure_help(self):
+        with HELP_UNINITIALIZED:
+            if self.__help is HELP_UNINITIALIZED:
+                self.__inititalize_help()
+
+    def __inititalize_help(self):
+        tool_source = self.__help_source
+        self.__help = None
+        self.__help_by_page = []
+        help_header = ""
+        help_footer = ""
+        help_text = tool_source.parse_help()
+        if help_text is not None:
+            if self.repository_id and help_text.find( '.. image:: ' ) >= 0:
+                # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
+                try:
+                    help_text = suc.set_image_paths( self.app, self.repository_id, help_text )
+                except Exception, e:
+                    log.exception( "Exception in parse_help, so images may not be properly displayed:\n%s" % str( e ) )
+            try:
+                self.__help = Template( rst_to_html(help_text), input_encoding='utf-8',
+                                        output_encoding='utf-8', default_filters=[ 'decode.utf8' ],
+                                        encoding_errors='replace' )
+            except:
+                log.exception( "error in help for tool %s" % self.name )
+
+            # Handle deprecated multi-page help text in XML case.
+            if hasattr(tool_source, "root"):
+                help_elem = tool_source.root.find("help")
+                help_header = help_text
+                help_pages = help_elem.findall( "page" )
+                # Multiple help page case
+                if help_pages:
+                    for help_page in help_pages:
+                        self.__help_by_page.append( help_page.text )
+                        help_footer = help_footer + help_page.tail
+                # Each page has to rendered all-together because of backreferences allowed by rst
+                try:
+                    self.__help_by_page = [ Template( rst_to_html( help_header + x + help_footer ),
+                                                    input_encoding='utf-8', output_encoding='utf-8',
+                                                    default_filters=[ 'decode.utf8' ],
+                                                    encoding_errors='replace' )
+                                            for x in self.__help_by_page ]
+                except:
+                    log.exception( "error in multi-page help for tool %s" % self.name )
+        # Pad out help pages to match npages ... could this be done better?
+        while len( self.__help_by_page ) < self.npages:
+            self.__help_by_page.append( self.__help )
 
     def check_workflow_compatible( self, tool_source ):
         """

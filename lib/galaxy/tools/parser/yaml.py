@@ -68,6 +68,9 @@ class YamlToolSource(ToolSource):
         exit_code_lower.error_level = StdioErrorLevel.FATAL
         return [exit_code_lower, exit_code_high], []
 
+    def parse_help(self):
+        return self.root_dict.get("help", None)
+
     def parse_outputs(self, tool):
         outputs = self.root_dict.get("outputs", {})
         output_defs = []

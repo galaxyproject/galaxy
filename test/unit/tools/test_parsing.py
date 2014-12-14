@@ -26,6 +26,7 @@ TOOL_XML_1 = """
     <stdio>
         <exit_code range="1:" level="fatal" />
     </stdio>
+    <help>This is HELP TEXT1!!!</help>
     <tests>
         <test>
             <param name="foo" value="5" />
@@ -75,6 +76,9 @@ inputs:
         type: data
       - name: nestsample
         type: text
+help:
+|
+    This is HELP TEXT2!!!
 tests:
    - inputs:
        foo: 5
@@ -172,6 +176,10 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert len(regexes) == 0
         assert exit[0].range_start == 1
         assert isinf(exit[0].range_end)
+
+    def test_help(self):
+        help_text = self._tool_source.parse_help()
+        assert help_text.strip() == "This is HELP TEXT1!!!"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
@@ -277,6 +285,10 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
 
         assert exit[1].range_start == 1
         assert isinf(exit[1].range_end)
+
+    def test_help(self):
+        help_text = self._tool_source.parse_help()
+        assert help_text.strip() == "This is HELP TEXT2!!!"
 
     def test_inputs(self):
         input_pages = self._tool_source.parse_input_pages()
