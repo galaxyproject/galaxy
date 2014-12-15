@@ -64,6 +64,22 @@ class ToolData( BaseAPIController ):
 
         return data_table.remove_entry(split_values)
 
+    @web.require_admin
+    @expose_api
+    def show_field( self, trans, id, value, **kwds ):
+        """
+        GET /api/tool_data/<id>/fields/<value>
+
+        Get information about a partiular field in a tool_data table
+        """
+        return self._data_table_field( id, value ).to_dict()
+
+    def _data_table_field( self, id, value ):
+        out = self._data_table(id).get_field(value)
+        if out is None:
+            raise exceptions.ObjectNotFound("No such field %s in data table %s." % (value, id))
+        return out
+
     def _data_table( self, id ):
         try:
             return self._data_tables[id]

@@ -28,3 +28,11 @@ class ToolDataApiTestCase( api.ApiTestCase ):
         assert first_entry[0] == "data1"
         assert first_entry[1] == "data1name"
         assert first_entry[2].endswith("test/functional/tool-data/data1/entry.txt")
+
+    def test_show_field(self):
+        show_field_response = self._get( "tool_data/testalpha/fields/data1", admin=True )
+        self._assert_status_code_is( show_field_response, 200 )
+        field = show_field_response.json()
+        self._assert_has_keys( field, "files", "name", "fields", "fingerprint", "base_dir" )
+        files = field[ "files" ]
+        assert len( files ) == 2

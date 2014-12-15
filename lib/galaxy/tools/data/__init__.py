@@ -9,7 +9,11 @@ to modify the tool configurations.
 import logging
 import os
 import os.path
+import re
 import string
+import hashlib
+
+from glob import glob
 
 from galaxy import util
 from galaxy.util.odict import odict
@@ -340,6 +344,13 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
     def get_fields( self ):
         return self.data
 
+    def get_field(self, value):
+        rval = None
+        for i in self.get_named_fields_list():
+            if i['value'] == value:
+                rval = TabularToolDataField(i)
+        return rval
+
     def get_named_fields_list( self ):
         rval = []
         named_colums = self.get_column_name_list()
@@ -577,6 +588,58 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         if view == 'element':
             rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval['fields'] = self.get_fields()
+        return rval
+
+
+class TabularToolDataField(Dictifiable, object):
+
+    dict_collection_visible_keys = []
+
+    def __init__(self, data):
+        self.data = data
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def get_base_path(self):
+        return os.path.normpath(os.path.abspath( self.data['path'] ))
+
+    def get_base_dir(self):
+        path = self.get_base_path()
+        if not os.path.isdir(path):
+            path = os.path.dirname(path)
+        return path
+
+    def clean_base_dir(self, path):
+        return re.sub( "^" + self.get_base_dir() + r"/*", "", path )
+
+    def get_files(self):
+        return glob( self.get_base_path() + "*" )
+
+    def get_filesize_map(self, rm_base_dir=False):
+        out = {}
+        for path in self.get_files():
+            if rm_base_dir:
+                out[self.clean_base_dir(path)] = os.path.getsize(path)
+            else:
+                out[path] = os.path.getsize(path)
+        return out
+
+    def get_fingerprint(self):
+        sha1 = hashlib.sha1()
+        fmap = self.get_filesize_map(True)
+        for k in sorted(fmap.keys()):
+            sha1.update(k)
+            sha1.update(str(fmap[k]))
+        return sha1.hexdigest()
+
+    def to_dict(self):
+        rval = super(TabularToolDataField, self).to_dict()
+        rval['name'] = self.data['value']
+        rval['fields'] = self.data
+        rval['base_dir'] = self.get_base_dir(),
+        rval['files'] = self.get_filesize_map(True)
+        rval['fingerprint'] = self.get_fingerprint()
         return rval
 
 
