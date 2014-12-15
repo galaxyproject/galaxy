@@ -176,6 +176,10 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             header_row = $('<tr/>').css('background-color', this.header_color).appendTo(data_table);
         if (column_names) {
             header_row.append('<th>' + column_names.join('</th><th>') + '</th>');
+        } else {
+            for (var j = 1; j <= this.model.get_metadata('columns'); j++) {
+                header_row.append('<th>' + j + '</th>');
+            }
         }
 
         // Render first chunk.
