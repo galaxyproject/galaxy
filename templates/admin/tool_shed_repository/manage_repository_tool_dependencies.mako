@@ -57,7 +57,7 @@ ${render_galaxy_repository_actions( repository )}
                     <td>${tool_dependency.version|h}</td>
                     <td>${tool_dependency.type|h}</td>
                     <td>${tool_dependency.status|h}</td>
-                    <td>${error_message|h}</td>
+                    <td>${error_message}</td>
                 </tr>
             %endfor
         </table>
