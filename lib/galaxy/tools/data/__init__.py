@@ -9,9 +9,7 @@ to modify the tool configurations.
 import logging
 import os
 import os.path
-import shutil
 import string
-import tempfile
 
 from galaxy import util
 from galaxy.util.odict import odict
@@ -21,6 +19,7 @@ from galaxy.model.item_attrs import Dictifiable
 log = logging.getLogger( __name__ )
 
 DEFAULT_TABLE_TYPE = 'tabular'
+
 
 class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
@@ -81,7 +80,7 @@ class ToolDataTableManager( object ):
                     log.debug( "Loaded tool data table '%s'", table.name )
                 else:
                     log.debug( "Loading another instance of data table '%s', attempting to merge content.", table.name )
-                    self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False ) #only merge content, do not persist to disk, do not allow duplicate rows when merging
+                    self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
                     # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
@@ -128,7 +127,7 @@ class ToolDataTableManager( object ):
         """
         if not ( new_elems or remove_elems ):
             log.debug( 'ToolDataTableManager.to_xml_file called without any elements to add or remove.' )
-            return #no changes provided, no need to persist any changes
+            return  # no changes provided, no need to persist any changes
         if not new_elems:
             new_elems = []
         if not remove_elems:
@@ -175,7 +174,7 @@ class ToolDataTable( object ):
         assert table_type in tool_data_table_types, "Unknown data table type '%s'" % type
         return tool_data_table_types[ table_type ]( table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename )
 
-    def __init__( self, config_element, tool_data_path, from_shed_config = False, filename=None ):
+    def __init__( self, config_element, tool_data_path, from_shed_config=False, filename=None ):
         self.name = config_element.get( 'name' )
         self.comment_char = config_element.get( 'comment_char' )
         self.empty_field_value = config_element.get( 'empty_field_value', '' )
@@ -187,7 +186,7 @@ class ToolDataTable( object ):
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ( [ config_element, tool_data_path ], { 'from_shed_config':from_shed_config } )
+        self._load_info = ( [ config_element, tool_data_path ], { 'from_shed_config': from_shed_config } )
         self._merged_load_info = []
 
     def _update_version( self, version=None ):
@@ -252,13 +251,13 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
     type_key = 'tabular'
 
-    def __init__( self, config_element, tool_data_path, from_shed_config = False, filename=None ):
+    def __init__( self, config_element, tool_data_path, from_shed_config=False, filename=None ):
         super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config, filename)
         self.config_element = config_element
         self.data = []
         self.configure_and_load( config_element, tool_data_path, from_shed_config)
 
-    def configure_and_load( self, config_element, tool_data_path, from_shed_config = False):
+    def configure_and_load( self, config_element, tool_data_path, from_shed_config=False):
         """
         Configure and load table from an XML element.
         """
@@ -323,7 +322,6 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
             else:
                 log.debug( "Filename '%s' already exists in filenames (%s), not adding", filename, self.filenames.keys() )
 
-
     def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % ( self.name, self.columns, other_table.name, other_table.columns )
         #merge filename info
@@ -350,7 +348,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
             for i, field in enumerate( fields ):
                 field_name = named_colums[i]
                 if field_name is None:
-                    field_name = i #check that this is supposed to be 0 based.
+                    field_name = i  # check that this is supposed to be 0 based.
                 field_dict[ field_name ] = field
             rval.append( field_dict )
         return rval
@@ -508,7 +506,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                     data_table_fh = open( filename, 'wb' )
                 if os.stat( filename )[6] != 0:
                     # ensure last existing line ends with new line
-                    data_table_fh.seek( -1, 2 ) #last char in file
+                    data_table_fh.seek( -1, 2 )  # last char in file
                     last_char = data_table_fh.read( 1 )
                     if last_char not in [ '\n', '\r' ]:
                         data_table_fh.write( '\n' )
@@ -577,7 +575,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
     def to_dict(self, view='collection'):
         rval = super(TabularToolDataTable, self).to_dict()
         if view == 'element':
-            rval['columns'] = sorted(self.columns.keys(), key=lambda x:self.columns[x])
+            rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval['fields'] = self.get_fields()
         return rval
 
