@@ -445,7 +445,7 @@ class Configuration( object ):
             job_resource_params_file = [ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
             migrated_tools_config = [ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
             object_store_config_file = [ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
-            openid_config_file = [ 'config/openid_conf.xml', 'openid_conf.xml' 'config/openid_conf.xml.sample' ],
+            openid_config_file = [ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
             shed_data_manager_config_file = [ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
             shed_tool_data_table_config = [ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
             tool_sheds_config_file = [ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
