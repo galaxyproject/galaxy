@@ -1,6 +1,9 @@
 """ Tests for the tool data API.
 """
+import json
+
 from base import api
+from .helpers import DatasetPopulator
 
 import operator
 
@@ -42,3 +45,19 @@ class ToolDataApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( show_field_response, 200 )
         content = show_field_response.content
         assert content == "This is data 1.", content
+
+    def test_create_data_with_manager(self):
+        dataset_populator = DatasetPopulator( self.galaxy_interactor )
+        history_id = dataset_populator.new_history()
+        payload = dataset_populator.run_tool_payload(
+            tool_id="data_manager",
+            inputs={"ignored_value": "moo"},
+            history_id=history_id,
+        )
+        create_response = self._post( "tools", data=payload )
+        self._assert_status_code_is( create_response, 200 )
+        dataset_populator.wait_for_history( history_id, assert_ok=True )
+        show_response = self._get( "tool_data/testbeta", admin=True )
+        print show_response.content
+        assert False
+

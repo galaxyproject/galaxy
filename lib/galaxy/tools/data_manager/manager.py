@@ -25,7 +25,10 @@ class DataManagers( object ):
         self.managed_data_tables = odict()
         self.tool_path = None
         self.filename = xml_filename or self.app.config.data_manager_config_file
-        self.load_from_xml( self.filename )
+        for filename in util.listify( self.filename ):
+            if not filename:
+                continue
+            self.load_from_xml( filename )
         if self.app.config.shed_data_manager_config_file:
             self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=False, replace_existing=True )
 

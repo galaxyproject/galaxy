@@ -241,6 +241,12 @@ def main():
             if os.path.exists( tool_data_config ):
                 default_tool_data_config = tool_data_config
         tool_data_table_config_path = '%s,test/functional/tool-data/sample_tool_data_tables.xml' % default_tool_data_config
+
+    default_data_manager_config = 'config/data_manager_conf.xml.sample'
+    for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml' ]:
+        if os.path.exists( data_manager_config ):
+            default_data_manager_config = data_manager_config
+    data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
     shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
     tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
@@ -329,6 +335,7 @@ def main():
                        master_api_key=master_api_key,
                        use_tasked_jobs=True,
                        enable_beta_tool_formats=True,
+                       data_manager_config_file=data_manager_config_file,
         )
         if install_database_connection is not None:
             kwargs[ 'install_database_connection' ] = install_database_connection
