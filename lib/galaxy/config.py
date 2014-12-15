@@ -4,23 +4,22 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import ConfigParser
+import logging
+import logging.config
 import os
 import re
 import socket
 import string
 import sys
 import tempfile
-import logging
-import logging.config
-import ConfigParser
 from datetime import timedelta
-from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.util import string_as_bool
-from galaxy.util import listify
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy import eggs
+from galaxy.util import listify
+from galaxy.util import string_as_bool
+from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.web.formatting import expand_pretty_datetime_format
 
-import ConfigParser
 
 log = logging.getLogger( __name__ )
 
@@ -442,23 +441,23 @@ class Configuration( object ):
         Backwards compatibility for config files moved to the config/ dir.
         """
         defaults = dict(
-            data_manager_config_file = [ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
-            datatypes_config_file = [ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
-            external_service_type_config_file = [ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
-            job_config_file = [ 'config/job_conf.xml', 'job_conf.xml' ],
-            job_metrics_config_file = [ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml' ],
-            dependency_resolvers_config_file = [ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
-            job_resource_params_file = [ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
-            migrated_tools_config = [ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
-            object_store_config_file = [ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
-            openid_config_file = [ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
-            shed_data_manager_config_file = [ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
-            shed_tool_data_table_config = [ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
-            tool_sheds_config_file = [ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
+            data_manager_config_file=[ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
+            datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
+            external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
+            job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
+            job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml' ],
+            dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
+            job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
+            migrated_tools_config=[ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
+            object_store_config_file=[ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
+            openid_config_file=[ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
+            shed_data_manager_config_file=[ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
+            shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
+            tool_sheds_config_file=[ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
         )
 
         listify_defaults = dict(
-            tool_data_table_config_path = [ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
+            tool_data_table_config_path=[ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
             # rationale:
             # [0]: user has explicitly created config/tool_conf.xml but did not
             #      move their existing shed_tool_conf.xml, don't use
@@ -469,7 +468,7 @@ class Configuration( object ):
             #      [0], probably moved their shed_tool_conf.xml as well
             # [2]: user has done nothing, use the old files
             # [3]: fresh install
-            tool_config_file = [ 'config/tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml,config/shed_tool_conf.xml', 'tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
+            tool_config_file=[ 'config/tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml,config/shed_tool_conf.xml', 'tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
         )
 
         for var, defaults in defaults.items():
