@@ -2234,6 +2234,8 @@ div.toolTitleNoSection{padding-bottom:5px;font-weight:bold}
 #loading_indicator{position:fixed;right:10px;top:10px;height:32px;width:32px;display:none;background:url(largespinner.gif)}
 #content_table td{text-align:right;white-space:nowrap;padding:2px 10px}
 #content_table td.stringalign{text-align:left}
+#content_table .dark_row{background-color:#DDD}
+#content_table th{background-color:#AAA}
 .toolMenuAndView .toolForm{float:left;background-color:white;margin:10px}
 .text-and-autocomplete-select{background:none;position:relative;padding-right:18px}.text-and-autocomplete-select:after{margin-top:6px;position:absolute;top:2px;right:6px;width:10px;height:10px;display:inline-block;width:0;height:0;margin-left:2px;vertical-align:middle;border-top:4px solid #000;border-right:4px solid transparent;border-left:4px solid transparent;border-bottom:0 dotted;content:"";filter:alpha(opacity=8000);opacity:80;-ms-filter:progid:DXImageTransform.Microsoft.Alpha(Opacity=8000);filter:alpha(opacity=8000)}.btn-default .text-and-autocomplete-select:after{border-top-color:#333}
 .btn-primary .text-and-autocomplete-select:after,.btn-success .text-and-autocomplete-select:after,.btn-warning .text-and-autocomplete-select:after,.btn-danger .text-and-autocomplete-select:after,.btn-info .text-and-autocomplete-select:after{border-top-color:#fff}

@@ -128,10 +128,6 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         this.row_count = 0;
         this.loading_chunk = false;
 
-        // CSS colors used in table.
-        this.header_color = '#AAA';
-        this.dark_row_color = '#DDD';
-
         // load trackster button
         new TabularButtonTracksterView({
             model   : options.model,
@@ -173,7 +169,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         });
         this.$el.append(data_table);
         var column_names = this.model.get_metadata('column_names'),
-            header_row = $('<tr/>').css('background-color', this.header_color).appendTo(data_table);
+            header_row = $('<tr/>').appendTo(data_table);
         if (column_names) {
             header_row.append('<th>' + column_names.join('</th><th>') + '</th>');
         } else {
@@ -236,7 +232,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             num_columns = this.model.get_metadata('columns');
 
         if (this.row_count % 2 !== 0) {
-            row.css('background-color', this.dark_row_color);
+            row.addClass('dark_row');
         }
 
         if (cells.length === num_columns) {
