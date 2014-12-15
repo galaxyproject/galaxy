@@ -629,7 +629,9 @@ class ToolBox( object, Dictifiable ):
                 integrated_panel_dict[ key ] = tool
             else:
                 integrated_panel_dict.insert( index, key, tool )
-        except:
+        except IOError:
+            log.error( "Error reading tool configuration file from path: %s." % path )
+        except Exception:
             log.exception( "Error reading tool from path: %s" % path )
 
     def __add_tool( self, tool, load_panel_dict, panel_dict ):
