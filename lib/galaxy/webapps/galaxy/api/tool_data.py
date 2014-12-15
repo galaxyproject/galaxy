@@ -1,6 +1,9 @@
+import os
+
 from galaxy import exceptions
 from galaxy import web
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_raw as expose_api_raw
 from galaxy.web.base.controller import BaseAPIController
 
 
@@ -73,6 +76,16 @@ class ToolData( BaseAPIController ):
         Get information about a partiular field in a tool_data table
         """
         return self._data_table_field( id, value ).to_dict()
+
+    @web.require_admin
+    @expose_api_raw
+    def download_field_file( self, trans, id, value, path, **kwds ):
+        field_value = self._data_table_field( id, value )
+        base_dir = field_value.get_base_dir()
+        full_path = os.path.join( base_dir, path )
+        if full_path not in field_value.get_files():
+            raise exceptions.ObjectNotFound("No such path in data table field.")
+        return open(full_path, "r")
 
     def _data_table_field( self, id, value ):
         out = self._data_table(id).get_field(value)
