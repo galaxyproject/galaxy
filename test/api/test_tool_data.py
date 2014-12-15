@@ -5,6 +5,8 @@ import json
 from base import api
 from .helpers import DatasetPopulator
 
+from requests import delete
+
 import operator
 
 
@@ -46,7 +48,10 @@ class ToolDataApiTestCase( api.ApiTestCase ):
         content = show_field_response.content
         assert content == "This is data 1.", content
 
-    def test_create_data_with_manager(self):
+    def test_delete_entry(self):
+        show_response = self._get( "tool_data/testbeta", admin=True )
+        original_count = len(show_response.json()["fields"])
+
         dataset_populator = DatasetPopulator( self.galaxy_interactor )
         history_id = dataset_populator.new_history()
         payload = dataset_populator.run_tool_payload(
@@ -58,6 +63,12 @@ class ToolDataApiTestCase( api.ApiTestCase ):
         self._assert_status_code_is( create_response, 200 )
         dataset_populator.wait_for_history( history_id, assert_ok=True )
         show_response = self._get( "tool_data/testbeta", admin=True )
-        print show_response.content
-        assert False
+        updated_fields = show_response.json()["fields"]
+        assert len(updated_fields) == original_count + 1
+        field0 = updated_fields[0]
+        url = self._api_url( "tool_data/testbeta?key=%s" % self.galaxy_interactor.master_api_key )
+        delete( url, data=json.dumps({"values": "\t".join(field0)}) )
 
+        show_response = self._get( "tool_data/testbeta", admin=True )
+        updated_fields = show_response.json()["fields"]
+        assert len(updated_fields) == original_count
