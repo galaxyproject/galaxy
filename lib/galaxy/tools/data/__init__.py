@@ -31,8 +31,10 @@ class ToolDataTableManager( object ):
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
         self.data_tables = {}
-        if config_filename:
-            self.load_from_config_file( config_filename, self.tool_data_path, from_shed_config=False )
+        for single_config_filename in util.listify( config_filename ):
+            if not single_config_filename:
+                continue
+            self.load_from_config_file( single_config_filename, self.tool_data_path, from_shed_config=False )
 
     def __getitem__( self, key ):
         return self.data_tables.__getitem__( key )
