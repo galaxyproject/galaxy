@@ -24,11 +24,11 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
     @expose_api
     def index( self, trans, **kwd ):
         """
-        index( trans, state=None, tool_id=None, history_id=None, date_range_min=None, date_range_max=None )
+        index( trans, state=None, tool_id=None, history_id=None, date_range_min=None, date_range_max=None, user_details=False )
         * GET /api/jobs:
             return jobs for current user
             
-            !! if user is admin and date_range_[min|max], then
+            !! if user is admin and user_details is True, then
                 return jobs for all galaxy users based on filtering - this is an extended service
 
         :type   state: string or list
@@ -39,6 +39,9 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :type   tool_id: string or list
         :param  tool_id: limit listing of jobs to those that match one of the included tool_ids. If none, all are returned.
 
+        :type   user_details: boolean
+        :param  user_details: if true, and requestor is an admin, will return external job id and user email.
+        
         :type   date_range_min: string '2014-01-01'
         :param  date_range_min: limit the listing of jobs to those updated on or after requested date 
         
@@ -51,9 +54,8 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :rtype:     list
         :returns:   list of dictionaries containing summary job information
         """
-
         state = kwd.get( 'state', None )
-        if trans.user_is_admin() and (kwd.get('date_range_min', None) or kwd.get('date_range_max', None)):
+        if trans.user_is_admin() and kwd.get('user_details', False):
             is_extended_service = True
         else:
             is_extended_service = False
@@ -96,24 +98,12 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         else:
             order_by = trans.app.model.Job.update_time.desc()
         for job in query.order_by( order_by ).all():
-            j = self.encode_all_ids( trans, job.to_dict( 'collection' ), True )
-            
+            j = self.encode_all_ids( trans, job.to_dict( 'collection' ), True )          
             if is_extended_service:
-                def get_email_dict(trans):
-                    user_email_dict = {}
-                    user_query = trans.sa_session.query( trans.app.model.User )
-                    for user in user_query.all():
-                        u = user.to_dict()
-                        user_email_dict[u['id']] = u['email']
-                    return user_email_dict
-                
-                user_emails = get_email_dict(trans)
                 j['external_id'] = job.job_runner_external_id
-                j['job_id'] = job.id
-                if job.user_id in user_emails:
-                    j['user_email'] = user_emails[job.user_id]
-            
+                j['user_email'] = job.user.email
             out.append(j)
+        
         return out
 
     @expose_api
