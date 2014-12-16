@@ -11,7 +11,9 @@ from galaxy.workflow import modules
 # For WorkflowContentManager
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.steps import attach_ordered_steps
-from galaxy.workflow.modules import module_factory, is_tool_module_type
+from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule
+from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter
+from galaxy.tools.parameters import visit_input_values
 
 
 class WorkflowsManager( object ):
@@ -311,6 +313,108 @@ class WorkflowContentsManager(UsesAnnotations):
         if workflow.has_cycles:
             errors.append( "This workflow contains cycles" )
         return workflow, errors
+
+    def workflow_to_dict(self, trans, stored, style="export" ):
+        """
+        """
+        workflow = stored.latest_workflow
+        workflow_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, stored )
+        annotation_str = ""
+        if workflow_annotation:
+            annotation_str = workflow_annotation.annotation
+        # Pack workflow data into a dictionary and return
+        data = {}
+        data['a_galaxy_workflow'] = 'true'  # Placeholder for identifying galaxy workflow
+        data['format-version'] = "0.1"
+        data['name'] = workflow.name
+        data['annotation'] = annotation_str
+        if workflow.uuid is not None:
+            data['uuid'] = str(workflow.uuid)
+        data['steps'] = {}
+        # For each step, rebuild the form and encode the state
+        for step in workflow.steps:
+            # Load from database representation
+            module = module_factory.from_workflow_step( trans, step )
+            if not module:
+                return None
+            # Get user annotation.
+            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
+            annotation_str = ""
+            if step_annotation:
+                annotation_str = step_annotation.annotation
+            # Step info
+            step_dict = {
+                'id': step.order_index,
+                'type': module.type,
+                'tool_id': module.get_tool_id(),
+                'tool_version': step.tool_version,
+                'name': module.get_name(),
+                'tool_state': module.get_state( secure=False ),
+                'tool_errors': module.get_errors(),
+                ## 'data_inputs': module.get_data_inputs(),
+                ## 'data_outputs': module.get_data_outputs(),
+                'annotation': annotation_str
+            }
+            # Add post-job actions to step dict.
+            if module.type == 'tool':
+                pja_dict = {}
+                for pja in step.post_job_actions:
+                    pja_dict[pja.action_type + pja.output_name] = dict( action_type=pja.action_type,
+                                                                        output_name=pja.output_name,
+                                                                        action_arguments=pja.action_arguments )
+                step_dict[ 'post_job_actions' ] = pja_dict
+            # Data inputs
+            step_dict['inputs'] = module.get_runtime_input_dicts( annotation_str )
+            # User outputs
+            step_dict['user_outputs'] = []
+
+            # All step outputs
+            step_dict['outputs'] = []
+            if type( module ) is ToolModule:
+                for output in module.get_data_outputs():
+                    step_dict['outputs'].append( { 'name': output['name'], 'type': output['extensions'][0] } )
+
+            # Connections
+            input_connections = step.input_connections
+            if step.type is None or step.type == 'tool':
+                # Determine full (prefixed) names of valid input datasets
+                data_input_names = {}
+
+                def callback( input, value, prefixed_name, prefixed_label ):
+                    if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
+                        data_input_names[ prefixed_name ] = True
+                # FIXME: this updates modules silently right now; messages from updates should be provided.
+                module.check_and_update_state()
+                visit_input_values( module.tool.inputs, module.state.inputs, callback )
+                # Filter
+                # FIXME: this removes connection without displaying a message currently!
+                input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
+
+            # Encode input connections as dictionary
+            input_conn_dict = {}
+            unique_input_names = set( [conn.input_name for conn in input_connections] )
+            for input_name in unique_input_names:
+                input_conn_dict[ input_name ] = \
+                    [ dict( id=conn.output_step.order_index, output_name=conn.output_name ) for conn in input_connections if conn.input_name == input_name ]
+
+            # Preserve backward compatability. Previously Galaxy
+            # assumed input connections would be dictionaries not
+            # lists of dictionaries, so replace any singleton list
+            # with just the dictionary so that workflows exported from
+            # newer Galaxy instances can be used with older Galaxy
+            # instances if they do no include multiple input
+            # tools. This should be removed at some point. Mirrored
+            # hack in _workflow_from_dict should never be removed so
+            # existing workflow exports continue to function.
+            for input_name, input_conn in dict(input_conn_dict).iteritems():
+                if len(input_conn) == 1:
+                    input_conn_dict[input_name] = input_conn[0]
+            step_dict['input_connections'] = input_conn_dict
+            # Position
+            step_dict['position'] = step.position
+            # Add to return value
+            data['steps'][step.order_index] = step_dict
+        return data
 
 
 class MissingToolsException(object):
