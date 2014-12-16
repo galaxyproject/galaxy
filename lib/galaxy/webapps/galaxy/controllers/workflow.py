@@ -666,12 +666,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         encode it as a json string that can be read by the workflow editor
         web interface.
         """
-        user = trans.get_user()
-        id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
-        # Load encoded workflow from database
-        stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
-        assert stored.user == user
+        stored = self.get_stored_workflow( trans, id, check_ownership=True, check_accessible=False )
         workflow = stored.latest_workflow
         # Pack workflow data into a dictionary and return
         data = {}
@@ -898,12 +894,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         Exports a workflow to myExperiment website.
         """
-
-        # Load encoded workflow from database
-        id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
-        stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
-        self.security_check( trans, stored, False, True )
+        stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
 
         # Convert workflow to dict.
         workflow_dict = self._workflow_to_dict( trans, stored )
