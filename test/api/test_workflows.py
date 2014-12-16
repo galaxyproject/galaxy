@@ -181,6 +181,13 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     def setUp( self ):
         super( WorkflowsApiTestCase, self ).setUp()
 
+    def test_show_valid( self ):
+        workflow_id = self.workflow_populator.simple_workflow( "test_regular" )
+        show_response = self._get( "workflows/%s" % workflow_id )
+        workflow = show_response.json()
+        self._assert_looks_like_instance_workflow_representation( workflow )
+        assert len(workflow["steps"]) == 3
+
     def test_show_invalid_key_is_400( self ):
         show_response = self._get( "workflows/%s" % self._random_key() )
         self._assert_status_code_is( show_response, 400 )
@@ -730,5 +737,26 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         show_response = self._get( "workflows/%s" % workflow_id )
         self._assert_status_code_is( show_response, 200 )
         return show_response.json()
+
+    def _assert_looks_like_instance_workflow_representation(self, workflow):
+        self._assert_has_keys(
+            workflow,
+            'url',
+            'owner',
+            'inputs',
+            'annotation',
+            'steps'
+        )
+        for step in workflow["steps"].values():
+            self._assert_has_keys(
+                step,
+                'id',
+                'type',
+                'tool_id',
+                'tool_version',
+                'annotation',
+                'tool_inputs',
+                'input_steps',
+            )
 
 RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'inputs', 'jobs'])
