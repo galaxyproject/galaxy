@@ -44,7 +44,7 @@ def __add_column(column, table_name, metadata, **kwds):
         column.create( table, **kwds )
     except Exception as e:
         print str(e)
-        log.exception( "Adding column %s column failed." % column)
+        log.exception( "Adding column %s failed." % column)
 
 
 def __drop_column( column_name, table_name, metadata ):
