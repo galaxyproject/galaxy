@@ -136,7 +136,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Tools can be locally developed or installed from Galaxy tool sheds.
 # (config/tool_conf.xml.sample will be used if left unset and
 # config/tool_conf.xml does not exist).
-#tool_config_file = config/tool_conf.xml,shed_tool_conf.xml
+#tool_config_file = config/tool_conf.xml,config/shed_tool_conf.xml
 
 # Enable / disable checking if any tools defined in the above non-shed tool_config_files
 # (i.e., tool_conf.xml) have been migrated from the Galaxy code distribution to the Tool
