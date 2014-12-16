@@ -226,9 +226,9 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     def test_upload_deprecated( self ):
         self.__test_upload( use_deprecated_route=True )
 
-    def __test_upload( self, use_deprecated_route ):
+    def __test_upload( self, use_deprecated_route=False, name="test_import" ):
         data = dict(
-            workflow=dumps( self.workflow_populator.load_workflow( name="test_import" ) ),
+            workflow=dumps( self.workflow_populator.load_workflow( name=name ) ),
         )
         if use_deprecated_route:
             route = "workflows/upload"
@@ -236,7 +236,51 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             route = "workflows"
         upload_response = self._post( route, data=data )
         self._assert_status_code_is( upload_response, 200 )
-        self._assert_user_has_workflow_with_name( "test_import (imported from API)" )
+        self._assert_user_has_workflow_with_name( "%s (imported from API)" % name )
+        return upload_response
+
+    def test_update( self ):
+        original_workflow = self.workflow_populator.load_workflow( name="test_import" )
+
+        upload_response = self.__test_upload( )
+        workflow_id = upload_response.json()["id"]
+
+        def update(workflow_object):
+            data = dict(
+                workflow=workflow_object
+            )
+            raw_url = 'workflows/%s' % workflow_id
+            url = self._api_url( raw_url, use_key=True )
+            put_response = put( url, data=dumps(data) )
+            self._assert_status_code_is( put_response, 200 )
+            return put_response
+
+        workflow_content = self._download_workflow(workflow_id)
+        steps = workflow_content["steps"]
+
+        def tweak_step(step):
+            assert step['position']['top'] != 1
+            assert step['position']['left'] != 1
+            step['position'] = {'top': 1, 'left': 1}
+
+        map(tweak_step, steps.values())
+
+        update(workflow_content)
+
+        def check_step(step):
+            assert step['position']['top'] == 1
+            assert step['position']['left'] == 1
+
+        updated_workflow_content = self._download_workflow(workflow_id)
+        map(check_step, updated_workflow_content['steps'].values())
+
+        # Re-update against original worklfow...
+        update(original_workflow)
+
+        updated_workflow_content = self._download_workflow(workflow_id)
+
+        # Make sure the positions have been updated.
+        map(tweak_step, updated_workflow_content['steps'].values())
 
     def test_import_deprecated( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_import_published_deprecated", publish=True )

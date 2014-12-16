@@ -1575,6 +1575,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
+        # TODO: replace this method with direct access to manager.
         workflow_contents_manager = workflows.WorkflowContentsManager()
         created_workflow = workflow_contents_manager.build_workflow_from_dict(
             trans,

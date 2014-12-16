@@ -11,7 +11,7 @@ from galaxy.workflow import modules
 # For WorkflowContentManager
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.steps import attach_ordered_steps
-from galaxy.workflow.modules import module_factory
+from galaxy.workflow.modules import module_factory, is_tool_module_type
 
 
 class WorkflowsManager( object ):
@@ -235,3 +235,86 @@ class WorkflowContentsManager(UsesAnnotations):
             stored_workflow=stored,
             missing_tools=missing_tool_tups
         )
+
+    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data, from_editor=False):
+        # Put parameters in workflow mode
+        trans.workflow_building_mode = True
+        # Convert incoming workflow data from json if coming from editor
+        data = json.loads(workflow_data) if from_editor else workflow_data
+        # Create new workflow from incoming data
+        workflow = model.Workflow()
+        # Just keep the last name (user can rename later)
+        workflow.name = stored_workflow.name
+        # Assume no errors until we find a step that has some
+        workflow.has_errors = False
+        # Create each step
+        steps = []
+        # The editor will provide ids for each step that we don't need to save,
+        # but do need to use to make connections
+        steps_by_external_id = {}
+        errors = []
+        for key, step_dict in data['steps'].iteritems():
+            is_tool = is_tool_module_type( step_dict[ 'type' ] )
+            if is_tool and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
+                errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
+        if errors:
+            raise MissingToolsException(workflow, errors)
+
+        # First pass to build step objects and populate basic values
+        for key, step_dict in data['steps'].iteritems():
+            # Create the model class for the step
+            step = model.WorkflowStep()
+            steps.append( step )
+            steps_by_external_id[ step_dict['id' ] ] = step
+            # FIXME: Position should be handled inside module
+            step.position = step_dict['position']
+            module = module_factory.from_dict( trans, step_dict, secure=from_editor )
+            module.save_to_step( step )
+            if 'workflow_outputs' in step_dict:
+                for output_name in step_dict['workflow_outputs']:
+                    m = model.WorkflowOutput(workflow_step=step, output_name=output_name)
+                    trans.sa_session.add(m)
+            if step.tool_errors:
+                # DBTODO Check for conditional inputs here.
+                workflow.has_errors = True
+            # Stick this in the step temporarily
+            step.temp_input_connections = step_dict['input_connections']
+            # Save step annotation.
+            annotation = step_dict[ 'annotation' ]
+            if annotation:
+                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+        # Second pass to deal with connections between steps
+        for step in steps:
+            # Input connections
+            for input_name, conns in step.temp_input_connections.iteritems():
+                if conns:
+                    conn_dicts = conns if isinstance(conns, list) else [ conns ]
+                    for conn_dict in conn_dicts:
+                        conn = model.WorkflowStepConnection()
+                        conn.input_step = step
+                        conn.input_name = input_name
+                        conn.output_name = conn_dict['output_name']
+                        conn.output_step = steps_by_external_id[ conn_dict['id'] ]
+            del step.temp_input_connections
+        # Order the steps if possible
+        attach_ordered_steps( workflow, steps )
+        # Connect up
+        workflow.stored_workflow = stored_workflow
+        stored_workflow.latest_workflow = workflow
+        # Persist
+        trans.sa_session.flush()
+        # Return something informative
+        errors = []
+        if workflow.has_errors:
+            errors.append( "Some steps in this workflow have validation errors" )
+        if workflow.has_cycles:
+            errors.append( "This workflow contains cycles" )
+        return workflow, errors
+
+
+class MissingToolsException(object):
+
+    def __init__(self, workflow, errors):
+        self.workflow = workflow
+        self.errors = errors

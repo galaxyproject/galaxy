@@ -271,6 +271,38 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         """
         return self.__api_import_new_workflow( trans, payload, **kwd )
 
+    @expose_api
+    def update( self, trans, id, payload, **kwds ):
+        """
+        * PUT /api/workflows/{id}
+            updates the workflow stored with ``id``
+
+        :type   id:      str
+        :param  id:      the encoded id of the workflow to update
+        :type   payload: dict
+        :param  payload: a dictionary containing any or all the
+            * workflow   the json description of the workflow as would be
+                         produced by GET workflows/<id>/download or
+                         given to `POST workflows`
+
+                         The workflow contents will be updated to target
+                         this.
+        :rtype:     dict
+        :returns:   serialized version of the workflow
+        """
+        stored_workflow = self.__get_stored_workflow( trans, id )
+        if 'workflow' in payload:
+            workflow_contents_manager = workflows.WorkflowContentsManager()
+            workflow, errors = workflow_contents_manager.update_workflow_from_dict(
+                trans,
+                stored_workflow,
+                payload['workflow'],
+            )
+        else:
+            message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
+            raise exceptions.RequestParameterInvalidException( message )
+        return self.__encode_workflow( trans, stored_workflow, workflow )
+
     def __api_import_new_workflow( self, trans, payload, **kwd ):
         data = payload['workflow']
 
