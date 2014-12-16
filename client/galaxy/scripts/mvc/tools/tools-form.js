@@ -493,6 +493,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
             
             // show errors
+            this._showErrors(options);
+        },
+        
+        /** Highlight all errors
+        */
+        _showErrors: function(options) {
             if (options.errors) {
                 this.tree.finalize();
                 var error_messages = this.tree.matchResponse(options.errors);

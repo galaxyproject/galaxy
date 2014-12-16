@@ -1254,6 +1254,7 @@ class ColumnListParameter( SelectToolParameter ):
         options = []
         colnames = None
         if self.usecolnames: # read first row - assume is a header with metadata useful for making good choices
+            assert self.data_ref in other_values, "Value for associated DataToolParameter not found"
             dataset = other_values[ self.data_ref ]
             try:
                 head = open(dataset.get_file_name(),'r').readline()
