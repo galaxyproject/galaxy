@@ -155,19 +155,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
-        supplied_steps = data[ 'steps' ]
-        # Try to iterate through imported workflow in such a way as to
-        # preserve step order.
-        step_indices = supplied_steps.keys()
-        try:
-            step_indices = sorted( step_indices, key=int )
-        except ValueError:
-            # to defensive, were these ever or will they ever not be integers?
-            pass
-        # First pass to build step objects and populate basic values
-        for step_index in step_indices:
-            step_dict = supplied_steps[ step_index ]
-
+        for step_dict in self.__walk_step_dicts( data ):
             module, step = self.__module_from_dict( trans, step_dict, secure=False )
             steps.append( step )
             steps_by_external_id[ step_dict['id' ] ] = step
@@ -242,7 +230,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raise MissingToolsException(workflow, errors)
 
         # First pass to build step objects and populate basic values
-        for key, step_dict in data['steps'].iteritems():
+        for step_dict in self.__walk_step_dicts( data ):
             module, step = self.__module_from_dict( trans, step_dict, secure=from_editor )
             # Create the model class for the step
             steps.append( step )
@@ -553,6 +541,24 @@ class WorkflowContentsManager(UsesAnnotations):
                                                                   'step_output': conn.output_name}
         item['steps'] = steps
         return item
+
+    def __walk_step_dicts( self, data ):
+        """ Walk over the supplid step dictionaries and return them in a way designed
+        to preserve step order when possible.
+        """
+        supplied_steps = data[ 'steps' ]
+        # Try to iterate through imported workflow in such a way as to
+        # preserve step order.
+        step_indices = supplied_steps.keys()
+        try:
+            step_indices = sorted( step_indices, key=int )
+        except ValueError:
+            # to defensive, were these ever or will they ever not be integers?
+            pass
+        # First pass to build step objects and populate basic values
+        for step_index in step_indices:
+            step_dict = supplied_steps[ step_index ]
+            yield step_dict
 
     def __module_from_dict( self, trans, step_dict, secure ):
         """ Create a WorkflowStep model object and corrsponding module representing
