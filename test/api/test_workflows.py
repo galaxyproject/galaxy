@@ -307,6 +307,21 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         # Make sure the positions have been updated.
         map(tweak_step, updated_workflow_content['steps'].iteritems())
 
+    def test_require_unique_step_uuids( self ):
+        workflow_dup_uuids = self.workflow_populator.load_workflow( name="test_import" )
+        uuid0 = str(uuid4())
+        for step_dict in workflow_dup_uuids["steps"].values():
+            step_dict["uuid"] = uuid0
+        response = self.workflow_populator.create_workflow_response( workflow_dup_uuids )
+        self._assert_status_code_is( response, 400 )
+
+    def test_require_unique_step_labels( self ):
+        workflow_dup_label = self.workflow_populator.load_workflow( name="test_import" )
+        for step_dict in workflow_dup_label["steps"].values():
+            step_dict["label"] = "my duplicated label"
+        response = self.workflow_populator.create_workflow_response( workflow_dup_label )
+        self._assert_status_code_is( response, 400 )
+
     def test_import_deprecated( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_import_published_deprecated", publish=True )
         with self._different_user():

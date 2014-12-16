@@ -561,9 +561,24 @@ class WorkflowContentsManager(UsesAnnotations):
         except ValueError:
             # to defensive, were these ever or will they ever not be integers?
             pass
+
+        discovered_labels = set()
+        discovered_uuids = set()
+
         # First pass to build step objects and populate basic values
         for step_index in step_indices:
             step_dict = supplied_steps[ step_index ]
+            uuid = step_dict.get("uuid", None)
+            if uuid:
+                if uuid in discovered_uuids:
+                    raise exceptions.DuplicatedIdentifierException("Duplicate step UUID in request.")
+                discovered_uuids.add(uuid)
+            label = step_dict.get("label", None)
+            if label:
+                if label in discovered_labels:
+                    raise exceptions.DuplicatedIdentifierException("Duplicated step label in request.")
+                discovered_labels.add(label)
+
             yield step_dict
 
     def __module_from_dict( self, trans, step_dict, secure ):

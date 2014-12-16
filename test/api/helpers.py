@@ -198,13 +198,17 @@ class WorkflowPopulator( object ):
         return self.create_workflow( workflow, **create_kwds )
 
     def create_workflow( self, workflow, **create_kwds ):
+        upload_response = self.create_workflow_response( workflow, **create_kwds )
+        uploaded_workflow_id = upload_response.json()[ "id" ]
+        return uploaded_workflow_id
+
+    def create_workflow_response( self, workflow, **create_kwds ):
         data = dict(
             workflow=json.dumps( workflow ),
             **create_kwds
         )
         upload_response = self.galaxy_interactor.post( "workflows/upload", data=data )
-        uploaded_workflow_id = upload_response.json()[ "id" ]
-        return uploaded_workflow_id
+        return upload_response
 
 
 class LibraryPopulator( object ):
