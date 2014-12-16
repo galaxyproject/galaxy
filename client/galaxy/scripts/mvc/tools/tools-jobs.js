@@ -22,7 +22,7 @@ return Backbone.Model.extend({
         }
         
         // reset
-        this.app.reset();
+        this.app.trigger('reset');
         
         // validate job definition
         if (!this._validation(job_def)) {
@@ -51,7 +51,7 @@ return Backbone.Model.extend({
                 if (response && response.message && response.message.data) {
                     var error_messages = self.app.tree.matchResponse(response.message.data);
                     for (var input_id in error_messages) {
-                        self.app.foundError(input_id, error_messages[input_id]);
+                        self.app.highlight(input_id, error_messages[input_id]);
                         break;
                     }
                 } else {
@@ -99,7 +99,7 @@ return Backbone.Model.extend({
             
             // validate non-optional fields
             if (!input_def.optional && input_field.validate && !input_field.validate()) {
-                this.app.foundError(input_id);
+                this.app.highlight(input_id);
                 return false;
             }
             
@@ -120,7 +120,7 @@ return Backbone.Model.extend({
                         batch_src = src;
                     } else {
                         if (batch_src !== src) {
-                            this.app.foundError(input_id, 'Please select either dataset or dataset list fields for all batch mode fields.');
+                            this.app.highlight(input_id, 'Please select either dataset or dataset list fields for all batch mode fields.');
                             return false;
                         }
                     }
@@ -131,7 +131,7 @@ return Backbone.Model.extend({
                     batch_n = n;
                 } else {
                     if (batch_n !== n) {
-                        this.app.foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
+                        this.app.highlight(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
                         return false;
                     }
                 }

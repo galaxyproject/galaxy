@@ -17,9 +17,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // log options
             console.debug(options);
             
-            // link this
-            var self = this;
-            
             // link galaxy modal or create one
             var galaxy = parent.Galaxy;
             if (galaxy && galaxy.modal) {
@@ -52,38 +49,35 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this._buildForm();
         },
         
-        // reciept shows the final message usually upon successful job submission
+        /** Shows the final message (usually upon successful job submission)
+        */
         reciept: function($el) {
             $(this.container).empty();
             $(this.container).append($el);
         },
-        
-        // reset form
-        reset: function() {
-            for (var i in this.element_list) {
-                this.element_list[i].reset();
+                
+        /** Highlight and scroll to input element (currently only used for error notifications)
+        */
+        highlight: function (input_id, message, silent) {
+            // get input field
+            var input_element = this.element_list[input_id];
+            
+            // check input element
+            if (input_element) {
+                // mark error
+                input_element.error(message || 'Please verify this parameter.');
+            
+                // scroll to first input element
+                if (!silent) {
+                    $(this.container).animate({
+                        scrollTop: input_element.$el.offset().top - 20
+                    }, 500);
+                }
             }
         },
         
-        // rebuild underlying data structure representation for the tool form
-        // this happens i.e. when repeat blocks are added or removed and on initialization
-        rebuild: function() {
-            this.tree.refresh();
-            console.debug('tools-form::rebuild() - Rebuilding data structures.');
-        },
-        
-        // refreshes input states i.e. for dynamic parameters
-        refresh: function() {
-            // only refresh the state if the form contains dynamic parameters
-            // by using/reseting the deferred ajax queue the number of redundant calls is reduced
-            if (this.is_dynamic) {
-                var self = this;
-                this.deferred.reset();
-                this.deferred.execute(function(){self._updateModel()});
-            };
-        },
-        
-        // build tool model through api call
+        /** Builds a new model through api call and recreates the entire form
+        */
         _buildModel: function() {
             // link this
             var self = this;
@@ -156,7 +150,8 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
         },
         
-        // request a new model and update the form inputs
+        /** Request a new model for an already created tool form and updates the form inputs
+        */
         _updateModel: function() {
             // create the request dictionary
             var self = this;
@@ -202,9 +197,39 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 type    : 'GET',
                 url     : model_url,
                 data    : current_state,
-                success : function(response) {
-                    // rebuild form
-                    self._updateForm(response);
+                success : function(new_model) {
+                    // update form
+                    self.tree.matchModel(new_model, function(input_id, node) {
+                        var input = self.input_list[input_id];
+                        if (input && input.options) {
+                            if (!_.isEqual(input.options, node.options)) {
+                                // backup new options
+                                input.options = node.options;
+                                
+                                // get/update field
+                                var field = self.field_list[input_id];
+                                if (field.update) {
+                                    var new_options = [];
+                                    if ((['data', 'data_collection', 'drill_down']).indexOf(input.type) != -1) {
+                                        new_options = input.options;
+                                    } else {
+                                        for (var i in node.options) {
+                                            var opt = node.options[i];
+                                            if (opt.length > 2) {
+                                                new_options.push({
+                                                    'label': opt[0],
+                                                    'value': opt[1]
+                                                });
+                                            }
+                                        }
+                                    }
+                                    field.update(new_options);
+                                    field.trigger('change');
+                                    console.debug('Updating options for ' + input_id);
+                                }
+                            }
+                        }
+                    });
             
                     // unset wait mode
                     wait(false);
@@ -214,7 +239,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
                     // log success
                     console.debug('tools-form::_refreshForm() - States refreshed.');
-                    console.debug(response);
+                    console.debug(new_model);
                 },
                 error   : function(response) {
                     // process completed
@@ -227,46 +252,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
         },
         
-        // update form inputs
-        _updateForm: function(new_model) {
-            var self = this;
-            this.tree.matchModel(new_model, function(input_id, node) {
-                var input = self.input_list[input_id];
-                if (input && input.options) {
-                    if (!_.isEqual(input.options, node.options)) {
-                        // backup new options
-                        input.options = node.options;
-                        
-                        // get/update field
-                        var field = self.field_list[input_id];
-                        if (field.update) {
-                            var new_options = [];
-                            if ((['data', 'data_collection', 'drill_down']).indexOf(input.type) != -1) {
-                                new_options = input.options;
-                            } else {
-                                for (var i in node.options) {
-                                    var opt = node.options[i];
-                                    if (opt.length > 2) {
-                                        new_options.push({
-                                            'label': opt[0],
-                                            'value': opt[1]
-                                        });
-                                    }
-                                }
-                            }
-                            field.update(new_options);
-                            field.trigger('change');
-                            console.debug('Updating options for ' + input_id);
-                        }
-                    }
-                }
-            });
-        },
-        
-        // builds the tool form
+        /** Main tool form build function. This function is called once a new model is available.
+        */
         _buildForm: function() {
             // link this
             var self = this;
+            
+            // reset events
+            this.off('refresh');
+            this.off('reset');
             
             // reset field list, which contains the input field elements
             this.field_list = {};
@@ -288,6 +282,41 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // link model options
             var options = this.options;
+            
+            // create ui elements
+            this._renderForm(options);
+            
+            // rebuild the underlying data structure
+            this.tree.finalize();
+            
+            // show errors
+            if (options.errors) {
+                var error_messages = this.tree.matchResponse(options.errors);
+                for (var input_id in error_messages) {
+                    this.highlight(input_id, error_messages[input_id], true);
+                }
+            }
+            
+            // add refresh listener
+            this.on('refresh', function() {
+                // by using/reseting the deferred ajax queue the number of redundant calls is reduced
+                self.deferred.reset();
+                self.deferred.execute(function(){self._updateModel()});
+            });
+            
+            // add reset listener
+            this.on('reset', function() {
+                for (var i in this.element_list) {
+                    this.element_list[i].reset();
+                }
+            });
+        },
+
+        /** Renders the UI elements required for the form
+        */
+        _renderForm: function(options) {
+            // link this
+            var self = this;
             
             // create message view
             this.message = new Ui.Message();
@@ -454,6 +483,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 }
             });
             
+            // append message
+            this.portlet.append(this.message.$el, true);
+            
+            // append tool section
+            this.portlet.append(this.section.$el);
+            
             // start form
             this.$el.empty();
             this.$el.append(this.portlet.$el);
@@ -474,15 +509,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 this.$el.append($citations);
             }
             
-            // append message
-            this.portlet.append(this.message.$el, true);
-            
-            // append tool section
-            this.portlet.append(this.section.$el);
-            
-            // rebuild the underlying data structure
-            this.rebuild();
-            
             // show message if available in model
             if (options.message) {
                 this.message.update({
@@ -490,38 +516,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     status      : 'warning',
                     message     : options.message
                 });
-            }
-            
-            // show errors
-            this._showErrors(options);
-        },
-        
-        /** Highlight all errors
-        */
-        _showErrors: function(options) {
-            if (options.errors) {
-                this.tree.finalize();
-                var error_messages = this.tree.matchResponse(options.errors);
-                for (var input_id in error_messages) {
-                    this.foundError(input_id, error_messages[input_id], true);
-                }
-            }
-        },
-        
-        /** Highlight and scroll to error
-        */
-        foundError: function (input_id, message, silent) {
-            // get input field
-            var input_element = this.element_list[input_id];
-            
-            // mark error
-            input_element.error(message || 'Please verify this parameter.');
-        
-            // scroll to first input element
-            if (!silent) {
-                $(this.container).animate({
-                    scrollTop: input_element.$el.offset().top - 20
-                }, 500);
             }
         }
     });

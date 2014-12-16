@@ -119,7 +119,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 }
                 
                 // refresh form inputs
-                self.app.refresh();
+                self.app.trigger('refresh');
             };
             
             // add conditional sub sections
@@ -172,8 +172,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                         repeat.retitle(input_def.title);
                         
                         // trigger refresh
-                        self.app.rebuild();
-                        self.app.refresh();
+                        self.app.trigger('refresh');
                     }
                 }
                     
@@ -206,8 +205,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     create(input_def.inputs, true);
                             
                     // trigger refresh
-                    self.app.rebuild();
-                    self.app.refresh();
+                    self.app.trigger('refresh');
                 }
             });
             
@@ -254,11 +252,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
 
             // create input field
             var field = this._createField(input_def);
-            
-            // flagging this form as dynamic will trigger api-driven refresh events
-            if (input_def.is_dynamic) {
-                this.app.is_dynamic = true;
-            }
             
             // add to field list
             this.app.field_list[id] = field;
@@ -392,7 +385,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 type        : input_def.type,
                 data        : input_def.options,
                 onchange    : function() {
-                    self.app.refresh();
+                    self.app.trigger('refresh');
                 }
             });
         },
@@ -430,7 +423,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 multiple    : input_def.multiple,
                 searchable  : input_def.searchable,
                 onchange    : function() {
-                    self.app.refresh();
+                    self.app.trigger('refresh');
                 }
             });
         },
@@ -444,7 +437,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 data        : input_def.options,
                 display     : input_def.display,
                 onchange    : function() {
-                    self.app.refresh();
+                    self.app.trigger('refresh');
                 }
             });
         },
@@ -457,7 +450,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 id      : 'field-' + input_def.id,
                 area    : input_def.area,
                 onchange: function() {
-                    self.app.refresh();
+                    self.app.trigger('refresh');
                 }
             });
         },

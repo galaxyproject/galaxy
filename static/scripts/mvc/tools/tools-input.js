@@ -63,7 +63,7 @@ define([], function() {
             if (!this.field.skip) {
                 this.$field.fadeIn('fast');
                 this.$title_optional.html('Disable');
-                this.app.refresh();
+                this.app.trigger('refresh');
             } else {
                 this.$field.hide();
                 this.$title_optional.html('Enable');
