@@ -324,6 +324,46 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         first_input = downloaded_workflow[ "steps" ][ "0" ][ "inputs" ][ 0 ]
         assert first_input[ "name" ] == "WorkflowInput1"
         assert first_input[ "description" ] == "input1 description"
+        self._assert_has_keys( downloaded_workflow, "a_galaxy_workflow", "format-version", "annotation", "uuid", "steps" )
+        for step in downloaded_workflow["steps"].values():
+            self._assert_has_keys(
+                step,
+                'id',
+                'type',
+                'tool_id',
+                'tool_version',
+                'name',
+                'tool_state',
+                'tool_errors',
+                'annotation',
+                'inputs',
+                'user_outputs',
+                'outputs'
+            )
+            if step['type'] == "tool":
+                self._assert_has_keys( step, "post_job_actions" )
+
+    def test_export_editor( self ):
+        uploaded_workflow_id = self.workflow_populator.simple_workflow( "test_for_export" )
+        downloaded_workflow = self._download_workflow( uploaded_workflow_id, style="editor" )
+        self._assert_has_keys( downloaded_workflow, "name", "steps", "upgrade_messages" )
+        for step in downloaded_workflow["steps"].values():
+            self._assert_has_keys(
+                step,
+                'id',
+                'type',
+                'tool_id',
+                'name',
+                'tool_state',
+                'tooltip',
+                'tool_errors',
+                'data_inputs',
+                'data_outputs',
+                'form_html',
+                'annotation',
+                'post_job_actions',
+                'workflow_outputs',
+            )
 
     def test_import_export_with_runtime_inputs( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( name="test_workflow_with_runtime_input" )
@@ -771,8 +811,11 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             )
         return self._post( route, import_data )
 
-    def _download_workflow(self, workflow_id):
-        download_response = self._get( "workflows/%s/download" % workflow_id )
+    def _download_workflow(self, workflow_id, style=None):
+        params = {}
+        if style:
+            params = {"style": style}
+        download_response = self._get( "workflows/%s/download" % workflow_id, params )
         self._assert_status_code_is( download_response, 200 )
         downloaded_workflow = download_response.json()
         return downloaded_workflow

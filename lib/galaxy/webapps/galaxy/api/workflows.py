@@ -28,6 +28,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         super( BaseAPIController, self ).__init__( app )
         self.history_manager = histories.HistoryManager()
         self.workflow_manager = workflows.WorkflowsManager( app )
+        self.workflow_contents_manager = workflows.WorkflowContentsManager()
 
     @expose_api
     def index(self, trans, **kwd):
@@ -221,7 +222,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         """
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
 
-        ret_dict = self._workflow_to_dict( trans, stored_workflow )
+        style = kwd.get("style", "export")
+        ret_dict = self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style=style )
         if not ret_dict:
             # This workflow has a tool that's missing from the distribution
             message = "Workflow cannot be exported due to missing tools."
