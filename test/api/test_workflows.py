@@ -3,6 +3,7 @@ from .helpers import wait_on_state
 from base import api
 from json import dumps
 from collections import namedtuple
+from uuid import uuid4
 
 import time
 
@@ -227,9 +228,11 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     def test_upload_deprecated( self ):
         self.__test_upload( use_deprecated_route=True )
 
-    def __test_upload( self, use_deprecated_route=False, name="test_import" ):
+    def __test_upload( self, use_deprecated_route=False, name="test_import", workflow=None ):
+        if workflow is None:
+            workflow = self.workflow_populator.load_workflow( name=name )
         data = dict(
-            workflow=dumps( self.workflow_populator.load_workflow( name=name ) ),
+            workflow=dumps( workflow ),
         )
         if use_deprecated_route:
             route = "workflows/upload"
@@ -242,8 +245,25 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
 
     def test_update( self ):
         original_workflow = self.workflow_populator.load_workflow( name="test_import" )
+        uuids = {}
+        labels = {}
 
-        upload_response = self.__test_upload( )
+        for order_index, step_dict in original_workflow["steps"].iteritems():
+            uuid = str(uuid4())
+            step_dict["uuid"] = uuid
+            uuids[order_index] = uuid
+            label = "label_%s" % order_index
+            step_dict["label"] = label
+            labels[order_index] = label
+
+        def check_label_and_uuid(order_index, step_dict):
+            assert order_index in uuids
+            assert order_index in labels
+
+            self.assertEquals(uuids[order_index], step_dict["uuid"])
+            self.assertEquals(labels[order_index], step_dict["label"])
+
+        upload_response = self.__test_upload( workflow=original_workflow )
         workflow_id = upload_response.json()["id"]
 
         def update(workflow_object):
@@ -260,20 +280,24 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         steps = workflow_content["steps"]
 
         def tweak_step(step):
-            assert step['position']['top'] != 1
-            assert step['position']['left'] != 1
-            step['position'] = {'top': 1, 'left': 1}
+            order_index, step_dict = step
+            check_label_and_uuid( order_index, step_dict)
+            assert step_dict['position']['top'] != 1
+            assert step_dict['position']['left'] != 1
+            step_dict['position'] = {'top': 1, 'left': 1}
 
-        map(tweak_step, steps.values())
+        map(tweak_step, steps.iteritems())
 
         update(workflow_content)
 
         def check_step(step):
-            assert step['position']['top'] == 1
-            assert step['position']['left'] == 1
+            order_index, step_dict = step
+            check_label_and_uuid(order_index, step_dict)
+            assert step_dict['position']['top'] == 1
+            assert step_dict['position']['left'] == 1
 
         updated_workflow_content = self._download_workflow(workflow_id)
-        map(check_step, updated_workflow_content['steps'].values())
+        map(check_step, updated_workflow_content['steps'].iteritems())
 
         # Re-update against original worklfow...
         update(original_workflow)
@@ -281,7 +305,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         updated_workflow_content = self._download_workflow(workflow_id)
 
         # Make sure the positions have been updated.
-        map(tweak_step, updated_workflow_content['steps'].values())
+        map(tweak_step, updated_workflow_content['steps'].iteritems())
 
     def test_import_deprecated( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_import_published_deprecated", publish=True )
@@ -364,6 +388,8 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
                 'annotation',
                 'post_job_actions',
                 'workflow_outputs',
+                'uuid',
+                'label',
             )
 
     def test_import_export_with_runtime_inputs( self ):

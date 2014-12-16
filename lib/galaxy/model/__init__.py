@@ -3074,6 +3074,7 @@ class WorkflowStep( object ):
         self.position = None
         self.input_connections = []
         self.config = None
+        self.uuid = uuid4()
 
 
 class WorkflowStepConnection( object ):

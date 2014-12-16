@@ -312,6 +312,8 @@ class WorkflowContentsManager(UsesAnnotations):
                     'annotation': annotation_str,
                     'input_connections': {},
                     'post_job_actions': {},
+                    'uuid': str(step.uuid),
+                    'label': step.label or None,
                     'workflow_outputs': []
                 }
                 # Position
@@ -344,6 +346,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 'form_html': module.get_config_form(),
                 'annotation': annotation_str,
                 'post_job_actions': {},
+                'uuid': str(step.uuid),
+                'label': step.label or None,
                 'workflow_outputs': []
             }
             # Connections
@@ -438,6 +442,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 'name': module.get_name(),
                 'tool_state': module.get_state( secure=False ),
                 'tool_errors': module.get_errors(),
+                'uuid': str(step.uuid),
+                'label': step.label or None,
                 ## 'data_inputs': module.get_data_inputs(),
                 ## 'data_outputs': module.get_data_outputs(),
                 'annotation': annotation_str
@@ -568,7 +574,10 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # TODO: Consider handling position inside module.
         step.position = step_dict['position']
-
+        if "uuid" in step_dict:
+            step.uuid = step_dict["uuid"]
+        if "label" in step_dict:
+            step.label = step_dict["label"]
         module = module_factory.from_dict( trans, step_dict, secure=secure )
         module.save_to_step( step )
 

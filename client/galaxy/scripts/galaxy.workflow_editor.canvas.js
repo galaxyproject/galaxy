@@ -784,6 +784,8 @@ var Node = Backbone.Model.extend({
         this.tooltip = data.tooltip ? data.tooltip : "";
         this.annotation = data.annotation;
         this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
+        this.label = data.label;
+        this.uuid = data.uuid;
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
 
         var node = this;
@@ -991,6 +993,8 @@ $.extend( Workflow.prototype, {
                 position : $(node.element).position(),
                 annotation: node.annotation,
                 post_job_actions: node.post_job_actions,
+                uuid: node.uuid,
+                label: node.label,
                 workflow_outputs: node.workflow_outputs
             };
             nodes[ node.id ] = node_data;
