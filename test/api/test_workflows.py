@@ -78,13 +78,14 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         elif inputs_by == "name":
             workflow_request[ "inputs" ] = dumps( label_map )
             workflow_request[ "inputs_by" ] = 'name'
-        elif inputs_by == "step_uuid":
+        elif inputs_by in [ "step_uuid", "uuid_implicitly" ]:
             uuid_map = {
                 workflow["steps"]["0"]["uuid"]: self._ds_entry(hda1),
                 workflow["steps"]["1"]["uuid"]: self._ds_entry(hda2),
             }
             workflow_request[ "inputs" ] = dumps( uuid_map )
-            workflow_request[ "inputs_by" ] = "step_uuid"
+            if inputs_by == "step_uuid":
+                workflow_request[ "inputs_by" ] = "step_uuid"
 
         return workflow_request, history_id
 
@@ -430,6 +431,10 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     @skip_without_tool( "cat1" )
     def test_run_workflow_by_uuid( self ):
         self.__run_cat_workflow( inputs_by='step_uuid' )
+
+    @skip_without_tool( "cat1" )
+    def test_run_workflow_by_uuid_implicitly( self ):
+        self.__run_cat_workflow( inputs_by='uuid_implicitly' )
 
     @skip_without_tool( "cat1" )
     def test_run_workflow_by_name( self ):
