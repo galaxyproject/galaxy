@@ -38,14 +38,13 @@ from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDataset
 
 from galaxy.managers import api_keys
 from galaxy.managers import tags
+from galaxy.managers import workflows
 from galaxy.managers import base as managers_base
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.tools.parameters.basic import DataCollectionToolParameter
-from galaxy.util.json import dumps
 from galaxy.workflow.modules import ToolModule
-from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.util import validation
 
 
@@ -1576,110 +1575,15 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
-
-        # Put parameters in workflow mode
-        trans.workflow_building_mode = True
-        # Create new workflow from incoming dict
-        workflow = model.Workflow()
-        # If there's a source, put it in the workflow name.
-        if source:
-            name = "%s (imported from %s)" % ( data['name'], source )
-        else:
-            name = data['name']
-        workflow.name = name
-        if 'uuid' in data:
-            workflow.uuid = data['uuid']
-        # Assume no errors until we find a step that has some
-        workflow.has_errors = False
-        # Create each step
-        steps = []
-        # The editor will provide ids for each step that we don't need to save,
-        # but do need to use to make connections
-        steps_by_external_id = {}
-        # Keep track of tools required by the workflow that are not available in
-        # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
-        # will be ( tool_id, tool_name, tool_version ).
-        missing_tool_tups = []
-        supplied_steps = data[ 'steps' ]
-        # Try to iterate through imported workflow in such a way as to
-        # preserve step order.
-        step_indices = supplied_steps.keys()
-        try:
-            step_indices = sorted( step_indices, key=int )
-        except ValueError:
-            # to defensive, were these ever or will they ever not be integers?
-            pass
-        # First pass to build step objects and populate basic values
-        for step_index in step_indices:
-            step_dict = supplied_steps[ step_index ]
-            # Create the model class for the step
-            step = model.WorkflowStep()
-            steps.append( step )
-            steps_by_external_id[ step_dict['id' ] ] = step
-            # FIXME: Position should be handled inside module
-            step.position = step_dict['position']
-            module = module_factory.from_dict( trans, step_dict, secure=False )
-            module.save_to_step( step )
-            if module.type == 'tool' and module.tool is None:
-                # A required tool is not available in the local Galaxy instance.
-                missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
-                if missing_tool_tup not in missing_tool_tups:
-                    missing_tool_tups.append( missing_tool_tup )
-                # Save the entire step_dict in the unused config field, be parsed later
-                # when we do have the tool
-                step.config = dumps(step_dict)
-            if step.tool_errors:
-                workflow.has_errors = True
-            # Stick this in the step temporarily
-            step.temp_input_connections = step_dict['input_connections']
-            # Save step annotation.
-            annotation = step_dict[ 'annotation' ]
-            if annotation:
-                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
-        # Second pass to deal with connections between steps
-        for step in steps:
-            # Input connections
-            for input_name, conn_list in step.temp_input_connections.iteritems():
-                if not conn_list:
-                    continue
-                if not isinstance(conn_list, list):  # Older style singleton connection
-                    conn_list = [conn_list]
-                for conn_dict in conn_list:
-                    conn = model.WorkflowStepConnection()
-                    conn.input_step = step
-                    conn.input_name = input_name
-                    conn.output_name = conn_dict['output_name']
-                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
-            del step.temp_input_connections
-
-        # Order the steps if possible
-        attach_ordered_steps( workflow, steps )
-
-        # Connect up
-        stored = model.StoredWorkflow()
-        stored.name = workflow.name
-        workflow.stored_workflow = stored
-        stored.latest_workflow = workflow
-        stored.user = trans.user
-        stored.published = publish
-        if data[ 'annotation' ]:
-            annotation = sanitize_html( data[ 'annotation' ], 'utf-8', 'text/html' )
-            self.add_item_annotation( trans.sa_session, stored.user, stored, annotation )
-
-        # Persist
-        trans.sa_session.add( stored )
-        trans.sa_session.flush()
-
-        if add_to_menu:
-            if trans.user.stored_workflow_menu_entries == None:
-                trans.user.stored_workflow_menu_entries = []
-            menuEntry = model.StoredWorkflowMenuEntry()
-            menuEntry.stored_workflow = stored
-            trans.user.stored_workflow_menu_entries.append( menuEntry )
-            trans.sa_session.flush()
-
-        return stored, missing_tool_tups
+        workflow_contents_manager = workflows.WorkflowContentsManager()
+        created_workflow = workflow_contents_manager.build_workflow_from_dict(
+            trans,
+            data,
+            source=source,
+            add_to_menu=add_to_menu,
+            publish=publish
+        )
+        return created_workflow.stored_workflow, created_workflow.missing_tools
 
     def _workflow_to_dict( self, trans, stored ):
         """
