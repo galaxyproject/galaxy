@@ -78,6 +78,13 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         elif inputs_by == "name":
             workflow_request[ "inputs" ] = dumps( label_map )
             workflow_request[ "inputs_by" ] = 'name'
+        elif inputs_by == "step_uuid":
+            uuid_map = {
+                workflow["steps"]["0"]["uuid"]: self._ds_entry(hda1),
+                workflow["steps"]["1"]["uuid"]: self._ds_entry(hda2),
+            }
+            workflow_request[ "inputs" ] = dumps( uuid_map )
+            workflow_request[ "inputs_by" ] = "step_uuid"
 
         return workflow_request, history_id
 
@@ -421,6 +428,10 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         self.__run_cat_workflow( inputs_by='step_index' )
 
     @skip_without_tool( "cat1" )
+    def test_run_workflow_by_uuid( self ):
+        self.__run_cat_workflow( inputs_by='step_uuid' )
+
+    @skip_without_tool( "cat1" )
     def test_run_workflow_by_name( self ):
         self.__run_cat_workflow( inputs_by='name' )
 
@@ -430,11 +441,13 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
 
     def __run_cat_workflow( self, inputs_by ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run" )
+        workflow["steps"]["0"]["uuid"] = str(uuid4())
+        workflow["steps"]["1"]["uuid"] = str(uuid4())
         workflow_request, history_id = self._setup_workflow_run( workflow, inputs_by=inputs_by )
         # TODO: This should really be a post to workflows/<workflow_id>/run or
         # something like that.
         run_workflow_response = self._post( "workflows", data=workflow_request )
-
+        self._assert_status_code_is( run_workflow_response, 200 )
         invocation_id = run_workflow_response.json()[ "id" ]
         invocation = self._invocation_details( workflow_request[ "workflow_id" ], invocation_id )
         assert invocation[ "state" ] == "scheduled", invocation

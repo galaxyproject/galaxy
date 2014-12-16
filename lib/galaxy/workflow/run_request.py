@@ -57,6 +57,8 @@ def normalize_inputs(steps, inputs, inputs_by):
             inputs_key = str( step.id )
         elif inputs_by == "step_index":
             inputs_key = str( step.order_index )
+        elif inputs_by == "step_uuid":
+            inputs_key = str( step.uuid )
         elif inputs_by == "name":
             inputs_key = step.tool_inputs.get( 'name', None )
         else:
@@ -169,6 +171,11 @@ def build_workflow_run_config( trans, workflow, payload ):
         # which is intrinsic to the workflow and independent of the state
         # of Galaxy at the time of workflow import.
         inputs_by = inputs_by or 'step_index'
+
+        # TODO: with a little reworking this default could be
+        # step_index or step_uuid depending on what is inputs -
+        # unlike step_id and step_index there is not chance of
+        # conflicts.
 
     add_to_history = 'no_add_to_history' not in payload
     history_param = payload.get('history', '')
