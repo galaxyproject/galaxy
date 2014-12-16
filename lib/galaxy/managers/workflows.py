@@ -317,12 +317,17 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def workflow_to_dict( self, trans, stored, style="export" ):
         """ Export the workflow contents to a dictionary ready for JSON-ification and to be
-        sent out via API for instance. There are two styles of export allowed 'editor' and 'export'.
-        The Galaxy team will do it best to preserve the backward compatibility of the 'export' stye -
-        but the 'editor' style is subject to rapid and unannounced changes.
+        sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
+        'editor'. The Galaxy team will do it best to preserve the backward compatibility of the
+        'export' stye - this is the export method meant to be portable across Galaxy instances and over
+        time. The 'editor' style is subject to rapid and unannounced changes. The 'instance' export
+        option describes the workflow in a context more tied to the current Galaxy instance and includes
+        fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
         if style == "editor":
             return self._workflow_to_dict_editor( trans, stored )
+        elif style == "instance":
+            return self._workflow_to_dict_instance( trans, stored )
         else:
             return self._workflow_to_dict_export( trans, stored )
 
@@ -551,6 +556,45 @@ class WorkflowContentsManager(UsesAnnotations):
             # Add to return value
             data['steps'][step.order_index] = step_dict
         return data
+
+    def _workflow_to_dict_instance(self, trans, stored):
+        item = stored.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
+        workflow = stored.latest_workflow
+        item['url'] = url_for('workflow', id=item['id'])
+        item['owner'] = stored.user.username
+        inputs = {}
+        for step in workflow.steps:
+            step_type = step.type
+            if step_type in ['data_input', 'data_collection_input']:
+                if step.tool_inputs and "name" in step.tool_inputs:
+                    label = step.tool_inputs['name']
+                elif step_type == "data_input":
+                    label = "Input Dataset"
+                elif step_type == "data_collection_input":
+                    label = "Input Dataset Collection"
+                else:
+                    raise ValueError("Invalid step_type %s" % step_type)
+                inputs[step.id] = {'label': label, 'value': ""}
+            else:
+                pass
+                # Eventually, allow regular tool parameters to be inserted and modified at runtime.
+                # p = step.get_required_parameters()
+        item['inputs'] = inputs
+        item['annotation'] = self.get_item_annotation_str( trans.sa_session, stored.user, stored )
+        steps = {}
+        for step in workflow.steps:
+            steps[step.id] = {'id': step.id,
+                              'type': step.type,
+                              'tool_id': step.tool_id,
+                              'tool_version': step.tool_version,
+                              'annotation': self.get_item_annotation_str( trans.sa_session, stored.user, step ),
+                              'tool_inputs': step.tool_inputs,
+                              'input_steps': {}}
+            for conn in step.input_connections:
+                steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
+                                                                  'step_output': conn.output_name}
+        item['steps'] = steps
+        return item
 
 
 class MissingToolsException(object):
