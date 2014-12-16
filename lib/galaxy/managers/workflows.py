@@ -184,24 +184,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 workflow.has_errors = True
 
         # Second pass to deal with connections between steps
-        for step in steps:
-            # Input connections
-            for input_name, conn_list in step.temp_input_connections.iteritems():
-                if not conn_list:
-                    continue
-                if not isinstance(conn_list, list):  # Older style singleton connection
-                    conn_list = [conn_list]
-                for conn_dict in conn_list:
-                    if 'output_name' not in conn_dict or 'id' not in conn_dict:
-                        template = "Invalid connection [%s] - must be dict with output_name and id fields."
-                        message = template % conn_dict
-                        raise exceptions.MessageException(message)
-                    conn = model.WorkflowStepConnection()
-                    conn.input_step = step
-                    conn.input_name = input_name
-                    conn.output_name = conn_dict['output_name']
-                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
-            del step.temp_input_connections
+        self.__connect_workflow_steps( steps, steps_by_external_id )
 
         # Order the steps if possible
         attach_ordered_steps( workflow, steps )
@@ -273,18 +256,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 workflow.has_errors = True
 
         # Second pass to deal with connections between steps
-        for step in steps:
-            # Input connections
-            for input_name, conns in step.temp_input_connections.iteritems():
-                if conns:
-                    conn_dicts = conns if isinstance(conns, list) else [ conns ]
-                    for conn_dict in conn_dicts:
-                        conn = model.WorkflowStepConnection()
-                        conn.input_step = step
-                        conn.input_name = input_name
-                        conn.output_name = conn_dict['output_name']
-                        conn.output_step = steps_by_external_id[ conn_dict['id'] ]
-            del step.temp_input_connections
+        self.__connect_workflow_steps( steps, steps_by_external_id )
+
         # Order the steps if possible
         attach_ordered_steps( workflow, steps )
         # Connect up
@@ -602,6 +575,31 @@ class WorkflowContentsManager(UsesAnnotations):
         step.temp_input_connections = step_dict['input_connections']
 
         return module, step
+
+    def __connect_workflow_steps( self, steps, steps_by_external_id ):
+        """ Second pass to deal with connections between steps.
+
+        Create workflow connection objects using externally specified ids
+        using during creation or update.
+        """
+        for step in steps:
+            # Input connections
+            for input_name, conn_list in step.temp_input_connections.iteritems():
+                if not conn_list:
+                    continue
+                if not isinstance(conn_list, list):  # Older style singleton connection
+                    conn_list = [conn_list]
+                for conn_dict in conn_list:
+                    if 'output_name' not in conn_dict or 'id' not in conn_dict:
+                        template = "Invalid connection [%s] - must be dict with output_name and id fields."
+                        message = template % conn_dict
+                        raise exceptions.MessageException(message)
+                    conn = model.WorkflowStepConnection()
+                    conn.input_step = step
+                    conn.input_name = input_name
+                    conn.output_name = conn_dict['output_name']
+                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
+            del step.temp_input_connections
 
 
 class MissingToolsException(object):
