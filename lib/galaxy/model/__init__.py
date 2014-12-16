@@ -3077,12 +3077,27 @@ class WorkflowStep( object ):
 
 
 class WorkflowStepConnection( object ):
+    # Constant used in lieu of output_name and input_name to indicate an
+    # implicit connection between two steps that is not dependent on a dataset
+    # or a dataset collection. Allowing for instance data manager steps to setup
+    # index data before a normal tool runs or for workflows that manage data
+    # outside of Galaxy.
+    NON_DATA_CONNECTION = "__NO_INPUT_OUTPUT_NAME__"
 
     def __init__( self ):
         self.output_step_id = None
         self.output_name = None
         self.input_step_id = None
         self.input_name = None
+
+    def set_non_data_connection(self):
+        self.output_name = WorkflowStepConnection.NON_DATA_CONNECTION
+        self.input_name = WorkflowStepConnection.NON_DATA_CONNECTION
+
+    @property
+    def non_data_connection(self):
+        return (self.output_name == WorkflowStepConnection.NON_DATA_CONNECTION and
+                self.input_name == WorkflowStepConnection.NON_DATA_CONNECTION)
 
 
 class WorkflowOutput(object):
@@ -3151,6 +3166,13 @@ class WorkflowInvocation( object, Dictifiable ):
             if step_id not in step_invocations:
                 step_invocations[ step_id ] = []
             step_invocations[ step_id ].append( invocation_step )
+        return step_invocations
+
+    def step_invocations_for_step_id( self, step_id ):
+        step_invocations = []
+        for invocation_step in self.steps:
+            if step_id == invocation_step.workflow_step_id:
+                step_invocations.append( invocation_step )
         return step_invocations
 
     @staticmethod

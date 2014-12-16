@@ -262,6 +262,8 @@ def __populate_input_connections(context, step, connect):
             values = [ values ]
         for value in values:
             if not isinstance(value, dict):
+                if key == "$step":
+                    value += "#__NO_INPUT_OUTPUT_NAME__"
                 value_parts = str(value).split("#")
                 if len(value_parts) == 1:
                     value_parts.append("output")
@@ -270,6 +272,8 @@ def __populate_input_connections(context, step, connect):
                     id = context.labels[id]
                 value = {"id": int(id), "output_name": value_parts[1]}
             input_connection_value.append(value)
+        if key == "$step":
+            key = "__NO_INPUT_OUTPUT_NAME__"
         input_connections[key] = input_connection_value
 
 

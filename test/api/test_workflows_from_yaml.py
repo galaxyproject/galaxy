@@ -102,3 +102,34 @@ test_data:
         print self._get("workflows/%s/download" % workflow_id).json()
         assert False
         # TODO: fill out test...
+
+    def test_implicit_connections( self ):
+        workflow_id = self._upload_yaml_workflow("""
+- label: test_input
+  type: input
+- label: first_cat
+  tool_id: cat1
+  state:
+    input1:
+      $link: test_input
+- label: the_pause
+  type: pause
+  connect:
+    input:
+    - first_cat#out_file1
+- label: second_cat
+  tool_id: cat1
+  state:
+    input1:
+      $link: the_pause
+- label: third_cat
+  tool_id: cat1
+  connect:
+    $step: second_cat
+  state:
+    input1:
+      $link: test_input
+""")
+        workflow = self._get("workflows/%s/download" % workflow_id).json()
+        print workflow
+        assert False

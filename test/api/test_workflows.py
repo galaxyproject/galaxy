@@ -107,7 +107,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         invocation_details = invocation_details_response.json()
         return invocation_details
 
-    def _run_jobs( self, jobs_yaml, history_id=None ):
+    def _run_jobs( self, jobs_yaml, history_id=None, wait=True ):
         if history_id is None:
             history_id = self.history_id
         workflow_id = self._upload_yaml_workflow(
@@ -153,8 +153,9 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         invocation_id = invocation[ "id" ]
         # Wait for workflow to become fully scheduled and then for all jobs
         # complete.
-        self.wait_for_invocation( workflow_id, invocation_id )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        if wait:
+            self.wait_for_invocation( workflow_id, invocation_id )
+            self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         jobs = self._history_jobs( history_id )
         return RunJobsSummary(
             history_id=history_id,
@@ -515,6 +516,60 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         # is not complete.
         invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
         assert invocation[ 'state' ] == 'cancelled'
+
+    def test_run_with_implicit_connection( self ):
+        history_id = self.dataset_populator.new_history()
+        run_summary = self._run_jobs("""
+steps:
+- label: test_input
+  type: input
+- label: first_cat
+  tool_id: cat1
+  state:
+    input1:
+      $link: test_input
+- label: the_pause
+  type: pause
+  connect:
+    input:
+    - first_cat#out_file1
+- label: second_cat
+  tool_id: cat1
+  state:
+    input1:
+      $link: the_pause
+- label: third_cat
+  tool_id: random_lines1
+  connect:
+    $step: second_cat
+  state:
+    num_lines: 1
+    input:
+      $link: test_input
+    seed_source:
+      seed_source_selector: set_seed
+      seed: asdf
+      __current_case__: 1
+test_data:
+  test_input: "hello world"
+""", history_id=history_id, wait=False)
+        time.sleep( 2 )
+        history_id = run_summary.history_id
+        workflow_id = run_summary.workflow_id
+        invocation_id = run_summary.workflow_id
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        invocation = self._invocation_details( workflow_id, invocation_id )
+        assert invocation[ 'state' ] != 'scheduled'
+        # Expect two jobs - the upload and first cat. randomlines shouldn't run
+        # it is implicitly dependent on second cat.
+        assert len(  self._history_jobs( history_id ) ) == 2
+
+        self.__review_paused_steps( workflow_id, invocation_id, order_index=2, action=True )
+        self.wait_for_invocation( workflow_id, invocation_id )
+        time.sleep(1)
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        time.sleep(1)
+        assert len(  self._history_jobs( history_id ) ) == 4
 
     def test_cannot_run_inaccessible_workflow( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run_cannot_access" )

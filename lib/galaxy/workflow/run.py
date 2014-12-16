@@ -136,6 +136,8 @@ class WorkflowInvoker( object ):
         for step in remaining_steps:
             jobs = None
             try:
+                self.__check_implicitly_dependent_steps(step)
+
                 jobs = self._invoke_step( step )
                 for job in (util.listify( jobs ) or [None]):
                     # Record invocation
@@ -159,6 +161,38 @@ class WorkflowInvoker( object ):
         # Not flushing in here, because web controller may create multiple
         # invocations.
         return self.progress.outputs
+
+    def __check_implicitly_dependent_steps( self, step ):
+        """ Method will delay the workflow evaluation if implicitly dependent
+        steps (steps dependent but not through an input->output way) are not
+        yet complete.
+        """
+        for input_connection in step.input_connections:
+            if input_connection.non_data_connection:
+                output_id = input_connection.output_step.id
+                self.__check_implicitly_dependent_step( output_id )
+
+    def __check_implicitly_dependent_step( self, output_id ):
+        step_invocations = self.workflow_invocation.step_invocations_for_step_id( output_id )
+
+        # No steps created yet - have to delay evaluation.
+        if not step_invocations:
+            raise modules.DelayedWorkflowEvaluation()
+
+        for step_invocation in step_invocations:
+            job = step_invocation.job
+            if job:
+                # At least one job in incomplete.
+                if not job.finished:
+                    raise modules.DelayedWorkflowEvaluation()
+
+                if job.state != job.states.OK:
+                    raise modules.CancelWorkflowEvaluation()
+
+            else:
+                # TODO: Handle implicit dependency on stuff like
+                # pause steps.
+                pass
 
     def _invoke_step( self, step ):
         jobs = step.module.execute( self.trans, self.progress, self.workflow_invocation, step )
