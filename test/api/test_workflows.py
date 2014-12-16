@@ -714,6 +714,20 @@ test_data:
         self.__assert_lines_hid_line_count_is( history_id, 2, 5 )
         self.__assert_lines_hid_line_count_is( history_id, 3, 5 )
 
+    @skip_without_tool( "random_lines1" )
+    def test_run_replace_params_by_uuid( self ):
+        workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
+        workflow_request[ "parameters" ] = dumps( {
+            "58dffcc9-bcb7-4117-a0e1-61513524b3b1": dict( num_lines=4 ),
+            "58dffcc9-bcb7-4117-a0e1-61513524b3b2": dict( num_lines=3 ),
+        } )
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        # Would be 8 and 6 without modification
+        self.__assert_lines_hid_line_count_is( history_id, 2, 4 )
+        self.__assert_lines_hid_line_count_is( history_id, 3, 3 )
+
     @skip_without_tool( "validation_default" )
     def test_parameter_substitution_validation( self ):
         substitions = dict( input1="\" ; echo \"moo" )

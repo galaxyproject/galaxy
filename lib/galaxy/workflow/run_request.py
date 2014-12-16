@@ -112,6 +112,10 @@ def _step_parameters(step, param_map):
     """
     param_dict = param_map.get(step.tool_id, {}).copy()
     param_dict.update(param_map.get(str(step.id), {}))
+    step_uuid = step.uuid
+    if step_uuid:
+        uuid_params = param_map.get(str(step_uuid), {})
+        param_dict.update(uuid_params)
     if param_dict:
         if 'param' in param_dict and 'value' in param_dict:
             param_dict[param_dict['param']] = param_dict['value']
