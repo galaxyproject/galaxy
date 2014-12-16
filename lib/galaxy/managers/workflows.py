@@ -167,14 +167,11 @@ class WorkflowContentsManager(UsesAnnotations):
         # First pass to build step objects and populate basic values
         for step_index in step_indices:
             step_dict = supplied_steps[ step_index ]
-            # Create the model class for the step
-            step = model.WorkflowStep()
+
+            module, step = self.__module_from_dict( trans, step_dict, secure=False )
             steps.append( step )
             steps_by_external_id[ step_dict['id' ] ] = step
-            # FIXME: Position should be handled inside module
-            step.position = step_dict['position']
-            module = module_factory.from_dict( trans, step_dict, secure=False )
-            module.save_to_step( step )
+
             if module.type == 'tool' and module.tool is None:
                 # A required tool is not available in the local Galaxy instance.
                 missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
@@ -185,13 +182,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 step.config = json.dumps(step_dict)
             if step.tool_errors:
                 workflow.has_errors = True
-            # Stick this in the step temporarily
-            step.temp_input_connections = step_dict['input_connections']
-            # Save step annotation.
-            annotation = step_dict[ 'annotation' ]
-            if annotation:
-                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
@@ -269,14 +260,10 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # First pass to build step objects and populate basic values
         for key, step_dict in data['steps'].iteritems():
+            module, step = self.__module_from_dict( trans, step_dict, secure=from_editor )
             # Create the model class for the step
-            step = model.WorkflowStep()
             steps.append( step )
             steps_by_external_id[ step_dict['id' ] ] = step
-            # FIXME: Position should be handled inside module
-            step.position = step_dict['position']
-            module = module_factory.from_dict( trans, step_dict, secure=from_editor )
-            module.save_to_step( step )
             if 'workflow_outputs' in step_dict:
                 for output_name in step_dict['workflow_outputs']:
                     m = model.WorkflowOutput(workflow_step=step, output_name=output_name)
@@ -284,13 +271,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if step.tool_errors:
                 # DBTODO Check for conditional inputs here.
                 workflow.has_errors = True
-            # Stick this in the step temporarily
-            step.temp_input_connections = step_dict['input_connections']
-            # Save step annotation.
-            annotation = step_dict[ 'annotation' ]
-            if annotation:
-                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
@@ -599,6 +580,28 @@ class WorkflowContentsManager(UsesAnnotations):
                                                                   'step_output': conn.output_name}
         item['steps'] = steps
         return item
+
+    def __module_from_dict( self, trans, step_dict, secure ):
+        """ Create a WorkflowStep model object and corrsponding module representing
+        type-specific functionality from the incoming dicitionary.
+        """
+        step = model.WorkflowStep()
+
+        # TODO: Consider handling position inside module.
+        step.position = step_dict['position']
+
+        module = module_factory.from_dict( trans, step_dict, secure=secure )
+        module.save_to_step( step )
+
+        annotation = step_dict[ 'annotation' ]
+        if annotation:
+            annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
+
+        # Stick this in the step temporarily
+        step.temp_input_connections = step_dict['input_connections']
+
+        return module, step
 
 
 class MissingToolsException(object):
