@@ -322,8 +322,8 @@ def validate_repository_name( app, name, user ):
             return 'You have a deleted repository named <b>%s</b>, so choose a different name.' % name
         else:
             return "You already have a repository named <b>%s</b>, so choose a different name." % name
-    if len( name ) < 4:
-        return "Repository names must be at least 4 characters in length."
+    if len( name ) < 2:
+        return "Repository names must be at least 2 characters in length."
     if len( name ) > 80:
         return "Repository names cannot be more than 80 characters in length."
     if not( VALID_REPOSITORYNAME_RE.match( name ) ):
