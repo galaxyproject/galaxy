@@ -571,10 +571,19 @@ class SQlite ( Binary ):
             rslt = c.execute(tables_query).fetchall()
             for table,sql in rslt:
                 tables.append(table)
-                columns[table] = re.sub('^.*\((.*)\)$','\\1',sql).split(',')
+                try:
+                    col_query = 'SELECT * FROM %s LIMIT 0' % table
+                    cur = conn.cursor().execute(col_query)
+                    cols = [col[0] for col in cur.description]
+                    columns[table] = cols
+                except Exception, exc:
+                    log.warn( '%s, set_meta Exception: %s', self, exc )
             for table in tables:
-                row_query = "SELECT count(*) FROM %s" % table
-                rowcounts[table] = c.execute(row_query).fetchone()[0]
+                try:
+                    row_query = "SELECT count(*) FROM %s" % table
+                    rowcounts[table] = c.execute(row_query).fetchone()[0]
+                except Exception, exc:
+                    log.warn( '%s, set_meta Exception: %s', self, exc )
             dataset.metadata.tables = tables
             dataset.metadata.table_columns = columns
             dataset.metadata.table_row_count = rowcounts
