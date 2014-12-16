@@ -50,9 +50,10 @@ ${job_traceback}
 (This is an automated message).
 """
 
+
 class ErrorReporter( object ):
     def __init__( self, hda, app ):
-         # Get the dataset
+        # Get the dataset
         sa_session = app.model.context
         if not isinstance( hda, model.HistoryDatasetAssociation ):
             hda_id = hda
@@ -68,12 +69,14 @@ class ErrorReporter( object ):
         self.app = app
         self.tool_id = self.job.tool_id
         self.report = None
+
     def _can_access_dataset( self, user ):
         if user:
             roles = user.all_roles()
         else:
             roles = []
         return self.app.security_agent.can_access_dataset( roles, self.hda.dataset )
+
     def create_report( self, user, email='', message='', **kwd ):
         hda = self.hda
         job = self.job
@@ -103,12 +106,15 @@ class ErrorReporter( object ):
                               job_traceback=util.unicodify( job.traceback ),
                               email_str=email_str,
                               message=util.unicodify( message ) )
+
     def _send_report( self, user, email=None, message=None, **kwd ):
         return self.report
+
     def send_report( self, user, email=None, message=None, **kwd ):
         if self.report is None:
             self.create_report( user, email=email, message=message, **kwd )
         return self._send_report( user, email=email, message=message, **kwd )
+
 
 class EmailErrorReporter( ErrorReporter ):
     def _send_report( self, user, email=None, message=None, **kwd ):
