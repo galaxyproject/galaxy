@@ -321,23 +321,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // create message view
             this.message = new Ui.Message();
             
-            // construct tool requirements message content
-            var requirements_message = 'This tool requires ';
-            for (var i in options.requirements) {
-                var req = options.requirements[i];
-                requirements_message += req.name;
-                if (req.version) {
-                    requirements_message += ' (Version ' + req.version + ')';
-                }
-                if (i < options.requirements.length - 2) {
-                    requirements_message += ', ';
-                }
-                if (i == options.requirements.length - 2) {
-                    requirements_message += ' and ';
-                }
-            }
-            requirements_message += '.';
-            
             // button for version selection
             var requirements_button = new Ui.ButtonIcon({
                 icon    : 'fa-info-circle',
@@ -348,8 +331,8 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         this.visible = true;
                         self.message.update({
                             persistent  : true,
-                            message     : requirements_message,
-                            status      : 'warning'
+                            message     : ToolTemplate.requirements(options),
+                            status      : 'info'
                         });
                     } else {
                         this.visible = false;
@@ -395,7 +378,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // button menu
             var menu_button = new Ui.ButtonMenu({
-                icon    : 'fa-gear',
+                icon    : 'fa-caret-down',
                 title   : 'Options',
                 tooltip : 'View available options'
             });
@@ -462,7 +445,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // create portlet
             this.portlet = new Portlet.View({
                 icon    : 'fa-wrench',
-                title   : '<b>' + options.name + '</b> ' + options.description + ' (Version ' + options.version + ')',
+                title   : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Tool Version ' + options.version + ')',
                 cls     : 'ui-portlet-slim',
                 operations: {
                     requirements    : requirements_button,
