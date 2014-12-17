@@ -195,8 +195,7 @@ class ToolTestBuilder( object ):
                     if isinstance( value, basic.DataToolParameter ):
                         if not isinstance(param_value, list):
                             param_value = [ param_value ]
-                        map( lambda v: self.__add_uploaded_dataset( context.for_state(), v, param_extra, value ),
-param_value )
+                        map( lambda v: self.__add_uploaded_dataset( context.for_state(), v, param_extra, value ), param_value )
                         processed_value = param_value
                     elif isinstance( value, basic.DataCollectionToolParameter ):
                         assert 'collection' in param_extra
