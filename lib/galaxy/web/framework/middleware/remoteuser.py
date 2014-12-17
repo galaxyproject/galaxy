@@ -59,7 +59,7 @@ class RemoteUser( object ):
         # Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
         path_info = environ.get('PATH_INFO', '')
-        if environ.get(self.remote_user_header, '(null)') != '(null)':
+        if not environ.get(self.remote_user_header, '(null)').startswith('(null)'):
             if not environ[ self.remote_user_header ].count( '@' ):
                 if self.maildomain is not None:
                     environ[ self.remote_user_header ] += '@' + self.maildomain
