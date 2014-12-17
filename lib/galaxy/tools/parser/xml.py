@@ -254,9 +254,6 @@ def __parse_assert_list( output_elem ):
     assert_elem = output_elem.find("assert_contents")
     assert_list = None
 
-    # Trying to keep testing patch as localized as
-    # possible, this function should be relocated
-    # somewhere more conventional.
     def convert_elem(elem):
         """ Converts and XML element to a dictionary format, used by assertion checking code. """
         tag = elem.tag
