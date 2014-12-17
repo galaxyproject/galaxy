@@ -67,6 +67,13 @@ id_secret = changethisinproductiontoo
 # https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
 #use_remote_user = False
 
+# If use_remote_user is enabled, anyone who can log in to the Galaxy host may
+# impersonate any other user by simply sending the appropriate header. Thus a
+# secret shared between the upstream proxy server, and Galaxy is required.
+# If anyone other than the Galaxy user is using the server, then apache/nginx should
+# pass a value in the header 'GX_SECRET' that is identical the one below
+#remote_user_secret = changethisinproductiontoo
+
 # Configuration for debugging middleware
 debug = true
 use_lint = false
