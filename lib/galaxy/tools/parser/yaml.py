@@ -152,25 +152,43 @@ def _parse_test(i, test_dict):
         attributes["metadata"] = {}
         # TODO
         assert_list = []
-        for key, assertion in attributes.get("asserts", {}).iteritems():
-            # TODO: not handling nested assertions correctly,
-            # not sure these are used though.
-            children = []
-            if "children" in assertion:
-                children = assertion["children"]
-                del assertion["children"]
-            assert_dict = dict(
-                tag=key,
-                attributes=assertion,
-                children=children,
-            )
-            assert_list.append(assert_dict)
+        assert_list = __to_test_assert_list( attributes.get("asserts", [] ) )
         attributes["assert_list"] = assert_list
-
         _ensure_has(attributes, defaults)
 
     test_dict["outputs"] = new_outputs
+    test_dict["command"] = __to_test_assert_list( attributes.get( "command", [] ) )
+    test_dict["stdout"] = __to_test_assert_list( attributes.get( "stdout", [] ) )
+    test_dict["stderr"] = __to_test_assert_list( attributes.get( "stderr", [] ) )
     return test_dict
+
+
+def __to_test_assert_list(assertions):
+    def expand_dict_form(item):
+        key, value = item
+        new_value = value.copy()
+        new_value["that"] = key
+        return new_value
+
+    if isinstance( assertions, dict ):
+        assertions = map(expand_dict_form, assertions.items() )
+
+    assert_list = []
+    for assertion in assertions:
+        # TODO: not handling nested assertions correctly,
+        # not sure these are used though.
+        children = []
+        if "children" in assertion:
+            children = assertion["children"]
+            del assertion["children"]
+        assert_dict = dict(
+            tag=assertion["that"],
+            attributes=assertion,
+            children=children,
+        )
+        assert_list.append(assert_dict)
+
+    return assert_list or None  # XML variant is None if no assertions made
 
 
 class YamlPageSource(PageSource):

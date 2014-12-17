@@ -1,6 +1,7 @@
 import new
 import sys
 from base.twilltestcase import TwillTestCase
+from base.asserts import verify_assertions
 from base.interactor import build_interactor, stage_data_in_history, RunToolException
 from base.instrument import register_job_data
 from galaxy.tools import DataManagerTool
@@ -131,6 +132,21 @@ class ToolTestCase( TwillTestCase ):
                 found_exceptions.append(e)
         if job_stdio is None:
             job_stdio = galaxy_interactor.get_job_stdio( jobs[0][ 'id' ] )
+
+        other_checks = {
+            "command_line": "Command produced by the job",
+            "stdout": "Standard output of the job",
+            "stderr": "Standard error of the job",
+        }
+        for what, description in other_checks.items():
+            if getattr( testdef, what, None ) is not None:
+                try:
+                    data = job_stdio[what]
+                    verify_assertions( data, getattr( testdef, what ) )
+                except AssertionError, err:
+                    errmsg = '%s different than expected\n' % description
+                    errmsg += str( err )
+                    found_exceptions.append( AssertionError( errmsg ) )
 
         if found_exceptions:
             raise JobOutputsError(found_exceptions, job_stdio)

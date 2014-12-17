@@ -127,6 +127,9 @@ class ToolTestBuilder( object ):
             if num_outputs:
                 num_outputs = int( num_outputs )
             self.num_outputs = num_outputs
+            self.command_line = test_dict.get("command", None)
+            self.stdout = test_dict.get("stdout", None)
+            self.stderr = test_dict.get("stderr", None)
         except Exception, e:
             self.error = True
             self.exception = e
