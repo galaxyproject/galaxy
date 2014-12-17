@@ -34,10 +34,10 @@ class DatasetCollectionManager( object ):
         self.collection_type_descriptions = CollectionTypeDescriptionFactory( self.type_registry )
         self.model = app.model
         self.security = app.security
-        self.hda_manager = hdas.HDAManager()
-        self.history_manager = histories.HistoryManager()
+        self.hda_manager = hdas.HDAManager( app )
+        self.history_manager = histories.HistoryManager( app )
         self.tag_manager = tags.TagsManager( app )
-        self.ldda_manager = lddas.LDDAManager( )
+        self.ldda_manager = lddas.LDDAManager( app )
 
     def create(
         self,
@@ -278,7 +278,10 @@ class DatasetCollectionManager( object ):
     def __get_history_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):
         instance_id = int( trans.app.security.decode_id( id ) )
         collection_instance = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( instance_id )
-        self.history_manager.secure( trans, collection_instance.history, check_ownership=check_ownership, check_accessible=check_accessible )
+        if check_ownership:
+            self.history_manager.error_unless_owner( trans, collection_instance.history, trans.user )
+        if check_accessible:
+            self.history_manager.error_unless_accessible( trans, collection_instance.history, trans.user )
         return collection_instance
 
     def __get_library_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):

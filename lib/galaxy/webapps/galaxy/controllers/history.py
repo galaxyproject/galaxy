@@ -1,5 +1,6 @@
 import logging
 from cgi import escape
+from traceback import format_exc
 import urllib
 
 import galaxy.util
@@ -34,14 +35,23 @@ class HistoryListGrid( grids.Grid ):
     # Custom column types
     class DatasetsByStateColumn( grids.GridColumn, UsesHistoryMixin ):
         def get_value( self, trans, grid, history ):
-            state_count_dict = self.get_hda_state_counts( trans, history )
+            state_counts = {
+                'ok' : 0,
+                'running' : 0,
+                'queued' : 0,
+                'error' : 0,
+            }
+            for hda in history.datasets:
+                if hda.visible and not hda.deleted and hda.state in state_counts.keys():
+                    state_counts[ hda.state ] += 1
 
             rval = ''
-            for state in ( 'ok', 'running', 'queued', 'error' ):
-                count = state_count_dict.get( state, 0 )
+            for state in state_counts.keys():
+                count = state_counts.get( state )
                 if count:
                     rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
             return rval
+
 
     class HistoryListNameColumn( NameColumn ):
         def get_link( self, trans, grid, history ):
@@ -201,8 +211,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     def __init__( self, app ):
         super( HistoryController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager()
+            histories=managers.histories.HistoryManager( app )
         )
+        self.history_serializer = managers.histories.HistorySerializer( self.app )
+
 
     @web.expose
     def index( self, trans ):
@@ -626,7 +638,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         history_dictionaries = []
         for history in self.get_user_histories( trans, user=trans.user, include_deleted=include_deleted_histories ):
-            history_dictionary = self.get_history_dict( trans, history )
+            history_dictionary = self.history_serializer.serialize_to_view( trans, history, view='detailed' )
             history_dictionaries.append( history_dictionary )
 
         return trans.fill_template_mako( "history/view_multiple.mako",
@@ -1097,7 +1109,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     trans.app.job_manager.job_stop_queue.put( job.id )
 
         # Regardless of whether it was previously deleted, get the most recent history or create a new one.
-        most_recent_history = self.mgrs.histories.most_recent( trans, user=trans.user, deleted=False )
+        most_recent_history = self.mgrs.histories.most_recent( trans, user=trans.user )
         if most_recent_history:
             trans.set_history( most_recent_history )
             return trans.show_ok_message( "History deleted, your most recent history is now active",
@@ -1442,7 +1454,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             msg = 'Copied and created %d new histories.' % len( histories )
         return trans.show_ok_message( msg )
 
-
     # ------------------------------------------------------------------------- current history
     @web.expose
     @web.require_login( "switch to a history" )
@@ -1459,33 +1470,35 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     def history_data( self, trans, history ):
         """
         """
-        #TODO: to manager
-        history_data = self.get_history_dict( trans, history )
-        encoded_history_id = trans.security.encode_id( history.id )
-        history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=encoded_history_id )
-        return history_data
+        return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
 
     #TODO: combine these next two - poss. with a redirect flag
-    @web.require_login( "switch to a history" )
+    #@web.require_login( "switch to a history" )
     @web.json
-    def set_as_current( self, trans, id=None ):
+    def set_as_current( self, trans, id ):
         """
         """
-        history = self.get_history( trans, id )
-        trans.set_history( history )
-        return self.history_data( trans, history )
+        try:
+            history = self.mgrs.histories.ownership_by_id( trans, trans.security.decode_id( id ), trans.user )
+            trans.set_history( history )
+            return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+        except exceptions.MessageException, msg_exc:
+            print type( msg_exc )
+            trans.response.status = msg_exc.err_code.code
+            return { 'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code }
 
     @web.json
     def current_history_json( self, trans ):
         """
         """
         history = trans.get_history( create=True )
-        return self.history_data( trans, history )
+        return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
 
     @web.json
     def create_new_current( self, trans, name=None ):
         """
         """
-        return self.history_data( trans, trans.new_history( name ) )
+        new_history = trans.new_history( name )
+        return self.history_serializer.serialize_to_view( trans, new_history, view='detailed' )
 
     #TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current

@@ -290,7 +290,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
     def __init__( self, app ):
         super( PageController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager()
+            histories=managers.histories.HistoryManager( app )
         )
 
     @web.expose
@@ -740,12 +740,6 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
 
         hda_dicts = []
         datasets = self.get_history_datasets( trans, history )
-        #for hda in datasets:
-        #    hda_dict = self.get_hda_dict( trans, hda )
-        #    hda_dict[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, hda )
-        #    hda_dicts.append( hda_dict )
-        #history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
-        #history_dict[ 'annotation' ] = history.annotation
 
         # include all datasets: hidden, deleted, and purged
         #TODO!: doubled query (hda_dictionaries + datasets)

@@ -6,9 +6,12 @@ created (or copied) by users over the course of an analysis.
 """
 
 from galaxy import exceptions
+from galaxy import model
 from galaxy.model import orm
 
-from galaxy.managers import base as manager_base
+import base
+import sharable
+import hdas
 import galaxy.managers.collections_util
 
 import galaxy.web
@@ -18,122 +21,76 @@ log = logging.getLogger( __name__ )
 
 
 # =============================================================================
-class HistoryManager( manager_base.ModelManager ):
+class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface ):
     """
     Interface/service object for interacting with HDAs.
     """
+    model_class = model.History
+    default_order_by = ( model.History.create_time, )
+    foreign_key_name = 'history'
+    user_share_model = model.HistoryUserShareAssociation
 
-    #TODO: all the following would be more useful if passed the user instead of defaulting to trans.user
-    def __init__( self, *args, **kwargs ):
-        super( HistoryManager, self ).__init__( *args, **kwargs )
+    def __init__( self, app, *args, **kwargs ):
+        super( HistoryManager, self ).__init__( app, *args, **kwargs )
+        self.hda_mgr = hdas.HDAManager( app )
 
-    def get( self, trans, unencoded_id, check_ownership=True, check_accessible=True, deleted=None ):
-        """
-        Get a History from the database by id, verifying ownership.
-        """
-        # this is a replacement for UsesHistoryMixin because mixins are a bad soln/structure
-        history = trans.sa_session.query( trans.app.model.History ).get( unencoded_id )
-        if history is None:
-            raise exceptions.ObjectNotFound()
-        if deleted is True and not history.deleted:
-            raise exceptions.ItemDeletionException( 'History "%s" is not deleted' % ( history.name ), type="error" )
-        elif deleted is False and history.deleted:
-            raise exceptions.ItemDeletionException( 'History "%s" is deleted' % ( history.name ), type="error" )
+    # ......................................................................... crud
+    def copy( self, trans, history, user, **kwargs ):
+        return history.copy( target_user=user, **kwargs )
 
-        history = self.secure( trans, history, check_ownership, check_accessible )
+    def get_current( self, trans ):
+        return trans.get_history()
+
+    def set_current( self, trans, history ):
+        trans.set_history( history )
         return history
 
-    def by_user( self, trans, user=None, include_deleted=False, only_deleted=False ):
+    def set_current_by_id( self, trans, history_id ):
+        return self.set_current( trans, self.by_id( trans, history_id ) )
+
+    def most_recent( self, trans, user, **kwargs ):
+        if not user:
+            return None if trans.history.deleted else trans.history
+        desc_update_time = self.model_class.table.c.update_time
+        return self.by_user( trans, user, order_by=desc_update_time, limit=1, **kwargs )
+
+    # ......................................................................... sharable
+    # overriding to handle anonymous users' current histories in both cases
+    def by_user( self, trans, user, **kwargs ):
         """
-        Get all the histories for a given user (defaulting to `trans.user`)
-        ordered by update time and filtered on whether they've been deleted.
+        Get all the histories for a given user (allowing anon users' theirs)
+        ordered by update time.
         """
         # handle default and/or anonymous user (which still may not have a history yet)
-        user = user or trans.user
-        if not user:
+        if self.user_mgr.is_anonymous( user ):
             current_history = trans.get_history()
             return [ current_history ] if current_history else []
 
-        history_model = trans.model.History
-        query = ( trans.sa_session.query( history_model )
-                  .filter( history_model.user == user )
-                  .order_by( orm.desc( history_model.table.c.update_time ) ) )
-        if only_deleted:
-            query = query.filter( history_model.deleted == True )
-        elif not include_deleted:
-            query = query.filter( history_model.deleted == False )
-        return query.all()
+        return super( HistoryManager, self ).by_user( trans, user, **kwargs )
 
-    def secure( self, trans, history, check_ownership=True, check_accessible=True ):
-        """
-        Checks if (a) user owns item or (b) item is accessible to user.
-        """
-        # all items are accessible to an admin
-        if trans.user and trans.user_is_admin():
-            return history
-        if check_ownership:
-            history = self.check_ownership( trans, history )
-        if check_accessible:
-            history = self.check_accessible( trans, history )
-        return history
-
-    def is_current( self, trans, history ):
-        """
-        True if the given history is the user's current history.
-
-        Returns False if the session has no current history.
-        """
-        if trans.history is None:
-            return False
-        return trans.history == history
-
-    def is_owner( self, trans, history ):
+    def is_owner( self, trans, history, user ):
         """
         True if the current user is the owner of the given history.
         """
         # anon users are only allowed to view their current history
-        if not trans.user:
-            return self.is_current( trans, history )
-        return trans.user == history.user
-
-    def check_ownership( self, trans, history ):
-        """
-        Raises error if the current user is not the owner of the history.
-        """
-        if trans.user and trans.user_is_admin():
-            return history
-        if not trans.user and not self.is_current( trans, history ):
-            raise exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy histories", type='error' )
-        if self.is_owner( trans, history ):
-            return history
-        raise exceptions.ItemOwnershipException( "History is not owned by the current user", type='error' )
-
-    def is_accessible( self, trans, history ):
-        """
-        True if the user can access (read) the current history.
-        """
-        # admin always have access
-        if trans.user and trans.user_is_admin():
+        if self.user_mgr.is_anonymous( user ) and history == trans.get_history():
             return True
-        # owner has implicit access
-        if self.is_owner( trans, history ):
-            return True
-        # importable and shared histories are always accessible
-        if history.importable:
-            return True
-        if trans.user in history.users_shared_with_dot_users:
-            return True
-        return False
+        return super( HistoryManager, self ).is_owner( trans, history, user )
 
-    def check_accessible( self, trans, history ):
-        """
-        Raises error if the current user can't access the history.
-        """
-        if self.is_accessible( trans, history ):
-            return history
-        raise exceptions.ItemAccessibilityException( "History is not accessible to the current user", type='error' )
+    # ......................................................................... purgable
+    def purge( self, trans, history, flush=True, **kwargs ):
+        self.error_unless_dataset_purge_allowed( trans, history )
 
-    #TODO: bleh...
+        # First purge all the datasets
+        for hda in history.datasets:
+            if not hda.purged:
+                self.hda_mgr.purge( trans, hda, flush=True )
+
+        # Now mark the history as purged
+        super( HistoryManager, self ).purge( trans, history, flush=flush, **kwargs )
+
+    # ......................................................................... serialization
+    #TODO: move to serializer
     def _get_history_data( self, trans, history ):
         """
         Returns a dictionary containing ``history`` and ``contents``, serialized
@@ -191,53 +148,174 @@ class HistoryManager( manager_base.ModelManager ):
             'contents'  : contents_dictionaries
         }
 
-    def get_history_dict( self, trans, history, contents_dictionaries=None ):
+    # remove this
+    def get_state_counts( self, trans, history, exclude_deleted=True, exclude_hidden=False ):
         """
-        Returns history data in the form of a dictionary.
         """
-        #TODO: to serializer
-        history_dict = history.to_dict( view='element', value_mapper={ 'id':trans.security.encode_id })
-        history_dict[ 'user_id' ] = None
-        if history.user_id:
-            history_dict[ 'user_id' ] = trans.security.encode_id( history.user_id )
+        #TODO: the default flags above may not make a lot of sense (T,T?)
+        state_counts = {}
+        for state in trans.app.model.Dataset.states.values():
+            state_counts[ state ] = 0
 
-        history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
-        history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, history.user, history )
-        if not history_dict[ 'annotation' ]:
-            history_dict[ 'annotation' ] = ''
+        #TODO:?? collections and coll. states?
+        for hda in history.datasets:
+            if exclude_deleted and hda.deleted:
+                continue
+            if exclude_hidden and not hda.visible:
+                continue
+            state_counts[ hda.state ] = state_counts[ hda.state ] + 1
+        return state_counts
 
-        #TODO: item_slug url
-        if history_dict[ 'importable' ] and history_dict[ 'slug' ]:
-            username_and_slug = ( '/' ).join(( 'u', history.user.username, 'h', history_dict[ 'slug' ] ))
-            history_dict[ 'username_and_slug' ] = username_and_slug
+    # remove this
+    def get_state_ids( self, trans, history ):
+        """
+        """
+        state_ids = {}
+        for state in trans.app.model.Dataset.states.values():
+            state_ids[ state ] = []
 
-#TODO: re-add
-        #hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
-        ##TODO remove the following in v2
-        #( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
-        #history_dict[ 'state_details' ] = state_counts
-        #history_dict[ 'state_ids' ] = state_ids
-        #history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
+        #TODO:?? collections and coll. states?
+        for hda in history.datasets:
+            #TODO: do not encode ids at this layer
+            encoded_id = trans.security.encode_id( hda.id )
+            state_ids[ hda.state ].append( encoded_id )
+        return state_ids
 
-        return history_dict
+    #TODO: remove this (is state used/useful?)
+    def get_history_state( self, trans, history ):
+        """Returns the history state based on the states of the HDAs it contains.
+        """
+        states = trans.app.model.Dataset.states
 
-    def most_recent( self, trans, user=None, deleted=False ):
-        user = user or trans.user
-        if not user:
-            return None if trans.history.deleted else trans.history
+        # (default to ERROR)
+        state = states.ERROR
 
-        #TODO: dup with by_user - should return query from there and call first and not all
-        history_model = trans.model.History
-        query = ( trans.sa_session.query( history_model )
-                  .filter( history_model.user == user )
-                  .order_by( orm.desc( history_model.table.c.update_time ) ) )
-        if not deleted:
-            query = query.filter( history_model.deleted == False )
-        return query.first()
+        #TODO: history_state and state_counts are classically calc'd at the same time
+        #   so this is rel. ineff. - if we keep this...
+        hda_state_counts = self.get_state_counts( trans, history, exclude_deleted=False )
+        num_hdas = sum( hda_state_counts.values() )
+        if num_hdas == 0:
+            state = states.NEW
 
-# =============================================================================
-class HistorySerializer( manager_base.ModelSerializer ):
+        else:
+            if( ( hda_state_counts[ states.RUNNING ] > 0 )
+            or  ( hda_state_counts[ states.SETTING_METADATA ] > 0 )
+            or  ( hda_state_counts[ states.UPLOAD ] > 0 ) ):
+                state = states.RUNNING
+            #TODO: this method may be more useful if we *also* polled the histories jobs here too
+
+            elif hda_state_counts[ states.QUEUED ] > 0:
+                state = states.QUEUED
+
+            elif( ( hda_state_counts[ states.ERROR ] > 0 )
+            or    ( hda_state_counts[ states.FAILED_METADATA ] > 0 ) ):
+                state = states.ERROR
+
+            elif hda_state_counts[ states.OK ] == num_hdas:
+                state = states.OK
+
+        return state
+
+
+## =============================================================================
+class HistorySerializer( base.ModelSerializer ):
     """
     Interface/service object for serializing histories into dictionaries.
     """
-    pass
+
+    def __init__( self, app ):
+        super( HistorySerializer, self ).__init__( app )
+        self.history_mgr = HistoryManager( app )
+
+        summary_view = [
+            'id',
+            'model_class',
+            'name',
+            'deleted', 'purged',
+            'published',
+            #'count'
+            'annotation',
+            'tags',
+            'url'
+        ]
+        # in the Historys' case, each of these views includes the keys from the previous
+        detailed_view = summary_view + [
+            'contents_url',
+            #'hdas',
+            'empty',
+            'size', 'nice_size',
+            'user_id',
+            'create_time', 'update_time',
+            'importable', 'slug',
+            'genome_build',
+            #username_and_slug = ( '/' ).join(( 'u', history.user.username, 'h', history_dict[ 'slug' ] ))
+            #TODO: remove the next three - instead getting the same info from the 'hdas' list
+            'state',
+            'state_details',
+            'state_ids',
+        ]
+        extended_view = detailed_view + [
+        ]
+        self.serializable_keys = extended_view + []
+        self.views = {
+            'summary'   : summary_view,
+            'detailed'  : detailed_view,
+            'extended'  : extended_view,
+        }
+        self.default_view = 'summary'
+
+    #assumes: outgoing to json.dumps and sanitized
+    def add_serializers( self ):
+        super( HistorySerializer, self ).add_serializers()
+        self.serializers.update({
+            'model_class'   : lambda *a: 'History',
+            'id'            : self.serialize_id,
+            'count'         : lambda trans, item, key: len( item.datasets ),
+            'create_time'   : self.serialize_date,
+            'update_time'   : self.serialize_date,
+            'user_id'       : self.serialize_id,
+            'hdas'          : lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],
+            'size'          : lambda t, i, k: int( i.get_disk_size() ),
+            'nice_size'     : lambda t, i, k: i.get_disk_size( nice_size=True ),
+            #TODO: to mixins: annotatable, taggable
+            'annotation'    : lambda t, i, k: i.get_item_annotation_str( t.sa_session, t.user, i ),
+            'tags'          : lambda t, i, k: [ tag.user_tname + ( ':' + tag.user_value if tag.user_value else '' )
+                                                for tag in i.tags ],
+            'url'           : lambda t, i, k: galaxy.web.url_for( 'history', id=t.security.encode_id( i.id ) ),
+            'contents_url'  : lambda t, i, k:
+                galaxy.web.url_for( 'history_contents', history_id=t.security.encode_id( i.id ) ),
+            'empty'         : lambda t, i, k: len( i.datasets ) <= 0,
+
+            'state'         : lambda t, i, k: self.history_mgr.get_history_state( t, i ),
+            'state_details' : lambda t, i, k: self.history_mgr.get_state_counts( t, i ),
+            'state_ids'     : lambda t, i, k: self.history_mgr.get_state_ids( t, i ),
+        })
+
+## =============================================================================
+class HistoryDeserializer( base.ModelDeserializer ):
+    """
+    Interface/service object for validating and deserializing dictionaries into histories.
+    """
+
+    def __init__( self, app ):
+        super( HistoryDeserializer, self ).__init__( app )
+        self.history_mgr = HistoryManager( app )
+
+    #assumes: incoming from json.loads and sanitized
+    def add_deserializers( self ):
+        super( HistoryDeserializer, self ).add_deserializers()
+        self.deserializers.update({
+            'name'          : self.deserialize_basestring,
+            'genome_build'  : self.deserialize_genome_build,
+            # mixin: annotatable
+            'annotation'    : self.deserialize_annotation,
+            # mixin: taggable
+            'tags'          : self.deserialize_tags,
+
+            # mixin: deletable
+            'deleted'       : self.deserialize_bool,
+            # sharable
+            'published'     : self.deserialize_bool,
+            'importable'    : self.deserialize_bool,
+        })
+        self.deserializable_keys = self.deserializers.keys()

@@ -27,7 +27,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     def __init__( self, app ):
         super( RootController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager()
+            histories=managers.histories.HistoryManager( app )
         )
 
     @web.expose

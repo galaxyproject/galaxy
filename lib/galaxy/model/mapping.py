@@ -131,6 +131,7 @@ model.Dataset.table = Table( "dataset", metadata,
     Column( 'total_size', Numeric( 15, 0 ) ),
     Column( 'uuid', UUIDType() ) )
 
+# hda read access permission given by a user to a specific site (gen. for external display applications)
 model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_dataset_association_display_at_authorization", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -972,10 +973,10 @@ model.Page.table = Table( "page", metadata,
     Column( "latest_revision_id", Integer,
             ForeignKey( "page_revision.id", use_alter=True, name='page_latest_revision_id_fk' ), index=True ),
     Column( "title", TEXT ),
-    Column( "slug", TEXT, unique=True, index=True ),
-    Column( "importable", Boolean, index=True, default=False ),
-    Column( "published", Boolean, index=True, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
+    Column( "importable", Boolean, index=True, default=False ),
+    Column( "slug", TEXT, unique=True, index=True ),
+    Column( "published", Boolean, index=True, default=False ),
     )
 
 model.PageRevision.table = Table( "page_revision", metadata,

@@ -33,7 +33,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
     def __init__( self, app ):
         super( ToolsController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager()
+            histories=managers.histories.HistoryManager( app )
         )
 
     @web.expose_api
@@ -144,7 +144,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         # dataset upload.
         history_id = payload.get("history_id", None)
         if history_id:
-            target_history = self.mgrs.histories.get( trans, trans.security.decode_id( history_id ) )
+            decoded_id = trans.security.decode_id( history_id )
+            target_history = self.mgrs.histories.ownership_by_id( trans, decoded_id, trans.user )
         else:
             target_history = None
 

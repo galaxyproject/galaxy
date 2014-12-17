@@ -26,7 +26,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
     def __init__( self, app ):
         super( BaseAPIController, self ).__init__( app )
-        self.history_manager = histories.HistoryManager()
+        self.history_manager = histories.HistoryManager( app )
         self.workflow_manager = workflows.WorkflowsManager( app )
         self.workflow_contents_manager = workflows.WorkflowContentsManager()
 

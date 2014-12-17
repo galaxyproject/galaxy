@@ -5,7 +5,7 @@ class LDDAManager( manager_base.ModelManager ):
     """ A fairly sparse manager for LDDAs.
     """
 
-    def __init__( self ):
+    def __init__( self, app ):
         """
         Set up and initialize other managers needed by lddas.
         """

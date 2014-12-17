@@ -30,8 +30,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     def __init__( self, app ):
         super( HistoryContentsController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories=histories.HistoryManager(),
-            hdas=hdas.HDAManager()
+            histories=histories.HistoryManager( app ),
+            hdas=hdas.HDAManager( app )
         )
 
     def _decode_id( self, trans, id ):
@@ -77,8 +77,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             history = trans.history
         # otherwise, check permissions for the history first
         else:
-            history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-                check_ownership=False, check_accessible=True )
+            history = self.mgrs.histories.accessible_by_id( trans, self._decode_id( trans, history_id ), trans.user )
 
         # Allow passing in type or types - for continuity rest of methods
         # take in type - but this one can be passed multiple types and
@@ -220,7 +219,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return { 'error': str( e ) }
 
     def __show_dataset( self, trans, id, **kwd ):
-        hda = self.mgrs.hdas.get( trans, self._decode_id( trans, id ), check_ownership=False, check_accessible=True )
+        hda = self.mgrs.hdas.accessible_by_id( trans, self._decode_id( trans, id ), trans.user )
         #if hda.history.id != self._decode_id( trans, history_id ):
         #    raise exceptions.ObjectNotFound( 'dataset was not found in this history' )
         hda_dict = self.get_hda_dict( trans, hda )
@@ -287,8 +286,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             history = trans.history
         # otherwise, check permissions for the history first
         else:
-            history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-                check_ownership=True, check_accessible=True )
+            history = self.mgrs.histories.ownership_by_id( trans, self._decode_id( trans, history_id ), trans.user )
 
         type = payload.get('type', 'dataset')
         if type == 'dataset':
@@ -321,7 +319,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         # copy an existing, accessible hda
         elif source == 'hda':
             unencoded_hda_id = self._decode_id( trans, content )
-            original = self.mgrs.hdas.get( trans, unencoded_hda_id, check_ownership=False, check_accessible=True )
+            original = self.mgrs.hdas.accessible_by_id( trans, unencoded_hda_id, trans.user )
             data_copy = original.copy( copy_children=True )
             hda = history.add_dataset( data_copy )
 
@@ -403,9 +401,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 anon_allowed_payload[ 'visible' ] = payload[ 'visible' ]
             payload = self._validate_and_parse_update_payload( anon_allowed_payload )
 
-            hda = self.mgrs.hdas.get( trans, self._decode_id( trans, id ),
-                check_ownership=False, check_accessible=False )
-            hda = self.mgrs.hdas.err_if_uploading( trans, hda )
+            hda = self.mgrs.hdas.by_id( trans, self._decode_id( trans, id ) )
+            hda = self.mgrs.hdas.error_if_uploading( trans, hda )
             if hda.history != trans.history:
                 raise exceptions.AuthenticationRequired( 'You must be logged in to update this dataset' )
 
@@ -413,10 +410,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             payload = self._validate_and_parse_update_payload( payload )
             # only check_state if not deleting, otherwise cannot delete uploading files
             check_state = not payload.get( 'deleted', False )
-            hda = self.mgrs.hdas.get( trans, self._decode_id( trans, id ),
-                check_ownership=True, check_accessible=True )
+            hda = self.mgrs.hdas.accessible_by_id( trans, self._decode_id( trans, id ), trans.user )
             if check_state:
-                hda = self.mgrs.hdas.err_if_uploading( trans, hda )
+                hda = self.mgrs.hdas.error_if_uploading( trans, hda )
             #hda = self.get_dataset( trans, id, check_ownership=True, check_accessible=True, check_state=check_state )
 
         if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
@@ -473,9 +469,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             # payload takes priority
             purge = util.string_as_bool( kwd['payload'].get( 'purge', purge ) )
 
-        hda = self.mgrs.hdas.get( trans, self._decode_id( trans, id ),
-            check_ownership=True, check_accessible=True )
-        self.mgrs.hdas.err_if_uploading( trans, hda )
+        hda = self.mgrs.hdas.by_id( trans, self._decode_id( trans, id ), trans.user )
+        self.mgrs.histories.error_unless_ownership( trans, hda.history, trans.user )
+        self.mgrs.hdas.error_if_uploading( trans, hda )
 
         rval = { 'id' : id }
         hda.deleted = True

@@ -15,7 +15,7 @@ class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
     """
     def __init__( self, app ):
         super( BaseProvenanceController, self ).__init__( app )
-        self.hdas = hdas.HDAManager()
+        self.hdas = hdas.HDAManager( app )
 
     @web.expose_api
     def index( self, trans, **kwd ):

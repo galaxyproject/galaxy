@@ -1327,6 +1327,14 @@ class Dataset( object ):
                     FAILED_METADATA = 'failed_metadata',
                     RESUBMITTED = 'resubmitted' )
     # failed_metadata and resubmitted are only valid as DatasetInstance states currently
+    
+    non_ready_states = (
+        states.UPLOAD,
+        states.QUEUED,
+        states.RUNNING,
+        states.SETTING_METADATA
+    )
+    ready_states = tuple( set( states.__dict__.values() ) - set( non_ready_states ) )
 
     conversion_messages = Bunch( PENDING = "pending",
                                  NO_DATA = "no data",
@@ -1355,6 +1363,9 @@ class Dataset( object ):
             self.uuid = uuid4()
         else:
             self.uuid = UUID(str(uuid))
+
+    def in_ready_state( self ):
+        return self.state in self.ready_states
 
     def get_file_name( self ):
         if not self.external_filename:
