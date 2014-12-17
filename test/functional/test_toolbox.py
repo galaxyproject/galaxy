@@ -93,6 +93,9 @@ class ToolTestCase( TwillTestCase ):
                 raise Exception( "Test parse failure" )
 
     def _verify_outputs( self, testdef, history, jobs, shed_tool_id, data_list, galaxy_interactor ):
+        assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
+        job = jobs[ 0 ]
+
         maxseconds = testdef.maxseconds
         if testdef.num_outputs is not None:
             expected = testdef.num_outputs
@@ -103,7 +106,33 @@ class ToolTestCase( TwillTestCase ):
                 raise Exception( message )
         found_exceptions = []
 
-        job_stdio = None
+        if testdef.expect_failure:
+            if testdef.outputs:
+                raise Exception("Cannot specify outputs in a test expecting failure.")
+
+        # Wait for the job to complete and register expections if the final
+        # status was not what test was expecting.
+        job_failed = False
+        try:
+            galaxy_interactor.wait_for_job( job[ 'id' ], history, maxseconds )
+        except Exception as e:
+            job_failed = True
+            if not testdef.expect_failure:
+                found_exceptions.append(e)
+
+        if not job_failed and testdef.expect_failure:
+            error = AssertionError("Expected job to fail but Galaxy indicated the job successfully completed.")
+            found_exceptions.append(error)
+
+        job_stdio = galaxy_interactor.get_job_stdio( job[ 'id' ] )
+
+        expect_exit_code = testdef.expect_exit_code
+        if expect_exit_code is not None:
+            exit_code = job_stdio["exit_code"]
+            if str(expect_exit_code) != str(exit_code):
+                error = AssertionError("Expected job to complete with exit code %s, found %s" % (expect_exit_code, exit_code))
+                found_exceptions.append(error)
+
         for output_index, output_tuple in enumerate(testdef.outputs):
             # Get the correct hid
             name, outfile, attributes = output_tuple
@@ -124,14 +153,10 @@ class ToolTestCase( TwillTestCase ):
             except Exception as e:
                 if not found_exceptions:
                     # Only print this stuff out once.
-                    for job in jobs:
-                        job_stdio = galaxy_interactor.get_job_stdio( job[ 'id' ] )
-                        for stream in ['stdout', 'stderr']:
-                            if stream in job_stdio:
-                                print >>sys.stderr, self._format_stream( job_stdio[ stream ], stream=stream, format=True )
+                    for stream in ['stdout', 'stderr']:
+                        if stream in job_stdio:
+                            print >>sys.stderr, self._format_stream( job_stdio[ stream ], stream=stream, format=True )
                 found_exceptions.append(e)
-        if job_stdio is None:
-            job_stdio = galaxy_interactor.get_job_stdio( jobs[0][ 'id' ] )
 
         other_checks = {
             "command_line": "Command produced by the job",

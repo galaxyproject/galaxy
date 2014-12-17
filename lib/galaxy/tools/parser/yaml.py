@@ -157,9 +157,11 @@ def _parse_test(i, test_dict):
         _ensure_has(attributes, defaults)
 
     test_dict["outputs"] = new_outputs
-    test_dict["command"] = __to_test_assert_list( attributes.get( "command", [] ) )
-    test_dict["stdout"] = __to_test_assert_list( attributes.get( "stdout", [] ) )
-    test_dict["stderr"] = __to_test_assert_list( attributes.get( "stderr", [] ) )
+    test_dict["command"] = __to_test_assert_list( test_dict.get( "command", [] ) )
+    test_dict["stdout"] = __to_test_assert_list( test_dict.get( "stdout", [] ) )
+    test_dict["stderr"] = __to_test_assert_list( test_dict.get( "stderr", [] ) )
+    test_dict["expect_exit_code"] = test_dict.get( "expect_exit_code", None )
+    test_dict["expect_failure"] = test_dict.get( "expect_exit_code", False )
     return test_dict
 
 
