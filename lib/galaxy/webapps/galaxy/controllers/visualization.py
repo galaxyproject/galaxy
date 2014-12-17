@@ -9,7 +9,7 @@ from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
-from galaxy.web.framework.helpers import time_ago, grids
+from galaxy.web.framework.helpers import time_ago, grids, escape
 from galaxy import util
 from galaxy.datatypes.interval import Bed
 from galaxy.util.json import loads
@@ -123,7 +123,7 @@ class DbKeyColumn( grids.GridColumn ):
         #                        or_( "metadata like '%%\"dbkey\": [\"?\"]%%'", "metadata like '%%\"dbkey\": \"?\"%%'" ) \
         #                        )
         #                    )
-        
+
 
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
@@ -360,7 +360,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
     def list( self, trans, *args, **kwargs ):
-        
+
         # Handle operation
         if 'operation' in kwargs and 'id' in kwargs:
             session = trans.sa_session
@@ -388,7 +388,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         kwargs[ 'embedded' ] = True
         grid = self._user_list_grid( trans, *args, **kwargs )
         return trans.fill_template( "visualization/list.mako", embedded_grid=grid, shared_by_others=shared_by_others )
-    
+
     #
     # -- Functions for operating on visualizations. --
     #
@@ -459,7 +459,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Set referer message.
         referer = trans.request.referer
         if referer is not "":
-            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % web.url_for( '/' )
 
@@ -535,14 +535,14 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ( "User '%s' does not exist" % email )
+                msg = ( "User '%s' does not exist" % escape( email ) )
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ( "You cannot share a visualization with yourself" )
             elif trans.sa_session.query( model.VisualizationUserShareAssociation ) \
                     .filter_by( user=other, visualization=visualization ).count() > 0:
                 mtype = "error"
-                msg = ( "Visualization already shared with '%s'" % email )
+                msg = ( "Visualization already shared with '%s'" % escape( email ) )
             else:
                 share = model.VisualizationUserShareAssociation()
                 share.visualization = visualization
@@ -551,7 +551,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 session.add( share )
                 self.create_item_slug( session, visualization )
                 session.flush()
-                trans.set_message( "Visualization '%s' shared with user '%s'" % ( visualization.title, other.email ) )
+                viz_title = escape( visualization.title )
+                other_email = escape( other.email )
+                trans.set_message( "Visualization '%s' shared with user '%s'" % ( viz_title, other_email ) )
                 return trans.response.send_redirect( web.url_for(controller='visualization', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,

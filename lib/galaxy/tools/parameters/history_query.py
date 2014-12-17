@@ -11,10 +11,10 @@ class HistoryQuery( object ):
         self.collection_type_description = kwargs.get( "collection_type_description", None )
 
     @staticmethod
-    def from_parameter_elem( elem, collection_type_descriptions ):
+    def from_parameter( param, collection_type_descriptions ):
         """ Take in a tool parameter element.
         """
-        collection_type = elem.get( "collection_type", None )
+        collection_type = param.collection_type
         if collection_type:
             collection_type_description = collection_type_descriptions.for_collection_type( collection_type )
         else:

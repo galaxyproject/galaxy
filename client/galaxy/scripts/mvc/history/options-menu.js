@@ -1,7 +1,8 @@
 define([
+    "mvc/ui/popup-menu",
     "mvc/base-mvc",
     "utils/localization"
-], function( BASE_MVC, _l ){
+], function( PopupMenu, BASE_MVC, _l ){
 // ============================================================================
 var menu = [
     {

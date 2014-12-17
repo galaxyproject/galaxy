@@ -12,7 +12,7 @@
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input type="text" name="name" value="${group.name}" size="40"/>
+                    <input type="text" name="name" value="${group.name|h}" size="40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>

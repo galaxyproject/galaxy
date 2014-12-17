@@ -1,36 +1,9 @@
-## get user data
-<%def name="get_user_json()">
-<%
-    """Bootstrapping user API JSON"""
-    #TODO: move into common location (poss. BaseController)
-    if trans.user:
-        user_dict = trans.user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
-                                                                             'total_disk_usage': float } )
-        user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
-        users_api_controller = trans.webapp.api_controllers[ 'users' ]
-        user_dict[ 'tags_used' ] = users_api_controller.get_user_tags_used( trans, user=trans.user )
-        user_dict[ 'is_admin' ] = trans.user_is_admin()
-    else:
-        usage = 0
-        percent = None
-        try:
-            usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
-            percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
-        except AssertionError, assertion:
-            # no history for quota_agent.get_usage assertion
-            pass
-        user_dict = {
-            'total_disk_usage'      : int( usage ),
-            'nice_total_disk_usage' : util.nice_size( usage ),
-            'quota_percent'         : percent
-        }
-    return user_dict
-%>
-</%def>
+<%namespace file="/galaxy_client_app.mako" import="get_user_dict" />
 
 ## masthead head generator
 <%def name="load(active_view = None)">
     <%
+        from markupsafe import escape
         ## get configuration
         masthead_config = {
             ## inject configuration
@@ -60,9 +33,9 @@
             ## user details
             'user'          : {
                 'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),
-                'email'     : trans.user.email if (trans.user) else "",
+                'email'     : escape( trans.user.email ) if (trans.user) else "",
                 'valid'     : bool(trans.user != None),
-                'json'      : get_user_json()
+                'json'      : get_user_dict()
             }
         }
     %>
@@ -87,7 +60,7 @@
         ], function( mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload, user, quotameter ){
             if( !Galaxy.currUser ){
                 // this doesn't need to wait for the page being readied
-                Galaxy.currUser = new user.User(${ h.dumps( get_user_json(), indent=2 ) });
+                Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user' ][ 'json' ], indent=2 ) });
             }
 
             $(function() {

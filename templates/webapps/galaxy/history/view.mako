@@ -1,4 +1,4 @@
-<%namespace file="/galaxy.masthead.mako" import="get_user_json" />
+<%namespace file="/galaxy_client_app.mako" import="get_user_json" />
 
 ## ----------------------------------------------------------------------------
 <%!
@@ -65,8 +65,7 @@ a.btn {
 
 ## ----------------------------------------------------------------------------
 <%def name="javascripts()">
-${parent.javascripts()}
-
+    ${parent.javascripts()}
 </%def>
 
 ## ----------------------------------------------------------------------------
@@ -144,7 +143,7 @@ ${parent.javascripts()}
                 window.location = "${ switch_to_url }";
             }
         });
-        
+
         $( '#import' ).modeButton({
             switchModesOnClick : false,
             initialMode : "${ 'with_deleted' if show_deleted else 'without_deleted' }",
@@ -166,17 +165,25 @@ ${parent.javascripts()}
     // use_panels effects where the the center_panel() is rendered:
     //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
     var hasMasthead  = ${ 'true' if use_panels else 'false' },
-        userIsOwner  = ${'true' if user_is_owner else 'false'},
-        historyJSON  = ${h.dumps( history )},
-        hdaJSON      = ${h.dumps( hdas )},
+        userIsOwner  = ${ 'true' if user_is_owner else 'false' },
+        historyJSON  = ${ h.dumps( history ) },
+        hdaJSON      = ${ h.dumps( hdas ) },
         panelToUse   = ( userIsOwner )?
 //TODO: change class names
             ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanelEdit' }):
             ({ location: 'mvc/history/history-panel',       className: 'HistoryPanel' });
 
     require.config({
-        baseUrl : "${h.url_for( '/static/scripts' )}"
-    })([ 'mvc/user/user-model', panelToUse.location, 'utils/localization' ], function( user, panelMod, _l ){
+        baseUrl : "${h.url_for( '/static/scripts' )}",
+        paths   : {
+            'jquery' : 'libs/jquery/jquery'
+        }
+    })([
+        'mvc/user/user-model',
+        panelToUse.location,
+        'utils/localization',
+        'ui/mode-button'
+    ], function( user, panelMod, _l ){
         $(function(){
             setUpBehaviors();
             if( hasMasthead ){

@@ -1003,7 +1003,7 @@ var View = Backbone.View.extend({
                     '<div class="f-content">' +
                         '<div class="f-cover"></div>' +
                     '</div>' +
-                    '<span class="f-resize f-icon corner fa fa-resize-full"></span>' +
+                    '<span class="f-resize f-icon corner fa fa-expand"></span>' +
                 '</div>';
     },
     

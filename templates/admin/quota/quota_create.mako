@@ -11,9 +11,9 @@
 </%def>
 
 <%def name="render_select( name, options )">
-    <select name="${name}" id="${name}" style="min-width: 250px; height: 150px;" multiple>
+    <select name="${name|h}" id="${name|h}" style="min-width: 250px; height: 150px;" multiple>
         %for option in options:
-            <option value="${option[0]}">${option[1]}</option>
+            <option value="${option[0]|h}">${option[1]|h}</option>
         %endfor
     </select>
 </%def>
@@ -69,15 +69,15 @@
         <form name="associate_quota_group_user" id="associate_quota_group_user" action="${h.url_for(controller='admin', action='create_quota' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
-                <input  name="name" type="textfield" value="${name}" size=40"/>
+                <input  name="name" type="textfield" value="${name|h}" size=40"/>
             </div>
             <div class="form-row">
                 <label>Description:</label>
-                <input  name="description" type="textfield" value="${description}" size=40"/>
+                <input  name="description" type="textfield" value="${description|h}" size=40"/>
             </div>
             <div class="form-row">
                 <label>Amount</label>
-                <input  name="amount" type="textfield" value="${amount}" size=40"/>
+                <input  name="amount" type="textfield" value="${amount|h}" size=40"/>
                 <div class="toolParamHelp" style="clear: both;">
                     Examples: "10000MB", "99 gb", "0.2T", "unlimited"
                 </div>

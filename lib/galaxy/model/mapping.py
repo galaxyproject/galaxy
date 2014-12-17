@@ -715,6 +715,8 @@ model.WorkflowStep.table = Table( "workflow_step", metadata,
     Column( "position", JSONType ),
     Column( "config", JSONType ),
     Column( "order_index", Integer ),
+    Column( "uuid", UUIDType ),
+    Column( "label", Unicode(255) ),
     ## Column( "input_connections", JSONType )
     )
 

@@ -214,7 +214,7 @@
             %else:
                 Private ${get_class_display_name( item.__class__ )}
             %endif
-            | ${get_item_name( item )}
+            | ${get_item_name( item ) | h}
             
             <div style="float: right">
                 ${self.render_item_links( item )}

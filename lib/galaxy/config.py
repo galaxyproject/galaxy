@@ -4,23 +4,22 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import ConfigParser
+import logging
+import logging.config
 import os
 import re
 import socket
 import string
 import sys
 import tempfile
-import logging
-import logging.config
-import ConfigParser
 from datetime import timedelta
-from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.util import string_as_bool
-from galaxy.util import listify
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy import eggs
+from galaxy.util import listify
+from galaxy.util import string_as_bool
+from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.web.formatting import expand_pretty_datetime_format
 
-import ConfigParser
 
 log = logging.getLogger( __name__ )
 
@@ -99,6 +98,7 @@ class Configuration( object ):
         # been migrated from the Galaxy code distribution to the Tool Shed.
         self.check_migrate_tools = string_as_bool( kwargs.get( 'check_migrate_tools', True ) )
         self.shed_tool_data_path = kwargs.get( "shed_tool_data_path", None )
+        self.x_frame_options = kwargs.get( "x_frame_options", "SAMEORIGIN" )
         if self.shed_tool_data_path:
             self.shed_tool_data_path = resolve_path( self.shed_tool_data_path, self.root )
         else:
@@ -202,6 +202,9 @@ class Configuration( object ):
         # workflows built using these modules may not function in the
         # future.
         self.enable_beta_workflow_modules = string_as_bool( kwargs.get( 'enable_beta_workflow_modules', 'False' ) )
+        # These are not even beta - just experiments - don't use them unless
+        # you want yours tools to be broken in the future.
+        self.enable_beta_tool_formats = string_as_bool( kwargs.get( 'enable_beta_tool_formats', 'False' ) )
 
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
@@ -254,7 +257,10 @@ class Configuration( object ):
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
-        self.watch_tools = kwargs.get( 'watch_tools', False )
+        self.watch_tools = string_as_bool( kwargs.get( 'watch_tools', False ) )
+        # On can mildly speed up Galaxy startup time by disabling index of help,
+        # not needed on production systems but useful if running many functional tests.
+        self.index_tool_help = string_as_bool( kwargs.get( "index_tool_help", True ) )
         # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
@@ -438,23 +444,23 @@ class Configuration( object ):
         Backwards compatibility for config files moved to the config/ dir.
         """
         defaults = dict(
-            data_manager_config_file = [ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
-            datatypes_config_file = [ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
-            external_service_type_config_file = [ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
-            job_config_file = [ 'config/job_conf.xml', 'job_conf.xml' ],
-            job_metrics_config_file = [ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml' ],
-            dependency_resolvers_config_file = [ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
-            job_resource_params_file = [ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
-            migrated_tools_config = [ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
-            object_store_config_file = [ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
-            openid_config_file = [ 'config/openid_conf.xml', 'openid_conf.xml' 'config/openid_conf.xml.sample' ],
-            shed_data_manager_config_file = [ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
-            shed_tool_data_table_config = [ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
-            tool_sheds_config_file = [ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
+            data_manager_config_file=[ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
+            datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
+            external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
+            job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
+            job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml' ],
+            dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
+            job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
+            migrated_tools_config=[ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
+            object_store_config_file=[ 'config/object_store_conf.xml', 'object_store_conf.xml' ],
+            openid_config_file=[ 'config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample' ],
+            shed_data_manager_config_file=[ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
+            shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
+            tool_sheds_config_file=[ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
         )
 
         listify_defaults = dict(
-            tool_data_table_config_path = [ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
+            tool_data_table_config_path=[ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
             # rationale:
             # [0]: user has explicitly created config/tool_conf.xml but did not
             #      move their existing shed_tool_conf.xml, don't use
@@ -465,7 +471,7 @@ class Configuration( object ):
             #      [0], probably moved their shed_tool_conf.xml as well
             # [2]: user has done nothing, use the old files
             # [3]: fresh install
-            tool_config_file = [ 'config/tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml,config/shed_tool_conf.xml', 'tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
+            tool_config_file=[ 'config/tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml,config/shed_tool_conf.xml', 'tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
         )
 
         for var, defaults in defaults.items():
@@ -579,8 +585,9 @@ class Configuration( object ):
         for path in tool_configs:
             if not os.path.exists( path ):
                 raise ConfigurationError("Tool config file not found: %s" % path )
-        if not os.path.isfile( self.datatypes_config ):
-            raise ConfigurationError("Datatypes config file not found: %s" % self.datatypes_config )
+        for datatypes_config in listify( self.datatypes_config ):
+            if not os.path.isfile( datatypes_config ):
+                raise ConfigurationError("Datatypes config file not found: %s" % datatypes_config )
         # Check for deprecated options.
         for key in self.config_dict.keys():
             if key in self.deprecated_options:
@@ -704,7 +711,8 @@ class ConfiguresGalaxyMixin:
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         # Search support for tools
         import galaxy.tools.search
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
+        index_help = getattr( self.config, "index_tool_help", True )
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
 
         from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)
@@ -741,7 +749,12 @@ class ConfiguresGalaxyMixin:
             # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
             installed_repository_manager.load_proprietary_datatypes()
         # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
-        self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
+        datatypes_configs = self.config.datatypes_config
+        for datatypes_config in listify( datatypes_configs ):
+            # Setting override=False would make earlier files would take
+            # precedence - but then they wouldn't override tool shed
+            # datatypes.
+            self.datatypes_registry.load_datatypes( self.config.root, datatypes_config, override=True )
 
     def _configure_object_store( self, **kwds ):
         from galaxy.objectstore import build_object_store_from_config

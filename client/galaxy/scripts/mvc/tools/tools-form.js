@@ -17,9 +17,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // log options
             console.debug(options);
             
-            // link this
-            var self = this;
-            
             // link galaxy modal or create one
             var galaxy = parent.Galaxy;
             if (galaxy && galaxy.modal) {
@@ -48,53 +45,39 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // add to main element
             $(this.container).append(this.$el);
             
-            // creates a tree/json structure from the input form
-            this.tree = new ToolTree(this);
-            
-            // creates the job handler
-            this.job_handler = new ToolJobs(this);
-
-            // request history content and build form
-            this.content = new ToolContent(this);
-            
             // build this form
-            this._buildForm(options);
+            this._buildForm();
         },
         
-        // message
-        message: function($el) {
+        /** Shows the final message (usually upon successful job submission)
+        */
+        reciept: function($el) {
             $(this.container).empty();
             $(this.container).append($el);
         },
-        
-        // reset form
-        reset: function() {
-            for (var i in this.element_list) {
-                this.element_list[i].reset();
-            }
-        },
-        
-        // rebuild underlying data structure representation for the tool form
-        // this happens i.e. when repeat blocks are added or removed and on initialization
-        rebuild: function() {
-            this.tree.refresh();
-            console.debug('tools-form::rebuild() - Rebuilding data structures.');
-        },
-        
-        // refreshes input states i.e. for dynamic parameters
-        refresh: function() {
-            // only refresh the state if the form contains dynamic parameters
-            if (!this.is_dynamic) {
-                return;
-            }
+                
+        /** Highlight and scroll to input element (currently only used for error notifications)
+        */
+        highlight: function (input_id, message, silent) {
+            // get input field
+            var input_element = this.element_list[input_id];
             
-            // place refresh process into deferred queue
-            var self = this;
-            this.deferred.reset();
-            this.deferred.execute(function(){self._updateModel()});
+            // check input element
+            if (input_element) {
+                // mark error
+                input_element.error(message || 'Please verify this parameter.');
+            
+                // scroll to first input element
+                if (!silent) {
+                    $(this.container).animate({
+                        scrollTop: input_element.$el.offset().top - 20
+                    }, 500);
+                }
+            }
         },
         
-        // build tool model through api call
+        /** Builds a new model through api call and recreates the entire form
+        */
         _buildModel: function() {
             // link this
             var self = this;
@@ -107,6 +90,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 if (this.options.dataset_id) {
                     model_url += 'dataset_id=' + this.options.dataset_id;
                 } else {
+                    model_url += 'tool_version=' + this.options.version + '&';
                     var loc = top.location.href;
                     var pos = loc.indexOf('?');
                     if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
@@ -114,37 +98,63 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     }
                 }
             }
-        
+            
+            // register process
+            var process_id = this.deferred.register();
+            
             // get initial model
             Utils.request({
                 type    : 'GET',
                 url     : model_url,
                 success : function(response) {
                     // link model data update options
-                    self.options    = $.extend(self.options, response);
-                    self.model      = response;
-                    self.inputs     = response.inputs;
+                    self.options = response;
+                    
+                    // build form
+                    self._buildForm();
+                    
+                    // notification
+                    self.message.update({
+                        status      : 'success',
+                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
+                        persistent  : false
+                    });
+                    
+                    // process completed
+                    self.deferred.done(process_id);
                     
                     // log success
                     console.debug('tools-form::initialize() - Initial tool model ready.');
                     console.debug(response);
-
-                    // build form
-                    self._buildForm();
                 },
                 error   : function(response) {
+                    // process completed
+                    self.deferred.done(process_id);
+                    
+                    // log error
                     console.debug('tools-form::initialize() - Initial tool model request failed.');
                     console.debug(response);
+                    
+                    // show error
+                    var error_message = response.error || 'Uncaught error.';
+                    self.modal.show({
+                        title   : 'Tool cannot be executed',
+                        body    : error_message,
+                        buttons : {
+                            'Close' : function() {
+                                self.modal.hide();
+                            }
+                        }
+                    });
                 }
             });
         },
         
-        // request a new model and update the form inputs
+        /** Request a new model for an already created tool form and updates the form inputs
+        */
         _updateModel: function() {
-            // link this
+            // create the request dictionary
             var self = this;
-            
-            // finalize data
             var current_state = this.tree.finalize({
                 data : function(dict) {
                     if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
@@ -179,14 +189,47 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // register process
             var process_id = this.deferred.register();
 
+            // build model url for request
+            var model_url = galaxy_config.root + 'api/tools/' + this.options.id + '/build?tool_version=' + this.options.version;
+            
             // post job
             Utils.request({
                 type    : 'GET',
-                url     : galaxy_config.root + 'api/tools/' + this.options.id + '/build',
+                url     : model_url,
                 data    : current_state,
-                success : function(response) {
-                    // rebuild form
-                    self._updateForm(response);
+                success : function(new_model) {
+                    // update form
+                    self.tree.matchModel(new_model, function(input_id, node) {
+                        var input = self.input_list[input_id];
+                        if (input && input.options) {
+                            if (!_.isEqual(input.options, node.options)) {
+                                // backup new options
+                                input.options = node.options;
+                                
+                                // get/update field
+                                var field = self.field_list[input_id];
+                                if (field.update) {
+                                    var new_options = [];
+                                    if ((['data', 'data_collection', 'drill_down']).indexOf(input.type) != -1) {
+                                        new_options = input.options;
+                                    } else {
+                                        for (var i in node.options) {
+                                            var opt = node.options[i];
+                                            if (opt.length > 2) {
+                                                new_options.push({
+                                                    'label': opt[0],
+                                                    'value': opt[1]
+                                                });
+                                            }
+                                        }
+                                    }
+                                    field.update(new_options);
+                                    field.trigger('change');
+                                    console.debug('Updating options for ' + input_id);
+                                }
+                            }
+                        }
+                    });
             
                     // unset wait mode
                     wait(false);
@@ -196,7 +239,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
                     // log success
                     console.debug('tools-form::_refreshForm() - States refreshed.');
-                    console.debug(response);
+                    console.debug(new_model);
                 },
                 error   : function(response) {
                     // process completed
@@ -209,48 +252,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
         },
         
-        // update form inputs
-        _updateForm: function(new_model) {
-            var self = this;
-            this.tree.matchModel(new_model, function(input_id, node) {
-                var input = self.input_list[input_id];
-                if (input && input.options) {
-                    if (JSON.stringify(input.options) != JSON.stringify(node.options)) {
-                        // backup new options
-                        input.options = node.options;
-                        
-                        // get/update field
-                        var field = self.field_list[input_id];
-                        if (field.update) {
-                            var new_options = [];
-                            switch (input.type) {
-                                case 'data':
-                                    new_options = input.options;
-                                    break;
-                                default:
-                                    for (var i in node.options) {
-                                        var opt = node.options[i];
-                                        if (opt.length > 2) {
-                                            new_options.push({
-                                                'label': opt[0],
-                                                'value': opt[1]
-                                            });
-                                        }
-                                    }
-                            }
-                            field.update(new_options);
-                            field.trigger('change');
-                            console.debug('Updating options for ' + input_id);
-                        }
-                    }
-                }
-            });
-        },
-        
-        // builds the tool form
-        _buildForm: function(options) {
+        /** Main tool form build function. This function is called once a new model is available.
+        */
+        _buildForm: function() {
             // link this
             var self = this;
+            
+            // reset events
+            this.off('refresh');
+            this.off('reset');
             
             // reset field list, which contains the input field elements
             this.field_list = {};
@@ -261,70 +271,172 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // reset input element list, which contains the dom elements of each input element (includes also the input field)
             this.element_list = {};
             
-            // for now the initial tool model is parsed through the mako
-            this.model  = options;
-            this.inputs = options.inputs;
+            // creates a tree/json data structure from the input form
+            this.tree = new ToolTree(this);
+            
+            // creates the job handler
+            this.job_handler = new ToolJobs(this);
+
+            // request history content and build form
+            this.content = new ToolContent(this);
+            
+            // link model options
+            var options = this.options;
+            
+            // create ui elements
+            this._renderForm(options);
+            
+            // rebuild the underlying data structure
+            this.tree.finalize();
+            
+            // show errors
+            if (options.errors) {
+                var error_messages = this.tree.matchResponse(options.errors);
+                for (var input_id in error_messages) {
+                    this.highlight(input_id, error_messages[input_id], true);
+                }
+            }
+            
+            // add refresh listener
+            this.on('refresh', function() {
+                // by using/reseting the deferred ajax queue the number of redundant calls is reduced
+                self.deferred.reset();
+                self.deferred.execute(function(){self._updateModel()});
+            });
+            
+            // add reset listener
+            this.on('reset', function() {
+                for (var i in this.element_list) {
+                    this.element_list[i].reset();
+                }
+            });
+        },
+
+        /** Renders the UI elements required for the form
+        */
+        _renderForm: function(options) {
+            // link this
+            var self = this;
+            
+            // create message view
+            this.message = new Ui.Message();
+            
+            // button for version selection
+            var requirements_button = new Ui.ButtonIcon({
+                icon    : 'fa-info-circle',
+                title   : 'Requirements',
+                tooltip : 'Display tool requirements',
+                onclick : function() {
+                    if (!this.visible) {
+                        this.visible = true;
+                        self.message.update({
+                            persistent  : true,
+                            message     : ToolTemplate.requirements(options),
+                            status      : 'info'
+                        });
+                    } else {
+                        this.visible = false;
+                        self.message.update({
+                            message     : ''
+                        });
+                    }
+                }
+            });
+            if (!options.requirements || options.requirements.length == 0) {
+                requirements_button.$el.hide();
+            }
+            
+            // button for version selection
+            var versions_button = new Ui.ButtonMenu({
+                icon    : 'fa-cubes',
+                title   : 'Versions',
+                tooltip : 'Select another tool version'
+            });
+            if (options.versions && options.versions.length > 1) {
+                for (var i in options.versions) {
+                    var version = options.versions[i];
+                    if (version != options.version) {
+                        versions_button.addMenu({
+                            title   : 'Switch to ' + version,
+                            version : version,
+                            icon    : 'fa-cube',
+                            onclick : function() {
+                                // here we update the tool version (some tools encode the version also in the id)
+                                options.id = options.id.replace(options.version, this.version);
+                                options.version = this.version;
+                                
+                                // rebuild the model and form
+                                self.deferred.reset();
+                                self.deferred.execute(function(){self._buildModel()});
+                            }
+                        });
+                    }
+                }
+            } else {
+                versions_button.$el.hide();
+            }
             
             // button menu
-            var menu = new Ui.ButtonMenu({
-                icon    : 'fa-gear',
-                tooltip : 'Click to see a list of options.'
+            var menu_button = new Ui.ButtonMenu({
+                icon    : 'fa-caret-down',
+                title   : 'Options',
+                tooltip : 'View available options'
             });
             
             // configure button selection
             if(options.biostar_url) {
                 // add question option
-                menu.addMenu({
+                menu_button.addMenu({
                     icon    : 'fa-question-circle',
                     title   : 'Question?',
                     tooltip : 'Ask a question about this tool (Biostar)',
                     onclick : function() {
-                        window.open(self.options.biostar_url + '/p/new/post/');
+                        window.open(options.biostar_url + '/p/new/post/');
                     }
                 });
                 
                 // create search button
-                menu.addMenu({
+                menu_button.addMenu({
                     icon    : 'fa-search',
                     title   : 'Search',
                     tooltip : 'Search help for this tool (Biostar)',
                     onclick : function() {
-                        window.open(self.options.biostar_url + '/t/' + self.options.id + '/');
+                        window.open(options.biostar_url + '/t/' + options.id + '/');
                     }
                 });
             };
             
             // create share button
-            menu.addMenu({
+            menu_button.addMenu({
                 icon    : 'fa-share',
                 title   : 'Share',
                 tooltip : 'Share this tool',
                 onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + galaxy_config.root + 'root?tool_id=' + self.options.id);
+                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + galaxy_config.root + 'root?tool_id=' + options.id);
                 }
             });
             
             // add admin operations
             if (this.is_admin) {
                 // create download button
-                menu.addMenu({
+                menu_button.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
                     tooltip : 'Download this tool',
                     onclick : function() {
-                        window.location.href = galaxy_config.root + 'api/tools/' + self.options.id + '/download';
+                        window.location.href = galaxy_config.root + 'api/tools/' + options.id + '/download';
                     }
                 });
             }
             
             // create tool form section
             this.section = new ToolSection.View(self, {
-                inputs : this.inputs,
+                inputs : options.inputs,
                 cls    : 'ui-table-plain'
             });
             
             // switch to classic tool form mako if the form definition is incompatible
-            if (this.incompatible || !this.options.toolform_upgrade) {
+            if (this.incompatible) {
                 this.$el.hide();
                 $('#tool-form-classic').show();
                 return;
@@ -332,15 +444,18 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // create portlet
             this.portlet = new Portlet.View({
-                icon : 'fa-wrench',
-                title: '<b>' + this.model.name + '</b> ' + this.model.description,
+                icon    : 'fa-wrench',
+                title   : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Tool Version ' + options.version + ')',
+                cls     : 'ui-portlet-slim',
                 operations: {
-                    menu    : menu
+                    requirements    : requirements_button,
+                    menu            : menu_button,
+                    versions        : versions_button
                 },
                 buttons: {
                     execute : new Ui.Button({
                         icon     : 'fa-check',
-                        tooltip  : 'Execute the tool',
+                        tooltip  : 'Execute: ' + options.name,
                         title    : 'Execute',
                         cls      : 'btn btn-primary',
                         floating : 'clear',
@@ -350,6 +465,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     })
                 }
             });
+            
+            // append message
+            this.portlet.append(this.message.$el, true);
+            
+            // append tool section
+            this.portlet.append(this.section.$el);
             
             // start form
             this.$el.empty();
@@ -371,11 +492,14 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 this.$el.append($citations);
             }
             
-            // append tool section
-            this.portlet.append(this.section.$el);
-            
-            // rebuild the underlying data structure
-            this.rebuild();
+            // show message if available in model
+            if (options.message) {
+                this.message.update({
+                    persistent  : true,
+                    status      : 'warning',
+                    message     : options.message
+                });
+            }
         }
     });
 

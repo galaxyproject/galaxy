@@ -5,7 +5,6 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend({
     // options
     optionsDefault: {
-        value   : '',
         min     : null,
         max     : null,
         step    : null,
@@ -48,6 +47,11 @@ var View = Backbone.View.extend({
         
         // link text input field
         this.$text = this.$el.find('#text');
+        
+        // set initial value
+        if (this.options.value !== undefined) {
+            this.value(this.options.value);
+        }
         
         // add text field event
         this.$text.on('change', function () {

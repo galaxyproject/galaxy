@@ -46,6 +46,8 @@ ensure_grunt() {
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
+xunit_report_file=""
+structured_data_report_file=""
 with_framework_test_tools_arg=""
 
 driver="python"
@@ -146,6 +148,24 @@ do
               exit 1
           fi
           ;;
+      --xunit_report_file)
+          if [ $# -gt 1 ]; then
+              xunit_report_file=$2
+              shift 2
+          else
+              echo "--xunit_report_file requires an argument" 1>&2
+              exit 1
+          fi
+          ;;
+      --structured_data_report_file)
+          if [ $# -gt 1 ]; then
+              structured_data_report_file=$2
+              shift 2
+          else
+              echo "--structured_data_report_file requires an argument" 1>&2
+              exit 1
+          fi
+          ;;
       -c|--coverage)
           # Must have coverage installed (try `which coverage`) - only valid with --unit
           # for now. Would be great to get this to work with functional tests though.
@@ -234,7 +254,17 @@ else
 fi
 
 if [ "$driver" = "python" ]; then
-    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $with_framework_test_tools_arg $extra_args
+    if [ -n "$xunit_report_file" ]; then
+        xunit_args="--with-xunit --xunit-file $xunit_report_file"
+    else
+        xunit_args=""
+    fi
+    if [ -n "$structured_data_report_file" ]; then
+        structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
+    else
+        structured_data_args=""
+    fi
+    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $with_framework_test_tools_arg $extra_args
 else
     ensure_grunt
     if [ -n "$watch" ]; then

@@ -12,6 +12,7 @@ require(
 [
     // load js libraries
     'utils/utils',
+    'mvc/ui/icon-button',
     'libs/jquery/jquery.event.drag',
     'libs/jquery/jquery.event.hover',
     'libs/jquery/jquery.mousewheel',
@@ -19,9 +20,8 @@ require(
     'libs/jquery/select2',
     'libs/farbtastic',
     'libs/jquery/jquery.form',
-    'libs/jquery/jquery.rating',
-    'mvc/ui'
-], function(mod_utils)
+    'libs/jquery/jquery.rating'
+], function(mod_utils, mod_icon_btn)
 {
     // load css
     mod_utils.cssLoadFile("static/style/jquery.rating.css");
@@ -101,7 +101,7 @@ var TracksterUI = base.Base.extend({
      */ 
     createButtonMenu: function() {
         var self = this,
-            menu = create_icon_buttons_menu([
+            menu = mod_icon_btn.create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
                 visualization.select_datasets(galaxy_config.root + "visualization/list_current_history_datasets", galaxy_config.root + "api/datasets", { 'f-dbkey': view.dbkey }, 
                 function(new_tracks) {

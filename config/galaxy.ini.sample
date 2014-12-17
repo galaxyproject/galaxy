@@ -136,7 +136,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Tools can be locally developed or installed from Galaxy tool sheds.
 # (config/tool_conf.xml.sample will be used if left unset and
 # config/tool_conf.xml does not exist).
-#tool_config_file = config/tool_conf.xml,shed_tool_conf.xml
+#tool_config_file = config/tool_conf.xml,config/shed_tool_conf.xml
 
 # Enable / disable checking if any tools defined in the above non-shed tool_config_files
 # (i.e., tool_conf.xml) have been migrated from the Galaxy code distribution to the Tool
@@ -212,8 +212,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Directory where chrom len files are kept, currently mainly used by trackster
 #len_file_path = tool-data/shared/ucsc/chrom
 
-# Datatypes config file, defines what data (file) types are available in
-# Galaxy (.sample is used if default does not exist).
+# Datatypes config file(s), defines what data (file) types are available in
+# Galaxy (.sample is used if default does not exist). If a datatype appears in
+# multiple files - the last definition is used (though the first sniffer is used
+# so limit sniffer definitions to one file).
 #datatypes_config_file = config/datatypes_conf.xml
 
 # Disable the 'Auto-detect' option for file uploads
@@ -523,6 +525,16 @@ nglims_config_file = tool-data/nglims.yaml
 # it faster on the fly.
 #upstream_gzip = False
 
+# The following default adds a header to web request responses that
+# will cause modern web browsers to not allow Galaxy to be embedded in
+# the frames of web applications hosted at other hosts - this can help
+# prevent a class of attack called clickjacking
+# (https://www.owasp.org/index.php/Clickjacking). If you configure a
+# proxy in front of Galaxy - please ensure this header remains intact
+# to protect your users. Uncomment and leave empty to not set the
+# `X-Frame-Options` header.
+#x_frame_options = SAMEORIGIN
+
 # nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
 # Configuration for this is complex and explained in detail in the
 # documentation linked above.  The upload store is a temporary directory in
@@ -577,10 +589,11 @@ nglims_config_file = tool-data/nglims.yaml
 # log_events and log_actions functionality will eventually be merged.
 #log_actions = True
 
-# Sanitize All HTML Tool Output
-# By default, all tool output served as 'text/html' will be sanitized
-# thoroughly. This can be disabled if you have special tools that require
-# unaltered output.
+# Sanitize All HTML Tool Output By default, all tool output served as
+# 'text/html' will be sanitized thoroughly. This can be disabled if
+# you have special tools that require unaltered output. WARNING:
+# Disabling this does make the Galxy instance susceptible to XSS
+# attacks initiated by your users.
 #sanitize_all_html = True
 
 # By default Galaxy will serve non-HTML tool output that may potentially

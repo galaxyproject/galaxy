@@ -53,7 +53,7 @@
                             
                         %>
                         <option value="${trans.security.encode_id(hist.id)}" ${selected}>
-                            ${i + 1}: ${h.truncate(util.unicodify( hist.name ), 30)}${current_history_text}
+                            ${i + 1}: ${h.truncate(util.unicodify( hist.name ), 30) | h}${current_history_text}
                         </option>
                     %endfor
                 </select>
@@ -70,7 +70,7 @@
                         %>
                         <div class="form-row">
                             <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
-                            <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name)}</label>
+                            <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name) | h}</label>
                         </div>
                     %endfor
                 %else:
@@ -95,7 +95,7 @@
                                 if encoded_id == target_history_id:
                                     selected = " selected='selected'"
                             %>
-                            <option value="${encoded_id}"${selected}>${i + 1}: ${h.truncate( util.unicodify( hist.name ), 30)}${source_history_text}</option>
+                            <option value="${encoded_id}"${selected}>${i + 1}: ${h.truncate( util.unicodify( hist.name ), 30) | h}${source_history_text}</option>
                         %endfor
                     </select><br /><br />
                     <a style="margin-left: 10px;" href="javascript:void(0);" id="select-multiple">Choose multiple histories</a>
@@ -110,7 +110,7 @@
                         %>
                         <div class="form-row">
                             <input type="checkbox" name="target_history_ids" id="hist_${encoded_id}" value="${encoded_id}"/>
-                            <label for="hist_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${ util.unicodify( hist.name ) }${cur_history_text}</label>
+                            <label for="hist_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${ util.unicodify( hist.name ) | h }${cur_history_text}</label>
                         </div>
                     %endfor
                 </div>

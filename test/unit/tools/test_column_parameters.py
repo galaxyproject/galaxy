@@ -2,16 +2,27 @@
 test_select_parameters.py.
 """
 
-from unittest import TestCase
-from galaxy.tools.parameters import basic
 from galaxy.util import bunch
 from galaxy import model
-from elementtree.ElementTree import XML
-
-import tools_support
+from .test_parameter_parsing import BaseParameterTestCase
 
 
-class DataColumnParameterTestCase( TestCase, tools_support.UsesApp ):
+class DataColumnParameterTestCase( BaseParameterTestCase ):
+
+    def test_not_optional_by_default(self):
+        assert not self.__param_optional()
+
+    def test_force_select_disable(self):
+        self.other_attributes = 'force_select="false"'
+        assert self.__param_optional()
+
+    def test_optional_override(self):
+        self.other_attributes = 'optional="true"'
+        assert self.__param_optional()
+
+    def __param_optional(self):
+        # TODO: don't break abstraction, try setting null value instead
+        return not self.param.force_select
 
     def test_from_html(self):
         value = self.param.from_html("3", self.trans, { "input_tsv": self.build_ready_hda()  } )
@@ -47,11 +58,7 @@ class DataColumnParameterTestCase( TestCase, tools_support.UsesApp ):
         self.assertEqual( '2', self.param.get_initial_value( self.trans, { "input_tsv": self.build_ready_hda() } ) )
 
     def setUp( self ):
-        self.setup_app( mock_model=False )
-        self.mock_tool = bunch.Bunch(
-            app=self.app,
-            tool_type="default",
-        )
+        super(DataColumnParameterTestCase, self).setUp()
         self.test_history = model.History()
         self.app.model.context.add( self.test_history )
         self.app.model.context.flush()
@@ -90,8 +97,8 @@ class DataColumnParameterTestCase( TestCase, tools_support.UsesApp ):
             if self.set_data_ref:
                 data_ref_text = 'data_ref="input_tsv"'
             template_xml = '''<param name="my_name" type="%s" %s %s %s %s></param>'''
-            self.param_xml = XML( template_xml % ( self.type, data_ref_text, multi_text, optional_text, self.other_attributes ) )
-            self._param = basic.ColumnListParameter( self.mock_tool, self.param_xml )
+            param_str = template_xml % ( self.type, data_ref_text, multi_text, optional_text, self.other_attributes )
+            self._param = self._parameter_for( xml=param_str )
             self._param.ref_input = bunch.Bunch(formats=[model.datatypes_registry.get_datatype_by_extension("tabular")])
 
         return self._param

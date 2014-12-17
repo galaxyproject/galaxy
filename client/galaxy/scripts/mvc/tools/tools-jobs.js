@@ -4,12 +4,8 @@
 define(['utils/utils', 'mvc/tools/tools-template'], function(Utils, ToolTemplate) {
 return Backbone.Model.extend({
     // initialize
-    initialize: function(app, options) {
-        // link app
+    initialize: function(app) {
         this.app = app;
-        
-        // link options
-        this.options = Utils.merge(options, this.optionsDefault);
     },
     
     /** Creates and submits a job request to the api
@@ -20,12 +16,13 @@ return Backbone.Model.extend({
         
         // create job definition for submission to tools api
         var job_def = {
-            tool_id : this.app.options.id,
-            inputs  : this.app.tree.finalize()
+            tool_id         : this.app.options.id,
+            tool_version    : this.app.options.version,
+            inputs          : this.app.tree.finalize()
         }
         
         // reset
-        this.app.reset();
+        this.app.trigger('reset');
         
         // validate job definition
         if (!this._validation(job_def)) {
@@ -46,7 +43,7 @@ return Backbone.Model.extend({
             data    : job_def,
             success : function(response) {
                 self.app.modal.hide();
-                self.app.message(ToolTemplate.success(response));
+                self.app.reciept(ToolTemplate.success(response));
                 self._refreshHdas();
             },
             error   : function(response, response_full) {
@@ -54,7 +51,7 @@ return Backbone.Model.extend({
                 if (response && response.message && response.message.data) {
                     var error_messages = self.app.tree.matchResponse(response.message.data);
                     for (var input_id in error_messages) {
-                        self._foundError(input_id, error_messages[input_id]);
+                        self.app.highlight(input_id, error_messages[input_id]);
                         break;
                     }
                 } else {
@@ -72,21 +69,6 @@ return Backbone.Model.extend({
                 }
             }
         });
-    },
-    
-    /** Highlight and scroll to error
-    */
-    _foundError: function (input_id, message) {
-        // get input field
-        var input_element = this.app.element_list[input_id];
-        
-        // mark error
-        input_element.error(message || 'Please verify this parameter.');
-    
-        // scroll to first input element
-        $(this.app.container).animate({
-            scrollTop: input_element.$el.offset().top - 20
-        }, 500);
     },
     
     /** Validate job definition
@@ -108,15 +90,21 @@ return Backbone.Model.extend({
             var input_id = this.app.tree.match(job_input_id);
             var input_field = this.app.field_list[input_id];
             var input_def = this.app.input_list[input_id];
-                
-            // check basic field validation
-            if (input_def && input_field && input_field.validate && !input_field.validate()) {
-                this._foundError(input_id);
+            
+            // check if objects where properly identified
+            if (!input_id || !input_def || !input_field) {
+                console.debug('tools-jobs::_validation - Retrieving input objects failed.');
+                continue;
+            }
+            
+            // validate non-optional fields
+            if (!input_def.optional && input_field.validate && !input_field.validate()) {
+                this.app.highlight(input_id);
                 return false;
             }
             
             // check if input field is in batch mode
-            if (input_value.batch) {
+            if (input_value && input_value.batch) {
                 // get values
                 var n = input_value.values.length;
                 
@@ -132,7 +120,7 @@ return Backbone.Model.extend({
                         batch_src = src;
                     } else {
                         if (batch_src !== src) {
-                            this._foundError(input_id, 'Please select either dataset or dataset list fields for all batch mode fields.');
+                            this.app.highlight(input_id, 'Please select either dataset or dataset list fields for all batch mode fields.');
                             return false;
                         }
                     }
@@ -143,12 +131,11 @@ return Backbone.Model.extend({
                     batch_n = n;
                 } else {
                     if (batch_n !== n) {
-                        this._foundError(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
+                        this.app.highlight(input_id, 'Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>' + n + '</b> selection(s) while a previous field contains <b>' + batch_n + '</b>.');
                         return false;
                     }
                 }
             }
-            
         }
         
         // return validation result

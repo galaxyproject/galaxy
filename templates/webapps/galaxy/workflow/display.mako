@@ -40,7 +40,7 @@
 <%def name="row_for_param( param, value, other_values, prefix, step )">
     <% cls = "form-row" %>
     <div class="${cls}">
-        <label>${param.get_label()}</label>
+        <label>${param.get_label() | h}</label>
         <div>
             %if isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
                 %if ( prefix + param.name ) in step.input_connections_by_name:
@@ -93,19 +93,19 @@
               %>
               <div class="toolForm">
                 %if tool:
-                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
+                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name | h}</div>
                   <div class="toolFormBody">
                     ${do_inputs( tool.inputs, step.state.inputs, "", step )}
                   </div>
                 %else:
-                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: Unknown Tool with id '${step.tool_id}'</div>
+                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: Unknown Tool with id '${step.tool_id | h}'</div>
                 %endif
               </div>
             %else:
             ## TODO: always input dataset?
             <% module = step.module %>
               <div class="toolForm">
-                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name}</div>
+                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name | h}</div>
                   <div class="toolFormBody">
                     ${do_inputs( module.get_runtime_inputs(), step.state.inputs, "", step )}
                   </div>

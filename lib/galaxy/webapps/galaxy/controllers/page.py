@@ -8,6 +8,7 @@ from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.json import loads
+from markupsafe import escape
 
 def format_bool( b ):
     if b:
@@ -89,9 +90,9 @@ class ItemSelectionGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, item):
             if hasattr( item, "get_display_name" ):
-                return item.get_display_name()
+                return escape(item.get_display_name())
             else:
-                return item.name
+                return escape(item.name)
 
     # Grid definition.
     show_item_checkboxes = True
@@ -499,14 +500,14 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
                                     .first()
             if not other:
                 mtype = "error"
-                msg = ( "User '%s' does not exist" % email )
+                msg = ( "User '%s' does not exist" % escape( email ) )
             elif other == trans.get_user():
                 mtype = "error"
                 msg = ( "You cannot share a page with yourself" )
             elif trans.sa_session.query( model.PageUserShareAssociation ) \
                     .filter_by( user=other, page=page ).count() > 0:
                 mtype = "error"
-                msg = ( "Page already shared with '%s'" % email )
+                msg = ( "Page already shared with '%s'" % escape( email ) )
             else:
                 share = model.PageUserShareAssociation()
                 share.page = page
@@ -515,7 +516,9 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
                 session.add( share )
                 self.create_item_slug( session, page )
                 session.flush()
-                trans.set_message( "Page '%s' shared with user '%s'" % ( page.title, other.email ) )
+                page_title = escape( page.title )
+                other_email = escape( other.email )
+                trans.set_message( "Page '%s' shared with user '%s'" % ( page_title, other_email ) )
                 return trans.response.send_redirect( url_for( controller='page', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,

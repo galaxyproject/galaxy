@@ -22,7 +22,7 @@ and pointing your browser to the following link.
 
 ${history_view_link}
 -----------------------------------------------------------------------------
-The user '${email}' provided the following information:
+The user ${email_str} provided the following information:
 
 ${message}
 -----------------------------------------------------------------------------
@@ -50,9 +50,10 @@ ${job_traceback}
 (This is an automated message).
 """
 
+
 class ErrorReporter( object ):
     def __init__( self, hda, app ):
-         # Get the dataset
+        # Get the dataset
         sa_session = app.model.context
         if not isinstance( hda, model.HistoryDatasetAssociation ):
             hda_id = hda
@@ -68,18 +69,24 @@ class ErrorReporter( object ):
         self.app = app
         self.tool_id = self.job.tool_id
         self.report = None
+
     def _can_access_dataset( self, user ):
         if user:
             roles = user.all_roles()
         else:
             roles = []
         return self.app.security_agent.can_access_dataset( roles, self.hda.dataset )
-    def create_report( self, email='', message='', **kwd ):
+
+    def create_report( self, user, email='', message='', **kwd ):
         hda = self.hda
         job = self.job
         host = web.url_for( '/', qualified=True )
         history_view_link = web.url_for( controller="history", action="view", id=self.app.security.encode_id( hda.history_id ), qualified=True )
         # Build the email message
+        if user and user.email != email:
+            email_str = "'%s' (providing preferred contact email '%s')" % (user.email, email)
+        else:
+            email_str = "'%s'" % email
         self.report = string.Template( error_report_template ) \
             .safe_substitute( host=host,
                               dataset_id=hda.dataset_id,
@@ -97,22 +104,25 @@ class ErrorReporter( object ):
                               job_stdout=util.unicodify( job.stdout ),
                               job_info=util.unicodify( job.info ),
                               job_traceback=util.unicodify( job.traceback ),
-                              email=email,
+                              email_str=email_str,
                               message=util.unicodify( message ) )
+
     def _send_report( self, user, email=None, message=None, **kwd ):
         return self.report
+
     def send_report( self, user, email=None, message=None, **kwd ):
         if self.report is None:
-            self.create_report( email=email, message=message, **kwd )
+            self.create_report( user, email=email, message=message, **kwd )
         return self._send_report( user, email=email, message=message, **kwd )
-        
+
+
 class EmailErrorReporter( ErrorReporter ):
     def _send_report( self, user, email=None, message=None, **kwd ):
         smtp_server = self.app.config.smtp_server
         assert smtp_server, ValueError( "Mail is not configured for this galaxy instance" )
         to_address = self.app.config.error_email_to
         assert to_address, ValueError( "Error reporting has been disabled for this galaxy instance" )
-        
+
         frm = to_address
         # Check email a bit
         email = email or ''

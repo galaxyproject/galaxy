@@ -1,8 +1,10 @@
 define([
     "mvc/list/list-item",
+    "ui/loading-indicator",
     "mvc/base-mvc",
-    "utils/localization"
-], function( LIST_ITEM, BASE_MVC, _l ){
+    "utils/localization",
+    "ui/search-input"
+], function( LIST_ITEM, LoadingIndicator, BASE_MVC, _l ){
 /* ============================================================================
 TODO:
 

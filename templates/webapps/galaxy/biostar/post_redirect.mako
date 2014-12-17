@@ -18,7 +18,7 @@
         <p>If you are not automatically forwarded, click the button below:<p>
         <form id="postRedirectForm" action="${post_url}" method="post" >
             %for input_name, input_value in form_inputs.items():
-                <input type="hidden" name="${input_name}" value="${input_value | h}">
+                <input type="hidden" name="${input_name | h}" value="${input_value | h}">
             %endfor
                 <input type="submit" name="GalaxySubmitPostRedirectForm" id='GalaxySubmitPostRedirectForm' value="Click Here">
         </form>

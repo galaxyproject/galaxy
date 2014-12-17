@@ -1,9 +1,10 @@
 define([
     "mvc/list/list-item",
     "mvc/dataset/states",
+    "ui/fa-icon-button",
     "mvc/base-mvc",
     "utils/localization"
-], function( LIST_ITEM, STATES, BASE_MVC, _l ){
+], function( LIST_ITEM, STATES, faIconButton, BASE_MVC, _l ){
 /* global Backbone */
 /*==============================================================================
 TODO:

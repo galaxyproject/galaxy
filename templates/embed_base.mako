@@ -49,9 +49,9 @@
     <div style="float: right;">
         ${self.render_item_links( item )}
     </div>
-    <h4><a class="toggle-embed" href="${display_href}" title="Show or hide ${item_display_name} content">Galaxy ${get_class_display_name( item.__class__ )} | ${get_item_name( item )}</a></h4>
+    <h4><a class="toggle-embed" href="${display_href}" title="Show or hide ${item_display_name} content">Galaxy ${get_class_display_name( item.__class__ )} | ${get_item_name( item ) | h}</a></h4>
     %if hasattr( item, "annotation") and item.annotation:
-        <div class="annotation">${item.annotation}</div>
+        <div class="annotation">${item.annotation | h}</div>
     %endif
     
     ## Use a hidden var to store the ajax URL for getting an item's content.

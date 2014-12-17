@@ -83,7 +83,7 @@
     %>
     
     <div class="toolForm">
-        <div class="toolFormTitle">Share ${item_class_name} '${item_name}' with Another User</div>
+        <div class="toolFormTitle">Share ${item_class_name} '${item_name | h}' with Another User</div>
             <div class="toolFormBody">
                 <form action="${h.url_for(controller=item_controller, action='share', id=trans.security.encode_id( item.id ) )}" method="POST">
                     <div class="form-row">
@@ -91,7 +91,7 @@
                             Email address of user to share with
                         </label>
                         <div style="float: left; width: 250px; margin-right: 10px;">
-                            <input type="text" name="email" value="${email}" size="40">
+                            <input type="text" name="email" value="${email | h}" size="40">
                         </div>
                         <div style="clear: both"></div>
                     </div>

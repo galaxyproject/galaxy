@@ -79,7 +79,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         GET /api/tools/{tool_id}/build
         Returns a tool model including dynamic parameters and updated values, repeats block etc.
         """
-        tool = self._get_tool( id )
+        tool_id = urllib.unquote_plus( id )
+        tool_version = kwd.get( 'tool_version', None )
+        tool = self.app.toolbox.get_tool( tool_id, tool_version )
+        if not tool:
+            trans.response.status = 500
+            return { 'error': 'Could not find tool with id \'%s\'' % tool_id }
         return self._build_dict(trans, tool, kwd)
     
     @_future_expose_api
@@ -128,7 +133,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         # -- Execute tool. --
 
         # Get tool.
-        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] ) if 'tool_id' in payload else None
+        tool_version = payload.get( 'tool_version', None )
+        tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] , tool_version ) if 'tool_id' in payload else None
         if not tool:
             trans.response.status = 404
             return { "message": { "type": "error", "text" : trans.app.model.Dataset.conversion_messages.NO_TOOL } }
@@ -219,9 +225,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
     #
     # -- Helper methods --
     #
-    def _get_tool( self, id ):
+    def _get_tool( self, id, tool_version=None ):
         id = urllib.unquote_plus( id )
-        tool = self.app.toolbox.get_tool( id )
+        tool = self.app.toolbox.get_tool( id, tool_version )
         if not tool:
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
         return tool
@@ -564,7 +570,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             value = dict['value'] if 'value' in dict else None
 
             # identify lists
-            if dict['type'] == 'data':
+            if dict['type'] in ['data']:
                 if isinstance(value, list):
                     value = [ convert(v) for v in value ]
                 else:
@@ -588,15 +594,28 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
             for input in inputs.itervalues():
                 state[input.name] = input.get_initial_value(trans, context)
     
+        # check the current state of a value and update it if necessary
+        def check_state(trans, input, default_value, context):
+            value = default_value
+            error = 'State validation failed.'
+            try:
+                # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
+                if input.type == 'boolean' and isinstance(default_value, basestring):
+                    value, error = [util.string_as_bool(default_value), None]
+                else:
+                    value, error = check_param(trans, input, default_value, context)
+            except Exception:
+                log.error('Checking parameter %s failed.', input.name)
+                pass
+            return [value, error]
+    
         # populates state with incoming url parameters
-        def populate_state(trans, inputs, state, incoming, prefix="", context=None ):
-            errors = dict()
+        def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):
             context = ExpressionContext(state, context)
             for input in inputs.itervalues():
                 key = prefix + input.name
                 if input.type == 'repeat':
                     group_state = state[input.name]
-                    group_errors = []
                     rep_index = 0
                     del group_state[:]
                     while True:
@@ -608,43 +627,32 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                             new_state['__index__'] = rep_index
                             initialize_state(trans, input.inputs, new_state, context)
                             group_state.append(new_state)
-                            group_errors.append({})
-                            rep_errors = populate_state(trans, input.inputs, new_state, incoming, prefix=rep_name + "|", context=context)
-                            if rep_errors:
-                                group_errors[rep_index].update( rep_errors )
-                        else:
-                            group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
+                            populate_state(trans, input.inputs, new_state, errors, incoming, prefix=rep_name + "|", context=context)
                         rep_index += 1
                 elif input.type == 'conditional':
                     group_state = state[input.name]
                     group_prefix = "%s|" % ( key )
                     test_param_key = group_prefix + input.test_param.name
                     default_value = incoming.get(test_param_key, group_state.get(input.test_param.name, None))
-                    value, test_param_error = check_param( trans, input.test_param, default_value, context)
-                    if test_param_error:
-                        errors[input.name] = [test_param_error]
+                    value, error = check_state(trans, input.test_param, default_value, context)
+                    if error:
+                        errors[test_param_key] = error
                     else:
                         current_case = input.get_current_case(value, trans)
                         group_state = state[input.name] = {}
                         initialize_state(trans, input.cases[current_case].inputs, group_state, context)
-                        group_errors = populate_state( trans, input.cases[current_case].inputs, group_state, incoming, prefix=group_prefix, context=context)
-                        if group_errors:
-                            errors[input.name] = group_errors
+                        populate_state( trans, input.cases[current_case].inputs, group_state, errors, incoming, prefix=group_prefix, context=context)
                         group_state['__current_case__'] = current_case
-                    group_state[ input.test_param.name ] = value
+                    group_state[input.test_param.name] = value
                 else:
-                    try:
-                        value, error = check_param(trans, input, incoming.get(key, state.get(input.name, None)), context)
-                        if error:
-                            errors[input.name] = error
-                        state[input.name] = value
-                    except Exception:
-                        log.error('Checking parameter %s failed.', input.name)
-                        pass
-            return errors
+                    default_value = incoming.get(key, state.get(input.name, None))
+                    value, error = check_state(trans, input, default_value, context)
+                    if error:
+                        errors[key] = error
+                    state[input.name] = value
         
         # builds tool model including all attributes
-        def iterate(group_inputs, inputs, tool_state, errors, other_values=None):
+        def iterate(group_inputs, inputs, tool_state, other_values=None):
             other_values = ExpressionContext( tool_state, other_values )
             for input_index, input in enumerate( inputs.itervalues() ):
                 # create model dictionary
@@ -660,8 +668,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                     group_cache = group_inputs[input_index]['cache'] = {}
                     for i in range( len( group_state ) ):
                         group_cache[i] = {}
-                        group_errors = errors[input.name][i] if input.name in errors else dict()
-                        iterate( group_cache[i], input.inputs, group_state[i], group_errors, other_values )
+                        iterate( group_cache[i], input.inputs, group_state[i], other_values )
                 elif input.type == 'conditional':
                     try:
                         test_param = group_inputs[input_index]['test_param']
@@ -669,8 +676,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
                     except Exception:
                         pass
                     i = group_state['__current_case__']
-                    group_errors = errors.get( input.name, {} )
-                    iterate(group_inputs[input_index]['cases'][i]['inputs'], input.cases[i].inputs, group_state, group_errors, other_values)
+                    iterate(group_inputs[input_index]['cases'][i]['inputs'], input.cases[i].inputs, group_state, other_values)
                 else:
                     # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
                     try:
@@ -694,15 +700,16 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         
         # create tool state
         state_inputs = {}
+        state_errors = {}
         initialize_state(trans, tool.inputs, state_inputs)
-        errors = populate_state(trans, tool.inputs, state_inputs, params.__dict__)
+        populate_state(trans, tool.inputs, state_inputs, state_errors, params.__dict__)
 
         # create basic tool model
         tool_model = tool.to_dict(trans)
         tool_model['inputs'] = {}
 
         # build tool model
-        iterate(tool_model['inputs'], tool.inputs, state_inputs, errors, '')
+        iterate(tool_model['inputs'], tool.inputs, state_inputs, '')
 
         # load tool help
         tool_help = ''
@@ -716,50 +723,69 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         tool_citations = False
         if tool.citations:
             tool_citations = True
+    
+        # get tool versions
+        tool_versions = []
+        tools = self.app.toolbox.get_loaded_tools_by_lineage(tool.id)
+        for t in tools:
+            tool_versions.append(t.version)
+        
+        ## add information with underlying requirements and their versions
+        tool_requirements = []
+        if tool.requirements:
+            for requirement in tool.requirements:
+                tool_requirements.append({
+                    'name'      : requirement.name,
+                    'version'   : requirement.version
+                })
 
         # add additional properties
         tool_model.update({
             'help'          : tool_help,
             'citations'     : tool_citations,
             'biostar_url'   : trans.app.config.biostar_url,
-            'message'       : tool_message
+            'message'       : tool_message,
+            'versions'      : tool_versions,
+            'requirements'  : tool_requirements,
+            'errors'        : state_errors
         })
-        
+
+        # check for errors
+        if 'error' in tool_message:
+            return tool_message
+
         # return enriched tool model
         return tool_model
 
-    def _get_tool_components( self, trans, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
-        return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
-
     def _compare_tool_version( self, trans, tool, job ):
         """
-        Compares a tool version with the tool version from a job (from ToolRunne.
+        Compares a tool version with the tool version from a job (from ToolRunner).
         """
-        id = job.tool_id
-        version = job.tool_version
+        tool_id = job.tool_id
+        tool_version = job.tool_version
         message = ''
         try:
-            select_field, tools, tool = self._get_tool_components( trans, id, tool_version=version, get_loaded_tools_by_lineage=False, set_selected=True )
+            select_field, tools, tool = self.app.toolbox.get_tool_components( tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True )
             if tool is None:
                 trans.response.status = 500
-                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % id }
-            if ( tool.id != id and tool.old_id != id ) or tool.version != version:
-                if tool.id == id:
-                    if version == None:
+                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id }
+            if ( tool.id != tool_id and tool.old_id != tool_id ) or tool.version != tool_version:
+                if tool.id == tool_id:
+                    if tool_version == None:
                         # for some reason jobs don't always keep track of the tool version.
                         message = ''
                     else:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % version
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
                         if len( tools ) > 1:
                             message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
                         else:
                             message += 'You can re-run the job with this tool version, which is a derivation of the original tool.'
                 else:
                     if len( tools ) > 1:
-                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % version
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
                         message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
                     else:
-                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( id, version )
+                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( tool_id, tool_version )
                         message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
         except Exception, error:
             trans.response.status = 500

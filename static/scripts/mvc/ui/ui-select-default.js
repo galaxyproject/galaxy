@@ -9,10 +9,11 @@ var View = Backbone.View.extend({
     optionsDefault : {
         id          : '',
         cls         : '',
-        empty       : 'No data available',
+        error_text  : 'No data available',
         visible     : true,
         wait        : false,
-        multiple    : false
+        multiple    : false,
+        searchable  : false
     },
     
     // initialize
@@ -24,8 +25,9 @@ var View = Backbone.View.extend({
         this.setElement(this._template(this.options));
         
         // link elements
-        this.$select = this.$el.find('#select');
-        this.$icon = this.$el.find('#icon');
+        this.$select = this.$el.find('.select');
+        this.$icon = this.$el.find('.icon');
+        this.$button = this.$el.find('.button');
         
         // configure multiple
         if (this.options.multiple) {
@@ -38,6 +40,11 @@ var View = Backbone.View.extend({
         
         // refresh
         this.update(this.options.data);
+        
+        // set initial value
+        if (this.options.value !== undefined) {
+            this.value(this.options.value);
+        }
         
         // show/hide
         if (!this.options.visible) {
@@ -68,6 +75,9 @@ var View = Backbone.View.extend({
     value : function (new_value) {
         if (new_value !== undefined) {
             this.$select.val(new_value);
+            if (this.$select.select2) {
+                this.$select.select2('val', new_value);
+            }
         }
         return this.$select.val();
     },
@@ -109,7 +119,7 @@ var View = Backbone.View.extend({
     show: function() {
         this.unwait();
         this.$select.show();
-        this.$el.css('display', 'inline-block');
+        this.$el.show();
     },
     
     /** Hide the select field
@@ -179,7 +189,7 @@ var View = Backbone.View.extend({
         
         // remove all options
         this.$select.find('option').remove();
-
+        
         // add new options
         for (var key in options) {
             this.$select.append(this._templateOption(options[key]));
@@ -194,6 +204,13 @@ var View = Backbone.View.extend({
         // check if any value was set
         if (!this.$select.val()) {
             this.$select.val(this.first());
+        }
+        
+        // update to searchable field (in this case select2)
+        if (this.options.searchable) {
+            this.$button.hide();
+            this.$select.select2('destroy');
+            this.$select.select2();
         }
     },
     
@@ -230,7 +247,7 @@ var View = Backbone.View.extend({
             this.disable();
         
             // append placeholder
-            this.$select.append(this._templateOption({value : 'null', label : this.options.empty}));
+            this.$select.append(this._templateOption({value : 'null', label : this.options.error_text}));
         } else {
             // enable select field
             this.enable();
@@ -249,7 +266,7 @@ var View = Backbone.View.extend({
         return  '<div id="' + options.id + '">' +
                     '<select id="select" class="select ' + options.cls + ' ' + options.id + '"></select>' +
                     '<div class="button">' +
-                        '<i id="icon"/>' +
+                        '<i class="icon"/>' +
                     '</div>' +
                 '</div>';
     }

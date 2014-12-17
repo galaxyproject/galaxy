@@ -184,9 +184,8 @@ class Registry( object ):
                             if ok:
                                 datatype_class = None
                                 if proprietary_path and proprietary_datatype_module and datatype_class_name:
-                                    # We need to change the value of sys.path, so do it in a way that is thread-safe.
-                                    lock = threading.Lock()
-                                    lock.acquire( True )
+                                    # TODO: previously comments suggested this needs to be locked because it modifys
+                                    # the sys.path, probably true but the previous lock wasn't doing that.
                                     try:
                                         imported_module = __import_module( proprietary_path,
                                                                            proprietary_datatype_module,
@@ -198,15 +197,13 @@ class Registry( object ):
                                     except Exception, e:
                                         full_path = os.path.join( proprietary_path, proprietary_datatype_module )
                                         self.log.debug( "Exception importing proprietary code file %s: %s" % ( str( full_path ), str( e ) ) )
-                                    finally:
-                                        lock.release()
                                 # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
                                 # in the repository, or we are loading Galaxy's datatypes. In either case we'll look in the registry.
                                 if datatype_class is None:
                                     try:
                                         # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
                                         fields = datatype_module.split( '.' )
-                                        module = __import__( fields.pop( 0 ) )
+                                        module = __import__( datatype_module )
                                         for mod in fields:
                                             module = getattr( module, mod )
                                         datatype_class = getattr( module, datatype_class_name )

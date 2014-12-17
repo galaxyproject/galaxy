@@ -1,13 +1,11 @@
-from unittest import TestCase
 from galaxy.util import bunch
 from galaxy import model
 from galaxy.tools.parameters import basic
-from elementtree.ElementTree import XML
 
-import tools_support
+from .test_parameter_parsing import BaseParameterTestCase
 
 
-class SelectToolParameterTestCase( TestCase, tools_support.UsesApp ):
+class SelectToolParameterTestCase( BaseParameterTestCase ):
 
     def test_dep_dummy_datasets_need_late_validation( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
@@ -51,11 +49,7 @@ class SelectToolParameterTestCase( TestCase, tools_support.UsesApp ):
     # TODO: Good deal of overlap here with DataToolParameterTestCase,
     # refactor.
     def setUp( self ):
-        self.setup_app( mock_model=False )
-        self.mock_tool = bunch.Bunch(
-            app=self.app,
-            tool_type="default",
-        )
+        super(SelectToolParameterTestCase, self).setUp()
         self.test_history = model.History()
         self.app.model.context.add( self.test_history )
         self.app.model.context.flush()
@@ -88,8 +82,8 @@ class SelectToolParameterTestCase( TestCase, tools_support.UsesApp ):
             if self.set_data_ref:
                 data_ref_text = 'data_ref="input_bam"'
             template_xml = '''<param name="my_name" type="%s" %s %s %s>%s</param>'''
-            self.param_xml = XML( template_xml % ( self.type, data_ref_text, multi_text, optional_text, options_text ) )
-            self._param = basic.SelectToolParameter( self.mock_tool, self.param_xml )
+            param_str = template_xml % ( self.type, data_ref_text, multi_text, optional_text, options_text )
+            self._param = self._parameter_for( xml=param_str )
 
         return self._param
 

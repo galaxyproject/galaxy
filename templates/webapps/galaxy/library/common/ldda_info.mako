@@ -47,9 +47,9 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">
-        Information about <div class="menubutton popup" id="dataset-${ldda.id}-popup">${util.unicodify( ldda.name )}</div>
+        Information about <div class="menubutton popup" id="dataset-${ trans.security.encode_id( ldda.id ) | h}-popup">${util.unicodify( ldda.name ) | h}</div>
         %if not library.deleted and not branch_deleted( ldda.library_dataset.folder ) and not ldda.library_dataset.deleted:
-            <div popupmenu="dataset-${ldda.id}-popup">
+            <div popupmenu="dataset-${ trans.security.encode_id( ldda.id ) | h}-popup">
                 %if can_modify:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='ldda_edit_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( ldda.library_dataset.folder.id ), id=trans.security.encode_id( ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit information</a>
                     %if not info_association:
@@ -81,52 +81,52 @@
         %if ldda.message:
             <div class="form-row">
                 <label>Message:</label>
-                <pre>${ldda.message}</pre>
+                <pre>${ldda.message | h}</pre>
                 <div style="clear: both"></div>
             </div>
         %endif
         <div class="form-row">
             <label>Uploaded by:</label>
-            ${uploaded_by}
+            ${uploaded_by | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Date uploaded:</label>
-            ${ldda.create_time.strftime( trans.app.config.pretty_datetime_format )}
+            ${ldda.create_time.strftime( trans.app.config.pretty_datetime_format ) | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>File size:</label>
-            ${ldda.get_size( nice_size=True )}
+            ${ldda.get_size( nice_size=True ) | h}
             <div style="clear: both"></div>
         </div>
         %if ldda.dataset.uuid:
         <div class="form-row">
             <label>UUID:</label>
-            ${ldda.dataset.uuid}
+            ${ldda.dataset.uuid | h}
             <div style="clear: both"></div>
         </div>
         %endif
         %if ldda.tool_version:
             <div class="form-row">
                 <label>Tool version:</label>
-                ${ldda.tool_version}
+                ${ldda.tool_version | h}
                 <div style="clear: both"></div>
             </div>
         %endif
         <div class="form-row">
             <label>Data type:</label>
-            ${ldda.ext}
+            ${ldda.ext | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Build:</label>
-            ${ldda.dbkey}
+            ${ldda.dbkey | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Miscellaneous information:</label>
-            ${util.unicodify( ldda.info )}
+            ${util.unicodify( ldda.info ) | h}
             <div style="clear: both"></div>
         </div>
         %if ldda.creating_job_associations:
@@ -134,25 +134,25 @@
             %if job.stdout and job.stdout.strip() != '':
                 <div class="form-row">
                     <label>Job Standard Output</label>
-                    <pre>${job.stdout}</pre>
+                    <pre>${job.stdout | h}</pre>
                     <div style="clear: both"></div>
                 </div>
             %endif
             %if job.stderr and job.stderr.strip() != '':
                 <div class="form-row">
                     <label>Job Standard Error</label>
-                    <pre>${job.stderr}</pre>
+                    <pre>${job.stderr | h}</pre>
                     <div style="clear: both"></div>
                 </div>
             %endif
         %endif
         <div class="form-row">
-            <div>${ldda.blurb}</div>
+            <div>${ldda.blurb | h}</div>
         </div>
         ## We want to display all metadata item here, whether marked visible or not since they are all pretty useful
         %for name, spec in ldda.metadata.spec.items():
             <div class="form-row">
-                <label>${spec.desc.replace( ' (click box & select)', '' )}:</label>
+                <label>${spec.desc.replace( ' (click box & select)', '' ) | h}:</label>
                 <%
                     metadata_val = ldda.metadata.get( name )
                     if isinstance( metadata_val, trans.model.MetadataFile ):
@@ -162,29 +162,29 @@
                         metadata_val = [ str( item ) for item in metadata_val ]
                         metadata_val = ', '.join( metadata_val )
                 %>
-                ${metadata_val}
+                ${metadata_val | h}
                 <div style="clear: both"></div>
             </div>
         %endfor
         %if ldda.peek != "no peek":
             <div class="form-row">
-                <div id="info${ldda.id}" class="historyItemBody">
+                <div id="info${ trans.security.encode_id( ldda.id ) | h}" class="historyItemBody">
                     <label>Peek:</label>
-                    <div><pre id="peek${ldda.id}" class="peek">${util.unicodify( ldda.display_peek() )}</pre></div>
+                    <div><pre id="peek${ trans.security.encode_id( ldda.id ) | h}" class="peek">${util.unicodify( ldda.display_peek() )}</pre></div>
                 </div>
             </div>
         %endif
         %if ldda.extended_metadata:
             <div class="form-row">
                 <label>Extended Metadata:</label>
-                <pre>${util.pretty_print_json(ldda.extended_metadata.data)}</pre>
+                <pre>${util.pretty_print_json(ldda.extended_metadata.data) | h}</pre>
                 <div style="clear: both"></div>
             </div>
         %endif
         %if trans.user_is_admin() and cntrller == 'library_admin':
             <div class="form-row">
                 <label>Disk file:</label>
-                ${ldda.file_name}
+                ${ldda.file_name | h}
                 <div style="clear: both"></div>
             </div>
         %endif
@@ -211,16 +211,16 @@
                     <tr>
                         <td>
                             %if hda.history:
-                                <a target="_blank" href="${h.url_for( controller='history', action='view', id=trans.security.encode_id( hda.history_id ) )}">${hda.history.get_display_name()}</a>
+                                <a target="_blank" href="${h.url_for( controller='history', action='view', id=trans.security.encode_id( hda.history_id ) )}">${hda.history.get_display_name() | h}</a>
                             %else:
                                 no history
                             %endif
                         </td>
-                        <td>${hda.get_display_name()}</td>
-                        <td>${time_ago( hda.update_time )}</td>
+                        <td>${hda.get_display_name() | h}</td>
+                        <td>${time_ago( hda.update_time ) | h}</td>
                         <td>
                             %if hda.history and hda.history.user:
-                                ${hda.history.user.email}
+                                ${hda.history.user.email | h}
                             %else:
                                 anonymous
                             %endif
@@ -256,9 +256,9 @@
                                     library_display_name = 'no library'
                             %>
                             %if containing_library:
-                                <a href="${h.url_for( controller='library_common', action='browse_library', id=trans.security.encode_id( containing_library.id ), cntrller=cntrller, use_panels=use_panels )}">${library_display_name}</a>
+                                <a href="${h.url_for( controller='library_common', action='browse_library', id=trans.security.encode_id( containing_library.id ), cntrller=cntrller, use_panels=use_panels )}">${library_display_name | h}</a>
                             %else:
-                                ${library_display_name}
+                                ${library_display_name | h}
                             %endif
                         </td>
                         <td>
@@ -269,14 +269,14 @@
                                 if folder_display_name == library_display_name:
                                     folder_display_name = 'library root'
                             %>
-                            ${folder_display_name}
-                            ${copied_ldda.library_dataset.folder.get_display_name()}
+                            ${folder_display_name | h}
+                            ${copied_ldda.library_dataset.folder.get_display_name() | h}
                         </td>
-                        <td>${copied_ldda.get_display_name()}</td>
-                        <td>${time_ago( copied_ldda.update_time )}</td>
+                        <td>${copied_ldda.get_display_name() | h}</td>
+                        <td>${time_ago( copied_ldda.update_time ) | h}</td>
                         <td>
                             %if copied_ldda.user:
-                                ${copied_ldda.user.email}
+                                ${copied_ldda.user.email | h}
                             %else:
                                 anonymous
                             %endif
@@ -292,10 +292,10 @@
     <% expired_lddas = [ e_ldda for e_ldda in ldda.library_dataset.expired_datasets ] %>
     %if expired_lddas:
         <br/>
-        <div class="toolFormTitle">Expired versions of ${util.unicodify( ldda.name )}</div>
+        <div class="toolFormTitle">Expired versions of ${util.unicodify( ldda.name ) | h}</div>
         %for expired_ldda in expired_lddas:
             <div class="form-row">
-                <a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">${util.unicodify( expired_ldda.name )}</a>
+                <a href="${h.url_for( controller='library_common', action='ldda_info', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), folder_id=trans.security.encode_id( expired_ldda.library_dataset.folder.id ), id=trans.security.encode_id( expired_ldda.id ), use_panels=use_panels, show_deleted=show_deleted )}">${util.unicodify( expired_ldda.name ) | h}</a>
             </div>
         %endfor
     %endif

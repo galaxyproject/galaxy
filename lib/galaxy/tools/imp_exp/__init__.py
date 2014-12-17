@@ -13,12 +13,7 @@ from galaxy.web.base.controller import UsesHistoryMixin
 
 log = logging.getLogger(__name__)
 
-
-def load_history_imp_exp_tools( toolbox ):
-    """ Adds tools for importing/exporting histories to archives. """
-    # Use same process as that used in load_external_metadata_tool; see that
-    # method for why create tool description files on the fly.
-    tool_xml_text = """
+EXPORT_HISTORY_TEXT = """
         <tool id="__EXPORT_HISTORY__" name="Export History" version="0.1" tool_type="export_history">
           <type class="ExportHistoryTool" module="galaxy.tools"/>
           <action module="galaxy.tools.actions.history_imp_exp" class="ExportHistoryToolAction"/>
@@ -32,7 +27,14 @@ def load_history_imp_exp_tools( toolbox ):
             <data format="gzip" name="output_file"/>
           </outputs>
         </tool>
-    """
+"""
+
+
+def load_history_imp_exp_tools( toolbox ):
+    """ Adds tools for importing/exporting histories to archives. """
+    # Use same process as that used in load_external_metadata_tool; see that
+    # method for why create tool description files on the fly.
+    tool_xml_text = EXPORT_HISTORY_TEXT
 
     # Load export tool.
     tmp_name = tempfile.NamedTemporaryFile()

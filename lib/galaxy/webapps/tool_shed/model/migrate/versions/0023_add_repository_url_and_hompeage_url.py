@@ -7,6 +7,7 @@ from sqlalchemy import *
 from sqlalchemy.orm import *
 from migrate import *
 from migrate.changeset import *
+from galaxy.model.custom_types import TrimmedString
 
 import sys, logging
 
@@ -35,7 +36,6 @@ def upgrade( migrate_engine ):
         assert c_homepage is Repository_table.c.homepage_url
     except Exception, e:
         print "Adding remote_repository_url and homepage_url columns to the repository table failed: %s" % str( e )
-    migrate_engine.execute( cmd )
 
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine
@@ -43,7 +43,7 @@ def downgrade( migrate_engine ):
     # Drop type column from repository table.
     Repository_table = Table( "repository", metadata, autoload=True )
     try:
-        Repository_table.c..drop()
+        Repository_table.c.remote_repository_url.drop()
         Repository_table.c.homepage_url.drop()
     except Exception, e:
         print "Dropping columns remote_repository_url and homepage_url from the repository table failed: %s" % str( e )

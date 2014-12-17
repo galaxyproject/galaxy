@@ -8,7 +8,7 @@
             });
             // --- Initialize sample trees
             $("#tree").dynatree({
-                title: "${title_text}",
+                title: "${title_text|h}",
                 rootVisible: true,
                 minExpandLevel: 0, // 1: root node is not collapsible
                 persist: false,
@@ -24,7 +24,7 @@
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='admin_toolshed', action='open_folder' )}",
                            dataType: "json", 
-                           data: { folder_path: "${directory_path}" },
+                           data: { folder_path: "${directory_path|h}" },
                 },
                 onLazyRead: function(dtnode){
                     dtnode.appendAjax({
@@ -45,7 +45,7 @@
                     var cell = $("#file_contents");
                     var selected_value;
                      if (dtnode.data.key == 'root') {
-                        selected_value = "${directory_path}/";
+                        selected_value = "${directory_path|h}/";
                     } else {
                         selected_value = dtnode.data.key;
                     };
@@ -81,6 +81,7 @@
                            line-break:strict; }
     </style>
     <%
+        from markupsafe import escape
         class RowCounter( object ):
             def __init__( self ):
                 self.count = 0
@@ -96,7 +97,7 @@
         env_settings_heaader_row_displayed = False
         package_header_row_displayed = False
         if revision_label:
-            revision_label_str = ' revision <b>%s</b> of ' % str( revision_label )
+            revision_label_str = ' revision <b>%s</b> of ' % escape( str( revision_label ) )
         else:
             revision_label_str = ' '
     %>
@@ -104,7 +105,7 @@
         <div class="toolParamHelp" style="clear: both;">
             <p>
                 %if export:
-                    The following additional repositories are required by${revision_label_str}the <b>${repository.name}</b> repository
+                    The following additional repositories are required by${revision_label_str}the <b>${repository.name|h}</b> repository
                     and they can be exported as well.
                 %else:
                     These dependencies can be automatically handled with${revision_label_str}the installed repository, providing significant

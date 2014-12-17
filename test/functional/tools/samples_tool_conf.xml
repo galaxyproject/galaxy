@@ -3,14 +3,17 @@
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="composite.xml" />
+  <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="multi_page.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
+  <tool file="multi_output_assign_primary.xml" />
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
+  <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
   <tool file="output_filter.xml" />
@@ -41,5 +44,7 @@
   <tool file="for_workflows/cat_list.xml" />
   <tool file="for_workflows/cat_collection.xml" />
   <tool file="for_workflows/head.xml" />
+
+  <tool file="simple_constructs.yml" />
 
 </toolbox>

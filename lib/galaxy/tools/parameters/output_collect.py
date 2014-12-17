@@ -5,7 +5,6 @@ import re
 import glob
 import json
 
-
 from galaxy import jobs
 from galaxy import util
 from galaxy.util import odict
@@ -30,8 +29,10 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
     # Loop through output file names, looking for generated primary
     # datasets in form of:
     #     'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
+    primary_output_assigned = False
+    new_outdata_name = None
     primary_datasets = {}
-    for name, outdata in output.items():
+    for output_index, ( name, outdata ) in enumerate( output.items() ):
         dataset_collectors = tool.outputs[ name ].dataset_collectors if name in tool.outputs else [ DEFAULT_DATASET_COLLECTOR ]
         filenames = odict.odict()
         if 'new_file_path' in app.config.collect_outputs_from:
@@ -42,28 +43,22 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 for filename in glob.glob(os.path.join(app.config.new_file_path, "primary_%i_*" % outdata.id) ):
                     filenames[ filename ] = DEFAULT_DATASET_COLLECTOR
         if 'job_working_directory' in app.config.collect_outputs_from:
-            for extra_file_collector in dataset_collectors:
-                directory = job_working_directory
-                if extra_file_collector.directory:
-                    directory = os.path.join( directory, extra_file_collector.directory )
-                    if not util.in_directory( directory, job_working_directory ):
-                        raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
-                if not os.path.isdir( directory ):
-                    continue
-                for filename in os.listdir( directory ):
-                    path = os.path.join( directory, filename )
-                    if not os.path.isfile( path ):
-                        continue
-                    if extra_file_collector.match( outdata, filename ):
-                        filenames[ path ] = extra_file_collector
-        for filename, extra_file_collector in filenames.iteritems():
-            if not name in primary_datasets:
-                primary_datasets[name] = {}
+            for path, extra_file_collector in walk_over_extra_files( dataset_collectors, job_working_directory, outdata ):
+                filenames[ path ] = extra_file_collector
+        for filename_index, ( filename, extra_file_collector ) in enumerate( filenames.iteritems() ):
             fields_match = extra_file_collector.match( outdata, os.path.basename( filename ) )
             if not fields_match:
                 # Before I guess pop() would just have thrown an IndexError
                 raise Exception( "Problem parsing metadata fields for file %s" % filename )
             designation = fields_match.designation
+            if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
+                new_outdata_name = fields_match.name or "%s (%s)" % ( outdata.name, designation )
+                # Move data from temp location to dataset location
+                app.object_store.update_from_file( outdata.dataset, file_name=filename, create=True )
+                primary_output_assigned = True
+                continue
+            if not name in primary_datasets:
+                primary_datasets[ name ] = {}
             visible = fields_match.visible
             ext = fields_match.ext
             if ext == "input":
@@ -112,7 +107,8 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                     for root, dirs, files in os.walk( extra_files_path_joined ):
                         extra_dir = os.path.join( primary_data.extra_files_path, root.replace( extra_files_path_joined, '', 1 ).lstrip( os.path.sep ) )
                         for f in files:
-                            app.object_store.update_from_file( primary_data.dataset,
+                            app.object_store.update_from_file(
+                                primary_data.dataset,
                                 extra_dir=extra_dir,
                                 alt_name=f,
                                 file_name=os.path.join( root, f ),
@@ -120,7 +116,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                                 dir_only=True,
                                 preserve_symlinks=True
                             )
-                    # FIXME: 
+                    # FIXME:
                     # since these are placed into the job working dir, let the standard
                     # Galaxy cleanup methods handle this (for now?)
                     # there was an extra_files_path dir, attempt to remove it
@@ -145,8 +141,31 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 dataset.history.add_dataset( new_data )
                 sa_session.add( new_data )
                 sa_session.flush()
+        if primary_output_assigned:
+            outdata.name = new_outdata_name
+            outdata.init_meta()
+            outdata.set_meta()
+            outdata.set_peek()
+            sa_session.add( outdata )
+            sa_session.flush()
     return primary_datasets
 
+
+def walk_over_extra_files( extra_file_collectors, job_working_directory, matchable ):
+    for extra_file_collector in extra_file_collectors:
+        directory = job_working_directory
+        if extra_file_collector.directory:
+            directory = os.path.join( directory, extra_file_collector.directory )
+            if not util.in_directory( directory, job_working_directory ):
+                raise Exception( "Problem with tool configuration, attempting to pull in datasets from outside working directory." )
+        if not os.path.isdir( directory ):
+            continue
+        for filename in sorted( os.listdir( directory ) ):
+            path = os.path.join( directory, filename )
+            if not os.path.isfile( path ):
+                continue
+            if extra_file_collector.match( matchable, filename ):
+                yield path, extra_file_collector
 
 # XML can describe custom patterns, but these literals describe named
 # patterns that will be replaced.
@@ -167,6 +186,10 @@ def dataset_collectors_from_elem( elem ):
         return map( lambda elem: DatasetCollector( **elem.attrib ), primary_dataset_elems )
 
 
+def dataset_collectors_from_list( discover_datasets_dicts ):
+    return map( lambda kwds: DatasetCollector( **kwds ), discover_datasets_dicts )
+
+
 class DatasetCollector( object ):
 
     def __init__( self, **kwargs ):
@@ -178,6 +201,7 @@ class DatasetCollector( object ):
         self.default_ext = kwargs.get( "ext", None )
         self.default_visible = util.asbool( kwargs.get( "visible", None ) )
         self.directory = kwargs.get( "directory", None )
+        self.assign_primary_output = util.asbool( kwargs.get( 'assign_primary_output', False ) )
 
     def pattern_for_dataset( self, dataset_instance=None ):
         token_replacement = r'\d+'

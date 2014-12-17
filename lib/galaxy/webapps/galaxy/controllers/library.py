@@ -3,7 +3,7 @@ from galaxy import model, util
 from galaxy import web
 from galaxy.model.orm import and_, not_, or_
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.framework.helpers import grids
+from galaxy.web.framework.helpers import escape, grids
 from library_common import get_comptypes, lucene_search, whoosh_search
 
 
@@ -79,20 +79,20 @@ class Library( BaseUIController ):
     
     @web.expose
     def list( self, trans, **kwd ):
-        params = util.Params( kwd )
         # define app configuration for generic mako template
         app = {
             'jscript'       : "galaxy.library"
         }
-        # fill template
-        return trans.fill_template('galaxy.panels.mako', config = {'app' : app})
+        return trans.fill_template( 'galaxy.panels.mako',
+                                    config = { 
+                                    'title': 'Galaxy Data Libraries',
+                                    'app': app } )
 
     @web.expose
     def index( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        default_action = params.get( 'default_action', None )
+        message = escape( kwd.get( 'message', ''  ) )
+        status = escape( kwd.get( 'status', 'done' ) )
+        default_action = kwd.get( 'default_action', None )
         return trans.fill_template( "/library/index.mako",
                                     default_action=default_action,
                                     message=message,

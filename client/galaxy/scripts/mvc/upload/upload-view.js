@@ -6,7 +6,6 @@ define(["utils/utils",
         "mvc/upload/upload-ftp",
         "mvc/ui/ui-popover",
         "mvc/ui/ui-modal",
-        "mvc/ui",
         "utils/uploadbox"],
        
         function(   Utils,

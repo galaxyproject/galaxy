@@ -1,6 +1,7 @@
 from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
 from galaxy.dataset_collections.matching import MatchingCollections
 from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
+from galaxy.dataset_collections import builder
 
 from galaxy import model
 from galaxy.exceptions import MessageException
@@ -113,7 +114,7 @@ class DatasetCollectionManager( object ):
         # else if elements is set, it better be an ordered dict!
 
         type_plugin = collection_type_description.rank_type_plugin()
-        dataset_collection = type_plugin.build_collection( elements )
+        dataset_collection = builder.build_collection( type_plugin, elements )
         dataset_collection.collection_type = collection_type
         return dataset_collection
 

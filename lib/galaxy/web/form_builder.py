@@ -563,7 +563,7 @@ class SwitchingSelectField(BaseField):
         html += '<input name="__switch_default__" type="hidden" value="%s" />' % self.default_field
         options = []
         for name, delegate_field in self.delegate_fields.items():
-            field = dumps( delegate_field.to_dict() )
+            field = escape( dumps( delegate_field.to_dict() ) )
             option = " '%s': %s" % ( name, field )
             options.append( option )
         html += '<script>$(document).ready( function() {\nvar switchOptions = {\n'

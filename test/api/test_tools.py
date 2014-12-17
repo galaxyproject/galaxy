@@ -106,6 +106,20 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output )
         assert output1_content == "--ex1,ex2"
 
+    @skip_without_tool( "multi_select" )
+    def test_multi_select_optional( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            "select_ex": ["--ex1"],
+            "select_optional": None,
+        }
+        response = self._run( "multi_select", history_id, inputs, assert_ok=True )
+        output = response[ "outputs" ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
+        assert output1_content.strip() == "--ex1"
+        assert output2_content.strip() == "None", output2_content
+
     @skip_without_tool( "multi_data_param" )
     def test_multidata_param( self ):
         history_id = self.dataset_populator.new_history()
@@ -255,26 +269,31 @@ class ToolsTestCase( api.ApiTestCase ):
         assert sorted( map( lambda c: len( c.split( "\n" ) ), outputs_contents ) ) == [ 1, 2, 3 ]
 
     @skip_without_tool( "cat1" )
-    def test_multirun_in_repeat( self ):
-        history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
-        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
-        common_dataset = self.dataset_populator.new_dataset( history_id, content='Common' )
+    def test_multirun_in_repeat_legacy( self ):
+        history_id, common_dataset, repeat_datasets = self._setup_repeat_multirun( )
         inputs = {
-            "input1": dataset_to_param( common_dataset ),
-            'queries_0|input2|__multirun__': [
-                dataset_to_param( new_dataset1 ),
-                dataset_to_param( new_dataset2 ),
-            ],
+            "input1": common_dataset,
+            'queries_0|input2|__multirun__': repeat_datasets,
         }
-        outputs = self._cat1_outputs( history_id, inputs=inputs )
-        self.assertEquals( len( outputs ), 2 )
-        output1 = outputs[ 0 ]
-        output2 = outputs[ 1 ]
-        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
-        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
-        self.assertEquals( output1_content.strip(), "Common\n123" )
-        self.assertEquals( output2_content.strip(), "Common\n456" )
+        self._check_repeat_multirun( history_id, inputs )
+
+    @skip_without_tool( "cat1" )
+    def test_multirun_in_repeat( self ):
+        history_id, common_dataset, repeat_datasets = self._setup_repeat_multirun( )
+        inputs = {
+            "input1": common_dataset,
+            'queries_0|input2': { 'batch': True, 'values': repeat_datasets },
+        }
+        self._check_repeat_multirun( history_id, inputs )
+
+    @skip_without_tool( "cat1" )
+    def test_multirun_in_repeat_mismatch( self ):
+        history_id, common_dataset, repeat_datasets = self._setup_repeat_multirun( )
+        inputs = {
+            "input1": {'batch': False, 'values': [ common_dataset ] },
+            'queries_0|input2': { 'batch': True, 'values': repeat_datasets },
+        }
+        self._check_repeat_multirun( history_id, inputs )
 
     @skip_without_tool( "cat1" )
     def test_multirun_on_multiple_inputs_legacy( self ):
@@ -316,6 +335,27 @@ class ToolsTestCase( api.ApiTestCase ):
         assert "456\n0ab" in outputs_contents
         assert "123\n0ab" in outputs_contents
         assert "456\n789" in outputs_contents
+
+    def _setup_repeat_multirun( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
+        common_dataset = self.dataset_populator.new_dataset( history_id, content='Common' )
+        return (
+            history_id,
+            dataset_to_param( common_dataset ),
+            [ dataset_to_param( new_dataset1 ), dataset_to_param( new_dataset2 ) ]
+        )
+
+    def _check_repeat_multirun( self, history_id, inputs ):
+        outputs = self._cat1_outputs( history_id, inputs=inputs )
+        self.assertEquals( len( outputs ), 2 )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
+        self.assertEquals( output1_content.strip(), "Common\n123" )
+        self.assertEquals( output2_content.strip(), "Common\n456" )
 
     def _setup_two_multiruns( self ):
         history_id = self.dataset_populator.new_history()

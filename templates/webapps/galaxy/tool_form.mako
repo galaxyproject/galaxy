@@ -1,34 +1,37 @@
 <%inherit file="/base.mako"/>
 
-## new tool form
-<%
-    ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
-    ## This avoids making two separate requests since the classic form requires the mako anyway.
-    from galaxy.webapps.galaxy.api.tools import ToolsController
-    controller = ToolsController(trans.app)
-    params = dict(trans.request.params)
-    if 'id' in params:
-        params['dataset_id'] = params['id']
-    self.form_config = controller._build_dict(trans, tool, params)
-    self.form_config.update({
-        'id'                : tool.id,
-        'job_id'            : trans.security.encode_id( job.id ) if job else None,
-        'history_id'        : trans.security.encode_id( trans.history.id ),
-        'toolform_upgrade'  : trans.app.config.get('toolform_upgrade',  False)
-    })
-%>
 ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
 ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
-<script>
-    require(['mvc/tools/tools-form'], function(ToolsForm){
-        $(function(){
-            var form = new ToolsForm.View(${ h.dumps(self.form_config) });
-        });
-    });
-</script>
 
-## classic tool form
-<div id="tool-form-classic" style="display: none;">
+## skip new tool form code if disabled
+##%if trans.app.config.get('toolform_upgrade',  False):
+    <%
+        ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
+        ## This avoids making two separate requests since the classic form requires the mako anyway.
+        from galaxy.webapps.galaxy.api.tools import ToolsController
+        controller = ToolsController(trans.app)
+        params = dict(trans.request.params)
+        if 'id' in params:
+            params['dataset_id'] = params['id']
+        self.form_config = controller._build_dict(trans, tool, params)
+        self.form_config.update({
+            'id'                : tool.id,
+            'job_id'            : trans.security.encode_id( job.id ) if job else None,
+            'history_id'        : trans.security.encode_id( trans.history.id )
+        })
+    %>
+    <script>
+        require(['mvc/tools/tools-form'], function(ToolsForm){
+            $(function(){
+                var form = new ToolsForm.View(${ h.dumps(self.form_config) });
+            });
+        });
+    </script>
+    <div id="tool-form-classic" style="display: none;">
+##%else:
+##    <div id="tool-form-classic">
+##%endif
+
     <%namespace file="/message.mako" import="render_msg" />
     <%namespace file="/base_panels.mako" import="overlay" />
 
@@ -350,9 +353,24 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
             %if tool.has_multiple_pages:
                 <div class="toolFormTitle">${tool.name} (step ${tool_state.page+1} of ${tool.npages})
             %elif not tool_version_select_field:
-                <div class="toolFormTitle">${tool.name} (version ${tool.version})
+                <div class="toolFormTitle">${tool.name} (Galaxy tool version ${tool.version})
             %else:
                 <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}
+            %endif
+            ## Show information button with underlying requirements and their versions
+            %if tool.requirements:
+                <a href="#" class="icon-btn" title="Underlying versions" tabindex="0" data-toggle="popover" data-placement="bottom" data-content=
+                "
+                %for i, requirement in enumerate( tool.requirements ):
+                    ${ requirement.name } ${ ('v ' + requirement.version ) if requirement.version else ' ' } ${ '' if i + 1 == len( tool.requirements ) else ' | ' } 
+                %endfor
+                "
+                 onclick="$(function () {
+                              $( '[ data-toggle=\'popover\' ]' ).popover();
+                              $( this ).popover( 'show' );
+                          })">
+                    <span class="fa fa-info-circle"></span>
+                </a>
             %endif
 
             <span class="pull-right">

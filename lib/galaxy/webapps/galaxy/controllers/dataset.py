@@ -9,8 +9,7 @@ from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesExtendedMetadataMixin
-from galaxy.web.framework.helpers import grids, iff, time_ago
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode, escape
 from galaxy.tools.errors import EmailErrorReporter
 
 eggs.require( "Paste" )
@@ -506,7 +505,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         # Set referer message.
         referer = trans.request.referer
         if referer is not "":
-            referer_message = "<a href='%s'>return to the previous page</a>" % referer
+            referer_message = "<a href='%s'>return to the previous page</a>" % escape(referer)
         else:
             referer_message = "<a href='%s'>go to Galaxy's start page</a>" % url_for( '/' )
         # Error checking.
@@ -933,11 +932,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def show_params( self, trans, dataset_id=None, from_noframe=None, **kwd ):
         """
-        Show the parameters used for an HDA
+        Show the parameters used for the job associated with an HDA
         """
-        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+        try:
+            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+        except ValueError:
+            hda = None
         if not hda:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
+            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % escape( str( dataset_id ) ) )
         if not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
@@ -962,19 +964,30 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     toolbox = self.get_toolbox()
                     tool = toolbox.get_tool( job.tool_id )
                     assert tool is not None, 'Requested tool has not been loaded.'
-                    #Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
+                    # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
                     try:
                         params_objects = job.get_param_values( trans.app, ignore_errors=False )
                     except:
                         params_objects = job.get_param_values( trans.app, ignore_errors=True )
-                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app, ignore_errors=True ), trans, update_values=False ) #use different param_objects here, since we want to display original values as much as possible
+                        # use different param_objects in the following line, since we want to display original values as much as possible
+                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app, ignore_errors=True ),
+                                                                               trans,
+                                                                               update_values=False )
                         has_parameter_errors = True
                 except:
                     pass
         if job is None:
             return trans.show_error_message( "Job information is not available for this dataset." )
-        #TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
-        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects, upgrade_messages=upgrade_messages, has_parameter_errors=has_parameter_errors )
+        # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
+        return trans.fill_template( "show_params.mako",
+                                    inherit_chain=inherit_chain,
+                                    history=trans.get_history(),
+                                    hda=hda,
+                                    job=job,
+                                    tool=tool,
+                                    params_objects=params_objects,
+                                    upgrade_messages=upgrade_messages,
+                                    has_parameter_errors=has_parameter_errors )
 
     @web.expose
     def copy_datasets( self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):

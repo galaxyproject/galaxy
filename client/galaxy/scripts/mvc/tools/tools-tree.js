@@ -1,5 +1,5 @@
 /*
-    This class maps the tool form to javascript datastructures. Once refreshed it converts the tool form (including sub sections) into a xml (containing only ids) and a detailed dictionary representation. The xml object is a jquery element and can be searched/filtered e.g. in order to hierarchically identify referenced fields. Once the job is ready for submission, the finalize function will transform the generic dictionary representation into the specific flat dictionary format required by the tools api.
+    This class maps the tool form dom to an api compatible javascript dictionary.
 */
 // dependencies
 define([], function() {
@@ -8,47 +8,42 @@ define([], function() {
 return Backbone.Model.extend({
     // initialize
     initialize: function(app) {
-        // link app
         this.app = app;
     },
     
-    /** Refresh the datastructures representing the ToolForm.
+    /** Convert dictionary representation into tool api specific flat dictionary format.
     */
-    refresh: function() {
-        // create dictionary
-        this.dict = {};
+    finalize: function(patch) {
+        // link this
+        var self = this;
         
-        // create xml object
-        this.xml = $('<div/>');
-        
+        // dictionary with api specific identifiers
+        this.map_dict = {};
+
         // check if section is available
         if (!this.app.section) {
             return {};
         }
         
-        // fill dictionary
-        this._iterate(this.app.section.$el, this.dict, this.xml);
-    },
-
-    /** Convert dictionary representation into tool api specific flat dictionary format.
-    */
-    finalize: function(patch) {
-        // initialize
+        // ensure that dictionary with patching functions exists
         patch = patch || {};
         
-        // link this
-        var self = this;
+        // dictionary formatted for job submission or tool form update
+        var result_dict = {};
+
+        // prepare full dictionary
+        var dict = {};
         
-        // dictionary formatted for job submission
-        this.job_def = {};
-
-        // dictionary with api specific identifiers
-        this.job_ids = {};
-
+        // fill dictionary from dom
+        this._iterate(this.app.section.$el, dict);
+        
         // add identifier and value to job definition
         function add(job_input_id, input_id, input_value) {
-            self.job_def[job_input_id] = input_value;
-            self.job_ids[job_input_id] = input_id;
+            // add entry to result dictionary
+            result_dict[job_input_id] = input_value;
+            
+            // backup id mapping
+            self.map_dict[job_input_id] = input_id;
         };
 
         // converter between raw dictionary and job dictionary
@@ -98,8 +93,11 @@ return Backbone.Model.extend({
                             break;
                         // handle conditionals
                         case 'conditional':
-                            // get conditional value
+                            // get and patch conditional value
                             var value = self.app.field_list[input.id].value();
+                            if (patch[input.test_param.type]) {
+                                value = patch[input.test_param.type](value);
+                            }
                             
                             // add conditional value
                             add (job_input_id + '|' + input.test_param.name, input.id, value);
@@ -114,16 +112,17 @@ return Backbone.Model.extend({
                             // get field
                             var field = self.app.field_list[input.id];
                             
-                            // get value
+                            // get and patch field value
                             var value = field.value();
-                            
-                            // patch value
                             if (patch[input.type]) {
                                 value = patch[input.type](value);
                             }
                             
                             // handle default value
                             if (!field.skip) {
+                                if (input.optional && field.validate && !field.validate()) {
+                                    value = null;
+                                }
                                 add (job_input_id, input.id, value);
                             }
                     }
@@ -132,16 +131,16 @@ return Backbone.Model.extend({
         }
         
         // start conversion
-        convert('', this.dict);
+        convert('', dict);
         
         // return result
-        return this.job_def;
+        return result_dict;
     },
     
     /** Match job definition identifier to input element identifier
     */
     match: function (job_input_id) {
-        return this.job_ids && this.job_ids[job_input_id];
+        return this.map_dict && this.map_dict[job_input_id];
     },
     
     /** Match conditional values to selected cases
@@ -198,7 +197,7 @@ return Backbone.Model.extend({
                         }
                         break;
                     default:
-                        var input_id = self.app.tree.job_ids[index];
+                        var input_id = self.map_dict[index];
                         if (input_id) {
                             callback(input_id, node);
                         }
@@ -225,7 +224,7 @@ return Backbone.Model.extend({
         // search throughout response
         function search (id, head) {
             if (typeof head === 'string') {
-                var input_id = self.app.tree.job_ids[id];
+                var input_id = self.map_dict[id];
                 if (input_id) {
                     result[input_id] = head;
                 }
@@ -233,7 +232,11 @@ return Backbone.Model.extend({
                 for (var i in head) {
                     var new_id = i;
                     if (id !== '') {
-                        new_id = id + '|' + new_id;
+                        var separator = '|';
+                        if (head instanceof Array) {
+                            separator = '_';
+                        }
+                        new_id = id + separator + new_id;
                     }
                     search (new_id, head[i]);
                 }
@@ -247,83 +250,9 @@ return Backbone.Model.extend({
         return result;
     },
     
-    /** Find referenced elements.
+    /** Iterate through the tool form dom and map it to the dictionary.
     */
-    references: function(identifier, type) {
-        // referenced elements
-        var referenced = [];
-        
-        // link this
-        var self = this;
-        
-        // iterate
-        function search (name, parent) {
-            // get child nodes
-            var children = $(parent).children();
-            
-            // create list of referenced elements
-            var list = [];
-            
-            // a node level is skipped if a reference of higher priority was found
-            var skip = false;
-            
-            // verify that hierarchy level is referenced by target identifier
-            children.each(function() {
-                // get child element
-                var child = this;
-                
-                // get id
-                var id = $(child).attr('id');
-            
-                // skip target element
-                if (id !== identifier) {
-                    // get input element
-                    var input = self.app.input_list[id];
-                    if (input) {
-                        // check for new reference definition with higher priority
-                        if (input.name == name) {
-                            // skip iteration for this branch
-                            skip = true;
-                            return false;
-                        }
-                        
-                        // check for referenced element
-                        if (input.data_ref == name && input.type == type) {
-                            list.push(id);
-                        }
-                    }
-                }
-            });
-            
-            // skip iteration
-            if (!skip) {
-                // merge temporary list with result
-                referenced = referenced.concat(list);
-                
-                // continue iteration
-                children.each(function() {
-                    search(name, this);
-                });
-            }
-        }
-        
-        // get initial node
-        var node = this.xml.find('#' + identifier);
-        if (node.length > 0) {
-            // get parent input element
-            var input = this.app.input_list[identifier];
-            if (input) {
-                search(input.name, node.parent());
-            }
-        }
-        
-        // return
-        return referenced;
-    },
-    
-    /** Iterate through the tool form dom and map it to the dictionary and xml representation.
-    */
-    _iterate: function(parent, dict, xml) {
+    _iterate: function(parent, dict) {
         // get child nodes
         var self = this;
         var children = $(parent).children();
@@ -347,16 +276,10 @@ return Backbone.Model.extend({
                     }
                 }
                 
-                // create xml element
-                var $el = $('<div id="' + id + '"/>');
-                
-                // append xml
-                xml.append($el);
-                
                 // fill sub dictionary
-                self._iterate(child, dict[id], $el);
+                self._iterate(child, dict[id]);
             } else {
-                self._iterate(child, dict, xml);
+                self._iterate(child, dict);
             }
         });
     }

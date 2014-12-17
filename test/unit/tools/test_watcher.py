@@ -9,6 +9,10 @@ from galaxy.util import bunch
 
 
 def test_watcher():
+    if not watcher.can_watch:
+        from nose.plugins.skip import SkipTest
+        raise SkipTest()
+
     with __test_directory() as t:
         tool_path = path.join(t, "test.xml")
         toolbox = Toolbox()

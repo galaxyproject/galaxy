@@ -8,7 +8,7 @@
     ## set defaults
     self.galaxy_config = {
         ## template options
-        'title'         : '',
+        'title'         : 'Galaxy - Data Intensive Biology for Everyone',
         'master'        : True,
         'left_panel'    : False,
         'right_panel'   : False,
@@ -39,8 +39,7 @@
         'libs/d3',
         'galaxy.base',
         'galaxy.panels',
-        'libs/handlebars.runtime',
-        "mvc/ui"
+        'libs/handlebars.runtime'
     )}
     
     ## send errors to Sntry server if configured
@@ -49,7 +48,7 @@
         <script>
             Raven.config('${app.config.sentry_dsn_public}').install();
             %if trans.user:
-                Raven.setUser( { email: "${trans.user.email}" } );
+                Raven.setUser( { email: "${trans.user.email|h}" } );
             %endif
         </script>
     %endif
@@ -160,7 +159,11 @@
 ## document
 <html>
     <head>
-        <title></title>
+        <title>
+            %if self.galaxy_config['title']:
+                ${self.galaxy_config['title']}
+            %endif
+            </title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         
         ## for mobile browsers, don't scale up

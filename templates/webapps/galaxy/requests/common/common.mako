@@ -257,18 +257,18 @@
         <td valign="top"><input type="checkbox" name=select_sample_${sample.id} id="sample_checkbox" value="true" ${checked_str}/><input type="hidden" name=select_sample_${sample.id} id="sample_checkbox" value="true"/></td>
     %endif
     <td valign="top">
-        <input type="text" name="sample_${sample_widget_index}_name" value="${sample_widget['name']}" size="10"/>
+        <input type="text" name="sample_${sample_widget_index}_name" value="${sample_widget['name'] | h}" size="10"/>
         <div class="toolParamHelp" style="clear: both;">
-            <i>${' (required)' }</i>
+            <i>(required)</i>
         </div>
     </td>
     %if display_bar_code:
         <td valign="top">
             %if is_admin and is_submitted:
-                <input type="text" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code']}" size="10"/>
+                <input type="text" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code'] | h}" size="10"/>
             %else:
-                ${sample_widget['bar_code']}
-                <input type="hidden" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code']}"/>
+                ${sample_widget['bar_code'] | h}
+                <input type="hidden" name="sample_${sample_widget_index}_bar_code" value="${sample_widget['bar_code'] | h}"/>
             %endif
         </td>
     %endif
@@ -416,7 +416,7 @@
                                         transferred_dataset_files = []
                                 %>
                                 <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="sample-${sample.id}-popup">
-                                    <a class="view-info" href="${h.url_for( controller='requests_common', action='view_sample', cntrller=cntrller, id=trans.security.encode_id( sample.id ) )}">${sample.name}</a>
+                                    <a class="view-info" href="${h.url_for( controller='requests_common', action='view_sample', cntrller=cntrller, id=trans.security.encode_id( sample.id ) )}">${sample.name | h}</a>
                                 </div>
                                 <div popupmenu="sample-${sample.id}-popup">
                                     %if can_select_datasets:
@@ -439,11 +439,11 @@
                                     %endif
                                 </div>
                             %else:
-                                ${sample_widget_name}
+                                ${sample_widget_name | h}
                             %endif
                         </td>
                         %if display_bar_code:
-                            <td>${sample_widget_bar_code}</td>
+                            <td>${sample_widget_bar_code | h}</td>
                         %endif
                         %if is_unsubmitted:
                             <td>Unsubmitted</td>
@@ -451,12 +451,12 @@
                             <td><a id="sampleState-${sample.id}" href="${h.url_for( controller='requests_common', action='view_sample_history', cntrller=cntrller, sample_id=trans.security.encode_id( sample.id ) )}">${render_sample_state( sample )}</a></td>
                         %endif
                         %if sample_widget_library and library_cntrller is not None:
-                            <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller=library_cntrller, id=trans.security.encode_id( sample_widget_library.id ) )}">${sample_widget_library.name}</a></td>                                  
+                            <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller=library_cntrller, id=trans.security.encode_id( sample_widget_library.id ) )}">${sample_widget_library.name | h}</a></td>                                  
                         %else:
                             <td></td>
                         %endif
                         %if sample_widget_folder:
-                            <td>${sample_widget_folder.name}</td>
+                            <td>${sample_widget_folder.name | h}</td>
                         %else:
                             <td></td>
                         %endif
@@ -464,11 +464,11 @@
                             %if trans.user == sample_widget_history.user:
                                 <td>
                                     <a target='_parent' href="${h.url_for( controller='history', action='list', operation="Switch", id=trans.security.encode_id(sample_widget_history.id), use_panels=False )}">
-                                    ${sample_widget_history.name}
+                                    ${sample_widget_history.name | h}
                                     </a>
                                 </td>
                             %else:
-                                <td>${sample_widget_history.name}</td>
+                                <td>${sample_widget_history.name | h}</td>
                             %endif
                         %else:
                             <td></td>
@@ -477,11 +477,11 @@
                             %if trans.user == sample_widget_workflow.stored_workflow.user:
                                 <td>
                                     <a target='_parent' href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id(sample_widget_workflow.stored_workflow.id) )}">
-                                    ${sample_widget_workflow.name}
+                                    ${sample_widget_workflow.name | h}
                                     </a>
                                 </td>
                             %else:
-                                <td>${sample_widget_workflow.name}</td>
+                                <td>${sample_widget_workflow.name | h}</td>
                             %endif
                         %else:
                             <td></td>
@@ -519,7 +519,7 @@
 
 <%def name="render_sample_form( index, sample_name, sample_values, fields_dict, display_only )">
     <tr>
-        <td>${sample_name}</td>
+        <td>${sample_name | h}</td>
         %for field_index, field in fields_dict.items():
             <% 
                 field_type = field[ 'type' ]
@@ -532,17 +532,17 @@
                         %if field_type == 'WorkflowField':
                             %if str( field_value ) != 'none':
                                 <% workflow = trans.sa_session.query( trans.app.model.StoredWorkflow ).get( int( field_value ) ) %>
-                                <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id( workflow.id ) )}">${workflow.name}</a>
+                                <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id( workflow.id ) )}">${workflow.name | h}</a>
                             %endif
                         %else:
-                            ${field_value}
+                            ${field_value | h}
                         %endif
                     %else:
                         <i>None</i>
                     %endif
                 %else:
                     %if field_type == 'TextField':
-                        <input type="text" name="sample_${index}_field_${field_index}" value="${field_value}" size="7"/>
+                        <input type="text" name="sample_${index}_field_${field_index}" value="${field_value | h}" size="7"/>
                     %elif field_type == 'SelectField':
                         <select name="sample_${index}_field_${field_index}" last_selected_value="2">
                             %for option_index, option in enumerate(field[ 'selectlist' ]):
@@ -694,22 +694,22 @@
                         <td>
                             %if is_admin:
                                 <span class="expandLink dataset-${dataset}-click"><span class="rowIcon"></span>
-                                    <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="dataset-${dataset.id}-popup">
-                                        <a class="dataset-${encoded_id}-click" href="${h.url_for( controller='requests_admin', action='manage_datasets', operation='view', id=trans.security.encode_id( dataset.id ) )}">${dataset.name}</a>
+                                    <div style="float: left; margin-left: 2px;" class="menubutton split popup" id="dataset-${ trans.security.encode_id( dataset.id ) }-popup">
+                                        <a class="dataset-${encoded_id}-click" href="${h.url_for( controller='requests_admin', action='manage_datasets', operation='view', id=trans.security.encode_id( dataset.id ) )}">${dataset.name | h}</a>
                                     </div>
                                 </span>
-                                <div popupmenu="dataset-${dataset.id}-popup">
+                                <div popupmenu="dataset-${ trans.security.encode_id( dataset.id ) }-popup">
                                     %if can_transfer_datasets and dataset in sample.untransferred_dataset_files:
                                         <li><a class="action-button" href="${h.url_for( controller='requests_admin', action='initiate_data_transfer', sample_id=trans.security.encode_id( sample.id ), sample_dataset_id=trans.security.encode_id( dataset.id ) )}">Transfer</a></li>
                                     %endif
                                 </div>
                             %else:
-                                ${dataset.name}
+                                ${dataset.name | h}
                             %endif
                         </td>
                         <td>${dataset.size}</td>
-                        <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( sample.library.id ) )}">${dataset.sample.library.name}</a></td>
-                        <td>${dataset.sample.folder.name}</td>
+                        <td><a href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( sample.library.id ) )}">${dataset.sample.library.name | h}</a></td>
+                        <td>${dataset.sample.folder.name | h}</td>
                         <td id="datasetTransferStatus-${encoded_id}">${dataset.status}</td>
                     </tr>
                 %endfor
@@ -723,7 +723,7 @@
 <%def name="render_samples_messages( request, is_admin=False, is_submitted=False, message=None, status=None)">
     %if request.is_rejected:
         <div class='errormessage'>
-            ${request.last_comment}
+            ${request.last_comment | h}
         </div><br/>
     %endif
     %if is_admin and is_submitted and request.samples_without_library_destinations:

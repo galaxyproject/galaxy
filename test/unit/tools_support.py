@@ -13,9 +13,9 @@ from galaxy.web.security import SecurityHelper
 import galaxy.model
 from galaxy.model import mapping
 from galaxy.tools import Tool
-from galaxy.util import parse_xml
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.jobs import NoopQueue
+from galaxy.tools.parser import get_tool_source
 from galaxy.tools.deps.containers import NullContainerFinder
 
 
@@ -70,8 +70,8 @@ class UsesTools( object ):
         self.__setup_tool( )
 
     def __setup_tool( self ):
-        tree = parse_xml( self.tool_file )
-        self.tool = Tool( self.tool_file, tree.getroot(), self.app )
+        tool_source = get_tool_source( self.tool_file )
+        self.tool = Tool( self.tool_file, tool_source, self.app )
         if getattr( self, "tool_action", None ):
             self.tool.tool_action = self.tool_action
 

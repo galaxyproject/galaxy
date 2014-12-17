@@ -20,7 +20,7 @@ ${render_galaxy_repository_actions( repository )}
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Tool shed repository '${repository.name}' tool dependencies</div>
+    <div class="toolFormTitle">Tool shed repository '${repository.name|h}' tool dependencies</div>
         <%
             can_install = False
             can_uninstall = False
@@ -48,15 +48,15 @@ ${render_galaxy_repository_actions( repository )}
                     <td>
                         %if tool_dependency.status not in [ trans.install_model.ToolDependency.installation_status.UNINSTALLED ]:
                             <a target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', operation='browse', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( repository.id ) )}">
-                                ${tool_dependency.name}
+                                ${tool_dependency.name|h}
                             </a>
                         %else:
-                            ${tool_dependency.name}
+                            ${tool_dependency.name|h}
                         %endif
                     </td>
-                    <td>${tool_dependency.version}</td>
-                    <td>${tool_dependency.type}</td>
-                    <td>${tool_dependency.status}</td>
+                    <td>${tool_dependency.version|h}</td>
+                    <td>${tool_dependency.type|h}</td>
+                    <td>${tool_dependency.status|h}</td>
                     <td>${error_message}</td>
                 </tr>
             %endfor

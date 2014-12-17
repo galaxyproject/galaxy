@@ -3,9 +3,16 @@
   <configfiles>
     <configfile name="config">${select_ex}</configfile>
   </configfiles>
-  <command>cat $config > $output</command>
+  <command>cat $config > $output; echo '$select_optional' > $output2</command>
   <inputs>
     <param name="select_ex" type="select" display="checkboxes" multiple="true">
+      <option value="--ex1">Ex1</option>
+      <option value="ex2">Ex2</option>
+      <option value="--ex3">Ex3</option>
+      <option value="--ex4">Ex4</option>
+      <option value="ex5">Ex5</option>
+    </param>
+    <param name="select_optional" type="select" optional="true">
       <option value="--ex1">Ex1</option>
       <option value="ex2">Ex2</option>
       <option value="--ex3">Ex3</option>
@@ -15,6 +22,7 @@
   </inputs>
   <outputs>
     <data format="txt" name="output" />
+    <data format="txt" name="output2" />    
   </outputs>
   <tests>
     <test>
@@ -22,6 +30,14 @@
       <output name="output">
         <assert_contents>
           <has_line line="--ex1,ex2,--ex3" />
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="select_ex" value="Ex1" />
+      <output name="output">
+        <assert_contents>
+          <has_line line="--ex1" />
         </assert_contents>
       </output>
     </test>

@@ -26,13 +26,11 @@
             data.createTabularDatasetChunkedView({
                 // TODO: encode id.
                 dataset_config:
-                    _.extend( ${h.dumps( item.to_dict() )},
-                            {
-                                chunk_url: "${h.url_for( controller='/dataset', action='display',
-                                                 dataset_id=trans.security.encode_id( item.id ))}",
-                                first_data_chunk: ${first_chunk}
-                            }
-                    ),
+                    _.extend( ${h.dumps( item.to_dict() )}, {
+                        chunk_url: "${h.url_for( controller='/dataset', action='display',
+                                         dataset_id=trans.security.encode_id( item.id ))}",
+                        first_data_chunk: ${first_chunk}
+                    }),
                 parent_elt: $('.page-body')
             });
         });

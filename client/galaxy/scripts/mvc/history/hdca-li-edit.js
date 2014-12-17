@@ -1,8 +1,9 @@
 define([
     "mvc/dataset/states",
     "mvc/history/hdca-li",
+    "ui/fa-icon-button",
     "utils/localization"
-], function( STATES, HDCA_LI, _l ){
+], function( STATES, HDCA_LI, faIconButton, _l ){
 //==============================================================================
 var _super = HDCA_LI.HDCAListItemView;
 /** @class Editing view for HistoryDatasetCollectionAssociation.

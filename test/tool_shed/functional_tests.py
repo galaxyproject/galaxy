@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
 
 import os
 import sys
@@ -66,6 +67,7 @@ import nose.plugins.manager
 
 
 from functional import database_contexts
+from base import nose_util
 
 log = logging.getLogger( "tool_shed_functional_tests.py" )
 
@@ -147,19 +149,10 @@ shed_data_manager_conf_xml_template = '''<?xml version="1.0"?>
 </data_managers>
 '''
 
+
 def run_tests( test_config ):
-    loader = nose.loader.TestLoader( config=test_config )
-    plug_loader = test_config.plugins.prepareTestLoader( loader )
-    if plug_loader is not None:
-        loader = plug_loader
-    tests = loader.loadTestsFromNames( test_config.testNames )
-    test_runner = nose.core.TextTestRunner( stream=test_config.stream,
-                                            verbosity=test_config.verbosity,
-                                            config=test_config )
-    plug_runner = test_config.plugins.prepareTestRunner( test_runner )
-    if plug_runner is not None:
-        test_runner = plug_runner
-    return test_runner.run( tests )
+    return nose_util.run( test_config )
+
 
 def main():
     # ---- Configuration ------------------------------------------------------

@@ -154,7 +154,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'resubmitted': hda._state == trans.app.model.Dataset.states.RESUBMITTED,
             'hid'   : hda.hid,
             'history_content_type' : hda.history_content_type,
-            'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
+            #'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
+            #TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
+            #   see also: https://trello.com/c/5d6j4X5y
+            #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
+            'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id ),
         }
 
     def __collection_dict( self, trans, dataset_collection_instance, view="collection" ):

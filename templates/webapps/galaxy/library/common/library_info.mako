@@ -34,11 +34,11 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">
-        <div class="menubutton split popup" id="library-${library.id}-popup">
-            <a href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">${library.name[:50]}</a>
+        <div class="menubutton split popup" id="library-${trans.security.encode_id( library.id ) | h }-popup">
+            <a href="${h.url_for( controller='library_common', action='browse_library', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">${library.name[:50] | h}</a>
         </div>
         %if can_add or can_modify or can_manage:
-            <div popupmenu="library-${library.id}-popup">
+            <div popupmenu="library-${ trans.security.encode_id( library.id ) | h }-popup">
                 %if not library.deleted:
                     %if can_add and not library.info_association:
                         <a class="action-button" href="${h.url_for( controller='library_common', action='add_template', cntrller=cntrller, item_type='library', form_type=trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE, library_id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Use template</a>
@@ -47,7 +47,7 @@
                         <a class="action-button" href="${h.url_for( controller='library_common', action='library_permissions', cntrller=cntrller, id=trans.security.encode_id( library.id ), use_panels=use_panels, show_deleted=show_deleted )}">Edit permissions</a>
                     %endif
                     %if can_modify:
-                        <a class="action-button" confirm="Click OK to delete the library named '${library.name}'." href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Delete this data library</a>
+                        <a class="action-button" confirm="Click OK to delete the library named '${library.name | h}'." href="${h.url_for( controller='library_common', action='delete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Delete this data library</a>
                     %endif
                 %elif can_modify and not library.purged:
                     <a class="action-button" href="${h.url_for( controller='library_common', action='undelete_library_item', cntrller=cntrller, library_id=trans.security.encode_id( library.id ), item_id=trans.security.encode_id( library.id ), item_type='library' )}">Undelete this data library</a>

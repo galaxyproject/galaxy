@@ -3,13 +3,13 @@ Galaxy web framework helpers
 """
 
 import time
-from cgi import escape
 from datetime import datetime, timedelta
 from galaxy import eggs
 from galaxy.util import hash_util
-from galaxy.util.json import dumps
+from galaxy.util.json import safe_dumps as dumps
 eggs.require( "MarkupSafe" ) #required by WebHelpers
 eggs.require( "WebHelpers" )
+from markupsafe import escape
 from webhelpers import date
 from webhelpers.html.tags import stylesheet_link, javascript_link
 
@@ -111,4 +111,3 @@ def is_true ( val ):
     Returns true if input is a boolean and true or is a string and looks like a true value.
     """
     return val == True or val in [ 'True', 'true', 'T', 't' ]
-

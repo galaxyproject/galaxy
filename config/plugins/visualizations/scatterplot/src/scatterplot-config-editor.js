@@ -120,7 +120,7 @@ var ScatterplotConfigEditor = Backbone.View.extend({
             peek : this.dataset.peek
         }));
 
-        $dataControl.find( '.peek' ).peekControl({
+        $dataControl.find( '.peek' ).peekColumnSelector({
             controls : [
                 { label: 'X Column',  id: 'xColumn',  selected: config.xColumn, disabled: columnTypes.text },
                 { label: 'Y Column',  id: 'yColumn',  selected: config.yColumn, disabled: columnTypes.text },
@@ -128,11 +128,11 @@ var ScatterplotConfigEditor = Backbone.View.extend({
             ]
             //renameColumns       : true
 
-        }).on( 'peek-control.change', function( ev, data ){
+        }).on( 'peek-column-selector.change', function( ev, data ){
             //console.info( 'new selection:', data );
             editor.model.set( 'config', data );
 
-        }).on( 'peek-control.rename', function( ev, data ){
+        }).on( 'peek-column-selector.rename', function( ev, data ){
             //console.info( 'new column names', data );
         });
 

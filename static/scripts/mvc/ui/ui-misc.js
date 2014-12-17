@@ -1,6 +1,6 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-select-default', 'mvc/ui/ui-slider', 'mvc/ui/ui-options', 'mvc/ui/ui-button-menu', 'mvc/ui/ui-modal'],
-        function(Utils, Select, Slider, Options, ButtonMenu, Modal) {
+define(['utils/utils', 'mvc/ui/ui-select-default', 'mvc/ui/ui-slider', 'mvc/ui/ui-options', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-button-menu', 'mvc/ui/ui-modal'],
+        function(Utils, Select, Slider, Options, Drilldown, ButtonMenu, Modal) {
 
 /**
  *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
@@ -248,9 +248,9 @@ var Anchor = Backbone.View.extend({
 var Message = Backbone.View.extend({
     // options
     optionsDefault: {
-        message : '',
-        status : 'info',
-        persistent : false
+        message     : null,
+        status      : 'info',
+        persistent  : false
     },
     
     // initialize
@@ -260,6 +260,11 @@ var Message = Backbone.View.extend({
         
         // create new element
         this.setElement('<div></div>');
+        
+        // show initial message
+        if (this.options.message) {
+            this.update(this.options);
+        }
     },
     
     // update
@@ -273,11 +278,15 @@ var Message = Backbone.View.extend({
             this.$el.find('.alert').append(options.message);
             this.$el.fadeIn();
             
-            // check if message is persistent
+            // clear previous timeouts
+            if (this.timeout) {
+                window.clearTimeout(this.timeout);
+            }
+            
+            // set timeout if message is not persistent
             if (!options.persistent) {
-                // set timer
                 var self = this;
-                window.setTimeout(function() {
+                this.timeout = window.setTimeout(function() {
                     if (self.$el.is(':visible')) {
                         self.$el.fadeOut();
                     } else {
@@ -339,7 +348,6 @@ var Searchbox = Backbone.View.extend({
 var Input = Backbone.View.extend({
     // options
     optionsDefault: {
-        value           : '',
         type            : 'text',
         placeholder     : '',
         disabled        : false,
@@ -355,6 +363,11 @@ var Input = Backbone.View.extend({
             
         // create new element
         this.setElement(this._template(this.options));
+        
+        // set initial value
+        if (this.options.value !== undefined) {
+            this.value(this.options.value);
+        }
         
         // disable input field
         if (this.options.disabled) {
@@ -395,18 +408,18 @@ var Input = Backbone.View.extend({
 
 // plugin
 var Hidden = Backbone.View.extend({
-    // options
-    optionsDefault: {
-        value           : ''
-    },
-    
     // initialize
     initialize : function(options) {
         // configure options
-        this.options = Utils.merge(options, this.optionsDefault);
+        this.options = options;
             
         // create new element
         this.setElement(this._template(this.options));
+        
+        // set initial value
+        if (this.options.value !== undefined) {
+            this.value(this.options.value);
+        }
     },
     
     // value
@@ -441,6 +454,7 @@ return {
     Searchbox   : Searchbox,
     Select      : Select,
     Hidden      : Hidden,
-    Slider      : Slider
+    Slider      : Slider,
+    Drilldown   : Drilldown
 }
 });

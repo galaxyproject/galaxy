@@ -28,6 +28,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         super( BaseAPIController, self ).__init__( app )
         self.history_manager = histories.HistoryManager()
         self.workflow_manager = workflows.WorkflowsManager( app )
+        self.workflow_contents_manager = workflows.WorkflowContentsManager()
 
     @expose_api
     def index(self, trans, **kwd):
@@ -75,44 +76,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException( message )
-
-        item = stored_workflow.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
-        item['url'] = url_for('workflow', id=id)
-        item['owner'] = stored_workflow.user.username
-        latest_workflow = stored_workflow.latest_workflow
-        inputs = {}
-        for step in latest_workflow.steps:
-            step_type = step.type
-            if step_type in ['data_input', 'data_collection_input']:
-                if step.tool_inputs and "name" in step.tool_inputs:
-                    label = step.tool_inputs['name']
-                elif step_type == "data_input":
-                    label = "Input Dataset"
-                elif step_type == "data_collection_input":
-                    label = "Input Dataset Collection"
-                else:
-                    raise ValueError("Invalid step_type %s" % step_type)
-                inputs[step.id] = {'label': label, 'value': ""}
-            else:
-                pass
-                # Eventually, allow regular tool parameters to be inserted and modified at runtime.
-                # p = step.get_required_parameters()
-        item['inputs'] = inputs
-        item['annotation'] = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
-        steps = {}
-        for step in latest_workflow.steps:
-            steps[step.id] = {'id': step.id,
-                              'type': step.type,
-                              'tool_id': step.tool_id,
-                              'tool_version': step.tool_version,
-                              'annotation': self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step ),
-                              'tool_inputs': step.tool_inputs,
-                              'input_steps': {}}
-            for conn in step.input_connections:
-                steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
-                                                                  'step_output': conn.output_name}
-        item['steps'] = steps
-        return item
+        return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
 
     @expose_api
     def create(self, trans, payload, **kwd):
@@ -257,7 +221,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         """
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
 
-        ret_dict = self._workflow_to_dict( trans, stored_workflow )
+        style = kwd.get("style", "export")
+        ret_dict = self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style=style )
         if not ret_dict:
             # This workflow has a tool that's missing from the distribution
             message = "Workflow cannot be exported due to missing tools."
@@ -306,6 +271,38 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         payload the same way.
         """
         return self.__api_import_new_workflow( trans, payload, **kwd )
+
+    @expose_api
+    def update( self, trans, id, payload, **kwds ):
+        """
+        * PUT /api/workflows/{id}
+            updates the workflow stored with ``id``
+
+        :type   id:      str
+        :param  id:      the encoded id of the workflow to update
+        :type   payload: dict
+        :param  payload: a dictionary containing any or all the
+            * workflow   the json description of the workflow as would be
+                         produced by GET workflows/<id>/download or
+                         given to `POST workflows`
+
+                         The workflow contents will be updated to target
+                         this.
+        :rtype:     dict
+        :returns:   serialized version of the workflow
+        """
+        stored_workflow = self.__get_stored_workflow( trans, id )
+        if 'workflow' in payload:
+            workflow_contents_manager = workflows.WorkflowContentsManager()
+            workflow, errors = workflow_contents_manager.update_workflow_from_dict(
+                trans,
+                stored_workflow,
+                payload['workflow'],
+            )
+        else:
+            message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
+            raise exceptions.RequestParameterInvalidException( message )
+        return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
 
     def __api_import_new_workflow( self, trans, payload, **kwd ):
         data = payload['workflow']

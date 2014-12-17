@@ -9,7 +9,7 @@
         <div class="toolFormTitle">Create a new form definition</div>
         %for label, input in inputs:
             <div class="form-row">
-                <label>${label}</label>
+                <label>${label | h}</label>
                 ${input.get_html()}
                 <div style="clear: both"></div>
             </div>

@@ -175,7 +175,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         base.DefaultWebTransaction.__init__( self, environ )
         self.setup_i18n()
         self.expunge_all()
-        self.debug = asbool( self.app.config.get( 'debug', False ) )
+        config = self.app.config
+        self.debug = asbool( config.get( 'debug', False ) )
+        x_frame_options = getattr( config, 'x_frame_options', None )
+        if x_frame_options:
+            self.response.headers['X-Frame-Options'] = x_frame_options
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values
         # and such).
@@ -202,9 +206,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             # When we've authenticated by session, we have to check the
             # following.
             # Prevent deleted users from accessing Galaxy
-            if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
+            if config.use_remote_user and self.galaxy_session.user.deleted:
                 self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
-            if self.app.config.require_login:
+            if config.require_login:
                 self._ensure_logged_in_user( environ, session_cookie )
 
     def setup_i18n( self ):
@@ -261,6 +265,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         tstamp = time.localtime( time.time() + 3600 * 24 * age )
         self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp )
         self.response.cookies[name]['version'] = version
+        https = self.request.environ[ "wsgi.url_scheme" ] == "https"
+        if https:
+            self.response.cookies[name]['secure'] = True
         try:
             self.response.cookies[name]['httponly'] = True
         except CookieError, e:

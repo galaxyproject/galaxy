@@ -123,6 +123,10 @@ def __expand_collection_parameter( trans, input_key, incoming_val, collections_t
 
 
 def __collection_multirun_parameter( value ):
+    is_batch = value.get( 'batch', False )
+    if not is_batch:
+        return False
+
     batch_values = util.listify( value[ 'values' ] )
     if len( batch_values ) == 1:
         batch_over = batch_values[ 0 ]

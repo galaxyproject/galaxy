@@ -17,7 +17,7 @@ class PairedDatasetCollectionType( BaseDatasetCollectionType ):
     def __init__( self ):
         pass
 
-    def build_collection( self, elements ):
+    def generate_elements( self, elements ):
         forward_dataset = elements.get( FORWARD_IDENTIFIER, None )
         reverse_dataset = elements.get( REVERSE_IDENTIFIER, None )
         if not forward_dataset or not reverse_dataset:
@@ -30,4 +30,5 @@ class PairedDatasetCollectionType( BaseDatasetCollectionType ):
             element=reverse_dataset,
             element_identifier=REVERSE_IDENTIFIER,
         )
-        return self._new_collection_for_elements([left_association, right_association])
+        yield left_association
+        yield right_association

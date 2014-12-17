@@ -119,7 +119,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 }
                 
                 // refresh form inputs
-                self.app.refresh();
+                self.app.trigger('refresh');
             };
             
             // add conditional sub sections
@@ -172,8 +172,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                         repeat.retitle(input_def.title);
                         
                         // trigger refresh
-                        self.app.rebuild();
-                        self.app.refresh();
+                        self.app.trigger('refresh');
                     }
                 }
                     
@@ -206,8 +205,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     create(input_def.inputs, true);
                             
                     // trigger refresh
-                    self.app.rebuild();
-                    self.app.refresh();
+                    self.app.trigger('refresh');
                 }
             });
             
@@ -254,11 +252,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
 
             // create input field
             var field = this._createField(input_def);
-            
-            // flagging this form as dynamic will trigger api-driven refresh events
-            if (input_def.is_dynamic) {
-                this.app.is_dynamic = true;
-            }
             
             // add to field list
             this.app.field_list[id] = field;
@@ -307,8 +300,14 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldData(input_def);
                     break;
                 
+                // collection selector
+                case 'data_collection':
+                    field = this._fieldData(input_def);
+                    break;
+                    
                 // data column
                 case 'data_column':
+                    input_def.error_text = 'Missing columns in referenced dataset.';
                     field = this._fieldSelect(input_def);
                     break;
                     
@@ -334,9 +333,20 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     
                 // genome field
                 case 'genomebuild':
+                    input_def.searchable = true;
                     field = this._fieldSelect(input_def);
                     break;
-                    
+                
+                // drill down field
+                case 'drill_down':
+                    field = this._fieldDrilldown(input_def);
+                    break;
+                
+                // base url field
+                case 'baseurl':
+                    field = this._fieldHidden(input_def);
+                    break;
+                        
                 // field not found
                 default:
                     // flag
@@ -372,9 +382,10 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
                 multiple    : input_def.multiple,
+                type        : input_def.type,
                 data        : input_def.options,
                 onchange    : function() {
-                    self.app.refresh();
+                    self.app.trigger('refresh');
                 }
             });
         },
@@ -406,11 +417,27 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             // select field
             var self = this;
             return new SelectClass.View({
-                id      : 'field-' + input_def.id,
-                data    : options,
-                multiple: input_def.multiple,
-                onchange: function() {
-                    self.app.refresh();
+                id          : 'field-' + input_def.id,
+                data        : options,
+                error_text  : input_def.error_text || 'No options available',
+                multiple    : input_def.multiple,
+                searchable  : input_def.searchable,
+                onchange    : function() {
+                    self.app.trigger('refresh');
+                }
+            });
+        },
+        
+        /** Drill down options field
+        */
+        _fieldDrilldown : function (input_def) {
+            var self = this;
+            return new Ui.Drilldown.View({
+                id          : 'field-' + input_def.id,
+                data        : input_def.options,
+                display     : input_def.display,
+                onchange    : function() {
+                    self.app.trigger('refresh');
                 }
             });
         },
@@ -423,7 +450,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 id      : 'field-' + input_def.id,
                 area    : input_def.area,
                 onchange: function() {
-                    self.app.refresh();
+                    self.app.trigger('refresh');
                 }
             });
         },

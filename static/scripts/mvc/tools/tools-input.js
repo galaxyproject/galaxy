@@ -25,12 +25,8 @@ define([], function() {
             // add field element
             this.$field.prepend(this.field.$el);
             
-            // hide optional field on initialization
-            if (options.optional) {
-                this.field.skip = true;
-            } else {
-                this.field.skip = false;
-            }
+            // start with enabled optional fields
+            this.field.skip = false;
             
             // refresh view
             this._refresh();
@@ -67,7 +63,7 @@ define([], function() {
             if (!this.field.skip) {
                 this.$field.fadeIn('fast');
                 this.$title_optional.html('Disable');
-                this.app.refresh();
+                this.app.trigger('refresh');
             } else {
                 this.$field.hide();
                 this.$title_optional.html('Enable');

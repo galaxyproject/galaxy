@@ -20,6 +20,7 @@ from galaxy.util.json import dumps, loads
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
+from markupsafe import escape
 from galaxy.model.orm import and_, eagerload_all
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
@@ -92,14 +93,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
 
     @web.expose
     def browse_library( self, trans, cntrller='library', **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
         # If use_panels is True, the library is being accessed via an external link
         # which did not originate from within the Galaxy instance, and the library will
         # be displayed correctly with the mast head.
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        library_id = params.get( 'id', None )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        library_id = kwd.get( 'id', None )
         if not library_id:
             # To handle bots
             message = "You must specify a library id."
@@ -116,12 +116,12 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             message = "Invalid library id ( %s ) specified." % str( library_id )
             status = 'error'
         else:
-            show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-            created_ldda_ids = params.get( 'created_ldda_ids', '' )
-            hidden_folder_ids = util.listify( params.get( 'hidden_folder_ids', '' ) )
+            show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+            created_ldda_ids = kwd.get( 'created_ldda_ids', '' )
+            hidden_folder_ids = util.listify( kwd.get( 'hidden_folder_ids', '' ) )
             if created_ldda_ids and not message:
                 message = "%d datasets are uploading in the background to the library '%s' (each is selected).  "  % \
-                    ( len( created_ldda_ids.split( ',' ) ), library.name )
+                    ( len( created_ldda_ids.split( ',' ) ), escape( library.name ) )
                 message += "Don't navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the "
                 message += "message \"This job is running\" is cleared from the \"Information\" column below for each selected dataset."
                 status = "info"
@@ -137,8 +137,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                 show_deleted=show_deleted,
                                                 comptypes=comptypes,
                                                 current_user_roles=current_user_roles,
-                                                message=message,
-                                                status=status )
+                                                message=escape( message ),
+                                                status=escape( status ) )
                 else:
                     return trans.fill_template( 'library/common/browse_library.mako',
                                                 cntrller=cntrller,
@@ -149,45 +149,44 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                 show_deleted=show_deleted,
                                                 comptypes=comptypes,
                                                 current_user_roles=current_user_roles,
-                                                message=message,
-                                                status=status )
+                                                message=escape( message ),
+                                                status=escape( status ) )
             except Exception, e:
-                message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
+                message = 'Error attempting to display contents of library (%s): %s.' % ( escape( str( library.name ) ), str( e ) )
                 status = 'error'
-        default_action = params.get( 'default_action', None )
+        default_action = kwd.get( 'default_action', None )
 
         return trans.response.send_redirect( web.url_for( use_panels=use_panels,
                                                           controller=cntrller,
                                                           action='browse_libraries',
                                                           default_action=default_action,
-                                                          message=util.sanitize_text( message ),
+                                                          message=message,
                                                           status=status ) )
 
     @web.expose
     def library_info( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
-        library_id = params.get( 'id', None )
+        library_id = kwd.get( 'id', None )
         try:
             library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         except:
             library = None
         self._check_access( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
-        if params.get( 'library_info_button', False ):
+        if kwd.get( 'library_info_button', False ):
             self._check_modify( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
             old_name = library.name
-            new_name = util.restore_text( params.get( 'name', 'No name' ) )
+            new_name = kwd.get( 'name', 'No name' )
             if not new_name:
                 message = 'Enter a valid name'
                 status='error'
             else:
-                new_description = util.restore_text( params.get( 'description', '' ) )
-                new_synopsis = util.restore_text( params.get( 'synopsis', '' ) )
+                new_description = kwd.get( 'description', '' )
+                new_synopsis = kwd.get( 'synopsis', '' )
                 if new_synopsis in [ None, 'None' ]:
                     new_synopsis = ''
                 library.name = new_name
@@ -205,7 +204,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                   use_panels=use_panels,
                                                                   id=trans.security.encode_id( library.id ),
                                                                   show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
+                                                                  message=message,
                                                                   status='done' ) )
         # See if we have any associated templates
         info_association, inherited = library.get_info_association()
@@ -221,30 +220,29 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     info_association=info_association,
                                     inherited=inherited,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def library_permissions( self, trans, cntrller, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
-        library_id = params.get( 'id', None )
+        library_id = kwd.get( 'id', None )
         try:
             library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( library_id ) )
         except:
             library = None
         self._check_access( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
         self._check_manage( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
-        if params.get( 'update_roles_button', False ):
+        if kwd.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
             for k, v in trans.app.model.Library.permitted_actions.items():
-                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( params.get( k + '_in', [] ) ) ]
+                in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( x ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
                 permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
             trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
             trans.sa_session.refresh( library )
@@ -257,7 +255,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               use_panels=use_panels,
                                                               id=trans.security.encode_id( library.id ),
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='done' ) )
         roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
         all_roles = trans.app.security_agent.get_all_roles( trans, cntrller )
@@ -269,16 +267,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     roles=roles,
                                     all_roles=all_roles,
                                     show_deleted=show_deleted,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def create_folder( self, trans, cntrller, parent_id, library_id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -291,9 +288,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             parent_library = parent_folder.parent_library
         self._check_access( trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted )
         self._check_add( trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted )
-        if params.get( 'new_folder_button', False ) or cntrller == 'api':
-            new_folder = trans.app.model.LibraryFolder( name=util.restore_text( params.name ),
-                                                        description=util.restore_text( params.description ) )
+        if kwd.get( 'new_folder_button', False ) or cntrller == 'api':
+            new_folder = trans.app.model.LibraryFolder( name=kwd.get( 'name', '' ),
+                                                        description=kwd.get( 'description', '' ) )
             # We are associating the last used genome build with folders, so we will always
             # initialize a new folder with the first dbkey in genome builds list which is currently
             # ?    unspecified (?)
@@ -325,7 +322,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             show_deleted=show_deleted,
                                             info_association=info_association,
                                             inherited=inherited,
-                                            message=message,
+                                            message=escape( message ),
                                             status='done' )
             # If not inheritable info_association, redirect to the library.
             message = "The new folder named '%s' has been added to the data library." % new_folder.name
@@ -337,7 +334,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               use_panels=use_panels,
                                                               id=library_id,
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='done' ) )
         # We do not render any template widgets on creation pages since saving the info_association
         # cannot occur before the associated item is saved.
@@ -347,16 +344,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     library_id=library_id,
                                     folder=parent_folder,
                                     show_deleted=show_deleted,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def folder_info( self, trans, cntrller, id, library_id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -364,11 +360,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         except:
             folder = None
         self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
-        if params.get( 'rename_folder_button', False ):
+        if kwd.get( 'rename_folder_button', False ):
             self._check_modify( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             old_name = folder.name
-            new_name = util.restore_text( params.name )
-            new_description = util.restore_text( params.description )
+            new_name = kwd.get( 'name', '' )
+            new_description = kwd.get( 'description', '' )
             if not new_name:
                 message = 'Enter a valid name'
                 status='error'
@@ -385,7 +381,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                   id=id,
                                                                   library_id=library_id,
                                                                   show_deleted=show_deleted,
-                                                                  message=util.sanitize_text( message ),
+                                                                  message=message,
                                                                   status='done' ) )
         # See if we have any associated templates
         widgets = []
@@ -405,16 +401,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     info_association=info_association,
                                     inherited=inherited,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def folder_permissions( self, trans, cntrller, id, library_id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -423,14 +418,14 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             folder = None
         self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
         self._check_manage( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
-        if params.get( 'update_roles_button', False ):
+        if kwd.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
             for k, v in trans.app.model.Library.permitted_actions.items():
                 if k != 'LIBRARY_ACCESS':
                     # LIBRARY_ACCESS is a special permission set only at the library level
                     # and it is not inherited.
-                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( int( x ) ) for x in util.listify( params.get( k + '_in', [] ) ) ]
+                    in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( int( x ) ) for x in util.listify( kwd.get( k + '_in', [] ) ) ]
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
             trans.app.security_agent.set_all_library_permissions( trans, folder, permissions )
             trans.sa_session.refresh( folder )
@@ -442,7 +437,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               id=trans.security.encode_id( folder.id ),
                                                               library_id=library_id,
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='done' ) )
         # If the library is public all roles are legitimate, but if the library
         # is restricted, only those roles associated with the LIBRARY_ACCESS
@@ -456,16 +451,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     current_user_roles=current_user_roles,
                                     roles=roles,
                                     show_deleted=show_deleted,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def ldda_edit_info( self, trans, cntrller, library_id, folder_id, id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -474,7 +468,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             ldda = None
         self._check_access( trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted )
         self._check_modify( trans, cntrller, is_admin, ldda, current_user_roles, use_panels, library_id, show_deleted )
-        dbkey = params.get( 'dbkey', '?' )
+        dbkey = kwd.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             dbkey = dbkey[0]
         file_formats = [ dtype_name for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change ]
@@ -498,26 +492,26 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         info_association, inherited = ldda.get_info_association()
         if info_association and ( not( inherited ) or info_association.inheritable ):
             widgets = ldda.get_template_widgets( trans )
-        if params.get( 'change', False ):
+        if kwd.get( 'change', False ):
             # The user clicked the Save button on the 'Change data type' form
             if __ok_to_edit_metadata( ldda.id ):
-                if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( params.datatype ).allow_datatype_change:
-                    trans.app.datatypes_registry.change_datatype( ldda, params.datatype )
+                if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( kwd.get( 'datatype' ) ).allow_datatype_change:
+                    trans.app.datatypes_registry.change_datatype( ldda, kwd.get( 'datatype' ) )
                     trans.sa_session.flush()
                     message = "Data type changed for library dataset '%s'." % ldda.name
                     status = 'done'
                 else:
-                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, params.datatype )
+                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, kwd.get( 'datatype' ) )
                     status = 'error'
             else:
                 message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
                 status = "error"
-        elif params.get( 'save', False ):
+        elif kwd.get( 'save', False ):
             # The user clicked the Save button on the 'Edit Attributes' form
             old_name = ldda.name
-            new_name = util.restore_text( params.get( 'name', '' ) )
-            new_info = util.restore_text( params.get( 'info', '' ) )
-            new_message = util.restore_text( params.get( 'message', '' ) )
+            new_name = kwd.get( 'name', '' )
+            new_info = kwd.get( 'info', '' )
+            new_message = escape( kwd.get( 'message', ''  ) )
             if not new_name:
                 message = 'Enter a valid name'
                 status = 'error'
@@ -530,12 +524,12 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     for name, spec in ldda.datatype.metadata_spec.items():
                         if spec.get("readonly"):
                             continue
-                        optional = params.get( "is_" + name, None )
+                        optional = kwd.get( "is_" + name, None )
                         if optional and optional == 'true':
                             # optional element... == 'true' actually means it is NOT checked (and therefore ommitted)
                             setattr( ldda.metadata, name, None )
                         else:
-                            setattr( ldda.metadata, name, spec.unwrap( params.get ( name, None ) ) )
+                            setattr( ldda.metadata, name, spec.unwrap( kwd.get( name, None ) ) )
                     ldda.metadata.dbkey = dbkey
                     ldda.datatype.after_setting_metadata( ldda )
                     message = "Attributes updated for library dataset '%s'." % ldda.name
@@ -544,7 +538,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
                     status = 'warning'
                 trans.sa_session.flush()
-        elif params.get( 'detect', False ):
+        elif kwd.get( 'detect', False ):
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             if __ok_to_edit_metadata( ldda.id ):
                 for name, spec in ldda.datatype.metadata_spec.items():
@@ -559,8 +553,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
                 status = 'error'
             trans.sa_session.flush()
-        elif params.get( 'change_extended_metadata', False):
-            em_string = util.restore_text( params.get("extended_metadata", "") )
+        elif kwd.get( 'change_extended_metadata', False):
+            em_string = kwd.get("extended_metadata", "" )
             if len(em_string):
                 payload = None
                 try:
@@ -610,17 +604,16 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     show_deleted=show_deleted,
                                     info_association=info_association,
                                     inherited=inherited,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def ldda_info( self, trans, cntrller, library_id, folder_id, id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        show_associated_hdas_and_lddas = util.string_as_bool( params.get( 'show_associated_hdas_and_lddas', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        show_associated_hdas_and_lddas = util.string_as_bool( kwd.get( 'show_associated_hdas_and_lddas', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
         ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
@@ -660,16 +653,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     current_user_roles=current_user_roles,
                                     info_association=info_association,
                                     inherited=inherited,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def ldda_permissions( self, trans, cntrller, library_id, folder_id, id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         ids = util.listify( id )
         lddas = []
         libraries = []
@@ -693,7 +685,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               id=library_id,
                                                               cntrller=cntrller,
                                                               use_panels=use_panels,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='error' ) )
         # If access to the dataset is restricted, then use the roles associated with the DATASET_ACCESS permission to
         # determine the legitimate roles.  If the dataset is public, see if access to the library is restricted.  If
@@ -706,7 +698,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             roles = trans.app.security_agent.get_legitimate_roles( trans, library, cntrller )
         else:
             roles = trans.app.security_agent.get_legitimate_roles( trans, ldda.dataset, cntrller )
-        if params.get( 'update_roles_button', False ):
+        if kwd.get( 'update_roles_button', False ):
             # Dataset permissions
             access_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action )
             manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
@@ -763,8 +755,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                         library_id=library_id,
                                         roles=roles,
                                         show_deleted=show_deleted,
-                                        message=message,
-                                        status=status )
+                                        message=escape( message ),
+                                        status=escape( status ) )
         if len( ids ) > 1:
             # Ensure that the permissions across all library items are identical, otherwise we can't update them together.
             check_list = []
@@ -789,7 +781,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                use_panels=use_panels,
                                                                id=library_id,
                                                                show_deleted=show_deleted,
-                                                               message=util.sanitize_text( message ),
+                                                               message=message,
                                                                status='error' ) )
         # Display permission form, permissions will be updated for all lddas simultaneously.
         return trans.fill_template( "/library/common/ldda_permissions.mako",
@@ -799,32 +791,31 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     library_id=library_id,
                                     roles=roles,
                                     show_deleted=show_deleted,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def upload_library_dataset( self, trans, cntrller, library_id, folder_id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        ldda_message = util.restore_text( params.get( 'ldda_message', '' ) )
-        deleted = util.string_as_bool( params.get( 'deleted', False ) )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        replace_id = params.get( 'replace_id', None )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        ldda_message = escape( kwd.get( 'ldda_message', '' ) )
+        deleted = util.string_as_bool( kwd.get( 'deleted', False ) )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        replace_id = kwd.get( 'replace_id', None )
         replace_dataset = None
-        upload_option = params.get( 'upload_option', 'upload_file' )
-        if params.get( 'files_0|space_to_tab', False ):
-            space_to_tab = params.get( 'files_0|space_to_tab', '' )
+        upload_option = kwd.get( 'upload_option', 'upload_file' )
+        if kwd.get( 'files_0|space_to_tab', False ):
+            space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
-            space_to_tab = params.get( 'space_to_tab', '' )
-        link_data_only = params.get( 'link_data_only', 'copy_files' )
-        dbkey = params.get( 'dbkey', '?' )
+            space_to_tab = kwd.get( 'space_to_tab', '' )
+        link_data_only = kwd.get( 'link_data_only', 'copy_files' )
+        dbkey = kwd.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        roles = params.get( 'roles', '' )
+        roles = kwd.get( 'roles', '' )
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
         widgets = []
@@ -853,7 +844,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             library = folder.parent_library
         if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
-        if params.get( 'runtool_btn', False ) or params.get( 'ajax_upload', False ) or cntrller == 'api':
+        if kwd.get( 'runtool_btn', False ) or kwd.get( 'ajax_upload', False ) or cntrller == 'api':
             error = False
             if upload_option == 'upload_paths' and not trans.app.config.allow_library_path_paste:
                 error = True
@@ -878,7 +869,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                            replace_id=replace_id,
                                                            upload_option=upload_option,
                                                            show_deleted=show_deleted,
-                                                           message=util.sanitize_text( message ),
+                                                           message=message,
                                                            status='error' ) )
             else:
                 # See if we have any inherited templates.
@@ -892,7 +883,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     for index, widget_dict in enumerate( widgets ):
                         widget = widget_dict[ 'widget' ]
                         if isinstance( widget, AddressField ):
-                            value = util.restore_text( params.get( widget.name, '' ) )
+                            value = kwd.get( widget.name, '' )
                             if value == 'new':
                                 if self.field_param_values_ok( widget.name, 'AddressField', **kwd ):
                                     # Save the new address
@@ -975,7 +966,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                        default_action=default_action,
                                                                        created_ldda_ids=created_ldda_ids,
                                                                        show_deleted=show_deleted,
-                                                                       message=util.sanitize_text( message ),
+                                                                       message=message,
                                                                        status='done' ) )
                 else:
                     created_ldda_ids = ''
@@ -990,7 +981,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                            id=library_id,
                                                            created_ldda_ids=created_ldda_ids,
                                                            show_deleted=show_deleted,
-                                                           message=util.sanitize_text( message ),
+                                                           message=message,
                                                            status=status ) )
         # Note: if the upload form was submitted due to refresh_on_change for a form field, we cannot re-populate
         # the field for the selected file ( files_0|file_data ) if the user selected one.  This is because the value
@@ -1049,8 +1040,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     link_data_only=link_data_only,
                                     show_deleted=show_deleted,
                                     ldda_message=ldda_message,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     def upload_dataset( self, trans, cntrller, library_id, folder_id, replace_dataset=None, **kwd ):
         # Set up the traditional tool state/params
@@ -1064,16 +1055,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append( input )
         # Library-specific params
-        params = util.Params( kwd ) # is this filetoolparam safe?
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        server_dir = util.restore_text( params.get( 'server_dir', '' ) )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        server_dir = kwd.get( 'server_dir', '' )
         if replace_dataset not in [ None, 'None' ]:
             replace_id = trans.security.encode_id( replace_dataset.id )
         else:
             replace_id = None
-        upload_option = params.get( 'upload_option', 'upload_file' )
+        upload_option = kwd.get( 'upload_option', 'upload_file' )
         response_code = 200
         if upload_option == 'upload_directory':
             if server_dir in [ None, 'None', '' ]:
@@ -1102,7 +1092,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         try:
             # FIXME: instead of passing params here ( which have been processed by util.Params(), the original kwd
             # should be passed so that complex objects that may have been included in the initial request remain.
-            library_bunch = upload_common.handle_library_params( trans, params, folder_id, replace_dataset )
+            library_bunch = upload_common.handle_library_params( trans, kwd, folder_id, replace_dataset )
         except:
             response_code = 500
             message = "Unable to parse upload parameters, please report this error."
@@ -1113,9 +1103,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 tool_params = upload_common.persist_uploads( tool_params )
                 uploaded_datasets = upload_common.get_uploaded_datasets( trans, cntrller, tool_params, precreated_datasets, dataset_upload_inputs, library_bunch=library_bunch )
             elif upload_option == 'upload_directory':
-                uploaded_datasets, response_code, message = self.get_server_dir_uploaded_datasets( trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message )
+                uploaded_datasets, response_code, message = self.get_server_dir_uploaded_datasets( trans, cntrller, kwd, full_dir, import_dir_desc, library_bunch, response_code, message )
             elif upload_option == 'upload_paths':
-                uploaded_datasets, response_code, message = self.get_path_paste_uploaded_datasets( trans, cntrller, params, library_bunch, response_code, message )
+                uploaded_datasets, response_code, message = self.get_path_paste_uploaded_datasets( trans, cntrller, kwd, library_bunch, response_code, message )
             upload_common.cleanup_unused_precreated_datasets( precreated_datasets )
             if upload_option == 'upload_file' and not uploaded_datasets:
                 response_code = 400
@@ -1131,7 +1121,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                        replace_id=replace_id,
                                                        upload_option=upload_option,
                                                        show_deleted=show_deleted,
-                                                       message=util.sanitize_text( message ),
+                                                       message=message,
                                                        status='error' ) )
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
@@ -1146,7 +1136,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         link_data_only = params.get( 'link_data_only', 'copy_files' )
         uuid_str =  params.get( 'uuid', None )
-        file_type = params.file_type
+        file_type = params.get( 'file_type' )
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
         new_name = name
@@ -1162,8 +1152,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.type = type
         uploaded_dataset.ext = None
         uploaded_dataset.file_type = file_type
-        uploaded_dataset.dbkey = params.dbkey
-        uploaded_dataset.space_to_tab = params.space_to_tab
+        uploaded_dataset.dbkey = params.get( 'dbkey' )
+        uploaded_dataset.space_to_tab = params.get( 'space_to_tab' )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
@@ -1262,7 +1252,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         return files_and_folders
 
     def _paths_list(self, params):
-        return [ (l.strip(), os.path.abspath(l.strip())) for l in params.filesystem_paths.splitlines() if l.strip() ]
+        return [ (l.strip(), os.path.abspath(l.strip())) for l in params.get( 'filesystem_paths', '' ).splitlines() if l.strip() ]
 
     def _check_path_paste_params(self, params):
         if params.get( 'filesystem_paths', '' ) == '':
@@ -1274,33 +1264,32 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if not os.path.exists( path ):
                 bad_paths.append( path )
         if bad_paths:
-            message = "Invalid paths:<br><ul><li>%s</li></ul>" % "</li><li>".join( bad_paths )
+            message = 'Invalid paths: "%s".' % '", "'.join( bad_paths )
             response_code = 400
             return None, response_code, message
         return None
 
     @web.expose
     def add_history_datasets_to_library( self, trans, cntrller, library_id, folder_id, hda_ids='', **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        ldda_message = util.restore_text( params.get( 'ldda_message', '' ) )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        replace_id = params.get( 'replace_id', None )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        ldda_message = escape( kwd.get( 'ldda_message', '' ) )
+        show_deleted = kwd.get( 'show_deleted', False )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        replace_id = kwd.get( 'replace_id', None )
         replace_dataset = None
-        upload_option = params.get( 'upload_option', 'import_from_history' )
-        if params.get( 'files_0|space_to_tab', False ):
-            space_to_tab = params.get( 'files_0|space_to_tab', '' )
+        upload_option = kwd.get( 'upload_option', 'import_from_history' )
+        if kwd.get( 'files_0|space_to_tab', False ):
+            space_to_tab = kwd.get( 'files_0|space_to_tab', '' )
         else:
-            space_to_tab = params.get( 'space_to_tab', '' )
-        link_data_only = params.get( 'link_data_only', 'copy_files' )
-        dbkey = params.get( 'dbkey', '?' )
+            space_to_tab = kwd.get( 'space_to_tab', '' )
+        link_data_only = kwd.get( 'link_data_only', 'copy_files' )
+        dbkey = kwd.get( 'dbkey', '?' )
         if isinstance( dbkey, list ):
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        roles = params.get( 'roles', '' )
+        roles = kwd.get( 'roles', '' )
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
         widgets = []
@@ -1338,9 +1327,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               cntrller=cntrller,
                                                               id=library_id,
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='error' ) )
-        if params.get( 'add_history_datasets_to_library_button', False ):
+        if kwd.get( 'add_history_datasets_to_library_button', False ):
             hda_ids = util.listify( hda_ids )
             if hda_ids:
                 dataset_names = []
@@ -1369,7 +1358,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         trans.app.security_agent.copy_library_permissions( trans, folder, ldda )
                         trans.app.security_agent.copy_library_permissions( trans, folder, ldda.library_dataset )
                     else:
-                        library_bunch = upload_common.handle_library_params( trans, params, folder_id, replace_dataset )
+                        library_bunch = upload_common.handle_library_params( trans, kwd, folder_id, replace_dataset )
                         if library_bunch.template and library_bunch.template_field_contents:
                             # Since information templates are inherited, the template fields can be displayed on the upload form.
                             # If the user has added field contents, we'll need to create a new form_values and info_association
@@ -1437,12 +1426,12 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                       id=library_id,
                                                                       created_ldda_ids=created_ldda_ids,
                                                                       show_deleted=show_deleted,
-                                                                      message=util.sanitize_text( message ),
+                                                                      message=message,
                                                                       status='done' ) )
             else:
                 message = 'Select at least one dataset from the list of active datasets in your current history'
                 status = 'error'
-                upload_option = params.get( 'upload_option', 'import_from_history' )
+                upload_option = kwd.get( 'upload_option', 'import_from_history' )
                 widgets = self._get_populated_widgets( folder )
                 # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
                 file_formats = trans.app.datatypes_registry.upload_file_formats
@@ -1476,8 +1465,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             link_data_only=link_data_only,
                                             show_deleted=show_deleted,
                                             ldda_message=ldda_message,
-                                            message=message,
-                                            status=status )
+                                            message=escape( message ),
+                                            status=escape( status ) )
 
     def _build_roles_select_list( self, trans, cntrller, library, selected_role_ids=[] ):
         # Get the list of legitimate roles to display on the upload form.  If the library is public,
@@ -1540,8 +1529,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     def download_dataset_from_folder( self, trans, cntrller, id, library_id=None, **kwd ):
         """Catches the dataset id and displays file contents as directed"""
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
-        params = util.Params( kwd )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -1574,16 +1562,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           use_panels=use_panels,
                                                           id=library_id,
                                                           show_deleted=show_deleted,
-                                                          message=util.sanitize_text( message ),
+                                                          message=message,
                                                           status='error' ) )
 
     @web.expose
     def library_dataset_info( self, trans, cntrller, id, library_id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -1591,11 +1578,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         except:
             library_dataset = None
         self._check_access( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
-        if params.get( 'edit_attributes_button', False ):
+        if kwd.get( 'edit_attributes_button', False ):
             self._check_modify( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
             old_name = library_dataset.name
-            new_name = util.restore_text( params.get( 'name', '' ) )
-            new_info = util.restore_text( params.get( 'info', '' ) )
+            new_name = kwd.get( 'name', '' )
+            new_info = kwd.get( 'info', '' )
             if not new_name:
                 message = 'Enter a valid name'
                 status = 'error'
@@ -1624,16 +1611,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     widgets=widgets,
                                     widget_fields_have_contents=widget_fields_have_contents,
                                     show_deleted=show_deleted,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def library_dataset_permissions( self, trans, cntrller, id, library_id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -1642,7 +1628,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             library_dataset = None
         self._check_access( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
         self._check_manage( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
-        if params.get( 'update_roles_button', False ):
+        if kwd.get( 'update_roles_button', False ):
             # The user clicked the Save button on the 'Associate With Roles' form
             permissions = {}
             for k, v in trans.app.model.Library.permitted_actions.items():
@@ -1673,23 +1659,22 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     roles=roles,
                                     current_user_roles=current_user_roles,
                                     show_deleted=show_deleted,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def make_library_item_public( self, trans, cntrller, library_id, item_type, id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         if item_type == 'library':
             library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( id ) )
             self._check_access( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
             self._check_manage( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
-            contents = util.string_as_bool( params.get( 'contents', 'False' ) )
+            contents = util.string_as_bool( kwd.get( 'contents', 'False' ) )
             trans.app.security_agent.make_library_public( library, contents=contents )
             if contents:
                 message = "The data library (%s) and all its contents have been made publicly accessible." % library.name
@@ -1716,7 +1701,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           use_panels=use_panels,
                                                           id=library_id,
                                                           show_deleted=show_deleted,
-                                                          message=util.sanitize_text( message ),
+                                                          message=message,
                                                           status=status ) )
 
     @web.expose
@@ -1741,12 +1726,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     rval += '%s %i %s%s %s\r\n' % ( crc, size, self.url_base, quoted_fname, relpath )
                 return rval
         # Perform an action on a list of library datasets.
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        action = params.get( 'do_action', None )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        action = kwd.get( 'do_action', None )
         lddas = []
         error = False
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
@@ -1761,7 +1745,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         else:
             if action in [ 'import_to_current_history', 'import_to_histories' ]:
                 new_kwd = {}
-                if action == 'import_to_current_history':
+                if current_history is not None and action == 'import_to_current_history':
                     encoded_current_history_id = trans.security.encode_id( current_history.id )
                     selected_history_id = encoded_current_history_id
                     new_kwd[ 'do_action' ] = action
@@ -1832,7 +1816,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                folder_id=folder_id,
                                                                id=",".join( encoded_ldda_ids ),
                                                                show_deleted=show_deleted,
-                                                               message=util.sanitize_text( message ),
+                                                               message=message,
                                                                status=status ) )
                 else:
                     message = "You are not authorized to manage permissions on any of the selected datasets."
@@ -1993,11 +1977,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               use_panels=use_panels,
                                                               id=library_id,
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status=status ) )
         else:
             # We arrived here from the library_dataset_search_results page, so redirect there.
-            search_term = params.get( 'search_term', '' )
+            search_term = kwd.get( 'search_term', '' )
             comptypes = get_comptypes( trans )
             return trans.fill_template( '/library/common/library_dataset_search_results.mako',
                                         cntrller=cntrller,
@@ -2007,8 +1991,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                         lddas=lddas,
                                         show_deleted=show_deleted,
                                         use_panels=use_panels,
-                                        message=message,
-                                        status=status )
+                                        message=escape( message ),
+                                        status=escape( status ) )
 
     @web.expose
     def import_datasets_to_histories( self, trans, cntrller, library_id='', folder_id='', ldda_ids='', target_history_id='', target_history_ids='', new_history_name='', **kwd ):
@@ -2018,12 +2002,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         # - a select list option for acting on multiple selected datasets within a library
         #   ( ldda_ids is a comma separated string of ldda ids )
         # - a menu option for a library dataset search result set ( ldda_ids is a comma separated string of ldda ids )
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        action = params.get( 'do_action', None )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        action = kwd.get( 'do_action', None )
         user = trans.get_user()
         current_history = trans.get_history()
         if library_id:
@@ -2042,7 +2025,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             target_history_ids = set( [ trans.security.decode_id( target_history_id ) for target_history_id in target_history_ids if target_history_id ] )
         elif target_history_id:
             target_history_ids = [ trans.security.decode_id( target_history_id ) ]
-        if params.get( 'import_datasets_to_histories_button', False ):
+        if kwd.get( 'import_datasets_to_histories_button', False ):
             invalid_datasets = 0
             if not ldda_ids or not ( target_history_ids or new_history_name ):
                 message = "You must provide one or more source library datasets and one or more target histories."
@@ -2106,11 +2089,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 # to the lddas in order for the menu optin  to be available.
                 ldda = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                 source_lddas.append( ldda )
+        if current_history is None:
+            current_history = trans.get_history( create=True )
         if current_history is not None:
             target_histories = [ current_history ]
         else:
             target_histories = []
-            message = 'You must have a history before you can import datasets.  You can do this by <a href="%s" target="_top">loading the analysis interface</a>.' % url_for(controller='root')
+            message = 'You must have a history before you can import datasets.  You can do this by loading the analysis interface.'
             status = 'error'
         if user:
            target_histories = user.active_histories
@@ -2120,7 +2105,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               action='browse_library',
                                                               cntrller=cntrller,
                                                               id=library_id,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status=status ) )
         return trans.fill_template( "/library/common/import_datasets_to_histories.mako",
                                     cntrller=cntrller,
@@ -2134,16 +2119,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     new_history_name=new_history_name,
                                     show_deleted=show_deleted,
                                     use_panels=use_panels,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def manage_template_inheritance( self, trans, cntrller, item_type, library_id, folder_id=None, ldda_id=None, **kwd ):
-        params = util.Params( kwd )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
         is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -2162,7 +2146,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               cntrller=cntrller,
                                                               id=library_id,
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='error' ) )
         info_association, inherited = item.get_info_association( restrict=True )
         if info_association:
@@ -2181,7 +2165,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                           folder_id=folder_id,
                                                           id=id,
                                                           show_deleted=show_deleted,
-                                                          message=util.sanitize_text( message ),
+                                                          message=message,
                                                           status='done' ) )
 
     @web.expose
@@ -2193,11 +2177,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         #   'ldda' and item_id is a comma separated string of ldda ids )
         # - a menu option for a library dataset search result set ( item_type is 'ldda' and item_id is a
         #   comma separated string of ldda ids )
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        show_deleted = util.string_as_bool( params.get( 'show_deleted', False ) )
-        use_panels = util.string_as_bool( params.get( 'use_panels', False ) )
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
+        show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
+        use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         make_target_current = util.string_as_bool( make_target_current )
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         user = trans.get_user()
@@ -2211,14 +2194,14 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         else:
             # Request sent from the library_dataset_search_results page.
             source_library = None
-        target_library_id = params.get( 'target_library_id', '' )
+        target_library_id = kwd.get( 'target_library_id', '' )
         if target_library_id not in [ '', 'none', None ]:
             target_library = trans.sa_session.query( trans.model.Library ).get( trans.security.decode_id( target_library_id ) )
         elif make_target_current:
             target_library = source_library
         else:
             target_library = None
-        target_folder_id = params.get( 'target_folder_id', '' )
+        target_folder_id = kwd.get( 'target_folder_id', '' )
         if target_folder_id not in [ '', 'none', None ]:
             target_folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( target_folder_id ) )
             if target_library is None:
@@ -2233,7 +2216,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         elif item_type == 'folder':
             move_folder_id = item_id
             move_folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( move_folder_id ) )
-        if params.get( 'move_library_item_button', False ):
+        if kwd.get( 'move_library_item_button', False ):
             if not ( move_ldda_ids or move_folder_id ) or target_folder_id in [ '', 'none', None ]:
                 message = "You must select a source folder or one or more source datasets, and a target folder."
                 status = 'error'
@@ -2397,8 +2380,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                     target_folder_id_select_field=target_folder_id_select_field,
                                     show_deleted=show_deleted,
                                     use_panels=use_panels,
-                                    message=message,
-                                    status=status )
+                                    message=escape( message ),
+                                    status=escape( status ) )
 
     @web.expose
     def delete_library_item( self, trans, cntrller, library_id, item_id, item_type, **kwd ):
@@ -2569,7 +2552,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                   action='browse_libraries',
                                                                   cntrller=cntrller,
                                                                   use_panels=use_panels,
-                                                                  message=util.sanitize_text( message ),
+                                                                  message=message,
                                                                   status='error' ) )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
@@ -2577,7 +2560,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               use_panels=use_panels,
                                                               id=library_id,
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='error' ) )
 
     def _check_add( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
@@ -2593,7 +2576,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               use_panels=use_panels,
                                                               id=library_id,
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='error' ) )
 
     def _check_manage( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
@@ -2610,7 +2593,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                   id=library_id,
                                                                   cntrller=cntrller,
                                                                   use_panels=use_panels,
-                                                                  message=util.sanitize_text( message ),
+                                                                  message=message,
                                                                   status='error' ) )
         # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE permission.
         if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, item ) ):
@@ -2622,7 +2605,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               id=library_id,
                                                               cntrller=cntrller,
                                                               use_panels=use_panels,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='error' ) )
 
     def _check_modify( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
@@ -2637,7 +2620,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                               id=library_id,
                                                               use_panels=use_panels,
                                                               show_deleted=show_deleted,
-                                                              message=util.sanitize_text( message ),
+                                                              message=message,
                                                               status='error' ) )
 
 # ---- Utility methods -------------------------------------------------------
@@ -2777,9 +2760,8 @@ def sort_by_attr( seq, attr ):
 
 def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     """Return display of results from a full-text lucene search of data libraries."""
-    params = util.Params( kwd )
-    message = util.restore_text( params.get( 'message', ''  ) )
-    status = params.get( 'status', 'done' )
+    message = escape( kwd.get( 'message', '' ) )
+    status = kwd.get( 'status', 'done' )
     full_url = "%s/find?%s" % ( search_url, urllib.urlencode( { "kwd" : search_term } ) )
     response = urllib2.urlopen( full_url )
     ldda_ids = util.json.loads( response.read() )[ "ids" ]
@@ -2789,9 +2771,8 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
 
 def whoosh_search( trans, cntrller, search_term, **kwd ):
     """Return display of results from a full-text whoosh search of data libraries."""
-    params = util.Params( kwd )
-    message = util.restore_text( params.get( 'message', ''  ) )
-    status = params.get( 'status', 'done' )
+    message = escape( kwd.get( 'message', '' ) )
+    status = kwd.get( 'status', 'done' )
     ok = True
     if whoosh_search_enabled:
         whoosh_index_dir = trans.app.config.whoosh_index_dir
