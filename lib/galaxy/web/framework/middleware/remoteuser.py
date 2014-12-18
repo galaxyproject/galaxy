@@ -72,7 +72,7 @@ class RemoteUser( object ):
         # enough". The only users able to exploit this are ones with access to
         # the local system (unless Galaxy is listening on 0.0.0.0....). It
         # seems improbable that an attacker with access to the server hosting
-        # Galaxy would not have acess to Galaxy itself, and be attempting to
+        # Galaxy would not have access to Galaxy itself, and be attempting to
         # attack the system
         if self.config_secret_header is not None:
             if not safe_str_cmp(environ.get('HTTP_GX_SECRET'), self.config_secret_header):
