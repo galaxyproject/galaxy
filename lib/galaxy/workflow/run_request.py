@@ -56,13 +56,13 @@ def normalize_inputs(steps, inputs, inputs_by):
         possible_input_keys = []
         for inputs_by_el in inputs_by.split("|"):
             if inputs_by_el == "step_id":
-                possible_input_keys = [str( step.id )]
+                possible_input_keys.append(str( step.id ))
             elif inputs_by_el == "step_index":
-                possible_input_keys = [str( step.order_index )]
+                possible_input_keys.append(str( step.order_index ))
             elif inputs_by_el == "step_uuid":
-                possible_input_keys = [str( step.uuid )]
+                possible_input_keys.append(str( step.uuid ))
             elif inputs_by_el == "name":
-                possible_input_keys = [step.tool_inputs.get( 'name', None )]
+                possible_input_keys.append(step.tool_inputs.get( 'name', None ))
             else:
                 message = "Workflow cannot be run because unexpected inputs_by value specified."
                 raise exceptions.MessageException( message )
