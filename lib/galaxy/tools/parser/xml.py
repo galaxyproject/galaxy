@@ -186,6 +186,11 @@ def _test_elem_to_dict(test_elem, i):
     rval = dict(
         outputs=__parse_output_elems(test_elem),
         inputs=__parse_input_elems(test_elem, i),
+        command=__parse_assert_list_from_elem( test_elem.find("assert_command") ),
+        stdout=__parse_assert_list_from_elem( test_elem.find("assert_stdout") ),
+        stderr=__parse_assert_list_from_elem( test_elem.find("assert_stderr") ),
+        expect_exit_code=test_elem.get("expect_exit_code"),
+        expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
     )
     _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
     return rval
@@ -222,6 +227,11 @@ def __parse_output_elem( output_elem ):
     return name, file, attributes
 
 
+def __parse_command_elem( test_elem ):
+    assert_elem = test_elem.find("command")
+    return __parse_assert_list_from_elem( assert_elem )
+
+
 def __parse_test_attributes( output_elem, attrib ):
     assert_list = __parse_assert_list( output_elem )
     file = attrib.pop( 'file', None )
@@ -252,6 +262,10 @@ def __parse_test_attributes( output_elem, attrib ):
 
 def __parse_assert_list( output_elem ):
     assert_elem = output_elem.find("assert_contents")
+    return __parse_assert_list_from_elem( assert_elem )
+
+
+def __parse_assert_list_from_elem( assert_elem ):
     assert_list = None
 
     def convert_elem(elem):

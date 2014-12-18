@@ -169,7 +169,8 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         });
         this.$el.append(data_table);
         var column_names = this.model.get_metadata('column_names'),
-            header_row = $('<tr/>').appendTo(data_table);
+            header_container = $('<thead/>').appendTo(data_table),
+            header_row = $('<tr/>').appendTo(header_container);
         if (column_names) {
             header_row.append('<th>' + column_names.join('</th><th>') + '</th>');
         } else {
