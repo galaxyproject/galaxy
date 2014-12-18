@@ -80,14 +80,28 @@ class ToolRunner( BaseUIController ):
                                                           message=message,
                                                           status=status,
                                                           redirect=redirect ) )
-        params = galaxy.util.Params( kwd, sanitize = False ) #Sanitize parameters when substituting into command line via input wrappers
-        #do param translation here, used by datasource tools
-        if tool.input_translator:
-            tool.input_translator.translate( params )
+
+        def _validated_params_for( kwd ):
+            params = galaxy.util.Params( kwd, sanitize=False )  # Sanitize parameters when substituting into command line via input wrappers
+            #do param translation here, used by datasource tools
+            if tool.input_translator:
+                tool.input_translator.translate( params )
+            return params
+
+        params = _validated_params_for( kwd )
         # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
         # so make sure to create a new history if we've never had one before.
         history = tool.get_default_history_by_trans( trans, create=True )
-        template, vars = tool.handle_input( trans, params.__dict__ )
+        try:
+            template, vars = tool.handle_input( trans, params.__dict__ )
+        except KeyError:
+            # This error indicates (or at least can indicate) there was a
+            # problem with the stored tool_state - it is incompatible with
+            # this variant of the tool - possibly because the tool changed
+            # or because the tool version changed.
+            del kwd[ "tool_state" ]
+            params = _validated_params_for( kwd )
+            template, vars = tool.handle_input( trans, params.__dict__ )
         if len( params ) > 0:
             trans.log_event( "Tool params: %s" % ( str( params ) ), tool_id=tool_id )
         add_frame = AddFrameData()
