@@ -90,31 +90,28 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         super( HistoryManager, self ).purge( trans, history, flush=flush, **kwargs )
 
     # ......................................................................... serialization
-    #TODO: move to serializer
+    #TODO: move to serializer (i.e. history with contents attr)
     def _get_history_data( self, trans, history ):
         """
         Returns a dictionary containing ``history`` and ``contents``, serialized
         history and an array of serialized history contents respectively.
         """
-        # import here prevents problems related to circular dependecy between histories and hdas managers.
-        import galaxy.managers.hdas
-        hda_mgr = galaxy.managers.hdas.HDAManager()
+        #TODO: instantiate here? really?
+        history_serializer = HistorySerializer( self.app )
+        hda_serializer = hdas.HDASerializer( self.app )
         collection_dictifier = galaxy.managers.collections_util.dictify_dataset_collection_instance
 
         history_dictionary = {}
         contents_dictionaries = []
         try:
+            history_dictionary = history_serializer.serialize_to_view( trans, history, view='detailed' )
+
             #for content in history.contents_iter( **contents_kwds ):
             for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
-                hda_dict = {}
+                contents_dict = {}
 
                 if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
-                    try:
-                        hda_dict = hda_mgr.get_hda_dict( trans, content )
-                    except Exception, exc:
-                        # don't fail entire list if hda err's, record and move on
-                        log.exception( 'Error bootstrapping hda: %s', exc )
-                        hda_dict = hda_mgr.get_hda_dict_with_error( trans, content, str( exc ) )
+                    contents_dict = hda_serializer.serialize_to_view( trans, hda, view='detailed' )
 
                 elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
                     try:
@@ -124,17 +121,14 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
                             instance_type='history',
                             id=trans.security.encode_id( content.id ),
                         )
-                        hda_dict = collection_dictifier( dataset_collection_instance,
+                        contents_dict = collection_dictifier( dataset_collection_instance,
                             security=trans.security, parent=dataset_collection_instance.history, view="element" )
 
                     except Exception, exc:
                         log.exception( "Error in history API at listing dataset collection: %s", exc )
                         #TODO: return some dict with the error
 
-                contents_dictionaries.append( hda_dict )
-
-            # re-use the hdas above to get the history data...
-            history_dictionary = self.get_history_dict( trans, history, contents_dictionaries=contents_dictionaries )
+                contents_dictionaries.append( contents_dict )
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
@@ -226,6 +220,8 @@ class HistorySerializer( base.ModelSerializer ):
     def __init__( self, app ):
         super( HistorySerializer, self ).__init__( app )
         self.history_mgr = HistoryManager( app )
+        self.hda_mgr = hdas.HDAManager( app )
+        self.hda_serializer = hdas.HDASerializer( app )
 
         summary_view = [
             'id',
@@ -274,24 +270,44 @@ class HistorySerializer( base.ModelSerializer ):
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
             'user_id'       : self.serialize_id,
-            'hdas'          : lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],
             'size'          : lambda t, i, k: int( i.get_disk_size() ),
             'nice_size'     : lambda t, i, k: i.get_disk_size( nice_size=True ),
-            #TODO: to mixins: annotatable, taggable
-            'annotation'    : lambda t, i, k: i.get_item_annotation_str( t.sa_session, t.user, i ),
-            'tags'          : lambda t, i, k: [ tag.user_tname + ( ':' + tag.user_value if tag.user_value else '' )
-                                                for tag in i.tags ],
+
+            'annotation'    : self.serialize_annotation,
+            'tags'          : self.serialize_tags,
             'url'           : lambda t, i, k: galaxy.web.url_for( 'history', id=t.security.encode_id( i.id ) ),
             'contents_url'  : lambda t, i, k:
                 galaxy.web.url_for( 'history_contents', history_id=t.security.encode_id( i.id ) ),
             'empty'         : lambda t, i, k: len( i.datasets ) <= 0,
 
+            'hdas'          : lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],
             'state'         : lambda t, i, k: self.history_mgr.get_history_state( t, i ),
             'state_details' : lambda t, i, k: self.history_mgr.get_state_counts( t, i ),
             'state_ids'     : lambda t, i, k: self.history_mgr.get_state_ids( t, i ),
+            'contents'      : self.serialize_contents
         })
 
-## =============================================================================
+    def serialize_contents( self, trans, history, key ):
+        for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
+            contents_dict = {}
+            if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
+                contents_dict = self.hda_serializer.serialize_to_view( trans, hda, view='detailed' )
+            elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
+                contents_dict = self.serialize_collection( trans, collection )
+            contents_dictionaries.append( contents_dict )
+
+    def serialize_collection( self, trans, collection ):
+        service = trans.app.dataset_collections_service
+        dataset_collection_instance = service.get_dataset_collection_instance(
+            trans=trans,
+            instance_type='history',
+            id=trans.security.encode_id( collection.id ),
+        )
+        return collection_dictifier( dataset_collection_instance,
+            security=trans.security, parent=dataset_collection_instance.history, view="element" )
+
+
+# =============================================================================
 class HistoryDeserializer( base.ModelDeserializer ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.

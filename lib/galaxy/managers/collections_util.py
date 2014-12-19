@@ -65,9 +65,9 @@ def validate_input_element_identifiers( element_identifiers ):
             validate_input_element_identifiers( element_identifier[ "element_identifiers" ] )
 
 
-def dictify_dataset_collection_instance( dataset_colleciton_instance, parent, security, view="element" ):
-    dict_value = dataset_colleciton_instance.to_dict( view=view )
-    encoded_id = security.encode_id( dataset_colleciton_instance.id )
+def dictify_dataset_collection_instance( dataset_collection_instance, parent, security, view="element" ):
+    dict_value = dataset_collection_instance.to_dict( view=view )
+    encoded_id = security.encode_id( dataset_collection_instance.id )
     if isinstance( parent, model.History ):
         encoded_history_id = security.encode_id( parent.id )
         dict_value[ 'url' ] = web.url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset_collection" )
@@ -77,7 +77,7 @@ def dictify_dataset_collection_instance( dataset_colleciton_instance, parent, se
         # TODO: Work in progress - this end-point is not right yet...
         dict_value[ 'url' ] = web.url_for( 'library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id )
     if view == "element":
-        dict_value[ 'elements' ] = map( dictify_element, dataset_colleciton_instance.collection.elements )
+        dict_value[ 'elements' ] = map( dictify_element, dataset_collection_instance.collection.elements )
     security.encode_all_ids( dict_value, recursive=True )  # TODO: Use Kyle's recusrive formulation of this.
     return dict_value
 

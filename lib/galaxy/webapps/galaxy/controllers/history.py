@@ -9,17 +9,24 @@ from galaxy import web
 from galaxy import exceptions
 from galaxy import managers
 from galaxy.datatypes.data import nice_size
-from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.model.orm import and_, eagerload_all, func
 from galaxy import util
 from galaxy.util import Params
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.base.controller import SharableMixin
+from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
+from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.item_attrs import UsesItemRatings
+
 from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
+
 from galaxy.web.framework.helpers import grids, iff, time_ago, escape
 
 log = logging.getLogger( __name__ )

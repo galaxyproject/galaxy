@@ -2,17 +2,34 @@
 API operations on the contents of a history dataset.
 """
 from galaxy import web
-from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider, SamDataProvider, BamDataProvider
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.framework.helpers import is_true
+from galaxy import util
+
+from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
+from galaxy.visualization.data_providers.genome import SamDataProvider
+from galaxy.visualization.data_providers.genome import BamDataProvider
 from galaxy.datatypes import dataproviders
-from galaxy.util import string_as_bool_or_none
+
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesVisualizationMixin
+from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
+from galaxy.web.base.controller import UsesHistoryMixin
+from galaxy import managers
+
 import logging
 log = logging.getLogger( __name__ )
 
+
 class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin,
                           UsesHistoryDatasetAssociationMixin ):
+
+    def __init__( self, app ):
+        super( DatasetsController, self ).__init__( app )
+        self.mgrs = util.bunch.Bunch(
+            histories=managers.histories.HistoryManager( app ),
+            hdas=managers.hdas.HDAManager( app )
+        )
+        self.hda_serializer = managers.hdas.HDASerializer( self.app )
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -55,10 +72,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             else:
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
-                    rval = self.get_hda_dict( trans, dataset )
-                    # add these to match api/history_contents.py, show
-                    rval[ 'display_types' ] = self.get_old_display_applications( trans, dataset )
-                    rval[ 'display_apps' ] = self.get_display_apps( trans, dataset )
+                    return self.hda_serializer.serialize_to_view( trans, hda, view=kwd.get( 'view', 'detailed' ) )
                 else:
                     rval = dataset.to_dict()
 
@@ -267,7 +281,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
-        raw = string_as_bool_or_none( raw )
+        raw = util.string_as_bool_or_none( raw )
         rval = ''
         try:
             hda = self.get_history_dataset_association_from_ids( trans, history_content_id, history_id )

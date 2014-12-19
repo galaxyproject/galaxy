@@ -92,6 +92,9 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
 
 # =============================================================================
 class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
+    # A dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
+    model_class = model.DatasetInstance
+    default_order_by = ( model.Dataset.create_time, )
 
     def __init__( self, app ):
         super( DatasetAssociationManager, self ).__init__( app )
@@ -100,3 +103,9 @@ class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterfac
     def is_accessible( self, trans, dataset_assoc, user ):
         # defer to the dataset
         return self.dataset_mgr.is_accessible( trans, dataset_assoc.dataset, user )
+
+    def metadata( self, trans, dataset_assoc ):
+        pass
+
+    def is_being_used( self, trans, dataset_assoc ):
+        pass

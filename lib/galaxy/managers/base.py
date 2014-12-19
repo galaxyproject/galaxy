@@ -401,7 +401,8 @@ class ModelSerializer( object ):
 
     def serialize( self, trans, item, keys ):
         # main interface fn for converting a model to a dict
-        #TODO: try/catch here?
+#TODO: try/catch here? add option 'fail_fast'/'raise' to allow optionally *catching* the error without raising it
+#   (and then returning the error message in the serialized data)
         returned = {}
         for key in keys:
             # check both serializers and serializable keys
@@ -425,9 +426,25 @@ class ModelSerializer( object ):
         id = getattr( item, key )
         return trans.security.encode_id( id ) if id is not None else None
 
+    #TODO: AnnotatableMixin
+    def serialize_annotation( self, trans, item, key ):
+#TODO: which is correct here?
+        #user = item.user
+        user = trans.user
+        return item.get_item_annotation_str( trans.sa_session, user, item )
+
+    #TODO: TaggableMixin
+    def serialize_tags( self, trans, item, key ):
+#TODO: whose tags are these?
+        return [ tag.user_tname + ( ':' + tag.user_value if tag.user_value else '' ) for tag in item.tags ]
+
     # ......................................................................... serializing to a view
     # where a view is a predefied list of keys to serialize
     def serialize_to_view( self, trans, item, view=None, keys=None ):
+#TODO: if keys and view - munge view and keys
+#    : if keys but no view - use keys
+#    : if no keys but view - use view
+#    : if no keys and no view - use default view
         keys = keys or []
         all_keys = self.view_to_list( view ) + keys
         return self.serialize( trans, item, all_keys )
@@ -438,6 +455,20 @@ class ModelSerializer( object ):
         if view not in self.views:
             raise ModelSerializingError( 'unknown view', view=view, available_views=self.views )
         return self.views[ view ]
+
+    #TODO: this is more util/gen. use
+    def pluck_from_list( self, l, elems ):
+        """
+        Removes found elems from list l and returns list of found elems if found.
+        """
+        found = []
+        for elem in elems:
+            try:
+                index = l.index( elem )
+                found.append( l.pop( index ) )
+            except ValueError, val_err:
+                pass
+        return found
 
     # ......................................................................... aliases
     #def to_dict( self, trans, item, view=None, view_keys=None ):
@@ -493,6 +524,7 @@ class ModelValidator( object ):
         return val
 
     #def slug( self, trans, item, key, val ):
+    #    """validate slug"""
     #    pass
 
 

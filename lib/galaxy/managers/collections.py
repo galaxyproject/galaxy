@@ -7,6 +7,7 @@ from galaxy import model
 from galaxy.exceptions import MessageException
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.managers import base
 from galaxy.managers import hdas  # TODO: Refactor all mixin use into managers.
 from galaxy.managers import histories
 from galaxy.managers import lddas
@@ -244,7 +245,7 @@ class DatasetCollectionManager( object ):
 
         if src_type == 'hda':
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )
-            element = self.hda_manager.get( trans, decoded_id, check_ownership=False )
+            element = self.hda_manager.accessible_by_id( trans, decoded_id, trans.user )
         elif src_type == 'ldda':
             element = self.ldda_manager.get( trans, encoded_id )
         elif src_type == 'hdca':
@@ -293,3 +294,122 @@ class DatasetCollectionManager( object ):
             if not trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), collection_instance, trans.user ):
                 raise ItemAccessibilityException( "LibraryDatasetCollectionAssociation is not accessible to the current user", type='error' )
         return collection_instance
+
+
+class DatasetCollectionSerializer( base.ModelSerializer ):
+
+    def __init__( self, app ):
+        super( HDASerializer, self ).__init__( app )
+
+    #    # most of these views build/add to the previous view
+    #    summary_view = [
+    #        'id', 'history_id', 'hid', 'name', 'dataset_id',
+    #        'state', 'deleted', 'purged', 'visible'
+    #    ]
+    #    detailed_view = summary_view + [
+    #        'dbkey', 'info', 'blurb', 'extension', 'create_time', 'update_time',
+    #        'copied_from_history_dataset_association_id', 'copied_from_library_dataset_dataset_association_id',
+    #        'metadata', 'size',
+    #        #mixin: annotatable
+    #        'annotation',
+    #        #mixin: taggable
+    #        'tags',
+    #    ]
+    #    extended_view = detailed_view + [
+    #        #NOTE: sending raw 'peek' (not get_display_peek)
+    #        'peek',
+    #        'tool_version', 'parent_id', 'designation',
+    #    ]
+    #
+    #    self.serializable_keys = extended_view + [
+    #        'display_apps',
+    #        'display_types',
+    #        'visualizations'
+    #    ]
+    #    self.views = {
+    #        'summary'   : summary_view,
+    #        'detailed'  : detailed_view,
+    #        'extended'  : extended_view,
+    #    }
+    #    self.default_view = 'summary'
+    #
+    #def add_serializers( self ):
+    #    self.serializers.update({
+    #        'id'            : self.serialize_id,
+    #        'history_id'    : self.serialize_id,
+    #        'dataset_id'    : self.serialize_id,
+    #
+    #        'create_time'   : self.serialize_date,
+    #        'update_time'   : self.serialize_date,
+    #        'copied_from_history_dataset_association_id'        : self.serialize_id,
+    #        'copied_from_library_dataset_dataset_association_id': self.serialize_id,
+    #
+    #        'metadata'      : self.serialize_metadata,
+    #        'size'          : lambda t, i, k: int( i.get_size() ),
+    #        'nice_size'     : lambda t, i, k: i.get_size( nice_size=True ),
+    #
+    #        'parent_id'     : self.serialize_id,
+    #        #TODO: to mixin: annotatable
+    #        'annotation'    : lambda t, i, k: i.get_item_annotation_str( t.sa_session, t.user, i ),
+    #        #TODO: to mixin: taggable
+    #        'tags'          : lambda t, i, k: [ tag.user_tname + ( ':' + tag.user_value if tag.user_value else '' )
+    #                                            for tag in i.tags ],
+    #    })
+
+#def dictify_dataset_collection_instance( dataset_collection_instance, parent, security, view="element" ):
+#    dict_value = dataset_collection_instance.to_dict( view=view )
+#    encoded_id = security.encode_id( dataset_collection_instance.id )
+#    if isinstance( parent, model.History ):
+#        encoded_history_id = security.encode_id( parent.id )
+#        dict_value[ 'url' ] = web.url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset_collection" )
+#    elif isinstance( parent, model.LibraryFolder ):
+#        encoded_library_id = security.encode_id( parent.library.id )
+#        encoded_folder_id = security.encode_id( parent.id )
+#        # TODO: Work in progress - this end-point is not right yet...
+#        dict_value[ 'url' ] = web.url_for( 'library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id )
+#    if view == "element":
+#        dict_value[ 'elements' ] = map( dictify_element, dataset_collection_instance.collection.elements )
+#    security.encode_all_ids( dict_value, recursive=True )  # TODO: Use Kyle's recusrive formulation of this.
+#    return dict_value
+#
+#
+#def dictify_element( element ):
+#    dictified = element.to_dict( view="element" )
+#    object_detials = element.element_object.to_dict()
+#    if element.child_collection:
+#        # Recursively yield elements for each nested collection...
+#        object_detials[ "elements" ] = map( dictify_element, element.child_collection.elements )
+#
+#    dictified[ "object" ] = object_detials
+#    return dictified
+#
+#    def serialize_metadata( self, trans, hda, key ):
+#        not_included = [ 'dbkey' ]
+#        md = {}
+#        for name, spec in hda.metadata.spec.items():
+#            if name in not_included:
+#                continue
+#            val = hda.metadata.get( name )
+#            #NOTE: no files
+#            if isinstance( val, model.MetadataFile ):
+#                continue
+#            #TODO:? possibly split this off?
+#            # If no value for metadata, look in datatype for metadata.
+#            elif val is None and hasattr( hda.datatype, name ):
+#                val = getattr( hda.datatype, name )
+#            md[ name ] = val
+#
+#        return md
+
+    #def add_deserializers( self ):
+    #    self.deserializers.update({
+    #        'name'          : self.deserialize_basestring,
+    #        'genome_build'  : self.deserialize_genome_build,
+    #        'deleted'       : self.deserialize_bool,
+    #        'published'     : self.deserialize_bool,
+    #        #TODO: to mixin: annotatable
+    #        #'annotation'    : self.deserialize_annotation,
+    #        #TODO: to mixin: taggable
+    #        #'tags'          : lambda t, i, k, v: ,
+    #    })
+    #    self.deserializable_keys = self.deserializers.keys()

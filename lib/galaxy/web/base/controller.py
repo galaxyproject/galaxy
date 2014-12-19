@@ -108,17 +108,6 @@ class BaseController( object ):
         """
         return trans.security.encode_all_ids( rval, recursive=recursive )
 
-    # incoming param validation
-    # should probably be in sep. serializer class/object _used_ by controller
-    def validate_and_sanitize_basestring( self, key, val ):
-        return validation.validate_and_sanitize_basestring( key, val )
-
-    def validate_and_sanitize_basestring_list( self, key, val ):
-        return validation.validate_and_sanitize_basestring_list( key, val )
-
-    def validate_boolean( self, key, val ):
-        return validation.validate_boolean( key, val )
-
 
 Root = BaseController
 
@@ -478,88 +467,6 @@ class UsesHistoryDatasetAssociationMixin:
         if dataset.state != trans.app.model.Job.states.OK:
             return dataset.conversion_messages.PENDING
         return None
-
-    def get_hda_dict( self, trans, hda ):
-        """Return full details of this HDA in dictionary form.
-        """
-        #precondition: the user's access to this hda has already been checked
-        #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-        expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
-        hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
-        hda_dict[ 'api_type' ] = "file"
-
-        # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-        can_access_hda = ( trans.user_is_admin() or can_access_hda )
-        if not can_access_hda:
-            return self.get_inaccessible_hda_dict( trans, hda )
-        hda_dict[ 'accessible' ] = True
-
-        #TODO: I'm unclear as to which access pattern is right
-        hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, trans.user, hda )
-        #annotation = getattr( hda, 'annotation', hda.get_item_annotation_str( trans.sa_session, trans.user, hda ) )
-
-        # ---- return here if deleted AND purged OR can't access
-        purged = ( hda.purged or hda.dataset.purged )
-        if hda.deleted and purged:
-            #TODO: to_dict should really go AFTER this - only summary data
-            return trans.security.encode_dict_ids( hda_dict )
-
-        if expose_dataset_path:
-            try:
-                hda_dict[ 'file_name' ] = hda.file_name
-            except objectstore.ObjectNotFound:
-                log.exception( 'objectstore.ObjectNotFound, HDA %s.', hda.id )
-
-        hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
-            history_id = trans.security.encode_id( hda.history.id ),
-            history_content_id = trans.security.encode_id( hda.id ) )
-
-        # resubmitted is not a real state
-        hda_dict[ 'resubmitted' ] = False
-        if hda.state == trans.app.model.Dataset.states.RESUBMITTED:
-            hda_dict[ 'state' ] = hda.dataset.state
-            hda_dict[ 'resubmitted' ] = True
-
-        # indeces, assoc. metadata files, etc.
-        meta_files = []
-        for meta_type in hda.metadata.spec.keys():
-            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
-                meta_files.append( dict( file_type=meta_type ) )
-        if meta_files:
-            hda_dict[ 'meta_files' ] = meta_files
-
-        # currently, the viz reg is optional - handle on/off
-        if trans.app.visualizations_registry:
-            hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
-        else:
-            hda_dict[ 'visualizations' ] = hda.get_visualizations()
-        #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
-        #           when the visualizations button is clicked (instead of preloading/pre-checking)
-
-        return trans.security.encode_dict_ids( hda_dict )
-
-    def get_inaccessible_hda_dict( self, trans, hda ):
-        return trans.security.encode_dict_ids({
-            'id'        : hda.id,
-            'history_id': hda.history.id,
-            'hid'       : hda.hid,
-            'name'      : hda.name,
-            'state'     : hda.state,
-            'deleted'   : hda.deleted,
-            'visible'   : hda.visible,
-            'accessible': False
-        })
-
-    def get_hda_dict_with_error( self, trans, hda=None, history_id=None, id=None, error_msg='Error' ):
-        return trans.security.encode_dict_ids({
-            'id'        : hda.id if hda else id,
-            'history_id': hda.history.id if hda else history_id,
-            'hid'       : hda.hid if hda else '(unknown)',
-            'name'      : hda.name if hda else '(unknown)',
-            'error'     : error_msg,
-            'state'     : trans.model.Dataset.states.NEW
-        })
 
     def get_display_apps( self, trans, hda ):
         display_apps = []
