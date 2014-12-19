@@ -55,12 +55,10 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :returns:   list of dictionaries containing summary job information
         """
         state = kwd.get( 'state', None )
-        if trans.user_is_admin() and kwd.get('user_details', False):
-            is_extended_service = True
-        else:
-            is_extended_service = False
+        is_admin = trans.user_is_admin()
+        user_details = kwd.get('user_details', False)
 
-        if is_extended_service:
+        if is_admin:
             query = trans.sa_session.query( trans.app.model.Job )
         else:
             query = trans.sa_session.query( trans.app.model.Job ).filter(trans.app.model.Job.user == trans.user)
@@ -98,9 +96,9 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         else:
             order_by = trans.app.model.Job.update_time.desc()
         for job in query.order_by( order_by ).all():
-            j = self.encode_all_ids( trans, job.to_dict( 'collection' ), True )
-            if is_extended_service:
-                j['external_id'] = job.job_runner_external_id
+            job_dict = job.to_dict( 'collection', system_details=is_admin )
+            j = self.encode_all_ids( trans, job_dict, True )
+            if user_details:
                 j['user_email'] = job.user.email
             out.append(j)
 
@@ -123,12 +121,13 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         :returns:   dictionary containing full description of job data
         """
         job = self.__get_job( trans, id )
-        job_dict = self.encode_all_ids( trans, job.to_dict( 'element' ), True )
+        is_admin = trans.user_is_admin()
+        job_dict = self.encode_all_ids( trans, job.to_dict( 'element', system_details=is_admin ), True )
         full_output = util.asbool( kwd.get( 'full', 'false' ) )
         if full_output:
             job_dict.update( dict( stderr=job.stderr, stdout=job.stdout ) )
-            if trans.user_is_admin():
-                job_dict['command_line'] = job.command_line
+            if is_admin:
+                job_dict['user_email'] = job.user.email
 
                 def metric_to_dict(metric):
                     metric_name = metric.metric_name
@@ -199,10 +198,16 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
             decoded_job_id = trans.security.decode_id( id )
         except Exception:
             raise exceptions.MalformedId()
-        query = trans.sa_session.query( trans.app.model.Job ).filter(
-            trans.app.model.Job.user == trans.user,
-            trans.app.model.Job.id == decoded_job_id
-        )
+        query = trans.sa_session.query( trans.app.model.Job )
+        if trans.user_is_admin():
+            query = query.filter(
+                trans.app.model.Job.id == decoded_job_id
+            )
+        else:
+            query = query.filter(
+                trans.app.model.Job.user == trans.user,
+                trans.app.model.Job.id == decoded_job_id
+            )
         job = query.first()
         if job is None:
             raise exceptions.ObjectNotFound()

@@ -520,9 +520,15 @@ class Job( object, HasJobMetrics, Dictifiable ):
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
-    def to_dict( self, view='collection' ):
+
+    def to_dict( self, view='collection', system_details=False ):
         rval = super( Job, self ).to_dict( view=view )
         rval['tool_id'] = self.tool_id
+        if system_details:
+            # System level details that only admins should have.
+            rval['external_id'] = self.job_runner_external_id
+            rval['command_line'] = self.command_line
+
         if view == 'element':
             param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
             rval['params'] = param_dict
