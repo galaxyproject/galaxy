@@ -27,7 +27,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         index( trans, state=None, tool_id=None, history_id=None, date_range_min=None, date_range_max=None, user_details=False )
         * GET /api/jobs:
             return jobs for current user
-            
+
             !! if user is admin and user_details is True, then
                 return jobs for all galaxy users based on filtering - this is an extended service
 
@@ -41,10 +41,10 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
 
         :type   user_details: boolean
         :param  user_details: if true, and requestor is an admin, will return external job id and user email.
-        
+
         :type   date_range_min: string '2014-01-01'
-        :param  date_range_min: limit the listing of jobs to those updated on or after requested date 
-        
+        :param  date_range_min: limit the listing of jobs to those updated on or after requested date
+
         :type   date_range_max: string '2014-12-31'
         :param  date_range_max: limit the listing of jobs to those updated on or before requested date
 
@@ -59,7 +59,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
             is_extended_service = True
         else:
             is_extended_service = False
-                
+
         if is_extended_service:
             query = trans.sa_session.query( trans.app.model.Job )
         else:
@@ -80,7 +80,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
 
         query = build_and_apply_filters( query, kwd.get( 'tool_id', None ), lambda t: trans.app.model.Job.tool_id == t )
         query = build_and_apply_filters( query, kwd.get( 'tool_id_like', None ), lambda t: trans.app.model.Job.tool_id.like(t) )
-    
+
         query = build_and_apply_filters( query, kwd.get( 'date_range_min', None ), lambda dmin: trans.app.model.Job.table.c.update_time >= dmin )
         query = build_and_apply_filters( query, kwd.get( 'date_range_max', None ), lambda dmax: trans.app.model.Job.table.c.update_time <= dmax )
 
@@ -98,12 +98,12 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         else:
             order_by = trans.app.model.Job.update_time.desc()
         for job in query.order_by( order_by ).all():
-            j = self.encode_all_ids( trans, job.to_dict( 'collection' ), True )          
+            j = self.encode_all_ids( trans, job.to_dict( 'collection' ), True )
             if is_extended_service:
                 j['external_id'] = job.job_runner_external_id
                 j['user_email'] = job.user.email
             out.append(j)
-        
+
         return out
 
     @expose_api
