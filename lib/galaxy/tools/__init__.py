@@ -257,8 +257,9 @@ class ToolBox( object, Dictifiable ):
         return tool_path
 
     def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
-        # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
-        # will be a ToolSection (if the value of section=True) or self.tool_panel (if section=False).
+        # See if a version of this tool is already loaded into the tool panel.
+        # The value of panel_component will be a ToolSection (if the value of
+        # section=True) or self.tool_panel (if section=False).
         tool_id = str( tool.id )
         tool = self.tools_by_id[ tool_id ]
         if section:
@@ -300,13 +301,17 @@ class ToolBox( object, Dictifiable ):
                             if not inserted:
                                 inserted = True
                 if not inserted:
-                    if tool.guid is None or \
-                        tool.tool_shed is None or \
-                        tool.repository_name is None or \
-                        tool.repository_owner is None or \
-                        tool.installed_changeset_revision is None:
-                        # We have a tool that was not installed from the Tool Shed, but is also not yet defined in
-                        # integrated_tool_panel.xml, so append it to the tool panel.
+                    if (
+                        tool.guid is None or
+                        tool.tool_shed is None or
+                        tool.repository_name is None or
+                        tool.repository_owner is None or
+                        tool.installed_changeset_revision is None
+                    ):
+                        # We have a tool that was not installed from the Tool
+                        # Shed, but is also not yet defined in
+                        # integrated_tool_panel.xml, so append it to the tool
+                        # panel.
                         panel_dict[ key ] = tool
                         log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
                     else:
@@ -364,9 +369,10 @@ class ToolBox( object, Dictifiable ):
 
     def load_integrated_tool_panel_keys( self ):
         """
-        Load the integrated tool panel keys, setting values for tools and workflows to None.  The values will
-        be reset when the various tool panel config files are parsed, at which time the tools and workflows are
-        loaded.
+        Load the integrated tool panel keys, setting values for tools and
+        workflows to None.  The values will be reset when the various tool
+        panel config files are parsed, at which time the tools and workflows
+        are loaded.
         """
         tree = parse_xml( self.integrated_tool_panel_config )
         root = tree.getroot()
@@ -499,11 +505,11 @@ class ToolBox( object, Dictifiable ):
         # We store only the port, if one exists, in the database.
         tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
         return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
-                              .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                             self.app.install_model.ToolShedRepository.table.c.name == name,
-                                             self.app.install_model.ToolShedRepository.table.c.owner == owner,
-                                             self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
-                              .first()
+            .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
+                           self.app.install_model.ToolShedRepository.table.c.name == name,
+                           self.app.install_model.ToolShedRepository.table.c.owner == owner,
+                           self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
+            .first()
 
     def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
         """
@@ -627,12 +633,14 @@ class ToolBox( object, Dictifiable ):
             log.exception( "Error reading tool from path: %s" % path )
 
     def __add_tool( self, tool, load_panel_dict, panel_dict ):
-        # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle
-        # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
-        # administrator has retrieved updates to the installed repository.  In this case, the tool may have
-        # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
-        # to only load the tool if it was not found in self.tools_by_id, but performing that check did
-        # not enable this scenario.
+        # Allow for the same tool to be loaded into multiple places in the
+        # tool panel.  We have to handle the case where the tool is contained
+        # in a repository installed from the tool shed, and the Galaxy
+        # administrator has retrieved updates to the installed repository.  In
+        # this case, the tool may have been updated, but the version was not
+        # changed, so the tool should always be reloaded here.  We used to
+        # only load the tool if it was not found in self.tools_by_id, but
+        # performing that check did not enable this scenario.
         self.tools_by_id[ tool.id ] = tool
         if load_panel_dict:
             self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
@@ -787,8 +795,6 @@ class ToolBox( object, Dictifiable ):
         :param tool_id: the tool ID from app.toolbox
         :returns: tuple of tarball filename, success True/False, message/None
         """
-        message = ''
-        success = True
         # Make sure the tool is actually loaded.
         if tool_id not in self.tools_by_id:
             return None, False, "No tool with id %s" % escape( tool_id )
@@ -870,7 +876,6 @@ class ToolBox( object, Dictifiable ):
                                     if os.path.exists( sample_file ):
                                         tarfile_path, tarfile_name = os.path.split( tar_file )
                                         tarfile_path = os.path.join( 'tool-data', tarfile_name )
-                                        sample_name = tarfile_path + '.sample'
                                         tarball_files.append( ( sample_file, tarfile_path ) )
                                     data_table_definitions.append( data_table.xml_string )
                             if len( data_table_definitions ) > 0:
