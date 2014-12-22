@@ -552,6 +552,7 @@ ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
     var spaceghost = this.api.spaceghost,
         uploadedId;
 
+    // upload via the api
     spaceghost.then( function(){
         var returned = this.api.tools.upload( historyId, options );
         this.debug( 'returned: ' + this.jsonStr( returned ) );
@@ -559,20 +560,19 @@ ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
         this.debug( 'uploadedId: ' + uploadedId );
     });
 
-    spaceghost.debug( '---------------------------------------------------------- timeout: ' + ( options.timeout || spaceghost.api.tools.DEFAULT_UPLOAD_TIMEOUT ) );
-    spaceghost.debug( 'timeout: ' + options.timeout );
-    spaceghost.debug( 'timeout: ' + spaceghost.api.tools.DEFAULT_UPLOAD_TIMEOUT );
+    // wait for upload/queued/running to stop
     spaceghost.then( function(){
+        var hda = null;
         this.waitFor(
             function testHdaState(){
-                var hda = spaceghost.api.hdas.show( historyId, uploadedId );
+                hda = spaceghost.api.hdas.show( historyId, uploadedId );
                 spaceghost.debug( spaceghost.jsonStr( hda.state ) );
                 return !( hda.state === 'upload' || hda.state === 'queued' || hda.state === 'running' );
             },
             function _then(){
                 spaceghost.info( 'upload finished: ' + uploadedId );
                 if( then ){
-                    then.call( spaceghost, uploadedId );
+                    then.call( spaceghost, uploadedId, hda );
                 }
                 //var hda = spaceghost.api.hdas.show( historyId, uploadedId );
                 //spaceghost.debug( spaceghost.jsonStr( hda ) );
@@ -628,6 +628,16 @@ ToolsAPI.prototype.thenUploadMultiple = function thenUploadMultiple( historyId, 
         );
     });
     return spaceghost;
+};
+
+
+/** get the current history's id, then upload there */
+ToolsAPI.prototype.thenUploadToCurrent = function thenUploadToCurrent( options, then ){
+    var spaceghost = this.api.spaceghost;
+    return spaceghost.then( function(){
+        var currentHistoryId = this.api.histories.index()[0].id;
+        spaceghost.api.tools.thenUpload( currentHistoryId, options, then );
+    });
 };
 
 
