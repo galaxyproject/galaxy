@@ -289,8 +289,7 @@ class ToolBox( object, Dictifiable ):
             for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
                 if key == integrated_panel_key:
                     panel_dict.insert( index, key, tool )
-                    if not inserted:
-                        inserted = True
+                    inserted = True
             if not inserted:
                 # Check the tool's installed versions.
                 for lineage_id in tool.lineage_ids:
@@ -298,8 +297,7 @@ class ToolBox( object, Dictifiable ):
                     for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
                         if lineage_id_key == integrated_panel_key:
                             panel_dict.insert( index, key, tool )
-                            if not inserted:
-                                inserted = True
+                            inserted = True
                 if not inserted:
                     if (
                         tool.guid is None or
@@ -322,8 +320,7 @@ class ToolBox( object, Dictifiable ):
                             if lineage_id in self.tools_by_id:
                                 loaded_version_key = 'tool_%s' % lineage_id
                                 if loaded_version_key in panel_dict:
-                                    if not already_loaded:
-                                        already_loaded = True
+                                    already_loaded = True
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                             panel_dict[ key ] = tool
