@@ -330,12 +330,13 @@ class ToolBox( object, Dictifiable ):
             elif isinstance( val, ToolSectionLabel ):
                 self.tool_panel[ key ] = val
             elif isinstance( val, ToolSection ):
-                elem = ElementTree.Element( 'section' )
-                elem.attrib[ 'id' ] = val.id or ''
-                elem.attrib[ 'name' ] = val.name or ''
-                elem.attrib[ 'version' ] = val.version or ''
-                section = ToolSection( elem )
-                log.debug( "Loading section: %s" % elem.get( 'name' ) )
+                section_dict = {
+                    'id': val.id or '',
+                    'name': val.name or '',
+                    'version': val.version or '',
+                }
+                section = ToolSection( section_dict )
+                log.debug( "Loading section: %s" % section_dict.get( 'name' ) )
                 for section_key, section_val in val.elems.items():
                     if isinstance( section_val, Tool ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
@@ -1050,6 +1051,8 @@ class ToolSection( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'version' )
 
     def __init__( self, elem=None ):
+        """ Build a ToolSection from an ElementTree element or a dictionary.
+        """
         f = lambda elem, val: elem is not None and elem.get( val ) or ''
         self.name = f( elem, 'name' )
         self.id = f( elem, 'id' )
@@ -1089,6 +1092,9 @@ class ToolSectionLabel( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'text', 'version' )
 
     def __init__( self, elem ):
+        """ Build a ToolSectionLabel from an ElementTree element or a
+        dictionary.
+        """
         self.text = elem.get( "text" )
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
