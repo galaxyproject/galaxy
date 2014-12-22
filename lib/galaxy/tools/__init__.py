@@ -143,18 +143,7 @@ class ToolBox( object, Dictifiable ):
         self.tool_watcher = watcher.get_watcher( self, app.config )
         self.filter_factory = FilterFactory( self )
         self.init_dependency_manager()
-        config_filenames = listify( config_filenames )
-        for config_filename in config_filenames:
-            if os.path.isdir( config_filename ):
-                directory_contents = sorted( os.listdir( config_filename ) )
-                directory_config_files = [ config_file for config_file in directory_contents if config_file.endswith( ".xml" ) ]
-                config_filenames.remove( config_filename )
-                config_filenames.extend( directory_config_files )
-        for config_filename in config_filenames:
-            try:
-                self.init_tools( config_filename )
-            except:
-                log.exception( "Error loading tools defined in config %s", config_filename )
+        self.init_tools_from_configs( config_filenames )
         if self.app.name == 'galaxy' and self.integrated_tool_panel_config_has_contents:
             # Load self.tool_panel based on the order in self.integrated_tool_panel.
             self.load_tool_panel()
@@ -165,7 +154,29 @@ class ToolBox( object, Dictifiable ):
             # will be False when things like functional tests are the caller.
             self.write_integrated_tool_panel_config_file()
 
-    def init_tools( self, config_filename ):
+    def init_tools_from_configs( self, config_filenames ):
+        """ Read through all tool config files and initialize tools in each
+        with init_tools_from_config below.
+        """
+        if self.app.config.get_bool( 'enable_tool_tags', False ):
+            log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")" )
+            self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
+            self.sa_session.flush()
+
+        config_filenames = listify( config_filenames )
+        for config_filename in config_filenames:
+            if os.path.isdir( config_filename ):
+                directory_contents = sorted( os.listdir( config_filename ) )
+                directory_config_files = [ config_file for config_file in directory_contents if config_file.endswith( ".xml" ) ]
+                config_filenames.remove( config_filename )
+                config_filenames.extend( directory_config_files )
+        for config_filename in config_filenames:
+            try:
+                self.init_tools_from_config( config_filename )
+            except:
+                log.exception( "Error loading tools defined in config %s", config_filename )
+
+    def init_tools_from_config( self, config_filename ):
         """
         Read the configuration file and load each tool.  The following tags are currently supported:
 
@@ -183,10 +194,6 @@ class ToolBox( object, Dictifiable ):
             </toolbox>
 
         """
-        if self.app.config.get_bool( 'enable_tool_tags', False ):
-            log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")" )
-            self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
-            self.sa_session.flush()
         log.info( "Parsing the tool configuration %s" % config_filename )
         tree = parse_xml( config_filename )
         root = tree.getroot()
