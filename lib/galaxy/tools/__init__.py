@@ -51,6 +51,7 @@ from galaxy.tools.filters import FilterFactory
 from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
+from galaxy.tools.toolbox import tool_tag_manager
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
@@ -143,6 +144,7 @@ class ToolBox( object, Dictifiable ):
         self.tool_watcher = watcher.get_watcher( self, app.config )
         self.filter_factory = FilterFactory( self )
         self.init_dependency_manager()
+        self.tool_tag_manager = tool_tag_manager( app )
         self.init_tools_from_configs( config_filenames )
         if self.app.name == 'galaxy' and self.integrated_tool_panel_config_has_contents:
             # Load self.tool_panel based on the order in self.integrated_tool_panel.
@@ -158,11 +160,7 @@ class ToolBox( object, Dictifiable ):
         """ Read through all tool config files and initialize tools in each
         with init_tools_from_config below.
         """
-        if self.app.config.get_bool( 'enable_tool_tags', False ):
-            log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")" )
-            self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
-            self.sa_session.flush()
-
+        self.tool_tag_manager.reset_tags()
         config_filenames = listify( config_filenames )
         for config_filename in config_filenames:
             if os.path.isdir( config_filename ):
@@ -588,27 +586,7 @@ class ToolBox( object, Dictifiable ):
                     self.app.install_model.context.flush()
                 # Load the tool's lineage ids.
                 tool.lineage_ids = tool.tool_version.get_version_ids( self.app )
-                if self.app.config.get_bool( 'enable_tool_tags', False ):
-                    tag_names = elem.get( "tags", "" ).split( "," )
-                    for tag_name in tag_names:
-                        if tag_name == '':
-                            continue
-                        tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
-                        if not tag:
-                            tag = self.app.model.Tag( name=tag_name )
-                            self.sa_session.add( tag )
-                            self.sa_session.flush()
-                            tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
-                            self.sa_session.add( tta )
-                            self.sa_session.flush()
-                        else:
-                            for tagged_tool in tag.tagged_tools:
-                                if tagged_tool.tool_id == tool.id:
-                                    break
-                            else:
-                                tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
-                                self.sa_session.add( tta )
-                                self.sa_session.flush()
+                self.tool_tag_manager.handle_tags( tool.id, elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             if key in integrated_panel_dict or index is None:
