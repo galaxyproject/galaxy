@@ -7,19 +7,14 @@ import glob
 import json
 import logging
 import os
-import pipes
 import re
 import shutil
-import sys
 import string
 import tarfile
 import tempfile
 import threading
-import traceback
 import types
 import urllib
-
-from math import isinf
 
 from galaxy import eggs
 eggs.require( "MarkupSafe" )  # MarkupSafe must load before mako
@@ -35,10 +30,8 @@ from paste import httpexceptions
 from sqlalchemy import and_
 
 from galaxy import jobs, model
-from galaxy.jobs.error_level import StdioErrorLevel
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
-from galaxy.jobs import ParallelismInfo
 from galaxy.tools import watcher
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -58,12 +51,11 @@ from galaxy.tools.filters import FilterFactory
 from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
-from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
+from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import hmac_new
-from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
@@ -73,7 +65,7 @@ from galaxy.model.item_attrs import Dictifiable
 from galaxy.model import Workflow
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
-from .loader import load_tool, template_macro_params, raw_tool_xml_tree, imported_macro_paths
+from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 from .wrappers import (
     ToolParameterValueWrapper,
