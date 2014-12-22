@@ -96,6 +96,16 @@ JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
 
 HELP_UNINITIALIZED = threading.Lock()
 
+INTEGRATED_TOOL_PANEL_DESCRIPTION = """
+This is Galaxy's integrated tool panel and probably should not be modified
+directly. It will be regenerated each time Galaxy starts up. To modify locally
+managed tools (e.g. from tool_conf.xml) modify that file directly and restart
+Galaxy. Whenever possible Tool Shed managed tools (e.g. from shed_tool_conf.xml)
+should be managed from within the Galaxy interface of via is UI - but if changes
+are nessecary (such as to hide a tool or re-assign its section) modify that file
+and restart Galaxy.
+"""
+
 
 class ToolNotFoundException( Exception ):
     pass
@@ -396,6 +406,9 @@ class ToolBox( object, Dictifiable ):
         fd, filename = tempfile.mkstemp()
         os.write( fd, '<?xml version="1.0"?>\n' )
         os.write( fd, '<toolbox>\n' )
+        os.write( fd, '    <!--\n    ')
+        os.write( fd, '\n    '.join( [ l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l ] ) )
+        os.write( fd, '\n    -->\n')
         for key, item in self.integrated_tool_panel.items():
             if item:
                 if isinstance( item, Tool ):
