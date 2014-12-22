@@ -356,7 +356,7 @@ class DataTransfer( object ):
         for i, step in enumerate( workflow.steps ):
             job = None
             if step.type == 'tool' or step.type is None:
-                tool = self.app.toolbox.tools_by_id[ step.tool_id ]
+                tool = self.app.toolbox.get_tool( step.tool_id )
                 def callback( input, value, prefixed_name, prefixed_label ):
                     if isinstance( input, DataToolParameter ):
                         if prefixed_name in step.input_connections_by_name:
