@@ -163,23 +163,7 @@ class ToolBox( object, Dictifiable ):
             # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
             # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
             # will be False when things like functional tests are the caller.
-            self.fix_integrated_tool_panel_dict()
             self.write_integrated_tool_panel_config_file()
-
-    def fix_integrated_tool_panel_dict( self ):
-        # HACK: instead of fixing after the fact, I suggest some combination of:
-        #  1) adjusting init_tools() and called methods to get this right
-        #  2) redesigning the code and/or data structure used to read/write integrated_tool_panel.xml
-        for key, value in self.integrated_tool_panel.iteritems():
-            if isinstance( value, ToolSection ):
-                for section_key, section_value in value.elems.iteritems():
-                    if section_value is None:
-                        if isinstance( section_value, Tool ):
-                            tool_id = section_key[5:]
-                            value.elems[section_key] = self.tools_by_id.get( tool_id )
-                        elif isinstance( section_value, Workflow ):
-                            workflow_id = section_key[9:]
-                            value.elems[section_key] = self.workflows_by_id.get( workflow_id )
 
     def init_tools( self, config_filename ):
         """
@@ -723,7 +707,6 @@ class ToolBox( object, Dictifiable ):
                         # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
                         # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
                         # will be False when things like functional tests are the caller.
-                        self.fix_integrated_tool_panel_dict()
                         self.write_integrated_tool_panel_config_file()
                 return tool.id
             except Exception:
