@@ -312,24 +312,7 @@ class ToolPanelManager( object ):
         return tool_section
 
     def get_or_create_tool_section( self, toolbox, tool_panel_section_id, new_tool_panel_section_label=None ):
-        tool_panel_section_key = str( tool_panel_section_id )
-        if tool_panel_section_key in toolbox.tool_panel:
-            # Appending a tool to an existing section in toolbox.tool_panel
-            tool_section = toolbox.tool_panel[ tool_panel_section_key ]
-            log.debug( "Appending to tool panel section: %s" % str( tool_section.name ) )
-        else:
-            # Appending a new section to toolbox.tool_panel
-            if new_tool_panel_section_label is None:
-                # This might add an ugly section label to the tool panel, but, oh well...
-                new_tool_panel_section_label = tool_panel_section_id
-            elem = XmlET.Element( 'section' )
-            elem.attrib[ 'name' ] = new_tool_panel_section_label
-            elem.attrib[ 'id' ] = tool_panel_section_id
-            elem.attrib[ 'version' ] = ''
-            tool_section = galaxy.tools.ToolSection( elem )
-            toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-            log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
-        return tool_panel_section_key, tool_section
+        return toolbox.get_or_create_section( section_id=tool_panel_section_id, new_label=new_tool_panel_section_label )
 
     def get_shed_tool_conf_dict( self, shed_tool_conf ):
         """
