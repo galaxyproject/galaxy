@@ -50,9 +50,6 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         # Tool stuff
-        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
-        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
-        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )

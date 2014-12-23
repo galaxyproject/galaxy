@@ -20,9 +20,9 @@ class FilterFactory( object ):
         self.default_filters = dict( tool=[ _not_hidden, _handle_requires_login ], section=[], label=[] )
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
-        self.__init_filters( "tool", config.tool_filters, self.default_filters )
-        self.__init_filters( "section", config.tool_section_filters, self.default_filters )
-        self.__init_filters( "label", config.tool_label_filters, self.default_filters )
+        self.__init_filters( "tool", getattr( config, "tool_filters", "" ), self.default_filters )
+        self.__init_filters( "section", getattr( config, "tool_section_filters", "" ), self.default_filters )
+        self.__init_filters( "label", getattr( config, "tool_label_filters", "" ), self.default_filters )
 
     def build_filters( self, trans, **kwds ):
         """
