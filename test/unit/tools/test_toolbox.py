@@ -28,22 +28,52 @@ class ToolBoxTestCase( unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._init_tool()
         self.__add_config( """<toolbox><tool file="tool.xml" /></toolbox>""" )
 
-        itp = os.path.join(self.test_directory, "integrated_tool_panel.xml")
-
-        assert not os.path.exists( itp )
+        self.assert_integerated_tool_panel(exists=False)
         self.toolbox
-        assert os.path.exists( itp )
+        self.assert_integerated_tool_panel(exists=True)
 
     def test_groups_tools( self ):
         self._init_tool()
         self.__add_config( """<toolbox><tool file="tool.xml" /></toolbox>""" )
 
+    def test_update_shed_conf(self):
+        self.__setup_shed_tool_conf()
+        self.toolbox.update_shed_config( 0, {} )
+        assert self.reindexed
+        self.assert_integerated_tool_panel(exists=True)
+
+    def test_update_shed_conf_deactivate_only(self):
+        self.__setup_shed_tool_conf()
+        self.toolbox.update_shed_config( 0, {}, integrated_panel_changes=False )
+        assert self.reindexed
+        # No changes, should be regenerated
+        self.assert_integerated_tool_panel(exists=False)
+
     def setUp( self ):
+        self.reindexed = False
         self.setup_app( mock_model=False )
+        self.app.reindex_tool_search = self.__reindex
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
         self.__toolbox = None
         self.config_files = []
+
+    def __reindex( self ):
+        self.reindexed = True
+
+    def __remove_itp( self ):
+        os.remove( os.path)
+
+    @property
+    def integerated_tool_panel_path( self ):
+        return os.path.join(self.test_directory, "integrated_tool_panel.xml")
+
+    def assert_integerated_tool_panel( self, exists=True ):
+        does_exist = os.path.exists( self.integerated_tool_panel_path )
+        if exists:
+            assert does_exist
+        else:
+            assert not does_exist
 
     @property
     def toolbox( self ):
@@ -56,6 +86,14 @@ class ToolBoxTestCase( unittest.TestCase, tools_support.UsesApp, tools_support.U
         with open( path, "w" ) as f:
             f.write( xml )
         self.config_files.append( path )
+
+    def __setup_shed_tool_conf( self ):
+        self.__add_config( """<toolbox tool_path="."></toolbox>""" )
+
+        self.toolbox  # create toolbox
+        assert not self.reindexed
+
+        os.remove( self.integerated_tool_panel_path )
 
 
 class SimplifiedToolBox( ToolBox ):

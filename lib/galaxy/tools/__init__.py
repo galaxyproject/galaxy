@@ -244,6 +244,18 @@ class ToolBox( object, Dictifiable ):
                 return shed_config_dict
         return default
 
+    def update_shed_config( self, shed_conf_index, shed_conf, integrated_panel_changes=True ):
+        """ Update the in-memory descriptions of tools and write out the changes
+        to integrated tool panel unless we are just deactivating a tool (since
+        that doesn't affect that file).
+        """
+        app = self.app
+        self.shed_tool_confs[ shed_conf_index ] = shed_conf
+        if integrated_panel_changes and app.config.update_integrated_tool_panel:
+            # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
+            self.write_integrated_tool_panel_config_file()
+        app.reindex_tool_search()
+
     def __resolve_tool_path(self, tool_path, config_filename):
         if not tool_path:
             # Default to backward compatible config setting.

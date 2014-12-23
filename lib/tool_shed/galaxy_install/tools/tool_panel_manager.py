@@ -76,11 +76,7 @@ class ToolPanelManager( object ):
                                                     guid=guid )
         # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        self.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
-        if self.app.config.update_integrated_tool_panel:
-            # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
-            self.app.toolbox.write_integrated_tool_panel_config_file()
-        self.app.reindex_tool_search()
+        self.app.toolbox.update_shed_config( index, shed_tool_conf_dict )
 
     def config_elems_to_xml_file( self, config_elems, config_filename, tool_path ):
         """
@@ -569,8 +565,4 @@ class ToolPanelManager( object ):
             config_elems.remove( config_elem )
         # Update the config_elems of the in-memory shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        self.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
-        self.app.reindex_tool_search()
-        if uninstall and self.app.config.update_integrated_tool_panel:
-            # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
-            self.app.toolbox.write_integrated_tool_panel_config_file()
+        self.app.toolbox.update_shed_config( index, shed_tool_conf_dict, integrated_panel_changes=uninstall )
