@@ -131,6 +131,7 @@ class MockApp( object ):
         self.tool_data_tables = {}
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
+        self.name = "galaxy"
 
 
 class MockContext(object):
