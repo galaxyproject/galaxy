@@ -59,13 +59,6 @@ class Configuration( object ):
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Install and test framework for testing tools contained in repositories.
         self.num_tool_test_results_saved = kwargs.get( 'num_tool_test_results_saved', 5 )
-        # Location for dependencies
-        if 'tool_dependency_dir' in kwargs:
-            self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
-            self.use_tool_dependencies = True
-        else:
-            self.tool_dependency_dir = None
-            self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
         # Galaxy flavor Docker Image
         self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
