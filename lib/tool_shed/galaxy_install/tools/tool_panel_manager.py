@@ -2,7 +2,6 @@ import logging
 import threading
 
 import galaxy.tools
-from galaxy.tools.search import ToolBoxSearch
 from xml.etree import ElementTree as XmlET
 
 from tool_shed.util import basic_util
@@ -81,7 +80,7 @@ class ToolPanelManager( object ):
         if self.app.config.update_integrated_tool_panel:
             # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
             self.app.toolbox.write_integrated_tool_panel_config_file()
-        self.app.toolbox_search = ToolBoxSearch( self.app.toolbox )
+        self.app.reindex_tool_search()
 
     def config_elems_to_xml_file( self, config_elems, config_filename, tool_path ):
         """
@@ -571,7 +570,7 @@ class ToolPanelManager( object ):
         # Update the config_elems of the in-memory shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
         self.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
-        self.app.toolbox_search = ToolBoxSearch( self.app.toolbox )
+        self.app.reindex_tool_search()
         if uninstall and self.app.config.update_integrated_tool_panel:
             # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
             self.app.toolbox.write_integrated_tool_panel_config_file()

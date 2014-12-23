@@ -706,10 +706,7 @@ class ConfiguresGalaxyMixin:
 
         from galaxy import tools
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        # Search support for tools
-        import galaxy.tools.search
-        index_help = getattr( self.config, "index_tool_help", True )
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
+        self.reindex_tool_search()
 
         from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)
@@ -720,7 +717,13 @@ class ConfiguresGalaxyMixin:
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
         )
-        self.container_finder = galaxy.tools.deps.containers.ContainerFinder(app_info)
+        self.container_finder = containers.ContainerFinder(app_info)
+
+    def reindex_tool_search( self ):
+        # Call this when tools are added or removed.
+        import galaxy.tools.search
+        index_help = getattr( self.config, "index_tool_help", True )
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager
