@@ -1,5 +1,4 @@
 import logging
-import os
 import threading
 
 import galaxy.tools
@@ -355,7 +354,7 @@ class ToolPanelManager( object ):
         # If tool_panel_section_id is received, the section exists in the tool panel.  In this
         # case, the value of the received tool_panel_section_id must be the id retrieved from a
         # tool panel config (e.g., tool_conf.xml, which may have getext).  If new_tool_panel_section_label
-        # is received, a new section will be added to the tool panel.  
+        # is received, a new section will be added to the tool panel.
         if new_tool_panel_section_label:
             section_id = str( new_tool_panel_section_label.lower().replace( ' ', '_' ) )
             tool_panel_section_key, tool_section = \
@@ -396,7 +395,6 @@ class ToolPanelManager( object ):
                     tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
                     tool_section_dict = tool_section_dicts[ 0 ]
                     original_section_id = tool_section_dict[ 'id' ]
-                    original_section_name = tool_section_dict[ 'name' ]
                     if original_section_id:
                         tool_panel_section_key, tool_section = \
                             self.get_or_create_tool_section( toolbox,
