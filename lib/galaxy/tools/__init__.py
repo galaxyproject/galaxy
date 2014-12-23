@@ -742,13 +742,13 @@ class ToolBox( object, Dictifiable ):
             root = getattr( tool_source, "root", None )
             # TODO: mucking with the XML directly like this is terrible,
             # modify inputs directly post load if possible.
-            if root and hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
-                tool_id = root.get( 'id' ) if root else None
+            if root is not None and hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
+                tool_id = root.get( 'id' )
                 parameters = self.app.job_config.get_tool_resource_parameters( tool_id )
                 if parameters:
                     inputs = root.find('inputs')
                     # If tool has not inputs, create some so we can insert conditional
-                    if not inputs:
+                    if inputs is None:
                         inputs = ElementTree.fromstring( "<inputs></inputs>")
                         root.append( inputs )
                     # Insert a conditional allowing user to specify resource parameters.
@@ -1563,7 +1563,7 @@ class Tool( object, Dictifiable ):
 
         root = tool_source.root
         conf_parent_elem = root.find("configfiles")
-        if conf_parent_elem:
+        if conf_parent_elem is not None:
             for conf_elem in conf_parent_elem.findall( "configfile" ):
                 name = conf_elem.get( "name" )
                 filename = conf_elem.get( "filename", None )
@@ -1697,7 +1697,7 @@ class Tool( object, Dictifiable ):
         root = tool_source.root
         citations = []
         citations_elem = root.find("citations")
-        if not citations_elem:
+        if citations_elem is None:
             return citations
 
         for citation_elem in citations_elem:

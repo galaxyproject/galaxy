@@ -604,7 +604,7 @@ class XmlPagesSource(PagesSource):
     def __init__(self, root):
         self.input_elem = root.find("inputs")
         page_sources = []
-        if self.input_elem:
+        if self.input_elem is not None:
             pages_elem = self.input_elem.findall( "page" )
             for page in ( pages_elem or [ self.input_elem ] ):
                 page_sources.append(XmlPageSource(page))

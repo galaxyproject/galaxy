@@ -49,7 +49,7 @@ class ToolParameter( object, Dictifiable ):
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
         sanitizer_elem = input_source.parse_sanitizer_elem()
-        if sanitizer_elem:
+        if sanitizer_elem is not None:
             self.sanitizer = ToolParameterSanitizer.from_element( sanitizer_elem )
         else:
             self.sanitizer = None
