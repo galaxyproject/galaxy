@@ -1,10 +1,26 @@
 import os
+import string
 import unittest
 
 from galaxy.tools import ToolBox
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 import tools_support
+
+
+CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
+    """    <tool file="tool.xml" guid="github.com/galaxyproect/example/test_tool/0.${version}">
+            <tool_shed>github.com</tool_shed>
+            <repository_name>example</repository_name>
+            <repository_owner>galaxyproject</repository_owner>
+            <installed_changeset_revision>${version}</installed_changeset_revision>
+            <id>github.com/galaxyproect/example/test_tool/0.${version}</id>
+            <version>0.${version}</version>
+        </tool>
+    """
+)
+CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute( dict( version="1" ) )
+CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute( dict( version="2" ) )
 
 
 class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_support.UsesTools  ):
@@ -115,32 +131,52 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         self.toolbox
         self.assert_integerated_tool_panel(exists=True)
 
-    def test_groups_tools( self ):
+    def test_groups_tools_in_section( self ):
         self._init_tool()
         self._add_config( """<toolbox tool_path="%s">
 <section id="tid" name="TID" version="">
-    <tool file="tool.xml" guid="github.com/galaxyproect/example/test_tool/0.1">
-        <tool_shed>github.com</tool_shed>
-        <repository_name>example</repository_name>
-        <repository_owner>galaxyproject</repository_owner>
-        <installed_changeset_revision>2</installed_changeset_revision>
-        <id>github.com/galaxyproect/example/test_tool/0.1</id>
-        <version>0.1</version>
-    </tool>
+    %s
 </section>
 <section id="tid" name="TID" version="">
-    <tool file="tool.xml" guid="github.com/galaxyproect/example/test_tool/0.2">
-        <tool_shed>github.com</tool_shed>
-        <repository_name>example</repository_name>
-        <repository_owner>galaxyproject</repository_owner>
-        <installed_changeset_revision>2</installed_changeset_revision>
-        <id>github.com/galaxyproect/example/test_tool/0.2</id>
-        <version>0.2</version>
-    </tool>
+    %s
 </section>
-</toolbox>""" % self.test_directory )
+</toolbox>""" % (self.test_directory, CONFIG_TEST_TOOL_VERSION_1, CONFIG_TEST_TOOL_VERSION_2 ) )
         self._setup_two_versions()
+        self.toolbox
+        self.__verify_two_test_tools( )
 
+        # Assert only newer version of the tool loaded into the panel.
+        section = self.toolbox.tool_panel["tid"]
+        assert len(section.elems) == 1
+        assert section.elems.values()[0].id == "github.com/galaxyproect/example/test_tool/0.2"
+
+    def test_group_tools_out_of_section( self ):
+        self._init_tool()
+        self._add_config( """<toolbox tool_path="%s">
+%s
+%s
+</toolbox>""" % (self.test_directory, CONFIG_TEST_TOOL_VERSION_1, CONFIG_TEST_TOOL_VERSION_2 ) )
+
+        self._setup_two_versions()
+        self.__verify_two_test_tools( )
+
+        # Assert tools merged in tool panel.
+        assert len( self.toolbox.tool_panel ) == 1
+
+    def test_update_shed_conf(self):
+        self.__setup_shed_tool_conf()
+        self.toolbox.update_shed_config( 0, {} )
+        assert self.reindexed
+        self.assert_integerated_tool_panel(exists=True)
+
+    def test_update_shed_conf_deactivate_only(self):
+        self.__setup_shed_tool_conf()
+        self.toolbox.update_shed_config( 0, {}, integrated_panel_changes=False )
+        assert self.reindexed
+        # No changes, should be regenerated
+        self.assert_integerated_tool_panel(exists=False)
+
+    def __verify_two_test_tools( self ):
         # Assert tool versions of the tool with simple id 'test_tool'
         all_versions = self.toolbox.get_tool( "test_tool", get_all_versions=True )
         assert len( all_versions ) == 2
@@ -155,24 +191,6 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         # Test tool_version attribute.
         assert self.toolbox.get_tool( "test_tool", tool_version="0.1" ).guid == "github.com/galaxyproect/example/test_tool/0.1"
         assert self.toolbox.get_tool( "test_tool", tool_version="0.2" ).guid == "github.com/galaxyproect/example/test_tool/0.2"
-
-        # Assert only newer version of the tool loaded into the panel.
-        section = self.toolbox.tool_panel["tid"]
-        assert len(section.elems) == 1
-        assert section.elems.values()[0].id == "github.com/galaxyproect/example/test_tool/0.2"
-
-    def test_update_shed_conf(self):
-        self.__setup_shed_tool_conf()
-        self.toolbox.update_shed_config( 0, {} )
-        assert self.reindexed
-        self.assert_integerated_tool_panel(exists=True)
-
-    def test_update_shed_conf_deactivate_only(self):
-        self.__setup_shed_tool_conf()
-        self.toolbox.update_shed_config( 0, {}, integrated_panel_changes=False )
-        assert self.reindexed
-        # No changes, should be regenerated
-        self.assert_integerated_tool_panel(exists=False)
 
     def __remove_itp( self ):
         os.remove( os.path)
