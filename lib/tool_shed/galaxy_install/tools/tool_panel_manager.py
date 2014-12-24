@@ -1,7 +1,6 @@
 import logging
 import threading
 
-import galaxy.tools
 from xml.etree import ElementTree as XmlET
 
 from tool_shed.util import basic_util
@@ -67,13 +66,14 @@ class ToolPanelManager( object ):
                                                         self.app.toolbox.integrated_tool_panel,
                                                         load_panel_dict=True )
             elif config_elem.tag == 'tool':
-                guid = config_elem.get( 'guid' )
-                self.app.toolbox.load_tool_tag_set( config_elem,
-                                                    self.app.toolbox.tool_panel,
-                                                    self.app.toolbox.integrated_tool_panel,
-                                                    tool_path,
-                                                    load_panel_dict=True,
-                                                    guid=guid )
+                self.app.toolbox.load_tool_tag_set(
+                    config_elem,
+                    self.app.toolbox.tool_panel,
+                    self.app.toolbox.integrated_tool_panel,
+                    tool_path,
+                    load_panel_dict=True,
+                    guid=config_elem.get( 'guid' )
+                )
         # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
         self.app.toolbox.update_shed_config( index, shed_tool_conf_dict )
@@ -124,8 +124,9 @@ class ToolPanelManager( object ):
 
     def generate_tool_panel_dict_for_new_install( self, tool_dicts, tool_section=None ):
         """
-        When installing a repository that contains tools, all tools must currently be defined
-        within the same tool section in the tool panel or outside of any sections.
+        When installing a repository that contains tools, all tools must
+        currently be defined within the same tool section in the tool panel or
+        outside of any sections.
         """
         tool_panel_dict = {}
         if tool_section:
@@ -168,11 +169,12 @@ class ToolPanelManager( object ):
 
     def generate_tool_panel_dict_from_shed_tool_conf_entries( self, repository ):
         """
-        Keep track of the section in the tool panel in which this repository's tools
-        will be contained by parsing the shed_tool_conf in which the repository's tools
-        are defined and storing the tool panel definition of each tool in the repository.
-        This method is called only when the repository is being deactivated or un-installed
-        and allows for activation or re-installation using the original layout.
+        Keep track of the section in the tool panel in which this repository's
+        tools will be contained by parsing the shed_tool_conf in which the
+        repository's tools are defined and storing the tool panel definition
+        of each tool in the repository. This method is called only when the
+        repository is being deactivated or un-installed and allows for
+        activation or re-installation using the original layout.
         """
         tool_panel_dict = {}
         shed_tool_conf, tool_path, relative_install_dir = \
@@ -351,8 +353,8 @@ class ToolPanelManager( object ):
     def handle_tool_panel_selection( self, toolbox, metadata, no_changes_checked, tool_panel_section_id,
                                      new_tool_panel_section_label ):
         """
-        Handle the selected tool panel location for loading tools included in tool shed
-        repositories when installing or reinstalling them.
+        Handle the selected tool panel location for loading tools included in
+        tool shed repositories when installing or reinstalling them.
         """
         # Get the location in the tool panel in which each tool was originally loaded.
         tool_section = None
@@ -390,10 +392,11 @@ class ToolPanelManager( object ):
 
     def remove_from_shed_tool_config( self, shed_tool_conf_dict, guids_to_remove ):
         """
-        A tool shed repository is being uninstalled so change the shed_tool_conf file.
-        Parse the config file to generate the entire list of config_elems instead of
-        using the in-memory list since it will be a subset of the entire list if one
-        or more repositories have been deactivated.
+        A tool shed repository is being uninstalled so change the
+        shed_tool_conf file. Parse the config file to generate the entire list
+        of config_elems instead of using the in-memory list since it will be a
+        subset of the entire list if one or more repositories have been
+        deactivated.
         """
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
@@ -426,8 +429,8 @@ class ToolPanelManager( object ):
 
     def remove_from_tool_panel( self, repository, shed_tool_conf, uninstall ):
         """
-        A tool shed repository is being deactivated or uninstalled, so handle tool panel
-        alterations accordingly.
+        A tool shed repository is being deactivated or uninstalled, so handle
+        tool panel alterations accordingly.
         """
         # Determine where the tools are currently defined in the tool panel and store this
         # information so the tools can be displayed in the same way when the repository is
