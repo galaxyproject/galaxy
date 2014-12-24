@@ -105,6 +105,8 @@ class ToolPanelManager( object ):
         else:
             tool_elem = XmlET.Element( 'tool' )
         tool_elem.attrib[ 'file' ] = tool_file_path
+        if not tool.guid:
+            raise ValueError("tool has no guid")
         tool_elem.attrib[ 'guid' ] = tool.guid
         tool_shed_elem = XmlET.SubElement( tool_elem, 'tool_shed' )
         tool_shed_elem.text = tool_shed

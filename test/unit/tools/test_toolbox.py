@@ -23,6 +23,8 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
     def toolbox( self ):
         if self.__toolbox is None:
             self.__toolbox = SimplifiedToolBox( self )
+            # wire app with this new toolbox
+            self.app.toolbox = self.__toolbox
         return self.__toolbox
 
     def setUp( self ):
@@ -35,10 +37,14 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         self.config_files = []
 
     def _add_config( self, xml, name="tool_conf.xml" ):
-        path = os.path.join( self.test_directory, "tool_conf.xml" )
+        path = self._tool_conf_path( name=name )
         with open( path, "w" ) as f:
             f.write( xml )
         self.config_files.append( path )
+
+    def _tool_conf_path( self, name="tool_conf.xml" ):
+        path = os.path.join( self.test_directory, name )
+        return path
 
     def __reindex( self ):
         self.reindexed = True
