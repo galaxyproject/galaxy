@@ -427,7 +427,7 @@ class ToolPanelManager( object ):
             # Persist the altered in-memory version of the tool config.
             self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
 
-    def remove_from_tool_panel( self, repository, shed_tool_conf, uninstall ):
+    def remove_repository_contents( self, repository, shed_tool_conf, uninstall ):
         """
         A tool shed repository is being deactivated or uninstalled, so handle
         tool panel alterations accordingly.
@@ -442,6 +442,9 @@ class ToolPanelManager( object ):
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
         guids_to_remove = [ k for k in tool_panel_dict.keys() ]
+        self.remove_guids( guids_to_remove, shed_tool_conf, uninstall )
+
+    def remove_guids( self, guids_to_remove, shed_tool_conf, uninstall ):
         # Remove the tools from the toolbox's tools_by_id dictionary.
         for guid_to_remove in guids_to_remove:
             if guid_to_remove in self.app.toolbox.tools_by_id:
