@@ -91,6 +91,27 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         self.app.install_model.context.add( version_association )
         self.app.install_model.context.flush( )
 
+    def _setup_two_versions_in_config( self, section=False ):
+        if section:
+            template = """<toolbox tool_path="%s">
+<section id="tid" name="TID" version="">
+    %s
+</section>
+<section id="tid" name="TID" version="">
+    %s
+</section>
+</toolbox>"""
+        else:
+            template = """<toolbox tool_path="%s">
+<section id="tid" name="TID" version="">
+    %s
+</section>
+<section id="tid" name="TID" version="">
+    %s
+</section>
+</toolbox>"""
+        self._add_config( template % (self.test_directory, CONFIG_TEST_TOOL_VERSION_1, CONFIG_TEST_TOOL_VERSION_2 ) )
+
     def _add_config( self, xml, name="tool_conf.xml" ):
         path = self._tool_conf_path( name=name )
         with open( path, "w" ) as f:
@@ -133,14 +154,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
 
     def test_groups_tools_in_section( self ):
         self._init_tool()
-        self._add_config( """<toolbox tool_path="%s">
-<section id="tid" name="TID" version="">
-    %s
-</section>
-<section id="tid" name="TID" version="">
-    %s
-</section>
-</toolbox>""" % (self.test_directory, CONFIG_TEST_TOOL_VERSION_1, CONFIG_TEST_TOOL_VERSION_2 ) )
+        self._setup_two_versions_in_config( section=True )
         self._setup_two_versions()
         self.toolbox
         self.__verify_two_test_tools( )
@@ -152,11 +166,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
 
     def test_group_tools_out_of_section( self ):
         self._init_tool()
-        self._add_config( """<toolbox tool_path="%s">
-%s
-%s
-</toolbox>""" % (self.test_directory, CONFIG_TEST_TOOL_VERSION_1, CONFIG_TEST_TOOL_VERSION_2 ) )
-
+        self._setup_two_versions_in_config( section=False )
         self._setup_two_versions()
         self.__verify_two_test_tools( )
 
