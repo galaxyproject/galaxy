@@ -2,6 +2,7 @@ import os
 import unittest
 
 from galaxy.tools import ToolBox
+from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 import tools_support
 
@@ -30,11 +31,49 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
     def setUp( self ):
         self.reindexed = False
         self.setup_app( mock_model=False )
+        install_model = mapping.init( "sqlite:///:memory:", create_tables=True )
+        self.app.install_model = install_model
         self.app.reindex_tool_search = self.__reindex
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
         self.__toolbox = None
         self.config_files = []
+
+    def _repo_install( self, changeset ):
+        repository = tool_shed_install.ToolShedRepository()
+        repository.tool_shed = "github.com"
+        repository.owner = "galaxyproject"
+        repository.name = "example"
+        repository.changeset_revision = changeset
+        repository.installed_changeset_revision = changeset
+        repository.deleted = False
+        repository.uninstalled = False
+        self.app.install_model.context.add( repository )
+        self.app.install_model.context.flush( )
+        return repository
+
+    def _setup_two_versions( self ):
+        repository1 = self._repo_install( changeset="1" )
+        version1 = tool_shed_install.ToolVersion()
+        version1.tool_id = "github.com/galaxyproect/example/test_tool/0.1"
+        version1.repository = repository1
+        self.app.install_model.context.add( version1 )
+        self.app.install_model.context.flush( )
+
+        repository2 = self._repo_install( changeset="2" )
+        version2 = tool_shed_install.ToolVersion()
+        version2.tool_id = "github.com/galaxyproect/example/test_tool/0.2"
+        version2.repository = repository2
+
+        self.app.install_model.context.add( version2 )
+        self.app.install_model.context.flush( )
+
+        version_association = tool_shed_install.ToolVersionAssociation()
+        version_association.parent_id = version1.id
+        version_association.tool_id = version2.id
+
+        self.app.install_model.context.add( version_association )
+        self.app.install_model.context.flush( )
 
     def _add_config( self, xml, name="tool_conf.xml" ):
         path = self._tool_conf_path( name=name )
@@ -78,7 +117,49 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
 
     def test_groups_tools( self ):
         self._init_tool()
-        self._add_config( """<toolbox><tool file="tool.xml" /></toolbox>""" )
+        self._add_config( """<toolbox tool_path="%s">
+<section id="tid" name="TID" version="">
+    <tool file="tool.xml" guid="github.com/galaxyproect/example/test_tool/0.1">
+        <tool_shed>github.com</tool_shed>
+        <repository_name>example</repository_name>
+        <repository_owner>galaxyproject</repository_owner>
+        <installed_changeset_revision>2</installed_changeset_revision>
+        <id>github.com/galaxyproect/example/test_tool/0.1</id>
+        <version>0.1</version>
+    </tool>
+</section>
+<section id="tid" name="TID" version="">
+    <tool file="tool.xml" guid="github.com/galaxyproect/example/test_tool/0.2">
+        <tool_shed>github.com</tool_shed>
+        <repository_name>example</repository_name>
+        <repository_owner>galaxyproject</repository_owner>
+        <installed_changeset_revision>2</installed_changeset_revision>
+        <id>github.com/galaxyproect/example/test_tool/0.2</id>
+        <version>0.2</version>
+    </tool>
+</section>
+</toolbox>""" % self.test_directory )
+        self._setup_two_versions()
+
+        # Assert tool versions of the tool with simple id 'test_tool'
+        all_versions = self.toolbox.get_tool( "test_tool", get_all_versions=True )
+        assert len( all_versions ) == 2
+
+        # Verify lineage_ids on both tools is correctly ordered.
+        for version in ["0.1", "0.2"]:
+            guid = "github.com/galaxyproect/example/test_tool/" + version
+            lineage_ids = self.toolbox.get_tool( guid ).lineage_ids
+            assert lineage_ids[ 0 ] == "github.com/galaxyproect/example/test_tool/0.1"
+            assert lineage_ids[ 1 ] == "github.com/galaxyproect/example/test_tool/0.2"
+
+        # Test tool_version attribute.
+        assert self.toolbox.get_tool( "test_tool", tool_version="0.1" ).guid == "github.com/galaxyproect/example/test_tool/0.1"
+        assert self.toolbox.get_tool( "test_tool", tool_version="0.2" ).guid == "github.com/galaxyproect/example/test_tool/0.2"
+
+        # Assert only newer version of the tool loaded into the panel.
+        section = self.toolbox.tool_panel["tid"]
+        assert len(section.elems) == 1
+        assert section.elems.values()[0].id == "github.com/galaxyproect/example/test_tool/0.2"
 
     def test_update_shed_conf(self):
         self.__setup_shed_tool_conf()
@@ -110,7 +191,6 @@ class SimplifiedToolBox( ToolBox ):
     def __init__( self, test_case ):
         app = test_case.app
         # Handle app/config stuff needed by toolbox but not by tools.
-        app.install_model = mapping.init( "sqlite:///:memory:", create_tables=True )
         app.job_config.get_tool_resource_parameters = lambda tool_id: None
         app.config.update_integrated_tool_panel = True
         config_files = test_case.config_files
