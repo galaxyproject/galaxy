@@ -27,7 +27,7 @@ class ToolBoxSearch( object ):
         self.index = self.storage.create_index( schema )
         writer = self.index.writer()
         ## TODO: would also be nice to search section headers.
-        for id, tool in self.toolbox.tools_by_id.iteritems():
+        for id, tool in self.toolbox.tools():
             add_doc_kwds = {
                 "id": id,
                 "title": to_unicode(tool.name),

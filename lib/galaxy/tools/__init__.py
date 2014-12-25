@@ -535,6 +535,9 @@ class ToolBox( object, Dictifiable ):
                                              .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
                                              .first()
 
+    def tools( self ):
+        return self.tools_by_id.iteritems()
+
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         # We store only the port, if one exists, in the database.
         tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
