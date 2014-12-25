@@ -445,10 +445,11 @@ class ToolPanelManager( object ):
         self.remove_guids( guids_to_remove, shed_tool_conf, uninstall )
 
     def remove_guids( self, guids_to_remove, shed_tool_conf, uninstall ):
+        toolbox = self.app.toolbox
         # Remove the tools from the toolbox's tools_by_id dictionary.
         for guid_to_remove in guids_to_remove:
-            if guid_to_remove in self.app.toolbox.tools_by_id:
-                del self.app.toolbox.tools_by_id[ guid_to_remove ]
+            if guid_to_remove in toolbox.tools_by_id:
+                del toolbox.tools_by_id[ guid_to_remove ]
         index, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         if uninstall:
             # Remove from the shed_tool_conf file on disk.
@@ -469,12 +470,12 @@ class ToolPanelManager( object ):
                         # Remove the tool sub-element from the section element.
                         config_elem.remove( tool_elem )
                     # Remove the tool from the section in the in-memory tool panel.
-                    if section_key in self.app.toolbox.tool_panel:
-                        tool_section = self.app.toolbox.tool_panel[ section_key ]
+                    if section_key in toolbox.tool_panel:
+                        tool_section = toolbox.tool_panel[ section_key ]
                         guid = tool_elem.get( 'guid' )
                         tool_key = 'tool_%s' % str( guid )
                         # Get the list of versions of this tool that are currently available in the toolbox.
-                        available_tool_versions = self.app.toolbox.get_loaded_tools_by_lineage( guid )
+                        available_tool_versions = toolbox.get_loaded_tools_by_lineage( guid )
                         if tool_key in tool_section.elems:
                             if available_tool_versions:
                                 available_tool_versions.reverse()
@@ -505,8 +506,8 @@ class ToolPanelManager( object ):
                                 del tool_section.elems[ tool_key ]
                     if uninstall:
                         # Remove the tool from the section in the in-memory integrated tool panel.
-                        if section_key in self.app.toolbox.integrated_tool_panel:
-                            tool_section = self.app.toolbox.integrated_tool_panel[ section_key ]
+                        if section_key in toolbox.integrated_tool_panel:
+                            tool_section = toolbox.integrated_tool_panel[ section_key ]
                             tool_key = 'tool_%s' % str( tool_elem.get( 'guid' ) )
                             if tool_key in tool_section.elems:
                                 del tool_section.elems[ tool_key ]
@@ -518,8 +519,8 @@ class ToolPanelManager( object ):
                 if guid in guids_to_remove:
                     tool_key = 'tool_%s' % str( config_elem.get( 'guid' ) )
                     # Get the list of versions of this tool that are currently available in the toolbox.
-                    available_tool_versions = self.app.toolbox.get_loaded_tools_by_lineage( guid )
-                    if tool_key in self.app.toolbox.tool_panel:
+                    available_tool_versions = toolbox.get_loaded_tools_by_lineage( guid )
+                    if tool_key in toolbox.tool_panel:
                         if available_tool_versions:
                             available_tool_versions.reverse()
                             replacement_tool_key = None
@@ -528,32 +529,32 @@ class ToolPanelManager( object ):
                             # the newest loaded version of the tool.
                             for available_tool_version in available_tool_versions:
                                 available_tool_section_id, available_tool_section_name = available_tool_version.get_panel_section()
-                                if available_tool_version.id in self.app.toolbox.tool_panel.keys() or not available_tool_section_id:
+                                if available_tool_version.id in toolbox.tool_panel.keys() or not available_tool_section_id:
                                     replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
                                     replacement_tool_version = available_tool_version
                                     break
                             if replacement_tool_key and replacement_tool_version:
                                 # Get the index of the tool_key in the tool_section.
-                                for tool_panel_index, key in enumerate( self.app.toolbox.tool_panel.keys() ):
+                                for tool_panel_index, key in enumerate( toolbox.tool_panel.keys() ):
                                     if key == tool_key:
                                         break
                                 # Remove the tool from the tool panel.
-                                del self.app.toolbox.tool_panel[ tool_key ]
+                                del toolbox.tool_panel[ tool_key ]
                                 # Add the replacement tool at the same location in the tool panel.
-                                self.app.toolbox.tool_panel.insert( tool_panel_index,
-                                                                    replacement_tool_key,
-                                                                    replacement_tool_version )
+                                toolbox.tool_panel.insert( tool_panel_index,
+                                                           replacement_tool_key,
+                                                           replacement_tool_version )
                             else:
-                                del self.app.toolbox.tool_panel[ tool_key ]
+                                del toolbox.tool_panel[ tool_key ]
                         else:
-                            del self.app.toolbox.tool_panel[ tool_key ]
+                            del toolbox.tool_panel[ tool_key ]
                     if uninstall:
-                        if tool_key in self.app.toolbox.integrated_tool_panel:
-                            del self.app.toolbox.integrated_tool_panel[ tool_key ]
+                        if tool_key in toolbox.integrated_tool_panel:
+                            del toolbox.integrated_tool_panel[ tool_key ]
                     config_elems_to_remove.append( config_elem )
         for config_elem in config_elems_to_remove:
             # Remove the element from the in-memory list of elements.
             config_elems.remove( config_elem )
         # Update the config_elems of the in-memory shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        self.app.toolbox.update_shed_config( index, shed_tool_conf_dict, integrated_panel_changes=uninstall )
+        toolbox.update_shed_config( index, shed_tool_conf_dict, integrated_panel_changes=uninstall )
