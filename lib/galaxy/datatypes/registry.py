@@ -535,7 +535,7 @@ class Registry( object ):
                             del self.datatype_converters[ source_datatype ][ target_datatype ]
                     self.log.debug( "Deactivated converter: %s", converter.id )
                 else:
-                    toolbox.tools_by_id[ converter.id ] = converter
+                    toolbox.register_tool( converter )
                     if source_datatype not in self.datatype_converters:
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
@@ -644,8 +644,7 @@ class Registry( object ):
         tmp_name = tempfile.NamedTemporaryFile()
         tmp_name.write( tool_xml_text )
         tmp_name.flush()
-        set_meta_tool = toolbox.load_tool( tmp_name.name )
-        toolbox.tools_by_id[ set_meta_tool.id ] = set_meta_tool
+        set_meta_tool = toolbox.load_hidden_tool( tmp_name.name )
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
 

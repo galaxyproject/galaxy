@@ -40,14 +40,12 @@ def load_history_imp_exp_tools( toolbox ):
     tmp_name = tempfile.NamedTemporaryFile()
     tmp_name.write( tool_xml_text )
     tmp_name.flush()
-    history_exp_tool = toolbox.load_tool( tmp_name.name )
-    toolbox.tools_by_id[ history_exp_tool.id ] = history_exp_tool
+    history_exp_tool = toolbox.load_hidden_tool( tmp_name.name )
     log.debug( "Loaded history export tool: %s", history_exp_tool.id )
 
     # Load import tool.
     tool_xml = os.path.join( os.getcwd(), "lib/galaxy/tools/imp_exp/imp_history_from_archive.xml" )
-    history_imp_tool = toolbox.load_tool( tool_xml )
-    toolbox.tools_by_id[ history_imp_tool.id ] = history_imp_tool
+    history_imp_tool = toolbox.load_hidden_tool( tool_xml )
     log.debug( "Loaded history import tool: %s", history_imp_tool.id )
 
 

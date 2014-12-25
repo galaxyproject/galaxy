@@ -804,6 +804,17 @@ class ToolBox( object, Dictifiable ):
             self.tool_watcher.watch_file( config_file, tool.id )
         return tool
 
+    def load_hidden_tool( self, config_file, **kwds ):
+        """ Load a hidden tool (in this context meaning one that does not
+        appear in the tool panel) and register it in tools_by_id.
+        """
+        tool = self.load_tool( config_file, **kwds )
+        self.register_tool( tool )
+        return tool
+
+    def register_tool( self, tool ):
+        self.tools_by_id[ tool.id ] = tool
+
     def package_tool( self, trans, tool_id ):
         """
         Create a tarball with the tool's xml, help images, and test data.
