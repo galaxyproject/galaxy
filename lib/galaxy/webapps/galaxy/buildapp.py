@@ -198,7 +198,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET', 'mapping' : 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping' : 'GET', 'converters': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )

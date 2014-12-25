@@ -43,6 +43,19 @@ class DatatypesApiTestCase( api.ApiTestCase ):
         xml_index = sniffer_list.index( "galaxy.datatypes.xml:GenericXml" )
         assert owl_index < xml_index
 
+    def test_converters( self ):
+        response = self._get( "datatypes/converters" )
+        self._assert_status_code_is( response, 200 )
+        converters_list = response.json()
+        found_fasta_to_tabular = False
+
+        for converter in converters_list:
+            self._assert_has_key( converter, "source", "target", "tool_id" )
+            if converter["source"] == "fasta" and converter["target"] == "tabular":
+                found_fasta_to_tabular = True
+
+        assert found_fasta_to_tabular
+
     def _index_datatypes( self, data={} ):
         response = self._get( "datatypes", data=data )
         self._assert_status_code_is( response, 200 )

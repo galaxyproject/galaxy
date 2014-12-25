@@ -101,6 +101,19 @@ class DatatypesController( BaseAPIController ):
             else:
                 raise
 
+    @expose_api_anonymous
+    def converters( self, trans, **kwd ):
+        converters = []
+        for (source_type, targets) in self._datatypes_registry.datatype_converters.iteritems():
+            for target_type in targets:
+                converters.append( {
+                    'source': source_type,
+                    'target': target_type,
+                    'tool_id': targets[ target_type ].id,
+                } )
+
+        return converters
+
     @property
     def _datatypes_registry( self ):
         return self.app.datatypes_registry
