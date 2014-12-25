@@ -260,7 +260,4 @@ def panel_entry_per_tool( tool_section_dict ):
 
 def reload_upload_tools( app ):
     if hasattr( app, 'toolbox' ):
-        for tool_id in app.toolbox.tools_by_id:
-            tool = app.toolbox.tools_by_id[ tool_id ]
-            if isinstance( tool.tool_action, UploadToolAction ):
-                app.toolbox.reload_tool_by_id( tool_id )
+        app.toolbox.handle_datatypes_changed()

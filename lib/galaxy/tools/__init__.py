@@ -34,6 +34,7 @@ from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
 from galaxy.tools import watcher
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import build_dependency_manager
@@ -991,6 +992,13 @@ class ToolBox( object, Dictifiable ):
 
     def init_dependency_manager( self ):
         self.dependency_manager = build_dependency_manager( self.app.config )
+
+    def handle_datatypes_changed( self ):
+        """ Refresh upload tools when new datatypes are added. """
+        for tool_id in self.tools_by_id:
+            tool = self.tools_by_id[ tool_id ]
+            if isinstance( tool.tool_action, UploadToolAction ):
+                self.reload_tool_by_id( tool_id )
 
     @property
     def sa_session( self ):
