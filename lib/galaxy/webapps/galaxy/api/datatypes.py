@@ -44,7 +44,7 @@ class DatatypesController( BaseAPIController ):
             return { 'error': str( exception ) }
 
     @web.expose_api_anonymous
-    def mapping( self, trans ):
+    def mapping( self, trans, **kwd ):
         '''
         GET /api/datatypes/mapping
         Return a dictionary of class to class mappings.
