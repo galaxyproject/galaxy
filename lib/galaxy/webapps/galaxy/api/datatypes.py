@@ -2,7 +2,8 @@
 API operations allowing clients to determine datatype supported by Galaxy.
 """
 
-from galaxy import web
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy import exceptions
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.util import asbool
 from galaxy.datatypes.data import Data
@@ -13,7 +14,7 @@ log = logging.getLogger( __name__ )
 
 class DatatypesController( BaseAPIController ):
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def index( self, trans, **kwd ):
         """
         GET /api/datatypes
@@ -38,12 +39,14 @@ class DatatypesController( BaseAPIController ):
                         dictionary[key] = elem.get(key)
                     rval.append(dictionary)
                 return rval
-        except Exception, exception:
+        except Exception as exception:
             log.error( 'could not get datatypes: %s', str( exception ), exc_info=True )
-            trans.response.status = 500
-            return { 'error': str( exception ) }
+            if not isinstance( exception, exceptions.MessageException ):
+                raise exceptions.InternalServerError( str( exception ) )
+            else:
+                raise
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def mapping( self, trans, **kwd ):
         '''
         GET /api/datatypes/mapping
@@ -69,12 +72,15 @@ class DatatypesController( BaseAPIController ):
                 visit_bases( types, c )
                 class_to_classes[ n ] = dict( ( t, True ) for t in types )
             return dict( ext_to_class_name=ext_to_class_name, class_to_classes=class_to_classes )
-        except Exception, exception:
-            log.error( 'could not get datatype mapping: %s', str( exception ), exc_info=True )
-            trans.response.status = 500
-            return { 'error': str( exception ) }
 
-    @web.expose_api_anonymous
+        except Exception as exception:
+            log.error( 'could not get datatype mapping: %s', str( exception ), exc_info=True )
+            if not isinstance( exception, exceptions.MessageException ):
+                raise exceptions.InternalServerError( str( exception ) )
+            else:
+                raise
+
+    @expose_api_anonymous
     def sniffers( self, trans, **kwd ):
         '''
         GET /api/datatypes/sniffers
@@ -87,7 +93,9 @@ class DatatypesController( BaseAPIController ):
                 if datatype is not None:
                     rval.append( datatype )
             return rval
-        except Exception, exception:
+        except Exception as exception:
             log.error( 'could not get datatypes: %s', str( exception ), exc_info=True )
-            trans.response.status = 500
-            return { 'error': str( exception ) }
+            if not isinstance( exception, exceptions.MessageException ):
+                raise exceptions.InternalServerError( str( exception ) )
+            else:
+                raise
