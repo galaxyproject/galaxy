@@ -101,6 +101,16 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         assert "github.com/galaxyproect/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
         self._verify_tool_confs()
 
+        self._remove_guids( ["github.com/galaxyproect/example/test_tool/0.1"], uninstall=True )
+
+        # Now no versions of this tool are returned by toolbox.
+        all_versions = self.toolbox.get_tool( "test_tool", get_all_versions=True )
+        assert not all_versions
+
+        # Check that tool panel has reverted to old value...
+        section = self.toolbox.tool_panel["tid"]
+        assert len(section.elems) == 0
+
     def _setup_two_versions_remove_one( self, section, uninstall ):
         self._init_tool()
         self._setup_two_versions_in_config( section=True )
