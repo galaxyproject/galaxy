@@ -490,8 +490,8 @@ class ToolPanelManager( object ):
 
         # Remove the tools from the toolbox's tools_by_id dictionary.
         for guid_to_remove in guids_to_remove:
-            if guid_to_remove in toolbox.tools_by_id:
-                del toolbox.tools_by_id[ guid_to_remove ]
+            # remove_from_tool_panel to false, will handling that logic below.
+            toolbox.remove_tool_by_id( guid_to_remove, remove_from_panel=False )
         index, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         if uninstall:
             # Remove from the shed_tool_conf file on disk.

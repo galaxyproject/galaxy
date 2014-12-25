@@ -952,9 +952,13 @@ class ToolBox( object, Dictifiable ):
             status = 'done'
         return message, status
 
-    def remove_tool_by_id( self, tool_id ):
+    def remove_tool_by_id( self, tool_id, remove_from_panel=True ):
         """
-        Attempt to remove the tool identified by 'tool_id'.
+        Attempt to remove the tool identified by 'tool_id'. Ignores
+        tool lineage - so to remove a tool with potentially multiple
+        versions send remove_from_panel=False and handle the logic of
+        promoting the next newest version of the tool into the panel
+        if needed.
         """
         if tool_id not in self.tools_by_id:
             message = "No tool with id %s" % escape( tool_id )
@@ -962,17 +966,18 @@ class ToolBox( object, Dictifiable ):
         else:
             tool = self.tools_by_id[ tool_id ]
             del self.tools_by_id[ tool_id ]
-            tool_key = 'tool_' + tool_id
-            for key, val in self.tool_panel.items():
-                if key == tool_key:
-                    del self.tool_panel[ key ]
-                    break
-                elif key.startswith( 'section' ):
-                    if tool_key in val.elems:
-                        del self.tool_panel[ key ].elems[ tool_key ]
+            if remove_from_panel:
+                tool_key = 'tool_' + tool_id
+                for key, val in self.tool_panel.items():
+                    if key == tool_key:
+                        del self.tool_panel[ key ]
                         break
-            if tool_id in self.data_manager_tools:
-                del self.data_manager_tools[ tool_id ]
+                    elif key.startswith( 'section' ):
+                        if tool_key in val.elems:
+                            del self.tool_panel[ key ].elems[ tool_key ]
+                            break
+                if tool_id in self.data_manager_tools:
+                    del self.data_manager_tools[ tool_id ]
             #TODO: do we need to manually remove from the integrated panel here?
             message = "Removed the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % tool.name

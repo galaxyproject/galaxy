@@ -529,8 +529,7 @@ class Registry( object ):
                             converter.id = tool_dict[ 'guid' ]
                             break
                 if deactivate:
-                    if converter.id in toolbox.tools_by_id:
-                        del toolbox.tools_by_id[ converter.id ]
+                    toolbox.remove_tool_by_id( converter.id, remove_from_panel=False )
                     if source_datatype in self.datatype_converters:
                         if target_datatype in self.datatype_converters[ source_datatype ]:
                             del self.datatype_converters[ source_datatype ][ target_datatype ]
