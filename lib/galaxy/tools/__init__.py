@@ -519,6 +519,21 @@ class ToolBox( object, Dictifiable ):
     def has_tool( self, tool_id, exact=False ):
         return self.get_tool( tool_id, exact=exact ) is not None
 
+    def get_tool_id( self, tool_id ):
+        """ Take a tool id (potentially from a different Galaxy instance or that
+        is no longer loaded  - and find the closest match to the currently loaded
+        tools (using get_tool for inexact matches which currently returns the oldest
+        tool shed installed tool with the same short id).
+        """
+        if tool_id not in self.tools_by_id:
+            tool = self.get_tool( tool_id )
+            if tool:
+                tool_id = tool.id
+            else:
+                tool_id = None
+        # else exact match - leave unmodified.
+        return tool_id
+
     def get_loaded_tools_by_lineage( self, tool_id ):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
         tv = self.__get_tool_version( tool_id )

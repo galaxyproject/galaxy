@@ -508,15 +508,13 @@ class ToolModule( WorkflowModule ):
     def from_workflow_step( Class, trans, step ):
         toolbox = trans.app.toolbox
         tool_id = step.tool_id
-        if toolbox and tool_id not in toolbox.tools_by_id:
+        if toolbox:
             # See if we have access to a different version of the tool.
             # TODO: If workflows are ever enhanced to use tool version
             # in addition to tool id, enhance the selection process here
             # to retrieve the correct version of the tool.
-            tool = toolbox.get_tool( tool_id )
-            if tool:
-                tool_id = tool.id
-        if ( toolbox and tool_id in toolbox.tools_by_id ):
+            tool_id = toolbox.get_tool_id( tool_id )
+        if ( toolbox and tool_id ):
             if step.config:
                 # This step has its state saved in the config field due to the
                 # tool being previously unavailable.

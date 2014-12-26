@@ -186,6 +186,15 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         # No changes, should be regenerated
         self.assert_integerated_tool_panel(exists=False)
 
+    def test_get_tool_id( self ):
+        self._init_tool()
+        self._setup_two_versions_in_config( )
+        self._setup_two_versions()
+        assert self.toolbox.get_tool_id( "test_tool" ) == "github.com/galaxyproect/example/test_tool/0.1"
+        assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.1" ) == "github.com/galaxyproect/example/test_tool/0.1"
+        assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.2" ) == "github.com/galaxyproect/example/test_tool/0.2"
+        assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.3" ) is None
+
     def __verify_two_test_tools( self ):
         # Assert tool versions of the tool with simple id 'test_tool'
         all_versions = self.toolbox.get_tool( "test_tool", get_all_versions=True )
