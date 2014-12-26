@@ -119,7 +119,7 @@ class JobHandlerQueue( object ):
                                        & ( model.Job.handler == self.app.config.server_name ) ).all()
 
         for job in jobs_at_startup:
-            if job.tool_id not in self.app.toolbox.tools_by_id:
+            if not self.app.toolbox.has_tool( job.tool_id, exact=True ):
                 log.warning( "(%s) Tool '%s' removed from tool config, unable to recover job" % ( job.id, job.tool_id ) )
                 self.job_wrapper( job ).fail( 'This tool was disabled before the job completed.  Please contact your Galaxy administrator.' )
             elif job.job_runner_name is not None and job.job_runner_external_id is None:

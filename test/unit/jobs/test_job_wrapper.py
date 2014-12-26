@@ -190,13 +190,13 @@ class MockToolbox(object):
     def __init__(self, test_tool):
         self.test_tool = test_tool
 
-    @property
-    def tools_by_id(self):
-        return self
-
     def get(self, tool_id, default=None):
         assert tool_id == TEST_TOOL_ID
         return self.test_tool
+
+    def get_tool( self, tool_id, exact=False ):
+        tool = self.get(tool_id)
+        return tool
 
 
 class MockObjectStore(object):
