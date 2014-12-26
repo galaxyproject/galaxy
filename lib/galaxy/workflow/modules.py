@@ -557,13 +557,6 @@ class ToolModule( WorkflowModule ):
     def normalize_runtime_state( self, runtime_state ):
         return runtime_state.encode( self.tool, self.trans.app, secure=False )
 
-    @classmethod
-    def __get_tool_version( cls, trans, tool_id ):
-        # Return a ToolVersion if one exists for tool_id.
-        return trans.install_model.context.query( trans.install_model.ToolVersion ) \
-                               .filter( trans.install_model.ToolVersion.table.c.tool_id == tool_id ) \
-                               .first()
-
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = self.tool_id
