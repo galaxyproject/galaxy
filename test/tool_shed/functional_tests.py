@@ -359,6 +359,7 @@ def main():
                        database_connection = galaxy_database_connection,
                        database_auto_migrate = galaxy_database_auto_migrate,
                        datatype_converters_config_file = "datatype_converters_conf.xml.sample",
+                       check_migrate_tools = False,
                        enable_tool_shed_check = True,
                        file_path = galaxy_file_path,
                        global_conf = galaxy_global_conf,
