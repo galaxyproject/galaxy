@@ -17,7 +17,7 @@ from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
-from markupsafe import escape
+from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
 

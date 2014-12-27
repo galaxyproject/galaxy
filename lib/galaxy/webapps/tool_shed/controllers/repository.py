@@ -6,7 +6,6 @@ from time import gmtime
 from time import strftime
 from datetime import date
 from datetime import datetime
-from markupsafe import escape
 
 from galaxy import util
 from galaxy import web
@@ -19,6 +18,7 @@ from galaxy.model.orm import and_
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
 
+from tool_shed.util.web_util import escape
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
