@@ -9,7 +9,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.datatypes import checkers
 from galaxy.web.base.controller import BaseUIController
-from markupsafe import escape
+from tool_shed.util.web_util import escape
 
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.galaxy_install import dependency_display

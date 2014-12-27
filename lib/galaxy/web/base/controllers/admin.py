@@ -7,7 +7,7 @@ from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
 from string import punctuation as PUNCTUATION
 import galaxy.queue_worker
-from markupsafe import escape
+from tool_shed.util.web_util import escape
 
 from tool_shed.util import shed_util_common as suc
 

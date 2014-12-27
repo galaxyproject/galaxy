@@ -3,7 +3,7 @@ import logging
 from galaxy import util
 from galaxy.util import inflector
 from galaxy import web
-from markupsafe import escape
+from tool_shed.util.web_util import escape
 
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.base.controllers.admin import Admin
