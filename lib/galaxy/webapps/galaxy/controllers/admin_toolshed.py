@@ -8,9 +8,9 @@ from galaxy import util
 from galaxy.web.form_builder import CheckboxField
 from galaxy.util import json
 from galaxy.model.orm import or_
-from markupsafe import escape
 
 import tool_shed.repository_types.util as rt_util
+from tool_shed.util.web_util import escape
 
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util

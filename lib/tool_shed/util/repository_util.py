@@ -7,7 +7,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.web.form_builder import build_select_field
 from galaxy.webapps.tool_shed.model import directory_hash_id
-from markupsafe import escape
+from tool_shed.util.web_util import escape
 
 from tool_shed.dependencies.repository import relation_builder
 

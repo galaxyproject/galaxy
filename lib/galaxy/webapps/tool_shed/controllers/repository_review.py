@@ -2,7 +2,7 @@ import logging
 import os
 
 from sqlalchemy.sql.expression import func
-from markupsafe import escape
+from tool_shed.util.web_util import escape
 
 from galaxy import util
 from galaxy import web
