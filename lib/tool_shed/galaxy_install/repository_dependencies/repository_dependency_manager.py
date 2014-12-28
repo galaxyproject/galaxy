@@ -213,7 +213,7 @@ class RepositoryDependencyInstallManager( object ):
                         # Get the repository metadata to see where it was previously located in the tool panel.
                         tpm = tool_panel_manager.ToolPanelManager( self.app )
                         if repository_db_record and repository_db_record.metadata:
-                            tool_section, tool_panel_section_key = \
+                            _, tool_panel_section_key = \
                                 tpm.handle_tool_panel_selection( toolbox=self.app.toolbox,
                                                                  metadata=repository_db_record.metadata,
                                                                  no_changes_checked=no_changes_checked,
@@ -221,7 +221,7 @@ class RepositoryDependencyInstallManager( object ):
                                                                  new_tool_panel_section_label=new_tool_panel_section_label )
                         else:
                             # We're installing a new tool shed repository that does not yet have a database record.
-                            tool_panel_section_key, tool_section = \
+                            tool_panel_section_key, _ = \
                                 tpm.handle_tool_panel_section( self.app.toolbox,
                                                                tool_panel_section_id=tool_panel_section_id,
                                                                new_tool_panel_section_label=new_tool_panel_section_label )

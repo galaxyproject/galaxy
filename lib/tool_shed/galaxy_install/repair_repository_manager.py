@@ -123,7 +123,7 @@ class RepairRepositoryManager():
                 tool_panel_section_name = section_dict[ 'name' ]
                 if tool_panel_section_id:
                     tpm = tool_panel_manager.ToolPanelManager( self.app )
-                    tool_panel_section_key, tool_panel_section = \
+                    tool_panel_section_key, _ = \
                         tpm.get_or_create_tool_section( self.app.toolbox,
                                                         tool_panel_section_id=tool_panel_section_id,
                                                         new_tool_panel_section_label=tool_panel_section_name )
@@ -165,7 +165,7 @@ class RepairRepositoryManager():
                 suc.get_tool_panel_config_tool_path_install_dir( self.app, repository )
             # Reset the repository attributes to the New state for installation.
             if metadata:
-                tool_section, tool_panel_section_key = \
+                _, tool_panel_section_key = \
                     tpm.handle_tool_panel_selection( self.app.toolbox,
                                                      metadata,
                                                      no_changes_checked=True,
