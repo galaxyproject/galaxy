@@ -136,6 +136,27 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         assert toolbox.get_tool( "test_tool" ) is not None
         assert toolbox.get_tool( "not_a_test_tool" ) is None
 
+    def test_tool_shed_properties( self ):
+        self._init_tool()
+        self._setup_two_versions_in_config( section=False )
+        self._setup_two_versions()
+
+        test_tool = self.toolbox.get_tool( "test_tool" )
+        assert test_tool.tool_shed == "github.com"
+        assert test_tool.repository_owner == "galaxyproject"
+        assert test_tool.repository_name == "example"
+        assert test_tool.installed_changeset_revision == "1"
+
+    def test_tool_shed_properties_only_on_installed_tools( self ):
+        self._init_tool()
+        self._add_config( """<toolbox><tool file="tool.xml" /></toolbox>""" )
+        toolbox = self.toolbox
+        test_tool = toolbox.get_tool( "test_tool" )
+        assert test_tool.tool_shed is None
+        assert test_tool.repository_name is None
+        assert test_tool.repository_owner is None
+        assert test_tool.installed_changeset_revision is None
+
     def test_load_file_in_section( self ):
         self._init_tool()
         self._add_config( """<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""" )

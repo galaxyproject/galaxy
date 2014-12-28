@@ -559,6 +559,23 @@ class ToolBox( object, Dictifiable ):
     def tools( self ):
         return self.tools_by_id.iteritems()
 
+    def __elem_to_tool_shed_repository( self, elem ):
+        # The tool is contained in an installed tool shed repository, so load
+        # the tool only if the repository has not been marked deleted.
+        tool_shed = elem.find( "tool_shed" ).text
+        repository_name = elem.find( "repository_name" ).text
+        repository_owner = elem.find( "repository_owner" ).text
+        installed_changeset_revision_elem = elem.find( "installed_changeset_revision" )
+        if installed_changeset_revision_elem is None:
+            # Backward compatibility issue - the tag used to be named 'changeset_revision'.
+            installed_changeset_revision_elem = elem.find( "changeset_revision" )
+        installed_changeset_revision = installed_changeset_revision_elem.text
+        tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
+                                                                repository_name,
+                                                                repository_owner,
+                                                                installed_changeset_revision )
+        return tool_shed_repository
+
     def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
         # We store only the port, if one exists, in the database.
         tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
@@ -613,42 +630,29 @@ class ToolBox( object, Dictifiable ):
         try:
             path = elem.get( "file" )
             repository_id = None
-            if guid is None:
-                tool_shed_repository = None
-                can_load_into_panel_dict = True
-            else:
+
+            tool_shed_repository = None
+            can_load_into_panel_dict = True
+            if guid is not None:
                 # The tool is contained in an installed tool shed repository, so load
                 # the tool only if the repository has not been marked deleted.
-                tool_shed = elem.find( "tool_shed" ).text
-                repository_name = elem.find( "repository_name" ).text
-                repository_owner = elem.find( "repository_owner" ).text
-                installed_changeset_revision_elem = elem.find( "installed_changeset_revision" )
-                if installed_changeset_revision_elem is None:
-                    # Backward compatibility issue - the tag used to be named 'changeset_revision'.
-                    installed_changeset_revision_elem = elem.find( "changeset_revision" )
-                installed_changeset_revision = installed_changeset_revision_elem.text
-                tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
-                                                                        repository_name,
-                                                                        repository_owner,
-                                                                        installed_changeset_revision )
+                tool_shed_repository = self.__elem_to_tool_shed_repository( elem )
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
                     repository_id = self.app.security.encode_id( tool_shed_repository.id )
-                else:
-                    # If there is not yet a tool_shed_repository record, we're in the process of installing
-                    # a new repository, so any included tools can be loaded into the tool panel.
-                    can_load_into_panel_dict = True
+                # Else there is not yet a tool_shed_repository record, we're in the process of installing
+                # a new repository, so any included tools can be loaded into the tool panel.
             tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id )
             if string_as_bool(elem.get( 'hidden', False )):
                 tool.hidden = True
             key = 'tool_%s' % str( tool.id )
             if can_load_into_panel_dict:
                 if guid is not None:
-                    tool.tool_shed = tool_shed
-                    tool.repository_name = repository_name
-                    tool.repository_owner = repository_owner
-                    tool.installed_changeset_revision = installed_changeset_revision
+                    tool.tool_shed = tool_shed_repository.tool_shed
+                    tool.repository_name = tool_shed_repository.name
+                    tool.repository_owner = tool_shed_repository.owner
+                    tool.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
                     tool.guid = guid
                     tool.version = elem.find( "version" ).text
                 # Make sure the tool has a tool_version.
