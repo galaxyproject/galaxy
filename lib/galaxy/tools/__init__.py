@@ -1021,6 +1021,24 @@ class ToolBox( object, Dictifiable ):
             status = 'done'
         return message, status
 
+    def find_section_id( self, tool_panel_section_id ):
+        """
+        Find the section ID referenced by the key or return '' indicating
+        no such section id.
+        """
+        if not tool_panel_section_id:
+            tool_panel_section_id = ''
+        else:
+            if tool_panel_section_id not in self.tool_panel:
+                # Hack introduced without comment in a29d54619813d5da992b897557162a360b8d610c-
+                # not sure why it is needed.
+                fixed_tool_panel_section_id = 'section_%s' % tool_panel_section_id
+                if fixed_tool_panel_section_id in self.tool_panel:
+                    tool_panel_section_id = fixed_tool_panel_section_id
+                else:
+                    tool_panel_section_id = ''
+        return tool_panel_section_id
+
     def load_workflow( self, workflow_id ):
         """
         Return an instance of 'Workflow' identified by `id`,

@@ -742,16 +742,7 @@ class InstallRepositoryManager( object ):
             tool_path = shed_config_dict[ 'tool_path' ]
         if not shed_tool_conf:
             raise exceptions.RequestParameterMissingException( "Missing required parameter 'shed_tool_conf'." )
-        tool_panel_section_id = install_options.get( 'tool_panel_section_id', '' )
-        if tool_panel_section_id not in [ None, '' ]:
-            if tool_panel_section_id not in self.app.toolbox.tool_panel:
-                fixed_tool_panel_section_id = 'section_%s' % tool_panel_section_id
-                if fixed_tool_panel_section_id in self.app.toolbox.tool_panel:
-                    tool_panel_section_id = fixed_tool_panel_section_id
-                else:
-                    tool_panel_section_id = ''
-        else:
-            tool_panel_section_id = ''
+        tool_panel_section_id = self.app.toolbox.find_section_id( install_options.get( 'tool_panel_section_id', '' ) )
         # Build the dictionary of information necessary for creating tool_shed_repository database records
         # for each repository being installed.
         installation_dict = dict( install_repository_dependencies=install_repository_dependencies,
