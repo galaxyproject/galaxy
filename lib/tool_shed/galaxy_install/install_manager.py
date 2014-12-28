@@ -42,11 +42,11 @@ log = logging.getLogger( __name__ )
 
 
 class InstallToolDependencyManager( object ):
-    
+
     def __init__( self, app ):
         self.app = app
         self.install_model = self.app.install_model
-        self.INSTALL_ACTIONS = [ 'download_binary', 'download_by_url', 'download_file', 
+        self.INSTALL_ACTIONS = [ 'download_binary', 'download_by_url', 'download_file',
                                  'setup_perl_environment', 'setup_python_environment',
                                  'setup_r_environment', 'setup_ruby_environment', 'shell_command' ]
 
@@ -142,9 +142,9 @@ class InstallToolDependencyManager( object ):
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
             # be left False here.
             error_message = '%s\n%s' % ( self.format_traceback(), str( e ) )
-            tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( self.app, 
-                                                                                              tool_dependency, 
-                                                                                              error_message, 
+            tool_dependency = tool_dependency_util.handle_tool_dependency_installation_error( self.app,
+                                                                                              tool_dependency,
+                                                                                              error_message,
                                                                                               remove_installation_path=False )
         tool_dependency = self.mark_tool_dependency_installed( tool_dependency )
         return tool_dependency
@@ -208,9 +208,9 @@ class InstallToolDependencyManager( object ):
                                                      tool_dependency_db_records=tool_dependencies )
                     if ( tool_dependency.type == 'package' and proceed_with_install ):
                         try:
-                            tool_dependency = self.install_package( elem, 
-                                                                    tool_shed_repository, 
-                                                                    tool_dependencies=tool_dependencies, 
+                            tool_dependency = self.install_package( elem,
+                                                                    tool_shed_repository,
+                                                                    tool_dependencies=tool_dependencies,
                                                                     from_tool_migration_manager=from_tool_migration_manager )
                         except Exception, e:
                             error_message = "Error installing tool dependency %s version %s: %s" % \
@@ -220,9 +220,9 @@ class InstallToolDependencyManager( object ):
                                 # Since there was an installation error, update the tool dependency status to Error. The
                                 # remove_installation_path option must be left False here.
                                 tool_dependency = \
-                                    tool_dependency_util.handle_tool_dependency_installation_error( self.app, 
-                                                                                                    tool_dependency, 
-                                                                                                    error_message, 
+                                    tool_dependency_util.handle_tool_dependency_installation_error( self.app,
+                                                                                                    tool_dependency,
+                                                                                                    error_message,
                                                                                                     remove_installation_path=False )
                         if tool_dependency and tool_dependency.status in [ self.install_model.ToolDependency.installation_status.INSTALLED,
                                                                            self.install_model.ToolDependency.installation_status.ERROR ]:
@@ -236,7 +236,7 @@ class InstallToolDependencyManager( object ):
     def install_via_fabric( self, tool_shed_repository, tool_dependency, install_dir, package_name=None, custom_fabfile_path=None,
                             actions_elem=None, action_elem=None, **kwd ):
         """
-        Parse a tool_dependency.xml file's <actions> tag set to gather information for installation using 
+        Parse a tool_dependency.xml file's <actions> tag set to gather information for installation using
         self.install_and_build_package().  The use of fabric is being eliminated, so some of these functions
         may need to be renamed at some point.
         """
@@ -363,8 +363,8 @@ class InstallToolDependencyManager( object ):
                                         else:
                                             # Process the next matching <actions> tag, or any defined <actions> tags that do not
                                             # contain platform dependent recipes.
-                                            log.debug( 'Error downloading binary for tool dependency %s version %s: %s' % \
-                                                ( str( package_name ), str( package_version ), str( tool_dependency.error_message ) ) )
+                                            log.debug( 'Error downloading binary for tool dependency %s version %s: %s' %
+                                                       ( str( package_name ), str( package_version ), str( tool_dependency.error_message ) ) )
                                     else:
                                         if actions_elem.tag == 'actions':
                                             # We've reached an <actions> tag that defines the recipe for installing and compiling from
@@ -380,7 +380,7 @@ class InstallToolDependencyManager( object ):
                                                         if removed:
                                                             can_install_from_source = True
                                                         else:
-                                                            log.debug( 'Error removing old files from installation directory %s: %s' % \
+                                                            log.debug( 'Error removing old files from installation directory %s: %s' %
                                                                        ( str( installation_directory, str( error_message ) ) ) )
                                                     else:
                                                         can_install_from_source = True
@@ -389,7 +389,7 @@ class InstallToolDependencyManager( object ):
                                             if can_install_from_source:
                                                 # We now know that binary installation was not successful, so proceed with the <actions>
                                                 # tag set that defines the recipe to install and compile from source.
-                                                log.debug( 'Proceeding with install and compile recipe for tool dependency %s.' % \
+                                                log.debug( 'Proceeding with install and compile recipe for tool dependency %s.' %
                                                            str( tool_dependency.name ) )
                                                 tool_dependency = self.install_via_fabric( tool_shed_repository,
                                                                                            tool_dependency,
@@ -398,7 +398,7 @@ class InstallToolDependencyManager( object ):
                                                                                            actions_elem=actions_elem,
                                                                                            action_elem=None )
                                     if actions_elem.tag == 'action' and \
-                                        tool_dependency.status != self.install_model.ToolDependency.installation_status.ERROR:
+                                            tool_dependency.status != self.install_model.ToolDependency.installation_status.ERROR:
                                         # If the tool dependency is not in an error state, perform any final actions that have been
                                         # defined within the actions_group tag set, but outside of an <actions> tag, which defines
                                         # the recipe for installing and compiling from source.
@@ -419,17 +419,17 @@ class InstallToolDependencyManager( object ):
                                                                            actions_elem=actions_elems,
                                                                            action_elem=None )
                                 if tool_dependency.status != self.install_model.ToolDependency.installation_status.ERROR:
-                                    log.debug( 'Tool dependency %s version %s has been installed in %s.' % \
-                                        ( str( package_name ), str( package_version ), str( install_dir ) ) )
+                                    log.debug( 'Tool dependency %s version %s has been installed in %s.' %
+                                               ( str( package_name ), str( package_version ), str( install_dir ) ) )
         return tool_dependency
 
     def mark_tool_dependency_installed( self, tool_dependency ):
         if tool_dependency.status not in [ self.install_model.ToolDependency.installation_status.ERROR,
                                            self.install_model.ToolDependency.installation_status.INSTALLED ]:
-            log.debug( 'Changing status for tool dependency %s from %s to %s.' % \
-                ( str( tool_dependency.name ),
-                  str( tool_dependency.status ),
-                  str( self.install_model.ToolDependency.installation_status.INSTALLED ) ) )
+            log.debug( 'Changing status for tool dependency %s from %s to %s.' %
+                       ( str( tool_dependency.name ),
+                         str( tool_dependency.status ),
+                           str( self.install_model.ToolDependency.installation_status.INSTALLED ) ) )
             status = self.install_model.ToolDependency.installation_status.INSTALLED
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes( self.app,
                                                                                    tool_dependency=tool_dependency,
@@ -531,10 +531,10 @@ class InstallRepositoryManager( object ):
         self.install_model.context.add( tool_shed_repository )
         self.install_model.context.flush()
         if 'tool_dependencies' in irmm_metadata_dict and not reinstalling:
-            tool_dependencies = tool_dependency_util.create_tool_dependency_objects( self.app,
-                                                                                     tool_shed_repository,
-                                                                                     relative_install_dir,
-                                                                                     set_status=True )
+            tool_dependency_util.create_tool_dependency_objects( self.app,
+                                                                 tool_shed_repository,
+                                                                 relative_install_dir,
+                                                                 set_status=True )
         if 'sample_files' in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = tdtm.get_tool_index_sample_files( sample_files )
@@ -579,12 +579,12 @@ class InstallRepositoryManager( object ):
                                             new_install=True )
         if 'data_manager' in irmm_metadata_dict:
             dmh = data_manager.DataManagerHandler( self.app )
-            new_data_managers = dmh.install_data_managers( self.app.config.shed_data_manager_config_file,
-                                                           irmm_metadata_dict,
-                                                           shed_config_dict,
-                                                           relative_install_dir,
-                                                           tool_shed_repository,
-                                                           repository_tools_tups )
+            dmh.install_data_managers( self.app.config.shed_data_manager_config_file,
+                                       irmm_metadata_dict,
+                                       shed_config_dict,
+                                       relative_install_dir,
+                                       tool_shed_repository,
+                                       repository_tools_tups )
         if 'datatypes' in irmm_metadata_dict:
             tool_shed_repository.status = self.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
@@ -656,13 +656,9 @@ class InstallRepositoryManager( object ):
         tool_shed_url = installation_dict[ 'tool_shed_url' ]
         # Handle contained tools.
         if includes_tools_for_display_in_tool_panel and ( new_tool_panel_section_label or tool_panel_section_id ):
-            tool_panel_section_key, tool_section = \
-                self.tpm.handle_tool_panel_section( self.app.toolbox,
-                                                    tool_panel_section_id=tool_panel_section_id,
-                                                    new_tool_panel_section_label=new_tool_panel_section_label )
-        else:
-            tool_panel_section_key = None
-            tool_section = None
+            self.tpm.handle_tool_panel_section( self.app.toolbox,
+                                                tool_panel_section_id=tool_panel_section_id,
+                                                new_tool_panel_section_label=new_tool_panel_section_label )
         encoded_repository_ids = [ self.app.security.encode_id( tsr.id ) for tsr in created_or_updated_tool_shed_repositories ]
         new_kwd = dict( includes_tools=includes_tools,
                         includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
@@ -679,7 +675,7 @@ class InstallRepositoryManager( object ):
                         tool_shed_repository_ids=encoded_repository_ids,
                         tool_shed_url=tool_shed_url )
         encoded_kwd = encoding_util.tool_shed_encode( new_kwd )
-        tsr_ids = [ r.id  for r in created_or_updated_tool_shed_repositories  ]
+        tsr_ids = [ r.id for r in created_or_updated_tool_shed_repositories  ]
         tool_shed_repositories = []
         for tsr_id in tsr_ids:
             tsr = self.install_model.context.query( self.install_model.ToolShedRepository ).get( tsr_id )
@@ -895,10 +891,10 @@ class InstallRepositoryManager( object ):
                 # Get the tool_dependencies.xml file from the repository.
                 tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', install_dir )
                 itdm = InstallToolDependencyManager( self.app )
-                installed_tool_dependencies = itdm.install_specified_tool_dependencies( tool_shed_repository=tool_shed_repository,
-                                                                                        tool_dependencies_config=tool_dependencies_config,
-                                                                                        tool_dependencies=tool_shed_repository.tool_dependencies,
-                                                                                        from_tool_migration_manager=False )
+                itdm.install_specified_tool_dependencies( tool_shed_repository=tool_shed_repository,
+                                                          tool_dependencies_config=tool_dependencies_config,
+                                                          tool_dependencies=tool_shed_repository.tool_dependencies,
+                                                          from_tool_migration_manager=False )
                 basic_util.remove_dir( work_dir )
             self.update_tool_shed_repository_status( tool_shed_repository,
                                                      self.install_model.ToolShedRepository.installation_status.INSTALLED )

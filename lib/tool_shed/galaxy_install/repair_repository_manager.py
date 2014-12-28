@@ -65,7 +65,7 @@ class RepairRepositoryManager():
         repair_dict = {}
         irm = install_manager.InstallRepositoryManager( self.app )
         # Get a dictionary of all repositories upon which the contents of the current repository_metadata
-        #record depend.
+        # record depend.
         repository_dependencies_dict = rdim.get_repository_dependencies_for_installed_tool_shed_repository( self.app,
                                                                                                             repository )
         if repository_dependencies_dict:
@@ -142,14 +142,14 @@ class RepairRepositoryManager():
         return repo_info_dict, tool_panel_section_key
 
     def repair_tool_shed_repository( self, repository, repo_info_dict ):
-    
+
         def add_repair_dict_entry( repository_name, error_message ):
             if repository_name in repair_dict:
                 repair_dict[ repository_name ].append( error_message )
             else:
                 repair_dict[ repository_name ] = [ error_message ]
             return repair_dict
-    
+
         metadata = repository.metadata
         repair_dict = {}
         tpm = tool_panel_manager.ToolPanelManager( self.app )
