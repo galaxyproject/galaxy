@@ -3,6 +3,7 @@ import string
 import unittest
 
 from galaxy.tools import ToolBox
+from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 import tools_support
@@ -215,6 +216,67 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.1" ) == "github.com/galaxyproect/example/test_tool/0.1"
         assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.2" ) == "github.com/galaxyproect/example/test_tool/0.2"
         assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.3" ) is None
+
+    def test_tool_dir( self ):
+        self._init_tool()
+        self._add_config( """<toolbox><tool_dir dir="%s" /></toolbox>""" % self.test_directory )
+
+        toolbox = self.toolbox
+        assert toolbox.get_tool( "test_tool" ) is not None
+
+    def test_workflow_in_panel( self ):
+        stored_workflow = self.__test_workflow()
+        encoded_id = self.app.security.encode_id( stored_workflow.id )
+        self._add_config( """<toolbox><workflow id="%s" /></toolbox>""" % encoded_id )
+        assert len( self.toolbox.tool_panel ) == 1
+        panel_workflow = self.toolbox.tool_panel.values()[ 0 ]
+        assert panel_workflow == stored_workflow.latest_workflow
+        # TODO: test to_dict with workflows
+
+    def test_workflow_in_section( self ):
+        stored_workflow = self.__test_workflow()
+        encoded_id = self.app.security.encode_id( stored_workflow.id )
+        self._add_config( """<toolbox><section id="tid" name="TID"><workflow id="%s" /></section></toolbox>""" % encoded_id )
+        assert len( self.toolbox.tool_panel ) == 1
+        section = self.toolbox.tool_panel[ 'tid' ]
+        assert len( section.elems ) == 1
+        panel_workflow = section.elems.values()[ 0 ]
+        assert panel_workflow == stored_workflow.latest_workflow
+
+    def test_label_in_panel( self ):
+        self._add_config( """<toolbox><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></toolbox>""" )
+        assert len( self.toolbox.tool_panel ) == 2
+        self.__check_test_labels( self.toolbox.tool_panel )
+
+    def test_label_in_section( self ):
+        self._add_config( """<toolbox><section id="tid" name="TID"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>""" )
+        assert len( self.toolbox.tool_panel ) == 1
+        section = self.toolbox.tool_panel[ 'tid' ]
+        self.__check_test_labels( section.elems )
+
+    def __check_test_labels( self, panel_dict ):
+        assert panel_dict.keys() == ["label_lab1", "label_lab2"]
+        label1 = panel_dict.values()[ 0 ]
+        assert label1.id == "lab1"
+        assert label1.text == "Label 1"
+
+        label2 = panel_dict[ "label_lab2" ]
+        assert label2.id == "lab2"
+        assert label2.text == "Label 2"
+
+    def __test_workflow( self ):
+        stored_workflow = model.StoredWorkflow()
+        workflow = model.Workflow()
+        workflow.stored_workflow = stored_workflow
+        stored_workflow.latest_workflow = workflow
+        user = model.User()
+        user.email = "test@example.com"
+        user.password = "passw0rD1"
+        stored_workflow.user = user
+        self.app.model.context.add( workflow )
+        self.app.model.context.add( stored_workflow )
+        self.app.model.context.flush()
+        return stored_workflow
 
     def __verify_two_test_tools( self ):
         # Assert tool versions of the tool with simple id 'test_tool'

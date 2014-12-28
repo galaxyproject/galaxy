@@ -222,22 +222,42 @@ class ToolBox( object, Dictifiable ):
             self.index += 1
             if parsing_shed_tool_conf:
                 config_elems.append( elem )
-            if elem.tag == 'tool':
-                self.load_tool_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict, guid=elem.get( 'guid' ), index=index )
-            elif elem.tag == 'workflow':
-                self.load_workflow_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
-            elif elem.tag == 'section':
-                self.load_section_tag_set( elem, tool_path, load_panel_dict, index=index )
-            elif elem.tag == 'label':
-                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
-            elif elem.tag == 'tool_dir':
-                self.load_tooldir_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
+            self.load_item(
+                elem,
+                tool_path=tool_path,
+                load_panel_dict=load_panel_dict,
+                guid=elem.get( 'guid' ),
+                index=index,
+                internal=True
+            )
 
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self.shed_tool_confs.append( shed_tool_conf_dict )
+
+    def load_item( self, elem, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False ):
+        item_type = elem.tag
+        if item_type not in ['tool', 'section'] and not internal:
+            # External calls from tool shed code cannot load labels or tool
+            # directories.
+            return
+
+        if panel_dict is None:
+            panel_dict = self.tool_panel
+        if integrated_panel_dict is None:
+            integrated_panel_dict = self.integrated_tool_panel
+        if item_type == 'tool':
+            self.load_tool_tag_set( elem, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, tool_path=tool_path, load_panel_dict=load_panel_dict, guid=guid, index=index )
+        elif item_type == 'workflow':
+            self.load_workflow_tag_set( elem, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
+        elif item_type == 'section':
+            self.load_section_tag_set( elem, tool_path=tool_path, load_panel_dict=load_panel_dict, index=index )
+        elif item_type == 'label':
+            self.load_label_tag_set( elem, panel_dict=panel_dict, integrated_panel_dict=integrated_panel_dict, load_panel_dict=load_panel_dict, index=index )
+        elif item_type == 'tool_dir':
+            self.load_tooldir_tag_set( elem, panel_dict, tool_path, integrated_panel_dict, load_panel_dict=load_panel_dict )
 
     def get_shed_config_dict_by_filename( self, filename, default=None ):
         for shed_config_dict in self.shed_tool_confs:
@@ -729,14 +749,16 @@ class ToolBox( object, Dictifiable ):
             integrated_section = ToolSection( elem )
             integrated_elems = integrated_section.elems
         for sub_index, sub_elem in enumerate( elem ):
-            if sub_elem.tag == 'tool':
-                self.load_tool_tag_set( sub_elem, elems, integrated_elems, tool_path, load_panel_dict, guid=sub_elem.get( 'guid' ), index=sub_index )
-            elif sub_elem.tag == 'workflow':
-                self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
-            elif sub_elem.tag == 'label':
-                self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
-            elif sub_elem.tag == 'tool_dir':
-                self.load_tooldir_tag_set( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
+            self.load_item(
+                sub_elem,
+                tool_path=tool_path,
+                panel_dict=elems,
+                integrated_panel_dict=integrated_elems,
+                load_panel_dict=load_panel_dict,
+                guid=sub_elem.get( 'guid' ),
+                index=sub_index,
+                internal=True,
+            )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.

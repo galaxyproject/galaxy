@@ -58,22 +58,12 @@ class ToolPanelManager( object ):
             # Add the new elements to the in-memory list of config_elems.
             config_elems.append( config_elem )
             # Load the tools into the in-memory tool panel.
-            if config_elem.tag == 'section':
-                self.app.toolbox.load_section_tag_set( config_elem, tool_path, load_panel_dict=True )
-            elif config_elem.tag == 'workflow':
-                self.app.toolbox.load_workflow_tag_set( config_elem,
-                                                        self.app.toolbox.tool_panel,
-                                                        self.app.toolbox.integrated_tool_panel,
-                                                        load_panel_dict=True )
-            elif config_elem.tag == 'tool':
-                self.app.toolbox.load_tool_tag_set(
-                    config_elem,
-                    self.app.toolbox.tool_panel,
-                    self.app.toolbox.integrated_tool_panel,
-                    tool_path,
-                    load_panel_dict=True,
-                    guid=config_elem.get( 'guid' )
-                )
+            self.app.toolbox.load_item(
+                config_elem,
+                tool_path=tool_path,
+                load_panel_dict=True,
+                guid=config_elem.get( 'guid' ),
+            )
         # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
         self.app.toolbox.update_shed_config( index, shed_tool_conf_dict )
