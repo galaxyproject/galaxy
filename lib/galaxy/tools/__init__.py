@@ -679,7 +679,7 @@ class ToolBox( object, Dictifiable ):
         # changed, so the tool should always be reloaded here.  We used to
         # only load the tool if it was not found in self.tools_by_id, but
         # performing that check did not enable this scenario.
-        self.tools_by_id[ tool.id ] = tool
+        self.register_tool( tool )
         if load_panel_dict:
             self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
 
