@@ -31,9 +31,8 @@ def build_shed_tool_conf_select_field( app ):
 def build_tool_panel_section_select_field( app ):
     """Build a SelectField whose options are the sections of the current in-memory toolbox."""
     options = []
-    for k, v in app.toolbox.tool_panel.items():
-        if isinstance( v, galaxy.tools.ToolSection ):
-            options.append( ( v.name, v.id ) )
+    for section_id, section_name in app.toolbox.get_sections():
+        options.append( ( section_name, section_id ) )
     select_field = SelectField( name='tool_panel_section_id', display='radio' )
     for option_tup in options:
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )

@@ -1059,6 +1059,11 @@ class ToolBox( object, Dictifiable ):
             status = 'done'
         return message, status
 
+    def get_sections( self ):
+        for k, v in self.tool_panel.items():
+            if isinstance( v, ToolSection ):
+                yield (v.id, v.name)
+
     def find_section_id( self, tool_panel_section_id ):
         """
         Find the section ID referenced by the key or return '' indicating
