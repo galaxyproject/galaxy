@@ -182,7 +182,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         self.__verify_two_test_tools( )
 
         # Assert only newer version of the tool loaded into the panel.
-        section = self.toolbox.tool_panel["tid"]
+        section = self.toolbox._tool_panel["tid"]
         assert len(section.elems) == 1
         assert section.elems.values()[0].id == "github.com/galaxyproject/example/test_tool/0.2"
 
@@ -193,7 +193,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         self.__verify_two_test_tools( )
 
         # Assert tools merged in tool panel.
-        assert len( self.toolbox.tool_panel ) == 1
+        assert len( self.toolbox._tool_panel ) == 1
 
     def test_update_shed_conf(self):
         self.__setup_shed_tool_conf()
@@ -228,8 +228,8 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         stored_workflow = self.__test_workflow()
         encoded_id = self.app.security.encode_id( stored_workflow.id )
         self._add_config( """<toolbox><workflow id="%s" /></toolbox>""" % encoded_id )
-        assert len( self.toolbox.tool_panel ) == 1
-        panel_workflow = self.toolbox.tool_panel.values()[ 0 ]
+        assert len( self.toolbox._tool_panel ) == 1
+        panel_workflow = self.toolbox._tool_panel.values()[ 0 ]
         assert panel_workflow == stored_workflow.latest_workflow
         # TODO: test to_dict with workflows
 
@@ -237,21 +237,21 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         stored_workflow = self.__test_workflow()
         encoded_id = self.app.security.encode_id( stored_workflow.id )
         self._add_config( """<toolbox><section id="tid" name="TID"><workflow id="%s" /></section></toolbox>""" % encoded_id )
-        assert len( self.toolbox.tool_panel ) == 1
-        section = self.toolbox.tool_panel[ 'tid' ]
+        assert len( self.toolbox._tool_panel ) == 1
+        section = self.toolbox._tool_panel[ 'tid' ]
         assert len( section.elems ) == 1
         panel_workflow = section.elems.values()[ 0 ]
         assert panel_workflow == stored_workflow.latest_workflow
 
     def test_label_in_panel( self ):
         self._add_config( """<toolbox><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></toolbox>""" )
-        assert len( self.toolbox.tool_panel ) == 2
-        self.__check_test_labels( self.toolbox.tool_panel )
+        assert len( self.toolbox._tool_panel ) == 2
+        self.__check_test_labels( self.toolbox._tool_panel )
 
     def test_label_in_section( self ):
         self._add_config( """<toolbox><section id="tid" name="TID"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>""" )
-        assert len( self.toolbox.tool_panel ) == 1
-        section = self.toolbox.tool_panel[ 'tid' ]
+        assert len( self.toolbox._tool_panel ) == 1
+        section = self.toolbox._tool_panel[ 'tid' ]
         self.__check_test_labels( section.elems )
 
     def __check_test_labels( self, panel_dict ):

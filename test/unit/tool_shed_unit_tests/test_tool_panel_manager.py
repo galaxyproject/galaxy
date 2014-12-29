@@ -18,20 +18,20 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         assert section_id == "tid"
         assert len( section.elems ) == 1  # tool.xml
         assert section.id == "tid"
-        assert len( toolbox.tool_panel ) == 1
+        assert len( toolbox._tool_panel ) == 1
 
         section_id, section = tpm.handle_tool_panel_section( toolbox, new_tool_panel_section_label="tid2" )
         assert section_id == "tid2"
         assert len( section.elems ) == 0  # new section
         assert section.id == "tid2"
-        assert len( toolbox.tool_panel ) == 2
+        assert len( toolbox._tool_panel ) == 2
 
         # Test re-fetch new section by same id.
         section_id, section = tpm.handle_tool_panel_section( toolbox, new_tool_panel_section_label="tid2" )
         assert section_id == "tid2"
         assert len( section.elems ) == 0  # new section
         assert section.id == "tid2"
-        assert len( toolbox.tool_panel ) == 2
+        assert len( toolbox._tool_panel ) == 2
 
     def test_add_tool_to_panel( self ):
         self._init_tool()
@@ -77,7 +77,7 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         assert not all_versions
 
         # Check that tool panel has reverted to old value...
-        section = self.toolbox.tool_panel["tid"]
+        section = self.toolbox._tool_panel["tid"]
         assert len(section.elems) == 0
 
     def test_uninstall_in_section( self ):
@@ -85,7 +85,7 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         self._verify_version_2_removed_from_panel( )
         # Not in tool conf because it was uninstalled.
         assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
-        assert "tool_github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox.integrated_tool_panel["tid"].elems
+        assert "tool_github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox._integrated_tool_panel["tid"].elems
         self._verify_tool_confs()
 
     def test_deactivate_outside_section( self ):
@@ -109,7 +109,7 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         assert not all_versions
 
         # Check that tool panel has reverted to old value...
-        section = self.toolbox.tool_panel["tid"]
+        section = self.toolbox._tool_panel["tid"]
         assert len(section.elems) == 0
 
     def _setup_two_versions_remove_one( self, section, uninstall ):
@@ -126,14 +126,14 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
 
         # Check that tool panel has reverted to old value...
         if section:
-            section = self.toolbox.tool_panel["tid"]
+            section = self.toolbox._tool_panel["tid"]
             assert len(section.elems) == 1
             assert section.elems.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
 
-            assert "github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox.integrated_tool_panel["tid"].elems
+            assert "github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox._integrated_tool_panel["tid"].elems
         else:
-            self.toolbox.tool_panel.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
-            assert "github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox.integrated_tool_panel
+            self.toolbox._tool_panel.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
+            assert "github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox._integrated_tool_panel
 
     def _remove_guids( self, guids, uninstall, shed_tool_conf="tool_conf.xml" ):
         self.tpm.remove_guids(
