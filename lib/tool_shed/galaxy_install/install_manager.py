@@ -809,12 +809,10 @@ class InstallRepositoryManager( object ):
     def install_tool_shed_repository( self, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path,
                                       install_tool_dependencies, reinstalling=False ):
         if tool_panel_section_key:
-            try:
-                tool_section = self.app.toolbox.tool_panel[ tool_panel_section_key ]
-            except KeyError:
+            _, tool_section = self.app.toolbox.get_section( tool_panel_section_key )
+            if tool_section is None:
                 log.debug( 'Invalid tool_panel_section_key "%s" specified.  Tools will be loaded outside of sections in the tool panel.',
                            str( tool_panel_section_key ) )
-                tool_section = None
         else:
             tool_section = None
         if isinstance( repo_info_dict, basestring ):

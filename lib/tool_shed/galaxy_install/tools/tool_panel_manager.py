@@ -297,7 +297,7 @@ class ToolPanelManager( object ):
         return tool_section
 
     def get_or_create_tool_section( self, toolbox, tool_panel_section_id, new_tool_panel_section_label=None ):
-        return toolbox.get_or_create_section( section_id=tool_panel_section_id, new_label=new_tool_panel_section_label )
+        return toolbox.get_section( section_id=tool_panel_section_id, new_label=new_tool_panel_section_label, create_if_needed=True )
 
     def get_shed_tool_conf_dict( self, shed_tool_conf ):
         """

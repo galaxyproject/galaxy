@@ -277,13 +277,13 @@ class ToolBox( object, Dictifiable ):
             self.write_integrated_tool_panel_config_file()
         app.reindex_tool_search()
 
-    def get_or_create_section( self, section_id, new_label=None ):
+    def get_section( self, section_id, new_label=None, create_if_needed=False ):
         tool_panel_section_key = str( section_id )
         if tool_panel_section_key in self.tool_panel:
             # Appending a tool to an existing section in toolbox.tool_panel
             tool_section = self.tool_panel[ tool_panel_section_key ]
             log.debug( "Appending to tool panel section: %s" % str( tool_section.name ) )
-        else:
+        elif create_if_needed:
             # Appending a new section to toolbox.tool_panel
             if new_label is None:
                 # This might add an ugly section label to the tool panel, but, oh well...
@@ -296,6 +296,8 @@ class ToolBox( object, Dictifiable ):
             tool_section = ToolSection( section_dict )
             self.tool_panel[ tool_panel_section_key ] = tool_section
             log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
+        else:
+            tool_section = None
         return tool_panel_section_key, tool_section
 
     def __resolve_tool_path(self, tool_path, config_filename):

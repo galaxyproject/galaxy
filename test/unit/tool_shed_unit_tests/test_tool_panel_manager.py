@@ -46,7 +46,7 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
                 self.tool,
             )
         ]
-        _, section = self.toolbox.get_or_create_section("tid1")
+        _, section = self.toolbox.get_section("tid1", create_if_needed=True)
         tpm = self.tpm
         tool_panel_dict = tpm.generate_tool_panel_dict_for_new_install(
             tool_dicts=new_tools,
