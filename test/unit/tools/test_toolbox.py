@@ -197,13 +197,13 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
 
     def test_update_shed_conf(self):
         self.__setup_shed_tool_conf()
-        self.toolbox.update_shed_config( 0, {} )
+        self.toolbox.update_shed_config( { "config_filename": "tool_conf.xml" } )
         assert self.reindexed
         self.assert_integerated_tool_panel(exists=True)
 
     def test_update_shed_conf_deactivate_only(self):
         self.__setup_shed_tool_conf()
-        self.toolbox.update_shed_config( 0, {}, integrated_panel_changes=False )
+        self.toolbox.update_shed_config(  { "config_filename": "tool_conf.xml" }, integrated_panel_changes=False )
         assert self.reindexed
         # No changes, should be regenerated
         self.assert_integerated_tool_panel(exists=False)
