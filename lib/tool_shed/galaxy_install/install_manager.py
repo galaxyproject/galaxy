@@ -730,7 +730,7 @@ class InstallRepositoryManager( object ):
         shed_tool_conf = install_options.get( 'shed_tool_conf', None )
         if shed_tool_conf:
             # Get the tool_path setting.
-            index, shed_conf_dict = self.tpm.get_shed_tool_conf_dict( shed_tool_conf )
+            _, shed_conf_dict = self.tpm.get_shed_tool_conf_dict( shed_tool_conf )
             tool_path = shed_conf_dict[ 'tool_path' ]
         else:
             # Pick a semi-random shed-related tool panel configuration file and get the tool_path setting.
