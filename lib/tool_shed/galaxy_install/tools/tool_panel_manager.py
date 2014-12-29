@@ -426,50 +426,6 @@ class ToolPanelManager( object ):
 
     def remove_guids( self, guids_to_remove, shed_tool_conf, uninstall ):
         toolbox = self.app.toolbox
-
-        def remove_from_panel( tool_elem, has_elems, integrated_has_elems, section_key='' ):
-            # Hide tool from panel and promote next oldest version if
-            # available.
-            guid = tool_elem.get( 'guid' )
-            tool_key = 'tool_%s' % str( guid )
-            available_tool_versions = toolbox.get_loaded_tools_by_lineage( guid )
-            if tool_key in has_elems:
-                if available_tool_versions:
-                    available_tool_versions.reverse()
-                    replacement_tool_key = None
-                    replacement_tool_version = None
-                    # Since we are going to remove the tool from the section, replace it with
-                    # the newest loaded version of the tool.
-                    for available_tool_version in available_tool_versions:
-                        available_tool_section_id, available_tool_section_name = available_tool_version.get_panel_section()
-                        # I suspect "available_tool_version.id in has_elems.keys()" doesn't
-                        # belong in the following line or at least I don't understand what
-                        # purpose it might serve. -John
-                        if available_tool_version.id in has_elems.keys() or (available_tool_section_id == section_key):
-                            replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
-                            replacement_tool_version = available_tool_version
-                            break
-                    if replacement_tool_key and replacement_tool_version:
-                        # Get the index of the tool_key in the tool_section.
-                        for tool_panel_index, key in enumerate( has_elems.keys() ):
-                            if key == tool_key:
-                                break
-                        # Remove the tool from the tool panel.
-                        del has_elems[ tool_key ]
-                        # Add the replacement tool at the same location in the tool panel.
-                        has_elems.insert( tool_panel_index,
-                                          replacement_tool_key,
-                                          replacement_tool_version )
-                    else:
-                        del has_elems[ tool_key ]
-                else:
-                    del has_elems[ tool_key ]
-            if uninstall:
-                if hasattr( integrated_has_elems, "elems" ):
-                    integrated_has_elems = integrated_has_elems.elems
-                if tool_key in integrated_has_elems:
-                    del integrated_has_elems[ tool_key ]
-
         # Remove the tools from the toolbox's tools_by_id dictionary.
         for guid_to_remove in guids_to_remove:
             # remove_from_tool_panel to false, will handling that logic below.
@@ -494,17 +450,14 @@ class ToolPanelManager( object ):
                         # Remove the tool sub-element from the section element.
                         config_elem.remove( tool_elem )
                     # Remove the tool from the section in the in-memory tool panel.
-                    _, tool_section = toolbox.get_section( section_key )
-                    if tool_section:
-                        remove_from_panel( tool_elem, tool_section.elems, toolbox.integrated_tool_panel.get( section_key, {} ), section_key=section_key )
+                    toolbox.remove_from_panel( tool_elem.get( "guid" ), section_key=section_key, remove_from_config=uninstall )
                 if len( config_elem ) < 1:
                     # Keep a list of all empty section elements so they can be removed.
                     config_elems_to_remove.append( config_elem )
             elif config_elem.tag == 'tool':
                 guid = config_elem.get( 'guid' )
                 if guid in guids_to_remove:
-                    # get_panel_section return '' for un-sectioned tools.
-                    remove_from_panel( config_elem, toolbox.tool_panel, toolbox.integrated_tool_panel, section_key='' )
+                    toolbox.remove_from_panel( guid, section_key='', remove_from_config=uninstall )
                     config_elems_to_remove.append( config_elem )
         for config_elem in config_elems_to_remove:
             # Remove the element from the in-memory list of elements.
