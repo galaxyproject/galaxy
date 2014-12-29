@@ -148,7 +148,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Tool config maintained by tool migration scripts. If you use the migration
 # scripts to install tools that have been migrated to the tool shed upon a new
 # release, they will be added to this tool config file.
-#migrated_tools_config = migrated_tools_conf.xml
+#migrated_tools_config = config/migrated_tools_conf.xml
 
 # File that contains the XML section and tool tags from all tool panel config
 # files integrated into a single file that defines the tool panel layout.  This
