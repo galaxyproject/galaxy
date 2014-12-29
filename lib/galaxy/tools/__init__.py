@@ -1147,24 +1147,22 @@ class ToolBox( object, Dictifiable ):
         """
         return self.app.model.context
 
+    def tool_panel_contents( self, trans, **kwds ):
+        """ Filter tool_panel contents for displaying for user.
+        """
+        context = Bunch( toolbox=self, trans=trans )
+        filters = self.filter_factory.build_filters( trans )
+        for elt in self.tool_panel.itervalues():
+            elt = _filter_for_panel( elt, filters, context )
+            if elt:
+                yield elt
+
     def to_dict( self, trans, in_panel=True, **kwds ):
         """
         to_dict toolbox.
         """
-
-        context = Bunch( toolbox=self, trans=trans, **kwds )
         if in_panel:
-            panel_elts = [ val for val in self.tool_panel.itervalues() ]
-
-            filters = self.filter_factory.build_filters( trans, **kwds )
-
-            filtered_panel_elts = []
-            for index, elt in enumerate( panel_elts ):
-                elt = _filter_for_panel( elt, filters, context )
-                if elt:
-                    filtered_panel_elts.append( elt )
-            panel_elts = filtered_panel_elts
-
+            panel_elts = list( self.tool_panel_contents( trans, **kwds ) )
             # Produce panel.
             rval = []
             kwargs = dict(

@@ -26,7 +26,7 @@ $().ready(function() {
                 Tool to bundle:
             </label>
             <select name="tool_id">
-                %for key, val in toolbox.tool_panel.items():
+                %for val in toolbox.tool_panel_contents( trans ):
                     %if isinstance( val, Tool ):
                         <option value="${val.id|h}">${val.name|h}</option>
                     %elif isinstance( val, ToolSection ):
