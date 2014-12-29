@@ -67,10 +67,10 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         self._setup_two_versions_remove_one( section=True, uninstall=False )
         self._verify_version_2_removed_from_panel( )
         # Still in tool conf since not uninstalled only deactivated...
-        assert "github.com/galaxyproect/example/test_tool/0.2" in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
+        assert "github.com/galaxyproject/example/test_tool/0.2" in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
         self._verify_tool_confs()
 
-        self._remove_guids( ["github.com/galaxyproect/example/test_tool/0.1"], uninstall=False )
+        self._remove_guids( ["github.com/galaxyproject/example/test_tool/0.1"], uninstall=False )
 
         # Now no versions of this tool are returned by toolbox.
         all_versions = self.toolbox.get_tool( "test_tool", get_all_versions=True )
@@ -84,24 +84,25 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         self._setup_two_versions_remove_one( section=True, uninstall=True )
         self._verify_version_2_removed_from_panel( )
         # Not in tool conf because it was uninstalled.
-        assert "github.com/galaxyproect/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
+        assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
+        assert "tool_github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox.integrated_tool_panel["tid"].elems
         self._verify_tool_confs()
 
     def test_deactivate_outside_section( self ):
         self._setup_two_versions_remove_one( section=False, uninstall=False )
         self._verify_version_2_removed_from_panel( section=False )
         # Still in tool conf since not uninstalled only deactivated...
-        assert "github.com/galaxyproect/example/test_tool/0.2" in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
+        assert "github.com/galaxyproject/example/test_tool/0.2" in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
         self._verify_tool_confs()
 
     def test_uninstall_outside_section( self ):
         self._setup_two_versions_remove_one( section=False, uninstall=True )
         self._verify_version_2_removed_from_panel( section=False )
         # Still in tool conf since not uninstalled only deactivated...
-        assert "github.com/galaxyproect/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
+        assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
         self._verify_tool_confs()
 
-        self._remove_guids( ["github.com/galaxyproect/example/test_tool/0.1"], uninstall=True )
+        self._remove_guids( ["github.com/galaxyproject/example/test_tool/0.1"], uninstall=True )
 
         # Now no versions of this tool are returned by toolbox.
         all_versions = self.toolbox.get_tool( "test_tool", get_all_versions=True )
@@ -116,7 +117,7 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         self._setup_two_versions_in_config( section=True )
         self._setup_two_versions()
         self.toolbox
-        self._remove_guids( ["github.com/galaxyproect/example/test_tool/0.2"], uninstall=uninstall )
+        self._remove_guids( ["github.com/galaxyproject/example/test_tool/0.2"], uninstall=uninstall )
 
     def _verify_version_2_removed_from_panel( self, section=True ):
         # Check that test_tool now only has one version...
@@ -127,12 +128,12 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         if section:
             section = self.toolbox.tool_panel["tid"]
             assert len(section.elems) == 1
-            assert section.elems.values()[0].id == "github.com/galaxyproect/example/test_tool/0.1"
+            assert section.elems.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
 
-            assert "github.com/galaxyproect/example/test_tool/0.2" not in self.toolbox.integrated_tool_panel["tid"].elems
+            assert "github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox.integrated_tool_panel["tid"].elems
         else:
-            self.toolbox.tool_panel.values()[0].id == "github.com/galaxyproect/example/test_tool/0.1"
-            assert "github.com/galaxyproect/example/test_tool/0.2" not in self.toolbox.integrated_tool_panel
+            self.toolbox.tool_panel.values()[0].id == "github.com/galaxyproject/example/test_tool/0.1"
+            assert "github.com/galaxyproject/example/test_tool/0.2" not in self.toolbox.integrated_tool_panel
 
     def _remove_guids( self, guids, uninstall, shed_tool_conf="tool_conf.xml" ):
         self.tpm.remove_guids(

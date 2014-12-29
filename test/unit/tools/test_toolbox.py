@@ -10,12 +10,12 @@ import tools_support
 
 
 CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
-    """    <tool file="tool.xml" guid="github.com/galaxyproect/example/test_tool/0.${version}">
+    """    <tool file="tool.xml" guid="github.com/galaxyproject/example/test_tool/0.${version}">
             <tool_shed>github.com</tool_shed>
             <repository_name>example</repository_name>
             <repository_owner>galaxyproject</repository_owner>
             <installed_changeset_revision>${version}</installed_changeset_revision>
-            <id>github.com/galaxyproect/example/test_tool/0.${version}</id>
+            <id>github.com/galaxyproject/example/test_tool/0.${version}</id>
             <version>0.${version}</version>
         </tool>
     """
@@ -72,14 +72,14 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
     def _setup_two_versions( self ):
         repository1 = self._repo_install( changeset="1" )
         version1 = tool_shed_install.ToolVersion()
-        version1.tool_id = "github.com/galaxyproect/example/test_tool/0.1"
+        version1.tool_id = "github.com/galaxyproject/example/test_tool/0.1"
         version1.repository = repository1
         self.app.install_model.context.add( version1 )
         self.app.install_model.context.flush( )
 
         repository2 = self._repo_install( changeset="2" )
         version2 = tool_shed_install.ToolVersion()
-        version2.tool_id = "github.com/galaxyproect/example/test_tool/0.2"
+        version2.tool_id = "github.com/galaxyproject/example/test_tool/0.2"
         version2.repository = repository2
 
         self.app.install_model.context.add( version2 )
@@ -184,7 +184,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         # Assert only newer version of the tool loaded into the panel.
         section = self.toolbox.tool_panel["tid"]
         assert len(section.elems) == 1
-        assert section.elems.values()[0].id == "github.com/galaxyproect/example/test_tool/0.2"
+        assert section.elems.values()[0].id == "github.com/galaxyproject/example/test_tool/0.2"
 
     def test_group_tools_out_of_section( self ):
         self._init_tool()
@@ -212,10 +212,10 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         self._init_tool()
         self._setup_two_versions_in_config( )
         self._setup_two_versions()
-        assert self.toolbox.get_tool_id( "test_tool" ) == "github.com/galaxyproect/example/test_tool/0.1"
-        assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.1" ) == "github.com/galaxyproect/example/test_tool/0.1"
-        assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.2" ) == "github.com/galaxyproect/example/test_tool/0.2"
-        assert self.toolbox.get_tool_id( "github.com/galaxyproect/example/test_tool/0.3" ) is None
+        assert self.toolbox.get_tool_id( "test_tool" ) == "github.com/galaxyproject/example/test_tool/0.1"
+        assert self.toolbox.get_tool_id( "github.com/galaxyproject/example/test_tool/0.1" ) == "github.com/galaxyproject/example/test_tool/0.1"
+        assert self.toolbox.get_tool_id( "github.com/galaxyproject/example/test_tool/0.2" ) == "github.com/galaxyproject/example/test_tool/0.2"
+        assert self.toolbox.get_tool_id( "github.com/galaxyproject/example/test_tool/0.3" ) is None
 
     def test_tool_dir( self ):
         self._init_tool()
@@ -285,14 +285,14 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
 
         # Verify lineage_ids on both tools is correctly ordered.
         for version in ["0.1", "0.2"]:
-            guid = "github.com/galaxyproect/example/test_tool/" + version
+            guid = "github.com/galaxyproject/example/test_tool/" + version
             lineage_ids = self.toolbox.get_tool( guid ).lineage_ids
-            assert lineage_ids[ 0 ] == "github.com/galaxyproect/example/test_tool/0.1"
-            assert lineage_ids[ 1 ] == "github.com/galaxyproect/example/test_tool/0.2"
+            assert lineage_ids[ 0 ] == "github.com/galaxyproject/example/test_tool/0.1"
+            assert lineage_ids[ 1 ] == "github.com/galaxyproject/example/test_tool/0.2"
 
         # Test tool_version attribute.
-        assert self.toolbox.get_tool( "test_tool", tool_version="0.1" ).guid == "github.com/galaxyproect/example/test_tool/0.1"
-        assert self.toolbox.get_tool( "test_tool", tool_version="0.2" ).guid == "github.com/galaxyproect/example/test_tool/0.2"
+        assert self.toolbox.get_tool( "test_tool", tool_version="0.1" ).guid == "github.com/galaxyproject/example/test_tool/0.1"
+        assert self.toolbox.get_tool( "test_tool", tool_version="0.2" ).guid == "github.com/galaxyproject/example/test_tool/0.2"
 
     def __remove_itp( self ):
         os.remove( os.path)

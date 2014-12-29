@@ -475,8 +475,10 @@ class ToolPanelManager( object ):
                 else:
                     del has_elems[ tool_key ]
             if uninstall:
-                if tool_key in toolbox.integrated_tool_panel:
-                    del toolbox.integrated_tool_panel[ tool_key ]
+                if hasattr( integrated_has_elems, "elems" ):
+                    integrated_has_elems = integrated_has_elems.elems
+                if tool_key in integrated_has_elems:
+                    del integrated_has_elems[ tool_key ]
 
         # Remove the tools from the toolbox's tools_by_id dictionary.
         for guid_to_remove in guids_to_remove:
