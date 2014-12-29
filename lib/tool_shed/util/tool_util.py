@@ -16,14 +16,12 @@ log = logging.getLogger( __name__ )
 def build_shed_tool_conf_select_field( app ):
     """Build a SelectField whose options are the keys in app.toolbox.shed_tool_confs."""
     options = []
-    for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
-        shed_tool_conf_filename = shed_tool_conf_dict[ 'config_filename' ]
-        if shed_tool_conf_filename != app.config.migrated_tools_config:
-            if shed_tool_conf_filename.startswith( './' ):
-                option_label = shed_tool_conf_filename.replace( './', '', 1 )
-            else:
-                option_label = shed_tool_conf_filename
-            options.append( ( option_label, shed_tool_conf_filename ) )
+    for dynamic_tool_conf_filename in app.toolbox.dynamic_conf_filenames():
+        if dynamic_tool_conf_filename.startswith( './' ):
+            option_label = dynamic_tool_conf_filename.replace( './', '', 1 )
+        else:
+            option_label = dynamic_tool_conf_filename
+        options.append( ( option_label, dynamic_tool_conf_filename ) )
     select_field = SelectField( name='shed_tool_conf' )
     for option_tup in options:
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )

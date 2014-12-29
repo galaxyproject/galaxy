@@ -632,6 +632,16 @@ class ToolBox( object, Dictifiable ):
                 break
         return tool_version_select_field, tools, tool
 
+    def dynamic_conf_filenames( self, include_migrated_tool_conf=False ):
+        """ Return list of dynamic tool configuration filenames (shed_tools).
+        These must be used with various dynamic tool configuration update
+        operations (e.g. with update_shed_config).
+        """
+        for dynamic_tool_conf_dict in self.shed_tool_confs:
+            dynamic_tool_conf_filename = dynamic_tool_conf_dict[ 'config_filename' ]
+            if include_migrated_tool_conf or (dynamic_tool_conf_filename != self.app.config.migrated_tools_config):
+                yield dynamic_tool_conf_filename
+
     def build_tool_version_select_field( self, tools, tool_id, set_selected ):
         """Build a SelectField whose options are the ids for the received list of tools."""
         options = []
