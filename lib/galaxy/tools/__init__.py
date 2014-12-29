@@ -325,20 +325,13 @@ class ToolBox( object, Dictifiable ):
             panel_dict = panel_component.elems
         else:
             panel_dict = panel_component
-        already_loaded = False
-        loaded_version_key = None
-        lineage_id = None
-        for lineage_id in tool.lineage_ids:
-            if lineage_id in self.tools_by_id:
-                loaded_version_key = 'tool_%s' % lineage_id
-                if loaded_version_key in panel_dict:
-                    already_loaded = True
-                    break
-        if already_loaded:
-            if tool.lineage_ids.index( tool_id ) > tool.lineage_ids.index( lineage_id ):
+        related_tool = self._lineage_in_panel( panel_dict, tool=tool )
+        if related_tool:
+            if self._newer_tool( tool, related_tool ):
+                lineage_id = "tool_%s" % related_tool.id
+                index = panel_dict.keys().index( lineage_id )
+                del panel_dict[ lineage_id ]
                 key = 'tool_%s' % tool.id
-                index = panel_dict.keys().index( loaded_version_key )
-                del panel_dict[ loaded_version_key ]
                 panel_dict.insert( index, key, tool )
                 log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
         else:
@@ -374,12 +367,7 @@ class ToolBox( object, Dictifiable ):
                     else:
                         # We are in the process of installing the tool.
                         tool_lineage = self.lineage_map.get( tool_id )
-                        tool_lineage_ids = tool_lineage.get_version_ids( reverse=True )
-                        for lineage_id in tool_lineage_ids:
-                            if lineage_id in self.tools_by_id:
-                                loaded_version_key = 'tool_%s' % lineage_id
-                                if loaded_version_key in panel_dict:
-                                    already_loaded = True
+                        already_loaded = self._lineage_in_panel( panel_dict, tool_lineage=tool_lineage ) is not None
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                             panel_dict[ key ] = tool
@@ -1192,6 +1180,27 @@ class ToolBox( object, Dictifiable ):
             rval = tools
 
         return rval
+
+    def _lineage_in_panel( self, panel_dict, tool=None, tool_lineage=None ):
+        """ If tool with same lineage already in panel (or section) - find
+        and return it. Otherwise return None.
+        """
+        if tool_lineage is None:
+            assert tool is not None
+            tool_lineage = tool.lineage
+        lineage_ids = tool_lineage.get_version_ids( reverse=True )
+        for lineage_id in lineage_ids:
+            if lineage_id in self.tools_by_id:
+                loaded_version_key = 'tool_%s' % lineage_id
+                if loaded_version_key in panel_dict:
+                    return panel_dict[ loaded_version_key ]
+        return None
+
+    def _newer_tool( self, tool1, tool2 ):
+        """ Return True if tool1 is considered "newer" given its own lineage
+        description.
+        """
+        return tool1.lineage_ids.index( tool1.id ) > tool1.lineage_ids.index( tool2.id )
 
 
 def _filter_for_panel( item, filters, context ):
