@@ -40,7 +40,7 @@ class ToolPanelManager( object ):
                            shed_tool_conf, tool_panel_dict, new_install=True ):
         """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
         # We need to change the in-memory version and the file system version of the shed_tool_conf file.
-        index, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
+        _, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         # Generate the list of ElementTree Element objects for each section or tool.
         elem_list = self.generate_tool_panel_elem_list( repository_name,
@@ -66,7 +66,7 @@ class ToolPanelManager( object ):
             )
         # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        self.app.toolbox.update_shed_config( index, shed_tool_conf_dict )
+        self.app.toolbox.update_shed_config( shed_tool_conf_dict )
 
     def config_elems_to_xml_file( self, config_elems, config_filename, tool_path ):
         """
@@ -430,7 +430,7 @@ class ToolPanelManager( object ):
         for guid_to_remove in guids_to_remove:
             # remove_from_tool_panel to false, will handling that logic below.
             toolbox.remove_tool_by_id( guid_to_remove, remove_from_panel=False )
-        index, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
+        _, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         if uninstall:
             # Remove from the shed_tool_conf file on disk.
             self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
@@ -464,4 +464,4 @@ class ToolPanelManager( object ):
             config_elems.remove( config_elem )
         # Update the config_elems of the in-memory shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        toolbox.update_shed_config( index, shed_tool_conf_dict, integrated_panel_changes=uninstall )
+        toolbox.update_shed_config( shed_tool_conf_dict, integrated_panel_changes=uninstall )
