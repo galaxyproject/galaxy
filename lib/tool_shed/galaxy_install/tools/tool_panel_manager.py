@@ -40,7 +40,7 @@ class ToolPanelManager( object ):
                            shed_tool_conf, tool_panel_dict, new_install=True ):
         """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
         # We need to change the in-memory version and the file system version of the shed_tool_conf file.
-        _, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
+        shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         # Generate the list of ElementTree Element objects for each section or tool.
         elem_list = self.generate_tool_panel_elem_list( repository_name,
@@ -304,13 +304,13 @@ class ToolPanelManager( object ):
         Return the in-memory version of the shed_tool_conf file, which is stored in
         the config_elems entry in the shed_tool_conf_dict associated with the file.
         """
-        for index, shed_tool_conf_dict in enumerate( self.app.toolbox.shed_tool_confs ):
+        for shed_tool_conf_dict in self.app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
             if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
-                return index, shed_tool_conf_dict
+                return shed_tool_conf_dict
             else:
                 file_name = basic_util.strip_path( shed_tool_conf_dict[ 'config_filename' ] )
                 if shed_tool_conf == file_name:
-                    return index, shed_tool_conf_dict
+                    return shed_tool_conf_dict
 
     def handle_tool_panel_section( self, toolbox, tool_panel_section_id=None, new_tool_panel_section_label=None ):
         """Return a ToolSection object retrieved from the current in-memory tool_panel."""
@@ -430,7 +430,7 @@ class ToolPanelManager( object ):
         for guid_to_remove in guids_to_remove:
             # remove_from_tool_panel to false, will handling that logic below.
             toolbox.remove_tool_by_id( guid_to_remove, remove_from_panel=False )
-        _, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
+        shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         if uninstall:
             # Remove from the shed_tool_conf file on disk.
             self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
