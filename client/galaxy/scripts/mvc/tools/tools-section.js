@@ -316,6 +316,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldHidden(input_def);
                     break;
                 
+                // hidden field
+                case 'hidden_data':
+                    field = this._fieldHidden(input_def);
+                    break;
+                
                 // integer field
                 case 'integer':
                     field = this._fieldSlider(input_def);
