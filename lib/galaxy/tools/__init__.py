@@ -1204,6 +1204,8 @@ class ToolBox( object, Dictifiable ):
         """
         if tool_lineage is None:
             assert tool is not None
+            if not hasattr( tool, "lineage" ):
+                return None
             tool_lineage = tool.lineage
         lineage_ids = tool_lineage.get_version_ids( reverse=True )
         for lineage_id in lineage_ids:
