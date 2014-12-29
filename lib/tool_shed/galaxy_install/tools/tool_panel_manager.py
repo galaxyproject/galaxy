@@ -325,8 +325,7 @@ class ToolPanelManager( object ):
                                                  tool_panel_section_id=section_id,
                                                  new_tool_panel_section_label=new_tool_panel_section_label )
         elif tool_panel_section_id:
-            tool_panel_section_key = str( tool_panel_section_id )
-            tool_section = toolbox.tool_panel[ tool_panel_section_key ]
+            tool_panel_section_key, tool_section = toolbox.get_section( tool_panel_section_id)
         else:
             return None, None
         return tool_panel_section_key, tool_section
@@ -495,8 +494,8 @@ class ToolPanelManager( object ):
                         # Remove the tool sub-element from the section element.
                         config_elem.remove( tool_elem )
                     # Remove the tool from the section in the in-memory tool panel.
-                    if section_key in toolbox.tool_panel:
-                        tool_section = toolbox.tool_panel[ section_key ]
+                    _, tool_section = toolbox.get_section( section_key )
+                    if tool_section:
                         remove_from_panel( tool_elem, tool_section.elems, toolbox.integrated_tool_panel.get( section_key, {} ), section_key=section_key )
                 if len( config_elem ) < 1:
                     # Keep a list of all empty section elements so they can be removed.
