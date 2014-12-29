@@ -171,8 +171,6 @@ class ToolMigrationManager( object ):
         clone_dir = os.path.join( self.tool_path, relative_clone_dir )
         if not self.__iscloned( clone_dir ):
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', owner, name )
-            relative_install_dir = os.path.join( relative_clone_dir, name )
-            install_dir = os.path.join( clone_dir, name )
             ctx_rev = suc.get_ctx_rev( self.app, self.tool_shed_url, name, owner, changeset_revision )
             tool_shed_repository = suc.create_or_update_tool_shed_repository( app=self.app,
                                                                               name=name,
@@ -406,7 +404,7 @@ class ToolMigrationManager( object ):
                                 tool_configs_to_filter.append( tool_config )
                 else:
                     print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
-                    % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
+                        % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
             if tool_configs_to_filter:
                 lock = threading.Lock()
                 lock.acquire( True )
@@ -421,7 +419,7 @@ class ToolMigrationManager( object ):
                                                    repository=tool_shed_repository,
                                                    changeset_revision=tool_shed_repository.changeset_revision,
                                                    repository_clone_url=repository_clone_url,
-                                                   shed_config_dict = self.shed_config_dict,
+                                                   shed_config_dict=self.shed_config_dict,
                                                    relative_install_dir=relative_install_dir,
                                                    repository_files_dir=None,
                                                    resetting_all_metadata_on_repository=False,
@@ -504,11 +502,11 @@ class ToolMigrationManager( object ):
             datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, repo_install_dir )
             # Load proprietary data types required by tools.  The value of override is not
             # important here since the Galaxy server will be started after this installation
-            #completes.
+            # completes.
             converter_path, display_path = \
                 cdl.alter_config_and_load_prorietary_datatypes( datatypes_config,
                                                                 repo_install_dir,
-                                                                override=False ) 
+                                                                override=False )
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
                 repository_dict = \
@@ -583,23 +581,23 @@ class ToolMigrationManager( object ):
                         tool_version_dicts = json.loads( text )
                         tvm.handle_tool_versions( tool_version_dicts, tool_shed_repository )
                     else:
-                        # Set the tool versions since they seem to be missing for this repository in the tool shed.
-                        # CRITICAL NOTE: These default settings may not properly handle all parent/child associations.
+                        # Set the tool versions since they seem to be missing
+                        # for this repository in the tool shed. CRITICAL NOTE:
+                        # These default settings may not properly handle all
+                        # parent/child associations.
                         for tool_dict in metadata_dict[ 'tools' ]:
-                            flush_needed = False
                             tool_id = tool_dict[ 'guid' ]
                             old_tool_id = tool_dict[ 'id' ]
-                            tool_version = tool_dict[ 'version' ]
                             tool_version_using_old_id = tvm.get_tool_version( old_tool_id )
                             tool_version_using_guid = tvm.get_tool_version( tool_id )
                             if not tool_version_using_old_id:
                                 tool_version_using_old_id = self.app.install_model.ToolVersion( tool_id=old_tool_id,
-                                                                                        tool_shed_repository=tool_shed_repository )
+                                                                                                tool_shed_repository=tool_shed_repository )
                                 self.app.install_model.context.add( tool_version_using_old_id )
                                 self.app.install_model.context.flush()
                             if not tool_version_using_guid:
                                 tool_version_using_guid = self.app.install_model.ToolVersion( tool_id=tool_id,
-                                                                                      tool_shed_repository=tool_shed_repository )
+                                                                                              tool_shed_repository=tool_shed_repository )
                                 self.app.install_model.context.add( tool_version_using_guid )
                                 self.app.install_model.context.flush()
                             # Associate the two versions as parent / child.
@@ -640,7 +638,6 @@ class ToolMigrationManager( object ):
         ordered_tsr_ids = []
         processed_tsr_ids = []
         prior_install_required_dict = self.get_prior_install_required_dict( tool_shed_repositories, repository_dependencies_dict )
-        tsr_ids = [ tool_shed_repository.id for tool_shed_repository in tool_shed_repositories ]
         while len( processed_tsr_ids ) != len( prior_install_required_dict.keys() ):
             tsr_id = suc.get_next_prior_import_or_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids )
             processed_tsr_ids.append( tsr_id )

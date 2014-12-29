@@ -11,9 +11,9 @@ log = logging.getLogger( __name__ )
 
 class ToolShedRepository( object ):
     dict_collection_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
+                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
     dict_element_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
+                                  'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
                                  SETTING_TOOL_VERSIONS='Setting tool versions',
@@ -356,12 +356,12 @@ class ToolShedRepository( object ):
             for rd_tup in rd_tups:
                 if len( rd_tup ) == 5:
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                    common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
+                        common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
                     if asbool( prior_installation_required ):
                         required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, 'True', 'False' ) )
                 elif len( rd_tup ) == 6:
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                    common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
+                        common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
                     # The repository dependency will only be required to be previously installed if it does not fall into the category of
                     # a repository that must be installed only so that its contained tool dependency can be used for compiling the tool
                     # dependency of the dependent repository.
@@ -493,12 +493,14 @@ class ToolShedRepository( object ):
 
 
 class RepositoryRepositoryDependencyAssociation( object ):
+
     def __init__( self, tool_shed_repository_id=None, repository_dependency_id=None ):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.repository_dependency_id = repository_dependency_id
 
 
 class RepositoryDependency( object ):
+
     def __init__( self, tool_shed_repository_id=None ):
         self.tool_shed_repository_id = tool_shed_repository_id
 
@@ -647,6 +649,7 @@ class ToolVersion( object, Dictifiable ):
 
 
 class ToolVersionAssociation( object ):
+
     def __init__( self, id=None, tool_id=None, parent_id=None ):
         self.id = id
         self.tool_id = tool_id
@@ -654,6 +657,7 @@ class ToolVersionAssociation( object ):
 
 
 class MigrateTools( object ):
+
     def __init__( self, repository_id=None, repository_path=None, version=None ):
         self.repository_id = repository_id
         self.repository_path = repository_path
