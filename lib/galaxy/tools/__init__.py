@@ -53,6 +53,7 @@ from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.toolbox import tool_tag_manager
+from galaxy.tools.toolbox.lineages import LineageMap
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
@@ -139,6 +140,7 @@ class ToolBox( object, Dictifiable ):
         self.tool_panel = odict()
         self.index = 0
         self.data_manager_tools = odict()
+        self.lineage_map = LineageMap( app )
         # File that contains the XML section and tool tags from all tool panel config files integrated into a
         # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
         # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
@@ -371,8 +373,8 @@ class ToolBox( object, Dictifiable ):
                         log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
                     else:
                         # We are in the process of installing the tool.
-                        tool_version = self.__get_tool_version( tool_id )
-                        tool_lineage_ids = tool_version.get_version_ids( self.app, reverse=True )
+                        tool_lineage = self.lineage_map.get( tool_id )
+                        tool_lineage_ids = tool_lineage.get_version_ids( reverse=True )
                         for lineage_id in tool_lineage_ids:
                             if lineage_id in self.tools_by_id:
                                 loaded_version_key = 'tool_%s' % lineage_id
@@ -512,9 +514,9 @@ class ToolBox( object, Dictifiable ):
             return self.tools_by_id[ tool_id ]
         #exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
         rval = []
-        tv = self.__get_tool_version( tool_id )
-        if tv:
-            tool_version_ids = tv.get_version_ids( self.app )
+        tool_lineage = self.lineage_map.get( tool_id )
+        if tool_lineage:
+            tool_version_ids = tool_lineage.get_version_ids( )
             for tool_version_id in tool_version_ids:
                 if tool_version_id in self.tools_by_id:
                     rval.append( self.tools_by_id[ tool_version_id ] )
@@ -560,9 +562,9 @@ class ToolBox( object, Dictifiable ):
 
     def get_loaded_tools_by_lineage( self, tool_id ):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
-        tv = self.__get_tool_version( tool_id )
-        if tv:
-            tool_version_ids = tv.get_version_ids( self.app )
+        tool_lineage = self.lineage_map.get( tool_id )
+        if tool_lineage:
+            tool_version_ids = tool_lineage.get_version_ids( )
             available_tool_versions = []
             for tool_version_id in tool_version_ids:
                 if tool_version_id in self.tools_by_id:
@@ -573,12 +575,6 @@ class ToolBox( object, Dictifiable ):
                 tool = self.tools_by_id[ tool_id ]
                 return [ tool ]
         return []
-
-    def __get_tool_version( self, tool_id ):
-        """Return a ToolVersion if one exists for the tool_id"""
-        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
-                                             .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
-                                             .first()
 
     def tools( self ):
         return self.tools_by_id.iteritems()
@@ -745,12 +741,10 @@ class ToolBox( object, Dictifiable ):
                     tool.guid = guid
                     tool.version = elem.find( "version" ).text
                 # Make sure the tool has a tool_version.
-                if not self.__get_tool_version( tool.id ):
-                    tool_version = self.app.install_model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
-                    self.app.install_model.context.add( tool_version )
-                    self.app.install_model.context.flush()
+                tool_lineage = self.lineage_map.register( tool, tool_shed_repository=tool_shed_repository )
                 # Load the tool's lineage ids.
-                tool.lineage_ids = tool.tool_version.get_version_ids( self.app )
+                tool.lineage = tool_lineage
+                tool.lineage_ids = tool_lineage.get_version_ids( )
                 self.tool_tag_manager.handle_tags( tool.id, elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
@@ -1490,14 +1484,6 @@ class Tool( object, Dictifiable ):
         tool_version = self.tool_version
         if tool_version:
             return tool_version.get_versions( self.app )
-        return []
-
-    @property
-    def tool_version_ids( self ):
-        # If we have versions, return a list of their tool_ids.
-        tool_version = self.tool_version
-        if tool_version:
-            return tool_version.get_version_ids( self.app )
         return []
 
     @property
