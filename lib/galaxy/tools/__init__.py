@@ -304,6 +304,23 @@ class ToolBox( object, Dictifiable ):
             tool_section = None
         return tool_panel_section_key, tool_section
 
+    def get_integrated_section_for_tool( self, tool ):
+        tool_id = tool.id
+        for key, item in self.integrated_tool_panel.items():
+            if item:
+                if isinstance( item, Tool ):
+                    if item.id == tool_id:
+                        return '', ''
+                if isinstance( item, ToolSection ):
+                    section_id = item.id or ''
+                    section_name = item.name or ''
+                    for section_key, section_item in item.elems.items():
+                        if isinstance( section_item, Tool ):
+                            if section_item:
+                                if section_item.id == tool_id:
+                                    return section_id, section_name
+        return None, None
+
     def __resolve_tool_path(self, tool_path, config_filename):
         if not tool_path:
             # Default to backward compatible config setting.
@@ -1553,20 +1570,7 @@ class Tool( object, Dictifiable ):
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
     def get_panel_section( self ):
-        for key, item in self.app.toolbox.integrated_tool_panel.items():
-            if item:
-                if isinstance( item, Tool ):
-                    if item.id == self.id:
-                        return '', ''
-                if isinstance( item, ToolSection ):
-                    section_id = item.id or ''
-                    section_name = item.name or ''
-                    for section_key, section_item in item.elems.items():
-                        if isinstance( section_item, Tool ):
-                            if section_item:
-                                if section_item.id == self.id:
-                                    return section_id, section_name
-        return None, None
+        return self.app.toolbox.get_integrated_section_for_tool( self )
 
     def parse( self, tool_source, guid=None ):
         """
