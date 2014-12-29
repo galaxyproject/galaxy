@@ -243,22 +243,13 @@ class ToolPanelManager( object ):
                     tool_file_path, tup_guid, tool = repository_tool_tup
                     if tup_guid == guid:
                         break
-                if inside_section:
-                    tool_elem = self.generate_tool_elem( tool_shed,
-                                                         repository_name,
-                                                         changeset_revision,
-                                                         owner,
-                                                         tool_file_path,
-                                                         tool,
-                                                         tool_section )
-                else:
-                    tool_elem = self.generate_tool_elem( tool_shed,
-                                                         repository_name,
-                                                         changeset_revision,
-                                                         owner,
-                                                         tool_file_path,
-                                                         tool,
-                                                         None )
+                tool_elem = self.generate_tool_elem( tool_shed,
+                                                     repository_name,
+                                                     changeset_revision,
+                                                     owner,
+                                                     tool_file_path,
+                                                     tool,
+                                                     tool_section if inside_section else None )
                 if inside_section:
                     if section_in_elem_list:
                         elem_list[ index ] = tool_section
