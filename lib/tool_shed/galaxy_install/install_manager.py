@@ -733,15 +733,13 @@ class InstallRepositoryManager( object ):
             shed_conf_dict = self.tpm.get_shed_tool_conf_dict( shed_tool_conf )
             tool_path = shed_conf_dict[ 'tool_path' ]
         else:
-            # Pick a semi-random shed-related tool panel configuration file and get the tool_path setting.
-            for shed_config_dict in self.app.toolbox.shed_tool_confs:
-                # Don't use migrated_tools_conf.xml.
-                if shed_config_dict[ 'config_filename' ] != self.app.config.migrated_tools_config:
-                    break
+            # Don't use migrated_tools_conf.xml.
+            try:
+                shed_config_dict = self.app.toolbox.dynamic_confs( include_migrated_tool_conf=False )[ 0 ]
+            except IndexError:
+                raise exceptions.RequestParameterMissingException( "Missing required parameter 'shed_tool_conf'." )
             shed_tool_conf = shed_config_dict[ 'config_filename' ]
             tool_path = shed_config_dict[ 'tool_path' ]
-        if not shed_tool_conf:
-            raise exceptions.RequestParameterMissingException( "Missing required parameter 'shed_tool_conf'." )
         tool_panel_section_id = self.app.toolbox.find_section_id( install_options.get( 'tool_panel_section_id', '' ) )
         # Build the dictionary of information necessary for creating tool_shed_repository database records
         # for each repository being installed.

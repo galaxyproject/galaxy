@@ -722,7 +722,7 @@ def get_tool_panel_config_tool_path_install_dir( app, repository ):
     shed_config_dict = repository.get_shed_config_dict( app )
     if not shed_config_dict:
         # Just pick a semi-random shed config.
-        for shed_config_dict in app.toolbox.shed_tool_confs:
+        for shed_config_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
             if ( repository.dist_to_shed and shed_config_dict[ 'config_filename' ] == app.config.migrated_tools_config ) \
                     or ( not repository.dist_to_shed and shed_config_dict[ 'config_filename' ] != app.config.migrated_tools_config ):
                 break
@@ -736,7 +736,7 @@ def get_tool_path_by_shed_tool_conf_filename( app, shed_tool_conf ):
     Return the tool_path config setting for the received shed_tool_conf file by searching the tool box's in-memory list of shed_tool_confs for the
     dictionary whose config_filename key has a value matching the received shed_tool_conf.
     """
-    for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+    for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
         config_filename = shed_tool_conf_dict[ 'config_filename' ]
         if config_filename == shed_tool_conf:
             return shed_tool_conf_dict[ 'tool_path' ]
@@ -1036,15 +1036,7 @@ def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_a
 
 
 def have_shed_tool_conf_for_install( app ):
-    if not app.toolbox.shed_tool_confs:
-        return False
-    migrated_tools_conf_path, migrated_tools_conf_name = os.path.split( app.config.migrated_tools_config )
-    for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
-        shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
-        shed_tool_conf_path, shed_tool_conf_name = os.path.split( shed_tool_conf )
-        if shed_tool_conf_name != migrated_tools_conf_name:
-            return True
-    return False
+    return bool( app.toolbox.dynamic_confs( include_migrated_tool_conf=False ) )
 
 
 def is_tool_shed_client( app ):

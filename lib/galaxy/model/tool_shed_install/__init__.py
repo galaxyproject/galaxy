@@ -99,7 +99,7 @@ class ToolShedRepository( object ):
         if not self.shed_config_filename:
             self.guess_shed_config( app, default=default )
         if self.shed_config_filename:
-            for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+            for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
                 if self.shed_config_filename == shed_tool_conf_dict[ 'config_filename' ]:
                     return shed_tool_conf_dict
         return default
@@ -118,7 +118,7 @@ class ToolShedRepository( object ):
         metadata = self.metadata or {}
         for tool in metadata.get( 'tools', [] ):
             tool_ids.append( tool.get( 'guid' ) )
-        for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+        for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
             name = shed_tool_conf_dict[ 'config_filename' ]
             for elem in shed_tool_conf_dict[ 'config_elems' ]:
                 if elem.tag == 'tool':
@@ -137,7 +137,7 @@ class ToolShedRepository( object ):
         if self.includes_datatypes:
             # We need to search by file paths here, which is less desirable.
             tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed )
-            for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+            for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
                 tool_path = shed_tool_conf_dict[ 'tool_path' ]
                 relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
                 if os.path.exists( relative_path ):
@@ -284,7 +284,7 @@ class ToolShedRepository( object ):
 
     def repo_path( self, app ):
         tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed )
-        for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
+        for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
             tool_path = shed_tool_conf_dict[ 'tool_path' ]
             relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
             if os.path.exists( relative_path ):
