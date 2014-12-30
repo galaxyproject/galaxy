@@ -1,6 +1,8 @@
-import logging
-from galaxy.util import listify
 from copy import deepcopy
+import sys
+import logging
+
+from galaxy.util import listify
 
 log = logging.getLogger( __name__ )
 
@@ -20,6 +22,7 @@ class FilterFactory( object ):
         self.default_filters = dict( tool=[ _not_hidden, _handle_requires_login ], section=[], label=[] )
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
+        self.__base_modules = listify( getattr( config, "toolbox_filter_base_modules", "galaxy.tools.filters" ) )
         self.__init_filters( "tool", getattr( config, "tool_filters", "" ), self.default_filters )
         self.__init_filters( "section", getattr( config, "tool_section_filters", "" ), self.default_filters )
         self.__init_filters( "label", getattr( config, "tool_label_filters", "" ), self.default_filters )
@@ -65,13 +68,26 @@ class FilterFactory( object ):
         if ":" in filter_name:
             # Should be a submodule of filters (e.g. examples:restrict_development_tools)
             (module_name, function_name) = filter_name.rsplit(":", 1)
-            module = __import__( module_name.strip(), globals() )
-            function = getattr( module, function_name.strip() )
+            function = self._import_filter( module_name, function_name )
         else:
             # No module found, just load a function from this file or
             # one that has be explicitly imported.
             function = getattr( globals(), filter_name.strip() )
         return function
+
+    def _import_filter( self, module_name, function_name ):
+        function_name = function_name.strip()
+        for base_module in self.__base_modules:
+            full_module_name = "%s.%s" % ( base_module, module_name.strip() )
+            try:
+                __import__( full_module_name )
+            except ImportError:
+                # log.debug("Failed to load module.", exc_info=True)
+                continue
+            module = sys.modules[ full_module_name ]
+            if hasattr( module, function_name ):
+                return getattr( module, function_name )
+        raise Exception("Failed to find filter %s.%s" % (module_name, function_name))
 
 
 ## Stock Filter Functions
