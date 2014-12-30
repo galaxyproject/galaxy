@@ -48,7 +48,7 @@ from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repea
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
-from galaxy.tools.filters import FilterFactory
+from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource

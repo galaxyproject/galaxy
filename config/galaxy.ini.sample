@@ -910,16 +910,26 @@ use_interactive = True
 #cache_user_job_count = False
 
 # ToolBox filtering
-# Modules from lib/galaxy/tools/filters/ can be specified in the following lines.
-# tool_* filters will be applied for all users and can not be changed by them.
-# user_tool_* filters will be shown under user preferences and can be toogled
-# on and off by runtime
-#tool_filters
-#tool_label_filters
-#tool_section_filters
+
+# Modules from lib/galaxy/tools/toolbox/filters/ can be specified in
+# the following lines.  tool_* filters will be applied for all users
+# and can not be changed by them.  user_tool_* filters will be shown
+# under user preferences and can be toogled on and off by
+# runtime. Example shown below are not real defaults (no custom
+# filters applied by defualt) but can be enabled with by renaming the
+# example.py.sample in the filters directory to example.py.
+
+#tool_filters =
+#tool_label_filters =
+#tool_section_filters =
 #user_tool_filters = examples:restrict_upload_to_admins, examples:restrict_encode
 #user_tool_section_filters = examples:restrict_text
 #user_tool_label_filters = examples:restrict_upload_to_admins, examples:restrict_encode
+
+# The base modules that are searched for modules as described above
+# can be modified and modules external to Galaxy can be searched by
+# modifying the following option.
+#toolbox_filter_base_modules = galaxy.tools.toolbox.filters,galaxy.tools.filters
 
 # Galaxy Application Internal Message Queue
 
