@@ -113,16 +113,6 @@ class ToolNotFoundException( Exception ):
     pass
 
 
-def to_dict_helper( obj, kwargs ):
-    """ Helper function that provides the appropriate kwargs to to_dict an object. """
-
-    # Label.to_dict cannot have kwargs.
-    if isinstance( obj, ToolSectionLabel ):
-        kwargs = {}
-
-    return obj.to_dict( **kwargs )
-
-
 class ToolBox( object, Dictifiable ):
     """Container for a collection of tools"""
 
@@ -1189,7 +1179,7 @@ class ToolBox( object, Dictifiable ):
                 link_details=True
             )
             for elt in panel_elts:
-                rval.append( to_dict_helper( elt, kwargs ) )
+                rval.append( elt.to_dict( **kwargs ) )
         else:
             tools = []
             for id, tool in self._tools_by_id.items():
@@ -1311,7 +1301,7 @@ class ToolSection( object, Dictifiable ):
             link_details=link_details
         )
         for elt in self.elems.values():
-            section_elts.append( to_dict_helper( elt, kwargs ) )
+            section_elts.append( elt.to_dict( **kwargs ) )
         section_dict[ 'elems' ] = section_elts
 
         return section_dict
@@ -1332,6 +1322,9 @@ class ToolSectionLabel( object, Dictifiable ):
         self.text = elem.get( "text" )
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
+
+    def to_dict( self, **kwds ):
+        return super( ToolSectionLabel, self ).to_dict()
 
 
 class DefaultToolState( object ):
