@@ -32,7 +32,7 @@ from sqlalchemy import and_
 from galaxy import jobs, model
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
-from galaxy.tools import watcher
+from galaxy.tools.toolbox import watcher
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
