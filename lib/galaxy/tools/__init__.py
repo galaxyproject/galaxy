@@ -573,6 +573,11 @@ class ToolBox( object, Dictifiable ):
                 return [ tool ]
         return []
 
+    @property
+    def tools_by_id( self ):
+        # Deprecated method, TODO - eliminate calls to this in test/.
+        return self._tools_by_id
+
     def tools( self ):
         return self._tools_by_id.iteritems()
 
