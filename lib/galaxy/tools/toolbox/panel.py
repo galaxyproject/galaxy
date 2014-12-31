@@ -35,3 +35,18 @@ class ToolPanelElements( odict ):
     def append_tool( self, tool ):
         key = "tool_%s" % tool.id
         self[ key ] = tool
+
+    def stub_tool( self, key ):
+        key = "tool_%s" % key
+        self[ key ] = None
+
+    def stub_workflow( self, key ):
+        key = 'workflow_%s' % key
+        self[ key ] = None
+
+    def stub_label( self, key ):
+        key = 'label_%s' % key
+        self[ key ] = None
+
+    def append_section( self, key, section_elems ):
+        self[ key ] = section_elems
