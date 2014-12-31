@@ -2,6 +2,7 @@
 """
 
 from .tags import tool_tag_manager
+from .panel import ToolPanelElements
 
 
-__all__ = ["tool_tag_manager"]
+__all__ = ["ToolPanelElements", "tool_tag_manager"]

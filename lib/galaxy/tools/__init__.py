@@ -52,6 +52,7 @@ from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
+from galaxy.tools.toolbox import ToolPanelElements
 from galaxy.tools.toolbox import tool_tag_manager
 from galaxy.tools.toolbox.lineages import LineageMap
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object
@@ -132,7 +133,7 @@ class ToolBox( object, Dictifiable ):
         self._tool_versions_by_id = {}
         self._workflows_by_id = {}
         # In-memory dictionary that defines the layout of the tool panel.
-        self._tool_panel = odict()
+        self._tool_panel = ToolPanelElements()
         self._index = 0
         self.data_manager_tools = odict()
         self._lineage_map = LineageMap( app )
@@ -141,7 +142,7 @@ class ToolBox( object, Dictifiable ):
         # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
         self._integrated_tool_panel_config = app.config.integrated_tool_panel_config
         # In-memory dictionary that defines the layout of the tool_panel.xml file on disk.
-        self._integrated_tool_panel = odict()
+        self._integrated_tool_panel = ToolPanelElements()
         self._integrated_tool_panel_config_has_contents = os.path.exists( self._integrated_tool_panel_config ) and os.stat( self._integrated_tool_panel_config ).st_size > 0
         if self._integrated_tool_panel_config_has_contents:
             self._load_integrated_tool_panel_keys()
@@ -337,32 +338,30 @@ class ToolBox( object, Dictifiable ):
             panel_dict = panel_component.elems
         else:
             panel_dict = panel_component
+
         related_tool = self._lineage_in_panel( panel_dict, tool=tool )
         if related_tool:
             if self._newer_tool( tool, related_tool ):
-                lineage_id = "tool_%s" % related_tool.id
-                index = panel_dict.keys().index( lineage_id )
-                del panel_dict[ lineage_id ]
-                key = 'tool_%s' % tool.id
-                panel_dict.insert( index, key, tool )
+                panel_dict.replace_tool(
+                    previous_tool_id=related_tool.id,
+                    new_tool_id=tool_id,
+                    tool=tool,
+                )
                 log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
         else:
             inserted = False
-            key = 'tool_%s' % tool.id
-            # The value of panel_component is the in-memory tool panel dictionary.
-            for index, integrated_panel_key in enumerate( self._integrated_tool_panel.keys() ):
-                if key == integrated_panel_key:
-                    panel_dict.insert( index, key, tool )
-                    inserted = True
+            index = self._integrated_tool_panel.index_of_tool_id( tool_id )
+            if index:
+                panel_dict.insert_tool( index, tool )
+                inserted = True
             if not inserted:
                 # Check the tool's installed versions.
                 for tool_lineage_version in tool.lineage.get_versions():
                     lineage_id = tool_lineage_version.id
-                    lineage_id_key = 'tool_%s' % lineage_id
-                    for index, integrated_panel_key in enumerate( self._integrated_tool_panel.keys() ):
-                        if lineage_id_key == integrated_panel_key:
-                            panel_dict.insert( index, key, tool )
-                            inserted = True
+                    index = self._integrated_tool_panel.index_of_tool_id( lineage_id )
+                    if index:
+                        panel_dict.insert_tool( index, tool )
+                        inserted = True
                 if not inserted:
                     if (
                         tool.guid is None or
@@ -375,7 +374,7 @@ class ToolBox( object, Dictifiable ):
                         # Shed, but is also not yet defined in
                         # integrated_tool_panel.xml, so append it to the tool
                         # panel.
-                        panel_dict[ key ] = tool
+                        panel_dict.append_tool( tool )
                         log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
                     else:
                         # We are in the process of installing the tool.
@@ -384,7 +383,7 @@ class ToolBox( object, Dictifiable ):
                         already_loaded = self._lineage_in_panel( panel_dict, tool_lineage=tool_lineage ) is not None
                         if not already_loaded:
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
-                            panel_dict[ key ] = tool
+                            panel_dict.append_tool( tool )
                             log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
 
     def _load_tool_panel( self ):
@@ -1231,9 +1230,8 @@ class ToolBox( object, Dictifiable ):
             lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
             if lineage_tool:
                 lineage_id = lineage_tool.id
-                loaded_version_key = 'tool_%s' % lineage_id
-                if loaded_version_key in panel_dict:
-                    return panel_dict[ loaded_version_key ]
+                if panel_dict.has_tool_with_id( lineage_id ):
+                    return panel_dict.get_tool_with_id( lineage_id )
         return None
 
     def _newer_tool( self, tool1, tool2 ):
@@ -1327,7 +1325,7 @@ class ToolSection( object, Dictifiable ):
         self.name = f( elem, 'name' )
         self.id = f( elem, 'id' )
         self.version = f( elem, 'version' )
-        self.elems = odict()
+        self.elems = ToolPanelElements()
 
     def copy( self ):
         copy = ToolSection()
