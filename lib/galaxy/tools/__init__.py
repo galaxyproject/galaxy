@@ -755,10 +755,7 @@ class ToolBox( object, Dictifiable ):
                 self._tool_tag_manager.handle_tags( tool.id, elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
-            if key in integrated_panel_dict or index is None:
-                integrated_panel_dict[ key ] = tool
-            else:
-                integrated_panel_dict.insert( index, key, tool )
+            integrated_panel_dict.update_or_append( index, key, tool )
         except IOError:
             log.error( "Error reading tool configuration file from path: %s." % path )
         except Exception:
@@ -787,10 +784,7 @@ class ToolBox( object, Dictifiable ):
             if load_panel_dict:
                 panel_dict[ key ] = workflow
             # Always load workflows into the integrated_panel_dict.
-            if key in integrated_panel_dict or index is None:
-                integrated_panel_dict[ key ] = workflow
-            else:
-                integrated_panel_dict.insert( index, key, workflow )
+            integrated_panel_dict.update_or_append( index, key, workflow )
         except:
             log.exception( "Error loading workflow: %s" % workflow_id )
 
@@ -799,10 +793,7 @@ class ToolBox( object, Dictifiable ):
         key = 'label_' + label.id
         if load_panel_dict:
             panel_dict[ key ] = label
-        if key in integrated_panel_dict or index is None:
-            integrated_panel_dict[ key ] = label
-        else:
-            integrated_panel_dict.insert( index, key, label )
+        integrated_panel_dict.update_or_append( index, key, label )
 
     def _load_section_tag_set( self, elem, tool_path, load_panel_dict, index=None ):
         key = elem.get( "id" )
@@ -832,10 +823,7 @@ class ToolBox( object, Dictifiable ):
         if load_panel_dict:
             self._tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
-        if key in self._integrated_tool_panel or index is None:
-            self._integrated_tool_panel[ key ] = integrated_section
-        else:
-            self._integrated_tool_panel.insert( index, key, integrated_section )
+        self._integrated_tool_panel.update_or_append( index, key, integrated_section )
 
     def _load_tooldir_tag_set(self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict):
         directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
