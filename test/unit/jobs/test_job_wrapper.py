@@ -194,7 +194,7 @@ class MockToolbox(object):
         assert tool_id == TEST_TOOL_ID
         return self.test_tool
 
-    def get_tool( self, tool_id, exact=False ):
+    def get_tool( self, tool_id, tool_version, exact=False ):
         tool = self.get(tool_id)
         return tool
 

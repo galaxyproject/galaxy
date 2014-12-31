@@ -165,6 +165,18 @@ class ToolsTestCase( api.ApiTestCase ):
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         self.assertEqual( output1_content.strip(), "Cat1Testlistified" )
 
+    @skip_without_tool( "multiple_versions" )
+    def test_run_by_versions( self ):
+        for version in ["0.1", "0.2"]:
+            # Run simple non-upload tool with an input data parameter.
+            history_id = self.dataset_populator.new_history()
+            inputs = dict()
+            outputs = self._run_and_get_outputs( tool_id="multiple_versions", history_id=history_id, inputs=inputs, tool_version=version )
+            self.assertEquals( len( outputs ), 1 )
+            output1 = outputs[ 0 ]
+            output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+            self.assertEqual( output1_content.strip(), "Version " + version )
+
     @skip_without_tool( "cat1" )
     def test_run_cat1_single_meta_wrapper( self ):
         # Wrap input in a no-op meta parameter wrapper like Sam is planning to
@@ -650,8 +662,8 @@ class ToolsTestCase( api.ApiTestCase ):
     def _cat1_outputs( self, history_id, inputs ):
         return self._run_outputs( self._run_cat1( history_id, inputs ) )
 
-    def _run_and_get_outputs( self, tool_id, history_id, inputs ):
-        return self._run_outputs( self._run( tool_id, history_id, inputs ) )
+    def _run_and_get_outputs( self, tool_id, history_id, inputs, tool_version=None ):
+        return self._run_outputs( self._run( tool_id, history_id, inputs, tool_version=tool_version ) )
 
     def _run_outputs( self, create_response ):
         self._assert_status_code_is( create_response, 200 )
@@ -660,12 +672,14 @@ class ToolsTestCase( api.ApiTestCase ):
     def _run_cat1( self, history_id, inputs, assert_ok=False ):
         return self._run( 'cat1', history_id, inputs, assert_ok=assert_ok )
 
-    def _run( self, tool_id, history_id, inputs, assert_ok=False ):
+    def _run( self, tool_id, history_id, inputs, assert_ok=False, tool_version=None ):
         payload = self.dataset_populator.run_tool_payload(
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
         )
+        if tool_version is not None:
+            payload[ "tool_version" ] = tool_version
         create_response = self._post( "tools", data=payload )
         if assert_ok:
             self._assert_status_code_is( create_response, 200 )

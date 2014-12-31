@@ -1,4 +1,5 @@
 from .interface import ToolLineage
+from .interface import ToolLineageVersion
 
 from galaxy.model.tool_shed_install import ToolVersion
 
@@ -31,6 +32,9 @@ class ToolShedLineage(ToolLineage):
     def get_version_ids( self, reverse=False ):
         tool_version = self.app.install_model.context.query( ToolVersion ).get( self.tool_version_id )
         return tool_version.get_version_ids( self.app, reverse=reverse )
+
+    def get_versions( self, reverse=False ):
+        return map( ToolLineageVersion.from_guid, self.get_version_ids( reverse=reverse ) )
 
 
 def get_install_tool_version( app, tool_id ):

@@ -286,13 +286,60 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         # Verify lineage_ids on both tools is correctly ordered.
         for version in ["0.1", "0.2"]:
             guid = "github.com/galaxyproject/example/test_tool/" + version
-            lineage_ids = self.toolbox.get_tool( guid ).lineage_ids
+            lineage_ids = self.toolbox.get_tool( guid ).lineage.get_version_ids()
             assert lineage_ids[ 0 ] == "github.com/galaxyproject/example/test_tool/0.1"
             assert lineage_ids[ 1 ] == "github.com/galaxyproject/example/test_tool/0.2"
 
         # Test tool_version attribute.
         assert self.toolbox.get_tool( "test_tool", tool_version="0.1" ).guid == "github.com/galaxyproject/example/test_tool/0.1"
         assert self.toolbox.get_tool( "test_tool", tool_version="0.2" ).guid == "github.com/galaxyproject/example/test_tool/0.2"
+
+    def test_default_lineage( self ):
+        self.__init_versioned_tools()
+        self._add_config( """<toolbox><tool file="tool_v01.xml" /><tool file="tool_v02.xml" /></toolbox>""" )
+        self.__verify_get_tool_for_default_lineage()
+
+    def test_default_lineage_reversed( self ):
+        # Run same test as above but with entries in tool_conf reversed to
+        # ensure versioning is at work and not order effects.
+        self.__init_versioned_tools()
+        self._add_config( """<toolbox><tool file="tool_v02.xml" /><tool file="tool_v01.xml" /></toolbox>""" )
+        self.__verify_get_tool_for_default_lineage()
+
+    def test_grouping_with_default_lineage( self ):
+        self.__init_versioned_tools()
+        self._add_config( """<toolbox><tool file="tool_v01.xml" /><tool file="tool_v02.xml" /></toolbox>""" )
+        self.__verify_tool_panel_for_default_lineage()
+
+    def test_grouping_with_default_lineage_reversed( self ):
+        # Run same test as above but with entries in tool_conf reversed to
+        # ensure versioning is at work and not order effects.
+        self.__init_versioned_tools()
+        self._add_config( """<toolbox><tool file="tool_v02.xml" /><tool file="tool_v02.xml" /></toolbox>""" )
+        self.__verify_tool_panel_for_default_lineage()
+
+    def __init_versioned_tools( self ):
+        self._init_tool( filename="tool_v01.xml", version="0.1" )
+        self._init_tool( filename="tool_v02.xml", version="0.2" )
+
+    def __verify_tool_panel_for_default_lineage( self ):
+        assert len( self.toolbox._tool_panel ) == 1
+        tool = self.toolbox._tool_panel["tool_test_tool"]
+        assert tool.version == "0.2", tool.version
+        assert tool.id == "test_tool"
+
+    def __verify_get_tool_for_default_lineage( self ):
+        tool_v01 = self.toolbox.get_tool( "test_tool", tool_version="0.1" )
+        tool_v02 = self.toolbox.get_tool( "test_tool", tool_version="0.2" )
+        assert tool_v02.id == "test_tool"
+        assert tool_v02.version == "0.2", tool_v02.version
+        assert tool_v01.id == "test_tool"
+        assert tool_v01.version == "0.1"
+
+        # Newer variant gets to be default for that id.
+        default_tool = self.toolbox.get_tool( "test_tool" )
+        assert default_tool.id == "test_tool"
+        assert default_tool.version == "0.2"
 
     def __remove_itp( self ):
         os.remove( os.path)

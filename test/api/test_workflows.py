@@ -444,6 +444,28 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
     def test_run_workflow( self ):
         self.__run_cat_workflow( inputs_by='step_id' )
 
+    @skip_without_tool( "multiple_versions" )
+    def test_run_versioned_tools( self ):
+        history_01_id = self.dataset_populator.new_history()
+        workflow_version_01 = self._upload_yaml_workflow( """
+- tool_id: multiple_versions
+  tool_version: "0.1"
+  state:
+    inttest: 0
+""" )
+        self.__invoke_workflow( history_01_id, workflow_version_01 )
+        self.dataset_populator.wait_for_history( history_01_id, assert_ok=True )
+
+        history_02_id = self.dataset_populator.new_history()
+        workflow_version_02 = self._upload_yaml_workflow( """
+- tool_id: multiple_versions
+  tool_version: "0.2"
+  state:
+    inttest: 1
+""" )
+        self.__invoke_workflow( history_02_id, workflow_version_02 )
+        self.dataset_populator.wait_for_history( history_02_id, assert_ok=True )
+
     def __run_cat_workflow( self, inputs_by ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run" )
         workflow["steps"]["0"]["uuid"] = str(uuid4())
@@ -910,7 +932,7 @@ test_data:
         self._assert_status_code_is( hda_info_response, 200 )
         self.assertEquals( hda_info_response.json()[ "metadata_data_lines" ], lines )
 
-    def __invoke_workflow( self, history_id, workflow_id, inputs, assert_ok=True ):
+    def __invoke_workflow( self, history_id, workflow_id, inputs={}, assert_ok=True ):
         workflow_request = dict(
             history="hist_id=%s" % history_id,
         )

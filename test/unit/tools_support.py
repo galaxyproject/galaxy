@@ -7,6 +7,7 @@ from collections import defaultdict
 import os.path
 import tempfile
 import shutil
+import string
 
 from galaxy.util.bunch import Bunch
 from galaxy.web.security import SecurityHelper
@@ -30,7 +31,7 @@ class UsesApp( object ):
 
 
 # Simple tool with just one text parameter and output.
-SIMPLE_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
+SIMPLE_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$version">
     <command>echo "$param1" &lt; $out1</command>
     <inputs>
         <param type="text" name="param1" value="" />
@@ -43,7 +44,7 @@ SIMPLE_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
 
 
 # A tool with data parameters (kind of like cat1) my favorite test tool :)
-SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
+SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$version">
     <command>cat "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>
     <inputs>
         <param type="data" format="tabular" name="param1" value="" />
@@ -60,14 +61,24 @@ SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
 
 class UsesTools( object ):
 
-    def _init_tool( self, tool_contents=SIMPLE_TOOL_CONTENTS ):
-        self.tool_file = os.path.join( self.test_directory, "tool.xml" )
+    def _init_tool(
+        self,
+        tool_contents=SIMPLE_TOOL_CONTENTS,
+        filename="tool.xml",
+        version="1.0"
+    ):
+        self._init_app_for_tools()
+        self.tool_file = os.path.join( self.test_directory, filename )
+        contents_template = string.Template( tool_contents )
+        tool_contents = contents_template.safe_substitute( dict( version=version ) )
+        self.__write_tool( tool_contents )
+        self.__setup_tool( )
+
+    def _init_app_for_tools( self ):
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
         self.app.job_config["get_job_tool_configurations"] = lambda ids: [Bunch(handler=Bunch())]
-        self.__write_tool( tool_contents )
-        self.__setup_tool( )
 
     def __setup_tool( self ):
         tool_source = get_tool_source( self.tool_file )

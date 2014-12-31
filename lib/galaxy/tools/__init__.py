@@ -126,6 +126,10 @@ class ToolBox( object, Dictifiable ):
         # shed_tool_conf.xml file.
         self._dynamic_tool_confs = []
         self._tools_by_id = {}
+        # Tool lineages can contain chains of related tools with different ids
+        # so each will be present once in the above dictionary. The following
+        # dictionary can instead hold multiple tools with different versions.
+        self._tool_versions_by_id = {}
         self._workflows_by_id = {}
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = odict()
@@ -352,7 +356,8 @@ class ToolBox( object, Dictifiable ):
                     inserted = True
             if not inserted:
                 # Check the tool's installed versions.
-                for lineage_id in tool.lineage_ids:
+                for tool_lineage_version in tool.lineage.get_versions():
+                    lineage_id = tool_lineage_version.id
                     lineage_id_key = 'tool_%s' % lineage_id
                     for index, integrated_panel_key in enumerate( self._integrated_tool_panel.keys() ):
                         if lineage_id_key == integrated_panel_key:
@@ -503,20 +508,26 @@ class ToolBox( object, Dictifiable ):
 
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False, exact=False ):
         """Attempt to locate a tool in the tool box."""
+        if tool_version:
+            tool_version = str( tool_version )
+
         if get_all_versions and exact:
             raise AssertionError("Cannot specify get_tool with both get_all_versions and exact as True")
 
         if tool_id in self._tools_by_id and not get_all_versions:
+            if tool_version and tool_version in self._tool_versions_by_id[ tool_id ]:
+                return self._tool_versions_by_id[ tool_id ][ tool_version ]
             #tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
             return self._tools_by_id[ tool_id ]
         #exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
         rval = []
         tool_lineage = self._lineage_map.get( tool_id )
         if tool_lineage:
-            tool_version_ids = tool_lineage.get_version_ids( )
-            for tool_version_id in tool_version_ids:
-                if tool_version_id in self._tools_by_id:
-                    rval.append( self._tools_by_id[ tool_version_id ] )
+            lineage_tool_versions = tool_lineage.get_versions( )
+            for lineage_tool_version in lineage_tool_versions:
+                lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
+                if lineage_tool:
+                    rval.append( lineage_tool )
         if not rval:
             #still no tool, do a deeper search and try to match by old ids
             for tool in self._tools_by_id.itervalues():
@@ -561,11 +572,12 @@ class ToolBox( object, Dictifiable ):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
         tool_lineage = self._lineage_map.get( tool_id )
         if tool_lineage:
-            tool_version_ids = tool_lineage.get_version_ids( )
+            lineage_tool_versions = tool_lineage.get_versions( )
             available_tool_versions = []
-            for tool_version_id in tool_version_ids:
-                if tool_version_id in self._tools_by_id:
-                    available_tool_versions.append( self._tools_by_id[ tool_version_id ] )
+            for lineage_tool_version in lineage_tool_versions:
+                tool = self._tool_from_lineage_version( lineage_tool_version )
+                if tool:
+                    available_tool_versions.append( tool )
             return available_tool_versions
         else:
             if tool_id in self._tools_by_id:
@@ -746,7 +758,6 @@ class ToolBox( object, Dictifiable ):
                 tool_lineage = self._lineage_map.register( tool, tool_shed_repository=tool_shed_repository )
                 # Load the tool's lineage ids.
                 tool.lineage = tool_lineage
-                tool.lineage_ids = tool_lineage.get_version_ids( )
                 self._tool_tag_manager.handle_tags( tool.id, elem )
                 self.__add_tool( tool, load_panel_dict, panel_dict )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
@@ -925,7 +936,20 @@ class ToolBox( object, Dictifiable ):
         return tool
 
     def register_tool( self, tool ):
-        self._tools_by_id[ tool.id ] = tool
+        tool_id = tool.id
+        version = tool.version or None
+        if tool_id not in self._tool_versions_by_id:
+            self._tool_versions_by_id[ tool_id ] = { version: tool }
+        else:
+            self._tool_versions_by_id[ tool_id ][ version ] = tool
+        if tool_id in self._tools_by_id:
+            related_tool = self._tools_by_id[ tool_id ]
+            # This one becomes the default un-versioned tool
+            # if newer.
+            if self._newer_tool( tool, related_tool ):
+                self._tools_by_id[ tool_id ] = tool
+        else:
+            self._tools_by_id[ tool_id ] = tool
 
     def package_tool( self, trans, tool_id ):
         """
@@ -1202,9 +1226,11 @@ class ToolBox( object, Dictifiable ):
             if not hasattr( tool, "lineage" ):
                 return None
             tool_lineage = tool.lineage
-        lineage_ids = tool_lineage.get_version_ids( reverse=True )
-        for lineage_id in lineage_ids:
-            if lineage_id in self._tools_by_id:
+        lineage_tool_versions = tool_lineage.get_versions( reverse=True )
+        for lineage_tool_version in lineage_tool_versions:
+            lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
+            if lineage_tool:
+                lineage_id = lineage_tool.id
                 loaded_version_key = 'tool_%s' % lineage_id
                 if loaded_version_key in panel_dict:
                     return panel_dict[ loaded_version_key ]
@@ -1214,7 +1240,22 @@ class ToolBox( object, Dictifiable ):
         """ Return True if tool1 is considered "newer" given its own lineage
         description.
         """
-        return tool1.lineage_ids.index( tool1.id ) > tool1.lineage_ids.index( tool2.id )
+        if not hasattr( tool1, "lineage" ):
+            return True
+        lineage_tool_versions = tool1.lineage.get_versions()
+        for lineage_tool_version in lineage_tool_versions:
+            lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
+            if lineage_tool is tool1:
+                return False
+            if lineage_tool is tool2:
+                return True
+        return True
+
+    def _tool_from_lineage_version( self, lineage_tool_version ):
+        if lineage_tool_version.id_based:
+            return self._tools_by_id.get( lineage_tool_version.id, None )
+        else:
+            return self._tool_versions_by_id.get( lineage_tool_version.id, {} ).get( lineage_tool_version.version, None )
 
 
 def _filter_for_panel( item, filters, context ):

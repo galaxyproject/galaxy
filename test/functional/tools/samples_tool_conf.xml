@@ -36,6 +36,9 @@
   <tool file="collection_two_paired.xml" />
   <tool file="collection_optional_param.xml" />
 
+  <tool file="multiple_versions_v01.xml" />
+  <tool file="multiple_versions_v02.xml" />
+
   <!-- Tools interesting only for building up test workflows. -->
 
   <!-- Next three tools demonstrate concatenating multiple datasets
