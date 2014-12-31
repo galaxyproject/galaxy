@@ -1,8 +1,46 @@
+from abc import abstractmethod
+
 from galaxy.util.odict import odict
+from galaxy.util import bunch
 from galaxy.model.item_attrs import Dictifiable
 
 
-class ToolSection( object, Dictifiable ):
+panel_item_types = bunch.Bunch(
+    TOOL="TOOL",
+    WORKFLOW="WORKFLOW",
+    SECTION="SECTION",
+    LABEL="LABEL",
+)
+
+
+class HasPanelItems:
+    """
+    """
+
+    @abstractmethod
+    def panel_items( self ):
+        """ Return an ordered dictionary-like object describing tool panel
+        items (such as workflows, tools, labels, and sections).
+        """
+
+    def panel_items_iter( self ):
+        """ Iterate through panel items each represented as a tuple of
+        (panel_key, panel_type, panel_content).
+        """
+        for panel_key, panel_value in self.panel_items().iteritems():
+            if panel_value is None:
+                continue
+            panel_type = panel_item_types.SECTION
+            if panel_key.startswith("tool_"):
+                panel_type = panel_item_types.TOOL
+            elif panel_key.startswith("label_"):
+                panel_type = panel_item_types.LABEL
+            elif panel_key.startswith("workflow_"):
+                panel_type = panel_item_types.WORKFLOW
+            yield (panel_key, panel_type, panel_value)
+
+
+class ToolSection( object, Dictifiable, HasPanelItems ):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
@@ -42,6 +80,9 @@ class ToolSection( object, Dictifiable ):
 
         return section_dict
 
+    def panel_items( self ):
+        return self.elems
+
 
 class ToolSectionLabel( object, Dictifiable ):
     """
@@ -63,7 +104,7 @@ class ToolSectionLabel( object, Dictifiable ):
         return super( ToolSectionLabel, self ).to_dict()
 
 
-class ToolPanelElements( odict ):
+class ToolPanelElements( odict, HasPanelItems ):
     """ Represents an ordered dictionary of tool entries - abstraction
     used both by tool panel itself (normal and integrated) and its sections.
     """
@@ -118,3 +159,6 @@ class ToolPanelElements( odict ):
 
     def append_section( self, key, section_elems ):
         self[ key ] = section_elems
+
+    def panel_items( self ):
+        return self

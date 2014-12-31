@@ -55,6 +55,7 @@ from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.toolbox import ToolPanelElements
 from galaxy.tools.toolbox import ToolSection
 from galaxy.tools.toolbox import ToolSectionLabel
+from galaxy.tools.toolbox import panel_item_types
 from galaxy.tools.toolbox import tool_tag_manager
 from galaxy.tools.toolbox.lineages import LineageMap
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object
@@ -304,16 +305,16 @@ class ToolBox( object, Dictifiable ):
 
     def get_integrated_section_for_tool( self, tool ):
         tool_id = tool.id
-        for key, item in self._integrated_tool_panel.items():
+        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
             if item:
-                if isinstance( item, Tool ):
+                if item_type == panel_item_types.TOOL:
                     if item.id == tool_id:
                         return '', ''
-                if isinstance( item, ToolSection ):
+                if item_type == panel_item_types.SECTION:
                     section_id = item.id or ''
                     section_name = item.name or ''
-                    for section_key, section_item in item.elems.items():
-                        if isinstance( section_item, Tool ):
+                    for section_key, section_item_type, section_item in item.panel_items_iter():
+                        if section_item_type == panel_item_types.TOOL:
                             if section_item:
                                 if section_item.id == tool_id:
                                     return section_id, section_name
@@ -389,20 +390,20 @@ class ToolBox( object, Dictifiable ):
                             log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
 
     def _load_tool_panel( self ):
-        for key, val in self._integrated_tool_panel.items():
-            if isinstance( val, Tool ):
+        for key, item_type, val in self._integrated_tool_panel.panel_items_iter():
+            if item_type == panel_item_types.TOOL:
                 tool_id = key.replace( 'tool_', '', 1 )
                 if tool_id in self._tools_by_id:
                     self.__add_tool_to_tool_panel( val, self._tool_panel, section=False )
-            elif isinstance( val, Workflow ):
+            elif item_type == panel_item_types.WORKFLOW:
                 workflow_id = key.replace( 'workflow_', '', 1 )
                 if workflow_id in self._workflows_by_id:
                     workflow = self._workflows_by_id[ workflow_id ]
                     self._tool_panel[ key ] = workflow
                     log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
-            elif isinstance( val, ToolSectionLabel ):
+            elif item_type == panel_item_types.LABEL:
                 self._tool_panel[ key ] = val
-            elif isinstance( val, ToolSection ):
+            elif item_type == panel_item_types.SECTION:
                 section_dict = {
                     'id': val.id or '',
                     'name': val.name or '',
@@ -410,18 +411,18 @@ class ToolBox( object, Dictifiable ):
                 }
                 section = ToolSection( section_dict )
                 log.debug( "Loading section: %s" % section_dict.get( 'name' ) )
-                for section_key, section_val in val.elems.items():
-                    if isinstance( section_val, Tool ):
+                for section_key, section_item_type, section_val in val.panel_items_iter():
+                    if section_item_type == panel_item_types.TOOL:
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self._tools_by_id:
                             self.__add_tool_to_tool_panel( section_val, section, section=True )
-                    elif isinstance( section_val, Workflow ):
+                    elif section_item_type == panel_item_types.WORKFLOW:
                         workflow_id = section_key.replace( 'workflow_', '', 1 )
                         if workflow_id in self._workflows_by_id:
                             workflow = self._workflows_by_id[ workflow_id ]
                             section.elems[ section_key ] = workflow
                             log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
-                    elif isinstance( section_val, ToolSectionLabel ):
+                    elif section_item_type == panel_item_types.LABEL:
                         if section_val:
                             section.elems[ section_key ] = section_val
                             log.debug( "Loaded label: %s" % ( section_val.text ) )
@@ -467,30 +468,30 @@ class ToolBox( object, Dictifiable ):
         os.write( fd, '    <!--\n    ')
         os.write( fd, '\n    '.join( [ l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l ] ) )
         os.write( fd, '\n    -->\n')
-        for key, item in self._integrated_tool_panel.items():
+        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
             if item:
-                if isinstance( item, Tool ):
+                if item_type == panel_item_types.TOOL:
                     os.write( fd, '    <tool id="%s" />\n' % item.id )
-                elif isinstance( item, Workflow ):
+                elif item_type == panel_item_types.WORKFLOW:
                     os.write( fd, '    <workflow id="%s" />\n' % item.id )
-                elif isinstance( item, ToolSectionLabel ):
+                elif item_type == panel_item_types.LABEL:
                     label_id = item.id or ''
                     label_text = item.text or ''
                     label_version = item.version or ''
                     os.write( fd, '    <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-                elif isinstance( item, ToolSection ):
+                elif item_type == panel_item_types.SECTION:
                     section_id = item.id or ''
                     section_name = item.name or ''
                     section_version = item.version or ''
                     os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
-                    for section_key, section_item in item.elems.items():
-                        if isinstance( section_item, Tool ):
+                    for section_key, section_item_type, section_item in item.panel_items_iter():
+                        if section_item_type == panel_item_types.TOOL:
                             if section_item:
                                 os.write( fd, '        <tool id="%s" />\n' % section_item.id )
-                        elif isinstance( section_item, Workflow ):
+                        elif section_item_type == panel_item_types.WORKFLOW:
                             if section_item:
                                 os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
-                        elif isinstance( section_item, ToolSectionLabel ):
+                        elif section_item_type == panel_item_types.LABEL:
                             if section_item:
                                 label_id = section_item.id or ''
                                 label_text = section_item.text or ''
@@ -709,10 +710,9 @@ class ToolBox( object, Dictifiable ):
                 else:
                     del has_elems[ tool_key ]
             if remove_from_config:
-                if hasattr( integrated_has_elems, "elems" ):
-                    integrated_has_elems = integrated_has_elems.elems
-                if tool_key in integrated_has_elems:
-                    del integrated_has_elems[ tool_key ]
+                itegrated_items = integrated_has_elems.panel_items()
+                if tool_key in itegrated_items:
+                    del itegrated_items[ tool_key ]
 
         if section_key:
             _, tool_section = self.get_section( section_key )
@@ -1174,8 +1174,8 @@ class ToolBox( object, Dictifiable ):
         """
         context = Bunch( toolbox=self, trans=trans )
         filters = self._filter_factory.build_filters( trans )
-        for elt in self._tool_panel.itervalues():
-            elt = _filter_for_panel( elt, filters, context )
+        for _, item_type, elt in self._tool_panel.panel_items_iter():
+            elt = _filter_for_panel( elt, item_type, filters, context )
             if elt:
                 yield elt
 
@@ -1241,7 +1241,7 @@ class ToolBox( object, Dictifiable ):
             return self._tool_versions_by_id.get( lineage_tool_version.id, {} ).get( lineage_tool_version.version, None )
 
 
-def _filter_for_panel( item, filters, context ):
+def _filter_for_panel( item, item_type, filters, context ):
     """
     Filters tool panel elements so that only those that are compatible
     with provided filters are kept.
@@ -1251,13 +1251,13 @@ def _filter_for_panel( item, filters, context ):
             if not filter_method( context, filter_item ):
                 return False
         return True
-    if isinstance( item, Tool ):
+    if item_type == panel_item_types.TOOL:
         if _apply_filter( item, filters[ 'tool' ] ):
             return item
-    elif isinstance( item, ToolSectionLabel ):
+    elif item_type == panel_item_types.LABEL:
         if _apply_filter( item, filters[ 'label' ] ):
             return item
-    elif isinstance( item, ToolSection ):
+    elif item_type == panel_item_types.SECTION:
         # Filter section item-by-item. Only show a label if there are
         # non-filtered tools below it.
 
@@ -1265,14 +1265,14 @@ def _filter_for_panel( item, filters, context ):
             cur_label_key = None
             tools_under_label = False
             filtered_elems = item.elems.copy()
-            for key, section_item in item.elems.items():
-                if isinstance( section_item, Tool ):
+            for key, section_item_type, section_item in item.panel_items_iter():
+                if section_item_type == panel_item_types.TOOL:
                     # Filter tool.
                     if _apply_filter( section_item, filters[ 'tool' ] ):
                         tools_under_label = True
                     else:
                         del filtered_elems[ key ]
-                elif isinstance( section_item, ToolSectionLabel ):
+                elif section_item_type == panel_item_types.LABEL:
                     # If there is a label and it does not have tools,
                     # remove it.
                     if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
