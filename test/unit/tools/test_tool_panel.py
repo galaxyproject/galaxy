@@ -1,5 +1,6 @@
 from xml.etree import ElementTree as ET
-from galaxy.tools import ToolSection
+
+from galaxy.tools.toolbox import ToolSection
 
 
 def test_tool_section( ):

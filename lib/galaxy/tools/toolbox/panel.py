@@ -1,4 +1,66 @@
 from galaxy.util.odict import odict
+from galaxy.model.item_attrs import Dictifiable
+
+
+class ToolSection( object, Dictifiable ):
+    """
+    A group of tools with similar type/purpose that will be displayed as a
+    group in the user interface.
+    """
+
+    dict_collection_visible_keys = ( 'id', 'name', 'version' )
+
+    def __init__( self, elem=None ):
+        """ Build a ToolSection from an ElementTree element or a dictionary.
+        """
+        f = lambda elem, val: elem is not None and elem.get( val ) or ''
+        self.name = f( elem, 'name' )
+        self.id = f( elem, 'id' )
+        self.version = f( elem, 'version' )
+        self.elems = ToolPanelElements()
+
+    def copy( self ):
+        copy = ToolSection()
+        copy.name = self.name
+        copy.id = self.id
+        copy.version = self.version
+        copy.elems = self.elems.copy()
+        return copy
+
+    def to_dict( self, trans, link_details=False ):
+        """ Return a dict that includes section's attributes. """
+
+        section_dict = super( ToolSection, self ).to_dict()
+        section_elts = []
+        kwargs = dict(
+            trans=trans,
+            link_details=link_details
+        )
+        for elt in self.elems.values():
+            section_elts.append( elt.to_dict( **kwargs ) )
+        section_dict[ 'elems' ] = section_elts
+
+        return section_dict
+
+
+class ToolSectionLabel( object, Dictifiable ):
+    """
+    A label for a set of tools that can be displayed above groups of tools
+    and sections in the user interface
+    """
+
+    dict_collection_visible_keys = ( 'id', 'text', 'version' )
+
+    def __init__( self, elem ):
+        """ Build a ToolSectionLabel from an ElementTree element or a
+        dictionary.
+        """
+        self.text = elem.get( "text" )
+        self.id = elem.get( "id" )
+        self.version = elem.get( "version" ) or ''
+
+    def to_dict( self, **kwds ):
+        return super( ToolSectionLabel, self ).to_dict()
 
 
 class ToolPanelElements( odict ):

@@ -269,7 +269,10 @@
 </%def>
 
 <%def name="left_panel()">
-    <% from galaxy.tools import Tool, ToolSection, ToolSectionLabel %>
+    <%
+       from galaxy.tools import Tool
+       from galaxy.tools.toolbox import ToolSection, ToolSectionLabel
+    %>
 
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>

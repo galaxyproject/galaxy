@@ -10,7 +10,7 @@ import threading
 import logging
 
 from galaxy import util
-from galaxy.tools import ToolSection
+from galaxy.tools.toolbox import ToolSection
 from galaxy.util.odict import odict
 
 from tool_shed.galaxy_install import install_manager

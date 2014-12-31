@@ -1,6 +1,9 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<% from galaxy.tools import Tool, ToolSection %>
+<%
+   from galaxy.tools import Tool
+   from galaxy.tools.toolbox import ToolSection
+%>
 
 <script type="text/javascript">
 $().ready(function() {
