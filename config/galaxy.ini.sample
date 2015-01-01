@@ -713,6 +713,13 @@ use_interactive = True
 # *not* include 'HTTP_' at the beginning of the header name.
 #remote_user_header = HTTP_REMOTE_USER
 
+# If use_remote_user is enabled, anyone who can log in to the Galaxy host may
+# impersonate any other user by simply sending the appropriate header. Thus a
+# secret shared between the upstream proxy server, and Galaxy is required.
+# If anyone other than the Galaxy user is using the server, then apache/nginx should
+# pass a value in the header 'GX_SECRET' that is identical the one below
+#remote_user_secret = USING THE DEFAULT IS NOT SECURE!
+
 # If use_remote_user is enabled, you can set this to a URL that will log your
 # users out.
 #remote_user_logout_href = None

@@ -1119,6 +1119,8 @@ def move_merge( source, target ):
 
 
 def safe_str_cmp(a, b):
+    """safely compare two strings in a timing-attack-resistant manner
+    """
     if len(a) != len(b):
         return False
     rv = 0

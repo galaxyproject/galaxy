@@ -3,6 +3,7 @@ Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
 
 import socket
+from galaxy.util import safe_str_cmp
 
 errorpage = """
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -37,12 +38,13 @@ errorpage = """
 
 
 class RemoteUser( object ):
-    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_header=None ):
+    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_header=None, remote_user_secret_header=None ):
         self.app = app
         self.maildomain = maildomain
         self.display_servers = display_servers or []
         self.admin_users = admin_users or []
         self.remote_user_header = remote_user_header or 'HTTP_REMOTE_USER'
+        self.config_secret_header = remote_user_secret_header
 
     def __call__( self, environ, start_response ):
         # Allow display servers
@@ -59,6 +61,34 @@ class RemoteUser( object ):
         # Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
         path_info = environ.get('PATH_INFO', '')
+
+        # If the secret header is enabled, we expect upstream to send along some key
+        # in HTTP_GX_SECRET, so we'll need to compare that here to the correct value
+        # 
+        # This is not an ideal location for this function.  The reason being
+        # that because this check is done BEFORE the REMOTE_USER check,  it is
+        # possible to attack the GX_SECRET key without having correct
+        # credentials. However, that's why it's not "ideal", but it is "good
+        # enough". The only users able to exploit this are ones with access to
+        # the local system (unless Galaxy is listening on 0.0.0.0....). It
+        # seems improbable that an attacker with access to the server hosting
+        # Galaxy would not have access to Galaxy itself, and be attempting to
+        # attack the system
+        if self.config_secret_header is not None:
+            if not safe_str_cmp(environ.get('HTTP_GX_SECRET'), self.config_secret_header):
+                title = "Access to Galaxy is denied"
+                message = """
+                Galaxy is configured to authenticate users via an external
+                method (such as HTTP authentication in Apache), but an 
+                incorrect shared secret key was provided by the 
+                upstream (proxy) server.</p>
+                <p>Please contact your local Galaxy administrator.  The
+                variable <code>remote_user_secret</code> and
+                <code>GX_SECRET</code> header must be set before you may
+                access Galaxy.
+                """
+                return self.error( start_response, title, message )
+             
         if not environ.get(self.remote_user_header, '(null)').startswith('(null)'):
             if not environ[ self.remote_user_header ].count( '@' ):
                 if self.maildomain is not None:
