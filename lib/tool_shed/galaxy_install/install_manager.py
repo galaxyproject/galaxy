@@ -501,8 +501,8 @@ class InstallRepositoryManager( object ):
         repo_info_dicts = [ repo_info_dict ]
         return repository_revision_dict, repo_info_dicts
 
-    def handle_repository_contents( self, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir,
-                                    tool_shed=None, tool_section=None, shed_tool_conf=None, reinstalling=False ):
+    def __handle_repository_contents( self, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir,
+                                      tool_shed=None, tool_section=None, shed_tool_conf=None, reinstalling=False ):
         """
         Generate the metadata for the installed tool shed repository, among other things.
         This method is called when an administrator is installing a new repository or
@@ -839,14 +839,14 @@ class InstallRepositoryManager( object ):
                                                             create=False )
                     hg_util.pull_repository( repo, repository_clone_url, current_changeset_revision )
                     hg_util.update_repository( repo, ctx_rev=current_ctx_rev )
-            self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
-                                             tool_path=tool_path,
-                                             repository_clone_url=repository_clone_url,
-                                             relative_install_dir=relative_install_dir,
-                                             tool_shed=tool_shed_repository.tool_shed,
-                                             tool_section=tool_section,
-                                             shed_tool_conf=shed_tool_conf,
-                                             reinstalling=reinstalling )
+            self.__handle_repository_contents( tool_shed_repository=tool_shed_repository,
+                                               tool_path=tool_path,
+                                               repository_clone_url=repository_clone_url,
+                                               relative_install_dir=relative_install_dir,
+                                               tool_shed=tool_shed_repository.tool_shed,
+                                               tool_section=tool_section,
+                                               shed_tool_conf=shed_tool_conf,
+                                               reinstalling=reinstalling )
             self.install_model.context.refresh( tool_shed_repository )
             metadata = tool_shed_repository.metadata
             if 'tools' in metadata:
