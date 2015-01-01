@@ -123,6 +123,10 @@ class BaseToolBoxTestCase(  unittest.TestCase, tools_support.UsesApp, tools_supp
         path = os.path.join( self.test_directory, name )
         return path
 
+    def _tool_path( self, name="tool.xml" ):
+        path = os.path.join( self.test_directory, name )
+        return path
+
     def __reindex( self ):
         self.reindexed = True
 

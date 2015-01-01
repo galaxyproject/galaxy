@@ -5,6 +5,10 @@ from galaxy.util import parse_xml
 from tools.test_toolbox import BaseToolBoxTestCase
 from tool_shed.galaxy_install.tools import tool_panel_manager
 
+from tool_shed.tools import tool_version_manager
+
+DEFAULT_GUID = "123456"
+
 
 class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
 
@@ -34,15 +38,14 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
         assert len( toolbox._tool_panel ) == 2
 
     def test_add_tool_to_panel( self ):
-        self._init_tool()
-        self._add_config( """<toolbox tool_path="%s"></toolbox>""" % self.test_directory )
-        tool_path = os.path.join(self.test_directory, "tool.xml")
-        self.tool.guid = "123456"
-        new_tools = [{"guid": "123456", "tool_config": tool_path}]
+        self._init_ts_tool( guid=DEFAULT_GUID )
+        self._init_dynamic_tool_conf()
+        tool_path = self._tool_path()
+        new_tools = [{"guid": DEFAULT_GUID, "tool_config": tool_path}]
         repository_tools_tups = [
             (
                 tool_path,
-                "123456",
+                DEFAULT_GUID,
                 self.tool,
             )
         ]
@@ -62,6 +65,51 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
             tool_panel_dict=tool_panel_dict,
         )
         self._verify_tool_confs()
+
+    def test_add_twice( self ):
+        self._init_dynamic_tool_conf()
+        tool_versions = {}
+        previous_guid = None
+        for v in "1", "2", "3":
+            changeset = "0123456789abcde%s" % v
+            guid = DEFAULT_GUID + ("v%s" % v)
+            tool = self._init_ts_tool( guid=guid, filename="tool_v%s.xml" % v )
+            tool_path = self._tool_path( name="tool_v%s.xml" % v )
+            new_tools = [{"guid": guid, "tool_config": tool_path}]
+            tool_shed_repository = self._repo_install( changeset )
+            repository_tools_tups = [
+                (
+                    tool_path,
+                    guid,
+                    tool,
+                )
+            ]
+            _, section = self.toolbox.get_section("tid1", create_if_needed=True)
+            tpm = self.tpm
+            tool_panel_dict = tpm.generate_tool_panel_dict_for_new_install(
+                tool_dicts=new_tools,
+                tool_section=section,
+            )
+            if previous_guid:
+                tool_versions[ guid ] = previous_guid
+            self.tvm.handle_tool_versions( [tool_versions], tool_shed_repository )
+            tpm.add_to_tool_panel(
+                repository_name="example",
+                repository_clone_url="github.com",
+                changeset_revision=changeset,
+                repository_tools_tups=repository_tools_tups,
+                owner="galaxyproject",
+                shed_tool_conf="tool_conf.xml",
+                tool_panel_dict=tool_panel_dict,
+            )
+            self._verify_tool_confs()
+            section = self.toolbox._tool_panel["tid1"]
+            # New GUID replaced old one in tool panel but both
+            # appear in integrated tool panel.
+            if previous_guid:
+                assert ("tool_%s" % previous_guid) not in section.panel_items()
+            assert ("tool_%s" % guid) in self.toolbox._integrated_tool_panel["tid1"].panel_items()
+            previous_guid = guid
 
     def test_deactivate_in_section( self ):
         self._setup_two_versions_remove_one( section=True, uninstall=False )
@@ -154,6 +202,19 @@ class ToolPanelManagerTestCase( BaseToolBoxTestCase ):
             message = message_template % ( filename, open( filename, "r" ).read() )
             raise AssertionError( message )
 
+    def _init_dynamic_tool_conf( self ):
+        # Add a dynamic tool conf (such as a ToolShed managed one) to list of configs.
+        self._add_config( """<toolbox tool_path="%s"></toolbox>""" % self.test_directory )
+
+    def _init_ts_tool( self, guid=DEFAULT_GUID, **kwds ):
+        tool = self._init_tool( **kwds )
+        tool.guid = guid
+        return tool
+
     @property
     def tpm( self ):
         return tool_panel_manager.ToolPanelManager( self.app )
+
+    @property
+    def tvm( self ):
+        return tool_version_manager.ToolVersionManager( self.app )

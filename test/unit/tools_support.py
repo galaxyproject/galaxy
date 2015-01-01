@@ -72,7 +72,7 @@ class UsesTools( object ):
         contents_template = string.Template( tool_contents )
         tool_contents = contents_template.safe_substitute( dict( version=version ) )
         self.__write_tool( tool_contents )
-        self.__setup_tool( )
+        return self.__setup_tool( )
 
     def _init_app_for_tools( self ):
         self.app.config.drmaa_external_runjob_script = ""
@@ -85,6 +85,7 @@ class UsesTools( object ):
         self.tool = Tool( self.tool_file, tool_source, self.app )
         if getattr( self, "tool_action", None ):
             self.tool.tool_action = self.tool_action
+        return self.tool
 
     def __write_tool( self, contents ):
         open( self.tool_file, "w" ).write( contents )
