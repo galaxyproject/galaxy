@@ -59,7 +59,7 @@ class ToolInputTranslator( object ):
             append_param = None
 
             value_trans_elem = req_param.find( 'value_translation' )
-            if value_trans_elem:
+            if value_trans_elem is not None:
                 for value_elem in value_trans_elem.findall( 'value' ):
                     remote_value = value_elem.get( "remote_value" )
                     galaxy_value = value_elem.get( "galaxy_value" )
@@ -67,7 +67,7 @@ class ToolInputTranslator( object ):
                         value_trans[ remote_value ] = galaxy_value
 
             append_param_elem = req_param.find( "append_param" )
-            if append_param_elem:
+            if append_param_elem is not None:
                 separator = append_param_elem.get( 'separator', ',' )
                 first_separator = append_param_elem.get( 'first_separator', None )
                 join_str = append_param_elem.get( 'join', '=' )

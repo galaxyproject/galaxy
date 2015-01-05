@@ -467,10 +467,10 @@ class ToolModule( WorkflowModule ):
 
     type = "tool"
 
-    def __init__( self, trans, tool_id ):
+    def __init__( self, trans, tool_id, tool_version=None ):
         self.trans = trans
         self.tool_id = tool_id
-        self.tool = trans.app.toolbox.get_tool( tool_id )
+        self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
@@ -493,11 +493,14 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         tool_id = d[ 'tool_id' ]
-        module = Class( trans, tool_id )
+        tool_version = str( d.get( 'tool_version', None ) )
+        module = Class( trans, tool_id, tool_version=tool_version )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                module.version_changes.append( "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() ) )
+                message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
+                log.debug(message)
+                module.version_changes.append(message)
             module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
@@ -506,23 +509,25 @@ class ToolModule( WorkflowModule ):
 
     @classmethod
     def from_workflow_step( Class, trans, step ):
+        toolbox = trans.app.toolbox
         tool_id = step.tool_id
-        if trans.app.toolbox and tool_id not in trans.app.toolbox.tools_by_id:
+        if toolbox:
             # See if we have access to a different version of the tool.
             # TODO: If workflows are ever enhanced to use tool version
             # in addition to tool id, enhance the selection process here
             # to retrieve the correct version of the tool.
-            tool = trans.app.toolbox.get_tool( tool_id )
-            if tool:
-                tool_id = tool.id
-        if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ):
+            tool_id = toolbox.get_tool_id( tool_id )
+        if ( toolbox and tool_id ):
             if step.config:
                 # This step has its state saved in the config field due to the
                 # tool being previously unavailable.
                 return module_factory.from_dict(trans, loads(step.config), secure=False)
-            module = Class( trans, tool_id )
+            tool_version = step.tool_version
+            module = Class( trans, tool_id, tool_version=tool_version )
             if step.tool_version and (step.tool_version != module.tool.version):
-                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version))
+                message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version)
+                log.debug(message)
+                module.version_changes.append(message)
             module.recover_state( step.tool_inputs )
             module.errors = step.tool_errors
             module.workflow_outputs = step.workflow_outputs
@@ -555,13 +560,6 @@ class ToolModule( WorkflowModule ):
 
     def normalize_runtime_state( self, runtime_state ):
         return runtime_state.encode( self.tool, self.trans.app, secure=False )
-
-    @classmethod
-    def __get_tool_version( cls, trans, tool_id ):
-        # Return a ToolVersion if one exists for tool_id.
-        return trans.install_model.context.query( trans.install_model.ToolVersion ) \
-                               .filter( trans.install_model.ToolVersion.table.c.tool_id == tool_id ) \
-                               .first()
 
     def save_to_step( self, step ):
         step.type = self.type
@@ -731,7 +729,7 @@ class ToolModule( WorkflowModule ):
         return state, step_errors
 
     def execute( self, trans, progress, invocation, step ):
-        tool = trans.app.toolbox.get_tool( step.tool_id )
+        tool = trans.app.toolbox.get_tool( step.tool_id, tool_version=step.tool_version )
         tool_state = step.state
 
         collections_to_match = self._find_collections_to_match( tool, progress, step )

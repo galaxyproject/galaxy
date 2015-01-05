@@ -711,7 +711,7 @@ class JobWrapper( object ):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
-        self.tool = queue.app.toolbox.tools_by_id.get( job.tool_id, None )
+        self.tool = queue.app.toolbox.get_tool( job.tool_id, job.tool_version, exact=True )
         self.queue = queue
         self.app = queue.app
         self.sa_session = self.app.model.context

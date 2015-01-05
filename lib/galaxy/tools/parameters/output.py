@@ -15,7 +15,7 @@ class ToolOutputActionGroup( object ):
     def __init__( self, parent, config_elem ):
         self.parent = parent
         self.actions = []
-        if config_elem:
+        if config_elem is not None:
             for elem in config_elem:
                 if elem.tag == "conditional":
                     self.actions.append( ToolOutputActionConditional( self, elem ) )

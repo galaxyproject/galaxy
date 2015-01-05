@@ -148,7 +148,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Tool config maintained by tool migration scripts. If you use the migration
 # scripts to install tools that have been migrated to the tool shed upon a new
 # release, they will be added to this tool config file.
-#migrated_tools_config = migrated_tools_conf.xml
+#migrated_tools_config = config/migrated_tools_conf.xml
 
 # File that contains the XML section and tool tags from all tool panel config
 # files integrated into a single file that defines the tool panel layout.  This
@@ -713,6 +713,13 @@ use_interactive = True
 # *not* include 'HTTP_' at the beginning of the header name.
 #remote_user_header = HTTP_REMOTE_USER
 
+# If use_remote_user is enabled, anyone who can log in to the Galaxy host may
+# impersonate any other user by simply sending the appropriate header. Thus a
+# secret shared between the upstream proxy server, and Galaxy is required.
+# If anyone other than the Galaxy user is using the server, then apache/nginx should
+# pass a value in the header 'GX_SECRET' that is identical the one below
+#remote_user_secret = USING THE DEFAULT IS NOT SECURE!
+
 # If use_remote_user is enabled, you can set this to a URL that will log your
 # users out.
 #remote_user_logout_href = None
@@ -910,16 +917,26 @@ use_interactive = True
 #cache_user_job_count = False
 
 # ToolBox filtering
-# Modules from lib/galaxy/tools/filters/ can be specified in the following lines.
-# tool_* filters will be applied for all users and can not be changed by them.
-# user_tool_* filters will be shown under user preferences and can be toogled
-# on and off by runtime
-#tool_filters
-#tool_label_filters
-#tool_section_filters
+
+# Modules from lib/galaxy/tools/toolbox/filters/ can be specified in
+# the following lines.  tool_* filters will be applied for all users
+# and can not be changed by them.  user_tool_* filters will be shown
+# under user preferences and can be toogled on and off by
+# runtime. Example shown below are not real defaults (no custom
+# filters applied by defualt) but can be enabled with by renaming the
+# example.py.sample in the filters directory to example.py.
+
+#tool_filters =
+#tool_label_filters =
+#tool_section_filters =
 #user_tool_filters = examples:restrict_upload_to_admins, examples:restrict_encode
 #user_tool_section_filters = examples:restrict_text
 #user_tool_label_filters = examples:restrict_upload_to_admins, examples:restrict_encode
+
+# The base modules that are searched for modules as described above
+# can be modified and modules external to Galaxy can be searched by
+# modifying the following option.
+#toolbox_filter_base_modules = galaxy.tools.toolbox.filters,galaxy.tools.filters
 
 # Galaxy Application Internal Message Queue
 

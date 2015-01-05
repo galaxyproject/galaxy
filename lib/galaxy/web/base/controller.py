@@ -243,6 +243,11 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """
         Get a History from the database by id, verifying ownership.
         """
+        if trans.user is None and trans.history:
+            if id == trans.security.encode_id( trans.history.id ):
+                return trans.history
+            raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
+
         history = self.get_object( trans, id, 'History',
             check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
         history = self.security_check( trans, history, check_ownership, check_accessible )

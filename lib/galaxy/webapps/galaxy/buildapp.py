@@ -198,7 +198,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET', 'mapping' : 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping' : 'GET', 'converters': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
@@ -503,8 +503,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         app = RemoteUser( app, maildomain = conf.get( 'remote_user_maildomain', None ),
                                display_servers = util.listify( conf.get( 'display_servers', '' ) ),
                                admin_users = conf.get( 'admin_users', '' ).split( ',' ),
-                               remote_user_header = conf.get( 'remote_user_header', 'HTTP_REMOTE_USER' ) )
-        log.debug( "Enabling 'remote user' middleware" )
+                               remote_user_header = conf.get( 'remote_user_header', 'HTTP_REMOTE_USER' ),
+                               remote_user_secret_header = conf.get('remote_user_secret', None) )
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):

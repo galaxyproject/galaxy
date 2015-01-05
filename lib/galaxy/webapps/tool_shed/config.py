@@ -50,9 +50,6 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         # Tool stuff
-        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
-        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
-        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
@@ -62,13 +59,6 @@ class Configuration( object ):
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Install and test framework for testing tools contained in repositories.
         self.num_tool_test_results_saved = kwargs.get( 'num_tool_test_results_saved', 5 )
-        # Location for dependencies
-        if 'tool_dependency_dir' in kwargs:
-            self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
-            self.use_tool_dependencies = True
-        else:
-            self.tool_dependency_dir = None
-            self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
         # Galaxy flavor Docker Image
         self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
@@ -83,6 +73,7 @@ class Configuration( object ):
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
+        self.remote_user_secret = kwargs.get( "remote_user_secret", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )

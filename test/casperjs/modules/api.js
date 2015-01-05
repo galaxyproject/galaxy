@@ -355,7 +355,6 @@ HDAAPI.prototype.delete_ = function create( historyId, id, purge ){
     // have to attach like GET param - due to body loss in jq
     url = utils.format( this.urlTpls.update, historyId, id );
     if( purge ){
-console.debug( 'adding purge:' + purge );
         url += '?purge=True';
     }
     return this.api._ajax( url, {
@@ -554,6 +553,7 @@ ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
     var spaceghost = this.api.spaceghost,
         uploadedId;
 
+    // upload via the api
     spaceghost.then( function(){
         var returned = this.api.tools.upload( historyId, options );
         this.debug( 'returned: ' + this.jsonStr( returned ) );
@@ -562,16 +562,17 @@ ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
     });
 
     spaceghost.then( function(){
+        var hda = null;
         this.waitFor(
             function testHdaState(){
-                var hda = spaceghost.api.hdas.show( historyId, uploadedId );
+                hda = spaceghost.api.hdas.show( historyId, uploadedId );
                 spaceghost.debug( spaceghost.jsonStr( hda.state ) );
                 return !( hda.state === 'upload' || hda.state === 'queued' || hda.state === 'running' );
             },
             function _then(){
                 spaceghost.info( 'upload finished: ' + uploadedId );
                 if( then ){
-                    then.call( spaceghost, uploadedId );
+                    then.call( spaceghost, uploadedId, hda );
                 }
                 //var hda = spaceghost.api.hdas.show( historyId, uploadedId );
                 //spaceghost.debug( spaceghost.jsonStr( hda ) );
@@ -627,6 +628,16 @@ ToolsAPI.prototype.thenUploadMultiple = function thenUploadMultiple( historyId, 
         );
     });
     return spaceghost;
+};
+
+
+/** get the current history's id, then upload there */
+ToolsAPI.prototype.thenUploadToCurrent = function thenUploadToCurrent( options, then ){
+    var spaceghost = this.api.spaceghost;
+    return spaceghost.then( function(){
+        var currentHistoryId = this.api.histories.index()[0].id;
+        spaceghost.api.tools.thenUpload( currentHistoryId, options, then );
+    });
 };
 
 

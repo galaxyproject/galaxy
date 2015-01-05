@@ -244,12 +244,12 @@ class DataManager( object ):
         return self.guid or self.declared_id #if we have a guid, we will use that as the data_manager id
 
     def load_tool( self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None ):
-        tool = self.data_managers.app.toolbox.load_tool( tool_filename,
-                                                         guid=guid,
-                                                         data_manager_id=data_manager_id,
-                                                         repository_id=tool_shed_repository_id )
+        toolbox = self.data_managers.app.toolbox
+        tool = toolbox.load_hidden_tool( tool_filename,
+                                         guid=guid,
+                                         data_manager_id=data_manager_id,
+                                         repository_id=tool_shed_repository_id )
         self.data_managers.app.toolbox.data_manager_tools[ tool.id ] = tool
-        self.data_managers.app.toolbox.tools_by_id[ tool.id ] = tool
         self.tool = tool
         return tool
 

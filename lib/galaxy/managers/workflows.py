@@ -224,7 +224,7 @@ class WorkflowContentsManager(UsesAnnotations):
         errors = []
         for key, step_dict in data['steps'].iteritems():
             is_tool = is_tool_module_type( step_dict[ 'type' ] )
-            if is_tool and step_dict['tool_id'] not in trans.app.toolbox.tools_by_id:
+            if is_tool and not trans.app.toolbox.has_tool( step_dict['tool_id'], exact=True ):
                 errors.append("Step %s requires tool '%s'." % (step_dict['id'], step_dict['tool_id']))
         if errors:
             raise MissingToolsException(workflow, errors)

@@ -8,9 +8,9 @@ from galaxy import util
 from galaxy.web.form_builder import CheckboxField
 from galaxy.util import json
 from galaxy.model.orm import or_
-from markupsafe import escape
 
 import tool_shed.repository_types.util as rt_util
+from tool_shed.util.web_util import escape
 
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -249,9 +249,9 @@ class AdminToolshed( AdminGalaxy ):
             if tool_shed_repository.includes_tools_for_display_in_tool_panel:
                 # Handle tool panel alterations.
                 tpm = tool_panel_manager.ToolPanelManager( trans.app )
-                tpm.remove_from_tool_panel( tool_shed_repository,
-                                            shed_tool_conf,
-                                            uninstall=remove_from_disk_checked )
+                tpm.remove_repository_contents( tool_shed_repository,
+                                                shed_tool_conf,
+                                                uninstall=remove_from_disk_checked )
             if tool_shed_repository.includes_data_managers:
                 dmh = data_manager.DataManagerHandler( trans.app )
                 dmh.remove_from_data_manager( tool_shed_repository )

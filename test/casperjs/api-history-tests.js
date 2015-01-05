@@ -18,7 +18,7 @@ spaceghost.user.loginOrRegisterUser( email, password );
 
 
 // =================================================================== TESTS
-spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
+spaceghost.openHomePage().then( function(){
 
     // ------------------------------------------------------------------------------------------- INDEX
     this.test.comment( 'index should get a list of histories' );

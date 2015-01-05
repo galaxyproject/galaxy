@@ -83,6 +83,7 @@ class Configuration( object ):
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
+        self.toolbox_filter_base_modules = listify( kwargs.get( "toolbox_filter_base_modules", "galaxy.tools.filters,galaxy.tools.toolbox.filters" ) )
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
@@ -132,6 +133,7 @@ class Configuration( object ):
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
+        self.remote_user_secret = kwargs.get( "remote_user_secret", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
@@ -706,10 +708,7 @@ class ConfiguresGalaxyMixin:
 
         from galaxy import tools
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        # Search support for tools
-        import galaxy.tools.search
-        index_help = getattr( self.config, "index_tool_help", True )
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
+        self.reindex_tool_search()
 
         from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)
@@ -720,7 +719,13 @@ class ConfiguresGalaxyMixin:
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
         )
-        self.container_finder = galaxy.tools.deps.containers.ContainerFinder(app_info)
+        self.container_finder = containers.ContainerFinder(app_info)
+
+    def reindex_tool_search( self ):
+        # Call this when tools are added or removed.
+        import galaxy.tools.search
+        index_help = getattr( self.config, "index_tool_help", True )
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager

@@ -6,6 +6,7 @@
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
+from galaxy.datatypes.metadata import MetadataElement
 from galaxy import util
 
 import tempfile
@@ -154,4 +155,107 @@ class Obo( Text ):
                     if handle.next().startswith('id:'):
                         return True
         return False
+
+
+class Arff( Text ):
+    """
+        An ARFF (Attribute-Relation File Format) file is an ASCII text file that describes a list of instances sharing a set of attributes. 
+        http://weka.wikispaces.com/ARFF
+    """
+    file_ext = "arff"
+
+
+    """Add metadata elements"""
+    MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=True, optional=True, no_value=0 )
+    MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0 )
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = "Attribute-Relation File Format (ARFF)"
+            dataset.blurb += ", %s comments, %s attributes" % ( dataset.metadata.comment_lines, dataset.metadata.columns )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff( self, filename ):
+        """
+            Try to guess the Arff filetype. 
+            It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
+        """
+        with open( filename ) as handle:
+            relation_found = False
+            attribute_found = False
+            prefix = ""
+            for line_count, line in enumerate( handle ):
+                if line_count > 1000:
+                    # only investigate the first 1000 lines
+                    return False
+                line = line.strip()
+                if not line:
+                    continue
+
+                start_string = line[:20].upper()
+                if start_string.startswith("@RELATION"):
+                    relation_found = True
+                elif start_string.startswith("@ATTRIBUTE"):
+                    attribute_found = True
+                elif start_string.startswith("@DATA"):
+                    # @DATA should be the last data block
+                    if relation_found and attribute_found:
+                        return True
+        return False
+
+    def set_meta( self, dataset, **kwd ):
+        """
+            Trying to count the comment lines and the number of columns included.
+            A typical ARFF data block looks like this:
+            @DATA
+            5.1,3.5,1.4,0.2,Iris-setosa
+            4.9,3.0,1.4,0.2,Iris-setosa
+        """
+        if dataset.has_data():
+            comment_lines = 0
+            first_real_line = False
+            data_block = False
+            with open( dataset.file_name ) as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if line.startswith('%') and not first_real_line:
+                        comment_lines += 1
+                    else:
+                        first_real_line = True
+                    if data_block:
+                        if line.startswith('{'):
+                            # Sparse representation
+                            """
+                                @data
+                                0, X, 0, Y, "class A", {5}
+                            or
+                                @data
+                                {1 X, 3 Y, 4 "class A"}, {5}
+                            """
+                            token = line.split('}',1)
+                            first_part = token[0]
+                            last_column = first_part.split(',')[-1].strip()
+                            numeric_value = last_column.split()[0]
+                            column_count = int(numeric_value)
+                            if len(token) > 1:
+                                # we have an additional weight
+                                column_count -= 1
+                        else:
+                            columns = line.strip().split(',')
+                            column_count = len(columns)
+                            if columns[-1].strip().startswith('{'):
+                                # we have an additional weight at the end
+                                column_count -= 1
+
+                        # We have now the column_count and we know the initial comment lines. So we can terminate here.
+                        break
+                    if line[:5].upper() == "@DATA":
+                        data_block = True
+        dataset.metadata.comment_lines = comment_lines
+        dataset.metadata.columns = column_count
 
