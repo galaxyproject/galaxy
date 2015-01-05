@@ -483,8 +483,8 @@ class AbstractToolBox( object, Dictifiable ):
             return[ self._tools_by_id[ tool_id ] ]
         return None
 
-    def has_tool( self, tool_id, exact=False ):
-        return self.get_tool( tool_id, exact=exact ) is not None
+    def has_tool( self, tool_id, tool_version=None, exact=False ):
+        return self.get_tool( tool_id, tool_version=tool_version, exact=exact ) is not None
 
     def get_tool_id( self, tool_id ):
         """ Take a tool id (potentially from a different Galaxy instance or that
