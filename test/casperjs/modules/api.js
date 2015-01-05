@@ -355,7 +355,6 @@ HDAAPI.prototype.delete_ = function create( historyId, id, purge ){
     // have to attach like GET param - due to body loss in jq
     url = utils.format( this.urlTpls.update, historyId, id );
     if( purge ){
-console.debug( 'adding purge:' + purge );
         url += '?purge=True';
     }
     return this.api._ajax( url, {
