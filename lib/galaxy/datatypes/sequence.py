@@ -814,3 +814,34 @@ class Lav( data.Text ):
         except:
             return False
 
+
+class RNADotPlotMatrix( data.Data ):
+    file_ext = "rna_eps"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = 'RNA Dot Plot format (Postscript derivative)'
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff(self, filename, image=None):
+        """Determine if the file is in RNA dot plot format."""
+        seq = False
+        coor = False
+        pairs = False
+        with open( filename ) as handle:
+            for line in handle:
+                line = line.strip()
+                if line:
+                    if line.startswith('/sequence'):
+                        seq = True
+                    elif line.startswith('/coor'):
+                        coor = True
+                    elif line.startswith('/pairs'):
+                        pairs = True
+                if seq and coor and pairs:
+                    return True
+        return False
+
