@@ -295,7 +295,10 @@ class AbstractToolBox( object, Dictifiable ):
                 inserted = True
             if not inserted:
                 # Check the tool's installed versions.
-                for tool_lineage_version in tool.lineage.get_versions():
+                versions = []
+                if hasattr( tool, 'lineage' ):
+                    versions = tool.lineage.get_versions()
+                for tool_lineage_version in versions:
                     lineage_id = tool_lineage_version.id
                     index = self._integrated_tool_panel.index_of_tool_id( lineage_id )
                     if index:

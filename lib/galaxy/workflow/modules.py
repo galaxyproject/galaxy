@@ -29,6 +29,13 @@ from galaxy.util.json import dumps
 
 log = logging.getLogger( __name__ )
 
+# Key into Tool state to describe invocation-specific runtime properties.
+RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
+# Key into step runtime state dict describing invocation-specific post job
+# actions (i.e. PJA specified at runtime on top of the workflow-wide defined
+# ones.
+RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
+
 
 class WorkflowModule( object ):
 
@@ -472,6 +479,7 @@ class ToolModule( WorkflowModule ):
         self.tool_id = tool_id
         self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
         self.post_job_actions = {}
+        self.runtime_post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
         self.version_changes = []
@@ -556,6 +564,9 @@ class ToolModule( WorkflowModule ):
         state = galaxy.tools.DefaultToolState()
         app = self.trans.app
         state.decode( runtime_state, self.tool, app, secure=False )
+        state_dict = loads( runtime_state )
+        if RUNTIME_STEP_META_STATE_KEY in state_dict:
+            self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
         return state
 
     def normalize_runtime_state( self, runtime_state ):
@@ -572,16 +583,19 @@ class ToolModule( WorkflowModule ):
             step.tool_inputs = None
         step.tool_errors = self.errors
         for k, v in self.post_job_actions.iteritems():
-            # Must have action_type, step.  output and a_args are optional.
-            if 'output_name' in v:
-                output_name = v['output_name']
-            else:
-                output_name = None
-            if 'action_arguments' in v:
-                action_arguments = v['action_arguments']
-            else:
-                action_arguments = None
-            self.trans.sa_session.add(PostJobAction(v['action_type'], step, output_name, action_arguments))
+            pja = self.__to_pja( k, v, step )
+            self.trans.sa_session.add( pja )
+
+    def __to_pja( self, key, value, step ):
+        if 'output_name' in value:
+            output_name = value['output_name']
+        else:
+            output_name = None
+        if 'action_arguments' in value:
+            action_arguments = value['action_arguments']
+        else:
+            action_arguments = None
+        return PostJobAction(value['action_type'], step, output_name, action_arguments)
 
     def get_name( self ):
         if self.tool:
@@ -677,7 +691,8 @@ class ToolModule( WorkflowModule ):
             tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
 
     def encode_runtime_state( self, trans, state ):
-        return state.encode( self.tool, self.trans.app )
+        encoded = state.encode( self.tool, self.trans.app )
+        return encoded
 
     def update_state( self, incoming ):
         # Build a callback that handles setting an input to be required at
@@ -712,26 +727,46 @@ class ToolModule( WorkflowModule ):
         self.errors = errors or None
 
     def check_and_update_state( self ):
-        return self.tool.check_and_update_param_values( self.state.inputs, self.trans, allow_workflow_parameters=True )
+        inputs = self.state.inputs
+        return self.tool.check_and_update_param_values( inputs, self.trans, allow_workflow_parameters=True )
 
     def compute_runtime_state( self, trans, step_updates=None, source="html" ):
         # Warning: This method destructively modifies existing step state.
         step_errors = None
         state = self.state
+        self.runtime_post_job_actions = {}
         if step_updates:
             # Get the tool
             tool = self.tool
             # Get old errors
             old_errors = state.inputs.pop( "__errors__", {} )
             # Update the state
+            self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
             step_errors = tool.update_state( trans, tool.inputs, state.inputs, step_updates,
                                              update_only=True, old_errors=old_errors, source=source )
+            step_metadata_runtime_state = self.__step_meta_runtime_state()
+            if step_metadata_runtime_state:
+                state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
         return state, step_errors
+
+    def __step_meta_runtime_state( self ):
+        """ Build a dictionary a of meta-step runtime state (state about how
+        the workflow step - not the tool state) to be serialized with the Tool
+        state.
+        """
+        return { RUNTIME_POST_JOB_ACTIONS_KEY: self.runtime_post_job_actions }
+
+    def __restore_step_meta_runtime_state( self, step_runtime_state ):
+        if RUNTIME_POST_JOB_ACTIONS_KEY in step_runtime_state:
+            self.runtime_post_job_actions = step_runtime_state[ RUNTIME_POST_JOB_ACTIONS_KEY ]
 
     def execute( self, trans, progress, invocation, step ):
         tool = trans.app.toolbox.get_tool( step.tool_id, tool_version=step.tool_version )
         tool_state = step.state
-
+        # Not strictly needed - but keep Tool state clean by stripping runtime
+        # metadata parameters from it.
+        if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
+            del tool_state.inputs[ RUNTIME_STEP_META_STATE_KEY ]
         collections_to_match = self._find_collections_to_match( tool, progress, step )
         # Have implicit collections...
         if collections_to_match.has_collections():
@@ -815,7 +850,10 @@ class ToolModule( WorkflowModule ):
         # Create new PJA associations with the created job, to be run on completion.
         # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
         # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
-        for pja in step.post_job_actions:
+        post_job_actions = step.post_job_actions
+        for key, value in self.runtime_post_job_actions.iteritems():
+            post_job_actions.append( self.__to_pja( key, value, step ) )
+        for pja in post_job_actions:
             if pja.action_type in ActionBox.immediate_actions:
                 ActionBox.execute( self.trans.app, self.trans.sa_session, pja, job, replacement_dict )
             else:

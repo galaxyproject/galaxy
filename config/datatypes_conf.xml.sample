@@ -299,7 +299,7 @@
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
     <sniffer type="galaxy.datatypes.text:Obo"/>
-    <sniffer type="galaxy.datatypes.text.Arff"/>
+    <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>

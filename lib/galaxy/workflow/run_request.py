@@ -151,7 +151,7 @@ def _flatten_step_params( param_dict, prefix="" ):
         else:
             effective_key = key
         value = param_dict[key]
-        if isinstance(value, dict) and not ('src' in value and 'id' in value):
+        if isinstance(value, dict) and (not ('src' in value and 'id' in value) and key != "__POST_JOB_ACTIONS__"):
             new_params.update(_flatten_step_params( value, effective_key) )
         else:
             new_params[effective_key] = value

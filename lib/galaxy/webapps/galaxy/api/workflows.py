@@ -372,9 +372,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return item
 
     @expose_api
-    def workflow_request( self, trans, workflow_id, payload, **kwd ):
+    def invoke( self, trans, workflow_id, payload, **kwd ):
         """
-        POST /api/workflows/{encoded_workflow_id}/usage
+        POST /api/workflows/{encoded_workflow_id}/invocations
 
         Schedule the workflow specified by `workflow_id` to run.
         """
@@ -398,10 +398,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
 
     @expose_api
-    def workflow_usage(self, trans, workflow_id, **kwd):
+    def index_invocations(self, trans, workflow_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage
-        Get the list of the workflow usage
+        GET /api/workflows/{workflow_id}/invocations
+
+        Get the list of the workflow invocations
 
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
@@ -416,53 +417,53 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return out
 
     @expose_api
-    def workflow_usage_contents(self, trans, workflow_id, usage_id, **kwd):
+    def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage/{usage_id}
-        Get detailed description of workflow usage
+        GET /api/workflows/{workflow_id}/invocation/{invocation_id}
+        Get detailed description of workflow invocation
 
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
+        :param  workflow_id:        the workflow id (required)
+        :type   workflow_id:        str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the invocation id (required)
+        :type   invocation_id:      str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
+        decoded_workflow_invocation_id = self.__decode_id( trans, invocation_id )
         workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
         if workflow_invocation:
             return self.__encode_invocation( trans, workflow_invocation )
         return None
 
     @expose_api
-    def cancel_workflow_invocation(self, trans, workflow_id, usage_id, **kwd):
+    def cancel_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        DELETE /api/workflows/{workflow_id}/usage/{usage_id}
+        DELETE /api/workflows/{workflow_id}/invocation/{invocation_id}
         Cancel the specified workflow invocation.
 
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the usage id (required)
+        :type   invocation_id:      str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
+        decoded_workflow_invocation_id = self.__decode_id( trans, invocation_id )
         workflow_invocation = self.workflow_manager.cancel_invocation( trans, decoded_workflow_invocation_id )
         return self.__encode_invocation( trans, workflow_invocation )
 
     @expose_api
-    def workflow_invocation_step(self, trans, workflow_id, usage_id, step_id, **kwd):
+    def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}
+        GET /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
 
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
+        :param  workflow_id:        the workflow id (required)
+        :type   workflow_id:        str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the invocation id (required)
+        :type   invocation_id:      str
 
         :param  step_id:      encoded id of the WorkflowInvocationStep (required)
         :type   step_id:      str
@@ -480,9 +481,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return self.__encode_invocation_step( trans, invocation_step )
 
     @expose_api
-    def workflow_invocation_step_update(self, trans, workflow_id, usage_id, step_id, payload, **kwd):
+    def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):
         """
-        PUT /api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}
+        PUT /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
         Update state of running workflow step invocation - still very nebulous
         but this would be for stuff like confirming paused steps can proceed
         etc....
@@ -491,8 +492,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the usage id (required)
+        :type   invocation_id:      str
 
         :param  step_id:      encoded id of the WorkflowInvocationStep (required)
         :type   step_id:      str

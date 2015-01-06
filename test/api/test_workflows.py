@@ -163,8 +163,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         # Wait for workflow to become fully scheduled and then for all jobs
         # complete.
         if wait:
-            self.wait_for_invocation( workflow_id, invocation_id )
-            self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+            self._wait_for_workflow( workflow_id, invocation_id, history_id )
         jobs = self._history_jobs( history_id )
         return RunJobsSummary(
             history_id=history_id,
@@ -179,6 +178,12 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
 
     def _history_jobs( self, history_id ):
         return self._get("jobs", { "history_id": history_id, "order_by": "create_time" } ).json()
+
+    def _wait_for_workflow( self, workflow_id, invocation_id, history_id, assert_ok=True ):
+        """ Wait for a workflow invocation to completely schedule and then history
+        to be complete. """
+        self.wait_for_invocation( workflow_id, invocation_id )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
 
 
 # Workflow API TODO:
@@ -743,6 +748,87 @@ test_data:
         content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
         assert content[ "name" ] == "foo was replaced"
 
+    @skip_without_tool( "cat1" )
+    def test_run_with_runtime_pja( self ):
+        workflow = self.workflow_populator.load_workflow( name="test_for_pja_runtime" )
+        uuid0, uuid1, uuid2 = str(uuid4()), str(uuid4()), str(uuid4())
+        workflow["steps"]["0"]["uuid"] = uuid0
+        workflow["steps"]["1"]["uuid"] = uuid1
+        workflow["steps"]["2"]["uuid"] = uuid2
+        workflow_request, history_id = self._setup_workflow_run( workflow, inputs_by='step_index' )
+        workflow_request[ "replacement_params" ] = dumps( dict( replaceme="was replaced" ) )
+
+        pja_map = {
+            "RenameDatasetActionout_file1": dict(
+                action_type="RenameDatasetAction",
+                output_name="out_file1",
+                action_arguments=dict( newname="foo ${replaceme}" ),
+            )
+        }
+        workflow_request[ "parameters" ] = dumps({
+            uuid2: { "__POST_JOB_ACTIONS__": pja_map }
+        })
+
+        run_workflow_response = self._post( "workflows", data=workflow_request )
+        self._assert_status_code_is( run_workflow_response, 200 )
+        content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
+        assert content[ "name" ] == "foo was replaced", content[ "name" ]
+
+    @skip_without_tool( "cat1" )
+    def test_run_with_delayed_runtime_pja( self ):
+        workflow_id = self._upload_yaml_workflow("""
+- label: test_input
+  type: input
+- label: first_cat
+  tool_id: cat1
+  state:
+    input1:
+      $link: test_input
+- label: the_pause
+  type: pause
+  connect:
+    input:
+    - first_cat#out_file1
+- label: second_cat
+  tool_id: cat1
+  state:
+    input1:
+      $link: the_pause
+""")
+        downloaded_workflow = self._download_workflow( workflow_id )
+        print downloaded_workflow
+        uuid_dict = dict( map( lambda (index, step): ( int( index ), step["uuid"] ), downloaded_workflow["steps"].iteritems() ) )
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset( history_id, content="1 2 3" )
+        self.dataset_populator.wait_for_history( history_id )
+        inputs = {
+            '0': self._ds_entry( hda ),
+        }
+        print inputs
+        uuid2 = uuid_dict[ 3 ]
+        workflow_request = {}
+        workflow_request[ "replacement_params" ] = dumps( dict( replaceme="was replaced" ) )
+        pja_map = {
+            "RenameDatasetActionout_file1": dict(
+                action_type="RenameDatasetAction",
+                output_name="out_file1",
+                action_arguments=dict( newname="foo ${replaceme}" ),
+            )
+        }
+        workflow_request[ "parameters" ] = dumps({
+            uuid2: { "__POST_JOB_ACTIONS__": pja_map }
+        })
+        invocation_id = self.__invoke_workflow( history_id, workflow_id, inputs=inputs, request=workflow_request )
+
+        time.sleep( 2 )
+        self.dataset_populator.wait_for_history( history_id )
+        self.__review_paused_steps( workflow_id, invocation_id, order_index=2, action=True )
+
+        self._wait_for_workflow( workflow_id, invocation_id, history_id )
+        time.sleep( 1 )
+        content = self.dataset_populator.get_history_dataset_details( history_id )
+        assert content[ "name" ] == "foo was replaced", content[ "name" ]
+
     @skip_without_tool( "random_lines1" )
     def test_run_replace_params_by_tool( self ):
         workflow_request, history_id = self._setup_random_x2_workflow( "test_for_replace_tool_params" )
@@ -932,15 +1018,13 @@ test_data:
         self._assert_status_code_is( hda_info_response, 200 )
         self.assertEquals( hda_info_response.json()[ "metadata_data_lines" ], lines )
 
-    def __invoke_workflow( self, history_id, workflow_id, inputs={}, assert_ok=True ):
-        workflow_request = dict(
-            history="hist_id=%s" % history_id,
-        )
-        workflow_request[ "inputs" ] = dumps( inputs )
-        workflow_request[ "inputs_by" ] = 'step_index'
+    def __invoke_workflow( self, history_id, workflow_id, inputs={}, request={}, assert_ok=True ):
+        request["history"] = "hist_id=%s" % history_id,
+        if inputs:
+            request[ "inputs" ] = dumps( inputs )
+            request[ "inputs_by" ] = 'step_index'
         url = "workflows/%s/usage" % ( workflow_id )
-
-        invocation_response = self._post( url, data=workflow_request )
+        invocation_response = self._post( url, data=request )
         if assert_ok:
             self._assert_status_code_is( invocation_response, 200 )
             invocation_id = invocation_response.json()[ "id" ]
