@@ -36,7 +36,7 @@ class DatasetCollectionManager( object ):
         self.security = app.security
         self.hda_manager = hdas.HDAManager()
         self.history_manager = histories.HistoryManager()
-        self.tag_manager = tags.TagsManager( app )
+        self.tag_manager = tags.TagManager( app )
         self.ldda_manager = lddas.LDDAManager( )
 
     def create(
@@ -163,7 +163,7 @@ class DatasetCollectionManager( object ):
             dataset_collection_instance.add_item_annotation( trans.sa_session, trans.get_user(), dataset_collection_instance, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
         if 'tags' in new_data.keys() and trans.get_user():
-            self.tag_manager.set_tags_from_list( trans, dataset_collection_instance, new_data[ 'tags' ], user=trans.user )
+            self.tag_manager.set_tags_from_list( trans.get_user(), dataset_collection_instance, new_data[ 'tags' ] )
 
         if changed.keys():
             trans.sa_session.flush()
