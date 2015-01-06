@@ -12,37 +12,37 @@ log = logging.getLogger( __name__ )
 
 
 # =============================================================================
-class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
-    # superclass that uses its importable, plublished, or user_share_associations to check accessibility
+class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.AccessibleModelInterface ):
+    """
+    Superclass for managers of a model that:
+        has an owner/creator User
+        is sharable with other, specific Users
+        is importable (copyable) by users that have access
+        has a slug which can be used as a link to view the resource
+        can be published effectively making it available to all other Users
+        can be rated
+    """
     # histories, pages, stored workflows, visualizations
     user_share_model = None
 
     def __init__( self, app ):
+        """
+        """
         super( SharableModelManager, self ).__init__( app )
-        assert hasattr( self.model_class, 'user_id' ), (
-            'No user_id on Sharable model: %s' %( self.model_class_name ) )
-
-        assert self.user_share_model, (
-            'No UserShareAssociation on Sharable model: %s' %( self.model_class.__name__ ) )
-        assert hasattr( self.model_class, 'users_shared_with_dot_users' ), (
-            'No users_shared_with_dot_users on Sharable model: %s' %( self.model_class.__name__ ) )
-
-#TODO: libraries do not have importable
-        assert hasattr( self.model_class, 'importable' ), (
-            'No users_shared_with_dot_users on Sharable model: %s' %( self.model_class.__name__ ) )
-        assert hasattr( self.model_class, 'published' ), (
-            'No published on Sharable model: %s' %( self.model_class.__name__ ) )
-
         # user manager is needed to check access/ownership/admin
         self.user_mgr = users.UserManager( app )
 
     # ......................................................................... has a user
     def _query_by_user( self, trans, user, filters=None, **kwargs ):
+        """
+        """
         user_filter = self.model_class.user_id == user.id
         filters=self._munge_filters( user_filter, filters )
         return self.query( trans, filters=filters, **kwargs )
 
     def by_user( self, trans, user, filters=None, **kwargs ):
+        """
+        """
         user_filter = self.model_class.user_id == user.id
         filters=self._munge_filters( user_filter, filters )
         #note: no ownership check needed
@@ -50,11 +50,9 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
 
     # ......................................................................... owned model interface
 # this really is more of a 'check_*editable/write*' - in essence that's what check_ownership boils down to often
-    def ownership_by_id( self, trans, id, user, **kwargs ):
-        item = super( SharableModelManager, self ).by_id( trans, id, **kwargs )
-        return self.error_unless_owner( trans, item, user )
-
     def is_owner( self, trans, item, user ):
+        """
+        """
         if self.user_mgr.is_anonymous( user ):
             # note: this needs to be overridden in the case of anon users and session.current_history
             return False
@@ -62,20 +60,10 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
             return True
         return item.user == user
 
-    def error_unless_owner( self, trans, item, user ):
-        if self.is_owner( trans, item, user ):
-            return item
-        raise exceptions.ItemOwnershipException( "%s is not owned by user" % ( self.model_class_name ) )
-
-    def list_owned( self, trans, user, **kwargs ):
-        items = base.ModelManager.list( self, trans, **kwargs )
-        return [ self.error_unless_owner( trans, item, user ) for item in items ]
-
-    def filter_owned( self, trans, user, **kwargs ):
-        pass
-
     # ......................................................................... accessible interface
     def is_accessible( self, trans, item, user ):
+        """
+        """
         if item.importable:
             return True
         # note: owners always have access - checking for accessible implicitly checks for ownership
@@ -107,6 +95,7 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
         Does not flush/commit changes, however. Item must have name, user,
         importable, and slug attributes.
         """
+        #??: can a published item be non-importable?
         #if item.published:
         #    if unpublish:
         #        self.unpublish( trans, item, flush=False )
@@ -120,6 +109,8 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
 
     def list_importable( self, trans, **kwargs ):
 #TODO:
+        """
+        """
         pass
 
     # ......................................................................... published
@@ -132,6 +123,8 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
     #                                                               item=str( item ) )
     # a published item is also/already importable(=True) implicitly
     def publish( self, trans, item, flush=True ):
+        """
+        """
         if not item.importable:
             self.make_importable( trans, item, flush=False )
         trans.sa_session.add( item )
@@ -141,6 +134,8 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
         return item
 
     def unpublish( self, trans, item, flush=True ):
+        """
+        """
         trans.sa_session.add( item )
         item.published = False
         if flush:
@@ -149,17 +144,23 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
 
     def list_published( self, trans, **kwargs ):
 #TODO:
+        """
+        """
         pass
 
     # ......................................................................... user sharing
     # sharing is often done via a 3rd table btwn a User and an item -> a <Item>UserShareAssociation
     def get_share_assocs( self, trans, item, user=None ):
+        """
+        """
         query = self.query_associated( trans, self.user_share_model, item )
         if user is not None:
             query = query.filter_by( user=user )
         return query.all()
 
     def share_with( self, trans, item, user, flush=True ):
+        """
+        """
         # allow user to be a list and call recursivly
         if isinstance( user, list ):
             return map( lambda user: self.share_with( trans, item, user, flush=False ), user )
@@ -174,6 +175,8 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
         return item
 
     def unshare_with( self, trans, item, user, flush=True ):
+        """
+        """
         if isinstance( user, list ):
             return map( lambda user: self.unshare_with( trans, item, user, flush=False ), user )
         # Look for and delete sharing relation for history-user.
@@ -185,6 +188,8 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
 
     def list_shared_with( self, trans, item, user, **kwargs ):
 #TODO:
+        """
+        """
         pass
 
     # ......................................................................... slugs
@@ -197,6 +202,8 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
         return VALID_SLUG_RE.match( slug )
 
     def set_slug( self, trans, item, new_slug, flush=True ):
+        """
+        """
         if not self.is_valid_slug( new_slug ):
             raise exceptions.RequestParameterInvalidException( "Invalid slug", slug=new_slug )
 
@@ -250,6 +257,8 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
         return new_slug
 
     def create_unique_slug( self, trans, item, flush=True ):
+        """
+        """
         item.slug = self.get_unique_slug( trans, item )
         trans.sa_session.add( item )
         if flush:
@@ -257,6 +266,8 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
         return item
 
     def by_slug( self, trans, user, **kwargs ):
+        """
+        """
         pass
 
     # ......................................................................... display
@@ -275,14 +286,20 @@ class SharableModelManager( base.ModelManager, base.AccessibleModelInterface ):
 class SharableModelDeserializer( base.ModelDeserializer ):
 
     def deserialize_published( self, trans, item, val ):
+        """
+        """
         #TODO: call manager.publish/unpublish
         pass
 
     def deserialize_importable( self, trans, item, val ):
+        """
+        """
         #TODO: call manager.make_importable/non_importable
         pass
 
     def deserialize_slug( self, trans, item, val ):
+        """
+        """
         #TODO: call manager.set_slug
         pass
 

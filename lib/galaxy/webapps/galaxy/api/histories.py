@@ -45,6 +45,13 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             raise exceptions.MalformedId( "Malformed History id ( %s ) specified, unable to decode"
                                           % ( str( id ) ), type='error' )
 
+    def _parse_serialization_params( self, kwd, default_view ):
+        view = kwd.get( 'view', None )
+        keys = kwd.get( 'keys' )
+        if isinstance( keys, basestring ):
+            keys = keys.split( ',' )
+        return dict( view=view, keys=keys, default_view=default_view )
+
     @expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
         """
@@ -62,6 +69,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :returns:   list of dictionaries containing summary history information
         """
         rval = []
+        serialization_params = self._parse_serialization_params( kwd, 'summary' )
 
         deleted_filter = ( self.app.model.History.deleted == False )
         if string_as_bool( deleted ):
@@ -69,7 +77,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         histories = self.mgrs.histories.by_user( trans, user=trans.user, filters=deleted_filter )
         for history in histories:
-            history_dict = self.history_serializer.serialize_to_view( trans, history, view='summary' )
+            history_dict = self.history_serializer.serialize_to_view( trans, history, **serialization_params )
             rval.append( history_dict )
 
         return rval
@@ -102,10 +110,13 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         else:
             history = self.mgrs.histories.accessible_by_id( trans, self._decode_id( trans, history_id ), trans.user )
 
-        return self.history_serializer.serialize_to_view( trans, history, view=kwd.get( 'view', 'detailed' ) )
+        return self.history_serializer.serialize_to_view( trans, history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api_anonymous
     def citations( self, trans, history_id, **kwd ):
+        """
+        """
         history = self.mgrs.histories.accessible_by_id( trans, self._decode_id( trans, history_id ), trans.user )
         tool_ids = set([])
         for dataset in history.datasets:
@@ -116,7 +127,8 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             if not tool_id:
                 continue
             tool_ids.add(tool_id)
-        return map( lambda citation: citation.to_dict( "bibtex" ), self.citations_manager.citations_for_tool_ids( tool_ids ) )
+        return map( lambda citation: citation.to_dict( "bibtex" ),
+                    self.citations_manager.citations_for_tool_ids( tool_ids ) )
 
     @expose_api
     def create( self, trans, payload, **kwd ):
@@ -161,7 +173,8 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
 
-        return self.history_serializer.serialize_to_view( trans, new_history, view=kwd.get( 'view', 'detailed' ) )
+        return self.history_serializer.serialize_to_view( trans, new_history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def delete( self, trans, id, **kwd ):
@@ -191,12 +204,13 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         if kwd.get( 'payload', None ):
             purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 
-        history = self.mgrs.histories.ownership_by_id( trans, self._decode_id( trans, history_id ), trans.user )
+        history = self.mgrs.histories.owned_by_id( trans, self._decode_id( trans, history_id ), trans.user )
         self.mgrs.histories.delete( trans, history )
         if purge:
             self.mgrs.histories.purge( trans, history )
 
-        return self.history_serializer.serialize_to_view( trans, history, view=kwd.get( 'view', 'detailed' ) )
+        return self.history_serializer.serialize_to_view( trans, new_history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def undelete( self, trans, id, **kwd ):
@@ -212,10 +226,11 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :returns:   'OK' if the history was undeleted
         """
         history_id = id
-        history = self.mgrs.histories.ownership_by_id( trans, self._decode_id( trans, history_id ), trans.user )
+        history = self.mgrs.histories.owned_by_id( trans, self._decode_id( trans, history_id ), trans.user )
         self.mgrs.histories.undelete( trans, history )
 
-        return self.history_serializer.serialize_to_view( trans, history, view=kwd.get( 'view', 'detailed' ) )
+        return self.history_serializer.serialize_to_view( trans, history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def update( self, trans, id, payload, **kwd ):
@@ -237,11 +252,12 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             any values that were different from the original and, therefore, updated
         """
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        history = self.mgrs.histories.ownership_by_id( trans, self._decode_id( trans, id ), trans.user )
+        history = self.mgrs.histories.owned_by_id( trans, self._decode_id( trans, id ), trans.user )
 
         #TODO: flushing in deserialize is an iffy pattern...
         self.history_deserializer.deserialize( trans, history, payload )
-        return self.history_serializer.serialize_to_view( trans, history, view=kwd.get( 'view', 'detailed' ) )
+        return self.history_serializer.serialize_to_view( trans, history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def archive_export( self, trans, id, **kwds ):

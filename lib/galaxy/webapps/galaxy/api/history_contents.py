@@ -46,6 +46,13 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             raise exceptions.MalformedId( "Malformed History id ( %s ) specified, unable to decode"
                                           % ( str( id ) ), type='error' )
 
+    def _parse_serialization_params( self, kwd, default_view ):
+        view = kwd.get( 'view', None )
+        keys = kwd.get( 'keys' )
+        if isinstance( keys, basestring ):
+            keys = keys.split( ',' )
+        return dict( view=view, keys=keys, default_view=default_view )
+
     @expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):
         """
@@ -117,10 +124,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 rval.append( hda_dict )
 
             elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
-                if detailed:
-                    rval.append( self.__collection_dict( trans, content, view="element" ) )
-                else:
-                    rval.append( self.__collection_dict( trans, content ) )
+                view = 'element' if detailed else 'collection'
+                collection_dict = self.__collection_dict( trans, content, view=view )
+                rval.append( collection_dict )
 
         return rval
 
@@ -156,7 +162,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         hda = self.mgrs.hdas.accessible_by_id( trans, self._decode_id( trans, id ), trans.user )
         #if hda.history.id != self._decode_id( trans, history_id ):
         #    raise exceptions.ObjectNotFound( 'dataset was not found in this history' )
-        return self.hda_serializer.serialize_to_view( trans, hda, view=kwd.get( 'view', 'detailed' ) )
+        return self.hda_serializer.serialize_to_view( trans, hda,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __show_dataset_collection( self, trans, id, history_id, **kwd ):
         try:
@@ -225,15 +232,9 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         # TODO: Flush out create new collection documentation above, need some
         # examples. See also bioblend and API tests for specific examples.
 
-        # get the history, if anon user and requesting current history - allow it
-        if( ( trans.user == None )
-        and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-            history = trans.history
-        # otherwise, check permissions for the history first
-        else:
-            history = self.mgrs.histories.ownership_by_id( trans, self._decode_id( trans, history_id ), trans.user )
+        history = self.mgrs.histories.owned_by_id( trans, self._decode_id( trans, history_id ), trans.user )
 
-        type = payload.get('type', 'dataset')
+        type = payload.get( 'type', 'dataset' )
         if type == 'dataset':
             return self.__create_dataset( trans, history, payload, **kwd )
         elif type == 'dataset_collection':
@@ -271,7 +272,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         trans.sa_session.flush()
         if not hda:
             return None
-        return self.hda_serializer.serialize_to_view( trans, hda, view=kwd.get( 'view', 'detailed' ) )
+        return self.hda_serializer.serialize_to_view( trans, hda,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __create_dataset_collection( self, trans, history, payload, **kwd ):
         source = kwd.get("source", "new_collection")
@@ -365,7 +367,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             #TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):
                 self.stop_hda_creating_job( hda )
-            return self.hda_serializer.serialize_to_view( trans, hda, view=kwd.get( 'view', 'detailed' ) )
+            return self.hda_serializer.serialize_to_view( trans, hda,
+                **self._parse_serialization_params( kwd, 'detailed' ) )
 
         return {}
 
@@ -424,70 +427,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             self.mgrs.hdas.purge( trans, hda )
         else:
             self.mgrs.hdas.delete( trans, hda )
-        return self.hda_serializer.serialize_to_view( trans, hda, view=kwd.get( 'view', 'detailed' ) )
-
-        #rval = { 'id' : id }
-        #hda.deleted = True
-        #if purge:
-        #    if not trans.app.config.allow_user_dataset_purge:
-        #        raise exceptions.ConfigDoesNotAllowException( 'This instance does not allow user dataset purging' )
-        #    hda.purged = True
-        #    trans.sa_session.add( hda )
-        #    trans.sa_session.flush()
-        #    if hda.dataset.user_can_purge:
-        #        try:
-        #            hda.dataset.full_delete()
-        #            trans.sa_session.add( hda.dataset )
-        #        except:
-        #            pass
-        #        # flush now to preserve deleted state in case of later interruption
-        #        trans.sa_session.flush()
-        #    rval[ 'purged' ] = True
-        #
-        #self.stop_hda_creating_job( hda )
-        #trans.sa_session.flush()
-        #
-        #rval[ 'deleted' ] = True
-        #return rval
-
-    #def _validate_and_parse_update_payload( self, payload ):
-    #    """
-    #    Validate and parse incomming data payload for an HDA.
-    #    """
-    #    # This layer handles (most of the stricter idiot proofing):
-    #    #   - unknown/unallowed keys
-    #    #   - changing data keys from api key to attribute name
-    #    #   - protection against bad data form/type
-    #    #   - protection against malicious data content
-    #    # all other conversions and processing (such as permissions, etc.) should happen down the line
-    #
-    #    # keys listed here don't error when attempting to set, but fail silently
-    #    #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
-    #    valid_but_uneditable_keys = (
-    #        'id', 'name', 'type', 'api_type', 'model_class', 'history_id', 'hid',
-    #        'accessible', 'purged', 'state', 'data_type', 'file_ext', 'file_size', 'misc_blurb',
-    #        'download_url', 'visualizations', 'display_apps', 'display_types',
-    #        'metadata_dbkey', 'metadata_column_names', 'metadata_column_types', 'metadata_columns',
-    #        'metadata_comment_lines', 'metadata_data_lines'
-    #    )
-    #    validated_payload = {}
-    #    for key, val in payload.items():
-    #        if val is None:
-    #            continue
-    #        if key in ( 'name', 'genome_build', 'misc_info', 'annotation' ):
-    #            val = validation.validate_and_sanitize_basestring( key, val )
-    #            #TODO: need better remap system or eliminate the need altogether
-    #            key = 'dbkey' if key == 'genome_build' else key
-    #            key = 'info'  if key == 'misc_info' else key
-    #            validated_payload[ key ] = val
-    #        if key in ( 'deleted', 'visible' ):
-    #            validated_payload[ key ] = validation.validate_boolean( key, val )
-    #        elif key == 'tags':
-    #            validated_payload[ key ] = validation.validate_and_sanitize_basestring_list( key, val )
-    #        elif key not in valid_but_uneditable_keys:
-    #            pass
-    #            #log.warn( 'unknown key: %s', str( key ) )
-    #    return validated_payload
+        return self.hda_serializer.serialize_to_view( trans, hda,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __handle_unknown_contents_type( self, trans, contents_type ):
         raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)

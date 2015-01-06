@@ -1,4 +1,5 @@
-
+"""
+"""
 
 class TagsManager( object ):
     """ Manages CRUD operations related to tagging objects.

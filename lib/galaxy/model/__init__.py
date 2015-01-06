@@ -1511,6 +1511,8 @@ class DatasetInstance( object ):
         self.tool_version = tool_version
         self.extension = extension
         self.designation = designation
+        # set private variable to None here, since the attribute may be needed in by MetadataCollection.__init__
+        self._metadata = None
         self.metadata = metadata or dict()
         self.extended_metadata = extended_metadata
         if dbkey: #dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'

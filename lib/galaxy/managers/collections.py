@@ -299,62 +299,7 @@ class DatasetCollectionManager( object ):
 class DatasetCollectionSerializer( base.ModelSerializer ):
 
     def __init__( self, app ):
-        super( HDASerializer, self ).__init__( app )
-
-    #    # most of these views build/add to the previous view
-    #    summary_view = [
-    #        'id', 'history_id', 'hid', 'name', 'dataset_id',
-    #        'state', 'deleted', 'purged', 'visible'
-    #    ]
-    #    detailed_view = summary_view + [
-    #        'dbkey', 'info', 'blurb', 'extension', 'create_time', 'update_time',
-    #        'copied_from_history_dataset_association_id', 'copied_from_library_dataset_dataset_association_id',
-    #        'metadata', 'size',
-    #        #mixin: annotatable
-    #        'annotation',
-    #        #mixin: taggable
-    #        'tags',
-    #    ]
-    #    extended_view = detailed_view + [
-    #        #NOTE: sending raw 'peek' (not get_display_peek)
-    #        'peek',
-    #        'tool_version', 'parent_id', 'designation',
-    #    ]
-    #
-    #    self.serializable_keys = extended_view + [
-    #        'display_apps',
-    #        'display_types',
-    #        'visualizations'
-    #    ]
-    #    self.views = {
-    #        'summary'   : summary_view,
-    #        'detailed'  : detailed_view,
-    #        'extended'  : extended_view,
-    #    }
-    #    self.default_view = 'summary'
-    #
-    #def add_serializers( self ):
-    #    self.serializers.update({
-    #        'id'            : self.serialize_id,
-    #        'history_id'    : self.serialize_id,
-    #        'dataset_id'    : self.serialize_id,
-    #
-    #        'create_time'   : self.serialize_date,
-    #        'update_time'   : self.serialize_date,
-    #        'copied_from_history_dataset_association_id'        : self.serialize_id,
-    #        'copied_from_library_dataset_dataset_association_id': self.serialize_id,
-    #
-    #        'metadata'      : self.serialize_metadata,
-    #        'size'          : lambda t, i, k: int( i.get_size() ),
-    #        'nice_size'     : lambda t, i, k: i.get_size( nice_size=True ),
-    #
-    #        'parent_id'     : self.serialize_id,
-    #        #TODO: to mixin: annotatable
-    #        'annotation'    : lambda t, i, k: i.get_item_annotation_str( t.sa_session, t.user, i ),
-    #        #TODO: to mixin: taggable
-    #        'tags'          : lambda t, i, k: [ tag.user_tname + ( ':' + tag.user_value if tag.user_value else '' )
-    #                                            for tag in i.tags ],
-    #    })
+        super( DatasetCollectionSerializer, self ).__init__( app )
 
 #def dictify_dataset_collection_instance( dataset_collection_instance, parent, security, view="element" ):
 #    dict_value = dataset_collection_instance.to_dict( view=view )
@@ -400,6 +345,26 @@ class DatasetCollectionSerializer( base.ModelSerializer ):
 #            md[ name ] = val
 #
 #        return md
+
+
+class DatasetCollectionDeserializer( base.ModelDeserializer ):
+
+    def __init__( self, app ):
+        super( DatasetCollectionSerializer, self ).__init__( app )
+
+    #def _validate_and_parse_update_payload( self, payload ):
+    #    validated_payload = {}
+    #    for key, val in payload.items():
+    #        if val is None:
+    #            continue
+    #        if key in ( 'name' ):
+    #            val = validation.validate_and_sanitize_basestring( key, val )
+    #            validated_payload[ key ] = val
+    #        if key in ( 'deleted', 'visible' ):
+    #            validated_payload[ key ] = validation.validate_boolean( key, val )
+    #        elif key == 'tags':
+    #            validated_payload[ key ] = validation.validate_and_sanitize_basestring_list( key, val )
+    #    return validated_payload
 
     #def add_deserializers( self ):
     #    self.deserializers.update({

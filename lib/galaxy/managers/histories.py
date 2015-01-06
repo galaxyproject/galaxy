@@ -23,7 +23,6 @@ log = logging.getLogger( __name__ )
 # =============================================================================
 class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface ):
     """
-    Interface/service object for interacting with HDAs.
     """
     model_class = model.History
     default_order_by = ( model.History.create_time, )
@@ -31,24 +30,36 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
     user_share_model = model.HistoryUserShareAssociation
 
     def __init__( self, app, *args, **kwargs ):
+        """
+        """
         super( HistoryManager, self ).__init__( app, *args, **kwargs )
         self.hda_mgr = hdas.HDAManager( app )
 
     # ......................................................................... crud
     def copy( self, trans, history, user, **kwargs ):
+        """
+        """
         return history.copy( target_user=user, **kwargs )
 
     def get_current( self, trans ):
+        """
+        """
         return trans.get_history()
 
     def set_current( self, trans, history ):
+        """
+        """
         trans.set_history( history )
         return history
 
     def set_current_by_id( self, trans, history_id ):
+        """
+        """
         return self.set_current( trans, self.by_id( trans, history_id ) )
 
     def most_recent( self, trans, user, **kwargs ):
+        """
+        """
         if not user:
             return None if trans.history.deleted else trans.history
         desc_update_time = self.model_class.table.c.update_time
@@ -79,6 +90,8 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
 
     # ......................................................................... purgable
     def purge( self, trans, history, flush=True, **kwargs ):
+        """
+        """
         self.error_unless_dataset_purge_allowed( trans, history )
 
         # First purge all the datasets

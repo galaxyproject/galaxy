@@ -39,7 +39,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
         user3 = self.user_mgr.create( self.trans, **user3_data )
 
-        print "should be able to create a new history"
+        self.log( "should be able to create a new history" )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
         self.assertIsInstance( history1, model.History )
         self.assertEqual( history1, self.trans.sa_session.query( model.History ).get( history1.id ) )
@@ -48,7 +48,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( history1,
             self.trans.sa_session.query( model.History ).filter( model.History.user == user2 ).one() )
 
-        print "should be able to copy a history"
+        self.log( "should be able to copy a history" )
         history2 = self.history_mgr.copy( self.trans, history1, user=user3 )
         self.assertIsInstance( history2, model.History )
         self.assertEqual( history2.user, user3 )
@@ -56,14 +56,14 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( history2.name, history1.name )
         self.assertNotEqual( history2, history1 )
 
-        print "should be able to query"
+        self.log( "should be able to query" )
         histories = self.trans.sa_session.query( model.History ).all()
         self.assertEqual( self.history_mgr.one( self.trans, filters=( model.History.id == history1.id ) ), history1 )
         self.assertEqual( self.history_mgr.list( self.trans ), histories )
         self.assertEqual( self.history_mgr.by_id( self.trans, history1.id ), history1 )
         self.assertEqual( self.history_mgr.by_ids( self.trans, [ history2.id, history1.id ] ), [ history2, history1 ] )
 
-        print "should be able to limit and offset"
+        self.log( "should be able to limit and offset" )
         self.assertEqual( self.history_mgr.list( self.trans, limit=1 ), histories[0:1] )
         self.assertEqual( self.history_mgr.list( self.trans, offset=1 ), histories[1:] )
         self.assertEqual( self.history_mgr.list( self.trans, limit=1, offset=1 ), histories[1:2] )
@@ -71,7 +71,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( self.history_mgr.list( self.trans, limit=0 ), [] )
         self.assertEqual( self.history_mgr.list( self.trans, offset=3 ), [] )
 
-        print "should be able to order"
+        self.log( "should be able to order" )
         history3 = self.history_mgr.create( self.trans, name="history3", user=user2 )
         name_first_then_time = ( model.History.name, sqlalchemy.desc( model.History.create_time ) )
         self.assertEqual( self.history_mgr.list( self.trans, order_by=name_first_then_time ),
@@ -85,7 +85,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         item2 = self.history_mgr.create( self.trans, user=owner )
         item3 = self.history_mgr.create( self.trans, user=non_owner )
 
-        print "should be able to list items by user"
+        self.log( "should be able to list items by user" )
         user_histories = self.history_mgr.by_user( self.trans, owner )
         self.assertEqual( user_histories, [ item1, item2 ] )
 
@@ -98,24 +98,24 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         item1 = self.history_mgr.create( self.trans, user=owner )
 
-        print "should be able to poll whether a given user owns an item"
+        self.log( "should be able to poll whether a given user owns an item" )
         self.assertTrue(  self.history_mgr.is_owner( self.trans, item1, owner ) )
         self.assertFalse( self.history_mgr.is_owner( self.trans, item1, non_owner ) )
 
-        print "should raise an error when checking ownership with non-owner"
+        self.log( "should raise an error when checking ownership with non-owner" )
         self.assertRaises( exceptions.ItemOwnershipException,
             self.history_mgr.error_unless_owner, self.trans, item1, non_owner )
         self.assertRaises( exceptions.ItemOwnershipException,
-            self.history_mgr.ownership_by_id, self.trans, item1.id, non_owner )
+            self.history_mgr.owned_by_id, self.trans, item1.id, non_owner )
 
-        print "should not raise an error when checking ownership with owner"
+        self.log( "should not raise an error when checking ownership with owner" )
         self.assertEqual( self.history_mgr.error_unless_owner( self.trans, item1, owner ), item1 )
-        self.assertEqual( self.history_mgr.ownership_by_id( self.trans, item1.id, owner ), item1 )
+        self.assertEqual( self.history_mgr.owned_by_id( self.trans, item1.id, owner ), item1 )
 
-        print "should not raise an error when checking ownership with admin"
+        self.log( "should not raise an error when checking ownership with admin" )
         self.assertTrue( self.history_mgr.is_owner( self.trans, item1, self.admin_user ) )
         self.assertEqual( self.history_mgr.error_unless_owner( self.trans, item1, self.admin_user ), item1 )
-        self.assertEqual( self.history_mgr.ownership_by_id( self.trans, item1.id, self.admin_user ), item1 )
+        self.assertEqual( self.history_mgr.owned_by_id( self.trans, item1.id, self.admin_user ), item1 )
 
     def test_accessible( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )
@@ -123,22 +123,22 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         non_owner = self.user_mgr.create( self.trans, **user3_data )
 
-        print "should be inaccessible by default except to owner"
+        self.log( "should be inaccessible by default except to owner" )
         self.assertTrue( self.history_mgr.is_accessible( self.trans, item1, owner ) )
         self.assertTrue( self.history_mgr.is_accessible( self.trans, item1, self.admin_user ) )
         self.assertFalse( self.history_mgr.is_accessible( self.trans, item1, non_owner ) )
 
-        print "should raise an error when checking accessibility with non-owner"
+        self.log( "should raise an error when checking accessibility with non-owner" )
         self.assertRaises( exceptions.ItemAccessibilityException,
             self.history_mgr.error_unless_accessible, self.trans, item1, non_owner )
         self.assertRaises( exceptions.ItemAccessibilityException,
             self.history_mgr.accessible_by_id, self.trans, item1.id, non_owner )
 
-        print "should not raise an error when checking ownership with owner"
+        self.log( "should not raise an error when checking ownership with owner" )
         self.assertEqual( self.history_mgr.error_unless_accessible( self.trans, item1, owner ), item1 )
         self.assertEqual( self.history_mgr.accessible_by_id( self.trans, item1.id, owner ), item1 )
 
-        print "should not raise an error when checking ownership with admin"
+        self.log( "should not raise an error when checking ownership with admin" )
         self.assertTrue( self.history_mgr.is_accessible( self.trans, item1, self.admin_user ) )
         self.assertEqual( self.history_mgr.error_unless_accessible( self.trans, item1, self.admin_user ), item1 )
         self.assertEqual( self.history_mgr.accessible_by_id( self.trans, item1.id, self.admin_user ), item1 )
@@ -150,11 +150,11 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         item1 = self.history_mgr.create( self.trans, user=owner )
 
-        print "should not be importable by default"
+        self.log( "should not be importable by default" )
         self.assertFalse( item1.importable )
         self.assertIsNone( item1.slug )
 
-        print "should be able to make importable (accessible by link) to all users"
+        self.log( "should be able to make importable (accessible by link) to all users" )
         accessible = self.history_mgr.make_importable( self.trans, item1 )
         self.assertEqual( accessible, item1 )
         self.assertIsNotNone( accessible.slug )
@@ -163,7 +163,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         for user in self.user_mgr.list( self.trans ):
             self.assertTrue( self.history_mgr.is_accessible( self.trans, accessible, user ) )
 
-        print "should be able to make non-importable/inaccessible again"
+        self.log( "should be able to make non-importable/inaccessible again" )
         inaccessible = self.history_mgr.make_non_importable( self.trans, accessible )
         self.assertEqual( inaccessible, accessible )
         self.assertIsNotNone( inaccessible.slug )
@@ -180,11 +180,11 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         item1 = self.history_mgr.create( self.trans, user=owner )
 
-        print "should not be published by default"
+        self.log( "should not be published by default" )
         self.assertFalse( item1.published )
         self.assertIsNone( item1.slug )
 
-        print "should be able to publish (listed publicly) to all users"
+        self.log( "should be able to publish (listed publicly) to all users" )
         published = self.history_mgr.publish( self.trans, item1 )
         self.assertEqual( published, item1 )
         self.assertTrue( published.published )
@@ -195,7 +195,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         for user in self.user_mgr.list( self.trans ):
             self.assertTrue( self.history_mgr.is_accessible( self.trans, published, user ) )
 
-        print "should be able to make non-importable/inaccessible again"
+        self.log( "should be able to make non-importable/inaccessible again" )
         unpublished = self.history_mgr.unpublish( self.trans, published )
         self.assertEqual( unpublished, published )
         self.assertFalse( unpublished.published )
@@ -217,10 +217,10 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         item1 = self.history_mgr.create( self.trans, user=owner )
 
-        print "should be unshared by default"
+        self.log( "should be unshared by default" )
         self.assertEqual( self.history_mgr.get_share_assocs( self.trans, item1 ), [] )
 
-        print "should be able to share with specific users"
+        self.log( "should be able to share with specific users" )
         shared_item = self.history_mgr.share_with( self.trans, item1, non_owner )
         self.assertEqual( shared_item, item1 )
         self.assertTrue( self.history_mgr.is_accessible( self.trans, shared_item, non_owner ) )
@@ -229,7 +229,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual(
             len( self.history_mgr.get_share_assocs( self.trans, shared_item, user=non_owner ) ), 1 )
 
-        print "should be able to unshare with specific users"
+        self.log( "should be able to unshare with specific users" )
         unshared_item = self.history_mgr.unshare_with( self.trans, shared_item, non_owner )
         self.assertEqual( shared_item, unshared_item )
         self.assertFalse( self.history_mgr.is_accessible( self.trans, shared_item, non_owner ) )
@@ -243,24 +243,24 @@ class HistoryManagerTestCase( BaseTestCase ):
         anon_user = None
         self.trans.set_user( anon_user )
 
-        print "should not allow access and owner for anon user on a history by another anon user (None)"
+        self.log( "should not allow access and owner for anon user on a history by another anon user (None)" )
         anon_history1 = self.history_mgr.create( self.trans, user=None )
         self.assertFalse( self.history_mgr.is_owner( self.trans, anon_history1, anon_user ) )
         self.assertFalse( self.history_mgr.is_accessible( self.trans, anon_history1, anon_user ) )
 
-        print "should allow access and owner for anon user on a history if it's the session's current history"
+        self.log( "should allow access and owner for anon user on a history if it's the session's current history" )
         anon_history2 = self.history_mgr.create( self.trans, user=anon_user )
         self.trans.set_history( anon_history2 )
         self.assertTrue( self.history_mgr.is_owner( self.trans, anon_history2, anon_user ) )
         self.assertTrue( self.history_mgr.is_accessible( self.trans, anon_history2, anon_user ) )
 
-        print "should not allow owner or access for anon user on someone elses history"
+        self.log( "should not allow owner or access for anon user on someone elses history" )
         owner = self.user_mgr.create( self.trans, **user2_data )
         someone_elses = self.history_mgr.create( self.trans, user=owner )
         self.assertFalse( self.history_mgr.is_owner( self.trans, someone_elses, anon_user ) )
         self.assertFalse( self.history_mgr.is_accessible( self.trans, someone_elses, anon_user ) )
 
-        print "should allow access for anon user if the history is published or importable"
+        self.log( "should allow access for anon user if the history is published or importable" )
         self.history_mgr.make_importable( self.trans, someone_elses )
         self.assertTrue( self.history_mgr.is_accessible( self.trans, someone_elses, anon_user ) )
         self.history_mgr.publish( self.trans, someone_elses )
@@ -293,7 +293,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.trans.set_history( history1 )
         history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
 
-        print "should be able to set or get the current history for a user"
+        self.log( "should be able to set or get the current history for a user" )
         self.assertEqual( self.history_mgr.get_current( self.trans ), history1 )
         self.assertEqual( self.history_mgr.set_current( self.trans, history2 ), history2 )
         self.assertEqual( self.history_mgr.get_current( self.trans ), history2 )

@@ -4,6 +4,7 @@ Manager and Serializer for HDAs.
 HistoryDatasetAssociations (HDAs) are datasets contained or created in a
 history.
 """
+
 import gettext
 
 from galaxy import model
@@ -19,7 +20,8 @@ from galaxy import objectstore
 
 
 # =============================================================================
-class HDAManager( datasets.DatasetAssociationManager ):
+class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface ):
+    #TODO: move what makes sense into DatasetManager
     """
     Interface/service object for interacting with HDAs.
     """
@@ -32,7 +34,23 @@ class HDAManager( datasets.DatasetAssociationManager ):
         """
         super( HDAManager, self ).__init__( app )
 
+    def is_accessible( self, trans, hda, user ):
+        """
+        """
+        if self.is_owned( trans, hda, user ):
+            return True
+        return super( HDAManager, self ).is_accessible( trans, hda, user )
+
+    def is_owned( self, trans, hda, user ):
+        """
+        Use history to see if current user owns HDA.
+        """
+        #TODO: this may be slow due to HistoryManager instantiation and possible 2nd transaction to get the hda.history
+        return histories.HistoryManager( self.app ).is_owner( trans, hda.history, user )
+
     def create( self, trans, history=None, dataset=None, flush=True, **kwargs ):
+        """
+        """
         if not dataset:
             kwargs[ 'create_dataset' ] = True
         hda = super( HDAManager, self ).create( trans, flush=flush,
@@ -43,6 +61,8 @@ class HDAManager( datasets.DatasetAssociationManager ):
         return hda
 
     def copy_hda( self, trans, hda, history=None, **kwargs ):
+        """
+        """
         #TODO:?? not using the following as this fn does not set history and COPIES hid (this doesn't seem correct)
         #return hda.copy()
         copy = model.HistoryDatasetAssociation(
@@ -78,17 +98,24 @@ class HDAManager( datasets.DatasetAssociationManager ):
         return copy
 
     def copy_ldda( self, trans, history, ldda, **kwargs ):
+        """
+        """
         return ldda.to_history_dataset_association( history, add_to_history=True )
 
 #    def by_history_id( self, trans, history_id, filters=None, **kwargs ):
 #        history_id_filter = self.model_class.history_id == history_id
 #        filters = self._munge_filters( history_id_filter, filters )
 #        return self.list( trans, filters=filters, **kwargs )
-#
+
 #    #def by_history( self, trans, history, filters=None, **kwargs ):
 #    #    return history.datasets
 
+    #def by_user( self, trans, user ):
+    #    pass
+
     def purge( self, trans, hda ):
+        """
+        """
         self.error_unless_dataset_purge_allowed( trans, hda )
         super( HDAManager, self ).purge( trans, hda, flush=True )
 
@@ -219,6 +246,8 @@ class HDAManager( datasets.DatasetAssociationManager ):
         return display_apps
 
     def get_visualizations( self, trans, hda ):
+        """
+        """
         # use older system if registry is off in the config
         if not trans.app.visualizations_registry:
            return hda.get_visualizations()
@@ -423,76 +452,10 @@ class HDAManager( datasets.DatasetAssociationManager ):
     #                job.mark_deleted( self.app.config.track_jobs_in_database )
     #                self.app.job_manager.job_stop_queue.put( job.id )
 
-# old file
-    #def get( self, trans, unencoded_id, check_ownership=True, check_accessible=True ):
-    #    """
-    #    Get an HDA by its unencoded db id, checking ownership (via its history)
-    #    or accessibility (via dataset shares/permissions).
-    #    """
-    #    hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( unencoded_id )
-    #    if hda is None:
-    #        raise exceptions.ObjectNotFound()
-    #    hda = self.secure( trans, hda, check_ownership, check_accessible )
-    #    return hda
-    #
-    #def secure( self, trans, hda, check_ownership=True, check_accessible=True ):
-    #    """
-    #    check ownership (via its history) or accessibility (via dataset
-    #    shares/permissions).
-    #    """
-    #    # all items are accessible to an admin
-    #    if trans.user and trans.user_is_admin():
-    #        return hda
-    #    if check_ownership:
-    #        hda = self.check_ownership( trans, hda )
-    #    if check_accessible:
-    #        hda = self.check_accessible( trans, hda )
-    #    return hda
-    #
-    #def can_access_dataset( self, trans, hda ):
-    #    """
-    #    Use security agent to see if current user has access to dataset.
-    #    """
-    #    current_user_roles = trans.get_current_user_roles()
-    #    return trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset )
-    #
-    ##TODO: is_owner, is_accessible
-    #
-    #def check_ownership( self, trans, hda ):
-    #    """
-    #    Use history to see if current user owns HDA.
-    #    """
-    #    if not trans.user:
-    #        #if hda.history == trans.history:
-    #        #    return hda
-    #        raise exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy datasets", type='error' )
-    #    if trans.user_is_admin():
-    #        return hda
-    #    # check for ownership of the containing history and accessibility of the underlying dataset
-    #    if( self.histories_mgr.is_owner( trans, hda.history )
-    #            and self.can_access_dataset( trans, hda ) ):
-    #        return hda
-    #    raise exceptions.ItemOwnershipException(
-    #        "HistoryDatasetAssociation is not owned by the current user", type='error' )
-
-    #def check_accessible( self, trans, hda ):
-    #    """
-    #    Raise error if HDA is not accessible.
-    #    """
-    #    if trans.user and trans.user_is_admin():
-    #        return hda
-    #    # check for access of the containing history...
-    #    self.histories_mgr.check_accessible( trans, hda.history )
-    #    # ...then the underlying dataset
-    #    if self.can_access_dataset( trans, hda ):
-    #        return hda
-    #    raise exceptions.ItemAccessibilityException(
-    #        "HistoryDatasetAssociation is not accessible to the current user", type='error' )
-
-
 # =============================================================================
 class HDASerializer( base.ModelSerializer ):
     #TODO: inherit from datasets.DatasetAssociationSerializer
+    #TODO: move what makes sense into DatasetSerializer
 
     def __init__( self, app ):
         super( HDASerializer, self ).__init__( app )
@@ -517,6 +480,7 @@ class HDASerializer( base.ModelSerializer ):
             # why include if model_class is there?
             'hda_ldda', 'history_content_type',
             'state',
+            #TODO: accessible needs to go away
             'accessible',
             'deleted', 'purged', 'visible', 'resubmitted',
 
@@ -565,6 +529,7 @@ class HDASerializer( base.ModelSerializer ):
     def add_serializers( self ):
         self.serializers.update({
             'model_class'   : lambda *a: 'HistoryDatasetAssociation',
+            #TODO: accessible needs to go away
             'accessible'    : lambda *a: True,
 
             'id'            : self.serialize_id,
@@ -629,6 +594,8 @@ class HDASerializer( base.ModelSerializer ):
         })
 
     def serialize( self, trans, hda, keys ):
+        """
+        """
         # if 'metadata' isn't removed from keys here serialize will retrieve the un-serializable MetadataCollection
         #TODO: remove these when metadata is sub-object
         KEYS_HANDLED_SEPARATELY = ( 'metadata', )
@@ -639,6 +606,20 @@ class HDASerializer( base.ModelSerializer ):
             # we currently add metadata directly to the dict instead of as a sub-object
             serialized.update( self.prefixed_metadata( trans, hda ) )
         return serialized
+
+    #TODO: this is more util/gen. use
+    def pluck_from_list( self, l, elems ):
+        """
+        Removes found elems from list l and returns list of found elems if found.
+        """
+        found = []
+        for elem in elems:
+            try:
+                index = l.index( elem )
+                found.append( l.pop( index ) )
+            except ValueError, val_err:
+                pass
+        return found
 
     def prefixed_metadata( self, trans, hda ):
         """
@@ -655,6 +636,8 @@ class HDASerializer( base.ModelSerializer ):
         return prefixed
 
     def serialize_metadata( self, trans, hda, key, excluded=None ):
+        """
+        """
         # dbkey is a repeat actually (metadata_dbkey == genome_build)
         #excluded = [ 'dbkey' ] if excluded is None else excluded
         excluded = [] if excluded is None else excluded
@@ -680,6 +663,8 @@ class HDASerializer( base.ModelSerializer ):
 
     # add to serialize_metadata above
     def serialize_meta_files( self, trans, hda, key ):
+        """
+        """
         meta_files = []
         for meta_type in hda.metadata.spec.keys():
             if isinstance( hda.metadata.spec[ meta_type ].param, galaxy.datatypes.metadata.FileParameter ):
@@ -689,6 +674,8 @@ class HDASerializer( base.ModelSerializer ):
     #def file_info #TODO
     #TODO: and to dataset instead (passing through object store)
     def serialize_file_path( self, trans, hda, key ):
+        """
+        """
 #TODO: allow admin
         if trans.app.config.expose_dataset_path:
             try:
@@ -698,6 +685,8 @@ class HDASerializer( base.ModelSerializer ):
         return None
 
     def serialize_urls( self, trans, hda, key ):
+        """
+        """
         url_for = galaxy.web.url_for
         encoded_id = trans.security.encode_id( hda.id )
         urls = {

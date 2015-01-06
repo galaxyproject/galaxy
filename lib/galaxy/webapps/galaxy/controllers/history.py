@@ -1486,7 +1486,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """
         """
         try:
-            history = self.mgrs.histories.ownership_by_id( trans, trans.security.decode_id( id ), trans.user )
+            history = self.mgrs.histories.owned_by_id( trans, trans.security.decode_id( id ), trans.user )
             trans.set_history( history )
             return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
         except exceptions.MessageException, msg_exc:
