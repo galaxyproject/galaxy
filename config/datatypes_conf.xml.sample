@@ -140,6 +140,7 @@
     <datatype extension="rgb" type="galaxy.datatypes.images:Rgb" mimetype="image/rgb"/>
     <datatype extension="pbm" type="galaxy.datatypes.images:Pbm" mimetype="image/pbm"/>
     <datatype extension="pgm" type="galaxy.datatypes.images:Pgm" mimetype="image/pgm"/>
+    <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="True"/>
     <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>
     <datatype extension="rast" type="galaxy.datatypes.images:Rast" mimetype="image/rast"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
@@ -302,6 +303,7 @@
     <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
+    <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>
