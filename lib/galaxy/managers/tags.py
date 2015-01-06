@@ -312,6 +312,6 @@ class GalaxyTagManager( TagManager ):
 
 
 class CommunityTagManager( TagManager):
-    def __init__( self ):
+    def __init__( self, app ):
         from galaxy.webapps.tool_shed import model  # ?huh?
-        TagManager.__init__( self )
+        TagManager.__init__( self, app )
