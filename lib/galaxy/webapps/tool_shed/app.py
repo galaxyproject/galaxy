@@ -44,7 +44,7 @@ class UniverseApplication( object ):
         self.model = mapping.init( self.config.file_path,
                                    db_url,
                                    self.config.database_engine_options )
-        # Initialize the Tool SHed security helper.
+        # Initialize the Tool Shed security helper.
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # initialize the Tool Shed tag handler.
         self.tag_handler = CommunityTagManager( self )
