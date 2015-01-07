@@ -7,7 +7,7 @@ from sqlalchemy.sql.expression import func
 log = logging.getLogger( __name__ )
 
 
-#Item-specific information needed to perform tagging.
+# Item-specific information needed to perform tagging.
 class ItemTagAssocInfo( object ):
     def __init__( self, item_class, tag_assoc_class, item_id_col ):
         self.item_class = item_class
@@ -36,8 +36,8 @@ class TagManager( object ):
         self.item_tag_assoc_info = {}
 
     def set_tags_from_list( self, user, item, new_tags_list ):
-        #precondition: item is already security checked against user
-        #precondition: incoming tags is a list of sanitized/formatted strings
+        # precondition: item is already security checked against user
+        # precondition: incoming tags is a list of sanitized/formatted strings
 
         self.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
@@ -83,7 +83,7 @@ class TagManager( object ):
 
     def get_tool_tags( self ):
         result_set = self.app.model.context.execute( select( columns=[ self.app.model.ToolTagAssociation.table.c.tag_id ],
-                                                       from_obj=self.app.model.ToolTagAssociation.table ).distinct() )
+                                                             from_obj=self.app.model.ToolTagAssociation.table ).distinct() )
 
         tags = []
         for row in result_set:
@@ -289,6 +289,7 @@ class TagManager( object ):
             name_value_pair.append( None )
         return name_value_pair
 
+
 class GalaxyTagManager( TagManager ):
     def __init__( self, app ):
         from galaxy import model
@@ -313,5 +314,4 @@ class GalaxyTagManager( TagManager ):
 
 class CommunityTagManager( TagManager):
     def __init__( self, app ):
-        from galaxy.webapps.tool_shed import model  # ?huh?
         TagManager.__init__( self, app )
