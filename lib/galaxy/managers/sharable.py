@@ -22,12 +22,12 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         can be published effectively making it available to all other Users
         can be rated
     """
-    # histories, pages, stored workflows, visualizations
+    # e.g. histories, pages, stored workflows, visualizations
+
+    # the model used for UserShareAssociations with this model
     user_share_model = None
 
     def __init__( self, app ):
-        """
-        """
         super( SharableModelManager, self ).__init__( app )
         # user manager is needed to check access/ownership/admin
         self.user_mgr = users.UserManager( app )
@@ -40,22 +40,21 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         filters=self._munge_filters( user_filter, filters )
         return self.query( trans, filters=filters, **kwargs )
 
-    def by_user( self, trans, user, filters=None, **kwargs ):
+    def by_user( self, trans, user, **kwargs ):
         """
         """
-        user_filter = self.model_class.user_id == user.id
-        filters=self._munge_filters( user_filter, filters )
-        #note: no ownership check needed
-        return self.list( trans, filters=filters, **kwargs )
+        query = self._query_by_user( trans, user, **kwargs )
+        return self.list( trans, query=query, **kwargs )
 
     # ......................................................................... owned model interface
-# this really is more of a 'check_*editable/write*' - in essence that's what check_ownership boils down to often
     def is_owner( self, trans, item, user ):
         """
+        Return true if this sharable belongs to `user` (or `user` is an admin).
         """
         if self.user_mgr.is_anonymous( user ):
             # note: this needs to be overridden in the case of anon users and session.current_history
             return False
+        # ... effectively a good fit to have this here, but not semantically
         if self.user_mgr.is_admin( trans, user ):
             return True
         return item.user == user
@@ -63,6 +62,8 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     # ......................................................................... accessible interface
     def is_accessible( self, trans, item, user ):
         """
+        If the item is importable, is owned by `user`, or (the valid) `user`
+        is in 'users shared with' list for the item: return True.
         """
         if item.importable:
             return True
@@ -76,6 +77,8 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         return False
 
     # ......................................................................... importable
+#TODO: the relationship between importable and published is ill defined
+#??: can a published item be non-importable?
     def make_importable( self, trans, item, flush=True ):
         """
         Makes item accessible--viewable and importable--and sets item's slug.
@@ -95,7 +98,6 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         Does not flush/commit changes, however. Item must have name, user,
         importable, and slug attributes.
         """
-        #??: can a published item be non-importable?
         #if item.published:
         #    if unpublish:
         #        self.unpublish( trans, item, flush=False )
@@ -107,13 +109,21 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             trans.sa_session.flush()
         return item
 
-    def list_importable( self, trans, **kwargs ):
-#TODO:
-        """
-        """
-        pass
+    #def _query_importable( self, trans, filters=None, **kwargs ):
+    #    """
+    #    """
+    #    importable_filter = self.model_class.importable == True
+    #    filters = self._munge_filters( importable_filter, filters )
+    #    return self.list( trans, filters=filters, **kwargs )
+    #
+    #def list_importable( self, trans, **kwargs ):
+    #    """
+    #    """
+    #    query = self._query_importable( trans, user, **kwargs )
+    #    return self.list( trans, query=query, **kwargs )
 
     # ......................................................................... published
+#TODO: the relationship between importable and published is ill defined
     #def publish( self, trans, item, make_accessible=True, flush=True ):
     #    if not item.importable:
     #        if make_accessible:
@@ -124,6 +134,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     # a published item is also/already importable(=True) implicitly
     def publish( self, trans, item, flush=True ):
         """
+        Set both the importable and published flags on `item` to True.
         """
         if not item.importable:
             self.make_importable( trans, item, flush=False )
@@ -135,6 +146,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
 
     def unpublish( self, trans, item, flush=True ):
         """
+        Set the published flag on `item` to False.
         """
         trans.sa_session.add( item )
         item.published = False
@@ -142,11 +154,18 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             trans.sa_session.flush()
         return item
 
-    def list_published( self, trans, **kwargs ):
-#TODO:
-        """
-        """
-        pass
+    #def _query_published( self, trans, filters=None, **kwargs ):
+    #    """
+    #    """
+    #    published_filter = self.model_class.published == True
+    #    filters = self._munge_filters( published_filter, filters )
+    #    return self.list( trans, filters=filters, **kwargs )
+    #
+    #def list_published( self, trans, **kwargs ):
+    #    """
+    #    """
+    #    query = self._query_published( trans, user, **kwargs )
+    #    return self.list( trans, query=query, **kwargs )
 
     # ......................................................................... user sharing
     # sharing is often done via a 3rd table btwn a User and an item -> a <Item>UserShareAssociation
@@ -186,23 +205,31 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             trans.sa_session.flush()
         return item
 
-    def list_shared_with( self, trans, item, user, **kwargs ):
-#TODO:
-        """
-        """
-        pass
+    #def _query_shared_with( self, trans, user, filters=None, **kwargs ):
+    ##TODO:
+    #    """
+    #    """
+    #    pass
+
+    #def list_published( self, trans, user, **kwargs ):
+    #    """
+    #    """
+    #    query = self._query_shared_with( trans, user, **kwargs )
+    #    return self.list( trans, query=query, **kwargs )
 
     # ......................................................................... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
+    #TODO: as validator, deserializer, etc. (maybe another object entirely?)
     def is_valid_slug( self, slug ):
         """
-        Returns true if slug is valid.
+        Returns true if `slug` is valid.
         """
         VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
         return VALID_SLUG_RE.match( slug )
 
     def set_slug( self, trans, item, new_slug, flush=True ):
         """
+        Validate and set the new slug for `item`.
         """
         if not self.is_valid_slug( new_slug ):
             raise exceptions.RequestParameterInvalidException( "Invalid slug", slug=new_slug )
@@ -228,6 +255,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         # Setup slug base.
         if cur_slug is None or cur_slug == "":
             # Item can have either a name or a title.
+#TODO: this depends on the model having name or title
             if hasattr( item, 'name' ):
                 item_name = item.name
             elif hasattr( item, 'title' ):
@@ -280,6 +308,16 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    """ Handle item sharing. """
     #def get_name_and_link_async( self, trans, id=None ):
     #    """ Returns item's name and link. """
+
+
+# =============================================================================
+class SharableModelSerializer( base.ModelSerializer ):
+    pass
+
+    # the only ones that needs any fns:
+    #   user/user_id
+    #   user_shares?
+    #   username_and_slug?
 
 
 # =============================================================================

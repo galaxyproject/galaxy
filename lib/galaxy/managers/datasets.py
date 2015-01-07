@@ -32,6 +32,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
         # default to NEW state on new datasets
         kwargs.update( dict( state=( kwargs.get( 'state', model.Dataset.states.NEW ) ) ) )
         dataset = model.Dataset( **kwargs )
+
         trans.sa_session.add( dataset )
         if flush:
             trans.sa_session.flush()
@@ -54,6 +55,12 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
         pass
 
     # ......................................................................... delete
+    def error_unless_dataset_purge_allowed( self, trans, item, msg=None ):
+        if not trans.app.config.allow_user_dataset_purge:
+            msg = msg or 'This instance does not allow user dataset purging'
+            raise exceptions.ConfigDoesNotAllowException( msg )
+        return item
+
     def purge( self, trans, dataset, flush=True ):
         """
         """
@@ -78,42 +85,91 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
             return True
         return False
 
+    def _access_permission( self, trans, dataset, user=None, role=None ):
+        """
+        """
+        security_agent = trans.app.security_agent
+        access_action = security_agent.permitted_actions.DATASET_ACCESS.action
+
+        # get a list of role ids to check access for (defaulting to all_roles)
+        user_roles = [ role ] if role else user.all_roles()
+        user_role_ids = [ role.id for role in user_roles ]
+        query = ( trans.sa_session.query( model.DatasetPermissions )
+                    .filter( model.DatasetPermissions.action == access_action )
+                    .filter( model.DatasetPermissions.dataset == dataset )
+                    .filter( model.DatasetPermissions.role_id.in_( user_role_ids ) ) )
+        perms = query.all()
+        if len( perms ):
+            return perms[0]
+        return None
+
+    def _create_access_permission( self, trans, dataset, role, flush=True ):
+        """
+        """
+        access_action = trans.app.security_agent.permitted_actions.DATASET_ACCESS.action
+        permission = model.DatasetPermissions( access_action, dataset, role )
+        trans.sa_session.add( permission )
+        if flush:
+            trans.sa_session.flush()
+        return permission
+
     def has_access_permission( self, trans, dataset, user ):
         """
         """
-        roles = user.roles if user else []
+        
+        roles = user.all_roles() if user else []
         return trans.app.security_agent.can_access_dataset( roles, dataset )
 
-    def give_access_permission( self, trans, dataset, user ):
-        """
-        """
-        #permission = {}
-        ##TODO:?? is this correct and reliable?
-        #user_private_role = self.user_mgr.private_role( trans, user )
-        #permission[ trans.app.security_agent.permitted_actions.DATASET_ACCESS ] = [ user_private_role ]
-        #trans.app.security_agent.set_dataset_permission( dataset, permission )
-        pass
+    #TODO: this needs work
+    #def give_access_permission( self, trans, dataset, user, flush=True ):
+    #    """
+    #    """
+    #    # for now, use the user's private role
+    #    security_agent = trans.app.security_agent
+    #    user_role = security_agent.get_private_user_role( user )
+    #
+    #    existing_permission = self._access_permission( trans, dataset, role=user_role )
+    #    print 'existing access_perm:', existing_permission
+    #    if existing_permission:
+    #        return dataset
+    #
+    #    permission = self._create_access_permission( trans, dataset, user_role )
+    #    print 'access_roles:', [ role.name for role in dataset.get_access_roles( trans ) ]
+    #
+    #    #access_action = security_agent.permitted_actions.DATASET_ACCESS.action
+    #    #access_action = security_agent.get_action( access_action )
+    #    #permissions = { access_action : [ user_role ] }
+    #    #security_agent.set_dataset_permission( dataset, permissions )
+    #
+    #    #trans.sa_session.add( dataset )
+    #    #if flush:
+    #    #    trans.sa_session.flush()
+    #
+    #    dbl_chk = self._access_permission( trans, dataset, role=user_role )
+    #    print 'access_perm:', dbl_chk
+    #
+    #    return dataset
 
-    def remove_access_permission( self, trans, dataset, user ):
-        """
-        """
-        pass
+    #def remove_access_permission( self, trans, dataset, user ):
+    #    """
+    #    """
+    #    pass
 
     # ......................................................................... manage/modify
-    def has_manage_permission( self, trans, dataset, user ):
-        """
-        """
-        pass
-
-    def give_manage_permission( self, trans, dataset, user ):
-        """
-        """
-        pass
-
-    def remove_manage_permission( self, trans, dataset, user ):
-        """
-        """
-        pass
+    #def has_manage_permission( self, trans, dataset, user ):
+    #    """
+    #    """
+    #    pass
+    #
+    #def give_manage_permission( self, trans, dataset, user ):
+    #    """
+    #    """
+    #    pass
+    #
+    #def remove_manage_permission( self, trans, dataset, user ):
+    #    """
+    #    """
+    #    pass
 
     #TODO: implement above for groups
     #TODO: datatypes?
@@ -183,9 +239,11 @@ class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterfac
     def metadata( self, trans, dataset_assoc ):
         """
         """
+        # get metadata
         pass
 
     def is_being_used( self, trans, dataset_assoc ):
         """
         """
+        #TODO: check history_associations, library_associations
         pass

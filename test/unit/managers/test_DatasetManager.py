@@ -95,6 +95,30 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.assertRaises( exceptions.ConfigDoesNotAllowException, self.dataset_mgr.purge, self.trans, item1 )
         self.assertFalse( item1.purged )
 
+    ##TODO: I'm unclear as to how these work, so I'm kicking this down the road a bit....
+    #def test_access_permission( self ):
+    #    owner = self.user_mgr.create( self.trans, **user2_data )
+    #    dataset = self.dataset_mgr.create( self.trans )
+    #    # giving one user access permission makes it non-public, removing access for anyone else
+    #    self.dataset_mgr.give_access_permission( self.trans, dataset, owner )
+    #
+    #    user3 = self.user_mgr.create( self.trans, **user3_data )
+    #    user4 = self.user_mgr.create( self.trans,
+    #        email='user4@user4.user4', username='user4', password=default_password )
+    #
+    #    self.assertTrue( self.dataset_mgr.has_access_permission( self.trans, dataset, owner ) )
+    #    self.assertFalse( self.dataset_mgr.has_access_permission( self.trans, dataset, user3 ) )
+    #    self.assertFalse( self.dataset_mgr.has_access_permission( self.trans, dataset, user4 ) )
+    #
+    #    # should be able to progressively add more roles without removing the previous
+    #    self.dataset_mgr.give_access_permission( self.trans, dataset, user3 )
+    #    self.assertTrue( self.dataset_mgr.has_access_permission( self.trans, dataset, user3 ) )
+    #    self.assertTrue( self.dataset_mgr.has_access_permission( self.trans, dataset, owner ) )
+    #    self.assertFalse( self.dataset_mgr.has_access_permission( self.trans, dataset, user4 ) )
+    #
+    #    #self.assertTrue( self.dataset_mgr.is_accessible( self.trans, dataset, owner ) )
+    #    #self.assertFalse( self.dataset_mgr.is_accessible( self.trans, dataset, non_owner ) )
+
     def test_accessible( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )
         non_owner = self.user_mgr.create( self.trans, **user3_data )
@@ -104,11 +128,6 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.log( "(by default, dataset permissions are lax) should be accessible to all" )
         for user in self.user_mgr.list( self.trans ):
             self.assertTrue( self.dataset_mgr.is_accessible( self.trans, dataset, user ) )
-
-        #TODO: this is ... not working...
-        #self.dataset_mgr.give_access_permission( self.trans, dataset, owner )
-        #self.assertTrue( self.dataset_mgr.is_accessible( self.trans, dataset, owner ) )
-        #self.assertFalse( self.dataset_mgr.is_accessible( self.trans, dataset, non_owner ) )
 
 
 # =============================================================================

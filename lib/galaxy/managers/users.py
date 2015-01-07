@@ -161,15 +161,15 @@ class UserManager( base.ModelManager ):
         #TODO: catch NoResultFound
         return trans.sa_session.query( model.APIKeys ).filter_by( user=user ).one()
 
-    #TODO: there is quite a bit of functionality around the user (authentication, quotas, groups/roles)
-    #   most of which it may be unneccessary to have here
-
     # ------------------------------------------------------------------------- roles
     def private_role( self, trans, user ):
         """
         """
         #TODO: not sure we need to go through sec agent... it's just the first role of type private
         return trans.app.security_agent.get_private_user_role( user )
+
+    #TODO: there is quite a bit of functionality around the user (authentication, quotas, groups/roles)
+    #   most of which it may be unneccessary to have here
 
 
 # =============================================================================

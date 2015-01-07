@@ -131,14 +131,15 @@ class ModelManager( object ):
     foreign_key_name = None
 
     def __init__( self, app ):
-        """
-        """
         self.app = app
 
     #NOTE: at this layer, all ids are expected to be decoded and in int form
     # ------------------------------------------------------------------------- get/read/query
     def query( self, trans, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
+        Return a basic query from model_class, filters, order_by, and limit and offset.
+
+        Set eagerloads to False to disable them for this query.
         """
         #print 'query:', eagerloads, filters, order_by, limit, offset, kwargs
         query = trans.sa_session.query( self.model_class )
@@ -154,6 +155,7 @@ class ModelManager( object ):
 
     def _apply_filters( self, query, filters ):
         """
+        Add any filters to the given query.
         """
         if filters is None:
             return query
@@ -167,9 +169,11 @@ class ModelManager( object ):
 
     def _munge_filters( self, filtersA, filtersB ):
         """
+        Combine two lists into a single list.
+
+        (While allowing them to be None, non-lists, or lists.)
         """
         # ... which sounds like a euphamism for something
-        final_filters = [ self.model_class.id == id ]
         if filtersA is None:
             return filtersB
         if filtersB is None:
@@ -182,12 +186,16 @@ class ModelManager( object ):
 
     def _apply_order_by_limit_offset( self, query, order_by, limit, offset ):
         """
+        Return the query after adding the order_by, limit, and offset clauses.
         """
         query = self._apply_order_by( query, order_by )
         return self._apply_limit_offset( query, limit, offset )
 
     def _apply_order_by( self, query, order_by ):
         """
+        Return the query after adding the order_by clauses.
+
+        Use the manager's default_order_by if order_by is None.
         """
         if order_by is None:
             #TODO: allow non-tuple default_order_by
@@ -199,6 +207,7 @@ class ModelManager( object ):
 
     def _apply_limit_offset( self, query, limit, offset ):
         """
+        Return the query after applying the given limit and offset (if not None).
         """
         if limit is not None:
             query = query.limit( limit )
@@ -207,37 +216,47 @@ class ModelManager( object ):
         return query
 
     # ......................................................................... common queries
-#TODO: needed?
+    #TODO: needed?
     def one( self, trans, **kwargs ):
         """
+        Sends kwargs to build the query and returns one and only one model.
+
+        :raises exceptions.ObjectNotFound: if no model is found
+        :raises exceptions.Conflict: if more than one model is found
         """
+        # overridden to raise serializable errors
         try:
             return self.query( trans, **kwargs ).one()
-        # re-raise as serializable errors
         except sqlalchemy.orm.exc.NoResultFound, not_found:
             raise exceptions.ObjectNotFound( self.model_class.__name__ + ' not found' )
+#TODO: exceptions.InconsistentDatabase?
         except sqlalchemy.orm.exc.MultipleResultsFound, multi_found:
             raise exceptions.Conflict( 'found more than one ' + self.model_class.__name__ )
 
-    def list( self, trans, **kwargs ):
+    def list( self, trans, query=None, **kwargs ):
         """
+        Sends kwargs to build the query return all models found.
         """
-        return self.query( trans, **kwargs ).all()
+        query = query or self.query( trans, **kwargs )
+        return query.all()
 
     def by_id( self, trans, id, **kwargs ):
         """
+        Gets a model by primary id.
         """
         id_filter = self.model_class.id == id
         return self.one( trans, filters=id_filter, **kwargs )
 
     def _query_by_ids( self, trans, ids, filters=None, **kwargs ):
         """
+        Builds a query to find a list of models with the given list of `ids`.
         """
         ids_filter = self.model_class.id.in_( ids )
         return self.query( trans, filters=self._munge_filters( ids_filter, filters ), **kwargs )
 
     def by_ids( self, trans, ids, **kwargs ):
         """
+        Returns an in-order list of models with the matching ids in `ids`.
         """
         found = self._query_by_ids( trans, ids, **kwargs ).all()
         #TODO: this does not order by the original 'ids' array
@@ -277,7 +296,9 @@ class ModelManager( object ):
     # ------------------------------------------------------------------------- create
     def create( self, trans, flush=True, *args, **kwargs ):
         """
+        Generically create a new model.
         """
+        # override in subclasses
         item = self.model_class( *args, **kwargs )
         trans.sa_session.add( item )
         if flush:
@@ -286,12 +307,16 @@ class ModelManager( object ):
 
     def copy( self, trans, item, **kwargs ):
         """
+        Clone or copy an item.
         """
         raise exceptions.NotImplemented( 'Abstract method' )
 
     # ------------------------------------------------------------------------- update
     def update( self, trans, item, new_values, flush=True, **kwargs ):
         """
+        Given a dictionary of new values, update `item` and return it.
+
+        ..note: NO validation or deserialization occurs here.
         """
         trans.sa_session.add( item )
         for key, value in new_values.items():
@@ -301,8 +326,10 @@ class ModelManager( object ):
             trans.sa_session.flush()
         return item
 
+    #TODO: yagni?
     def associate( self, trans, associate_with, item, foreign_key_name=None ):
         """
+        Generically associate `item` with `associate_with` based on `foreign_key_name`.
         """
         foreign_key_name = foreign_key_name or self.foreign_key_name
         setattr( associate_with, foreign_key_name, item )
@@ -310,6 +337,7 @@ class ModelManager( object ):
 
     def query_associated( self, trans, associated_model_class, item, foreign_key_name=None ):
         """
+        Generically query other items that have been associated with this `item`.
         """
         foreign_key_name = foreign_key_name or self.foreign_key_name
         foreign_key = getattr( associated_model_class, foreign_key_name )

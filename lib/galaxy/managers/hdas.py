@@ -37,11 +37,11 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     def is_accessible( self, trans, hda, user ):
         """
         """
-        if self.is_owned( trans, hda, user ):
+        if self.is_owner( trans, hda, user ):
             return True
         return super( HDAManager, self ).is_accessible( trans, hda, user )
 
-    def is_owned( self, trans, hda, user ):
+    def is_owner( self, trans, hda, user ):
         """
         Use history to see if current user owns HDA.
         """
@@ -116,7 +116,9 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     def purge( self, trans, hda ):
         """
         """
-        self.error_unless_dataset_purge_allowed( trans, hda )
+        # error here if disallowed - before jobs are stopped
+        #TODO: poss. move to DatasetAssociationManager
+        self.dataset_mgr.error_unless_dataset_purge_allowed( trans, hda )
         super( HDAManager, self ).purge( trans, hda, flush=True )
 
         # signal to stop the creating job?

@@ -225,7 +225,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
 
 
 ## =============================================================================
-class HistorySerializer( base.ModelSerializer ):
+class HistorySerializer( sharable.SharableModelSerializer ):
     """
     Interface/service object for serializing histories into dictionaries.
     """
@@ -321,7 +321,7 @@ class HistorySerializer( base.ModelSerializer ):
 
 
 # =============================================================================
-class HistoryDeserializer( base.ModelDeserializer ):
+class HistoryDeserializer( sharable.SharableModelDeserializer ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
