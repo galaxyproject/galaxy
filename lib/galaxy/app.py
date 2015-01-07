@@ -7,7 +7,7 @@ import galaxy.model
 import galaxy.security
 from galaxy.managers.collections import DatasetCollectionManager
 import galaxy.quota
-from galaxy.tags.tag_handler import GalaxyTagHandler
+from galaxy.managers.tags import GalaxyTagManager
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.registry import VisualizationsRegistry
@@ -58,7 +58,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Security helper
         self._configure_security()
         # Tag handler
-        self.tag_handler = GalaxyTagHandler()
+        self.tag_handler = GalaxyTagManager( self )
         # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
 
