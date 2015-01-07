@@ -99,7 +99,7 @@
                     </div>
                     <div class="form-row">
                         <label>Message</label>
-                        <textarea name="message" rows="10" cols="40"></textarea>
+                        <textarea name="message" rows="10" cols="60"></textarea>
                     </div>
                     <div class="form-row">
                         <input type="submit" name="submit_error_report" value="Report" onclick="return sendReport( this, this.form, '_self' );"/>
