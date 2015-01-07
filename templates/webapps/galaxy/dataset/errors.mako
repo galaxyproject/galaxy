@@ -32,7 +32,7 @@
                         {
                             form.elements[i].disabled = true;
                         }
-                        
+
                     }
                     var hiddenInput = document.createElement('input');
                     hiddenInput.type = 'hidden';
@@ -52,7 +52,7 @@
         <p><b>Dataset ${hda.hid}: ${hda.display_name() | h}</b></p>
         <% job = hda.creating_job %>
         %if job:
-            
+
             %if job.traceback:
                 The Galaxy framework encountered the following error while attempting to run the tool:
                 <pre>${ util.unicodify( job.traceback ) | h}</pre>
@@ -82,8 +82,8 @@
         %>
         <h2>Report this error to the Galaxy Team</h2>
         <p>
-            The Galaxy team regularly reviews errors that occur in the application. 
-            However, if you would like to provide additional information (such as 
+            The Galaxy team regularly reviews errors that occur in the application.
+            However, if you would like to provide additional information (such as
             what you were trying to do when the error occurred) and a contact e-mail
             address, we will be better able to investigate your problem and get back
             to you.
