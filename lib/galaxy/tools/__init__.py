@@ -1843,7 +1843,8 @@ class Tool( object, Dictifiable ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             self.requirements,
-            installed_tool_dependencies=self.installed_tool_dependencies
+            installed_tool_dependencies=self.installed_tool_dependencies,
+            tool_dir=self.tool_dir,
         )
 
     @property
