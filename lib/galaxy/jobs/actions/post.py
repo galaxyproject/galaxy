@@ -428,12 +428,11 @@ class TagDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         if action.action_arguments:
-            tags = ','.join([t.strip() for t in action.action_arguments.get('tags', '').split(',')])
+            tags = [t.strip() for t in action.action_arguments.get('tags', '').split(',')]
             if tags:
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
-                        app.tag_handler.apply_item_tags( job.user, dataset_assoc.dataset,
-                                                         unicode(tags.encode('utf-8'), 'utf-8'))
+                        app.tag_handler.set_tags_from_list( job.user, dataset_assoc.dataset, tags)
             sa_session.flush()
 
     @classmethod
