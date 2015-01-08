@@ -92,7 +92,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
     def purge( self, trans, history, flush=True, **kwargs ):
         """
         """
-        self.error_unless_dataset_purge_allowed( trans, history )
+        self.hda_mgr.dataset_mgr.error_unless_dataset_purge_allowed( trans, history )
 
         # First purge all the datasets
         for hda in history.datasets:

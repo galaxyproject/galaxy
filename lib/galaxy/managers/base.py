@@ -220,18 +220,36 @@ class ModelManager( object ):
     def one( self, trans, **kwargs ):
         """
         Sends kwargs to build the query and returns one and only one model.
+        """
+        query = self.query( trans, **kwargs )
+        return self._one_with_recast_errors( query )
+
+    def _one_with_recast_errors( self, query ):
+        """
+        Call sqlalchemy's one and recast errors to serializable errors if any.
 
         :raises exceptions.ObjectNotFound: if no model is found
         :raises exceptions.Conflict: if more than one model is found
         """
         # overridden to raise serializable errors
         try:
-            return self.query( trans, **kwargs ).one()
+            return query.one()
         except sqlalchemy.orm.exc.NoResultFound, not_found:
             raise exceptions.ObjectNotFound( self.model_class.__name__ + ' not found' )
 #TODO: exceptions.InconsistentDatabase?
         except sqlalchemy.orm.exc.MultipleResultsFound, multi_found:
             raise exceptions.Conflict( 'found more than one ' + self.model_class.__name__ )
+
+    def _one_or_none( self, query ):
+        """
+        Return the object if found, None if it's not.
+
+        :raises exceptions.Conflict: if more than one model is found
+        """
+        try:
+            return self._one_with_recast_errors( query )
+        except exceptions.ObjectNotFound, not_found:
+            return None
 
     def list( self, trans, query=None, **kwargs ):
         """
@@ -345,7 +363,7 @@ class ModelManager( object ):
 
     # ------------------------------------------------------------------------- delete
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
-    #def remove_from_db( self, trans, item, **kwargs ):
+    #def destroy( self, trans, item, **kwargs ):
     #    return item
 
 

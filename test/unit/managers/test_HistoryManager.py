@@ -26,6 +26,7 @@ from galaxy.managers.histories import HistoryManager
 default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
 user3_data = dict( email='user3@user3.user3', username='user3', password=default_password )
+user4_data = dict( email='user4@user4.user4', username='user4', password=default_password )
 
 
 # =============================================================================
@@ -213,29 +214,30 @@ class HistoryManagerTestCase( BaseTestCase ):
     def test_sharable( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )
         self.trans.set_user( owner )
-        non_owner = self.user_mgr.create( self.trans, **user3_data )
-
         item1 = self.history_mgr.create( self.trans, user=owner )
+
+        non_owner = self.user_mgr.create( self.trans, **user3_data )
+        #third_party = self.user_mgr.create( self.trans, **user4_data )
 
         self.log( "should be unshared by default" )
         self.assertEqual( self.history_mgr.get_share_assocs( self.trans, item1 ), [] )
 
         self.log( "should be able to share with specific users" )
-        shared_item = self.history_mgr.share_with( self.trans, item1, non_owner )
-        self.assertEqual( shared_item, item1 )
-        self.assertTrue( self.history_mgr.is_accessible( self.trans, shared_item, non_owner ) )
+        share_assoc = self.history_mgr.share_with( self.trans, item1, non_owner )
+        self.assertIsInstance( share_assoc, model.HistoryUserShareAssociation )
+        self.assertTrue( self.history_mgr.is_accessible( self.trans, item1, non_owner ) )
         self.assertEqual(
-            len( self.history_mgr.get_share_assocs( self.trans, shared_item ) ), 1 )
+            len( self.history_mgr.get_share_assocs( self.trans, item1 ) ), 1 )
         self.assertEqual(
-            len( self.history_mgr.get_share_assocs( self.trans, shared_item, user=non_owner ) ), 1 )
+            len( self.history_mgr.get_share_assocs( self.trans, item1, user=non_owner ) ), 1 )
 
         self.log( "should be able to unshare with specific users" )
-        unshared_item = self.history_mgr.unshare_with( self.trans, shared_item, non_owner )
-        self.assertEqual( shared_item, unshared_item )
-        self.assertFalse( self.history_mgr.is_accessible( self.trans, shared_item, non_owner ) )
-        self.assertEqual( self.history_mgr.get_share_assocs( self.trans, unshared_item ), [] )
+        share_assoc = self.history_mgr.unshare_with( self.trans, item1, non_owner )
+        self.assertIsInstance( share_assoc, model.HistoryUserShareAssociation )
+        self.assertFalse( self.history_mgr.is_accessible( self.trans, item1, non_owner ) )
+        self.assertEqual( self.history_mgr.get_share_assocs( self.trans, item1 ), [] )
         self.assertEqual(
-            self.history_mgr.get_share_assocs( self.trans, unshared_item, user=non_owner ), [] )
+            self.history_mgr.get_share_assocs( self.trans, item1, user=non_owner ), [] )
 
     #TODO: test slug formation
 

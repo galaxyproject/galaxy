@@ -35,6 +35,8 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     # ......................................................................... has a user
     def _query_by_user( self, trans, user, filters=None, **kwargs ):
         """
+        Return query for all items (of model_class type) associated with the given
+        `user`.
         """
         user_filter = self.model_class.user_id == user.id
         filters=self._munge_filters( user_filter, filters )
@@ -42,6 +44,8 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
 
     def by_user( self, trans, user, **kwargs ):
         """
+        Return list for all items (of model_class type) associated with the given
+        `user`.
         """
         query = self._query_by_user( trans, user, **kwargs )
         return self.list( trans, query=query, **kwargs )
@@ -171,6 +175,9 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     # sharing is often done via a 3rd table btwn a User and an item -> a <Item>UserShareAssociation
     def get_share_assocs( self, trans, item, user=None ):
         """
+        Get the UserShareAssociations for the `item`.
+
+        Optionally send in `user` to test for a single match.
         """
         query = self.query_associated( trans, self.user_share_model, item )
         if user is not None:
@@ -179,31 +186,45 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
 
     def share_with( self, trans, item, user, flush=True ):
         """
+        Get or create a share for the given user (or users if `user` is a list).
         """
         # allow user to be a list and call recursivly
         if isinstance( user, list ):
             return map( lambda user: self.share_with( trans, item, user, flush=False ), user )
+        # get or create
+        existing = self.get_share_assocs( trans, item, user=user )
+        if existing:
+            return existing.pop( 0 )
+        return self._create_user_share_assoc( trans, item, user, flush=flush )
 
-        share = self.user_share_model()
-        trans.sa_session.add( share )
-        self.associate( trans, share, item )
-        share.user = user
+    def _create_user_share_assoc( self, trans, item, user, flush=True ):
+        """
+        Create a share for the given user.
+        """
+        user_share_assoc = self.user_share_model()
+        trans.sa_session.add( user_share_assoc )
+        self.associate( trans, user_share_assoc, item )
+        user_share_assoc.user = user
+
+        # waat?
         self.create_unique_slug( trans, item )
+
         if flush:
             trans.sa_session.flush()
-        return item
+        return user_share_assoc
 
     def unshare_with( self, trans, item, user, flush=True ):
         """
+        Delete a user share (or list of shares) from the database.
         """
         if isinstance( user, list ):
             return map( lambda user: self.unshare_with( trans, item, user, flush=False ), user )
-        # Look for and delete sharing relation for history-user.
-        for assoc in self.get_share_assocs( trans, item, user=user ):
-            trans.sa_session.delete( assoc )
+        # Look for and delete sharing relation for user.
+        user_share_assoc = self.get_share_assocs( trans, item, user=user )[0]
+        trans.sa_session.delete( user_share_assoc )
         if flush:
             trans.sa_session.flush()
-        return item
+        return user_share_assoc
 
     #def _query_shared_with( self, trans, user, filters=None, **kwargs ):
     ##TODO:
@@ -211,7 +232,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    """
     #    pass
 
-    #def list_published( self, trans, user, **kwargs ):
+    #def list_shared_with( self, trans, user, **kwargs ):
     #    """
     #    """
     #    query = self._query_shared_with( trans, user, **kwargs )
@@ -286,6 +307,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
 
     def create_unique_slug( self, trans, item, flush=True ):
         """
+        Set a new, unique slug on the item.
         """
         item.slug = self.get_unique_slug( trans, item )
         trans.sa_session.add( item )
@@ -293,10 +315,10 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             trans.sa_session.flush()
         return item
 
-    def by_slug( self, trans, user, **kwargs ):
-        """
-        """
-        pass
+    #def by_slug( self, trans, user, **kwargs ):
+    #    """
+    #    """
+    #    pass
 
     # ......................................................................... display
     #def display_by_username_and_slug( self, trans, username, slug ):
