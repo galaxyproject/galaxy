@@ -1,10 +1,11 @@
 from os.path import abspath, join, exists
 
+from .resolver_mixins import UsesInstalledRepositoriesMixin
 from .galaxy_packages import GalaxyPackageDependencyResolver, GalaxyPackageDependency
 from ..resolvers import INDETERMINATE_DEPENDENCY
 
 
-class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
+class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesInstalledRepositoriesMixin):
     resolver_type = "tool_shed_packages"
 
     def __init__(self, dependency_manager, **kwds):
@@ -12,9 +13,8 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
 
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
         installed_tool_dependency = self._get_installed_dependency( name, type, version=version, **kwds )
-        base_path = self.base_path
         if installed_tool_dependency:
-            path = self._get_package_installed_dependency_path( installed_tool_dependency, base_path, name, version )
+            path = self._get_package_installed_dependency_path( installed_tool_dependency, name, version )
             return self._galaxy_package_dep(path, version)
         else:
             return INDETERMINATE_DEPENDENCY
@@ -29,26 +29,17 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
                     return GalaxyPackageDependency(dependency.script, dependency.path, None)
         return INDETERMINATE_DEPENDENCY
 
-    def _get_installed_dependency( self, name, type, version=None, **kwds ):
-        installed_tool_dependencies = kwds.get("installed_tool_dependencies", [])
-        for installed_tool_dependency in (installed_tool_dependencies or []):
-            name_and_type_equal = installed_tool_dependency.name == name and installed_tool_dependency.type == type
-            if version:
-                if name_and_type_equal and installed_tool_dependency.version == version:
-                    return installed_tool_dependency
-            else:
-                if name_and_type_equal:
-                    return installed_tool_dependency
-        return None
-
-    def _get_package_installed_dependency_path( self, installed_tool_dependency, base_path, name, version ):
+    def _get_package_installed_dependency_path( self, installed_tool_dependency, name, version ):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
-        return join( base_path,
-                             name,
-                             version,
-                             tool_shed_repository.owner,
-                             tool_shed_repository.name,
-                             tool_shed_repository.installed_changeset_revision )
+        base_path = self.base_path
+        return join(
+            base_path,
+            name,
+            version,
+            tool_shed_repository.owner,
+            tool_shed_repository.name,
+            tool_shed_repository.installed_changeset_revision
+        )
 
     def _get_set_environment_installed_dependency_script_path( self, installed_tool_dependency, name ):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
@@ -63,5 +54,6 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver):
             script = join( path, 'env.sh' )
             return GalaxyPackageDependency(script, path, None)
         return INDETERMINATE_DEPENDENCY
+
 
 __all__ = [ToolShedPackageDependencyResolver]
