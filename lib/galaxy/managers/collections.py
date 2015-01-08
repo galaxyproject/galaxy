@@ -38,7 +38,7 @@ class DatasetCollectionManager( object ):
 
         self.hda_manager = hdas.HDAManager( app )
         self.history_manager = histories.HistoryManager( app )
-        self.tag_manager = tags.TagsManager( app )
+        self.tag_manager = tags.TagManager( app )
         self.ldda_manager = lddas.LDDAManager( app )
 
     def create(
@@ -65,6 +65,7 @@ class DatasetCollectionManager( object ):
             element_identifiers=element_identifiers,
             elements=elements,
         )
+
         if isinstance( parent, model.History ):
             dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
@@ -78,15 +79,18 @@ class DatasetCollectionManager( object ):
                     trans.sa_session.add( output_dataset )
 
                 dataset_collection_instance.implicit_output_name = implicit_collection_info[ "implicit_output_name" ]
+
             log.debug("Created collection with %d elements" % ( len( dataset_collection_instance.collection.elements ) ) )
             # Handle setting hid
             parent.add_dataset_collection( dataset_collection_instance )
+
         elif isinstance( parent, model.LibraryFolder ):
             dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 folder=parent,
                 name=name,
             )
+
         else:
             message = "Internal logic error - create called with unknown parent type %s" % type( parent )
             log.exception( message )

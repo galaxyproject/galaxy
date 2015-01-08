@@ -28,7 +28,6 @@ def api_payload_to_create_params( payload ):
         element_identifiers=payload.get( "element_identifiers" ),
         name=payload.get( "name", None ),
     )
-
     return params
 
 

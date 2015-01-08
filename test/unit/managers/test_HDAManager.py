@@ -71,7 +71,7 @@ class HDAManagerTestCase( BaseTestCase ):
         dataset1 = self.dataset_mgr.create( self.trans )
 
         self.log( "should be able to create a new HDA with a specified history and dataset" )
-        hda1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1, hid=1 )
+        hda1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
         self.assertIsInstance( hda1, model.HistoryDatasetAssociation )
         self.assertEqual( hda1, self.trans.sa_session.query( model.HistoryDatasetAssociation ).get( hda1.id ) )
         self.assertEqual( hda1.history, history1 )
@@ -79,18 +79,18 @@ class HDAManagerTestCase( BaseTestCase ):
         self.assertEqual( hda1.hid, 1 )
 
         self.log( "should be able to create a new HDA with only a specified history and no dataset" )
-        hda2 = self.hda_mgr.create( self.trans, history=history1, hid=2 )
+        hda2 = self.hda_mgr.create( self.trans, history=history1 )
         self.assertIsInstance( hda2, model.HistoryDatasetAssociation )
         self.assertIsInstance( hda2.dataset, model.Dataset )
         self.assertEqual( hda2.history, history1 )
         self.assertEqual( hda2.hid, 2 )
 
         self.log( "should be able to create a new HDA with no history and no dataset" )
-        hda3 = self.hda_mgr.create( self.trans )
+        hda3 = self.hda_mgr.create( self.trans, hid=None )
         self.assertIsInstance( hda3, model.HistoryDatasetAssociation )
         self.assertIsInstance( hda3.dataset, model.Dataset, msg="dataset will be auto created" )
         self.assertIsNone( hda3.history, msg="history will be None" )
-        self.assertEqual( hda3.hid, None )
+        self.assertEqual( hda3.hid, None, msg="should allow setting hid to None (or any other value)" )
 
     def test_copy_from_hda( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )

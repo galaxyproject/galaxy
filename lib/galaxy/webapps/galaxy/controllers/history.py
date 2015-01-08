@@ -640,11 +640,15 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         include_deleted_histories = galaxy.util.string_as_bool( include_deleted_histories )
         order = order if order in ( 'update', 'name', 'size' ) else 'update'
 
+        deleted_filter = None
+        if not include_deleted_histories:
+            deleted_filter = model.History.deleted == False
+
         current_history = trans.get_history()
         current_history_id = trans.security.encode_id( current_history.id ) if current_history else None
 
         history_dictionaries = []
-        for history in self.get_user_histories( trans, user=trans.user, include_deleted=include_deleted_histories ):
+        for history in self.mgrs.histories.by_user( trans, trans.user, filters=deleted_filter ):
             history_dictionary = self.history_serializer.serialize_to_view( trans, history, view='detailed' )
             history_dictionaries.append( history_dictionary )
 

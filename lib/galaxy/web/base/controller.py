@@ -252,29 +252,11 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
             check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
         history = self.security_check( trans, history, check_ownership, check_accessible )
         return history
-
-    def get_user_histories( self, trans, user=None, include_deleted=False, only_deleted=False ):
-        """
-        Get all the histories for a given user (defaulting to `trans.user`)
-        ordered by update time and filtered on whether they've been deleted.
-        """
-        # handle default and/or anonymous user (which still may not have a history yet)
-        user = user or trans.user
-        if not user:
-            current_history = trans.get_history()
-            return [ current_history ] if current_history else []
-
-        history_model = trans.model.History
-        query = ( trans.sa_session.query( history_model )
-            .filter( history_model.user == user )
-            .order_by( desc( history_model.table.c.update_time ) ) )
-        if only_deleted:
-            query = query.filter( history_model.deleted == True )
-        elif not include_deleted:
-            query = query.filter( history_model.deleted == False )
-
-        return query.all()
-        #USED IN: history.py, 640
+#lib/galaxy/webapps/galaxy/api/annotations.py:55:        hist = self.get_history( trans, idstr )
+#lib/galaxy/webapps/galaxy/api/dataset_collections.py:44:            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
+#lib/galaxy/webapps/galaxy/api/workflows.py:152:            history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
+#lib/galaxy/webapps/galaxy/controllers/dataset.py:996:            history = self.get_history(trans, source_history)
+# and alll over history controller
 
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
@@ -289,7 +271,9 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if not show_purged:
             query = query.filter( trans.model.Dataset.purged == False )
         return query.all()
-
+#lib/galaxy/tools/imp_exp/__init__.py:417:        datasets = self.get_history_datasets( trans, history )
+#lib/galaxy/webapps/galaxy/controllers/history.py:1280:        datasets = self.get_history_datasets( trans, history )
+#lib/galaxy/webapps/galaxy/controllers/page.py:742:        datasets = self.get_history_datasets( trans, history )
 
 class ExportsHistoryMixin:
 

@@ -14,7 +14,10 @@ log = logging.getLogger( __name__ )
 # =============================================================================
 class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
     """
+    Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
+    
     """
+
     model_class = model.Dataset
     default_order_by = ( model.Dataset.create_time, )
     foreign_key_name = 'dataset'

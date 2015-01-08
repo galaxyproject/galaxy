@@ -102,6 +102,9 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         # Now mark the history as purged
         super( HistoryManager, self ).purge( trans, history, flush=flush, **kwargs )
 
+    # ......................................................................... contents
+    
+
     # ......................................................................... serialization
     #TODO: move to serializer (i.e. history with contents attr)
     def _get_history_data( self, trans, history ):

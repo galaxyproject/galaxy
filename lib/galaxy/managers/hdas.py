@@ -50,11 +50,21 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
 
     def create( self, trans, history=None, dataset=None, flush=True, **kwargs ):
         """
+        Create a new hda optionally passing in it's history and dataset.
+
+        ..note: to explicitly set hid to `None` you must pass in `hid=None`, otherwise
+        it will be automatically set.
         """
         if not dataset:
             kwargs[ 'create_dataset' ] = True
         hda = super( HDAManager, self ).create( trans, flush=flush,
             history=history, dataset=dataset, sa_session=trans.sa_session, **kwargs )
+
+        if history:
+            set_hid = not ( 'hid' in kwargs )
+            history.add_dataset( hda )
+        #TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
+
         trans.sa_session.add( hda )
         if flush:
             trans.sa_session.flush()
