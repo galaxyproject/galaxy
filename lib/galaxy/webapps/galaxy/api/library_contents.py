@@ -119,7 +119,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             :func:`galaxy.model.LibraryDataset.to_dict` and
             :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
-        class_name, content_id = self.__decode_library_content_id( trans, id )
+        class_name, content_id = self.__decode_library_content_id( id )
         if class_name == 'LibraryFolder':
             content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
             rval = content.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
@@ -166,7 +166,6 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :returns:   a dictionary containing the id, name,
             and 'show' url of the new item
         """
-        create_type = None
         if 'create_type' not in payload:
             trans.response.status = 400
             return "Missing required 'create_type' parameter."
@@ -178,10 +177,10 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         if 'folder_id' not in payload:
             trans.response.status = 400
-            return "Missing requred 'folder_id' parameter."
+            return "Missing required 'folder_id' parameter."
         else:
             folder_id = payload.pop( 'folder_id' )
-            class_name, folder_id = self.__decode_library_content_id( trans, folder_id )
+            class_name, folder_id = self.__decode_library_content_id( folder_id )
         try:
             # security is checked in the downstream controller
             parent = self.get_library_folder( trans, folder_id, check_ownership=False, check_accessible=False )
@@ -198,9 +197,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         #check for extended metadata, store it and pop it out of the param
         #otherwise sanitize_param will have a fit
-        ex_meta_payload = None
-        if 'extended_metadata' in payload:
-            ex_meta_payload = payload.pop('extended_metadata')
+        ex_meta_payload = payload.pop('extended_metadata', None)
 
         # Now create the desired content object, either file or folder.
         if create_type == 'file':
@@ -344,7 +341,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             trans.sa_session.add( assoc )
             trans.sa_session.flush()
 
-    def __decode_library_content_id( self, trans, content_id ):
+    def __decode_library_content_id( self, content_id ):
         if len( content_id ) % 16 == 0:
             return 'LibraryDataset', content_id
         elif content_id.startswith( 'F' ):
