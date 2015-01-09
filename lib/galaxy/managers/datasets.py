@@ -185,7 +185,8 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
 
     #TODO: implement above for groups
     #TODO: datatypes?
-    #TODO: data, object_store
+
+    # ......................................................................... data, object_store
 
 
 # =============================================================================

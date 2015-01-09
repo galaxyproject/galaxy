@@ -12,14 +12,13 @@ from galaxy.datatypes import dataproviders
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
-from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy import managers
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin ):
+class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
     def __init__( self, app ):
         super( DatasetsController, self ).__init__( app )
@@ -84,7 +83,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         """
         Returns state of dataset.
         """
-        msg = self.check_dataset_state( trans, dataset )
+        msg = self.mgrs.hdas.data_conversion_status( trans, dataset )
         if not msg:
             msg = dataset.conversion_messages.DATA
 
@@ -95,7 +94,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
         """
-        msg = self.check_dataset_state( trans, dataset )
+        msg = self.mgrs.hdas.data_conversion_status( trans, dataset )
         if msg:
             return msg
 
@@ -144,7 +143,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             return dataset.conversion_messages.NO_DATA
 
         # Dataset check.
-        msg = self.check_dataset_state( trans, dataset )
+        msg = self.mgrs.hdas.data_conversion_status( trans, dataset )
         if msg:
             return msg
 
@@ -237,7 +236,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         be slow because indexes need to be created.
         """
         # Dataset check.
-        msg = self.check_dataset_state( trans, dataset )
+        msg = self.mgrs.hdas.data_conversion_status( trans, dataset )
         if msg:
             return msg
 

@@ -4,18 +4,19 @@ API operations on the contents of a library folder.
 from galaxy import web
 from galaxy import util
 from galaxy import exceptions
+from galaxy import managers
 from galaxy.managers import folders
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
-from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin
+from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin ):
+class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
     """
     Class controls retrieval, creation and updating of folder contents.
     """
@@ -23,6 +24,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __init__( self, app ):
         super( FolderContentsController, self ).__init__( app )
         self.folder_manager = folders.FolderManager()
+        self.hda_manager = managers.hdas.HDAManager()
 
     @expose_api_anonymous
     def index( self, trans, folder_id, **kwd ):
@@ -265,7 +267,9 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
         rval = {}
         try:
-            hda = self.get_dataset( trans, from_hda_id, check_ownership=True, check_accessible=True, check_state=True )
+            decoded_hda_id = trans.security.decode_id( from_hda_id )
+            hda = self.hda_manager.owned_by_id( trans, decoded_hda_id, trans.user )
+            hda = self.hda_manager.error_if_uploading( trans, hda )
             folder = self.get_library_folder( trans, encoded_folder_id_16, check_accessible=True )
 
             library = folder.parent_library

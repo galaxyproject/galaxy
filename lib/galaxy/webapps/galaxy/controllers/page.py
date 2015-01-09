@@ -290,7 +290,8 @@ class PageController( BaseUIController, SharableMixin,
     def __init__( self, app ):
         super( PageController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager( app )
+            histories=managers.histories.HistoryManager( app ),
+            hdas=managers.hdas.HDAManager( app ),
         )
 
     @web.expose
@@ -778,10 +779,13 @@ class PageController( BaseUIController, SharableMixin,
             return self._get_embedded_history_html( trans, item_id )
 
         elif item_class == model.HistoryDatasetAssociation:
-            dataset = self.get_dataset( trans, item_id, False, True )
+            decoded_id = trans.security.decode_id( item_id )
+            dataset = self.mgrs.hdas.accessible_by_id( trans, decoded_id, trans.user )
+            dataset = self.mgrs.hdas.error_if_uploading( dataset )
+
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             if dataset:
-                data = self.get_data( dataset )
+                data = self.mgrs.hdas.text_data( dataset )
                 return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data )
 
         elif item_class == model.StoredWorkflow:

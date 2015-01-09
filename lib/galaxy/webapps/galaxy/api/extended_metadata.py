@@ -3,11 +3,11 @@ API operations on annotations.
 """
 import logging
 from galaxy import web
-from galaxy.web.base.controller import  BaseAPIController, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin, UsesExtendedMetadataMixin, HTTPNotImplemented
+from galaxy.web.base.controller import  BaseAPIController, UsesLibraryMixinItems, UsesStoredWorkflowMixin, UsesExtendedMetadataMixin, HTTPNotImplemented
 
 log = logging.getLogger( __name__ )
 
-class BaseExtendedMetadataController( BaseAPIController, UsesExtendedMetadataMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin ):
+class BaseExtendedMetadataController( BaseAPIController, UsesExtendedMetadataMixin, UsesLibraryMixinItems, UsesStoredWorkflowMixin ):
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -61,8 +61,15 @@ class LibraryDatasetExtendMetadataController(BaseExtendedMetadataController):
 class HistoryDatasetExtendMetadataController(BaseExtendedMetadataController):
     controller_name = "history_dataset_extended_metadata"
     exmeta_item_id = "history_content_id"
+
+    def __init__( self, app ):
+        super( HistoryDatasetExtendMetadataController, self ).__init__( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
+
     def _get_item_from_id(self, trans, idstr, check_writable=True):
+        decoded_idstr = trans.security.decode_id( idstr )
         if check_writable:
-            return self.get_dataset( trans, idstr,  check_ownership=True, check_accessible=True, check_state=True )
+            return self.hda_manager.owned_by_id( trans, decoded_idstr, trans.user )
         else:
-            return self.get_dataset( trans, idstr,  check_ownership=False, check_accessible=True, check_state=True )
+            hda = self.hda_manager.accessible_by_id( trans, decoded_idstr, trans.user )
+            return self.hda_manager.error_if_uploading( trans, hda )

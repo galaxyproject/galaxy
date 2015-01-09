@@ -32,7 +32,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 
 from galaxy.datatypes.interval import ChromatinInteractions
-from galaxy.datatypes.data import Text
 
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
@@ -278,117 +277,6 @@ class ImportsHistoryMixin:
         history_imp_tool.execute( trans, incoming=incoming )
 
 
-class UsesHistoryDatasetAssociationMixin:
-    """
-    Mixin for controllers that use HistoryDatasetAssociation objects.
-    """
-
-    def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
-        """
-        Get an HDA object by id performing security checks using
-        the current transaction.
-        """
-        try:
-            dataset_id = trans.security.decode_id( dataset_id )
-        except ( AttributeError, TypeError ):
-            # DEPRECATION: We still support unencoded ids for backward compatibility
-            try:
-                dataset_id = int( dataset_id )
-            except ValueError:
-                raise HTTPBadRequest( "Invalid dataset id: %s." % str( dataset_id ) )
-
-        try:
-            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
-        except:
-            raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
-
-        if check_ownership:
-            # Verify ownership.
-            user = trans.get_user()
-            if not user:
-                error( "Must be logged in to manage Galaxy items" )
-            if data.history.user != user:
-                error( "%s is not owned by current user" % data.__class__.__name__ )
-
-        if check_accessible:
-            current_user_roles = trans.get_current_user_roles()
-
-            if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                error( "You are not allowed to access this dataset" )
-
-            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
-                return trans.show_error_message( "Please wait until this dataset finishes uploading "
-                                                   + "before attempting to view it." )
-        return data
-
-    def get_data( self, dataset, preview=True ):
-        """
-        Gets a dataset's data.
-        """
-        # Get data from file, truncating if necessary.
-        truncated = False
-        dataset_data = None
-        if os.path.exists( dataset.file_name ):
-            if isinstance( dataset.datatype, Text ):
-                max_peek_size = 1000000 # 1 MB
-                if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
-                    dataset_data = open( dataset.file_name ).read(max_peek_size)
-                    truncated = True
-                else:
-                    dataset_data = open( dataset.file_name ).read(max_peek_size)
-                    truncated = False
-            else:
-                # For now, cannot get data from non-text datasets.
-                dataset_data = None
-        return truncated, dataset_data
-#lib/galaxy/webapps/galaxy/controllers/dataset.py:566:            truncated, dataset_data = self.get_data( dataset, preview )
-#lib/galaxy/webapps/galaxy/controllers/dataset.py:604:        truncated, dataset_data = self.get_data( dataset, preview=True )
-#lib/galaxy/webapps/galaxy/controllers/page.py:787:                data = self.get_data( dataset )
-#lib/galaxy/webapps/galaxy/controllers/visualization.py:1012:        data = pd.get_data( tree_index=tree_index )
-
-    def check_dataset_state( self, trans, dataset ):
-        """
-        Returns a message if dataset is not ready to be used in visualization.
-        """
-        if not dataset:
-            return dataset.conversion_messages.NO_DATA
-        if dataset.state == trans.app.model.Job.states.ERROR:
-            return dataset.conversion_messages.ERROR
-        if dataset.state != trans.app.model.Job.states.OK:
-            return dataset.conversion_messages.PENDING
-        return None
-#lib/galaxy/webapps/galaxy/api/datasets.py:89:        msg = self.check_dataset_state( trans, dataset )
-#lib/galaxy/webapps/galaxy/api/datasets.py:100:        msg = self.check_dataset_state( trans, dataset )
-#lib/galaxy/webapps/galaxy/api/datasets.py:149:        msg = self.check_dataset_state( trans, dataset )
-#lib/galaxy/webapps/galaxy/api/datasets.py:242:        msg = self.check_dataset_state( trans, dataset )
-#lib/galaxy/webapps/galaxy/api/tools.py:287:        msg = self.check_dataset_state( trans, original_dataset )
-
-    def get_hda_job( self, hda ):
-        # Get dataset's job.
-        job = None
-        for job_output_assoc in hda.creating_job_associations:
-            job = job_output_assoc.job
-            break
-        return job
-#lib/galaxy/web/base/controller.py:846:        job = self.get_hda_job( hda )
-#lib/galaxy/webapps/galaxy/api/tools.py:296:        original_job = self.get_hda_job( original_dataset )
-#lib/galaxy/webapps/galaxy/controllers/visualization.py:977:            job = self.get_hda_job( dataset )
-
-    def stop_hda_creating_job( self, hda ):
-        """
-        Stops an HDA's creating job if all the job's other outputs are deleted.
-        """
-        if hda.parent_id is None and len( hda.creating_job_associations ) > 0:
-            # Mark associated job for deletion
-            job = hda.creating_job_associations[0].job
-            if job.state in [ self.app.model.Job.states.QUEUED, self.app.model.Job.states.RUNNING, self.app.model.Job.states.NEW ]:
-                # Are *all* of the job's other output datasets deleted?
-                if job.check_if_output_datasets_deleted():
-                    job.mark_deleted( self.app.config.track_jobs_in_database )
-                    self.app.job_manager.job_stop_queue.put( job.id )
-#lib/galaxy/webapps/galaxy/api/history_contents.py:366:                self.stop_hda_creating_job( hda )
-#lib/galaxy/webapps/galaxy/controllers/dataset.py:772:            self.stop_hda_creating_job( hda )
-
 class UsesLibraryMixin:
 
     def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
@@ -527,7 +415,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         return security_agent.get_permissions( ldda )
 
 
-class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
+class UsesVisualizationMixin( UsesLibraryMixinItems ):
     """
     Mixin for controllers that use Visualization objects.
     """
@@ -816,9 +704,14 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
     def get_tool_def( self, trans, hda ):
         """ Returns definition of an interactive tool for an HDA. """
 
-        job = self.get_hda_job( hda )
+        # Get dataset's job.
+        job = None
+        for job_output_assoc in hda.creating_job_associations:
+            job = job_output_assoc.job
+            break
         if not job:
             return None
+
         tool = trans.app.toolbox.get_tool( job.tool_id )
         if not tool:
             return None
@@ -956,9 +849,47 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
     def get_hda_or_ldda( self, trans, hda_ldda, dataset_id ):
         """ Returns either HDA or LDDA for hda/ldda and id combination. """
         if hda_ldda == "hda":
-            return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+            return self.get_hda( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
             return self.get_library_dataset_dataset_association( trans, dataset_id )
+
+    def get_hda( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
+        """
+        Get an HDA object by id performing security checks using
+        the current transaction.
+        """
+        try:
+            dataset_id = trans.security.decode_id( dataset_id )
+        except ( AttributeError, TypeError ):
+            # DEPRECATION: We still support unencoded ids for backward compatibility
+            try:
+                dataset_id = int( dataset_id )
+            except ValueError:
+                raise HTTPBadRequest( "Invalid dataset id: %s." % str( dataset_id ) )
+
+        try:
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
+        except:
+            raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
+
+        if check_ownership:
+            # Verify ownership.
+            user = trans.get_user()
+            if not user:
+                error( "Must be logged in to manage Galaxy items" )
+            if data.history.user != user:
+                error( "%s is not owned by current user" % data.__class__.__name__ )
+
+        if check_accessible:
+            current_user_roles = trans.get_current_user_roles()
+
+            if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+                error( "You are not allowed to access this dataset" )
+
+            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
+                return trans.show_error_message( "Please wait until this dataset finishes uploading "
+                                                   + "before attempting to view it." )
+        return data
 
     # -- Helper functions --
 

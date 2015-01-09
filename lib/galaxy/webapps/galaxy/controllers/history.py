@@ -18,7 +18,6 @@ from galaxy.web import error, url_for
 
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.base.controller import SharableMixin
-from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.model.item_attrs import UsesAnnotations
@@ -211,8 +210,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
 
 class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
-                         UsesHistoryDatasetAssociationMixin, ExportsHistoryMixin,
-                         ImportsHistoryMixin ):
+                         ExportsHistoryMixin, ImportsHistoryMixin ):
 
     def __init__( self, app ):
         super( HistoryController, self ).__init__( app )

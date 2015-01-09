@@ -24,6 +24,7 @@ log = logging.getLogger( __name__ )
 class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface ):
     """
     """
+
     model_class = model.History
     default_order_by = ( model.History.create_time, )
     foreign_key_name = 'history'
@@ -35,27 +36,10 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         super( HistoryManager, self ).__init__( app, *args, **kwargs )
         self.hda_mgr = hdas.HDAManager( app )
 
-    # ......................................................................... crud
     def copy( self, trans, history, user, **kwargs ):
         """
         """
         return history.copy( target_user=user, **kwargs )
-
-    def get_current( self, trans ):
-        """
-        """
-        return trans.get_history()
-
-    def set_current( self, trans, history ):
-        """
-        """
-        trans.set_history( history )
-        return history
-
-    def set_current_by_id( self, trans, history_id ):
-        """
-        """
-        return self.set_current( trans, self.by_id( trans, history_id ) )
 
     def most_recent( self, trans, user, **kwargs ):
         """
@@ -104,6 +88,23 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
 
     # ......................................................................... contents
     
+
+    # ......................................................................... current
+    def get_current( self, trans ):
+        """
+        """
+        return trans.get_history()
+
+    def set_current( self, trans, history ):
+        """
+        """
+        trans.set_history( history )
+        return history
+
+    def set_current_by_id( self, trans, history_id ):
+        """
+        """
+        return self.set_current( trans, self.by_id( trans, history_id ) )
 
     # ......................................................................... serialization
     #TODO: move to serializer (i.e. history with contents attr)

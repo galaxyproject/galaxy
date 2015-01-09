@@ -9,7 +9,6 @@ from sqlalchemy.orm import aliased
 import json
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy import exceptions
 from galaxy import util
@@ -19,7 +18,11 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
+class JobController( BaseAPIController, UsesLibraryMixinItems ):
+
+    def __init__( self, app ):
+        super( JobController, self ).__init__( app )
+        self.hda_manager = managers.hdas.HDAManager()
 
     @expose_api
     def index( self, trans, **kwd ):
@@ -256,7 +259,8 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
             if isinstance( v, dict ):
                 if 'id' in v:
                     if 'src' not in v or v[ 'src' ] == 'hda':
-                        dataset = self.get_dataset( trans, v['id'], check_ownership=False, check_accessible=True )
+                        hda_id = trans.security.decode_id( v['id'] )
+                        dataset = self.hda_manager.accessible_by_id( trans, hda_id, trans.user )
                     else:
                         dataset = self.get_library_dataset_dataset_association( trans, v['id'] )
                     if dataset is None:

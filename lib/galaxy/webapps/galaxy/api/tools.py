@@ -32,7 +32,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     def __init__( self, app ):
         super( ToolsController, self ).__init__( app )
         self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager( app )
+            histories=managers.histories.HistoryManager( app ),
+            hdas=managers.hdas.HDAManager( app )
         )
 
     @web.expose_api
@@ -282,17 +283,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             run_on_regions = True
 
         # Dataset check.
-        original_dataset = self.get_dataset( trans, payload[ 'target_dataset_id' ], check_ownership=False, check_accessible=True )
-        msg = self.check_dataset_state( trans, original_dataset )
+        decoded_dataset_id = trans.security.decode_id( payload.get( 'target_dataset_id' ) )
+        original_dataset = self.mgrs.hdas.accessible_by_id( trans, decoded_dataset_id, user=trans.user )
+        original_dataset = self.hda_manager.error_if_uploading( trans, original_dataset )
+        msg = self.mgrs.hdas.data_conversion_status( trans, original_dataset )
         if msg:
             return msg
 
-        #
         # Set tool parameters--except non-hidden dataset parameters--using combination of
         # job's previous parameters and incoming parameters. Incoming parameters
         # have priority.
         #
-        original_job = self.get_hda_job( original_dataset )
+        original_job = self.mgrs.hdas.creating_job( original_dataset )
         tool = trans.app.toolbox.get_tool( original_job.tool_id )
         if not tool:
             return trans.app.model.Dataset.conversion_messages.NO_TOOL

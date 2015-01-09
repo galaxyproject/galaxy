@@ -5,10 +5,12 @@ HistoryDatasetAssociations (HDAs) are datasets contained or created in a
 history.
 """
 
+import os
 import gettext
 
 from galaxy import model
 from galaxy import exceptions
+from galaxy import datatypes
 
 import base
 import histories
@@ -28,12 +30,15 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     model_class = model.HistoryDatasetAssociation
     default_order_by = ( model.HistoryDatasetAssociation.create_time, )
 
+    #TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
+
     def __init__( self, app ):
         """
         Set up and initialize other managers needed by hdas.
         """
         super( HDAManager, self ).__init__( app )
 
+    # ......................................................................... security and permissions
     def is_accessible( self, trans, hda, user ):
         """
         """
@@ -48,6 +53,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         #TODO: this may be slow due to HistoryManager instantiation and possible 2nd transaction to get the hda.history
         return histories.HistoryManager( self.app ).is_owner( trans, hda.history, user )
 
+    # ......................................................................... create and copy
     def create( self, trans, history=None, dataset=None, flush=True, **kwargs ):
         """
         Create a new hda optionally passing in it's history and dataset.
@@ -115,6 +121,13 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         """
         return ldda.to_history_dataset_association( history, add_to_history=True )
 
+    def is_a_copy( self, trans, hda ):
+        pass
+
+    def copied_from( self, trans, hda ):
+        pass
+
+    # .........................................................................
 #    def by_history_id( self, trans, history_id, filters=None, **kwargs ):
 #        history_id_filter = self.model_class.history_id == history_id
 #        filters = self._munge_filters( history_id_filter, filters )
@@ -152,6 +165,15 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         if hda.state == trans.model.Dataset.states.UPLOAD:
             raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
         return hda
+
+    # ......................................................................... associated
+#TODO: is this needed? Can't you use the hda.creating_job attribute? When is this None?
+    def creating_job( self, trans, hda ):
+        job = None
+        for job_output_assoc in hda.creating_job_associations:
+            job = job_output_assoc.job
+            break
+        return job
 
     # ......................................................................... serialization
     def get_display_apps( self, trans, hda ):
@@ -208,6 +230,27 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
            return hda.get_visualizations()
         return trans.app.visualizations_registry.get_visualizations( trans, hda )
 
+    #TODO: to data provider or Text datatype directly
+    def text_data( self, dataset, preview=True ):
+        """
+        Get data from text file, truncating if necessary.
+        """
+        truncated = False
+        dataset_data = None
+        if os.path.exists( dataset.file_name ):
+            if isinstance( dataset.datatype, datatypes.data.Text ):
+                max_peek_size = 1000000 # 1 MB
+                if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
+                    dataset_data = open( dataset.file_name ).read( max_peek_size )
+                    truncated = True
+                else:
+                    dataset_data = open( dataset.file_name ).read( max_peek_size )
+                    truncated = False
+            else:
+                # For now, cannot get data from non-text datasets.
+                dataset_data = None
+        return truncated, dataset_data
+
     #def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
     #    """
     #    Get an HDA object by id performing security checks using
@@ -246,60 +289,38 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     #                                               + "before attempting to view it." )
     #    return data
 
-    #def get_data( self, dataset, preview=True ):
-    #    """
-    #    Gets a dataset's data.
-    #    """
-    #    # Get data from file, truncating if necessary.
-    #    truncated = False
-    #    dataset_data = None
-    #    if os.path.exists( dataset.file_name ):
-    #        if isinstance( dataset.datatype, Text ):
-    #            max_peek_size = 1000000 # 1 MB
-    #            if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
-    #                dataset_data = open( dataset.file_name ).read(max_peek_size)
-    #                truncated = True
-    #            else:
-    #                dataset_data = open( dataset.file_name ).read(max_peek_size)
-    #                truncated = False
-    #        else:
-    #            # For now, cannot get data from non-text datasets.
-    #            dataset_data = None
-    #    return truncated, dataset_data
-    #
-    #def check_dataset_state( self, trans, dataset ):
-    #    """
-    #    Returns a message if dataset is not ready to be used in visualization.
-    #    """
-    #    if not dataset:
-    #        return dataset.conversion_messages.NO_DATA
-    #    if dataset.state == trans.app.model.Job.states.ERROR:
-    #        return dataset.conversion_messages.ERROR
-    #    if dataset.state != trans.app.model.Job.states.OK:
-    #        return dataset.conversion_messages.PENDING
-    #    return None
+    # this is a weird syntax and return val
+    def data_conversion_status( self, trans, hda ):
+        """
+        Returns a message if dataset is not ready to be used in visualization.
+        """
+        if not hda:
+            return hda.conversion_messages.NO_DATA
+        if hda.state == trans.app.model.Job.states.ERROR:
+            return hda.conversion_messages.ERROR
+        if hda.state != trans.app.model.Job.states.OK:
+            return hda.conversion_messages.PENDING
+        return None
 
-
-    #def get_hda_job( self, hda ):
-    #    # Get dataset's job.
-    #    job = None
-    #    for job_output_assoc in hda.creating_job_associations:
-    #        job = job_output_assoc.job
-    #        break
-    #    return job
-
-    #def stop_hda_creating_job( self, hda ):
-    #    """
-    #    Stops an HDA's creating job if all the job's other outputs are deleted.
-    #    """
-    #    if hda.parent_id is None and len( hda.creating_job_associations ) > 0:
-    #        # Mark associated job for deletion
-    #        job = hda.creating_job_associations[0].job
-    #        if job.state in [ self.app.model.Job.states.QUEUED, self.app.model.Job.states.RUNNING, self.app.model.Job.states.NEW ]:
-    #            # Are *all* of the job's other output datasets deleted?
-    #            if job.check_if_output_datasets_deleted():
-    #                job.mark_deleted( self.app.config.track_jobs_in_database )
-    #                self.app.job_manager.job_stop_queue.put( job.id )
+    def stop_creating_job( self, hda ):
+        """
+        Stops an HDA's creating job if all the job's other outputs are deleted.
+        """
+        RUNNING_STATES = (
+            self.app.model.Job.states.QUEUED,
+            self.app.model.Job.states.RUNNING,
+            self.app.model.Job.states.NEW
+        )
+        if hda.parent_id is None and len( hda.creating_job_associations ) > 0:
+            # Mark associated job for deletion
+            job = hda.creating_job_associations[0].job
+            if job.state in RUNNING_STATES:
+                # Are *all* of the job's other output datasets deleted?
+                if job.check_if_output_datasets_deleted():
+                    job.mark_deleted( self.app.config.track_jobs_in_database )
+                    self.app.job_manager.job_stop_queue.put( job.id )
+                    return True
+        return False
 
 # =============================================================================
 class HDASerializer( base.ModelSerializer ):

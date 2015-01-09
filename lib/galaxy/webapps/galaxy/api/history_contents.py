@@ -10,7 +10,6 @@ from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import url_for
 
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import UsesLibraryMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesTagsMixin
@@ -26,8 +25,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin,
-                                 UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin ):
+class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin ):
 
     def __init__( self, app ):
         super( HistoryContentsController, self ).__init__( app )
@@ -362,7 +360,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             self.hda_deserializer.deserialize( trans, hda, payload )
             #TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):
-                self.stop_hda_creating_job( hda )
+                self.mgrs.hdas.stop_creating_job( hda )
             return self.hda_serializer.serialize_to_view( trans, hda,
                 **self._parse_serialization_params( kwd, 'detailed' ) )
 

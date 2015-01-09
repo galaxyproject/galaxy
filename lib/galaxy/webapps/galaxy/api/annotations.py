@@ -5,14 +5,14 @@ import logging
 from galaxy import web
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.base.controller import BaseAPIController, HTTPNotImplemented, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin
+from galaxy.web.base.controller import BaseAPIController, HTTPNotImplemented, UsesStoredWorkflowMixin
 
 from galaxy import managers
 
 log = logging.getLogger( __name__ )
 
 
-class BaseAnnotationsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin, UsesAnnotations ):
+class BaseAnnotationsController( BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations ):
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -59,7 +59,7 @@ class HistoryAnnotationsController(BaseAnnotationsController):
 
     def _get_item_from_id(self, trans, idstr):
         decoded_idstr = trans.security.decode_id( idstr )
-        history = self.history_manager.accessible_by_id( trans, decoded_idstr, trans.uer )
+        history = self.history_manager.accessible_by_id( trans, decoded_idstr, trans.user )
         return history
 
 
@@ -67,8 +67,14 @@ class HistoryContentAnnotationsController(BaseAnnotationsController):
     controller_name = "history_content_annotations"
     tagged_item_id = "history_content_id"
 
+    def __init__( self, app ):
+        super( HistoryContentAnnotationsController, self ).__init__( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
+
     def _get_item_from_id(self, trans, idstr):
-        hda = self.get_dataset(trans, idstr)
+        decoded_idstr = trans.security.decode_id( idstr )
+        hda = self.hda_manager.accessible_by_id( trans, decoded_idstr, trans.user )
+        hda = self.hda_manager.error_if_uploading( trans, hda )
         return hda
 
 

@@ -6,7 +6,6 @@ from galaxy import web
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
-from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import HTTPBadRequest, url_for
 from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
@@ -17,7 +16,11 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin ):
+class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
+
+    def __init__( self, app ):
+        super( JobController, self ).__init__( app )
+        self.hda_manager = managers.hdas.HDAManager()
 
     @expose_api
     def index( self, trans, library_id, **kwd ):
@@ -288,7 +291,9 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         try:
             # check permissions on (all three?) resources: hda, library, folder
             #TODO: do we really need the library??
-            hda = self.get_dataset( trans, from_hda_id, check_ownership=True, check_accessible=True, check_state=True )
+            from_hda_id = trans.security.decode_id( from_hda_id )
+            hda = self.hda_manager.owned_by_id( trans, from_hda_id, trans.user )
+            hda = self.hda_manager.error_if_uploading( trans, hda )
             # library = self.get_library( trans, library_id, check_accessible=True )
             folder = self.get_library_folder( trans, folder_id, check_accessible=True )
 

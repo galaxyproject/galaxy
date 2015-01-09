@@ -7,6 +7,7 @@ from sqlalchemy import desc, or_, and_
 from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 
 from galaxy import model, web
+from galaxy import managers
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids, escape
@@ -271,15 +272,20 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
 
 
-class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
-                                UsesVisualizationMixin,
-                                UsesItemRatings ):
+class VisualizationController( BaseUIController, SharableMixin, UsesVisualizationMixin,
+                               UsesAnnotations, UsesItemRatings ):
     _user_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
     _libraries_grid = LibrarySelectionGrid()
     _histories_grid = HistorySelectionGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
+
+    def __init__( self, app ):
+        super( VisualizationController, self ).__init__( app )
+        self.mgrs = util.bunch.Bunch(
+            hdas=managers.hdas.HDAManager( app ),
+        )
 
     #
     # -- Functions for listing visualizations. --
@@ -862,7 +868,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             # use dbkey from dataset to be added or from incoming parameter
             dbkey = None
             if new_dataset_id:
-                dbkey = self.get_dataset( trans, new_dataset_id ).dbkey
+                decoded_id = trans.security.decode_id( new_dataset_id )
+                hda = self.mgrs.hdas.owned_by_id( trans, decoded_id, trans.user )
+                dbkey = hda.dbkey
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
 
@@ -970,11 +978,12 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             # Loading a shared visualization.
             viz = self.get_visualization( trans, id )
             viz_config = self.get_visualization_config( trans, viz )
-            dataset = self.get_dataset( trans, viz_config[ 'dataset_id' ] )
+            decoded_id = trans.security.decode_id( viz_config[ 'dataset_id' ] )
+            dataset = self.mgrs.hdas.owned_by_id( trans, decoded_id, trans.user )
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            job = self.get_hda_job( dataset )
+            job = self.mgrs.hdas.creating_job( dataset )
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
@@ -1004,7 +1013,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # get the hda if we can, then its data using the phyloviz parsers
         if dataset_id:
-            hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+            decoded_id = trans.security.decode_id( dataset_id )
+            hda = self.mgrs.hdas.accessible_by_id( trans, decoded_id, trans.user )
+            hda = self.mgrs.hdas.error_if_uploading( hda )
         else:
             return trans.show_message( "Phyloviz couldn't find a dataset_id" )
 
