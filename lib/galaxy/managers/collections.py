@@ -160,8 +160,6 @@ class DatasetCollectionManager( object ):
         return source_hdca
 
     def _set_from_dict( self, trans, dataset_collection_instance, new_data ):
-        # Blatantly stolen from UsesHistoryDatasetAssociationMixin.set_hda_from_dict.
-
         # send what we can down into the model
         changed = dataset_collection_instance.set_from_dict( new_data )
         # the rest (often involving the trans) - do here

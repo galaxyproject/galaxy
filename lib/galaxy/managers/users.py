@@ -23,8 +23,17 @@ class UserManager( base.ModelManager ):
     default_order_by = ( model.User.create_time, )
     foreign_key_name = 'user'
 
+    #TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
+    #   most of which it may be unneccessary to have here
+
+    #TODO: incorp BaseAPIController.validate_in_users_and_groups
+    #TODO: incorp CreatesUsersMixin
+    #TODO: incorp CreatesApiKeysMixin
+
+
     def create( self, trans, **kwargs ):
         """
+        Create a new user.
         """
         #TODO: deserialize and validate here
         email = kwargs[ 'email' ]
@@ -61,6 +70,9 @@ class UserManager( base.ModelManager ):
 
     def _error_on_duplicate_email( self, trans, email ):
         """
+        Check for a duplicate email and raise if found.
+
+        :raises exceptions.Conflict: if any are found
         """
         #TODO: remove this check when unique=True is added to the email column
         if self.by_email( trans, email ) is not None:
@@ -72,6 +84,7 @@ class UserManager( base.ModelManager ):
         """
         filters = self._munge_filters( self.model_class.email == email, filters )
         try:
+#TODO: use one_or_none
             return super( UserManager, self ).one( trans, filters=filters, **kwargs )
         except exceptions.ObjectNotFound, not_found:
             return None
@@ -86,24 +99,31 @@ class UserManager( base.ModelManager ):
     # ------------------------------------------------------------------------- admin
     def is_admin( self, trans, user ):
         """
+        Return True if this user is an admin.
         """
         admin_emails = self._admin_emails( trans )
         return user and admin_emails and user.email in admin_emails
 
     def _admin_emails( self, trans ):
         """
+        Return a list of admin email addresses from the config file.
         """
         return [ x.strip() for x in trans.app.config.get( "admin_users", "" ).split( "," ) ]
 
     def admins( self, trans, filters=None, **kwargs ):
         """
+        Return a list of admin Users.
         """
         filters = self._munge_filters( self.model_class.email.in_( self._admin_emails( trans ) ), filters )
         return super( UserManager, self ).list( trans, filters=filters, **kwargs )
 
     def error_unless_admin( self, trans, user, msg="Administrators only", **kwargs ):
         """
+        Raise an error if `user` is not an admin.
+
+        :raises exceptions.AdminRequiredException: if `user` is not an admin.
         """
+        # useful in admin only methods
         if not self.is_admin( trans, user ):
             raise exceptions.AdminRequiredException( msg, **kwargs )
         return user
@@ -111,12 +131,14 @@ class UserManager( base.ModelManager ):
     # ------------------------------------------------------------------------- anonymous
     def is_anonymous( self, user ):
         """
+        Return True if `user` is anonymous.
         """
-        # define here for single point of change
+        # define here for single point of change and make more readable
         return user is None
 
     def error_if_anonymous( self, trans, user, msg="Log-in required", **kwargs ):
         """
+        Raise an error if `user` is anonymous.
         """
         if user is None:
             #TODO: code is correct (403), but should be named AuthenticationRequired (401 and 403 are flipped)
@@ -126,16 +148,20 @@ class UserManager( base.ModelManager ):
     # ------------------------------------------------------------------------- current
     def is_current_user( self, trans, user ):
         """
+        Return True if this user is the trans' current user.
         """
+        # define here for single point of change and make more readable
         return user == trans.user
 
     def is_current_user_anonymous( self, trans ):
         """
+        Return True if the current user is anonymous.
         """
-        return trans.user is None
+        return self.is_anonymous( trans.user )
 
     def is_current_user_admin( self, trans ):
         """
+        Return True if the current user is admin.
         """
         return self.is_admin( trans, trans.user )
 
@@ -151,25 +177,39 @@ class UserManager( base.ModelManager ):
     # ------------------------------------------------------------------------- api keys
     def create_api_key( self, trans, user ):
         """
+        Create and return an API key for `user`.
         """
+        #TODO: seems like this should return the model
         return api_keys.ApiKeyManager( trans.app ).create_api_key( user )
 
-    # needed?
-    def api_key( self, trans, user ):
+    #TODO: possibly move to ApiKeyManager
+    def valid_api_key( self, trans, user ):
         """
+        Return this most recent APIKey for this user or None if none have been created.
         """
-        #TODO: catch NoResultFound
-        return trans.sa_session.query( model.APIKeys ).filter_by( user=user ).one()
+        query = ( trans.sa_session.query( model.APIKeys )
+                    .filter_by( user=user )
+                    .order_by( model.APIKeys.create_time ) )
+        return query.first()
+
+    #TODO: possibly move to ApiKeyManager
+    def get_or_create_valid_api_key( self, trans, user ):
+        """
+        Return this most recent APIKey for this user or create one if none have been
+        created.
+        """
+        existing = self.valid_api_key( trans, user )
+        if existing:
+            return existing
+        return self.create_api_key( self, trans, user )
 
     # ------------------------------------------------------------------------- roles
     def private_role( self, trans, user ):
         """
+        Return the security agent's private role for `user`.
         """
         #TODO: not sure we need to go through sec agent... it's just the first role of type private
         return trans.app.security_agent.get_private_user_role( user )
-
-    #TODO: there is quite a bit of functionality around the user (authentication, quotas, groups/roles)
-    #   most of which it may be unneccessary to have here
 
 
 # =============================================================================
@@ -177,6 +217,7 @@ class UserSerializer( base.ModelSerializer ):
 
     def __init__( self ):
         """
+        Convert a User and associated data to a dictionary representation.
         """
         super( UserSerializer, self ).__init__()
 
@@ -192,8 +233,8 @@ class UserSerializer( base.ModelSerializer ):
         ]
         extended_view = detailed_view + [
             #'preferences',
-            #'tags',
-            #'annotations'
+            #'tags', # all tags
+            #'annotations' # all annotations
         ]
         self.serializable_keys = extended_view
         self.views = {

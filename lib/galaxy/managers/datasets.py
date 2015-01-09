@@ -15,7 +15,6 @@ log = logging.getLogger( __name__ )
 class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
-    
     """
 
     model_class = model.Dataset
@@ -23,14 +22,14 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     foreign_key_name = 'dataset'
 
     def __init__( self, app ):
-        """
-        """
         super( DatasetManager, self ).__init__( app )
+        # need for admin test
         self.user_mgr = users.UserManager( app )
 
     # ......................................................................... create
     def create( self, trans, flush=True, **kwargs ):
         """
+        Create and return a new Dataset object.
         """
         # default to NEW state on new datasets
         kwargs.update( dict( state=( kwargs.get( 'state', model.Dataset.states.NEW ) ) ) )
@@ -41,23 +40,28 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
             trans.sa_session.flush()
         return dataset
 
-    def copy( self ):
-        """
-        """
-        pass
+    #def copy( self, dataset, **kwargs ):
+    #    """
+    #    Clone, update, and return the given dataset.
+    #    """
+    #    pass
 
     # ......................................................................... add to dataset association
-    def to_hda( self, trans, dataset, history, **kwargs ):
-        """
-        """
-        pass
+    #def to_hda( self, trans, dataset, history, **kwargs ):
+    #    """
+    #    Create an hda from this dataset.
+    #    """
+    #    pass
 
-    def to_ldda( self, trans, dataset, library_folder, **kwargs ):
-        """
-        """
-        pass
+    #def to_ldda( self, trans, dataset, library_folder, **kwargs ):
+    #    """
+    #    Create an ldda from this dataset.
+    #    """
+    #    pass
 
     # ......................................................................... delete
+    #TODO: this may be more conv. somewhere else
+#TODO: allow admin bypass
     def error_unless_dataset_purge_allowed( self, trans, item, msg=None ):
         if not trans.app.config.allow_user_dataset_purge:
             msg = msg or 'This instance does not allow user dataset purging'
@@ -66,6 +70,10 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
 
     def purge( self, trans, dataset, flush=True ):
         """
+        Remove the object_store/file for this dataset from storage and mark
+        as purged.
+
+        :raises exceptions.ConfigDoesNotAllowException: if the instance doesn't allow
         """
         self.error_unless_dataset_purge_allowed( trans, dataset )
 
@@ -81,6 +89,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     #   than those resources that have a user attribute (histories, pages, etc.)
     def is_accessible( self, trans, dataset, user ):
         """
+        Is this dataset readable/viewable to user?
         """
         if self.user_mgr.is_admin( trans, user ):
             return True
@@ -88,8 +97,17 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
             return True
         return False
 
+    def has_access_permission( self, trans, dataset, user ):
+        """
+        Return T/F if the user has role-based access to the dataset.
+        """
+        roles = user.all_roles() if user else []
+        return trans.app.security_agent.can_access_dataset( roles, dataset )
+
+#TODO: these need work
     def _access_permission( self, trans, dataset, user=None, role=None ):
         """
+        Return most recent DatasetPermissions for the dataset and user.
         """
         security_agent = trans.app.security_agent
         access_action = security_agent.permitted_actions.DATASET_ACCESS.action
@@ -101,13 +119,12 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
                     .filter( model.DatasetPermissions.action == access_action )
                     .filter( model.DatasetPermissions.dataset == dataset )
                     .filter( model.DatasetPermissions.role_id.in_( user_role_ids ) ) )
-        perms = query.all()
-        if len( perms ):
-            return perms[0]
-        return None
+        #TODO:?? most recent?
+        return query.first()
 
     def _create_access_permission( self, trans, dataset, role, flush=True ):
         """
+        Create a new DatasetPermissions for the given dataset and role.
         """
         access_action = trans.app.security_agent.permitted_actions.DATASET_ACCESS.action
         permission = model.DatasetPermissions( access_action, dataset, role )
@@ -116,14 +133,6 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
             trans.sa_session.flush()
         return permission
 
-    def has_access_permission( self, trans, dataset, user ):
-        """
-        """
-        
-        roles = user.all_roles() if user else []
-        return trans.app.security_agent.can_access_dataset( roles, dataset )
-
-    #TODO: this needs work
     #def give_access_permission( self, trans, dataset, user, flush=True ):
     #    """
     #    """

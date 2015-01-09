@@ -5,12 +5,14 @@ import logging
 from galaxy import web
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.base.controller import BaseAPIController, HTTPNotImplemented, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesStoredWorkflowMixin
+from galaxy.web.base.controller import BaseAPIController, HTTPNotImplemented, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin
+
+from galaxy import managers
 
 log = logging.getLogger( __name__ )
 
 
-class BaseAnnotationsController( BaseAPIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin, UsesAnnotations ):
+class BaseAnnotationsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin, UsesAnnotations ):
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -51,9 +53,14 @@ class HistoryAnnotationsController(BaseAnnotationsController):
     controller_name = "history_annotations"
     tagged_item_id = "history_id"
 
+    def __init__( self, app ):
+        super( HistoryAnnotationsController, self ).__init__( app )
+        self.history_manager = managers.histories.HistoryManager( app )
+
     def _get_item_from_id(self, trans, idstr):
-        hist = self.get_history( trans, idstr )
-        return hist
+        decoded_idstr = trans.security.decode_id( idstr )
+        history = self.history_manager.accessible_by_id( trans, decoded_idstr, trans.uer )
+        return history
 
 
 class HistoryContentAnnotationsController(BaseAnnotationsController):

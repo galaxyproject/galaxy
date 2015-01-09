@@ -11,7 +11,6 @@ from galaxy.web import url_for
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.web.base.controller import UsesTagsMixin
@@ -27,7 +26,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
+class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin,
                                  UsesLibraryMixin, UsesLibraryMixinItems, UsesTagsMixin ):
 
     def __init__( self, app ):
@@ -358,11 +357,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 hda = self.mgrs.hdas.error_if_uploading( trans, hda )
 
         # make the actual changes
-        #TODO: to deserializer
         #TODO: is this if still needed?
         if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
-            #payload = self._validate_and_parse_update_payload( payload )
-            #changed = self.set_hda_from_dict( trans, hda, payload )
             self.hda_deserializer.deserialize( trans, hda, payload )
             #TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):

@@ -13,15 +13,13 @@ from galaxy.datatypes import dataproviders
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy import managers
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin,
-                          UsesHistoryDatasetAssociationMixin ):
+class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin ):
 
     def __init__( self, app ):
         super( DatasetsController, self ).__init__( app )
@@ -281,24 +279,25 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
+        decoded_content_id = trans.security.decode_id( history_content_id )
         raw = util.string_as_bool_or_none( raw )
+
         rval = ''
         try:
-            hda = self.get_history_dataset_association_from_ids( trans, history_content_id, history_id )
+            hda = self.mgrs.hdas.accessible_by_id( trans, decoded_content_id, trans.user )
 
-            display_kwd = kwd.copy()
-            try:
-                del display_kwd["key"]
-            except KeyError:
-                pass
             if raw:
                 if filename and filename != 'index':
-                    file_path = trans.app.object_store.get_filename(hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id, alt_name=filename)
+                    file_path = trans.app.object_store.get_filename( hda.dataset,
+                        extra_dir=( 'dataset_%s_files' % hda.dataset.id ), alt_name=filename)
                 else:
                     file_path = hda.file_name
                 rval = open( file_path )
 
             else:
+                display_kwd = kwd.copy()
+                if 'key' in display_kwd:
+                    del display_kwd["key"]
                 rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **display_kwd )
 
         except Exception, exception:

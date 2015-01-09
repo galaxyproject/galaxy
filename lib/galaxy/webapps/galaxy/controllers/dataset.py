@@ -3,12 +3,13 @@ import os
 import urllib
 
 from galaxy import datatypes, eggs, model, util, web
+from galaxy import managers
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.json import loads
-from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesExtendedMetadataMixin
+from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode, escape
 from galaxy.tools.errors import EmailErrorReporter
 
@@ -85,9 +86,15 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
                 .filter( model.History.deleted==False ) \
                 .filter( self.model_class.visible==True )
 
-class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesItemRatings, UsesExtendedMetadataMixin ):
+class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryDatasetAssociationMixin, UsesItemRatings, UsesExtendedMetadataMixin ):
 
     stored_list_grid = HistoryDatasetAssociationListGrid()
+
+    def __init__( self, app ):
+        super( DatasetInterface, self ).__init__( app )
+        self.mgrs = util.bunch.Bunch(
+            histories=managers.histories.HistoryManager( app )
+        )
 
     def _get_job_for_dataset( self, trans, dataset_id ):
         '''
@@ -993,7 +1000,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def copy_datasets( self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
         user = trans.get_user()
         if source_history is not None:
-            history = self.get_history(trans, source_history)
+            decoded_source_history_id = trans.security.decode_id( source_history )
+            history = self.mgrs.histories.owned_by_id( trans, decoded_source_history_id, trans.user )
             current_history = trans.get_history()
         else:
             history = current_history = trans.get_history()

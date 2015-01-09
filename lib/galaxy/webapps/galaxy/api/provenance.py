@@ -3,14 +3,14 @@ API operations provenance
 """
 import logging
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
+from galaxy.web.base.controller import BaseAPIController
 from paste.httpexceptions import HTTPNotImplemented, HTTPBadRequest
 from galaxy.managers import hdas
 
 log = logging.getLogger( __name__ )
 
 
-class BaseProvenanceController( BaseAPIController, UsesHistoryMixin ):
+class BaseProvenanceController( BaseAPIController ):
     """
     """
     def __init__( self, app ):

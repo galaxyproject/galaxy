@@ -1,9 +1,9 @@
 from galaxy.web import _future_expose_api as expose_api
 
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 
+from galaxy import managers
 from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
 
 from logging import getLogger
@@ -12,9 +12,12 @@ log = getLogger( __name__ )
 
 class DatasetCollectionsController(
     BaseAPIController,
-    UsesHistoryMixin,
     UsesLibraryMixinItems,
 ):
+
+    def __init__( self, app ):
+        super( DatasetCollectionsController, self ).__init__( app )
+        self.history_manager = managers.histories.HistoryManager( app )
 
     @expose_api
     def index( self, trans, **kwd ):
@@ -41,7 +44,8 @@ class DatasetCollectionsController(
         instance_type = payload.pop( "instance_type", "history" )
         if instance_type == "history":
             history_id = payload.get( 'history_id' )
-            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
+            history_id = trans.security.decode_id( history_id )
+            history = self.history_manager.owned_by_id( trans, history_id, trans.user )
             create_params[ "parent" ] = history
         elif instance_type == "library":
             folder_id = payload.get( 'folder_id' )

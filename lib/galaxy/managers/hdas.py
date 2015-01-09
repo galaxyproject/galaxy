@@ -70,8 +70,9 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
             trans.sa_session.flush()
         return hda
 
-    def copy_hda( self, trans, hda, history=None, **kwargs ):
+    def copy( self, trans, hda, history=None, **kwargs ):
         """
+        Copy and return the given HDA.
         """
         #TODO:?? not using the following as this fn does not set history and COPIES hid (this doesn't seem correct)
         #return hda.copy()
@@ -94,6 +95,8 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
 
         copy.copied_from_history_dataset_association = hda
         copy.set_size()
+
+        #TODO: update from kwargs?
 
         # Need to set after flushed, as MetadataFiles require dataset.id
         trans.sa_session.add( copy )
@@ -151,66 +154,6 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         return hda
 
     # ......................................................................... serialization
-    #TODO: move into serializer below
-    #def get_hda_dict( self, trans, hda ):
-    #    """
-    #    Return full details of this HDA in dictionary form.
-    #    """
-    #    #precondition: the user's access to this hda has already been checked
-    #    #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-    #    expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
-    #    hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
-    #    hda_dict[ 'api_type' ] = "file"
-    #
-    #    # Add additional attributes that depend on trans must be added here rather than at the model level.
-    #    can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-    #    can_access_hda = ( trans.user_is_admin() or can_access_hda )
-    #    if not can_access_hda:
-    #        return self.get_inaccessible_hda_dict( trans, hda )
-    #    hda_dict[ 'accessible' ] = True
-    #
-    #    #TODO: I'm unclear as to which access pattern is right
-    #    hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, hda.history.user, hda )
-    #    #annotation = getattr( hda, 'annotation', hda.get_item_annotation_str( trans.sa_session, trans.user, hda ) )
-    #
-    #    # ---- return here if deleted AND purged OR can't access
-    #    purged = ( hda.purged or hda.dataset.purged )
-    #    if ( hda.deleted and purged ):
-    #        #TODO: to_dict should really go AFTER this - only summary data
-    #        return trans.security.encode_dict_ids( hda_dict )
-    #
-    #    if expose_dataset_path:
-    #        try:
-    #            hda_dict[ 'file_name' ] = hda.file_name
-    #        except objectstore.ObjectNotFound:
-    #            log.exception( 'objectstore.ObjectNotFound, HDA %s.', hda.id )
-    #
-    #    hda_dict[ 'download_url' ] = galaxy.web.url_for( 'history_contents_display',
-    #        history_id = trans.security.encode_id( hda.history.id ),
-    #        history_content_id = trans.security.encode_id( hda.id ) )
-    #
-    #    # indeces, assoc. metadata files, etc.
-    #    meta_files = []
-    #    for meta_type in hda.metadata.spec.keys():
-    #        if isinstance( hda.metadata.spec[ meta_type ].param, galaxy.datatypes.metadata.FileParameter ):
-    #            meta_files.append( dict( file_type=meta_type ) )
-    #    if meta_files:
-    #        hda_dict[ 'meta_files' ] = meta_files
-    #
-    #    # currently, the viz reg is optional - handle on/off
-    #    if trans.app.visualizations_registry:
-    #        hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
-    #    else:
-    #        hda_dict[ 'visualizations' ] = hda.get_visualizations()
-    #    #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
-    #    #           when the visualizations button is clicked (instead of preloading/pre-checking)
-    #
-    #    # ---- return here if deleted
-    #    if hda.deleted and not purged:
-    #        return trans.security.encode_dict_ids( hda_dict )
-    #
-    #    return trans.security.encode_dict_ids( hda_dict )
-
     def get_display_apps( self, trans, hda ):
         """
         Return dictionary containing new-style display app urls.
@@ -302,70 +245,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     #            return trans.show_error_message( "Please wait until this dataset finishes uploading "
     #                                               + "before attempting to view it." )
     #    return data
-    #
-    #def get_history_dataset_association( self, trans, history, dataset_id,
-    #                                     check_ownership=True, check_accessible=False, check_state=False ):
-    #    """
-    #    Get a HistoryDatasetAssociation from the database by id, verifying ownership.
-    #    """
-    #    #TODO: duplicate of above? alias to above (or vis-versa)
-    #    self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
-    #    hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation',
-    #                           check_ownership=False, check_accessible=False )
-    #
-    #    if check_accessible:
-    #        if( not trans.user_is_admin()
-    #        and not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ) ):
-    #            error( "You are not allowed to access this dataset" )
-    #
-    #        if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
-    #            error( "Please wait until this dataset finishes uploading before attempting to view it." )
-    #    return hda
-    #
-    #def get_history_dataset_association_from_ids( self, trans, id, history_id ):
-    #    # Just to echo other TODOs, there seems to be some overlap here, still
-    #    # this block appears multiple places (dataset show, history_contents
-    #    # show, upcoming history job show) so I am consolodating it here.
-    #    # Someone smarter than me should determine if there is some redundancy here.
-    #
-    #    # for anon users:
-    #    #TODO: check login_required?
-    #    #TODO: this isn't actually most_recently_used (as defined in histories)
-    #    if( ( trans.user == None )
-    #    and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-    #        history = trans.history
-    #        #TODO: dataset/hda by id (from history) OR check_ownership for anon user
-    #        hda = self.get_history_dataset_association( trans, history, id,
-    #            check_ownership=False, check_accessible=True )
-    #    else:
-    #        #TODO: do we really need the history?
-    #        history = self.get_history( trans, history_id,
-    #            check_ownership=False, check_accessible=True, deleted=False )
-    #        hda = self.get_history_dataset_association( trans, history, id,
-    #            check_ownership=False, check_accessible=True )
-    #    return hda
-    #
-    #def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
-    #    """
-    #    Returns one or more datasets in a list.
-    #
-    #    If a dataset is not found or is inaccessible to trans.user,
-    #    add None in its place in the list.
-    #    """
-    #    # precondtion: dataset_ids is a list of encoded id strings
-    #    hdas = []
-    #    for id in hda_ids:
-    #        hda = None
-    #        try:
-    #            hda = self.get_dataset( trans, id,
-    #                check_ownership=check_ownership,
-    #                check_accessible=check_accessible,
-    #                check_state=check_state )
-    #        except Exception:
-    #            pass
-    #        hdas.append( hda )
-    #    return hdas
-    #
+
     #def get_data( self, dataset, preview=True ):
     #    """
     #    Gets a dataset's data.
@@ -399,49 +279,6 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     #        return dataset.conversion_messages.PENDING
     #    return None
 
-    #def get_inaccessible_hda_dict( self, trans, hda ):
-    #    return trans.security.encode_dict_ids({
-    #        'id'        : hda.id,
-    #        'history_id': hda.history.id,
-    #        'hid'       : hda.hid,
-    #        'name'      : hda.name,
-    #        'state'     : hda.state,
-    #        'deleted'   : hda.deleted,
-    #        'visible'   : hda.visible,
-    #        'accessible': False
-    #    })
-
-    #def get_hda_dict_with_error( self, trans, hda=None, history_id=None, id=None, error_msg='Error' ):
-    #    return trans.security.encode_dict_ids({
-    #        'id'        : hda.id if hda else id,
-    #        'history_id': hda.history.id if hda else history_id,
-    #        'hid'       : hda.hid if hda else '(unknown)',
-    #        'name'      : hda.name if hda else '(unknown)',
-    #        'error'     : error_msg,
-    #        'state'     : trans.model.Dataset.states.NEW
-    #    })
-
-    #def set_hda_from_dict( self, trans, hda, new_data ):
-    #    """
-    #    Changes HDA data using the given dictionary new_data.
-    #    """
-    #    # precondition: access of the hda has already been checked
-    #
-    #    # send what we can down into the model
-    #    changed = hda.set_from_dict( new_data )
-    #    # the rest (often involving the trans) - do here
-    #    if 'annotation' in new_data.keys() and trans.get_user():
-    #        hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
-    #        changed[ 'annotation' ] = new_data[ 'annotation' ]
-    #    if 'tags' in new_data.keys() and trans.get_user():
-    #        self.set_tags_from_list( trans, hda, new_data[ 'tags' ], user=trans.user )
-    #    # sharing/permissions?
-    #    # purged
-    #
-    #    if changed.keys():
-    #        trans.sa_session.flush()
-    #
-    #    return changed
 
     #def get_hda_job( self, hda ):
     #    # Get dataset's job.
@@ -716,6 +553,89 @@ class HDASerializer( base.ModelSerializer ):
                                        hda_id=encoded_id, metadata_name='' ),
         }
         return urls
+
+
+    #TODO: move into serializer below
+    #def get_hda_dict( self, trans, hda ):
+    #    """
+    #    Return full details of this HDA in dictionary form.
+    #    """
+    #    #precondition: the user's access to this hda has already been checked
+    #    #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
+    #    expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
+    #    hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
+    #    hda_dict[ 'api_type' ] = "file"
+    #
+    #    # Add additional attributes that depend on trans must be added here rather than at the model level.
+    #    can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+    #    can_access_hda = ( trans.user_is_admin() or can_access_hda )
+    #    if not can_access_hda:
+    #        return self.get_inaccessible_hda_dict( trans, hda )
+    #    hda_dict[ 'accessible' ] = True
+    #
+    #    #TODO: I'm unclear as to which access pattern is right
+    #    hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, hda.history.user, hda )
+    #    #annotation = getattr( hda, 'annotation', hda.get_item_annotation_str( trans.sa_session, trans.user, hda ) )
+    #
+    #    # ---- return here if deleted AND purged OR can't access
+    #    purged = ( hda.purged or hda.dataset.purged )
+    #    if ( hda.deleted and purged ):
+    #        #TODO: to_dict should really go AFTER this - only summary data
+    #        return trans.security.encode_dict_ids( hda_dict )
+    #
+    #    if expose_dataset_path:
+    #        try:
+    #            hda_dict[ 'file_name' ] = hda.file_name
+    #        except objectstore.ObjectNotFound:
+    #            log.exception( 'objectstore.ObjectNotFound, HDA %s.', hda.id )
+    #
+    #    hda_dict[ 'download_url' ] = galaxy.web.url_for( 'history_contents_display',
+    #        history_id = trans.security.encode_id( hda.history.id ),
+    #        history_content_id = trans.security.encode_id( hda.id ) )
+    #
+    #    # indeces, assoc. metadata files, etc.
+    #    meta_files = []
+    #    for meta_type in hda.metadata.spec.keys():
+    #        if isinstance( hda.metadata.spec[ meta_type ].param, galaxy.datatypes.metadata.FileParameter ):
+    #            meta_files.append( dict( file_type=meta_type ) )
+    #    if meta_files:
+    #        hda_dict[ 'meta_files' ] = meta_files
+    #
+    #    # currently, the viz reg is optional - handle on/off
+    #    if trans.app.visualizations_registry:
+    #        hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
+    #    else:
+    #        hda_dict[ 'visualizations' ] = hda.get_visualizations()
+    #    #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
+    #    #           when the visualizations button is clicked (instead of preloading/pre-checking)
+    #
+    #    # ---- return here if deleted
+    #    if hda.deleted and not purged:
+    #        return trans.security.encode_dict_ids( hda_dict )
+    #
+    #    return trans.security.encode_dict_ids( hda_dict )
+
+    #def get_inaccessible_hda_dict( self, trans, hda ):
+    #    return trans.security.encode_dict_ids({
+    #        'id'        : hda.id,
+    #        'history_id': hda.history.id,
+    #        'hid'       : hda.hid,
+    #        'name'      : hda.name,
+    #        'state'     : hda.state,
+    #        'deleted'   : hda.deleted,
+    #        'visible'   : hda.visible,
+    #        'accessible': False
+    #    })
+
+    #def get_hda_dict_with_error( self, trans, hda=None, history_id=None, id=None, error_msg='Error' ):
+    #    return trans.security.encode_dict_ids({
+    #        'id'        : hda.id if hda else id,
+    #        'history_id': hda.history.id if hda else history_id,
+    #        'hid'       : hda.hid if hda else '(unknown)',
+    #        'name'      : hda.name if hda else '(unknown)',
+    #        'error'     : error_msg,
+    #        'state'     : trans.model.Dataset.states.NEW
+    #    })
 
 
 # =============================================================================

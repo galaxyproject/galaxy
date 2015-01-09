@@ -213,7 +213,7 @@ class CreatesUsersMixin:
         if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             trans.app.security_agent.user_set_default_permissions( user,
-                                                                   default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
+                default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
         return user
 
 
@@ -236,45 +236,6 @@ class SharableItemSecurityMixin:
         return managers_base.security_check( trans, item, check_ownership=check_ownership, check_accessible=check_accessible )
 
 
-class UsesHistoryMixin( SharableItemSecurityMixin ):
-    """ Mixin for controllers that use History objects. """
-
-    def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
-        """
-        Get a History from the database by id, verifying ownership.
-        """
-        if trans.user is None and trans.history:
-            if id == trans.security.encode_id( trans.history.id ):
-                return trans.history
-            raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
-
-        history = self.get_object( trans, id, 'History',
-            check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        history = self.security_check( trans, history, check_ownership, check_accessible )
-        return history
-#lib/galaxy/webapps/galaxy/api/annotations.py:55:        hist = self.get_history( trans, idstr )
-#lib/galaxy/webapps/galaxy/api/dataset_collections.py:44:            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
-#lib/galaxy/webapps/galaxy/api/workflows.py:152:            history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
-#lib/galaxy/webapps/galaxy/controllers/dataset.py:996:            history = self.get_history(trans, source_history)
-# and alll over history controller
-
-    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
-        """ Returns history's datasets. """
-        query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
-            .filter( trans.model.HistoryDatasetAssociation.history == history ) \
-            .options( eagerload( "children" ) ) \
-            .join( "dataset" ) \
-            .options( eagerload_all( "dataset.actions" ) ) \
-            .order_by( trans.model.HistoryDatasetAssociation.hid )
-        if not show_deleted:
-            query = query.filter( trans.model.HistoryDatasetAssociation.deleted == False )
-        if not show_purged:
-            query = query.filter( trans.model.Dataset.purged == False )
-        return query.all()
-#lib/galaxy/tools/imp_exp/__init__.py:417:        datasets = self.get_history_datasets( trans, history )
-#lib/galaxy/webapps/galaxy/controllers/history.py:1280:        datasets = self.get_history_datasets( trans, history )
-#lib/galaxy/webapps/galaxy/controllers/page.py:742:        datasets = self.get_history_datasets( trans, history )
-
 class ExportsHistoryMixin:
 
     def serve_ready_history_export( self, trans, jeha ):
@@ -289,7 +250,6 @@ class ExportsHistoryMixin:
 
     def queue_history_export( self, trans, history, gzip=True, include_hidden=False, include_deleted=False ):
         # Convert options to booleans.
-        #
         if isinstance( gzip, basestring ):
             gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
         if isinstance( include_hidden, basestring ):
@@ -361,69 +321,6 @@ class UsesHistoryDatasetAssociationMixin:
                                                    + "before attempting to view it." )
         return data
 
-    def get_history_dataset_association( self, trans, history, dataset_id,
-                                         check_ownership=True, check_accessible=False, check_state=False ):
-        """
-        Get a HistoryDatasetAssociation from the database by id, verifying ownership.
-        """
-        #TODO: duplicate of above? alias to above (or vis-versa)
-        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
-        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation',
-                               check_ownership=False, check_accessible=False )
-
-        if check_accessible:
-            if( not trans.user_is_admin()
-            and not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ) ):
-                error( "You are not allowed to access this dataset" )
-
-            if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
-                error( "Please wait until this dataset finishes uploading before attempting to view it." )
-        return hda
-
-    def get_history_dataset_association_from_ids( self, trans, id, history_id ):
-        # Just to echo other TODOs, there seems to be some overlap here, still
-        # this block appears multiple places (dataset show, history_contents
-        # show, upcoming history job show) so I am consolodating it here.
-        # Someone smarter than me should determine if there is some redundancy here.
-
-        # for anon users:
-        #TODO: check login_required?
-        #TODO: this isn't actually most_recently_used (as defined in histories)
-        if( ( trans.user == None )
-        and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-            history = trans.history
-            #TODO: dataset/hda by id (from history) OR check_ownership for anon user
-            hda = self.get_history_dataset_association( trans, history, id,
-                check_ownership=False, check_accessible=True )
-        else:
-            #TODO: do we really need the history?
-            history = self.get_history( trans, history_id,
-                check_ownership=False, check_accessible=True, deleted=False )
-            hda = self.get_history_dataset_association( trans, history, id,
-                check_ownership=False, check_accessible=True )
-        return hda
-
-    def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
-        """
-        Returns one or more datasets in a list.
-
-        If a dataset is not found or is inaccessible to trans.user,
-        add None in its place in the list.
-        """
-        # precondtion: dataset_ids is a list of encoded id strings
-        hdas = []
-        for id in hda_ids:
-            hda = None
-            try:
-                hda = self.get_dataset( trans, id,
-                    check_ownership=check_ownership,
-                    check_accessible=check_accessible,
-                    check_state=check_state )
-            except Exception:
-                pass
-            hdas.append( hda )
-        return hdas
-
     def get_data( self, dataset, preview=True ):
         """
         Gets a dataset's data.
@@ -444,6 +341,10 @@ class UsesHistoryDatasetAssociationMixin:
                 # For now, cannot get data from non-text datasets.
                 dataset_data = None
         return truncated, dataset_data
+#lib/galaxy/webapps/galaxy/controllers/dataset.py:566:            truncated, dataset_data = self.get_data( dataset, preview )
+#lib/galaxy/webapps/galaxy/controllers/dataset.py:604:        truncated, dataset_data = self.get_data( dataset, preview=True )
+#lib/galaxy/webapps/galaxy/controllers/page.py:787:                data = self.get_data( dataset )
+#lib/galaxy/webapps/galaxy/controllers/visualization.py:1012:        data = pd.get_data( tree_index=tree_index )
 
     def check_dataset_state( self, trans, dataset ):
         """
@@ -456,68 +357,11 @@ class UsesHistoryDatasetAssociationMixin:
         if dataset.state != trans.app.model.Job.states.OK:
             return dataset.conversion_messages.PENDING
         return None
-
-    def get_display_apps( self, trans, hda ):
-        display_apps = []
-        for display_app in hda.get_display_applications( trans ).itervalues():
-
-            app_links = []
-            for link_app in display_app.links.itervalues():
-                app_links.append({
-                    'target': link_app.url.get( 'target_frame', '_blank' ),
-                    'href'  : link_app.get_display_url( hda, trans ),
-                    'text'  : gettext( link_app.name )
-                })
-            if app_links:
-                display_apps.append( dict( label=display_app.name, links=app_links ) )
-
-        return display_apps
-
-    def get_old_display_applications( self, trans, hda ):
-        display_apps = []
-        if not trans.app.config.enable_old_display_applications:
-            return display_apps
-
-        for display_app in hda.datatype.get_display_types():
-            target_frame, display_links = hda.datatype.get_display_links( hda,
-                display_app, trans.app, trans.request.base )
-
-            if len( display_links ) > 0:
-                display_label = hda.datatype.get_display_label( display_app )
-
-                app_links = []
-                for display_name, display_link in display_links:
-                    app_links.append({
-                        'target': target_frame,
-                        'href'  : display_link,
-                        'text'  : gettext( display_name )
-                    })
-                if app_links:
-                    display_apps.append( dict( label=display_label, links=app_links ) )
-
-        return display_apps
-
-    def set_hda_from_dict( self, trans, hda, new_data ):
-        """
-        Changes HDA data using the given dictionary new_data.
-        """
-        # precondition: access of the hda has already been checked
-
-        # send what we can down into the model
-        changed = hda.set_from_dict( new_data )
-        # the rest (often involving the trans) - do here
-        if 'annotation' in new_data.keys() and trans.get_user():
-            hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
-            changed[ 'annotation' ] = new_data[ 'annotation' ]
-        if 'tags' in new_data.keys() and trans.get_user():
-            self.set_tags_from_list( trans, hda, new_data[ 'tags' ], user=trans.user )
-        # sharing/permissions?
-        # purged
-
-        if changed.keys():
-            trans.sa_session.flush()
-
-        return changed
+#lib/galaxy/webapps/galaxy/api/datasets.py:89:        msg = self.check_dataset_state( trans, dataset )
+#lib/galaxy/webapps/galaxy/api/datasets.py:100:        msg = self.check_dataset_state( trans, dataset )
+#lib/galaxy/webapps/galaxy/api/datasets.py:149:        msg = self.check_dataset_state( trans, dataset )
+#lib/galaxy/webapps/galaxy/api/datasets.py:242:        msg = self.check_dataset_state( trans, dataset )
+#lib/galaxy/webapps/galaxy/api/tools.py:287:        msg = self.check_dataset_state( trans, original_dataset )
 
     def get_hda_job( self, hda ):
         # Get dataset's job.
@@ -526,6 +370,9 @@ class UsesHistoryDatasetAssociationMixin:
             job = job_output_assoc.job
             break
         return job
+#lib/galaxy/web/base/controller.py:846:        job = self.get_hda_job( hda )
+#lib/galaxy/webapps/galaxy/api/tools.py:296:        original_job = self.get_hda_job( original_dataset )
+#lib/galaxy/webapps/galaxy/controllers/visualization.py:977:            job = self.get_hda_job( dataset )
 
     def stop_hda_creating_job( self, hda ):
         """
@@ -539,7 +386,8 @@ class UsesHistoryDatasetAssociationMixin:
                 if job.check_if_output_datasets_deleted():
                     job.mark_deleted( self.app.config.track_jobs_in_database )
                     self.app.job_manager.job_stop_queue.put( job.id )
-
+#lib/galaxy/webapps/galaxy/api/history_contents.py:366:                self.stop_hda_creating_job( hda )
+#lib/galaxy/webapps/galaxy/controllers/dataset.py:772:            self.stop_hda_creating_job( hda )
 
 class UsesLibraryMixin:
 

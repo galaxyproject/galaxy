@@ -3,11 +3,11 @@ API operations on annotations.
 """
 import logging
 from galaxy import web
-from galaxy.web.base.controller import  BaseAPIController, UsesHistoryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin, UsesExtendedMetadataMixin, HTTPNotImplemented
+from galaxy.web.base.controller import  BaseAPIController, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin, UsesExtendedMetadataMixin, HTTPNotImplemented
 
 log = logging.getLogger( __name__ )
 
-class BaseExtendedMetadataController( BaseAPIController, UsesExtendedMetadataMixin, UsesHistoryMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin ):
+class BaseExtendedMetadataController( BaseAPIController, UsesExtendedMetadataMixin, UsesLibraryMixinItems, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin ):
 
     @web.expose_api
     def index( self, trans, **kwd ):

@@ -7,7 +7,6 @@ from galaxy.web import _future_expose_api_anonymous
 from galaxy.web import _future_expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import dumps
 from galaxy.visualization.data_providers.genome import *
@@ -25,7 +24,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin ):
+class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     """
     RESTful controller for interactions with tools.
     """

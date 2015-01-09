@@ -13,7 +13,6 @@ from galaxy.managers import histories
 from galaxy.managers import workflows
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke, queue_invoke
@@ -22,10 +21,10 @@ from galaxy.workflow.run_request import build_workflow_run_config
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations, SharableMixin):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
 
     def __init__( self, app ):
-        super( BaseAPIController, self ).__init__( app )
+        super( WorkflowsAPIController, self ).__init__( app )
         self.history_manager = histories.HistoryManager( app )
         self.workflow_manager = workflows.WorkflowsManager( app )
         self.workflow_contents_manager = workflows.WorkflowContentsManager()
@@ -149,7 +148,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         if 'from_history_id' in payload:
             from_history_id = payload.get( 'from_history_id' )
-            history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
+            from_history_id = trans.security.decode_id( from_history_id )
+            history = self.history_manager.accessible_by_id( trans, from_history_id, trans.user )
+
             job_ids = map( trans.security.decode_id, payload.get( 'job_ids', [] ) )
             dataset_ids = payload.get( 'dataset_ids', [] )
             dataset_collection_ids = payload.get( 'dataset_collection_ids', [] )

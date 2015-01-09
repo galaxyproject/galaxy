@@ -3,7 +3,7 @@ from galaxy import model, web
 from galaxy import managers
 from galaxy.web import error, url_for
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
@@ -276,7 +276,7 @@ class _PageContentProcessor( _BaseHTMLProcessor ):
         # Default behavior:
         _BaseHTMLProcessor.unknown_endtag( self, tag )
 
-class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
+class PageController( BaseUIController, SharableMixin,
                       UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings ):
 
     _page_list = PageListGrid()
@@ -729,7 +729,8 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         Returns html suitable for embedding in another page.
         """
         #TODO: should be moved to history controller and/or called via ajax from the template
-        history = self.get_history( trans, id, False, True )
+        decoded_id = trans.security.decode_id( id )
+        history = self.mgrs.histories.accessible_by_id( trans, decoded_id, trans.user )
         if not history:
             return None
 
@@ -738,17 +739,13 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         user_is_owner = trans.user == history.user
         history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
 
-        hda_dicts = []
-        datasets = self.get_history_datasets( trans, history )
-
         # include all datasets: hidden, deleted, and purged
-        #TODO!: doubled query (hda_dictionaries + datasets)
         history_data = self.mgrs.histories._get_history_data( trans, history )
         history_dictionary = history_data[ 'history' ]
         hda_dictionaries   = history_data[ 'contents' ]
         history_dictionary[ 'annotation' ] = history.annotation
 
-        filled = trans.fill_template( "history/embed.mako", item=history, item_data=datasets,
+        filled = trans.fill_template( "history/embed.mako", item=history,
             user_is_owner=user_is_owner, history_dict=history_dictionary, hda_dicts=hda_dictionaries )
         return filled
 

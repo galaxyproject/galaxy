@@ -7,7 +7,7 @@ import urllib
 
 from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
-from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin
 from galaxy import managers
 
 from galaxy import web
@@ -20,7 +20,7 @@ from galaxy.util.json import dumps
 import logging
 log = logging.getLogger( __name__ )
 
-class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
+class RootController( BaseUIController, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """

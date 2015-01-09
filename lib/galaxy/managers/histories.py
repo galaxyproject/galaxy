@@ -127,7 +127,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
                 contents_dict = {}
 
                 if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
-                    contents_dict = hda_serializer.serialize_to_view( trans, hda, view='detailed' )
+                    contents_dict = hda_serializer.serialize_to_view( trans, content, view='detailed' )
 
                 elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
                     try:
