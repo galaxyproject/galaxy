@@ -13,6 +13,7 @@ from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy import exceptions
 from galaxy import util
 from galaxy import model
+from galaxy import managers
 
 import logging
 log = logging.getLogger( __name__ )
@@ -22,7 +23,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
 
     def __init__( self, app ):
         super( JobController, self ).__init__( app )
-        self.hda_manager = managers.hdas.HDAManager()
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     @expose_api
     def index( self, trans, **kwd ):

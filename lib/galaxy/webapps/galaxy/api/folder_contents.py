@@ -24,7 +24,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __init__( self, app ):
         super( FolderContentsController, self ).__init__( app )
         self.folder_manager = folders.FolderManager()
-        self.hda_manager = managers.hdas.HDAManager()
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     @expose_api_anonymous
     def index( self, trans, folder_id, **kwd ):

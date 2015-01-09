@@ -4,6 +4,7 @@ API operations on the contents of a data library.
 from galaxy import util
 from galaxy import web
 from galaxy import exceptions
+from galaxy import managers
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 from galaxy.web.base.controller import HTTPBadRequest, url_for
@@ -19,8 +20,8 @@ log = logging.getLogger( __name__ )
 class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
 
     def __init__( self, app ):
-        super( JobController, self ).__init__( app )
-        self.hda_manager = managers.hdas.HDAManager()
+        super( LibraryContentsController, self ).__init__( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     @expose_api
     def index( self, trans, library_id, **kwd ):
