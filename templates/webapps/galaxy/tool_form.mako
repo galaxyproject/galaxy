@@ -8,12 +8,10 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
     <%
         ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
         ## This avoids making two separate requests since the classic form requires the mako anyway.
-        from galaxy.webapps.galaxy.api.tools import ToolsController
-        controller = ToolsController(trans.app)
         params = dict(trans.request.params)
         if 'id' in params:
             params['dataset_id'] = params['id']
-        self.form_config = controller._build_dict(trans, tool, params)
+        self.form_config = tool.to_json(trans, **params)
         self.form_config.update({
             'id'                : tool.id,
             'job_id'            : trans.security.encode_id( job.id ) if job else None,

@@ -96,16 +96,7 @@ var View = Backbone.View.extend({
     /** Validate the current selection
     */
     validate: function() {
-        var current = this.value();
-        if (!(current instanceof Array)) {
-            current = [current];
-        }
-        for (var i in current) {
-            if ([null, 'null', undefined].indexOf(current[i]) > -1) {
-                return false;
-            }
-        }
-        return true;
+        return Utils.validate(this.value());
     },
     
     /** Return the label/text of the current selection

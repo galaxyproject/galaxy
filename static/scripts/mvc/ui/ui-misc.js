@@ -412,7 +412,7 @@ var Hidden = Backbone.View.extend({
     initialize : function(options) {
         // configure options
         this.options = options;
-            
+        
         // create new element
         this.setElement(this._template(this.options));
         
@@ -425,14 +425,20 @@ var Hidden = Backbone.View.extend({
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
-            this.$el.val(new_val);
+            this.$('hidden').val(new_val);
         }
-        return this.$el.val();
+        return this.$('hidden').val();
     },
     
     // element
     _template: function(options) {
-        return '<hidden id="' + options.id + '" value="' + options.value + '"/>';
+        var tmpl =  '<div id="' + options.id + '" >';
+        if (options.info) {
+            tmpl +=     '<label>' + options.info + '</label>';
+        }
+        tmpl +=         '<hidden value="' + options.value + '"/>' +
+                    '</div>';
+        return tmpl;
     }
 });
 
