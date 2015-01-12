@@ -729,7 +729,7 @@ class PageController( BaseUIController, SharableMixin,
         """
         #TODO: should be moved to history controller and/or called via ajax from the template
         decoded_id = self.decode_id( id )
-        history = self.history_manager.accessible_by_id( trans, decoded_id, trans.user )
+        history = self.history_manager.get_accessible( trans, decoded_id, trans.user )
         if not history:
             return None
 
@@ -778,8 +778,8 @@ class PageController( BaseUIController, SharableMixin,
 
         elif item_class == model.HistoryDatasetAssociation:
             decoded_id = self.decode_id( item_id )
-            dataset = self.hda_manager.accessible_by_id( trans, decoded_id, trans.user )
-            dataset = self.hda_manager.error_if_uploading( dataset )
+            dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+            dataset = self.hda_manager.error_if_uploading( trans, dataset )
 
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             if dataset:

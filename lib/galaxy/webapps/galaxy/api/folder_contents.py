@@ -268,7 +268,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         rval = {}
         try:
             decoded_hda_id = self.decode_id( from_hda_id )
-            hda = self.hda_manager.owned_by_id( trans, decoded_hda_id, trans.user )
+            hda = self.hda_manager.get_owned( trans, decoded_hda_id, trans.user )
             hda = self.hda_manager.error_if_uploading( trans, hda )
             folder = self.get_library_folder( trans, encoded_folder_id_16, check_accessible=True )
 

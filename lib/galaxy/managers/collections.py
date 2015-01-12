@@ -248,7 +248,7 @@ class DatasetCollectionManager( object ):
 
         if src_type == 'hda':
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )
-            element = self.hda_manager.accessible_by_id( trans, decoded_id, trans.user )
+            element = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
         elif src_type == 'ldda':
             element = self.ldda_manager.get( trans, encoded_id )
         elif src_type == 'hdca':

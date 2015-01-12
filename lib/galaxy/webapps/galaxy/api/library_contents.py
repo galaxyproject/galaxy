@@ -303,7 +303,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             # check permissions on (all three?) resources: hda, library, folder
             #TODO: do we really need the library??
             from_hda_id = self.decode_id( from_hda_id )
-            hda = self.hda_manager.owned_by_id( trans, from_hda_id, trans.user )
+            hda = self.hda_manager.get_owned( trans, from_hda_id, trans.user )
             hda = self.hda_manager.error_if_uploading( trans, hda )
             # library = self.get_library( trans, library_id, check_accessible=True )
             folder = self.get_library_folder( trans, folder_id, check_accessible=True )

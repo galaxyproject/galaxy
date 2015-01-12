@@ -92,7 +92,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             history = self.history_manager.most_recent( trans, trans.user,
                 filters=( self.app.model.History.deleted == False ) )
         else:
-            history = self.history_manager.accessible_by_id( trans, self.decode_id( history_id ), trans.user )
+            history = self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
 
         return self.history_serializer.serialize_to_view( trans, history,
             **self._parse_serialization_params( kwd, 'detailed' ) )
@@ -101,7 +101,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
     def citations( self, trans, history_id, **kwd ):
         """
         """
-        history = self.history_manager.accessible_by_id( trans, self.decode_id( history_id ), trans.user )
+        history = self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
         tool_ids = set([])
         for dataset in history.datasets:
             job = dataset.creating_job
@@ -146,7 +146,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         # if a history id was passed, copy that history
         if copy_this_history_id:
             decoded_id = self.decode_id( copy_this_history_id )
-            original_history = self.history_manager.accessible_by_id( trans, decoded_id, trans.user )
+            original_history = self.history_manager.get_accessible( trans, decoded_id, trans.user )
             hist_name = hist_name or ( "Copy of '%s'" % original_history.name )
             new_history = original_history.copy( name=hist_name, target_user=trans.user )
 
@@ -188,7 +188,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         if kwd.get( 'payload', None ):
             purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 
-        history = self.history_manager.owned_by_id( trans, self.decode_id( history_id ), trans.user )
+        history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
         self.history_manager.delete( trans, history )
         if purge:
             self.history_manager.purge( trans, history )
@@ -210,7 +210,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :returns:   'OK' if the history was undeleted
         """
         history_id = id
-        history = self.history_manager.owned_by_id( trans, self.decode_id( history_id ), trans.user )
+        history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
         self.history_manager.undelete( trans, history )
 
         return self.history_serializer.serialize_to_view( trans, history,
@@ -236,7 +236,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             any values that were different from the original and, therefore, updated
         """
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        history = self.history_manager.owned_by_id( trans, self.decode_id( id ), trans.user )
+        history = self.history_manager.get_owned( trans, self.decode_id( id ), trans.user )
 
         #TODO: flushing in deserialize is an iffy pattern...
         self.history_deserializer.deserialize( trans, history, payload )
@@ -259,7 +259,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         """
         # PUT instead of POST because multiple requests should just result
         # in one object being created.
-        history = self.history_manager.accessible_by_id( trans, self.decode_id( id ), trans.user )
+        history = self.history_manager.get_accessible( trans, self.decode_id( id ), trans.user )
         jeha = history.latest_export
         up_to_date = jeha and jeha.up_to_date
         if 'force' in kwds:
@@ -292,7 +292,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         """
         # Seems silly to put jeha_id in here, but want GET to be immuatable?
         # and this is being accomplished this way.
-        history = self.history_manager.accessible_by_id( trans, self.decode_id( id ), trans.user )
+        history = self.history_manager.get_accessible( trans, self.decode_id( id ), trans.user )
         matching_exports = filter( lambda e: trans.security.encode_id( e.id ) == jeha_id, history.exports )
         if not matching_exports:
             raise exceptions.ObjectNotFound()

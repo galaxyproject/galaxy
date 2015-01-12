@@ -251,12 +251,12 @@ class ModelManager( object ):
         except exceptions.ObjectNotFound, not_found:
             return None
 
-    def list( self, trans, query=None, **kwargs ):
-        """
-        Sends kwargs to build the query return all models found.
-        """
-        query = query or self.query( trans, **kwargs )
-        return query.all()
+    #def get( self, trans, id, **kwargs ):
+    #    """
+    #    """
+    #    #TODO: either remove to prevent confusion with sqlalx get or make it behave *much* more like it: obj/None
+    #    id_filter = self.model_class.id == id
+    #    return self.one( trans, filters=id_filter, **kwargs )
 
     def by_id( self, trans, id, **kwargs ):
         """
@@ -264,6 +264,13 @@ class ModelManager( object ):
         """
         id_filter = self.model_class.id == id
         return self.one( trans, filters=id_filter, **kwargs )
+
+    def list( self, trans, query=None, **kwargs ):
+        """
+        Sends kwargs to build the query return all models found.
+        """
+        query = query or self.query( trans, **kwargs )
+        return query.all()
 
     def _query_by_ids( self, trans, ids, filters=None, **kwargs ):
         """
@@ -436,7 +443,7 @@ class AccessibleModelInterface( object ):
         raise exceptions.NotImplemented( "Abstract Interface Method" )
         #OR? return False
 
-    def accessible_by_id( self, trans, id, user, **kwargs ):
+    def get_accessible( self, trans, id, user, **kwargs ):
         """
         Return the item with the given id if it's accessible to user,
         otherwise raise an error.
@@ -496,7 +503,7 @@ class OwnableModelInterface( object ):
         raise exceptions.NotImplemented( "Abstract Interface Method" )
         #OR? return False
 
-    def owned_by_id( self, trans, id, user, **kwargs ):
+    def get_owned( self, trans, id, user, **kwargs ):
         """
         Return the item with the given id if owned by the user,
         otherwise raise an error.

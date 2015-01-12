@@ -261,7 +261,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
                 if 'id' in v:
                     if 'src' not in v or v[ 'src' ] == 'hda':
                         hda_id = self.decode_id( v['id'] )
-                        dataset = self.hda_manager.accessible_by_id( trans, hda_id, trans.user )
+                        dataset = self.hda_manager.get_accessible( trans, hda_id, trans.user )
                     else:
                         dataset = self.get_library_dataset_dataset_association( trans, v['id'] )
                     if dataset is None:

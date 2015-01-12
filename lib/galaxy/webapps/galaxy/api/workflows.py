@@ -149,7 +149,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if 'from_history_id' in payload:
             from_history_id = payload.get( 'from_history_id' )
             from_history_id = self.decode_id( from_history_id )
-            history = self.history_manager.accessible_by_id( trans, from_history_id, trans.user )
+            history = self.history_manager.get_accessible( trans, from_history_id, trans.user )
 
             job_ids = map( self.decode_id, payload.get( 'job_ids', [] ) )
             dataset_ids = payload.get( 'dataset_ids', [] )

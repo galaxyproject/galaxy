@@ -45,7 +45,7 @@ class DatasetCollectionsController(
         if instance_type == "history":
             history_id = payload.get( 'history_id' )
             history_id = self.decode_id( history_id )
-            history = self.history_manager.owned_by_id( trans, history_id, trans.user )
+            history = self.history_manager.get_owned( trans, history_id, trans.user )
             create_params[ "parent" ] = history
         elif instance_type == "library":
             folder_id = payload.get( 'folder_id' )

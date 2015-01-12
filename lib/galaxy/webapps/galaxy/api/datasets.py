@@ -280,7 +280,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         rval = ''
         try:
-            hda = self.hda_manager.accessible_by_id( trans, decoded_content_id, trans.user )
+            hda = self.hda_manager.get_accessible( trans, decoded_content_id, trans.user )
 
             if raw:
                 if filename and filename != 'index':

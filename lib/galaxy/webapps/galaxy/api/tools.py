@@ -142,7 +142,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         history_id = payload.get("history_id", None)
         if history_id:
             decoded_id = self.decode_id( history_id )
-            target_history = self.history_manager.owned_by_id( trans, decoded_id, trans.user )
+            target_history = self.history_manager.get_owned( trans, decoded_id, trans.user )
         else:
             target_history = None
 
@@ -281,7 +281,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Dataset check.
         decoded_dataset_id = self.decode_id( payload.get( 'target_dataset_id' ) )
-        original_dataset = self.hda_manager.accessible_by_id( trans, decoded_dataset_id, user=trans.user )
+        original_dataset = self.hda_manager.get_accessible( trans, decoded_dataset_id, user=trans.user )
         original_dataset = self.hda_manager.error_if_uploading( trans, original_dataset )
         msg = self.hda_manager.data_conversion_status( trans, original_dataset )
         if msg:

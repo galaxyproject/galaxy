@@ -59,7 +59,7 @@ class HistoryAnnotationsController(BaseAnnotationsController):
 
     def _get_item_from_id(self, trans, idstr):
         decoded_idstr = self.decode_id( idstr )
-        history = self.history_manager.accessible_by_id( trans, decoded_idstr, trans.user )
+        history = self.history_manager.get_accessible( trans, decoded_idstr, trans.user )
         return history
 
 
@@ -73,7 +73,7 @@ class HistoryContentAnnotationsController(BaseAnnotationsController):
 
     def _get_item_from_id(self, trans, idstr):
         decoded_idstr = self.decode_id( idstr )
-        hda = self.hda_manager.accessible_by_id( trans, decoded_idstr, trans.user )
+        hda = self.hda_manager.get_accessible( trans, decoded_idstr, trans.user )
         hda = self.hda_manager.error_if_uploading( trans, hda )
         return hda
 
