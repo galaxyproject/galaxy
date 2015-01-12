@@ -99,6 +99,13 @@ class BaseController( object ):
     def get_role( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Role', check_ownership=False, check_accessible=False, deleted=deleted )
 
+    def decode_id( self, id ):
+        try:
+            return self.app.security.decode_id( id )
+        except:
+            msg = "Malformed History id ( %s ) specified, unable to decode" % ( str( id ) )
+            raise exceptions.MalformedId( msg, id=str( id ) )
+
     def encode_all_ids( self, trans, rval, recursive=False ):
         """
         Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
@@ -173,6 +180,13 @@ class BaseAPIController( BaseController ):
 
     def not_implemented( self, trans, **kwd ):
         raise HTTPNotImplemented()
+
+    def _parse_serialization_params( self, kwd, default_view ):
+        view = kwd.get( 'view', None )
+        keys = kwd.get( 'keys' )
+        if isinstance( keys, basestring ):
+            keys = keys.split( ',' )
+        return dict( view=view, keys=keys, default_view=default_view )
 
 
 class Datatype( object ):

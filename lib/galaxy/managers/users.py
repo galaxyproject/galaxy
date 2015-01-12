@@ -30,7 +30,6 @@ class UserManager( base.ModelManager ):
     #TODO: incorp CreatesUsersMixin
     #TODO: incorp CreatesApiKeysMixin
 
-
     def create( self, trans, **kwargs ):
         """
         Create a new user.

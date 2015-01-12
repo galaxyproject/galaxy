@@ -72,7 +72,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                     rval.append( ld )
             return rval
         try:
-            decoded_library_id = trans.security.decode_id( library_id )
+            decoded_library_id = self.decode_id( library_id )
         except Exception:
             raise exceptions.MalformedId( 'Malformed library id ( %s ) specified, unable to decode.' % library_id )
         try:
@@ -302,7 +302,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         try:
             # check permissions on (all three?) resources: hda, library, folder
             #TODO: do we really need the library??
-            from_hda_id = trans.security.decode_id( from_hda_id )
+            from_hda_id = self.decode_id( from_hda_id )
             hda = self.hda_manager.owned_by_id( trans, from_hda_id, trans.user )
             hda = self.hda_manager.error_if_uploading( trans, hda )
             # library = self.get_library( trans, library_id, check_accessible=True )

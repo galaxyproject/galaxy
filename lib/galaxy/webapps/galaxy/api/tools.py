@@ -31,10 +31,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
     def __init__( self, app ):
         super( ToolsController, self ).__init__( app )
-        self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager( app ),
-            hdas=managers.hdas.HDAManager( app )
-        )
+        self.history_manager = managers.histories.HistoryManager( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     @web.expose_api
     def index( self, trans, **kwds ):
@@ -47,7 +45,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                             including sections and labels
                 trackster - if true, only tools that are compatible with
                             Trackster are returned
-
         """
 
         # Read params.
@@ -144,8 +141,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # dataset upload.
         history_id = payload.get("history_id", None)
         if history_id:
-            decoded_id = trans.security.decode_id( history_id )
-            target_history = self.mgrs.histories.owned_by_id( trans, decoded_id, trans.user )
+            decoded_id = self.decode_id( history_id )
+            target_history = self.history_manager.owned_by_id( trans, decoded_id, trans.user )
         else:
             target_history = None
 
@@ -160,7 +157,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         input_patch = {}
         for k, v in inputs.iteritems():
             if  isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
-                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id(v['id']) )
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( self.decode_id(v['id']) )
                 if trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset ):
                     input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
 
@@ -283,10 +280,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             run_on_regions = True
 
         # Dataset check.
-        decoded_dataset_id = trans.security.decode_id( payload.get( 'target_dataset_id' ) )
-        original_dataset = self.mgrs.hdas.accessible_by_id( trans, decoded_dataset_id, user=trans.user )
+        decoded_dataset_id = self.decode_id( payload.get( 'target_dataset_id' ) )
+        original_dataset = self.hda_manager.accessible_by_id( trans, decoded_dataset_id, user=trans.user )
         original_dataset = self.hda_manager.error_if_uploading( trans, original_dataset )
-        msg = self.mgrs.hdas.data_conversion_status( trans, original_dataset )
+        msg = self.hda_manager.data_conversion_status( trans, original_dataset )
         if msg:
             return msg
 
@@ -294,7 +291,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # job's previous parameters and incoming parameters. Incoming parameters
         # have priority.
         #
-        original_job = self.mgrs.hdas.creating_job( original_dataset )
+        original_job = self.hda_manager.creating_job( original_dataset )
         tool = trans.app.toolbox.get_tool( original_job.tool_id )
         if not tool:
             return trans.app.model.Dataset.conversion_messages.NO_TOOL

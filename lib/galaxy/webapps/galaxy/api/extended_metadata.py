@@ -69,7 +69,7 @@ class HistoryDatasetExtendMetadataController(BaseExtendedMetadataController):
         self.hda_manager = managers.hdas.HDAManager( app )
 
     def _get_item_from_id(self, trans, idstr, check_writable=True):
-        decoded_idstr = trans.security.decode_id( idstr )
+        decoded_idstr = self.decode_id( idstr )
         if check_writable:
             return self.hda_manager.owned_by_id( trans, decoded_idstr, trans.user )
         else:

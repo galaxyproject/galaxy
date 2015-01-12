@@ -22,10 +22,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
     def __init__( self, app ):
         super( DatasetsController, self ).__init__( app )
-        self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager( app ),
-            hdas=managers.hdas.HDAManager( app )
-        )
+        self.hda_manager = managers.hdas.HDAManager( app )
         self.hda_serializer = managers.hdas.HDASerializer( self.app )
 
     @web.expose_api
@@ -83,7 +80,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         Returns state of dataset.
         """
-        msg = self.mgrs.hdas.data_conversion_status( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( trans, dataset )
         if not msg:
             msg = dataset.conversion_messages.DATA
 
@@ -94,7 +91,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
         """
-        msg = self.mgrs.hdas.data_conversion_status( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( trans, dataset )
         if msg:
             return msg
 
@@ -143,7 +140,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             return dataset.conversion_messages.NO_DATA
 
         # Dataset check.
-        msg = self.mgrs.hdas.data_conversion_status( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( trans, dataset )
         if msg:
             return msg
 
@@ -236,7 +233,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         be slow because indexes need to be created.
         """
         # Dataset check.
-        msg = self.mgrs.hdas.data_conversion_status( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( trans, dataset )
         if msg:
             return msg
 
@@ -278,12 +275,12 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
-        decoded_content_id = trans.security.decode_id( history_content_id )
+        decoded_content_id = self.decode_id( history_content_id )
         raw = util.string_as_bool_or_none( raw )
 
         rval = ''
         try:
-            hda = self.mgrs.hdas.accessible_by_id( trans, decoded_content_id, trans.user )
+            hda = self.hda_manager.accessible_by_id( trans, decoded_content_id, trans.user )
 
             if raw:
                 if filename and filename != 'index':

@@ -340,6 +340,13 @@ class SharableModelSerializer( base.ModelSerializer ):
     #   user/user_id
     #   user_shares?
     #   username_and_slug?
+    #def get_name_and_link_async( self, trans, id=None ):
+    #def published_url( self, trans, item, key ):
+    #    """
+    #    """
+    #    url = url_for(controller='history', action="display_by_username_and_slug",
+    #        username=item.user.username, slug=item.slug )
+    #    return url
 
 
 # =============================================================================

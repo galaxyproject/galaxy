@@ -148,10 +148,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         if 'from_history_id' in payload:
             from_history_id = payload.get( 'from_history_id' )
-            from_history_id = trans.security.decode_id( from_history_id )
+            from_history_id = self.decode_id( from_history_id )
             history = self.history_manager.accessible_by_id( trans, from_history_id, trans.user )
 
-            job_ids = map( trans.security.decode_id, payload.get( 'job_ids', [] ) )
+            job_ids = map( self.decode_id, payload.get( 'job_ids', [] ) )
             dataset_ids = payload.get( 'dataset_ids', [] )
             dataset_collection_ids = payload.get( 'dataset_collection_ids', [] )
             workflow_name = payload[ 'workflow_name' ]
@@ -242,7 +242,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         workflow_id = id
 
         try:
-            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
+            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
         except Exception, e:
             trans.response.status = 400
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
@@ -431,7 +431,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_workflow_invocation_id = self.__decode_id( trans, invocation_id )
+        decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
         if workflow_invocation:
             return self.__encode_invocation( trans, workflow_invocation )
@@ -451,7 +451,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_workflow_invocation_id = self.__decode_id( trans, invocation_id )
+        decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.cancel_invocation( trans, decoded_workflow_invocation_id )
         return self.__encode_invocation( trans, workflow_invocation )
 
@@ -474,7 +474,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_invocation_step_id = self.__decode_id( trans, step_id )
+        decoded_invocation_step_id = self.decode_id( step_id )
         invocation_step = self.workflow_manager.get_invocation_step(
             trans,
             decoded_invocation_step_id
@@ -501,7 +501,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_invocation_step_id = self.__decode_id( trans, step_id )
+        decoded_invocation_step_id = self.decode_id( step_id )
         action = payload.get( "action", None )
 
         invocation_step = self.workflow_manager.update_invocation_step(
@@ -540,7 +540,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if stored_workflow is None:
                 raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
         else:
-            workflow_id = self.__decode_id( trans, workflow_id )
+            workflow_id = self.decode_id( workflow_id )
             query = trans.sa_session.query( trans.app.model.StoredWorkflow )
             stored_workflow = query.get( workflow_id )
         if stored_workflow is None:
@@ -553,10 +553,3 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             invocation.to_dict( view ),
             True
         )
-
-    def __decode_id( self, trans, workflow_id, model_type="workflow" ):
-        try:
-            return trans.security.decode_id( workflow_id )
-        except Exception:
-            message = "Malformed %s id ( %s ) specified, unable to decode" % ( model_type, workflow_id )
-            raise exceptions.MalformedId( message )

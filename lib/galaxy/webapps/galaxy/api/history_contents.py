@@ -29,19 +29,10 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
     def __init__( self, app ):
         super( HistoryContentsController, self ).__init__( app )
-        self.mgrs = util.bunch.Bunch(
-            histories=histories.HistoryManager( app ),
-            hdas=hdas.HDAManager( app )
-        )
+        self.hda_manager = hdas.HDAManager( app )
+        self.history_manager = histories.HistoryManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
         self.hda_deserializer = hdas.HDADeserializer( app )
-
-    def _decode_id( self, trans, id ):
-        try:
-            return trans.security.decode_id( id )
-        except:
-            raise exceptions.MalformedId( "Malformed History id ( %s ) specified, unable to decode"
-                                          % ( str( id ) ), type='error' )
 
     def _parse_serialization_params( self, kwd, default_view ):
         view = kwd.get( 'view', None )
@@ -77,13 +68,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         """
         rval = []
 
-        # get the history, if anon user and requesting current history - allow it
-        if( ( trans.user == None )
-        and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-            history = trans.history
-        # otherwise, check permissions for the history first
-        else:
-            history = self.mgrs.histories.accessible_by_id( trans, self._decode_id( trans, history_id ), trans.user )
+        history = self.history_manager.accessible_by_id( trans, self.decode_id( history_id ), trans.user )
 
         # Allow passing in type or types - for continuity rest of methods
         # take in type - but this one can be passed multiple types and
@@ -96,7 +81,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         contents_kwds = { 'types': types }
         if ids:
-            ids = map( lambda id: trans.security.decode_id( id ), ids.split( ',' ) )
+            ids = map( lambda id: self.decode_id( id ), ids.split( ',' ) )
             contents_kwds[ 'ids' ] = ids
             # If explicit ids given, always used detailed result.
             details = 'all'
@@ -156,9 +141,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             return self.__handle_unknown_contents_type( trans, contents_type )
 
     def __show_dataset( self, trans, id, **kwd ):
-        hda = self.mgrs.hdas.accessible_by_id( trans, self._decode_id( trans, id ), trans.user )
-        #if hda.history.id != self._decode_id( trans, history_id ):
-        #    raise exceptions.ObjectNotFound( 'dataset was not found in this history' )
+        hda = self.hda_manager.accessible_by_id( trans, self.decode_id( id ), trans.user )
         return self.hda_serializer.serialize_to_view( trans, hda,
             **self._parse_serialization_params( kwd, 'detailed' ) )
 
@@ -229,7 +212,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         # TODO: Flush out create new collection documentation above, need some
         # examples. See also bioblend and API tests for specific examples.
 
-        history = self.mgrs.histories.owned_by_id( trans, self._decode_id( trans, history_id ), trans.user )
+        history = self.history_manager.owned_by_id( trans, self.decode_id( history_id ), trans.user )
 
         type = payload.get( 'type', 'dataset' )
         if type == 'dataset':
@@ -261,8 +244,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         # copy an existing, accessible hda
         elif source == 'hda':
-            unencoded_hda_id = self._decode_id( trans, content )
-            original = self.mgrs.hdas.accessible_by_id( trans, unencoded_hda_id, trans.user )
+            unencoded_hda_id = self.decode_id( content )
+            original = self.hda_manager.accessible_by_id( trans, unencoded_hda_id, trans.user )
             data_copy = original.copy( copy_children=True )
             hda = history.add_dataset( data_copy )
 
@@ -332,10 +315,10 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
         if trans.user == None:
-            hda = self.mgrs.hdas.by_id( trans, self._decode_id( trans, id ) )
+            hda = self.hda_manager.by_id( trans, self.decode_id( id ) )
             if hda.history != trans.history:
                 raise exceptions.AuthenticationRequired( 'You must be logged in to update this dataset' )
-            hda = self.mgrs.hdas.error_if_uploading( trans, hda )
+            hda = self.hda_manager.error_if_uploading( trans, hda )
 
             anon_allowed_payload = {}
             if 'deleted' in payload:
@@ -346,13 +329,13 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         # logged in user: use full payload, check state if deleting, and make sure the history is theirs
         else:
-            hda = self.mgrs.hdas.accessible_by_id( trans, self._decode_id( trans, id ), trans.user )
-            self.mgrs.histories.error_unless_owner( trans, hda.history, trans.user )
+            hda = self.hda_manager.accessible_by_id( trans, self.decode_id( id ), trans.user )
+            self.history_manager.error_unless_owner( trans, hda.history, trans.user )
 
             # only check_state if not deleting, otherwise cannot delete uploading files
             check_state = not payload.get( 'deleted', False )
             if check_state:
-                hda = self.mgrs.hdas.error_if_uploading( trans, hda )
+                hda = self.hda_manager.error_if_uploading( trans, hda )
 
         # make the actual changes
         #TODO: is this if still needed?
@@ -360,7 +343,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             self.hda_deserializer.deserialize( trans, hda, payload )
             #TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):
-                self.mgrs.hdas.stop_creating_job( hda )
+                self.hda_manager.stop_creating_job( hda )
             return self.hda_serializer.serialize_to_view( trans, hda,
                 **self._parse_serialization_params( kwd, 'detailed' ) )
 
@@ -413,14 +396,14 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             # payload takes priority
             purge = util.string_as_bool( kwd['payload'].get( 'purge', purge ) )
 
-        hda = self.mgrs.hdas.by_id( trans, self._decode_id( trans, id ), trans.user )
-        self.mgrs.histories.error_unless_ownership( trans, hda.history, trans.user )
-        self.mgrs.hdas.error_if_uploading( trans, hda )
+        hda = self.hda_manager.by_id( trans, self.decode_id( id ), trans.user )
+        self.history_manager.error_unless_ownership( trans, hda.history, trans.user )
+        self.hda_manager.error_if_uploading( trans, hda )
 
         if purge:
-            self.mgrs.hdas.purge( trans, hda )
+            self.hda_manager.purge( trans, hda )
         else:
-            self.mgrs.hdas.delete( trans, hda )
+            self.hda_manager.delete( trans, hda )
         return self.hda_serializer.serialize_to_view( trans, hda,
             **self._parse_serialization_params( kwd, 'detailed' ) )
 

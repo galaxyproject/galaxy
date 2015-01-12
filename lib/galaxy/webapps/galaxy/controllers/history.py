@@ -214,15 +214,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     def __init__( self, app ):
         super( HistoryController, self ).__init__( app )
-        self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager( app )
-        )
+        self.history_manager = managers.histories.HistoryManager( app )
         self.history_serializer = managers.histories.HistorySerializer( self.app )
 
     def _get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
         """
         Get a History from the database by id, verifying ownership.
         """
+        #TODO: moved from the mixin - to manager
         if trans.user is None and trans.history:
             if id == trans.security.encode_id( trans.history.id ):
                 return trans.history
@@ -495,7 +494,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if id is None:
             id = trans.history.id
         else:
-            id = trans.security.decode_id( id )
+            id = self.decode_id( id )
         # Expunge history from the session to allow us to force a reload
         # with a bunch of eager loaded joins
         trans.sa_session.expunge( trans.history )
@@ -563,17 +562,16 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     def structure( self, trans, id=None, **kwargs ):
         """
         """
-        if not id:
-            id = trans.security.encode_id( trans.history.id )
+        id = self.decode_id( id ) if id else trans.history.id
+        history_to_view = self.history_manager.accessible_by_id( trans, id, trans.user )
 
-        history_to_view = self._get_history( trans, id, check_ownership=False, check_accessible=True )
-        history_data = self.mgrs.histories._get_history_data( trans, history_to_view )
+        history_data = self.history_manager._get_history_data( trans, history_to_view )
         history_dictionary = history_data[ 'history' ]
         hda_dictionaries   = history_data[ 'contents' ]
 
         jobs = ( trans.sa_session.query( trans.app.model.Job )
             .filter( trans.app.model.Job.user == trans.user )
-            .filter( trans.app.model.Job.history_id == trans.security.decode_id( id ) ) ).all()
+            .filter( trans.app.model.Job.history_id == self.decode_id( id ) ) ).all()
         jobs = map( lambda j: self.encode_all_ids( trans, j.to_dict( 'element' ), True ), jobs )
 
         tools = {}
@@ -605,22 +603,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         hda_dictionaries   = []
         user_is_owner = False
         try:
-            history_to_view = self._get_history( trans, id, check_ownership=False, check_accessible=False )
-            if not history_to_view:
-                return trans.show_error_message( "The specified history does not exist." )
-            if history_to_view.user == trans.user:
-                user_is_owner = True
-
-            if( ( history_to_view.user != trans.user )
-            # Admin users can view any history
-            and ( not trans.user_is_admin() )
-            and ( not history_to_view.importable )
-            and ( trans.user not in history_to_view.users_shared_with_dot_users ) ):
-                return trans.show_error_message( "Either you are not allowed to view this history"
-                                               + " or the owner of this history has not made it accessible." )
+            history_to_view = self.history_manager.accessible_by_id( trans, id, trans.user )
+            user_is_owner = history_to_view.user == trans.user
 
             # include all datasets: hidden, deleted, and purged
-            history_data = self.mgrs.histories._get_history_data( trans, history_to_view )
+            history_data = self.history_manager._get_history_data( trans, history_to_view )
             history_dictionary = history_data[ 'history' ]
             hda_dictionaries   = history_data[ 'contents' ]
 
@@ -658,7 +645,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         current_history_id = trans.security.encode_id( current_history.id ) if current_history else None
 
         history_dictionaries = []
-        for history in self.mgrs.histories.by_user( trans, trans.user, filters=deleted_filter ):
+        for history in self.history_manager.by_user( trans, trans.user, filters=deleted_filter ):
             history_dictionary = self.history_serializer.serialize_to_view( trans, history, view='detailed' )
             history_dictionaries.append( history_dictionary )
 
@@ -692,7 +679,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         # create ownership flag for template, dictify models
         user_is_owner = trans.user == history.user
-        history_data = self.mgrs.histories._get_history_data( trans, history )
+        history_data = self.history_manager._get_history_data( trans, history )
         history_dict = history_data[ 'history' ]
         hda_dicts = history_data[ 'contents' ]
 
@@ -742,7 +729,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             elif 'disable_link_access_and_unpublish' in kwargs:
                 history.importable = history.published = False
             elif 'unshare_user' in kwargs:
-                user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( kwargs[ 'unshare_user' ] ) )
+                user = trans.sa_session.query( trans.app.model.User ).get( self.decode_id( kwargs[ 'unshare_user' ] ) )
                 # Look for and delete sharing relation for history-user.
                 deleted_sharing_relation = False
                 husas = trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ).filter_by( user=user, history=history ).all()
@@ -1130,7 +1117,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     trans.app.job_manager.job_stop_queue.put( job.id )
 
         # Regardless of whether it was previously deleted, get the most recent history or create a new one.
-        most_recent_history = self.mgrs.histories.most_recent( trans, user=trans.user )
+        most_recent_history = self.history_manager.most_recent( trans, user=trans.user )
         if most_recent_history:
             trans.set_history( most_recent_history )
             return trans.show_ok_message( "History deleted, your most recent history is now active",
@@ -1483,7 +1470,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """
         """
         try:
-            history = self.mgrs.histories.owned_by_id( trans, trans.security.decode_id( id ), trans.user )
+            history = self.history_manager.owned_by_id( trans, self.decode_id( id ), trans.user )
             trans.set_history( history )
             return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
         except exceptions.MessageException, msg_exc:

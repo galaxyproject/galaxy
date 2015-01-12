@@ -289,10 +289,8 @@ class PageController( BaseUIController, SharableMixin,
 
     def __init__( self, app ):
         super( PageController, self ).__init__( app )
-        self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager( app ),
-            hdas=managers.hdas.HDAManager( app ),
-        )
+        self.history_manager = managers.histories.HistoryManager( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     @web.expose
     @web.require_login()
@@ -304,7 +302,7 @@ class PageController( BaseUIController, SharableMixin,
             operation = kwargs['operation'].lower()
             ids = util.listify( kwargs['id'] )
             for id in ids:
-                item = session.query( model.Page ).get( trans.security.decode_id( id ) )
+                item = session.query( model.Page ).get( self.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
                 if operation == "share or publish":
@@ -397,7 +395,7 @@ class PageController( BaseUIController, SharableMixin,
         Edit a page's attributes.
         """
         encoded_id = id
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         session = trans.sa_session
         page = session.query( model.Page ).get( id )
         user = trans.user
@@ -447,7 +445,7 @@ class PageController( BaseUIController, SharableMixin,
         """
         Render the main page editor interface.
         """
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         assert page.user == trans.user
         return trans.fill_template( "page/editor.mako", page=page )
@@ -459,7 +457,7 @@ class PageController( BaseUIController, SharableMixin,
 
         # Get session and page.
         session = trans.sa_session
-        page = trans.sa_session.query( model.Page ).get( trans.security.decode_id( id ) )
+        page = trans.sa_session.query( model.Page ).get( self.decode_id( id ) )
 
         # Do operation on page.
         if 'make_accessible_via_link' in kwargs:
@@ -476,7 +474,7 @@ class PageController( BaseUIController, SharableMixin,
         elif 'disable_link_access_and_unpublish' in kwargs:
             page.importable = page.published = False
         elif 'unshare_user' in kwargs:
-            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
+            user = session.query( model.User ).get( self.decode_id( kwargs['unshare_user' ] ) )
             if not user:
                 error( "User not found for provided id" )
             association = session.query( model.PageUserShareAssociation ) \
@@ -493,7 +491,7 @@ class PageController( BaseUIController, SharableMixin,
     def share( self, trans, id, email="", use_panels=False ):
         """ Handle sharing with an individual user. """
         msg = mtype = None
-        page = trans.sa_session.query( model.Page ).get( trans.security.decode_id( id ) )
+        page = trans.sa_session.query( model.Page ).get( self.decode_id( id ) )
         if email:
             other = trans.sa_session.query( model.User ) \
                                     .filter( and_( model.User.table.c.email==email,
@@ -531,7 +529,7 @@ class PageController( BaseUIController, SharableMixin,
     @web.expose
     @web.require_login()
     def save( self, trans, id, content, annotations ):
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         assert page.user == trans.user
 
@@ -548,7 +546,7 @@ class PageController( BaseUIController, SharableMixin,
         # Save annotations.
         annotations = loads( annotations )
         for annotation_dict in annotations:
-            item_id = trans.security.decode_id( annotation_dict[ 'item_id' ] )
+            item_id = self.decode_id( annotation_dict[ 'item_id' ] )
             item_class = self.get_class( annotation_dict[ 'item_class' ] )
             item = trans.sa_session.query( item_class ).filter_by( id=item_id ).first()
             if not item:
@@ -581,7 +579,7 @@ class PageController( BaseUIController, SharableMixin,
     @web.expose
     @web.require_login()
     def display( self, trans, id ):
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         if not page:
             raise web.httpexceptions.HTTPNotFound()
@@ -715,7 +713,7 @@ class PageController( BaseUIController, SharableMixin,
     def get_page( self, trans, id, check_ownership=True, check_accessible=False ):
         """Get a page from the database by id."""
         # Load history from database
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         if not page:
             error( "Page not found" )
@@ -730,8 +728,8 @@ class PageController( BaseUIController, SharableMixin,
         Returns html suitable for embedding in another page.
         """
         #TODO: should be moved to history controller and/or called via ajax from the template
-        decoded_id = trans.security.decode_id( id )
-        history = self.mgrs.histories.accessible_by_id( trans, decoded_id, trans.user )
+        decoded_id = self.decode_id( id )
+        history = self.history_manager.accessible_by_id( trans, decoded_id, trans.user )
         if not history:
             return None
 
@@ -741,7 +739,7 @@ class PageController( BaseUIController, SharableMixin,
         history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
 
         # include all datasets: hidden, deleted, and purged
-        history_data = self.mgrs.histories._get_history_data( trans, history )
+        history_data = self.history_manager._get_history_data( trans, history )
         history_dictionary = history_data[ 'history' ]
         hda_dictionaries   = history_data[ 'contents' ]
         history_dictionary[ 'annotation' ] = history.annotation
@@ -779,13 +777,13 @@ class PageController( BaseUIController, SharableMixin,
             return self._get_embedded_history_html( trans, item_id )
 
         elif item_class == model.HistoryDatasetAssociation:
-            decoded_id = trans.security.decode_id( item_id )
-            dataset = self.mgrs.hdas.accessible_by_id( trans, decoded_id, trans.user )
-            dataset = self.mgrs.hdas.error_if_uploading( dataset )
+            decoded_id = self.decode_id( item_id )
+            dataset = self.hda_manager.accessible_by_id( trans, decoded_id, trans.user )
+            dataset = self.hda_manager.error_if_uploading( dataset )
 
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             if dataset:
-                data = self.mgrs.hdas.text_data( dataset )
+                data = self.hda_manager.text_data( dataset )
                 return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data )
 
         elif item_class == model.StoredWorkflow:

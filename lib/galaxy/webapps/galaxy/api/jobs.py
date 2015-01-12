@@ -89,7 +89,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         history_id = kwd.get( 'history_id', None )
         if history_id is not None:
             try:
-                decoded_history_id = trans.security.decode_id(history_id)
+                decoded_history_id = self.decode_id(history_id)
                 query = query.filter( trans.app.model.Job.history_id == decoded_history_id )
             except:
                 raise exceptions.ObjectAttributeInvalidException()
@@ -199,7 +199,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
 
     def __get_job( self, trans, id ):
         try:
-            decoded_job_id = trans.security.decode_id( id )
+            decoded_job_id = self.decode_id( id )
         except Exception:
             raise exceptions.MalformedId()
         query = trans.sa_session.query( trans.app.model.Job )
@@ -260,7 +260,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
             if isinstance( v, dict ):
                 if 'id' in v:
                     if 'src' not in v or v[ 'src' ] == 'hda':
-                        hda_id = trans.security.decode_id( v['id'] )
+                        hda_id = self.decode_id( v['id'] )
                         dataset = self.hda_manager.accessible_by_id( trans, hda_id, trans.user )
                     else:
                         dataset = self.get_library_dataset_dataset_association( trans, v['id'] )

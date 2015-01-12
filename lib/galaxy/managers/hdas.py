@@ -251,44 +251,6 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
                 dataset_data = None
         return truncated, dataset_data
 
-    #def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
-    #    """
-    #    Get an HDA object by id performing security checks using
-    #    the current transaction.
-    #    """
-    #    try:
-    #        dataset_id = trans.security.decode_id( dataset_id )
-    #    except ( AttributeError, TypeError ):
-    #        # DEPRECATION: We still support unencoded ids for backward compatibility
-    #        try:
-    #            dataset_id = int( dataset_id )
-    #        except ValueError:
-    #            raise HTTPBadRequest( "Invalid dataset id: %s." % str( dataset_id ) )
-    #
-    #    try:
-    #        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
-    #    except:
-    #        raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
-    #
-    #    if check_ownership:
-    #        # Verify ownership.
-    #        user = trans.get_user()
-    #        if not user:
-    #            error( "Must be logged in to manage Galaxy items" )
-    #        if data.history.user != user:
-    #            error( "%s is not owned by current user" % data.__class__.__name__ )
-    #
-    #    if check_accessible:
-    #        current_user_roles = trans.get_current_user_roles()
-    #
-    #        if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-    #            error( "You are not allowed to access this dataset" )
-    #
-    #        if check_state and data.state == trans.model.Dataset.states.UPLOAD:
-    #            return trans.show_error_message( "Please wait until this dataset finishes uploading "
-    #                                               + "before attempting to view it." )
-    #    return data
-
     # this is a weird syntax and return val
     def data_conversion_status( self, trans, hda ):
         """
@@ -321,6 +283,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
                     self.app.job_manager.job_stop_queue.put( job.id )
                     return True
         return False
+
 
 # =============================================================================
 class HDASerializer( base.ModelSerializer ):

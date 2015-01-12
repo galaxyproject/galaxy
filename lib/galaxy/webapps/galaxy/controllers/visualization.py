@@ -129,7 +129,7 @@ class DbKeyColumn( grids.GridColumn ):
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
     def filter( self, trans, user, query, history_id ):
-        return query.filter( model.History.id==trans.security.decode_id(history_id) )
+        return query.filter( model.History.id==self.decode_id(history_id) )
 
 class HistoryDatasetsSelectionGrid( grids.Grid ):
     # Grid definition.
@@ -158,7 +158,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
         Current item for grid is the history being queried. This is a bit
         of hack since current_item typically means the current item in the grid.
         """
-        return trans.sa_session.query( model.History ).get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
+        return trans.sa_session.query( model.History ).get( self.decode_id( kwargs[ 'f-history' ] ) )
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table ).join( model.Dataset.table )
     def apply_query_filter( self, trans, query, **kwargs ):
@@ -283,9 +283,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
 
     def __init__( self, app ):
         super( VisualizationController, self ).__init__( app )
-        self.mgrs = util.bunch.Bunch(
-            hdas=managers.hdas.HDAManager( app ),
-        )
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     #
     # -- Functions for listing visualizations. --
@@ -304,7 +302,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     def list_library_datasets( self, trans, **kwargs ):
         """List a library's datasets that can be added to a visualization."""
 
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( kwargs.get('f-library') ) )
+        library = trans.sa_session.query( trans.app.model.Library ).get( self.decode_id( kwargs.get('f-library') ) )
         return trans.fill_template( '/tracks/library_datasets_select_grid.mako',
                                     cntrller="library",
                                     use_panels=False,
@@ -373,7 +371,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             operation = kwargs['operation'].lower()
             ids = util.listify( kwargs['id'] )
             for id in ids:
-                item = session.query( model.Visualization ).get( trans.security.decode_id( id ) )
+                item = session.query( model.Visualization ).get( self.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
                 if operation == "share or publish":
@@ -517,7 +515,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         elif 'disable_link_access_and_unpublish' in kwargs:
             visualization.importable = visualization.published = False
         elif 'unshare_user' in kwargs:
-            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
+            user = session.query( model.User ).get( self.decode_id( kwargs['unshare_user' ] ) )
             if not user:
                 error( "User not found for provided id" )
             association = session.query( model.VisualizationUserShareAssociation ) \
@@ -868,8 +866,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             # use dbkey from dataset to be added or from incoming parameter
             dbkey = None
             if new_dataset_id:
-                decoded_id = trans.security.decode_id( new_dataset_id )
-                hda = self.mgrs.hdas.owned_by_id( trans, decoded_id, trans.user )
+                decoded_id = self.decode_id( new_dataset_id )
+                hda = self.hda_manager.owned_by_id( trans, decoded_id, trans.user )
                 dbkey = hda.dbkey
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
@@ -978,12 +976,12 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             # Loading a shared visualization.
             viz = self.get_visualization( trans, id )
             viz_config = self.get_visualization_config( trans, viz )
-            decoded_id = trans.security.decode_id( viz_config[ 'dataset_id' ] )
-            dataset = self.mgrs.hdas.owned_by_id( trans, decoded_id, trans.user )
+            decoded_id = self.decode_id( viz_config[ 'dataset_id' ] )
+            dataset = self.hda_manager.owned_by_id( trans, decoded_id, trans.user )
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            job = self.mgrs.hdas.creating_job( dataset )
+            job = self.hda_manager.creating_job( dataset )
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
@@ -1013,9 +1011,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
 
         # get the hda if we can, then its data using the phyloviz parsers
         if dataset_id:
-            decoded_id = trans.security.decode_id( dataset_id )
-            hda = self.mgrs.hdas.accessible_by_id( trans, decoded_id, trans.user )
-            hda = self.mgrs.hdas.error_if_uploading( hda )
+            decoded_id = self.decode_id( dataset_id )
+            hda = self.hda_manager.accessible_by_id( trans, decoded_id, trans.user )
+            hda = self.hda_manager.error_if_uploading( hda )
         else:
             return trans.show_message( "Phyloviz couldn't find a dataset_id" )
 
