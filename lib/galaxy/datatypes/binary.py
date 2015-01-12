@@ -106,6 +106,30 @@ class Ab1( Binary ):
 
 Binary.register_unsniffable_binary_ext("ab1")
 
+class CompressedArchive( Binary ):
+    """
+        Class describing an compressed binary file
+        This class can be sublass'ed to implement archive filetypes that will not be unpacked by upload.py.
+    """
+    file_ext = "compressed_archive"
+    compressed = True
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek  = "Compressed binary file"
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "Compressed binary file (%s)" % ( data.nice_size( dataset.get_size() ) )
+
+Binary.register_unsniffable_binary_ext("compressed_archive")
+
 
 class GenericAsn1Binary( Binary ):
     """Class for generic ASN.1 binary format"""
