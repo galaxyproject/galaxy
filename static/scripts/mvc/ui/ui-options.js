@@ -137,16 +137,7 @@ var Base = Backbone.View.extend({
     /** Validate the selected option/options
     */
     validate: function() {
-        var current = this.value();
-        if (!(current instanceof Array)) {
-            current = [current];
-        }
-        for (var i in current) {
-            if ([null, 'null', undefined].indexOf(current[i]) > -1) {
-                return false;
-            }
-        }
-        return true;
+        return Utils.validate(this.value());
     },
     
     /** Wait message during request processing

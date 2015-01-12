@@ -36,14 +36,7 @@ var View = Backbone.View.extend({
         this.list = {};
         
         // error messages
-        var extensions = options.extensions.toString();
-        if (extensions) {
-            extensions = extensions.replace(/,/g, ', ');
-            var pos = extensions.lastIndexOf(', ');
-            if (pos != -1) {
-                extensions = extensions.substr(0, pos) + ' or ' + extensions.substr(pos+1);
-            }
-        }
+        var extensions = Utils.textify(options.extensions);
         var hda_error = 'No dataset available.';
         if (extensions) {
             hda_error = 'No ' + extensions + ' dataset available.';
