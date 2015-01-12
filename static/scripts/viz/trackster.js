@@ -12,7 +12,6 @@ require(
 [
     // load js libraries
     'utils/utils',
-    'mvc/ui/icon-button',
     'libs/jquery/jquery.event.drag',
     'libs/jquery/jquery.event.hover',
     'libs/jquery/jquery.mousewheel',
@@ -32,9 +31,8 @@ require(
 });
 
 // trackster viewer
-define( ["libs/underscore", "base", "viz/trackster/tracks", "viz/visualization"], 
-        function(_, base, tracks, visualization) {
-
+define( ["libs/underscore", "base", "viz/trackster/tracks", "viz/visualization", "mvc/ui/icon-button" ],
+        function(_, base, tracks, visualization, mod_icon_btn) {
 /**
  * User interface controls for trackster 
  */
