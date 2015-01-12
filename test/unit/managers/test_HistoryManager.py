@@ -107,16 +107,16 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertRaises( exceptions.ItemOwnershipException,
             self.history_mgr.error_unless_owner, self.trans, item1, non_owner )
         self.assertRaises( exceptions.ItemOwnershipException,
-            self.history_mgr.owned_by_id, self.trans, item1.id, non_owner )
+            self.history_mgr.get_owned, self.trans, item1.id, non_owner )
 
         self.log( "should not raise an error when checking ownership with owner" )
         self.assertEqual( self.history_mgr.error_unless_owner( self.trans, item1, owner ), item1 )
-        self.assertEqual( self.history_mgr.owned_by_id( self.trans, item1.id, owner ), item1 )
+        self.assertEqual( self.history_mgr.get_owned( self.trans, item1.id, owner ), item1 )
 
         self.log( "should not raise an error when checking ownership with admin" )
         self.assertTrue( self.history_mgr.is_owner( self.trans, item1, self.admin_user ) )
         self.assertEqual( self.history_mgr.error_unless_owner( self.trans, item1, self.admin_user ), item1 )
-        self.assertEqual( self.history_mgr.owned_by_id( self.trans, item1.id, self.admin_user ), item1 )
+        self.assertEqual( self.history_mgr.get_owned( self.trans, item1.id, self.admin_user ), item1 )
 
     def test_accessible( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )
@@ -133,16 +133,16 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertRaises( exceptions.ItemAccessibilityException,
             self.history_mgr.error_unless_accessible, self.trans, item1, non_owner )
         self.assertRaises( exceptions.ItemAccessibilityException,
-            self.history_mgr.accessible_by_id, self.trans, item1.id, non_owner )
+            self.history_mgr.get_accessible, self.trans, item1.id, non_owner )
 
         self.log( "should not raise an error when checking ownership with owner" )
         self.assertEqual( self.history_mgr.error_unless_accessible( self.trans, item1, owner ), item1 )
-        self.assertEqual( self.history_mgr.accessible_by_id( self.trans, item1.id, owner ), item1 )
+        self.assertEqual( self.history_mgr.get_accessible( self.trans, item1.id, owner ), item1 )
 
         self.log( "should not raise an error when checking ownership with admin" )
         self.assertTrue( self.history_mgr.is_accessible( self.trans, item1, self.admin_user ) )
         self.assertEqual( self.history_mgr.error_unless_accessible( self.trans, item1, self.admin_user ), item1 )
-        self.assertEqual( self.history_mgr.accessible_by_id( self.trans, item1.id, self.admin_user ), item1 )
+        self.assertEqual( self.history_mgr.get_accessible( self.trans, item1.id, self.admin_user ), item1 )
 
     def test_importable( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )

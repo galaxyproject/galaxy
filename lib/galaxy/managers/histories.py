@@ -44,6 +44,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
     def most_recent( self, trans, user, **kwargs ):
         """
         """
+#TODO: normalize this
         if not user:
             return None if trans.history.deleted else trans.history
         desc_update_time = self.model_class.table.c.update_time
@@ -127,19 +128,19 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
             for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
                 contents_dict = {}
 
-                if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
+                if isinstance( content, model.HistoryDatasetAssociation ):
                     contents_dict = hda_serializer.serialize_to_view( trans, content, view='detailed' )
 
-                elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
+                elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
                     try:
-                        service = trans.app.dataset_collections_service
+                        service = self.app.dataset_collections_service
                         dataset_collection_instance = service.get_dataset_collection_instance(
                             trans=trans,
                             instance_type='history',
-                            id=trans.security.encode_id( content.id ),
+                            id=self.app.security.encode_id( content.id ),
                         )
                         contents_dict = collection_dictifier( dataset_collection_instance,
-                            security=trans.security, parent=dataset_collection_instance.history, view="element" )
+                            security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
                     except Exception, exc:
                         log.exception( "Error in history API at listing dataset collection: %s", exc )
@@ -165,7 +166,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         """
         #TODO: the default flags above may not make a lot of sense (T,T?)
         state_counts = {}
-        for state in trans.app.model.Dataset.states.values():
+        for state in model.Dataset.states.values():
             state_counts[ state ] = 0
 
         #TODO:?? collections and coll. states?
@@ -182,13 +183,13 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         """
         """
         state_ids = {}
-        for state in trans.app.model.Dataset.states.values():
+        for state in model.Dataset.states.values():
             state_ids[ state ] = []
 
         #TODO:?? collections and coll. states?
         for hda in history.datasets:
             #TODO: do not encode ids at this layer
-            encoded_id = trans.security.encode_id( hda.id )
+            encoded_id = self.app.security.encode_id( hda.id )
             state_ids[ hda.state ].append( encoded_id )
         return state_ids
 
@@ -196,7 +197,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
     def get_history_state( self, trans, history ):
         """Returns the history state based on the states of the HDAs it contains.
         """
-        states = trans.app.model.Dataset.states
+        states = model.Dataset.states
 
         # (default to ERROR)
         state = states.ERROR
@@ -307,21 +308,21 @@ class HistorySerializer( sharable.SharableModelSerializer ):
     def serialize_contents( self, trans, history, key ):
         for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
             contents_dict = {}
-            if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
+            if isinstance( content, model.HistoryDatasetAssociation ):
                 contents_dict = self.hda_serializer.serialize_to_view( trans, hda, view='detailed' )
-            elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
+            elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
                 contents_dict = self.serialize_collection( trans, collection )
             contents_dictionaries.append( contents_dict )
 
     def serialize_collection( self, trans, collection ):
-        service = trans.app.dataset_collections_service
+        service = self.app.dataset_collections_service
         dataset_collection_instance = service.get_dataset_collection_instance(
             trans=trans,
             instance_type='history',
-            id=trans.security.encode_id( collection.id ),
+            id=self.security.encode_id( collection.id ),
         )
         return collection_dictifier( dataset_collection_instance,
-            security=trans.security, parent=dataset_collection_instance.history, view="element" )
+            security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
 
 # =============================================================================

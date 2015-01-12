@@ -118,8 +118,7 @@ class UserManagerTestCase( BaseTestCase ):
         user3 = self.user_mgr.create( self.trans, **user3_data )
 
         self.log( "should return None if no APIKey has been created" )
-        no_api_key_yet = self.user_mgr.api_key( self.trans, user2 )
-        self.assertEqual( self.user_mgr.valid_api_key( self.trans, user2 ).key, None )
+        self.assertEqual( self.user_mgr.valid_api_key( self.trans, user2 ), None )
 
         self.log( "should be able to generate and retrieve valid api key" )
         user2_api_key = self.user_mgr.create_api_key( self.trans, user2 )

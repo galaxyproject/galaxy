@@ -43,26 +43,27 @@ class UserManager( base.ModelManager ):
         user = model.User( email=email, password=password )
         user.username = username
 
-        if trans.app.config.user_activation_on:
+        if self.app.config.user_activation_on:
             user.active = False
         else:
             # Activation is off, every new user is active by default.
             user.active = True
 
-        trans.sa_session.add( user )
+        self.app.model.context.add( user )
         try:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
             #TODO:?? flush needed for permissions below? If not, make optional
         except sqlalchemy.exceptions.IntegrityError, db_err:
             raise exceptions.Conflict( db_err.message )
 
         # can throw an sqlalx.IntegrityError if username not unique
 
-        trans.app.security_agent.create_private_user_role( user )
+        self.app.security_agent.create_private_user_role( user )
+#TODO: any other route to webapp?
         if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
-            permissions = trans.app.config.new_user_dataset_access_role_default_private
-            trans.app.security_agent.user_set_default_permissions( user, default_access_private=permissions )
+            permissions = self.app.config.new_user_dataset_access_role_default_private
+            self.app.security_agent.user_set_default_permissions( user, default_access_private=permissions )
         return user
 
     #TODO: incorporate security/validate_user_input.py
@@ -107,7 +108,7 @@ class UserManager( base.ModelManager ):
         """
         Return a list of admin email addresses from the config file.
         """
-        return [ x.strip() for x in trans.app.config.get( "admin_users", "" ).split( "," ) ]
+        return [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]
 
     def admins( self, trans, filters=None, **kwargs ):
         """
@@ -179,14 +180,14 @@ class UserManager( base.ModelManager ):
         Create and return an API key for `user`.
         """
         #TODO: seems like this should return the model
-        return api_keys.ApiKeyManager( trans.app ).create_api_key( user )
+        return api_keys.ApiKeyManager( self.app ).create_api_key( user )
 
     #TODO: possibly move to ApiKeyManager
     def valid_api_key( self, trans, user ):
         """
         Return this most recent APIKey for this user or None if none have been created.
         """
-        query = ( trans.sa_session.query( model.APIKeys )
+        query = ( self.app.model.context.query( model.APIKeys )
                     .filter_by( user=user )
                     .order_by( model.APIKeys.create_time ) )
         return query.first()
@@ -208,7 +209,7 @@ class UserManager( base.ModelManager ):
         Return the security agent's private role for `user`.
         """
         #TODO: not sure we need to go through sec agent... it's just the first role of type private
-        return trans.app.security_agent.get_private_user_role( user )
+        return self.app.security_agent.get_private_user_role( user )
 
 
 # =============================================================================

@@ -99,7 +99,7 @@ class HDAManagerTestCase( BaseTestCase ):
         hda1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
 
         self.log( "should be able to copy an HDA" )
-        hda2 = self.hda_mgr.copy_hda( self.trans, hda1, history=history1 )
+        hda2 = self.hda_mgr.copy( self.trans, hda1, history=history1 )
         self.assertIsInstance( hda2, model.HistoryDatasetAssociation )
         self.assertEqual( hda2, self.trans.sa_session.query( model.HistoryDatasetAssociation ).get( hda2.id ) )
         self.assertEqual( hda2.name, hda1.name )

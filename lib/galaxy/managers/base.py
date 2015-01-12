@@ -644,7 +644,7 @@ class ModelSerializer( object ):
         Serialize an id attribute of `item`.
         """
         id = getattr( item, key )
-        return trans.security.encode_id( id ) if id is not None else None
+        return self.app.security.encode_id( id ) if id is not None else None
 
     #TODO: AnnotatableMixin
     def serialize_annotation( self, trans, item, key ):
@@ -654,7 +654,8 @@ class ModelSerializer( object ):
 #TODO: which is correct here?
         #user = item.user
         user = trans.user
-        return item.get_item_annotation_str( trans.sa_session, user, item )
+        sa_session = self.app.model.context
+        return item.get_item_annotation_str( sa_session, user, item )
 
     #TODO: TaggableMixin
     def serialize_tags( self, trans, item, key ):
@@ -745,6 +746,7 @@ class ModelDeserializer( object ):
         Convert an incoming serialized dict into values that can be
         directly assigned to an item's attributes and assign them
         """
+        sa_session = self.app.model.context
         new_dict = {}
         for key, val in data.items():
             if key in self.deserializers:
@@ -753,8 +755,8 @@ class ModelDeserializer( object ):
 
         #TODO:?? add and flush here or in manager?
         if flush and len( new_dict ):
-            trans.sa_session.add( item )
-            trans.sa_session.flush()
+            sa_session.add( item )
+            sa_session.flush()
 
         return new_dict
 
@@ -891,10 +893,10 @@ class ModelValidator( object ):
         #TODO: is this correct?
         if val is None:
             return '?'
-        # wot...why tuples?
-        if val not in dict( trans.db_builds ):
-            raise exceptions.RequestParameterInvalidException( "invalid reference", key=key, val=val )
-        return val
+        for genome_build_shortname, longname in self.app.genome_builds.get_genome_build_names( trans=trans ):
+            if val == genome_build_shortname:
+                return val
+        raise exceptions.RequestParameterInvalidException( "invalid reference", key=key, val=val )
 
     #def slug( self, trans, item, key, val ):
     #    """validate slug"""

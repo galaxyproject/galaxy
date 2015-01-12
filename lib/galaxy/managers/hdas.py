@@ -64,16 +64,16 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         if not dataset:
             kwargs[ 'create_dataset' ] = True
         hda = super( HDAManager, self ).create( trans, flush=flush,
-            history=history, dataset=dataset, sa_session=trans.sa_session, **kwargs )
+            history=history, dataset=dataset, sa_session=self.app.model.context, **kwargs )
 
         if history:
             set_hid = not ( 'hid' in kwargs )
             history.add_dataset( hda )
         #TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
 
-        trans.sa_session.add( hda )
+        self.app.model.context.add( hda )
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return hda
 
     def copy( self, trans, hda, history=None, **kwargs ):
@@ -105,15 +105,15 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         #TODO: update from kwargs?
 
         # Need to set after flushed, as MetadataFiles require dataset.id
-        trans.sa_session.add( copy )
-        trans.sa_session.flush()
+        self.app.model.context.add( copy )
+        self.app.model.context.flush()
         copy.metadata = hda.metadata
 
         # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not hda.datatype.copy_safe_peek:
             copy.set_peek()
 
-        trans.sa_session.flush()
+        self.app.model.context.flush()
         return copy
 
     def copy_ldda( self, trans, history, ldda, **kwargs ):
@@ -162,7 +162,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         """
         Raise error if HDA is still uploading.
         """
-        if hda.state == trans.model.Dataset.states.UPLOAD:
+        if hda.state == model.Dataset.states.UPLOAD:
             raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
         return hda
 
@@ -200,12 +200,12 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         Return dictionary containing old-style display app urls.
         """
         display_apps = []
-        if not trans.app.config.enable_old_display_applications:
+        if not self.app.config.enable_old_display_applications:
             return display_apps
 
         for display_app in hda.datatype.get_display_types():
             target_frame, display_links = hda.datatype.get_display_links( hda,
-                display_app, trans.app, trans.request.base )
+                display_app, self.app, trans.request.base )
 
             if len( display_links ) > 0:
                 display_label = hda.datatype.get_display_label( display_app )
@@ -226,9 +226,9 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         """
         """
         # use older system if registry is off in the config
-        if not trans.app.visualizations_registry:
+        if not self.app.visualizations_registry:
            return hda.get_visualizations()
-        return trans.app.visualizations_registry.get_visualizations( trans, hda )
+        return self.app.visualizations_registry.get_visualizations( trans, hda )
 
     #TODO: to data provider or Text datatype directly
     def text_data( self, dataset, preview=True ):
@@ -258,9 +258,9 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         """
         if not hda:
             return hda.conversion_messages.NO_DATA
-        if hda.state == trans.app.model.Job.states.ERROR:
+        if hda.state == model.Job.states.ERROR:
             return hda.conversion_messages.ERROR
-        if hda.state != trans.app.model.Job.states.OK:
+        if hda.state != model.Job.states.OK:
             return hda.conversion_messages.PENDING
         return None
 
@@ -483,7 +483,7 @@ class HDASerializer( base.ModelSerializer ):
             #NOTE: no files
             if isinstance( val, model.MetadataFile ):
                 # only when explicitly set: fetching filepaths can be expensive
-                if not trans.app.config.expose_dataset_path:
+                if not self.app.config.expose_dataset_path:
                     continue
                 val = val.file_name
             #TODO:? possibly split this off?
@@ -510,7 +510,7 @@ class HDASerializer( base.ModelSerializer ):
         """
         """
 #TODO: allow admin
-        if trans.app.config.expose_dataset_path:
+        if self.app.config.expose_dataset_path:
             try:
                 return hda.file_name
             except objectstore.ObjectNotFound:
@@ -521,7 +521,7 @@ class HDASerializer( base.ModelSerializer ):
         """
         """
         url_for = galaxy.web.url_for
-        encoded_id = trans.security.encode_id( hda.id )
+        encoded_id = self.security.encode_id( hda.id )
         urls = {
             'purge'         : url_for( controller='dataset', action='purge_async', dataset_id=encoded_id ),
             'display'       : url_for( controller='dataset', action='display', dataset_id=encoded_id, preview=True ),

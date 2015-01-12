@@ -89,11 +89,11 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         Does not flush/commit changes, however. Item must have name, user,
         importable, and slug attributes.
         """
-        trans.sa_session.add( item )
+        self.app.model.context.add( item )
         item.importable = True
         self.create_unique_slug( trans, item, flush=False )
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return item
 
     def make_non_importable( self, trans, item, flush=True ):
@@ -107,10 +107,10 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         #        self.unpublish( trans, item, flush=False )
         #    else:
         #        raise exceptions.BadRequest( 'Item must be non-published to be inaccessible', item=item )
-        trans.sa_session.add( item )
+        self.app.model.context.add( item )
         item.importable = False
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return item
 
     #def _query_importable( self, trans, filters=None, **kwargs ):
@@ -142,20 +142,20 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         """
         if not item.importable:
             self.make_importable( trans, item, flush=False )
-        trans.sa_session.add( item )
+        self.app.model.context.add( item )
         item.published = True
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return item
 
     def unpublish( self, trans, item, flush=True ):
         """
         Set the published flag on `item` to False.
         """
-        trans.sa_session.add( item )
+        self.app.model.context.add( item )
         item.published = False
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return item
 
     #def _query_published( self, trans, filters=None, **kwargs ):
@@ -202,7 +202,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         Create a share for the given user.
         """
         user_share_assoc = self.user_share_model()
-        trans.sa_session.add( user_share_assoc )
+        self.app.model.context.add( user_share_assoc )
         self.associate( trans, user_share_assoc, item )
         user_share_assoc.user = user
 
@@ -210,7 +210,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         self.create_unique_slug( trans, item )
 
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return user_share_assoc
 
     def unshare_with( self, trans, item, user, flush=True ):
@@ -221,9 +221,9 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             return map( lambda user: self.unshare_with( trans, item, user, flush=False ), user )
         # Look for and delete sharing relation for user.
         user_share_assoc = self.get_share_assocs( trans, item, user=user )[0]
-        trans.sa_session.delete( user_share_assoc )
+        self.app.model.context.delete( user_share_assoc )
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return user_share_assoc
 
     #def _query_shared_with( self, trans, user, filters=None, **kwargs ):
@@ -256,14 +256,14 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             raise exceptions.RequestParameterInvalidException( "Invalid slug", slug=new_slug )
 
         # error if slug is already in use
-        existing_match = ( trans.sa_session.query( self.model_class )
+        existing_match = ( self.app.model.context.query( self.model_class )
             .filter_by( user=item.user, slug=new_slug, importable=True ) )
         if( existing_match.count() != 0 ):
             raise exceptions.BadRequest( "Slug already exists", slug=new_slug )
 
         item.slug = new_slug
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return item
 
     def get_unique_slug( self, trans, item ):
@@ -295,7 +295,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         # add integer to end.
         new_slug = slug_base
         count = 1
-        while ( trans.sa_session.query( item.__class__ )
+        while ( self.app.model.context.query( item.__class__ )
                     .filter_by( user=item.user, slug=new_slug, importable=True )
                     .count() != 0 ):
             # Slug taken; choose a new slug based on count. This approach can
@@ -310,9 +310,9 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         Set a new, unique slug on the item.
         """
         item.slug = self.get_unique_slug( trans, item )
-        trans.sa_session.add( item )
+        self.app.model.context.add( item )
         if flush:
-            trans.sa_session.flush()
+            self.app.model.context.flush()
         return item
 
     #def by_slug( self, trans, user, **kwargs ):
