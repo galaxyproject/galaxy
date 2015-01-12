@@ -89,7 +89,7 @@
 <%def name="render_tool_tagging_elements()">
     <%
         elt_id = int ( floor ( random()*maxint ) )
-        tags = trans.app.tag_handler.get_tool_tags( trans )
+        tags = trans.app.tag_handler.get_tool_tags()
     %>
     ${self.render_tagging_element_html(elt_id=elt_id, \
                                         tags=tags, \

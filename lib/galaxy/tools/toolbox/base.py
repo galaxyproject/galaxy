@@ -394,7 +394,7 @@ class AbstractToolBox( object, Dictifiable ):
                         section.elems.stub_label( section_id )
                 self._integrated_tool_panel.append_section( key, section )
             elif elem.tag == 'label':
-                section.stub_label( key )
+                self._integrated_tool_panel.stub_label( key )
 
     def _write_integrated_tool_panel_config_file( self ):
         """
