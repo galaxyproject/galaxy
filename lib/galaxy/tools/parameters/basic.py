@@ -782,8 +782,11 @@ class SelectToolParameter( ToolParameter ):
         if self.options:
             return self.options.get_options( trans, other_values )
         elif self.dynamic_options:
+            call_other_values = {"__trans__": trans}
+            if other_values:
+                call_other_values.update( other_values.dict )
             try:
-                return eval( self.dynamic_options, self.tool.code_namespace, other_values )
+                return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
             except Exception:
                 return []
         else:
