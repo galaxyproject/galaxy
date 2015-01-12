@@ -487,7 +487,7 @@ class BooleanToolParameter( ToolParameter ):
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
         return d
-    
+
     @property
     def legal_values( self ):
         return [ self.truevalue, self.falsevalue ]
@@ -670,7 +670,7 @@ class BaseURLToolParameter( ToolParameter ):
     def get_label( self ):
         # BaseURLToolParameters are ultimately "hidden" parameters
         return None
-    
+
     def to_dict( self, trans, view='collection', value_mapper=None ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
         d['value'] = self.get_value( trans )
@@ -1033,7 +1033,7 @@ class SelectToolParameter( ToolParameter ):
                     # Found selected option.
                     value = option[1]
             d[ 'value' ] = value
-            
+
         d['display'] = self.display
         d['multiple'] = self.multiple
         d['is_dynamic'] = self.is_dynamic
@@ -1114,7 +1114,7 @@ class GenomeBuildParameter( SelectToolParameter ):
             'display'   : self.display,
             'multiple'  : self.multiple
         })
-        
+
         return d
 
     def _get_dbkey_names( self, trans=None ):
@@ -1316,10 +1316,10 @@ class ColumnListParameter( SelectToolParameter ):
 
         # add data reference
         d['data_ref'] = self.data_ref
-        
+
         # add numerical flag
         d['numerical'] = self.numerical
-        
+
         # return
         return d
 
@@ -2111,7 +2111,7 @@ class DataToolParameter( BaseDataToolParameter ):
         d['multiple'] = self.multiple
         d['is_dynamic'] = True
         d['options'] = {'hda': [], 'hdca': []}
-        
+
         # return default content if context is not available
         if other_values is None:
             return d
@@ -2120,7 +2120,7 @@ class DataToolParameter( BaseDataToolParameter ):
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         history = trans.history
         multiple = self.multiple
-        
+
         # add datasets
         for hda in history.active_datasets_children_and_roles:
             match = dataset_matcher.hda_match( hda )
@@ -2133,7 +2133,7 @@ class DataToolParameter( BaseDataToolParameter ):
                     'name'          : m.name,
                     'src'           : 'hda'
                 })
-            
+
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
@@ -2352,7 +2352,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         d['multiple'] = self.multiple
         d['is_dynamic'] = False
         d['options'] = {'hda': [], 'hdca': []}
-        
+
         # return default content if context is not available
         if other_values is None:
             return d
@@ -2360,7 +2360,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         history = trans.history
-        
+
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({
