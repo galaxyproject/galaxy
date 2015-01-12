@@ -29,12 +29,12 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         .. note:: May be slow! Returns all content traversing recursively through all folders.
         .. seealso:: :class:`galaxy.webapps.galaxy.api.FolderContentsController.index` for a non-recursive solution
 
-        :param  library_id: encoded id string of the library
-        :type   library_id: string
+        :param  library_id: the encoded id of the library
+        :type   library_id: str
 
         :returns:   list of dictionaries of the form:
             * id:   the encoded id of the library item
-            * name: the 'libary path'
+            * name: the 'library path'
                 or relationship of the library item to the root
             * type: 'file' or 'folder'
             * url:  the url to get detailed information on the library item
@@ -109,7 +109,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :param  id:         the encoded id of the library item to return
         :type   id:         str
 
-        :param  library_id: encoded id string of the library that contains this item
+        :param  library_id: the encoded id of the library that contains this item
         :type   library_id: str
 
         :returns:   detailed library item information
@@ -119,7 +119,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             :func:`galaxy.model.LibraryDataset.to_dict` and
             :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
-        class_name, content_id = self.__decode_library_content_id( trans, id )
+        class_name, content_id = self.__decode_library_content_id( id )
         if class_name == 'LibraryFolder':
             content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
             rval = content.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
@@ -146,27 +146,39 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         the HDA's encoded id in ``from_hda_id`` (and optionally ``ldda_message``).
 
         :type   library_id: str
-        :param  library_id: encoded id string of the library where to create the new item
+        :param  library_id: the encoded id of the library where to create the new item
         :type   payload:    dict
         :param  payload:    dictionary structure containing:
 
-            * folder_id:    the parent folder of the new item
+            * folder_id:    the encoded id of the parent folder of the new item
             * create_type:  the type of item to create ('file', 'folder' or 'collection')
-            * from_hda_id:  (optional) the id of an accessible HDA to copy into the
-                library
+            * from_hda_id:  (optional, only if create_type is 'file') the
+                encoded id of an accessible HDA to copy into the library
             * ldda_message: (optional) the new message attribute of the LDDA created
             * extended_metadata: (optional) dub-dictionary containing any extended
                 metadata to associate with the item
-            * link_data_only: (optional) either 'copy_files' (default) or 'link_to_files'
             * upload_option: (optional) one of 'upload_file' (default), 'upload_directory' or 'upload_paths'
-            * server_dir: (optional) only if upload_option is 'upload_directory'
-            * filesystem_paths: (optional) only if upload_option is 'upload_paths' and the user is an admin
+            * server_dir: (optional, only if upload_option is
+                'upload_directory') relative path of the subdirectory of Galaxy
+                ``library_import_dir`` to upload. All and only the files (i.e.
+                no subdirectories) contained in the specified directory will be
+                uploaded.
+            * filesystem_paths: (optional, only if upload_option is
+                'upload_paths' and the user is an admin) file paths on the
+                Galaxy server to upload to the library, one file per line
+            * link_data_only: (optional, only when upload_option is
+                'upload_directory' or 'upload_paths') either 'copy_files'
+                (default) or 'link_to_files'. Setting to 'link_to_files'
+                symlinks instead of copying the files
+            * name: (optional, only if create_type is 'folder') name of the
+                folder to create
+            * description: (optional, only if create_type is 'folder')
+                description of the folder to create
 
         :rtype:     dict
         :returns:   a dictionary containing the id, name,
             and 'show' url of the new item
         """
-        create_type = None
         if 'create_type' not in payload:
             trans.response.status = 400
             return "Missing required 'create_type' parameter."
@@ -178,10 +190,10 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         if 'folder_id' not in payload:
             trans.response.status = 400
-            return "Missing requred 'folder_id' parameter."
+            return "Missing required 'folder_id' parameter."
         else:
             folder_id = payload.pop( 'folder_id' )
-            class_name, folder_id = self.__decode_library_content_id( trans, folder_id )
+            class_name, folder_id = self.__decode_library_content_id( folder_id )
         try:
             # security is checked in the downstream controller
             parent = self.get_library_folder( trans, folder_id, check_ownership=False, check_accessible=False )
@@ -198,9 +210,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         #check for extended metadata, store it and pop it out of the param
         #otherwise sanitize_param will have a fit
-        ex_meta_payload = None
-        if 'extended_metadata' in payload:
-            ex_meta_payload = payload.pop('extended_metadata')
+        ex_meta_payload = payload.pop('extended_metadata', None)
 
         # Now create the desired content object, either file or folder.
         if create_type == 'file':
@@ -272,7 +282,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
     def _copy_hda_to_library_folder( self, trans, from_hda_id, library_id, folder_id, ldda_message='' ):
         """
-        Copies hda ``from_hda_id`` to library folder ``library_folder_id`` optionally
+        Copies hda ``from_hda_id`` to library folder ``folder_id``, optionally
         adding ``ldda_message`` to the new ldda's ``message``.
 
         ``library_contents.create`` will branch to this if called with 'from_hda_id'
@@ -325,7 +335,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :type   id:         str
         :param  id:         the encoded id of the library item to return
         :type   library_id: str
-        :param  library_id: encoded id string of the library that contains this item
+        :param  library_id: the encoded id of the library that contains this item
         :type   payload:    dict
         :param  payload:    dictionary structure containing::
             'converted_dataset_id':
@@ -344,7 +354,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             trans.sa_session.add( assoc )
             trans.sa_session.flush()
 
-    def __decode_library_content_id( self, trans, content_id ):
+    def __decode_library_content_id( self, content_id ):
         if len( content_id ) % 16 == 0:
             return 'LibraryDataset', content_id
         elif content_id.startswith( 'F' ):

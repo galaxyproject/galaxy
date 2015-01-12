@@ -805,7 +805,7 @@ var Node = Backbone.Model.extend({
             nodeView.addDataOutput( output );
         } );
         nodeView.render();
-        workflow.node_changed( this );
+        workflow.node_changed( this, true);
     },
     update_field_data : function( data ) {
         var node = this;
@@ -1094,9 +1094,9 @@ $.extend( Workflow.prototype, {
             this.active_node = node;
         }
     },
-    node_changed : function ( node ) {
+    node_changed : function ( node, force ) {
         this.has_changes = true;
-        if ( this.active_node == node ) {
+        if ( this.active_node == node && (!parent.__NEWTOOLFORM__ || force)) {
             // Reactive with new form_html
             this.check_changes_in_active_form(); //Force changes to be saved even on new connection (previously dumped)
             parent.show_form_for_tool( node.form_html + node.tooltip, node );
@@ -1305,6 +1305,12 @@ function add_node( type, title_text, tool_id ) {
     return node;
 }
 
+function update_node( data ) {
+    var node = workflow.active_node;
+    if (node) {
+        node.update_field_data(data, true);
+    }
+}
 
 var ext_to_type = null;
 var type_to_type = null;

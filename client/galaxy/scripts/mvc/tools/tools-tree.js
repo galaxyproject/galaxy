@@ -2,7 +2,7 @@
     This class maps the tool form dom to an api compatible javascript dictionary.
 */
 // dependencies
-define([], function() {
+define(['utils/utils'], function(Utils) {
 
 // tool form tree
 return Backbone.Model.extend({
@@ -120,7 +120,7 @@ return Backbone.Model.extend({
                             
                             // handle default value
                             if (!field.skip) {
-                                if (input.optional && field.validate && !field.validate()) {
+                                if (field.validate && !field.validate(value)) {
                                     value = null;
                                 }
                                 add (job_input_id, input.id, value);

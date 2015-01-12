@@ -225,7 +225,11 @@ def main():
         if not os.path.isabs( galaxy_test_file_dir ):
             galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
         library_import_dir = galaxy_test_file_dir
-        user_library_import_dir = os.path.join( galaxy_test_file_dir, 'users' )
+        import_dir = os.path.join( galaxy_test_file_dir, 'users' )
+        if os.path.exists(import_dir):
+            user_library_import_dir = import_dir
+        else:
+            user_library_import_dir = None
         ignore_files = ()
 
     start_server = 'GALAXY_TEST_EXTERNAL' not in os.environ

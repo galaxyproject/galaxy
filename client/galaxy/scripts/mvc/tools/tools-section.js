@@ -382,6 +382,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Data input field
         */
         _fieldData : function(input_def) {
+            if (this.app.workflow) {
+                var extensions = Utils.textify(input_def.extensions.toString());
+                input_def.info = 'Data input \'' + input_def.name + '\' (' + extensions + ')';
+                return this._fieldHidden(input_def);
+            }
             var self = this;
             return new SelectContent.View(this.app, {
                 id          : 'field-' + input_def.id,
@@ -398,6 +403,14 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Select/Checkbox/Radio options field
         */
         _fieldSelect : function (input_def) {
+            // show text field in workflow
+            if (this.app.workflow && input_def.is_dynamic) {
+                if (!Utils.validate(input_def.value)) {
+                    input_def.value = '';
+                }
+                return this._fieldText(input_def);
+            }
+            
             // configure options fields
             var options = [];
             for (var i in input_def.options) {
@@ -475,7 +488,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         */
         _fieldHidden : function(input_def) {
             return new Ui.Hidden({
-                id      : 'field-' + input_def.id
+                id      : 'field-' + input_def.id,
+                info    : input_def.info
             });
         },
         

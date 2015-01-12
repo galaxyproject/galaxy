@@ -1,5 +1,7 @@
 #!/bin/sh
 
+./scripts/common_startup.sh
+
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log 
 

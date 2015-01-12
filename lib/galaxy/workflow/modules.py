@@ -18,7 +18,7 @@ from galaxy.dataset_collections import matching
 from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
-from galaxy.tools.parameters import check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
+from galaxy.tools.parameters import params_to_incoming, check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools.execute import execute
@@ -509,7 +509,8 @@ class ToolModule( WorkflowModule ):
                 message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
                 log.debug(message)
                 module.version_changes.append(message)
-            module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
+            if d[ "tool_state" ]:
+                module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
         module.workflow_outputs = d.get( "workflow_outputs", [] )
@@ -687,7 +688,7 @@ class ToolModule( WorkflowModule ):
 
     def get_config_form( self ):
         self.add_dummy_datasets()
-        return self.trans.fill_template( "workflow/editor_tool_form.mako",
+        return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
             tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
 
     def encode_runtime_state( self, trans, state ):

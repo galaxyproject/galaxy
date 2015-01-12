@@ -1742,7 +1742,7 @@ div.unified-panel-body{position:absolute;top:30px;bottom:0;width:100%}
 #masthead li.dropdown>a:hover .caret{border-top-color:gold;border-bottom-color:gold}
 #masthead .navbar-brand{position:absolute;left:0;top:0;font-family:verdana;font-weight:bold;font-size:20px;line-height:1;color:white;padding:5px 20px 12px;margin-left:-15px;z-index:2000}#masthead .navbar-brand img{display:inline;width:26px;vertical-align:top}
 #masthead .navbar-brand a{color:white;text-decoration:none}
-#masthead .iconbar{position:absolute;top:6px;right:110px;cursor:pointer;color:#999;overflow:hidden}#masthead .iconbar .symbol{float:left;margin:0px 10px;height:26px;font-size:11px}
+#masthead .iconbar{position:absolute;top:7px;right:110px;cursor:pointer;color:#999;overflow:hidden}#masthead .iconbar .symbol{float:left;margin:0px 10px;height:26px;font-size:11px}
 #masthead .iconbar .symbol .number{font-weight:bold;font-size:10px;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;position:relative;left:23px;top:-12px}
 #masthead .iconbar .toggle{color:gold}
 .quota-meter-container{position:absolute;top:0;right:0;height:32px}

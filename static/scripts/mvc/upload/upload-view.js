@@ -104,7 +104,7 @@ return Backbone.View.extend({
         });
         
         // define location
-        $('#left .unified-panel-header-inner').append((new UploadButton.View(this.ui_button)).$el);
+        $('.with-upload-button').append((new UploadButton.View(this.ui_button)).$el);
         
         // load extension
         var self = this;

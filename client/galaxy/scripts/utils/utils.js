@@ -15,6 +15,40 @@ function sanitize(content) {
 };
 
 /**
+ * Validate atomic values or list of values
+ * usually used for selectable options
+ * @param{String}   value - Value or list to be validated
+ */
+function validate (value) {
+    if (!(value instanceof Array)) {
+        value = [value];
+    }
+    for (var i in value) {
+        if (['None', null, 'null', undefined, 'undefined'].indexOf(value[i]) > -1) {
+            return false;
+        }
+    }
+    return true;
+};
+
+/**
+ * Convert list to pretty string
+ * @param{String}   lst - List of strings to be converted in human readable list sentence
+ */
+function textify(lst) {
+    var lst = lst.toString();
+    if (lst) {
+        lst = lst.replace(/,/g, ', ');
+        var pos = lst.lastIndexOf(', ');
+        if (pos != -1) {
+            lst = lst.substr(0, pos) + ' or ' + lst.substr(pos+1);
+        }
+        return lst;
+    }
+    return '';
+};
+
+/**
  * Request handler for GET
  * @param{String}   url     - Url request is made to
  * @param{Function} success - Callback on success
@@ -212,7 +246,9 @@ return {
     time: time,
     wrap: wrap,
     request: request,
-    sanitize: sanitize
+    sanitize: sanitize,
+    textify: textify,
+    validate: validate
 };
 
 });

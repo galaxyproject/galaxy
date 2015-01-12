@@ -24,7 +24,7 @@ def plugins_dict(module, plugin_type_identifier):
     for plugin_module in submodules( module ):
         # FIXME: this is not how one is suppose to use __all__ why did you do
         # this past John?
-        for clazz in plugin_module.__all__:
+        for clazz in getattr( plugin_module, "__all__", [] ):
             plugin_type = getattr( clazz, plugin_type_identifier, None )
             if plugin_type:
                 plugin_dict[ plugin_type ] = clazz
