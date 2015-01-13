@@ -1156,7 +1156,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     prt = model.PasswordResetToken(reset_user)
                     trans.sa_session.add(prt)
                     trans.sa_session.flush()
-                    reset_password_length = getattr( trans.app.config, "reset_password_length", 15 )
                     host = trans.request.host.split( ':' )[ 0 ]
                     if host == 'localhost':
                         host = socket.getfqdn()
