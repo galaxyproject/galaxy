@@ -1149,33 +1149,27 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
             user = trans.get_user()
             if reset_user:
-                if user and user.id != reset_user.id:
-                    # This doesn't make any sense because all they have to do is log
-                    # out and then try it again   #TODO revisit why this exists.
-                    message = "You may only reset your own password."
-                    status = 'error'
-                else:
-                    prt = trans.app.model.PasswordResetToken( reset_user )
-                    trans.sa_session.add( prt )
+                prt = trans.app.model.PasswordResetToken( reset_user )
+                trans.sa_session.add( prt )
+                trans.sa_session.flush()
+                host = trans.request.host.split( ':' )[ 0 ]
+                if host == 'localhost':
+                    host = socket.getfqdn()
+                reset_url = url_for( controller='user',
+                                        action="change_password",
+                                        token=prt.token, qualified=True)
+                body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
+                frm = 'galaxy-no-reply@' + host
+                subject = 'Galaxy Password Reset'
+                try:
+                    util.send_mail( frm, email, subject, body, trans.app.config )
+                    trans.sa_session.add( reset_user )
                     trans.sa_session.flush()
-                    host = trans.request.host.split( ':' )[ 0 ]
-                    if host == 'localhost':
-                        host = socket.getfqdn()
-                    reset_url = url_for( controller='user',
-                                         action="change_password",
-                                         token=prt.token, qualified=True)
-                    body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
-                    frm = 'galaxy-no-reply@' + host
-                    subject = 'Galaxy Password Reset'
-                    try:
-                        util.send_mail( frm, email, subject, body, trans.app.config )
-                        trans.sa_session.add( reset_user )
-                        trans.sa_session.flush()
-                        trans.log_event( "User reset password: %s" % email )
-                    except Exception, e:
-                        status = 'error'
-                        message = 'Failed to reset password: %s' % str( e )
-                        log.exception( 'Unable to reset password.' )
+                    trans.log_event( "User reset password: %s" % email )
+                except Exception, e:
+                    status = 'error'
+                    message = 'Failed to reset password: %s' % str( e )
+                    log.exception( 'Unable to reset password.' )
         return trans.fill_template( '/user/reset_password.mako',
                                     message=message,
                                     status=status )
