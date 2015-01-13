@@ -301,47 +301,60 @@ mapped_chars = { '>' :'__gt__',
                  '#' : '__pd__'
                  }
 
-def restore_text(text):
+def restore_text( text, character_map=mapped_chars ):
     """Restores sanitized text"""
     if not text:
         return text
-    for key, value in mapped_chars.items():
+    for key, value in character_map.items():
         text = text.replace(value, key)
     return text
 
-def sanitize_text(text):
+
+def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """
     Restricts the characters that are allowed in text; accepts both strings
-    and lists of strings.
+    and lists of strings; non-string entities will be cast to strings.
     """
-    if isinstance( text, basestring ):
-        return _sanitize_text_helper(text)
-    elif isinstance( text, list ):
-        return [ _sanitize_text_helper(t) for t in text ]
+    if isinstance( text, list ):
+        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
+    if not isinstance( text, basestring ):
+        text = smart_str( text )
+    return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
 
-def _sanitize_text_helper(text):
+def _sanitize_text_helper( text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """Restricts the characters that are allowed in a string"""
 
     out = []
     for c in text:
-        if c in valid_chars:
+        if c in valid_characters:
             out.append(c)
-        elif c in mapped_chars:
-            out.append(mapped_chars[c])
+        elif c in character_map:
+            out.append( character_map[c] )
         else:
-            out.append('X') # makes debugging easier
+            out.append( invalid_character )  # makes debugging easier
     return ''.join(out)
 
-def sanitize_param(value):
+
+def sanitize_lists_to_string( values, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'  ):
+    if isinstance( values, list ):
+        rval = []
+        for value in values:
+            rval.append( sanitize_lists_to_string( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) )
+        values = ",".join( rval )
+    else:
+        values = sanitize_text( values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
+    return values
+
+
+def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """Clean incoming parameters (strings or lists)"""
     if isinstance( value, basestring ):
-        return sanitize_text(value)
+        return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
-        return map(sanitize_text, value)
+        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
     else:
-        raise Exception, 'Unknown parameter type (%s)' % ( type( value ) )
+        raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
 
-valid_filename_chars = set( string.ascii_letters + string.digits + '_.' )
 invalid_filenames = [ '', '.', '..' ]
 def sanitize_for_filename( text, default=None ):
     """
@@ -538,6 +551,28 @@ def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None )
         return unicode( str( value ), encoding, error )
     except:
         return default
+
+def smart_str(s, encoding='utf-8', strings_only=False, errors='strict'):
+    """
+    Returns a bytestring version of 's', encoded as specified in 'encoding'.
+
+    If strings_only is True, don't convert (some) non-string-like objects.
+
+    Adapted from an older, simpler version of django.utils.encoding.smart_str.
+    """
+    if strings_only and isinstance(s, (type(None), int)):
+        return s
+    if not isinstance(s, basestring):
+        try:
+            return str(s)
+        except UnicodeEncodeError:
+            return unicode(s).encode(encoding, errors)
+    elif isinstance(s, unicode):
+        return s.encode(encoding, errors)
+    elif s and encoding != 'utf-8':
+        return s.decode('utf-8', errors).encode(encoding, errors)
+    else:
+        return s
 
 def object_to_string( obj ):
     return binascii.hexlify( obj )
