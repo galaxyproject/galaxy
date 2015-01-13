@@ -6,7 +6,8 @@
     <ul>
         %if t.webapp.name == 'galaxy':
             %if not trans.app.config.use_remote_user:
-                <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller )}">${_('Manage your information')}</a> (email, password, etc.)</li>
+                <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller )}">${_('Manage your information')}</a> (email, address, etc.)</li>
+                <li><a href="${h.url_for( controller='user', action='change_password', cntrller=cntrller )}">${_('Change your password')}</a></li>
             %endif
             <li><a href="${h.url_for( controller='user', action='set_default_permissions', cntrller=cntrller )}">${_('Change default permissions')}</a> for new histories</li>
             <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller )}">${_('Manage your API keys')}</a></li>

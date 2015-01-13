@@ -7,7 +7,6 @@ import logging
 import os
 import random
 import socket
-import string
 import urllib
 
 from datetime import datetime, timedelta
@@ -41,6 +40,13 @@ require_login_template = """
 <p/>
 """
 
+PASSWORD_RESET_TEMPLATE = """
+To reset your Galaxy password for the instance at %s, use the following link:
+
+    <a href="%s">%s</a>
+
+If you did not make this request, no action is necessary on your part, though
+you may want to notify an administrator."""
 
 class UserOpenIDGrid( grids.Grid ):
     use_panels = False
@@ -1031,38 +1037,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
-        elif user and params.get( 'change_password_button', False ):
-            # Editing password.  Do not sanitize passwords, so get from kwd
-            # and not params (which were sanitized).
-            password = kwd.get( 'password', '' )
-            confirm = kwd.get( 'confirm', '' )
-            ok = True
-            if not is_admin:
-                # If the current user is changing their own password, validate their current password
-                current = kwd.get( 'current', '' )
-                if not trans.user.check_password( current ):
-                    message = 'Invalid current password'
-                    status = 'error'
-                    ok = False
-            if ok:
-                # Validate the new password
-                message = validate_password( trans, password, confirm )
-                if message:
-                    status = 'error'
-                else:
-                    # Save new password
-                    user.set_password_cleartext( password )
-                    # Invalidate all other sessions
-                    for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
-                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id == trans.user.id,
-                                                                    trans.app.model.GalaxySession.table.c.is_valid is True,
-                                                                    trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
-                        other_galaxy_session.is_valid = False
-                        trans.sa_session.add( other_galaxy_session )
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
-                    trans.log_event( "User change password" )
-                    message = 'The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).'
         elif user and params.get( 'edit_user_info_button', False ):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
@@ -1105,38 +1079,99 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                           **kwd ) )
 
     @web.expose
-    def reset_password( self, trans, email=None, **kwd ):
+    def change_password( self, trans, token=None, **kwd):
+        """
+        Provides a form with which one can change their password.  If token is
+        provided, don't require current password.
+        """
+        status = None
+        message = None
+        user = None
+        if kwd.get( 'change_password_button', False ):
+            password = kwd.get( 'password', '' )
+            confirm = kwd.get( 'confirm', '' )
+            current = kwd.get( 'current', '' )
+            token_result = None
+            if token:
+                # If a token was supplied, validate and set user
+                token_result = trans.sa_session.query( trans.app.model.PasswordResetToken ).get(token)
+                if token_result and token_result.expiration_time > datetime.now():
+                    user = token_result.user
+                else:
+                    return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
+            else:
+                # The user is changing their own password, validate their current password
+                if trans.user.check_password( current ):
+                    user = trans.user
+                else:
+                    message = 'Invalid current password'
+                    status = 'error'
+            if user:
+                # Validate the new password
+                message = validate_password( trans, password, confirm )
+                if message:
+                    status = 'error'
+                else:
+                    # Save new password
+                    user.set_password_cleartext( password )
+                    # if we used a token, invalidate it and log the user in.
+                    if token_result:
+                        trans.handle_user_login(token_result.user)
+                        token_result.expiration_time = datetime.now()
+                        trans.sa_session.add(token_result)
+                    # Invalidate all other sessions
+                    for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
+                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id == user.id,
+                                                                    trans.app.model.GalaxySession.table.c.is_valid is True,
+                                                                    trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
+                        other_galaxy_session.is_valid = False
+                        trans.sa_session.add( other_galaxy_session )
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
+                    trans.log_event( "User change password" )
+                    return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
+        return trans.fill_template( '/user/change_password.mako',
+                                    token=token,
+                                    status=status,
+                                    message=message )
+
+
+    @web.expose
+    def reset_password( self, trans, email=None, token=None, **kwd ):
         """Reset the user's password. Send an email with the new password."""
         if trans.app.config.smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator." )
-        message = ''
-        status = 'done'
+            return trans.show_error_message( "Mail is not configured for this"
+                "Galaxy instance and password reset information cannot be sent."
+                "Please contact your local Galaxy administrator." )
+        message = None
+        status = None
         if kwd.get( 'reset_password_button', False ):
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
             user = trans.get_user()
             if reset_user:
                 if user and user.id != reset_user.id:
+                    # This doesn't make any sense because all they have to do is log
+                    # out and then try it again   #TODO revisit why this exists.
                     message = "You may only reset your own password."
                     status = 'error'
                 else:
-                    chars = string.letters + string.digits
-                    new_pass = ""
+                    prt = model.PasswordResetToken(reset_user)
+                    trans.sa_session.add(prt)
+                    trans.sa_session.flush()
                     reset_password_length = getattr( trans.app.config, "reset_password_length", 15 )
-                    for i in range( reset_password_length ):
-                        new_pass = new_pass + random.choice( chars )
                     host = trans.request.host.split( ':' )[ 0 ]
                     if host == 'localhost':
                         host = socket.getfqdn()
-                    body = 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass )
+                    reset_url = url_for( controller='user', action="change_password", token=prt.token, qualified=True)
+                    body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
                     frm = 'galaxy-no-reply@' + host
                     subject = 'Galaxy Password Reset'
                     try:
                         util.send_mail( frm, email, subject, body, trans.app.config )
-                        reset_user.set_password_cleartext( new_pass )
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
                         trans.log_event( "User reset password: %s" % email )
-                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( escape( email ), web.url_for( controller='user', action='login', noredirect='true' ) )
+                        message = "An email has been sent to %s.  Please refer to that email for more instructions." % ( escape( email ) )
                     except Exception, e:
                         status = 'error'
                         message = 'Failed to reset password: %s' % str( e )

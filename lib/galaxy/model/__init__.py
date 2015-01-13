@@ -18,6 +18,7 @@ import json
 import socket
 import time
 import numbers
+from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 from string import Template
 from itertools import ifilter
@@ -31,7 +32,7 @@ from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 import galaxy.model.orm.now
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
-from galaxy.util import ready_name_for_url
+from galaxy.util import ready_name_for_url, unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.directory_hash import directory_hash_id
@@ -261,6 +262,14 @@ class User( object, Dictifiable ):
         environment = User.user_template_environment( user )
         return Template( in_string ).safe_substitute( environment )
 
+class PasswordResetToken( object ):
+    def __init__( self, user, token=None):
+        if token:
+            self.token = token
+        else:
+            self.token = unique_id()
+        self.user = user
+        self.expiration_time = datetime.now() + timedelta(hours=24)
 
 class BaseJobMetric( object ):
 
