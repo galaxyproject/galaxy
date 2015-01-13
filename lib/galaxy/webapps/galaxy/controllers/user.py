@@ -1139,7 +1139,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """Reset the user's password. Send an email with the new password."""
         if trans.app.config.smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this Galaxy instance "
-                                             "and password reset information cannot be sent."
+                                             "and password reset information cannot be sent. "
                                              "Please contact your local Galaxy administrator." )
         message = None
         status = 'done'
