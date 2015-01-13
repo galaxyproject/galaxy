@@ -68,6 +68,11 @@ model.UserOpenID.table = Table( "galaxy_user_openid", metadata,
     Column( "provider", TrimmedString( 255 ) ),
     )
 
+model.PasswordResetToken.table = Table("password_reset_token", metadata,
+    Column( "token", String( 32 ), primary_key=True, unique=True, index=True ),
+    Column( "expiration_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
+
 model.History.table = Table( "history", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -1564,6 +1569,10 @@ mapper( model.User, model.User.table,
                                       primaryjoin=( model.User.table.c.form_values_id == model.FormValues.table.c.id ) ),
                      api_keys=relation( model.APIKeys, backref="user", order_by=desc( model.APIKeys.table.c.create_time ) ),
                      ) )
+
+mapper( model.PasswordResetToken, model.PasswordResetToken.table,
+        properties=dict( user=relation( model.User, backref="reset_tokens") ) )
+
 
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value

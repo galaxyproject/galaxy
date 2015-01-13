@@ -354,10 +354,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # If no message specified the warning box will not be shown.
 #registration_warning_message = Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
 
-# When users opt to reset passwords, new ones are created, this option
-# specifies the length of these passwords.
-#reset_password_length = 15
-
 
 # -- Account activation
 
