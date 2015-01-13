@@ -92,6 +92,7 @@
     &:extend(.icon-btn);
     &:extend(.no-highlight);
     margin-right: 5px;
+    height: auto !important;
     ul {
         i {
             font-size: 1.2em; margin-right: 5px; position: relative; top: 1px;
@@ -225,6 +226,16 @@
             padding     : 0px;
             padding-left: 10px;
         }
+    }
+}
+
+.ui-portlet-section {
+    &:extend(.ui-portlet-repeat all);
+    border-left: solid 3px @side-panel-bg;
+    border-radius: 5px;
+    .portlet-header {
+        background: @side-panel-bg;
+        border-bottom: solid darken(@side-panel-bg, 10%) 1px;
     }
 }
 

@@ -276,6 +276,11 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 buttons : this.buttons
             });
             
+            // remove padding
+            if (this.options.workflow) {
+                this.portlet.$content.css('padding', '0px');
+            }
+            
             // append message
             this.portlet.append(this.message.$el, true);
             

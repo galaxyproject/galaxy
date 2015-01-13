@@ -1,8 +1,8 @@
 /**
     This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _createField() function.
 */
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content', 'mvc/tools/tools-input'],
-    function(Utils, Table, Ui, Repeat, SelectContent, InputElement) {
+define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content', 'mvc/tools/tools-input'],
+    function(Utils, Table, Ui, Portlet, Repeat, SelectContent, InputElement) {
 
     // create form view
     var View = Backbone.View.extend({
@@ -36,13 +36,13 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             
             // load settings elements into table
             for (var i in this.inputs) {
-                this._add(this.inputs[i]);
+                this.add(this.inputs[i]);
             }
         },
         
         /** Add a new input element
         */
-        _add: function(input) {
+        add: function(input) {
             // link this
             var self = this;
             
@@ -65,6 +65,10 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                 // repeat block
                 case 'repeat':
                     this._addRepeat(input_def);
+                    break;
+                // customized section
+                case 'section':
+                    this._addSection(input_def);
                     break;
                 // default single element row
                 default:
@@ -103,8 +107,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     // check if non-hidden elements exist
                     var nonhidden = false;
                     for (var j in case_def.inputs) {
-                        var type = case_def.inputs[j].type;
-                        if (type && type !== 'hidden') {
+                        if (!case_def.inputs[j].hidden) {
                             nonhidden = true;
                             break;
                         }
@@ -244,6 +247,58 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             this.table.append(input_def.id);
         },
         
+        /** Add a customized section
+        */
+        _addSection: function(input_def) {
+            // link this
+            var self = this;
+            
+            // create sub section
+            var sub_section = new View(self.app, {
+                inputs  : input_def.inputs,
+                cls     : 'ui-table-plain'
+            });
+            
+            // delete button
+            var button_visible = new Ui.ButtonIcon({
+                icon    : 'fa-eye-slash',
+                tooltip : 'Show/hide section',
+                cls     : 'ui-button-icon-plain'
+            });
+            
+            // create portlet for sub section
+            var portlet = new Portlet.View({
+                title       : input_def.label,
+                cls         : 'ui-portlet-section',
+                operations  : {
+                    button_visible: button_visible
+                }
+            });
+            portlet.append(sub_section.$el);
+            
+            // add event handler visibility button
+            var visible = false;
+            portlet.$content.hide();
+            portlet.$header.css('cursor', 'pointer');
+            portlet.$header.on('click', function() {
+                if (visible) {
+                    visible = false;
+                    portlet.$content.hide();
+                    button_visible.setIcon('fa-eye-slash');
+                } else {
+                    visible = true;
+                    portlet.$content.fadeIn('fast');
+                    button_visible.setIcon('fa-eye');
+                }
+            });
+            
+            // create table row
+            this.table.add(portlet.$el);
+
+            // append row to table
+            this.table.append(input_def.id);
+        },
+
         /** Add a single input field element
         */
         _addRow: function(input_def) {
@@ -272,6 +327,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
             
             // append to table
             this.table.append(id);
+            
+            // hide row if neccessary
+            if (input_def.hidden) {
+                this.table.get(id).hide();
+            }
             
             // return created field
             return field;
@@ -316,7 +376,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
                     field = this._fieldHidden(input_def);
                     break;
                 
-                // hidden field
+                // hidden data field
                 case 'hidden_data':
                     field = this._fieldHidden(input_def);
                     break;
@@ -465,9 +525,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         _fieldText : function(input_def) {
             var self = this;
             return new Ui.Input({
-                id      : 'field-' + input_def.id,
-                area    : input_def.area,
-                onchange: function() {
+                id          : 'field-' + input_def.id,
+                area        : input_def.area,
+                onchange    : function() {
                     self.app.trigger('refresh');
                 }
             });
@@ -476,11 +536,15 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         /** Slider field
         */
         _fieldSlider: function(input_def) {
+            var self = this;
             return new Ui.Slider.View({
-                id      : 'field-' + input_def.id,
-                precise : input_def.type == 'float',
-                min     : input_def.min,
-                max     : input_def.max
+                id          : 'field-' + input_def.id,
+                precise     : input_def.type == 'float',
+                min         : input_def.min,
+                max         : input_def.max,
+                onchange    : function() {
+                    self.app.trigger('refresh');
+                }
             });
         },
         
@@ -488,18 +552,22 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/tools/tools-rep
         */
         _fieldHidden : function(input_def) {
             return new Ui.Hidden({
-                id      : 'field-' + input_def.id,
-                info    : input_def.info
+                id          : 'field-' + input_def.id,
+                info        : input_def.info
             });
         },
         
         /** Boolean field
         */
         _fieldBoolean : function(input_def) {
+            var self = this;
             return new Ui.RadioButton.View({
-                id      : 'field-' + input_def.id,
-                data    : [ { label : 'Yes', value : 'true'  },
-                            { label : 'No',  value : 'false' }]
+                id          : 'field-' + input_def.id,
+                data        : [ { label : 'Yes', value : 'true'  },
+                                { label : 'No',  value : 'false' }],
+                onchange    : function() {
+                    self.app.trigger('refresh');
+                }
             });
         }
     });
