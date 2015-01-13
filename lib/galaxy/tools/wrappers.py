@@ -1,5 +1,7 @@
 import pipes
+from galaxy import exceptions
 from galaxy.util.none_like import NoneDataset
+from galaxy.util.object_wrapper import wrap_with_safe_string
 from galaxy.util import odict
 
 from logging import getLogger
@@ -149,10 +151,13 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
             if name in self.metadata.spec:
                 if rval is None:
                     rval = self.metadata.spec[name].no_value
-                rval = self.metadata.spec[name].param.to_string( rval )
+                rval = self.metadata.spec[ name ].param.to_safe_string( rval )
                 # Store this value, so we don't need to recalculate if needed
                 # again
                 setattr( self, name, rval )
+            else:
+                #escape string value of non-defined metadata value
+                rval = wrap_with_safe_string( rval )
             return rval
 
         def __nonzero__( self ):
@@ -177,9 +182,13 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 ext = tool.inputs[name].extensions[0]
             except:
                 ext = 'data'
-            self.dataset = NoneDataset( datatypes_registry=datatypes_registry, ext=ext )
+            self.dataset = wrap_with_safe_string( NoneDataset( datatypes_registry=datatypes_registry, ext=ext ), no_wrap_classes=ToolParameterValueWrapper )
         else:
-            self.dataset = dataset
+            # Tool wrappers should not normally be accessing .dataset directly, 
+            # so we will wrap it and keep the original around for file paths
+            # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
+            self.unsanitized = dataset
+            self.dataset = wrap_with_safe_string( dataset, no_wrap_classes=ToolParameterValueWrapper )
             self.metadata = self.MetadataWrapper( dataset.metadata )
         self.false_path = getattr( dataset_path, "false_path", None )
         self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
@@ -192,13 +201,31 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         if self.false_path is not None:
             return self.false_path
         else:
-            return self.dataset.file_name
+            return self.unsanitized.file_name
 
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
             return self.false_path
         elif self.false_extra_files_path is not None and key == 'extra_files_path':
+            # Path to extra files was rewritten for this job.
             return self.false_extra_files_path
+        elif key == 'extra_files_path':
+            try:
+                # Assume it is an output and that this wrapper
+                # will be set with correct "files_path" for this
+                # job.
+                return self.files_path
+            except AttributeError:
+                # Otherwise, we have an input - delegate to model and
+                # object store to find the static location of this
+                # directory.
+                try:
+                    return self.unsanitized.extra_files_path
+                except exceptions.ObjectNotFound:
+                    # NestedObjectstore raises an error here
+                    # instead of just returning a non-existent
+                    # path like DiskObjectStore.
+                    raise
         else:
             return getattr( self.dataset, key )
 

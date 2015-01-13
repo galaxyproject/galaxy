@@ -4,6 +4,7 @@ Functionality for dealing with dbkeys.
 #dbkeys read from disk using builds.txt
 from galaxy.util import dbnames
 from galaxy.util.json import from_json_string
+from galaxy.util.object_wrapper import sanitize_lists_to_string
 import os.path
 
 
@@ -84,6 +85,7 @@ class GenomeBuilds( object ):
         # use configured server len path
         if not chrom_info:
             # Default to built-in build.
-            chrom_info = os.path.join( self._static_chrom_info_path, "%s.len" % dbkey )
+           # Since we are using an unverified dbkey, we will sanitize the dbkey before use
+           chrom_info = os.path.join( self._static_chrom_info_path, "%s.len" % sanitize_lists_to_string( dbkey ) )
         chrom_info = os.path.abspath( chrom_info )
         return ( chrom_info, db_dataset )
