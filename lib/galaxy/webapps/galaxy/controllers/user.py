@@ -1153,13 +1153,15 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     message = "You may only reset your own password."
                     status = 'error'
                 else:
-                    prt = model.PasswordResetToken(reset_user)
-                    trans.sa_session.add(prt)
+                    prt = model.PasswordResetToken( reset_user )
+                    trans.sa_session.add( prt )
                     trans.sa_session.flush()
                     host = trans.request.host.split( ':' )[ 0 ]
                     if host == 'localhost':
                         host = socket.getfqdn()
-                    reset_url = url_for( controller='user', action="change_password", token=prt.token, qualified=True)
+                    reset_url = url_for( controller='user',
+                                         action="change_password",
+                                         token=prt.token, qualified=True)
                     body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
                     frm = 'galaxy-no-reply@' + host
                     subject = 'Galaxy Password Reset'
