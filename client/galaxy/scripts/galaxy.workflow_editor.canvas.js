@@ -1089,7 +1089,11 @@ $.extend( Workflow.prototype, {
         if ( this.active_node != node ) {
             this.check_changes_in_active_form();
             this.clear_active_node();
-            parent.show_form_for_tool( node.form_html + node.tooltip, node );
+            if (parent.__NEWTOOLFORM__) {
+                parent.show_form_for_tool( node.form_html, node );
+            } else {
+                parent.show_form_for_tool( node.form_html + node.tooltip, node );
+            }
             node.make_active();
             this.active_node = node;
         }
@@ -1099,7 +1103,11 @@ $.extend( Workflow.prototype, {
         if ( this.active_node == node && (!parent.__NEWTOOLFORM__ || force)) {
             // Reactive with new form_html
             this.check_changes_in_active_form(); //Force changes to be saved even on new connection (previously dumped)
-            parent.show_form_for_tool( node.form_html + node.tooltip, node );
+            if (parent.__NEWTOOLFORM__) {
+                parent.show_form_for_tool( node.form_html, node );
+            } else {
+                parent.show_form_for_tool( node.form_html + node.tooltip, node );
+            }
         }
     },
     layout : function () {
@@ -1303,13 +1311,6 @@ function add_node( type, title_text, tool_id ) {
     canvas_manager.draw_overview();
     workflow.activate_node( node );    
     return node;
-}
-
-function update_node( data ) {
-    var node = workflow.active_node;
-    if (node) {
-        node.update_field_data(data, true);
-    }
 }
 
 var ext_to_type = null;

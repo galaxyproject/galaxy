@@ -7,8 +7,199 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
     // create form view
     var View = ToolFormBase.extend({
         initialize: function(options) {
+            // link with node representation in workflow module
+            this.node = workflow.active_node;
+            if (!this.node) {
+                console.debug('FAILED - tools-form-workflow:initialize() - Node not found in workflow.');
+                return;
+            }
+            
+            // initialize parameters
             this.workflow = true;
-            ToolFormBase.prototype.initialize.call(this, options);
+            this.options = options;
+
+            // load extension
+            var self = this;
+            Utils.get({
+                url     : galaxy_config.root + 'api/datatypes',
+                cache   : true,
+                success : function(datatypes) {
+                    self.datatypes = datatypes;
+                    self._makeSections(options.inputs);
+                    ToolFormBase.prototype.initialize.call(self, options);
+                }
+            });
+        },
+        
+        /** Builds all sub sections
+        */
+        _makeSections: function(inputs){
+            // for annotation
+            inputs[Utils.uuid()] = {
+                label   : 'Edit Step Attributes',
+                type    : 'section',
+                inputs  : [{
+                    label   : 'Annotation / Notes',
+                    name    : 'annotation',
+                    type    : 'text',
+                    area    : true,
+                    help    : 'Add an annotation or notes to this step; annotations are available when a workflow is viewed.',
+                    value   : this.node.annotation
+                }]
+            }
+            
+            // for actions
+            this.post_job_actions = this.node.post_job_actions;
+            for (var i in this.node.output_terminals) {
+                inputs[Utils.uuid()] = this._makeSection(i);
+            }
+        },
+        
+        /** Builds sub section with step actions/annotation
+        */
+        _makeSection: function(output_id){
+            // format datatypes
+            var extensions = [];
+            for (key in this.datatypes) {
+                extensions.push({
+                    0 : this.datatypes[key],
+                    1 : this.datatypes[key]
+                });
+            }
+            
+            // sort extensions
+            extensions.sort(function(a, b) {
+                return a.label > b.label ? 1 : a.label < b.label ? -1 : 0;
+            });
+            
+            // add additional options
+            extensions.unshift({
+                0 : 'Sequences',
+                1 : 'Sequences'
+            });
+            extensions.unshift({
+                0 : 'Roadmaps',
+                1 : 'Roadmaps'
+            });
+            extensions.unshift({
+                0 : 'Leave unchanged',
+                1 : 'None'
+            });
+            
+            // create custom sub section
+            var input_config = {
+                label   : 'Edit Step Action: \'' + output_id + '\'',
+                type    : 'section',
+                inputs  : [{
+                    action      : 'RenameDatasetAction',
+                    argument    : 'newname',
+                    label       : 'Rename dataset',
+                    type        : 'text',
+                    value       : '',
+                    ignore      : '',
+                    help        : 'This action will rename the result dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information.'
+                },{
+                    action      : 'ChangeDatatypeAction',
+                    argument    : 'newtype',
+                    label       : 'Change datatype',
+                    type        : 'select',
+                    ignore      : 'None',
+                    options     : extensions,
+                    help        : 'This action will change the datatype of the output to the indicated value.'
+                },{
+                    action      : 'TagDatasetAction',
+                    argument    : 'tags',
+                    label       : 'Tags',
+                    type        : 'text',
+                    value       : '',
+                    ignore      : '',
+                    help        : 'This action will set tags for the dataset.'
+                },{
+                    label   : 'Assign columns',
+                    type    : 'section',
+                    inputs  : [{
+                        action      : 'ColumnSetAction',
+                        argument    : 'chromCol',
+                        label       : 'Chrom column',
+                        type        : 'text',
+                        value       : '',
+                        ignore      : ''
+                    },{
+                        action      : 'ColumnSetAction',
+                        argument    : 'startCol',
+                        label       : 'Start column',
+                        type        : 'text',
+                        value       : '',
+                        ignore      : ''
+                    },{
+                        action      : 'ColumnSetAction',
+                        argument    : 'endCol',
+                        label       : 'End column',
+                        type        : 'text',
+                        value       : '',
+                        ignore      : ''
+                    },{
+                        action      : 'ColumnSetAction',
+                        argument    : 'strandCol',
+                        label       : 'Strand column',
+                        type        : 'text',
+                        value       : '',
+                        ignore      : ''
+                    },{
+                        action      : 'ColumnSetAction',
+                        argument    : 'nameCol',
+                        label       : 'Name column',
+                        type        : 'text',
+                        value       : '',
+                        ignore      : ''
+                    }],
+                    help    : 'This action will set column assignments in the output dataset. Blank fields are ignored.'
+                },{
+                    action      : 'EmailAction',
+                    label       : 'Email notification',
+                    type        : 'boolean',
+                    value       : 'false',
+                    ignore      : 'false',
+                    help        : 'This action will send an email notifying you when the job is done.'
+                },{
+                    action      : 'DeleteIntermediatesAction',
+                    label       : 'Delete non-outputs',
+                    type        : 'boolean',
+                    value       : 'false',
+                    ignore      : 'false',
+                    help        : 'All non-output steps of this workflow will have datasets deleted if they are no longer being used as job inputs when the job this action is attached to is finished. You *must* be using workflow outputs (the snowflake) in your workflow for this to have any effect.'
+                }]
+            };
+            
+            // visit input nodes and enrich by name/value pairs from server data
+            var self = this;
+            function visit (inputs) {
+                for (var i in inputs) {
+                    var input = inputs[i];
+                    if (input.action) {
+                        input.name = 'pja__' + output_id + '__' + input.action;
+                        if (input.argument) {
+                            input.name += '__' + input.argument;
+                        }
+                        var d = self.post_job_actions[input.action + output_id];
+                        if (d) {
+                            if (input.argument) {
+                                input.value = d.action_arguments && d.action_arguments[input.argument] || input.value;
+                            } else {
+                                input.value = 'true';
+                            }
+                        }
+                    } else {
+                        if (input.inputs) {
+                            visit(input.inputs);
+                        }
+                    }
+                }
+            }
+            visit(input_config.inputs);
+            
+            // return final configuration
+            return input_config;
         },
         
         /** Builds a new model through api call and recreates the entire form
@@ -38,15 +229,16 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 type    : 'GET',
                 url     : model_url,
                 data    : current_state,
-                success : function(node) {
-                    parent.update_node(node);
+                success : function(data) {
+                    // update node in workflow module
+                    self.node.update_field_data(data, true);
                     
                     // process completed
                     self.deferred.done(process_id);
             
                     // log success
                     console.debug('tools-form::_refreshForm() - States refreshed.');
-                    console.debug(node);
+                    console.debug(data);
                 },
                 error   : function(response) {
                     // process completed

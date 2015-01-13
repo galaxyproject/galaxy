@@ -32,6 +32,9 @@
     <![endif]-->
 
     <script type='text/javascript'>
+        // Switch for new tool form
+        __NEWTOOLFORM__ = false;
+        
         // Globals
         workflow = null;
         canvas_manager = null;

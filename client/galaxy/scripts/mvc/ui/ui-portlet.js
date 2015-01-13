@@ -25,6 +25,7 @@ var View = Backbone.View.extend({
     $content : null,
     $buttons : null,
     $operations : null,
+    $header : null,
     
     // initialize
     initialize : function(options) {
@@ -35,13 +36,16 @@ var View = Backbone.View.extend({
         this.setElement(this._template(this.options));
         
         // link content
-        this.$content = this.$el.find('#content');
+        this.$content = this.$el.find('.content');
         
         // link title
-        this.$title = this.$el.find('#portlet-title-text');
+        this.$title = this.$el.find('.portlet-title-text');
+        
+        // link header
+        this.$header = this.$el.find('.portlet-header');
         
         // set content format
-        var $portlet_content = this.$el.find('#portlet-content');
+        var $portlet_content = this.$el.find('.portlet-content');
         if (!this.options.scrollable) {
             if (this.options.title) {
                 $portlet_content.addClass('no-scroll');
@@ -59,7 +63,7 @@ var View = Backbone.View.extend({
         }
         
         // append buttons
-        this.$buttons = $(this.el).find('#buttons');
+        this.$buttons = $(this.el).find('.buttons');
         if (this.options.buttons) {
             // link functions
             var self = this;
@@ -72,7 +76,7 @@ var View = Backbone.View.extend({
         }
         
         // append operations
-        this.$operations = $(this.el).find('#operations');
+        this.$operations = $(this.el).find('.operations');
         if (this.options.operations) {
             // link functions
             var self = this;
@@ -161,27 +165,27 @@ var View = Backbone.View.extend({
         var tmpl =  '<div id="' + options.id + '" class="' + options.cls + '">';
         
         if (options.title) {
-            tmpl +=     '<div id="portlet-header" class="portlet-header">' +
-                            '<div id="operations" style="float: ' + options.operations_flt + ';"></div>' +
+            tmpl +=     '<div class="portlet-header">' +
+                            '<div class="operations" style="float: ' + options.operations_flt + ';"></div>' +
                             '<div class="portlet-title">';
                             
             if (options.icon)
                 tmpl +=         '<i class="icon fa ' + options.icon + '">&nbsp;</i>';
         
-            tmpl +=             '<span id="portlet-title-text" class="portlet-title-text">' + options.title + '</span>' +
+            tmpl +=             '<span class="portlet-title-text">' + options.title + '</span>' +
                             '</div>' +
                         '</div>';
         }
-        tmpl +=         '<div id="portlet-content" class="portlet-content">';
+        tmpl +=         '<div class="portlet-content">';
         
         if (options.placement == 'top') {
-            tmpl +=         '<div id="buttons" class="buttons"></div>';
+            tmpl +=         '<div class="buttons"></div>';
         }
         
-        tmpl +=             '<div id="content" class="content"></div>';
+        tmpl +=             '<div class="content"></div>';
         
         if (options.placement == 'bottom') {
-            tmpl +=         '<div id="buttons" class="buttons"></div>';
+            tmpl +=         '<div class="buttons"></div>';
         }
         
         tmpl +=         '</div>' +

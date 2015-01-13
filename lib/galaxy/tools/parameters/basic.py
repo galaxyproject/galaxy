@@ -46,6 +46,7 @@ class ToolParameter( object, Dictifiable ):
         self.refresh_on_change_values = []
         self.name = input_source.get("name")
         self.type = input_source.get("type")
+        self.hidden = input_source.get("hidden", False)
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
         sanitizer_elem = input_source.parse_sanitizer_elem()
@@ -213,6 +214,7 @@ class ToolParameter( object, Dictifiable ):
 
         tool_dict[ 'model_class' ] = self.__class__.__name__
         tool_dict[ 'optional' ] = self.optional
+        tool_dict[ 'hidden' ] = self.hidden
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
         return tool_dict
@@ -630,6 +632,7 @@ class HiddenToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.value = input_source.get( 'value' )
+        self.hidden = True
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self.value )
