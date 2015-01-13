@@ -1,9 +1,8 @@
 // dependencies
 define(["galaxy.masthead", "mvc/ui/ui-frames"], function(mod_masthead, Frames) {
 
-// frame manager
-var GalaxyFrame = Backbone.View.extend(
-{
+/** Frame manager uses the ui-frames to create the scratch book masthead icon and functionality **/
+var GalaxyFrame = Backbone.View.extend({
     // base element
     el_main: 'body',
         
@@ -17,8 +16,7 @@ var GalaxyFrame = Backbone.View.extend(
     button_load  : null,
     
     // initialize
-    initialize : function(options)
-    {
+    initialize : function(options) {
         // add to masthead menu
         var self = this;
         
@@ -28,8 +26,7 @@ var GalaxyFrame = Backbone.View.extend(
         });
 
         // add activate icon
-        this.button_active = new mod_masthead.GalaxyMastheadIcon (
-        {
+        this.button_active = new mod_masthead.GalaxyMastheadIcon({
             icon        : 'fa-th',
             tooltip     : 'Enable/Disable Scratchbook',
             onclick     : function() { self._activate(); },
@@ -44,8 +41,7 @@ var GalaxyFrame = Backbone.View.extend(
         Galaxy.masthead.append(this.button_active);
 
         // add load icon
-        this.button_load = new mod_masthead.GalaxyMastheadIcon (
-        {
+        this.button_load = new mod_masthead.GalaxyMastheadIcon({
             icon        : 'fa-eye',
             tooltip     : 'Show/Hide Scratchbook',
             onclick     : function(e) {
@@ -122,35 +118,77 @@ var GalaxyFrame = Backbone.View.extend(
         });
 
     },
+
+    /**
+     * Add a trackster visualization to the frames.
+     */
+    add_trackster_viz: function(viz_id) {
+        var self = this;
+        require(['viz/visualization', 'viz/trackster'], function(visualization, trackster) {
+            var viz = new visualization.Visualization({id: viz_id});
+            $.when( viz.fetch() ).then( function() {
+                var ui = new trackster.TracksterUI(galaxy_config.root);
+
+                // Construct frame config based on dataset's type.
+                var frame_config = {
+                        title: viz.get('name'),
+                        type: 'other',
+                        content: function(parent_elt) {
+                            // Create view config.
+                            var view_config = {
+                                container: parent_elt,
+                                name: viz.get('title'),
+                                id: viz.id,
+                                // FIXME: this will not work with custom builds b/c the dbkey needed to be encoded.
+                                dbkey: viz.get('dbkey'),
+                                stand_alone: false
+                            },
+                            latest_revision = viz.get('latest_revision'),
+                            drawables = latest_revision.config.view.drawables;
+
+                            // Set up datasets in drawables.
+                            _.each(drawables, function(d) {
+                                d.dataset = {
+                                    hda_ldda: d.hda_ldda,
+                                    id: d.dataset_id
+                                };
+                            });
+
+                            view = ui.create_visualization(view_config,
+                                                           latest_revision.config.viewport,
+                                                           latest_revision.config.view.drawables,
+                                                           latest_revision.config.bookmarks,
+                                                           false);
+                        }
+                    };
+
+                self.add(frame_config);
+            });
+        });
+    },
     
     /**
      * Add and display a new frame/window based on options.
      */
-    add: function(options)
-    {
+    add: function(options){
         // open new tab
-        if (options.target == '_blank')
-        {
+        if (options.target == '_blank'){
             window.open(options.content);
             return;
         }
         
         // reload entire window
-        if (options.target == '_top' || options.target == '_parent' || options.target == '_self')
-        {
+        if (options.target == '_top' || options.target == '_parent' || options.target == '_self'){
             window.location = options.content;
             return;
         }
         
         // validate
-        if (!this.active)
-        {
+        if (!this.active){
             // fix url if main frame is unavailable
             var $galaxy_main = $(window.parent.document).find('#galaxy_main');
-            if (options.target == 'galaxy_main' || options.target == 'center')
-            {
-                if ($galaxy_main.length === 0)
-                {
+            if (options.target == 'galaxy_main' || options.target == 'center'){
+                if ($galaxy_main.length === 0){
                     var href = options.content;
                     if (href.indexOf('?') == -1)
                         href += '?';
@@ -173,11 +211,9 @@ var GalaxyFrame = Backbone.View.extend(
     },
     
     // activate/disable panel
-    _activate: function ()
-    {
+    _activate: function (){
         // check
-        if (this.active)
-        {
+        if (this.active){
             // disable
             this.active = false;
 
@@ -196,8 +232,7 @@ var GalaxyFrame = Backbone.View.extend(
     },
     
     // update frame counter
-    _refresh: function()
-    {
+    _refresh: function(){
         // update on screen counter
         this.button_load.number(this.frames.length());
         

@@ -13,7 +13,7 @@ class SearchController( BaseUIController ):
     @web.expose
     def index(self, trans):
         """
-        Not ready for human consumption, yet.  Power users can still use the
-        search API.
+        Per the message, this is not ready for human consumption, yet.  Power
+        users can still use the search API.
         """
-        return trans.show_message("Sorry, the search interface isn't quite ready for use, yet.")
+        return trans.show_message("Sorry, the search interface isn't quite ready for use, yet.  Watch the release notes and check back later!")

@@ -25,16 +25,17 @@
 }
 
 // ---------------------------------------------------------------------------- panel header buttons
-#history-refresh-button,
-#history-options-button {
-    display : inline-block;
-    height  : @icon-btn-size;
-    width   : @icon-btn-size;
-    text-align  : center;
-    line-height : @icon-btn-size - 3;
-    font-size   : 1.2em;
+.history-panel-header {
+    .panel-header-button {
+        display : inline-block;
+        height  : @icon-btn-size;
+        width   : @icon-btn-size;
+        text-align  : center;
+        line-height : @icon-btn-size - 3;
+        font-size   : 1.2em;
 
-    padding: 0px;
+        padding: 0px;
+    }
 }
 
 
@@ -373,11 +374,17 @@
 .history-panel {
 
     .controls {
-        margin: 10px;
+        margin: 10px 10px 0px 10px;
         padding: 0px;
 
-        .messages > * {
-            cursor: pointer;
+        .messages {
+            margin-bottom: 0px;
+            & > * {
+                cursor: pointer;
+                &:last-child {
+                    margin-bottom: 8px;
+                }
+            }
         }
 
         .title {
@@ -391,7 +398,7 @@
         }
         .subtitle:not(:empty){
             margin-top: -4px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .editable-text {
             border: solid transparent 1px;
@@ -403,6 +410,7 @@
 
         .history-size {
             display: inline-block;
+            margin-top: 4px;
             color: black;
         }
         .actions {
@@ -442,6 +450,7 @@
         }
         .annotation-display {
             .annotation {
+                //display: inline-block;
                 border-radius: 3px;
                 border: 1px solid fadeout( @layout-border-color, 50% );
                 padding: 4px;
@@ -461,7 +470,7 @@
             }
             textarea {
                 margin: 0px 0px 2px 0px;
-                display: block;
+                //display: block;
                 border-radius: 3px;
                 width: 100%;
             }
@@ -494,8 +503,6 @@
     .dataset-collection {
         .subtitle {
             margin-top: 2px;
-            font-size: 90%;
-            color: #777;
         }
     }
     .dataset-collection-panel {
@@ -589,19 +596,11 @@
 
 // ---------------------------------------------------------------------------- current-history-panel
 .current-history-panel {
+    // .current-content is added to dataset/collection when displayed/edited/visualized, etc.
+    //  (roughly: when it's being used in the center panel)
     .list-item.history-content.current-content {
-
-        border: 2px solid #333;
-        border-bottom-width: 2px;
-        .primary-actions {
-            margin: 5px 8px 0px 0px;
-        }
-        .title-bar {
-            padding: 5px 8px 5px 6px;
-        }
-        .details {
-            padding: 0px 8px 5px 6px;
-        }
+        //TODO: Galaxy's 'bs-primary' color - not sure where this is defined
+        border-left: 5px solid #4E5777;
     }
 }
 

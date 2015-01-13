@@ -147,19 +147,6 @@ HistoryOptions.prototype.toggle = function toggle( optionLabel, force ){
 //};
 
 
-// ------------------------------------------------------------------- check the togglable options
-// these are easy, one click options (they don't open a new page)
-/** Is 'Include Deleted Datasets' on (accrd. to the menu)?
- */
-HistoryOptions.prototype.deletedAreIncluded = function deletedAreIncluded(){
-    return this.isOn( this.data.labels.options.includeDeleted );
-};
-/** Is 'Include Deleted Datasets' on (accrd. to the menu)?
- */
-HistoryOptions.prototype.hiddenAreIncluded = function hiddenAreIncluded(){
-    return this.isOn( this.data.labels.options.includeHidden );
-};
-
 // ------------------------------------------------------------------- options that control the hpanel
 /** corresponds to history options menu: 'Collapse Expanded Datasets'
  */
@@ -169,39 +156,6 @@ HistoryOptions.prototype.collapseExpanded = function collapseExpanded( then ){
         this.wait( 500, then );
     });
 };
-
-/** set 'Include Deleted Datasets' to on
- *  @param {Function} then  casper step to run when option is set
- */
-HistoryOptions.prototype.includeDeleted = function includeDeleted( then ){
-    this.toggle( this.data.labels.options.includeDeleted, true );
-    this.spaceghost.historypanel.waitForHdas( then );
-};
-
-/** set 'Include Deleted Datasets' to off
- *  @param {Function} then  casper step to run when option is set
- */
-HistoryOptions.prototype.excludeDeleted = function excludeDeleted( then ){
-    this.toggle( this.data.labels.options.includeDeleted, false );
-    this.spaceghost.historypanel.waitForHdas( then );
-};
-
-/** set 'Include Hidden Datasets' to on
- *  @param {Function} then  casper step to run when option is set
- */
-HistoryOptions.prototype.includeHidden = function includeHidden( then ){
-    this.toggle( this.data.labels.options.includeHidden, true );
-    this.spaceghost.historypanel.waitForHdas( then );
-};
-
-/** set 'Include Hidden Datasets' to off
- *  @param {Function} then  casper step to run when option is set
- */
-HistoryOptions.prototype.excludeHidden = function excludeHidden( then ){
-    this.toggle( this.data.labels.options.includeHidden, false );
-    this.spaceghost.historypanel.waitForHdas( then );
-};
-
 
 // =================================================================== SELECTORS
 //TODO: data is not a very good name
@@ -232,14 +186,13 @@ HistoryOptions.prototype.data = {
             datasetSecurity         : "Dataset Security",
             resumePausedJobs        : "Resume Paused Jobs",
             collapseExpanded        : 'Collapse Expanded Datasets',
-            includeDeleted          : 'Include Deleted Datasets',
-            includeHidden           : 'Include Hidden Datasets',
             unhideHiddenDatasets    : "Unhide Hidden Datasets",
-            purgeDeletedDatasets    : "Purge Deleted Datasets",
+            deleteHiddenDatasets    : "Delete Hidden Datasets",
             showStructure           : "Show Structure",
+            exportCitations         : "Export Citations",
             exportToFile            : "Export to File",
             deleteHistory           : "Delete",
-            deleteHistoryPermanently : "Delete Permanently",
+            //deleteHistoryPermanently : "Delete Permanently",
             //Other Actions
             importFromFile          : "Import from File"
         }

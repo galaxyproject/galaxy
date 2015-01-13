@@ -16,14 +16,14 @@ class FolderManager( object ):
     Interface/service object for interacting with folders.
     """
 
-    def get( self, trans, decoded_folder_id, check_ownership=False, check_accessible=True):
+    def get( self, trans, decoded_folder_id, check_manageable=False, check_accessible=True):
         """
         Get the folder from the DB.
 
         :param  decoded_folder_id:       decoded folder id
         :type   decoded_folder_id:       int
-        :param  check_ownership:         flag whether the check that user is owner
-        :type   check_ownership:         bool
+        :param  check_manageable:         flag whether the check that user can manage item
+        :type   check_manageable:         bool
         :param  check_accessible:        flag whether to check that user can access item
         :type   check_accessible:        bool
 
@@ -38,17 +38,17 @@ class FolderManager( object ):
             raise exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
         except Exception, e:
             raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
-        folder = self.secure( trans, folder, check_ownership, check_accessible )
+        folder = self.secure( trans, folder, check_manageable, check_accessible )
         return folder
 
-    def secure( self, trans, folder, check_ownership=True, check_accessible=True ):
+    def secure( self, trans, folder, check_manageable=True, check_accessible=True ):
         """
-        Check if (a) user owns folder or (b) folder is accessible to user.
+        Check if (a) user can manage folder or (b) folder is accessible to user.
 
         :param  folder:                  folder item
         :type   folder:                  LibraryFolder
-        :param  check_ownership:         flag whether the check that user is owner
-        :type   check_ownership:         bool
+        :param  check_manageable:        flag whether to check that user can manage item
+        :type   check_manageable:        bool
         :param  check_accessible:        flag whether to check that user can access item
         :type   check_accessible:        bool
 
@@ -58,23 +58,26 @@ class FolderManager( object ):
         # all folders are accessible to an admin
         if trans.user_is_admin():
             return folder
-        if check_ownership:
-            folder = self.check_ownership( trans, folder )
+        if check_manageable:
+            folder = self.check_manageable( trans, folder )
         if check_accessible:
             folder = self.check_accessible( trans, folder )
         return folder
 
-    def check_ownership( self, trans, folder ):
+    def check_manageable( self, trans, folder ):
         """
-        Check whether the user is owner of the folder.
+        Check whether the user can manage the folder.
 
         :returns:   the original folder
         :rtype:     LibraryFolder
+
+        :raises: AuthenticationRequired, InsufficientPermissionsException
         """
         if not trans.user:
-            raise exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy items", type='error' )
-        if folder.user != trans.user:
-            raise exceptions.ItemOwnershipException( "Folder is not owned by the current user", type='error' )
+            raise exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy items.", type='error' )
+        current_user_roles = trans.get_current_user_roles()
+        if not trans.app.security_agent.can_manage_library_item( current_user_roles, folder ):
+            raise exceptions.InsufficientPermissionsException( "You don't have permissions to manage this folder.", type='error' )
         else:
             return folder
 
@@ -135,6 +138,22 @@ class FolderManager( object ):
         trans.app.security_agent.copy_library_permissions( trans, parent_folder, new_folder )
         return new_folder
 
+    def delete( self, trans, folder, undelete=False ):
+        """
+        Mark given folder deleted/undeleted based on the flag.
+
+        :raises: ItemAccessibilityException
+        """
+        if not trans.user_is_admin():
+            folder = self.check_manageable( trans, folder )
+        if undelete:
+            folder.deleted = False
+        else:
+            folder.deleted = True
+        trans.sa_session.add( folder )
+        trans.sa_session.flush()
+        return folder
+
     def get_current_roles( self, trans, folder ):
         """
         Find all roles currently connected to relevant permissions 
@@ -176,7 +195,7 @@ class FolderManager( object ):
         if ( ( len( encoded_folder_id ) % 16 == 1 ) and encoded_folder_id.startswith( 'F' ) ):
             cut_id = encoded_folder_id[ 1: ]
         else:
-            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_id ) )
+            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
         return cut_id
 
     def decode_folder_id( self, trans, encoded_folder_id ):

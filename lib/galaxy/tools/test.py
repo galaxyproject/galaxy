@@ -195,13 +195,39 @@ class ToolTestBuilder( object ):
                     if isinstance( value, basic.DataToolParameter ):
                         if not isinstance(param_value, list):
                             param_value = [ param_value ]
-                        processed_value = [ self.__add_uploaded_dataset( context.for_state(), v, param_extra, value ) for v in param_value ]
-                    if isinstance( value, basic.DataCollectionToolParameter ):
+                        map( lambda v: self.__add_uploaded_dataset( context.for_state(), v, param_extra, value ), param_value )
+                        processed_value = param_value
+                    elif isinstance( value, basic.DataCollectionToolParameter ):
                         assert 'collection' in param_extra
                         collection_def = param_extra[ 'collection' ]
                         for ( name, value, extra ) in collection_def.collect_inputs():
                             require_file( name, value, extra, self.required_files )
                         processed_value = collection_def
+                    elif isinstance( value, basic.SelectToolParameter ) and hasattr( value, 'static_options' ):
+                        # Tests may specify values as either raw value or the value
+                        # as they appear in the list - the API doesn't and shouldn't
+                        # accept the text value - so we need to convert the text
+                        # into the form value.
+                        def process_param_value( param_value ):
+                            found_value = False
+                            value_for_text = None
+                            if value.static_options:
+                                for (text, opt_value, selected) in value.static_options:
+                                    if param_value == opt_value:
+                                        found_value = True
+                                    if value_for_text is None and param_value == text:
+                                        value_for_text = opt_value
+                            if not found_value and value_for_text is not None:
+                                processed_value = value_for_text
+                            else:
+                                processed_value = param_value
+                            return processed_value
+                        # Do replacement described above for lists or singleton
+                        # values.
+                        if isinstance( param_value, list ):
+                            processed_value = map( process_param_value, param_value )
+                        else:
+                            processed_value = process_param_value( param_value )
                     else:
                         processed_value = param_value
                     expanded_inputs[ context.for_state() ] = processed_value
@@ -345,7 +371,7 @@ def __parse_test_attributes( output_elem, attrib ):
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
     if not (assert_list or file or extra_files or metadata):
-        raise Exception( "Test output defines nothting to check (e.g. must have a 'file' check against, assertions to check, etc...)")
+        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata

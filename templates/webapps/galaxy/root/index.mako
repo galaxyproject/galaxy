@@ -28,102 +28,7 @@
     galaxy_async.set_func_url( galaxy_async.set_user_pref,
         "${h.url_for( controller='user', action='set_user_pref_async' )}");
     
-    // set up history options menu
     $(function(){
-        // Init history options.
-        //$("#history-options-button").css( "position", "relative" );
-        var popupmenu = PopupMenu.make_popupmenu( $("#history-options-button"), {
-            "${_("History Lists")}": null,
-            "${_("Saved Histories")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='list')}";
-            },
-            "${_("Histories Shared with Me")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='list_shared')}";
-            },
-            "${_("Current History")}": null,
-            "${_("Create New")}": function() {
-                if( Galaxy && Galaxy.currHistoryPanel ){
-                    Galaxy.currHistoryPanel.createNewHistory();
-                }
-            },
-            "${_("Copy History")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='copy')}";
-            },
-            "${_("Copy Datasets")}": function() {
-                galaxy_main.location = "${h.url_for( controller='dataset', action='copy_datasets' )}";
-            },
-            "${_("Share or Publish")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='sharing' )}";
-            },
-            "${_("Extract Workflow")}": function() {
-                galaxy_main.location = "${h.url_for( controller='workflow', action='build_from_current_history' )}";
-            },
-            "${_("Dataset Security")}": function() {
-                galaxy_main.location = "${h.url_for( controller='root', action='history_set_default_permissions' )}";
-            },
-            "${_("Resume Paused Jobs")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
-            },
-            "${_("Collapse Expanded Datasets")}": function() {
-                if( Galaxy && Galaxy.currHistoryPanel ){
-                    Galaxy.currHistoryPanel.collapseAll();
-                }
-            },
-            "${_("Include Deleted Datasets")}": function( clickEvent, thisMenuOption ) {
-                if( Galaxy && Galaxy.currHistoryPanel ){
-                    thisMenuOption.checked = Galaxy.currHistoryPanel.toggleShowDeleted();
-                }
-            },
-            "${_("Include Hidden Datasets")}": function( clickEvent, thisMenuOption ) {
-                if( Galaxy && Galaxy.currHistoryPanel ){
-                    thisMenuOption.checked = Galaxy.currHistoryPanel.toggleShowHidden();
-                }
-            },
-            "${_("Unhide Hidden Datasets")}": function() {
-                if ( confirm( "Really unhide all hidden datasets?" ) ) {
-                    galaxy_main.location = "${h.url_for( controller='history', action='unhide_datasets', current=True )}";
-                }
-            },
-            "${_("Delete Hidden Datasets")}": function() {
-                if ( confirm( "Really delete all hidden datasets?" ) ) {
-                    galaxy_main.location = "${h.url_for( controller='history', action='delete_hidden_datasets')}";
-                }
-            },
-            "${_("Purge Deleted Datasets")}": function() {
-                if ( confirm( "Really delete all deleted datasets permanently? This cannot be undone." ) ) {
-                    galaxy_main.location = "${h.url_for( controller='history', action='purge_deleted_datasets' )}";
-                    // update the user disk size when the purge page loads
-                    $( '#galaxy_main' ).load( function(){
-                        Galaxy.user.fetch();
-                    })
-                }
-            },
-            "${_("Show Structure")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='display_structured' )}";
-            },            
-            "${_("Export Citations")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='citations' )}";
-            },
-            "${_("Export to File")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='export_archive', preview=True )}";
-            },
-            "${_("Delete")}": function() {
-                if ( confirm( "Really delete the current history?" ) ) {
-                    galaxy_main.location = "${h.url_for( controller='history', action='delete_current' )}";
-                }
-            },
-            "${_("Delete Permanently")}": function() {
-                if ( confirm( "Really delete the current history permanently? This cannot be undone." ) ) {
-                    galaxy_main.location = "${h.url_for( controller='history', action='delete_current', purge=True )}";
-                }
-            },
-            "${_("Other Actions")}": null,
-            "${_("Import from File")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
-            }
-        });
-        Galaxy.historyOptionsMenu = popupmenu;
-
         // Fix iFrame scrolling on iOS
         if( navigator.userAgent.match( /(iPhone|iPod|iPad)/i ) ) {
             $("iframe").parent().css( {
@@ -131,7 +36,6 @@
                 "-webkit-overflow-scrolling": "touch"
             })
         }
-
     });
     </script>
 </%def>
@@ -189,7 +93,7 @@
 <%def name="right_panel()">
     <!-- current history panel -->
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner">
+        <div class="unified-panel-header-inner history-panel-header">
             <div style="float: right">
                 <a id="history-refresh-button" class='panel-header-button' href="javascript:void(0)"
                    title="${ _( 'Refresh history' ) }">
@@ -200,30 +104,16 @@
                    title="${ _( 'History options' ) }">
                     <span class="fa fa-cog"></span>
                 </a>
+                %if trans.user:
+                <a id="history-view-multi-button" class='panel-header-button'
+                   href="${h.url_for( controller='history', action='view_multiple' )}"
+                   title="${ _( 'View all histories' ) }">
+                    <span class="fa fa-columns"></span>
+                </a>
+                %endif
             </div>
             <div class="panel-header-text">${_('History')}</div>
         </div>
-    </div>
-    <div class="unified-panel-body">
-        <div id="current-history-panel" class="history-panel"></div>
-        ## Don't bootstrap data here - confuses the browser history: load via API
-        <script type="text/javascript">
-        require([ "mvc/history/history-panel-edit-current" ], function( historyPanel ){
-            $(function(){
-                var currPanel = new historyPanel.CurrentHistoryPanel({
-                    el              : $( "#current-history-panel" ),
-                    purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
-                    linkTarget      : 'galaxy_main',
-                    $scrollContainer: function(){ return this.$el.parent(); }
-                });
-                currPanel
-                    .connectToQuotaMeter( Galaxy.quotaMeter )
-                    .connectToOptionsMenu( Galaxy.historyOptionsMenu );
-                currPanel.loadCurrentHistory();
-                Galaxy.currHistoryPanel = currPanel;
-            });
-        });
-        </script>
         <script type="text/javascript">
             $(function(){
                 $( '#history-refresh-button' )
@@ -233,6 +123,36 @@
                             inside_galaxy_frameset = true;
                         }
                     });
+            });
+            require([ 'mvc/history/options-menu' ], function( optionsMenu ){
+                $(function(){
+                    //##TODO: Galaxy is not reliably available here since index doesn't use app
+                    var popupmenu = optionsMenu( $( "#history-options-button" ), {
+                            anonymous    : ${ 'true' if not trans.user else 'false' },
+                            purgeAllowed : ${ 'true' if trans.app.config.allow_user_dataset_purge else 'false' },
+                            root         : '${ h.url_for( "/" ) }'
+                        });
+                    Galaxy.historyOptionsMenu = popupmenu;
+                });
+            });
+        </script>
+    </div>
+    <div class="unified-panel-body">
+        <div id="current-history-panel" class="history-panel"></div>
+        ## Don't bootstrap data here - confuses the browser history: load via API
+        <script type="text/javascript">
+            require([ "mvc/history/history-panel-edit-current" ], function( historyPanel ){
+                $(function(){
+                    var currPanel = new historyPanel.CurrentHistoryPanel({
+                        el              : $( "#current-history-panel" ),
+                        purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
+                        linkTarget      : 'galaxy_main',
+                        $scrollContainer: function(){ return this.$el.parent(); }
+                    });
+                    currPanel.connectToQuotaMeter( Galaxy.quotaMeter );
+                    currPanel.loadCurrentHistory();
+                    Galaxy.currHistoryPanel = currPanel;
+                });
             });
         </script>
     </div>

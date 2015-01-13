@@ -138,7 +138,6 @@ extend( FeatureSlotter.prototype, {
                 // Feature is slotted; if feature now has larger start/end coordinates,
                 // update drawing coordinates.
                 if (feature[1] < slotted_info.feature[1]  || slotted_info.feature[2] < feature[2]) {
-                    console.log(feature[3], slotted_info.slot, this._find_slot(this._get_draw_coords(feature)));
                     // Feature has changed (e.g. a single read now has its pair), so recalculate its 
                     // drawing coordinates.
                     var old_draw_coords = this._get_draw_coords(slotted_info.feature),

@@ -164,12 +164,13 @@ var CurrentHistoryPanel = _super.extend(
     _setUpCollectionListeners : function(){
         _super.prototype._setUpCollectionListeners.call( this );
 
+        //TODO:?? may not be needed? see history-panel-edit, 369
         // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
         this.collection.on( 'state:ready', function( model, newState, oldState ){
             if( ( !model.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
-                this.removeItemView( this.viewFromModel( model ) );
+                this.removeItemView( model );
             }
         }, this );
     },
@@ -226,7 +227,7 @@ var CurrentHistoryPanel = _super.extend(
                 '</a>'
             ].join('') );
             $emptyMsg.find( '.uploader-link' ).click( function( ev ){
-                Galaxy.upload._eventShow( ev );
+                Galaxy.upload.show( ev );
             });
             $emptyMsg.find( '.get-data-link' ).click( function( ev ){
                 $toolMenu.parent().scrollTop( 0 );
@@ -288,51 +289,23 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     // ------------------------------------------------------------------------ sub-views
-    // reverse HID order
-    /** Override to reverse order of views - newest contents on top
-     *      and add the current-content highlight class to currentContentId's view
-     */
+    /** Override to add the current-content highlight class to currentContentId's view */
     _attachItems : function( $whereTo ){
-        var panel = this;
-        this.$list( $whereTo ).append( this.views.reverse().map( function( view ){
-            // add current content
-            if( panel.currentContentId && view.model.id === panel.currentContentId ){
-                panel.setCurrentContent( view );
-            }
-            return view.$el;
-        }));
+        _super.prototype._attachItems.call( this, $whereTo );
+        var panel = this,
+            currentContentView;
+        if( panel.currentContentId
+        && ( currentContentView = panel.viewFromModelId( panel.currentContentId ) ) ){
+            panel.setCurrentContent( currentContentView );
+        }
         return this;
     },
 
-    /** Override to add datasets at the top */
+    /** Override to remove any drill down panels */
     addItemView : function( model, collection, options ){
-        this.log( this + '.addItemView:', model );
-        var panel = this;
-        if( !panel._filterItem( model ) ){ return undefined; }
-//TODO: alternately, call collapse drilldown
-        // if this panel is currently hidden, return undefined
-        if( panel.panelStack.length ){ return this._collapseDrilldownPanel(); }
-
-        var view = panel._createItemView( model );
-        // use unshift and prepend to preserve reversed order
-        panel.views.unshift( view );
-
-        panel.scrollToTop();
-        $({}).queue([
-            function fadeOutEmptyMsg( next ){
-                var $emptyMsg = panel.$emptyMessage();
-                if( $emptyMsg.is( ':visible' ) ){
-                    $emptyMsg.fadeOut( panel.fxSpeed, next );
-                } else {
-                    next();
-                }
-            },
-            function createAndPrepend( next ){
-                // render as hidden then slide down
-                panel.$list().prepend( view.render( 0 ).$el.hide() );
-                view.$el.slideDown( panel.fxSpeed );
-            }
-        ]);
+        var view = _super.prototype.addItemView.call( this, model, collection, options );
+        if( !view ){ return view; }
+        if( this.panelStack.length ){ return this._collapseDrilldownPanel(); }
         return view;
     },
 
@@ -421,22 +394,6 @@ var CurrentHistoryPanel = _super.extend(
         var msg = this.$el.find( '.quota-message' );
         //this.log( this + ' hiding quota message:', msg, userData );
         if( !msg.is( ':hidden' ) ){ msg.slideUp( this.fxSpeed ); }
-    },
-
-//TODO: move show_deleted/hidden into panel from opt menu and remove this
-    /** add listeners to an external options menu (templates/webapps/galaxy/root/index.mako) */
-    connectToOptionsMenu : function( optionsMenu ){
-        if( !optionsMenu ){
-            return this;
-        }
-        // set a visible indication in the popupmenu for show_hidden/deleted based on the currHistoryPanel's settings
-        this.on( 'new-storage', function( storage, panel ){
-            if( optionsMenu && storage ){
-                optionsMenu.findItemByHtml( _l( 'Include Deleted Datasets' ) ).checked = storage.get( 'show_deleted' );
-                optionsMenu.findItemByHtml( _l( 'Include Hidden Datasets' ) ).checked = storage.get( 'show_hidden' );
-            }
-        });
-        return this;
     },
 
     /** Return a string rep of the history

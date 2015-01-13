@@ -107,15 +107,21 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 details = util.listify( details )
 
         for content in history.contents_iter( **contents_kwds ):
+            encoded_content_id = trans.security.encode_id( content.id )
+            detailed = details == 'all' or ( encoded_content_id in details )
+
             if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
-                encoded_content_id = trans.security.encode_id( content.id )
-                detailed = details == 'all' or ( encoded_content_id in details )
                 if detailed:
                     rval.append( self._detailed_hda_dict( trans, content ) )
                 else:
                     rval.append( self._summary_hda_dict( trans, history_id, content ) )
+
             elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
-                rval.append( self.__collection_dict( trans, content ) )
+                if detailed:
+                    rval.append( self.__collection_dict( trans, content, view="element" ) )
+                else:
+                    rval.append( self.__collection_dict( trans, content ) )
+
         return rval
 
     #TODO: move to model or Mixin
@@ -131,20 +137,28 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         api_type = "file"
         encoded_id = trans.security.encode_id( hda.id )
+        encoded_dataset_id = trans.security.encode_id( hda.dataset_id );
+        
         # TODO: handle failed_metadata here as well
         return {
             'id'    : encoded_id,
             'history_id' : encoded_history_id,
+            'dataset_id' : encoded_dataset_id,
             'name'  : hda.name,
             'type'  : api_type,
             'state'  : hda.dataset.state,
             'deleted': hda.deleted,
+            'extension': hda.extension,
             'visible': hda.visible,
             'purged': hda.purged,
             'resubmitted': hda._state == trans.app.model.Dataset.states.RESUBMITTED,
             'hid'   : hda.hid,
             'history_content_type' : hda.history_content_type,
-            'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
+            #'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
+            #TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
+            #   see also: https://trello.com/c/5d6j4X5y
+            #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
+            'url'   : url_for( 'history_content', history_id=encoded_history_id, id=encoded_id ),
         }
 
     def __collection_dict( self, trans, dataset_collection_instance, view="collection" ):
@@ -203,7 +217,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         except Exception, e:
             log.exception( "Error in history API at listing dataset collection: %s", e )
             trans.response.status = 500
-            return msg
+            return { 'error': str( e ) }
 
     def __show_dataset( self, trans, id, **kwd ):
         hda = self.mgrs.hdas.get( trans, self._decode_id( trans, id ), check_ownership=False, check_accessible=True )

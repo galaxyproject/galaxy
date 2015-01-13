@@ -380,11 +380,6 @@ var DraggableViewMixin = {
     /** allow the view to be dragged, set up event handlers */
     draggableOn : function(){
         this.draggable = true;
-        //TODO: I have no idea why this doesn't work with the events hash or jq.on()...
-        //this.$el.find( '.title-bar' )
-        //    .attr( 'draggable', true )
-        //    .bind( 'dragstart', this.dragStartHandler, false )
-        //    .bind( 'dragend',   this.dragEndHandler,   false );
         this.dragStartHandler = _.bind( this._dragStartHandler, this );
         this.dragEndHandler   = _.bind( this._dragEndHandler,   this );
 
@@ -402,23 +397,22 @@ var DraggableViewMixin = {
     },
 
     /** sets the dataTransfer data to the model's toJSON
-     *  @fires dragstart (bbone event) which is passed this view
+     *  @fires draggable:dragstart (bbone event) which is passed the event and this view
      */
     _dragStartHandler : function( event ){
-        //this.debug( 'dragStartHandler:', this, event, arguments )
-        this.trigger( 'dragstart', this );
         event.dataTransfer.effectAllowed = 'move';
+        //ASSUMES: this.model
         //TODO: all except IE: should be 'application/json', IE: must be 'text'
         event.dataTransfer.setData( 'text', JSON.stringify( this.model.toJSON() ) );
+        this.trigger( 'draggable:dragstart', event, this );
         return false;
     },
 
     /** handle the dragend
-     *  @fires dragend (bbone event) which is passed this view
+     *  @fires draggable:dragend (bbone event) which is passed the event and this view
      */
     _dragEndHandler : function( event ){
-        this.trigger( 'dragend', this );
-        //this.debug( 'dragEndHandler:', event )
+        this.trigger( 'draggable:dragend', event, this );
         return false;
     }
 };

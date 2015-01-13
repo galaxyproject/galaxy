@@ -13,6 +13,7 @@ from elementtree.ElementTree import Element
 import galaxy.tools
 from galaxy import exceptions
 from galaxy import model
+from galaxy import web
 from galaxy.dataset_collections import matching
 from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
@@ -170,8 +171,23 @@ class WorkflowModule( object ):
         """
         raise TypeError( "Abstract method" )
 
+    def do_invocation_step_action( self, step, action ):
+        """ Update or set the workflow invocation state action - generic
+        extension point meant to allows users to interact with interactive
+        workflow modules. The action object returned from this method will
+        be attached to the WorkflowInvocationStep and be available the next
+        time the workflow scheduler visits the workflow.
+        """
+        raise exceptions.RequestParameterInvalidException( "Attempting to perform invocation step action on module that does not support actions." )
 
-class InputModule( WorkflowModule ):
+    def recover_mapping( self, step, step_invocations, progress ):
+        """ Re-populate progress object with information about connections
+        from previously executed steps recorded via step_invocations.
+        """
+        raise TypeError( "Abstract method" )
+
+
+class SimpleWorkflowModule( WorkflowModule ):
 
     @classmethod
     def new( Class, trans, tool_id=None ):
@@ -199,9 +215,60 @@ class InputModule( WorkflowModule ):
         """
         raise TypeError( "Abstract method" )
 
-    def get_runtime_input_dicts( self, step_annotation ):
-        name = self.state.get( "name", self.default_name )
-        return [ dict( name=name, description=step_annotation ) ]
+    def save_to_step( self, step ):
+        step.type = self.type
+        step.tool_id = None
+        step.tool_inputs = self.state
+
+    def get_state( self, secure=True ):
+        return dumps( self.state )
+
+    def update_state( self, incoming ):
+        self.recover_state( incoming )
+
+    def recover_runtime_state( self, runtime_state ):
+        """ Take secure runtime state from persisted invocation and convert it
+        into a DefaultToolState object for use during workflow invocation.
+        """
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+        state = galaxy.tools.DefaultToolState()
+        state.decode( runtime_state, fake_tool, self.trans.app, secure=False )
+        return state
+
+    def normalize_runtime_state( self, runtime_state ):
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+        return runtime_state.encode( fake_tool, self.trans.app, secure=False )
+
+    def encode_runtime_state( self, trans, state ):
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+        return state.encode( fake_tool, trans.app )
+
+    def decode_runtime_state( self, trans, string ):
+        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
+        state = galaxy.tools.DefaultToolState()
+        if string:
+            state.decode( string, fake_tool, trans.app )
+        return state
+
+    def update_runtime_state( self, trans, state, values ):
+        errors = {}
+        for name, param in self.get_runtime_inputs().iteritems():
+            value, error = check_param( trans, param, values.get( name, None ), values )
+            state.inputs[ name ] = value
+            if error:
+                errors[ name ] = error
+        return errors
+
+    def compute_runtime_state( self, trans, step_updates=None, source="html" ):
+        if step_updates and "tool_state" in step_updates:
+            # Fix this for multiple inputs
+            state = self.decode_runtime_state( trans, step_updates.pop( "tool_state" ) )
+            step_errors = self.update_runtime_state( trans, state, step_updates )
+        else:
+            state = self.get_runtime_state()
+            step_errors = {}
+
+        return state, step_errors
 
     def recover_state( self, state, **kwds ):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -215,59 +282,25 @@ class InputModule( WorkflowModule ):
             if state and key in state:
                 self.state[ key ] = state[ key ]
 
-    def save_to_step( self, step ):
-        step.type = self.type
-        step.tool_id = None
-        step.tool_inputs = self.state
-
-    def get_data_inputs( self ):
-        return []
-
     def get_config_form( self ):
         form = self._abstract_config_form( )
         return self.trans.fill_template( "workflow/editor_generic_form.mako",
                                          module=self, form=form )
 
-    def get_state( self, secure=True ):
-        return dumps( self.state )
 
-    def update_state( self, incoming ):
-        self.recover_state( incoming )
+class InputModule( SimpleWorkflowModule ):
 
     def get_runtime_state( self ):
         state = galaxy.tools.DefaultToolState()
         state.inputs = dict( input=None )
         return state
 
-    def encode_runtime_state( self, trans, state ):
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        return state.encode( fake_tool, trans.app )
+    def get_runtime_input_dicts( self, step_annotation ):
+        name = self.state.get( "name", self.default_name )
+        return [ dict( name=name, description=step_annotation ) ]
 
-    def decode_runtime_state( self, trans, string ):
-        fake_tool = Bunch( inputs=self.get_runtime_inputs() )
-        state = galaxy.tools.DefaultToolState()
-        state.decode( string, fake_tool, trans.app )
-        return state
-
-    def update_runtime_state( self, trans, state, values ):
-        errors = {}
-        for name, param in self.get_runtime_inputs().iteritems():
-            value, error = check_param( trans, param, values.get( name, None ), values )
-            state.inputs[ name ] = value
-            if error:
-                errors[ name ] = error
-        return errors
-
-    def compute_runtime_state( self, trans, step_updates=None, source="html" ):
-        if step_updates:
-            # Fix this for multiple inputs
-            state = self.decode_runtime_state( trans, step_updates.pop( "tool_state" ) )
-            step_errors = self.update_runtime_state( trans, state, step_updates )
-        else:
-            state = self.get_runtime_state()
-            step_errors = {}
-
-        return state, step_errors
+    def get_data_inputs( self ):
+        return []
 
     def execute( self, trans, progress, invocation, step ):
         job, step_outputs = None, dict( output=step.state.inputs['input'])
@@ -289,6 +322,9 @@ class InputModule( WorkflowModule ):
                     raise Exception("Unknown history content encountered")
         progress.set_outputs_for_input( step, step_outputs )
         return job
+
+    def recover_mapping( self, step, step_invocations, progress ):
+        progress.set_outputs_for_input( step )
 
 
 class InputDataModule( InputModule ):
@@ -337,7 +373,7 @@ class InputDataCollectionModule( InputModule ):
         type_hints[ "list" ] = "List of Datasets"
         type_hints[ "paired" ] = "Dataset Pair"
         type_hints[ "list:paired" ] = "List of Dataset Pairs"
-        
+
         type_input = formbuilder.DatalistInput(
             name="collection_type",
             label="Collection Type",
@@ -355,6 +391,76 @@ class InputDataCollectionModule( InputModule ):
 
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input_collection'], collection_type=self.state[ 'collection_type' ] ) ]
+
+
+class PauseModule( SimpleWorkflowModule ):
+    """ Initially this module will unconditionally pause a workflow - will aim
+    to allow conditional pausing later on.
+    """
+    type = "pause"
+    name = "Pause for dataset review"
+    default_name = "Pause for Dataset Review"
+    state_fields = [ "name" ]
+
+    @classmethod
+    def default_state( Class ):
+        return dict( name=Class.default_name )
+
+    def get_data_inputs( self ):
+        input = dict(
+            name="input",
+            label="Dataset for Review",
+            multiple=False,
+            extensions='input',
+            input_type="dataset",
+        )
+        return [ input ]
+
+    def get_data_outputs( self ):
+        return [ dict( name="output", label="Reviewed Dataset", extensions=['input'] ) ]
+
+    def _abstract_config_form( self ):
+        form = formbuilder.FormBuilder(
+            title=self.name
+        ).add_text( "name", "Name", value=self.state['name'] )
+        return form
+
+    def get_runtime_inputs( self, **kwds ):
+        return dict( )
+
+    def get_runtime_input_dicts( self, step_annotation ):
+        return []
+
+    def get_runtime_state( self ):
+        state = galaxy.tools.DefaultToolState()
+        state.inputs = dict( )
+        return state
+
+    def execute( self, trans, progress, invocation, step ):
+        progress.mark_step_outputs_delayed( step )
+        return None
+
+    def recover_mapping( self, step, step_invocations, progress ):
+        if step_invocations:
+            step_invocation = step_invocations[0]
+            action = step_invocation.action
+            if action:
+                connection = step.input_connections_by_name[ "input" ][ 0 ]
+                replacement = progress.replacement_for_connection( connection )
+                progress.set_step_outputs( step, { 'output': replacement } )
+                return
+            elif action is False:
+                raise CancelWorkflowEvaluation()
+        raise DelayedWorkflowEvaluation()
+
+    def do_invocation_step_action( self, step, action ):
+        """ Update or set the workflow invocation state action - generic
+        extension point meant to allows users to interact with interactive
+        workflow modules. The action object returned from this method will
+        be attached to the WorkflowInvocationStep and be available the next
+        time the workflow scheduler visits the workflow.
+        """
+        return bool( action )
 
 
 class ToolModule( WorkflowModule ):
@@ -438,6 +544,18 @@ class ToolModule( WorkflowModule ):
         )
         self.state.inputs = self.tool.params_from_strings( state, app, **params_from_kwds )
 
+    def recover_runtime_state( self, runtime_state ):
+        """ Take secure runtime state from persisted invocation and convert it
+        into a DefaultToolState object for use during workflow invocation.
+        """
+        state = galaxy.tools.DefaultToolState()
+        app = self.trans.app
+        state.decode( runtime_state, self.tool, app, secure=False )
+        return state
+
+    def normalize_runtime_state( self, runtime_state ):
+        return runtime_state.encode( self.tool, self.trans.app, secure=False )
+
     @classmethod
     def __get_tool_version( cls, trans, tool_id ):
         # Return a ToolVersion if one exists for tool_id.
@@ -486,7 +604,7 @@ class ToolModule( WorkflowModule ):
 
     def get_tooltip( self, static_path='' ):
         if self.tool.help:
-            return self.tool.help.render( static_path=static_path )
+            return self.tool.help.render( host_url=web.url_for('/'), static_path=static_path )
         else:
             return None
 
@@ -663,7 +781,7 @@ class ToolModule( WorkflowModule ):
             param_combinations=param_combinations,
             history=invocation.history,
             collection_info=collection_info,
-            workflow_invocation_uuid=invocation.uuid
+            workflow_invocation_uuid=invocation.uuid.hex
         )
         if collection_info:
             step_outputs = dict( execution_tracker.created_collections )
@@ -730,6 +848,23 @@ class ToolModule( WorkflowModule ):
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
 
+    def recover_mapping( self, step, step_invocations, progress ):
+        # Grab a job representing this invocation - for normal workflows
+        # there will be just one job but if this step was mapped over there
+        # may be many.
+        job_0 = step_invocations[ 0 ].job
+
+        outputs = {}
+        for job_output in job_0.output_datasets:
+            replacement_name = job_output.name
+            replacement_value = job_output.dataset
+            # If was a mapping step, grab the output mapped collection for
+            # replacement instead.
+            if replacement_value.hidden_beneath_collection_instance:
+                replacement_value = replacement_value.hidden_beneath_collection_instance
+            outputs[ replacement_name ] = replacement_value
+        progress.set_step_outputs( step, outputs )
+
 
 class WorkflowModuleFactory( object ):
 
@@ -767,14 +902,51 @@ def is_tool_module_type( module_type ):
 module_types = dict(
     data_input=InputDataModule,
     data_collection_input=InputDataCollectionModule,
+    pause=PauseModule,
     tool=ToolModule,
 )
 module_factory = WorkflowModuleFactory( module_types )
 
 
+def load_module_sections( trans ):
+    """ Get abstract description of the workflow modules this Galaxy instance
+    is configured with.
+    """
+    inputs_section = {
+        "name": "inputs",
+        "title": "Inputs",
+        "modules": [
+            {"name": "data_input", "title": "Input Dataset", "description": "Input dataset"},
+            {"name": "data_collection_input", "title": "Input Dataset Collection", "description": "Input dataset collection"},
+        ],
+    }
+    module_sections = [
+        inputs_section
+    ]
+    if trans.app.config.enable_beta_workflow_modules:
+        experimental_modules = {
+            "name": "experimental",
+            "title": "Experimental",
+            "modules": [
+                {"name": "pause", "title": "Pause Workflow for Dataset Review", "description": "Pause for Review"},
+            ],
+        }
+        module_sections.append(experimental_modules)
+
+    return module_sections
+
+
 class MissingToolException( Exception ):
     """ WorkflowModuleInjector will raise this if the tool corresponding to the
     module is missing. """
+
+
+class DelayedWorkflowEvaluation(Exception):
+    pass
+
+
+class CancelWorkflowEvaluation(Exception):
+    pass
 
 
 class WorkflowModuleInjector(object):
@@ -814,7 +986,6 @@ class WorkflowModuleInjector(object):
         # Populate module.
         module = step.module = module_factory.from_workflow_step( trans, step )
 
-        # Calculating step errors and state depends on whether step is a tool step or not.
         if not module:
             step.module = None
             step.state = None

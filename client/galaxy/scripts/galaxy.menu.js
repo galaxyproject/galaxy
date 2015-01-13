@@ -1,13 +1,8 @@
-/*
-    galaxy menu
-*/
-
 // dependencies
 define(["galaxy.masthead"], function(mod_masthead) {
 
-// frame manager
-var GalaxyMenu = Backbone.Model.extend(
-{
+/** GalaxyMenu uses the GalaxyMasthead class in order to add menu items and icons to the Masthead **/
+var GalaxyMenu = Backbone.Model.extend({
     // options
     options: null,
 
@@ -15,23 +10,21 @@ var GalaxyMenu = Backbone.Model.extend(
     masthead: null,
 
     // initialize
-    initialize: function(options)
-    {
+    initialize: function(options) {
         this.options = options.config;
         this.masthead  = options.masthead;
         this.create();
     },
 
     // default menu
-    create: function()
-    {
+    create: function(){
         //
         // Analyze data tab.
         //
         var tab_analysis = new mod_masthead.GalaxyMastheadTab({
             id      : "analysis",
             title   : "Analyze Data",
-            content : "root/index",
+            content : "",
             title_attribute : 'Analysis home view'
         });
         this.masthead.append(tab_analysis);
@@ -137,8 +130,7 @@ var GalaxyMenu = Backbone.Model.extend(
 
         var tab_visualization = new mod_masthead.GalaxyMastheadTab(visualization_options);
 
-        if (this.options.user.valid) //add submenu only when user is logged in
-        {
+        if (this.options.user.valid){ //add submenu only when user is logged in
             tab_visualization.add({
                 title       : "New Track Browser",
                 content     : "visualization/trackster",
@@ -155,8 +147,7 @@ var GalaxyMenu = Backbone.Model.extend(
         //
         // Cloud menu.
         //
-        if (this.options.enable_cloud_launch)
-        {
+        if (this.options.enable_cloud_launch){
             var tab_cloud = new mod_masthead.GalaxyMastheadTab({
                 id      : "cloud",
                 title   : "Cloud",
@@ -172,12 +163,11 @@ var GalaxyMenu = Backbone.Model.extend(
         //
         // Admin.
         //
-        if (this.options.is_admin_user)
-        {
+        if (this.options.is_admin_user) {
             var tab_admin = new mod_masthead.GalaxyMastheadTab({
                 id          : "admin",
                 title       : "Admin",
-                content     : "admin/index",
+                content     : "admin",
                 extra_class : "admin-only",
                 title_attribute : 'Administer this Galaxy'
             });
@@ -192,8 +182,7 @@ var GalaxyMenu = Backbone.Model.extend(
             title   : "Help",
             title_attribute : 'Support, contact, and community hubs'
         });
-        if (this.options.biostar_url)
-        {
+        if (this.options.biostar_url){
             tab_help.add({
                 title   : "Galaxy Biostar",
                 content : this.options.biostar_url_redirect,
@@ -235,8 +224,7 @@ var GalaxyMenu = Backbone.Model.extend(
             content : this.options.citation_url,
             target  : "_blank"
         });
-        if (this.options.terms_url)
-        {
+        if (this.options.terms_url){
             tab_help.add({
                 title   : "Terms and Conditions",
                 content : this.options.terms_url,
@@ -248,8 +236,7 @@ var GalaxyMenu = Backbone.Model.extend(
         //
         // User tab.
         //
-        if (!this.options.user.valid)
-        {
+        if (!this.options.user.valid){
             var tab_user = new mod_masthead.GalaxyMastheadTab({
                 id          : "user",
                 title       : "User",
@@ -265,8 +252,7 @@ var GalaxyMenu = Backbone.Model.extend(
             });
 
             // register
-            if (this.options.allow_user_creation)
-            {
+            if (this.options.allow_user_creation){
                 tab_user.add({
                     title   : "Register",
                     content : "user/create",
@@ -331,8 +317,7 @@ var GalaxyMenu = Backbone.Model.extend(
                 target  : "galaxy_main"
             });
 
-            if (this.options.use_remote_user)
-            {
+            if (this.options.use_remote_user){
                 tab_user.add({
                     title   : "Public Name",
                     content : "user/edit_username?cntrller=user",

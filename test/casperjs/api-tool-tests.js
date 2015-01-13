@@ -92,7 +92,7 @@ function attemptShowOnAllTools(){
     this.debug( this.jsonStr( set ) );
 }
 
-spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
+spaceghost.openHomePage().then( function(){
 
     // ------------------------------------------------------------------------------------------- INDEX
     // ........................................................................................... (defaults)

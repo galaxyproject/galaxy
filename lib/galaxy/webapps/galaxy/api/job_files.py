@@ -105,7 +105,7 @@ class JobFilesAPIController( BaseAPIController ):
         job = trans.sa_session.query( model.Job ).get( job_id )
         if job.finished:
             error_message = "Attempting to read or modify the files of a job that has already completed."
-            raise exceptions.MessageException( error_message )
+            raise exceptions.ItemAccessibilityException( error_message )
         return job
 
     def __check_job_can_write_to_path( self, trans, job, path ):

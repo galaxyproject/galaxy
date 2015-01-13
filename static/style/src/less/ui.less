@@ -12,42 +12,10 @@
     padding: 5px;
 }
 
-.ui-options {
-    &:extend(.form-control);
-    height: 100% !important;
-}
-
 .ui-table-form-error {
     display: none;
     .ui-table-form-error-text  {
         padding-left: 5px;
-    }
-}
-
-.ui-form-slider {
-    .ui-form-slider-text {
-        &:extend(.form-control);
-        width: 100px;
-        float: left;
-    }
-
-    .ui-form-slider-element {
-        width: ~'calc(100% - 110px)';
-        float: left;
-        top: 8px;
-        left: 10px;
-    }
-}
-
-.ui-radiobutton {
-    width: 100%;
-    label {
-        height: 23px;
-        line-height: 1em;
-    }
-    
-    i {
-        padding-right: 5px;
     }
 }
 
@@ -76,6 +44,17 @@
     }
 }
 
+.ui-table-form-element {
+    .ui-table-form-title-optional {
+        font-weight: bold;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    .ui-table-form-field {
+        margin-top: 5px;
+    }
+}
+
 .ui-table-form-section {
     border-left: solid 3px @form-heading-bg;
     border-radius: 5px !important;
@@ -84,7 +63,6 @@
 
 .ui-table-form-title-strong {
     font-weight: bold;
-    padding-bottom: 5px;
 }
 
 .ui-table-form-info {
@@ -102,7 +80,8 @@
 }
 
 .ui-message {
-    padding: 2px 2px 2px 10px;
+    padding: 2px 10px 2px 10px;
+    margin-bottom: 5px;
 }
 
 .ui-icon {
@@ -112,14 +91,12 @@
 .ui-button-icon {
     &:extend(.icon-btn);
     &:extend(.no-highlight);
-
     margin-right: 5px;
     ul {
         i {
             font-size: 1.2em; margin-right: 5px; position: relative; top: 1px;
         }
     }
-    
     .button {
         margin-right: 5px;
         margin-left: 5px;
@@ -131,9 +108,17 @@
             top: -1px;
         }
     }
-    
     .button.disabled {
         .opacity(.65);
+    }
+}
+
+.ui-button-menu {
+    .dropdown-menu {
+        min-width: 50px;
+    }
+    .dropdown-item {
+        text-align: left;
     }
 }
 
@@ -141,15 +126,9 @@
     &:extend(.icon-btn);
     border: none !important;
     background: none !important;
-}
-
-.ui-input {
-    &:extend(.form-control);
-}
-
-.ui-textarea {
-    &:extend(.form-control);
-    height: 100px !important;
+    height: inherit !important;
+    width: inherit !important;
+    padding-right: 3px !important;
 }
 
 .ui-tabs {
@@ -183,16 +162,13 @@
         float: right;
         width:100%;
 
-        h1, h2, h3, h4, h5, h6 {
-            float: left;
-            font-weight: normal;
-            display: inline-block;
-            vertical-align: middle;
-            font-size: 1em;
-            margin: 3px;
-            
+        .portlet-title {
+            .portlet-title-text {
+                vertical-align: middle;
+            }
             .icon {
                 font-size: 1.2em;
+                vertical-align: middle;
             }
         }
     }
@@ -224,6 +200,11 @@
     }
 }
 
+.ui-portlet-slim {
+    &:extend(.ui-portlet all);
+    max-width: 900px;
+}
+
 .ui-portlet-repeat {
     &:extend(.ui-portlet);
     border: none;
@@ -233,11 +214,7 @@
         background: @form-heading-bg;
         border-radius: 3px;
         border-bottom-left-radius: 0px;
-        padding: 1px 0px 0px 2px;
-    }
-
-    .portlet-title {
-        padding-top: 1px;
+        padding: 0px 2px;
     }
 
     .portlet-content {
@@ -266,41 +243,77 @@
     }
 }
 
-.ui-select {
-    position: relative;
-    height: 27px;
-    overflow: hidden;
-    border: 1px solid @border-default-color;
-    -moz-border-radius: @border-radius-base;
-    border-radius: @border-radius-base;
+.ui-input {
+    &:extend(.form-control);
+    background: transparent;
+}
 
-    .button {
-        position: relative;
-        width: 25px;
-        height: 100%;
-        float: right;
-        border-left: 1px solid @border-default-color;
-        padding-left: 9px;
-        padding-top: 4px;
-        background: @btn-default-bg;
+.ui-textarea {
+    &:extend(.ui-input);
+    height: 100px !important;
+}
+
+.ui-options {
+    &:extend(.ui-input);
+    height: 100% !important;
+}
+
+
+.ui-form-slider {
+    display: inline-block;
+    width: 100%;
+    .ui-form-slider-text {
+        &:extend(.ui-input);
+        width: 100px;
+        float: left;
     }
 
-    select {
+    .ui-form-slider-element {
+        width: ~'calc(100% - 110px)';
+        float: left;
+        top: 8px;
+        left: 10px;
+    }
+}
+
+.ui-radiobutton {
+    width: 100%;
+    label {
+        height: 23px;
+        line-height: 1em;
+    }
+    
+    i {
+        padding-right: 5px;
+    }
+}
+
+.ui-select {
+    position: relative;
+    .button {
         position: absolute;
+        top: 5px;
+        right: 5px;
+    }
+    .select2-container {
+        width: 100%;
+    }
+    select {
+        position: relative;
         top: 0px;
-        height: 100%;
+        height: 27px;
         width: 100%;
         padding-left:5px;
+        padding-right: 20px;
         cursor: pointer;
         background: transparent;
-        border: 0;
-        border-radius: 0;
         -webkit-appearance: none;
+        border: 1px solid @border-default-color;
+        -moz-border-radius: @border-radius-base;
+        border-radius: @border-radius-base;
     }
 }
 
 .ui-select-multiple {
-    &:extend(.ui-select);
-    height: 100% !important;
-    width: 100% !important;
+    &:extend(.ui-input);
 }

@@ -758,6 +758,28 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
             user_is_owner=user_is_owner, history_dict=history_dictionary, hda_dicts=hda_dictionaries )
         return filled
 
+    def _get_embedded_visualization_html( self, trans, id ):
+        """
+        Returns html suitable for embedding visualizations in another page.
+        """
+        visualization = self.get_visualization( trans, id, False, True )
+        visualization.annotation = self.get_item_annotation_str( trans.sa_session, visualization.user, visualization )
+        if not visualization:
+            return None
+
+        # Fork to template based on visualization.type (registry or builtin).
+        if( ( trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins )
+        and ( visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS ) ):
+            # if a registry visualization, load a version into an iframe :(
+            #TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
+            #TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
+            encoded_visualization_id = trans.security.encode_id( visualization.id )
+            return trans.fill_template( 'visualization/embed_in_frame.mako',
+                item=visualization, encoded_visualization_id=encoded_visualization_id,
+                content_only=True )
+
+        return trans.fill_template( "visualization/embed.mako", item=visualization, item_data=None )
+
     def _get_embed_html( self, trans, item_class, item_id ):
         """ Returns HTML for embedding an item in a page. """
         item_class = self.get_class( item_class )
@@ -779,10 +801,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
                 return trans.fill_template( "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps )
 
         elif item_class == model.Visualization:
-            visualization = self.get_visualization( trans, item_id, False, True )
-            visualization.annotation = self.get_item_annotation_str( trans.sa_session, visualization.user, visualization )
-            if visualization:
-                return trans.fill_template( "visualization/embed.mako", item=visualization, item_data=None )
+            return self._get_embedded_visualization_html( trans, item_id )
 
         elif item_class == model.Page:
             pass

@@ -187,6 +187,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 
     /** copy an existing, accessible hda into this collection */
     copy : function( id ){
+//TODO: incorp collections
         var collection = this,
             xhr = jQuery.post( this.url(), {
                 source  : 'hda',

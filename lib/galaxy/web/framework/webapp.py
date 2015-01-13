@@ -23,6 +23,7 @@ from babel import Locale
 eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import joinedload
 
 from galaxy.exceptions import MessageException
 
@@ -174,7 +175,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         base.DefaultWebTransaction.__init__( self, environ )
         self.setup_i18n()
         self.expunge_all()
-        self.debug = asbool( self.app.config.get( 'debug', False ) )
+        config = self.app.config
+        self.debug = asbool( config.get( 'debug', False ) )
+        x_frame_options = getattr( config, 'x_frame_options', None )
+        if x_frame_options:
+            self.response.headers['X-Frame-Options'] = x_frame_options
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values
         # and such).
@@ -201,9 +206,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             # When we've authenticated by session, we have to check the
             # following.
             # Prevent deleted users from accessing Galaxy
-            if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
+            if config.use_remote_user and self.galaxy_session.user.deleted:
                 self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
-            if self.app.config.require_login:
+            if config.require_login:
                 self._ensure_logged_in_user( environ, session_cookie )
 
     def setup_i18n( self ):
@@ -260,6 +265,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         tstamp = time.localtime( time.time() + 3600 * 24 * age )
         self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp )
         self.response.cookies[name]['version'] = version
+        https = self.request.environ[ "wsgi.url_scheme" ] == "https"
+        if https:
+            self.response.cookies[name]['secure'] = True
         try:
             self.response.cookies[name]['httponly'] = True
         except CookieError, e:
@@ -337,7 +345,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 # Retrieve the galaxy_session id via the unique session_key
                 galaxy_session = self.sa_session.query( self.app.model.GalaxySession ) \
                                                 .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key, #noqa
-                                                               self.app.model.GalaxySession.table.c.is_valid==True ) ).first() #noqa
+                                                               self.app.model.GalaxySession.table.c.is_valid==True ) ).options( joinedload( "user" ) ).first() #noqa
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to to check some
         # things now.
@@ -503,9 +511,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             for char in filter( lambda x: x not in string.ascii_lowercase + string.digits + '-', username ):
                 username = username.replace( char, '-' )
             # Find a unique username - user can change it later
-            if ( self.sa_session.query( self.app.model.User ).filter_by( username=username ).first() ):
+            if self.sa_session.query( self.app.model.User ).filter_by( username=username ).first():
                 i = 1
-                while ( self.sa_session.query( self.app.model.User ).filter_by( username=(username + '-' + str(i) ) ).first() ):
+                while self.sa_session.query( self.app.model.User ).filter_by( username=(username + '-' + str(i) ) ).first():
                     i += 1
                 username += '-' + str(i)
             user.username = username
@@ -699,11 +707,6 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
     @base.lazy_property
     def template_context( self ):
         return dict()
-
-    def make_form_data( self, name, **kwargs ):
-        rval = self.template_context[name] = FormData()
-        rval.values.update( kwargs )
-        return rval
 
     def set_message( self, message, type=None ):
         """

@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Enable verbose test errors for install and test framework.
+GALAXY_TEST_VERBOSE_ERRORS="True"
+export GALAXY_TEST_VERBOSE_ERRORS
+
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 
 # The test/install_and_test_tool_shed_repositories/functional_tests.py cannot be executed directly because it must

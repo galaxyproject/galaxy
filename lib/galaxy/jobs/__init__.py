@@ -91,6 +91,15 @@ class JobToolConfiguration( Bunch ):
         return self.get( "resources", None )
 
 
+def config_exception(e, file):
+    abs_path = os.path.abspath(file)
+    message = 'Problem parsing the XML in file %s, ' % abs_path
+    message += 'please correct the indicated portion of the file and restart Galaxy.'
+    message += str(e)
+    log.exception(message)
+    return Exception(message)
+
+
 class JobConfiguration( object ):
     """A parser and interface to advanced job management features.
 
@@ -118,12 +127,15 @@ class JobConfiguration( object ):
 
         self.__parse_resource_parameters()
         # Initialize the config
+        job_config_file = self.app.config.job_config_file
         try:
-            tree = util.parse_xml(self.app.config.job_config_file)
+            tree = util.parse_xml(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
             log.warning( 'Job configuration "%s" does not exist, using legacy job configuration from Galaxy config file "%s" instead' % ( self.app.config.job_config_file, self.app.config.config_file ) )
             self.__parse_job_conf_legacy()
+        except Exception as e:
+            raise config_exception(e, job_config_file)
 
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
@@ -358,7 +370,12 @@ class JobConfiguration( object ):
         if not os.path.exists( self.app.config.job_resource_params_file ):
             return
 
-        resource_definitions = util.parse_xml( self.app.config.job_resource_params_file )
+        resource_param_file = self.app.config.job_resource_params_file
+        try:
+            resource_definitions = util.parse_xml( resource_param_file )
+        except Exception as e:
+            raise config_exception(e, resource_param_file)
+
         resource_definitions_root = resource_definitions.getroot()
         # TODO: Also handling conditionals would be awesome!
         for parameter_elem in resource_definitions_root.findall( "param" ):
@@ -901,7 +918,7 @@ class JobWrapper( object ):
                     self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
-            job.state = job.states.ERROR
+            job.set_final_state( job.states.ERROR )
             job.command_line = self.command_line
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
@@ -939,7 +956,7 @@ class JobWrapper( object ):
                 dataset_assoc.dataset.dataset.state = dataset_assoc.dataset.dataset.states.PAUSED
                 dataset_assoc.dataset.info = message
                 self.sa_session.add( dataset_assoc.dataset )
-            job.state = job.states.PAUSED
+            job.set_state( job.states.PAUSED )
             self.sa_session.add( job )
 
     def mark_as_resubmitted( self ):
@@ -948,7 +965,7 @@ class JobWrapper( object ):
         for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
             dataset._state = model.Dataset.states.RESUBMITTED
             self.sa_session.add( dataset )
-        job.state = model.Job.states.RESUBMITTED
+        job.set_state( model.Job.states.RESUBMITTED )
         self.sa_session.add( job )
         self.sa_session.flush()
 
@@ -965,7 +982,7 @@ class JobWrapper( object ):
             self.sa_session.flush()
         if info:
             job.info = info
-        job.state = state
+        job.set_state( state )
         self.sa_session.add( job )
         self.sa_session.flush()
 
@@ -1054,7 +1071,7 @@ class JobWrapper( object ):
                         log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead" % ( dataset_path.false_path, dataset_path.real_path ) )
                     else:
                         # Prior to fail we need to set job.state
-                        job.state = final_job_state
+                        job.set_state( final_job_state )
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
 
         job_context = ExpressionContext( dict( stdout=job.stdout, stderr=job.stderr ) )
@@ -1226,7 +1243,7 @@ class JobWrapper( object ):
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
-        job.state = final_job_state
+        job.set_final_state( final_job_state )
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statisitcs
             self._collect_metrics( job )

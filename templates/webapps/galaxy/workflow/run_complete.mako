@@ -2,6 +2,7 @@
 <%page expression_filter="h"/>
 
 <div class="donemessagelarge">
+%if scheduled:
     Successfully ran workflow "${util.unicodify( workflow.name )}". The following datasets have been added to the queue:
     %for invocation in invocations:
         <div class="workflow-invocation-complete">
@@ -22,6 +23,11 @@
             </div>
         </div>
     %endfor
+%else:
+    The requested workflows have been queued and datasets will appear
+    as jobs are created - you will need to refresh your history panel
+    to see these.
+%endif
 </div>
 
 <script type="text/javascript">

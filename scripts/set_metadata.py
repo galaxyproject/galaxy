@@ -35,6 +35,7 @@ from sqlalchemy.orm import clear_mappers
 from galaxy.objectstore import build_object_store_from_config
 from galaxy import config
 import ConfigParser
+from galaxy.util.properties import load_app_properties
 
 
 def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds ):
@@ -63,18 +64,7 @@ def __main__():
     # Set up reference to object store
     # First, read in the main config file for Galaxy; this is required because
     # the object store configuration is stored there
-    conf = ConfigParser.ConfigParser()
-    conf.read(config_file_name)
-    conf_dict = {}
-    for section in conf.sections():
-        for option in conf.options(section):
-            try:
-                conf_dict[option] = conf.get(section, option)
-            except ConfigParser.InterpolationMissingOptionError:
-                # Because this is not called from Paste Script, %(here)s variable
-                # is not initialized in the config file so skip those fields -
-                # just need not to use any such fields for the object store conf...
-                log.debug("Did not load option %s from %s" % (option, config_file_name))
+    conf_dict = load_app_properties( ini_file=config_file_name )
     # config object is required by ObjectStore class so create it now
     universe_config = config.Configuration(**conf_dict)
     universe_config.ensure_tempdir()

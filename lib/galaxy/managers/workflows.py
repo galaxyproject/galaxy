@@ -1,5 +1,6 @@
 from galaxy import model
 from galaxy import exceptions
+from galaxy.workflow import modules
 
 
 class WorkflowsManager( object ):
@@ -48,6 +49,46 @@ class WorkflowsManager( object ):
             raise exceptions.ObjectNotFound()
         self.check_security( trans, workflow_invocation, check_ownership=True, check_accessible=False )
         return workflow_invocation
+
+    def cancel_invocation( self, trans, decoded_invocation_id ):
+        workflow_invocation = self.get_invocation( trans, decoded_invocation_id )
+        cancelled = workflow_invocation.cancel()
+
+        if cancelled:
+            trans.sa_session.add( workflow_invocation )
+            trans.sa_session.flush()
+        else:
+            # TODO: More specific exception?
+            raise exceptions.MessageException( "Cannot cancel an inactive workflow invocation." )
+
+        return workflow_invocation
+
+    def get_invocation_step( self, trans, decoded_workflow_invocation_step_id ):
+        try:
+            workflow_invocation_step = trans.sa_session.query(
+                model.WorkflowInvocationStep
+            ).get( decoded_workflow_invocation_step_id )
+        except Exception:
+            raise exceptions.ObjectNotFound()
+        self.check_security( trans, workflow_invocation_step.workflow_invocation, check_ownership=True, check_accessible=False )
+        return workflow_invocation_step
+
+    def update_invocation_step( self, trans, decoded_workflow_invocation_step_id, action ):
+        if action is None:
+            raise exceptions.RequestParameterMissingException( "Updating workflow invocation step requires an action parameter. " )
+
+        workflow_invocation_step = self.get_invocation_step( trans, decoded_workflow_invocation_step_id )
+        workflow_invocation = workflow_invocation_step.workflow_invocation
+        if not workflow_invocation.active:
+            raise exceptions.RequestParameterInvalidException( "Attempting to modify the state of an completed workflow invocation." )
+
+        step = workflow_invocation_step.workflow_step
+        module = modules.module_factory.from_workflow_step( trans, step )
+        performed_action = module.do_invocation_step_action( step, action )
+        workflow_invocation_step.action = performed_action
+        trans.sa_session.add( workflow_invocation_step )
+        trans.sa_session.flush()
+        return workflow_invocation_step
 
     def build_invocations_query( self, trans, decoded_stored_workflow_id ):
         try:

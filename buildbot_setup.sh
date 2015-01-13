@@ -126,5 +126,3 @@ python test-data-repo/location/make_location.py
 
 echo "Appending tool-data/shared/ucsc/builds.txt.buildbot to tool-data/shared/ucsc/builds.txt"
 cat tool-data/shared/ucsc/builds.txt.buildbot >> tool-data/shared/ucsc/builds.txt
-
-python ./scripts/fetch_eggs.py all

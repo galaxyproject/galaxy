@@ -4,8 +4,7 @@ return $.extend(true, {}, config_default, {
     category    : '',
     library     : 'NVD3',
     tag         : 'svg',
-    keywords    : 'small',
-    query_limit : 500
+    keywords    : 'small'
 });
 
 });

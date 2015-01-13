@@ -47,9 +47,12 @@ class JSONType( TypeDecorator ):
         return json_encoder.encode( value )
 
     def process_result_value( self, value, dialect ):
-        if value is None:
-            return None
-        return json_decoder.decode( str( _sniffnfix_pg9_hex(value) ) )
+        if value is not None:
+            try:
+                return json_decoder.decode( str( _sniffnfix_pg9_hex( value ) ) )
+            except Exception, e:
+                log.error( 'Failed to decode JSON (%s): %s', value, e )
+        return None
 
     def copy_value( self, value ):
         # return json_decoder.decode( json_encoder.encode( value ) )
@@ -61,6 +64,13 @@ class JSONType( TypeDecorator ):
 
     def is_mutable( self ):
         return True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "mysql":
+            return dialect.type_descriptor(sqlalchemy.dialects.mysql.MEDIUMBLOB)
+        else:
+            return self.impl
+
 
 metadata_pickler = AliasPickleModule( {
     ( "cookbook.patterns", "Bunch" ) : ( "galaxy.util.bunch" , "Bunch" )

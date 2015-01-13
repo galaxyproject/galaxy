@@ -30,7 +30,7 @@ def persist_uploads( params ):
                 f.file.close()
                 upload_dataset['file_data'] = dict( filename=f.filename,
                                                     local_filename=local_filename )
-            elif type( f ) == dict and 'filename' and 'local_filename' not in f:
+            elif type( f ) == dict and 'local_filename' not in f:
                 raise Exception( 'Uploaded file was encoded in a way not understood by Galaxy.' )
             if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
                 upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file( StringIO.StringIO( upload_dataset['url_paste'] ), prefix="strio_url_paste_" )
@@ -367,7 +367,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
         job.history_id = history.id
     job.tool_id = tool.id
     job.tool_version = tool.version
-    job.state = job.states.UPLOAD
+    job.set_state( job.states.UPLOAD )
     trans.sa_session.add( job )
     trans.sa_session.flush()
     log.info( 'tool %s created job id %d' % ( tool.id, job.id ) )
@@ -393,7 +393,7 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None, his
             trans.sa_session.add( dataset )
             # open( dataset.file_name, "w" ).close()
     job.object_store_id = object_store_id
-    job.state = job.states.NEW
+    job.set_state( job.states.NEW )
     job.set_handler(tool.get_job_handler(None))
     trans.sa_session.add( job )
     trans.sa_session.flush()

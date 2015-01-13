@@ -181,6 +181,8 @@ var DatasetListItemEdit = _super.extend(
         }
 
         var $visualizations = $( this.templates.visualizations( visualizations, this ) );
+        //HACK: need to re-write those directed at galaxy_main with linkTarget
+        $visualizations.find( '[target="galaxy_main"]').attr( 'target', this.linkTarget );
         // use addBack here to include the root $visualizations elem (for the case of 1 visualization)
         this._addScratchBookFn( $visualizations.find( '.visualization-link' ).addBack( '.visualization-link' ) );
         return $visualizations;
@@ -188,6 +190,7 @@ var DatasetListItemEdit = _super.extend(
 
     /** add scratchbook functionality to visualization links */
     _addScratchBookFn : function( $links ){
+        var li = this;
         $links.click( function( ev ){
             if( Galaxy.frame && Galaxy.frame.active ){
                 Galaxy.frame.add({

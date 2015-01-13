@@ -172,6 +172,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # install from in the admin interface (.sample used if default does not exist).
 #tool_sheds_config_file = config/tool_sheds_conf.xml
 
+# If the following option is set to True - Galaxy will monitor individual tools
+# and tool directories specified in tool_conf.xml for changes and reload these
+# tools. Watchdog must be installed and available to Galaxy to use this option.
+# See https://pypi.python.org/pypi/watchdog.
+#watch_tools = False
+
 # Enable automatic polling of relative tool sheds to see if any updates
 # are available for installed repositories.  Ideally only one Galaxy 
 # server process should be able to check for repository updates.  The
@@ -215,8 +221,14 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # Visualizations config directory: where to look for individual visualization plugins.
 # The path is relative to the Galaxy root dir. To use an absolute path begin the path
-# with '/'. Defaults to "config/plugins/visualizations".
+# with '/'. This is a comma separated list. Defaults to "config/plugins/visualizations".
 #visualization_plugins_directory = config/plugins/visualizations
+
+# Interactive environment plugins root directory: where to look for interactive environment
+# plugins. By default none will be loaded. Set to config/plugins/interactive_environments
+# to load Galaxy's stock plugins (currently just IPython). These will require Docker
+# to be configured and have security considerations so proceed with caution.
+#interactive_environment_plugins_directory = 
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -363,6 +375,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
 
+# -- Analytics
+
+# You can enter tracking code here to track visitor's behavior
+# through your Google Analytics account. Example: UA-XXXXXXXX-Y
+#ga_code = None
+
 # -- Display sites
 
 # Galaxy can display data at various external browsers.  These options specify
@@ -414,6 +432,11 @@ nglims_config_file = tool-data/nglims.yaml
 # - $locale (complete format string for the server locale),
 # - $iso8601 (complete format string as specified by ISO 8601 international standard).
 # pretty_datetime_format = $locale (UTC)
+
+# URL (with schema http/https) of the Galaxy instance as accessible within your local
+# network - if specified used as a default by pulsar file staging and IPython docker
+# container for communicating back with Galaxy via the API.
+#galaxy_infrastructure_url = http://localhost:8080
 
 # The URL of the page to display in Galaxy's middle pane when loaded. This can be 
 # an absolute or relative URL.
@@ -500,6 +523,16 @@ nglims_config_file = tool-data/nglims.yaml
 # it faster on the fly.
 #upstream_gzip = False
 
+# The following default adds a header to web request responses that
+# will cause modern web browsers to not allow Galaxy to be embedded in
+# the frames of web applications hosted at other hosts - this can help
+# prevent a class of attack called clickjacking
+# (https://www.owasp.org/index.php/Clickjacking). If you configure a
+# proxy in front of Galaxy - please ensure this header remains intact
+# to protect your users. Uncomment and leave empty to not set the
+# `X-Frame-Options` header.
+#x_frame_options = SAMEORIGIN
+
 # nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
 # Configuration for this is complex and explained in detail in the
 # documentation linked above.  The upload store is a temporary directory in
@@ -510,6 +543,29 @@ nglims_config_file = tool-data/nglims.yaml
 # path where the nginx_upload_module has been configured to intercept upload
 # requests.
 #nginx_upload_path = False
+
+# Have Galaxy manage dynamic proxy component for routing requests to other
+# services based on Galaxy's session cookie. It will attempt to do this by
+# default though you do need to install node+npm and do an npm install from
+# `lib/galaxy/web/proxy/js`. It is generally more robust to configure this
+# externally managing it however Galaxy is managed. If True Galaxy will only
+# launch the proxy if it is actually going to be used (e.g. for IPython).
+#dynamic_proxy_manage=True
+
+# Dynamic proxy can use an SQLite database or a JSON file for IPC, set that
+# here.
+#dynamic_proxy_session_map=database/session_map.sqlite
+
+# Set the port and IP for the the dynamic proxy to bind to, this must match
+# the external configuration if dynamic_proxy_manage is False.
+#dynamic_proxy_bind_port=8800
+#dynamic_proxy_bind_ip=0.0.0.0
+
+# Enable verbose debugging of Galaxy-managed dynamic proxy.
+#dynamic_proxy_debug=False
+
+# The dynamic proxy is proxied by an external proxy (e.g. apache frontend to nodejs to wrap connections in SSL)
+#dynamic_proxy_external_proxy=False
 
 # -- Logging and Debugging
 
@@ -531,10 +587,11 @@ nglims_config_file = tool-data/nglims.yaml
 # log_events and log_actions functionality will eventually be merged.
 #log_actions = True
 
-# Sanitize All HTML Tool Output
-# By default, all tool output served as 'text/html' will be sanitized
-# thoroughly. This can be disabled if you have special tools that require
-# unaltered output.
+# Sanitize All HTML Tool Output By default, all tool output served as
+# 'text/html' will be sanitized thoroughly. This can be disabled if
+# you have special tools that require unaltered output. WARNING:
+# Disabling this does make the Galxy instance susceptible to XSS
+# attacks initiated by your users.
 #sanitize_all_html = True
 
 # By default Galaxy will serve non-HTML tool output that may potentially
@@ -542,6 +599,12 @@ nglims_config_file = tool-data/nglims.yaml
 # instance cause SVG datasets to not render properly and so may be disabled
 # by setting the following option to True.
 #serve_xss_vulnerable_mimetypes = False
+
+# Set the following to True to use ipython nbconvert to build HTML from IPython
+# notebooks in Galaxy histories. This process may allow users to execute arbitrary
+# code or serve arbitrary HTML. If enabled ipython must be available and on Galaxy's
+# PATH, to do this run `pip install jinja2 pygments ipython` in Galaxy's virtualenv.
+#trust_ipython_notebook_conversion = False
 
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
@@ -689,6 +752,9 @@ use_interactive = True
 #new_user_dataset_access_role_default_private = False
 
 # -- Beta features
+
+# Use new tool form
+#toolform_upgrade = False
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False

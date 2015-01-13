@@ -6,14 +6,24 @@ __all__ = ['failure']
 
 log = logging.getLogger(__name__)
 
+MESSAGES = dict(
+    walltime_reached = 'it reached the walltime',
+    memory_limit_reached = 'it exceeded the amount of allocated memory'
+)
+
 
 def failure(app, job_runner, job_state):
-    if getattr( job_state, 'runner_state', None ) and job_state.runner_state == job_state.runner_states.WALLTIME_REACHED:
+    if getattr( job_state, 'runner_state', None ) and job_state.runner_state in ( job_state.runner_states.WALLTIME_REACHED, job_state.runner_states.MEMORY_LIMIT_REACHED ):
         # Intercept jobs that hit the walltime and have a walltime or nonspecific resubmit destination configured
         for resubmit in job_state.job_destination.get('resubmit'):
-            if resubmit.get('condition', None) and resubmit['condition'] != 'walltime_reached':
+            if resubmit.get('condition', None) and resubmit['condition'] != job_state.runner_state:
                 continue # There is a resubmit defined for the destination but its condition is not for walltime_reached
-            log.info("(%s/%s) Job will be resubmitted to '%s' because it reached the walltime at the '%s' destination", job_state.job_wrapper.job_id, job_state.job_id, resubmit['destination'], job_state.job_wrapper.job_destination.id )
+            log.info("(%s/%s) Job will be resubmitted to '%s' because %s at the '%s' destination",
+                    job_state.job_wrapper.job_id,
+                    job_state.job_id,
+                    resubmit['destination'],
+                    MESSAGES[job_state.runner_state],
+                    job_state.job_wrapper.job_destination.id )
             # fetch JobDestination for the id or tag
             new_destination = app.job_config.get_destination(resubmit['destination'])
             # Resolve dynamic if necessary

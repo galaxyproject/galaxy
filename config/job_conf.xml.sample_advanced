@@ -50,7 +50,9 @@
           <!-- AMQP URL to connect to. -->
           <param id="amqp_url">amqp://guest:guest@localhost:5672//</param>
           <!-- URL remote Pulsar apps should transfer files to this Galaxy
-               instance to/from. -->
+               instance to/from. This can be unspecified/empty if
+               galaxy_infrastructure_url is set in galaxy.ini.
+          -->
           <param id="galaxy_url">http://localhost:8080</param>
           <!-- Pulsar job manager to communicate with (see Pulsar
                docs for information on job managers). -->
@@ -77,7 +79,7 @@
                of old LWR job runner. If your Pulsar server is running on a
                Windows machine for instance this runner should still be used.
 
-               These destinations still needs to target a Pulsar server, 
+               These destinations still needs to target a Pulsar server,
                older LWR plugins and destinations still work in Galaxy can
                target LWR servers, but this support should be considered
                deprecated and will disappear with a future release of Galaxy.
@@ -110,7 +112,7 @@
         <destination id="local" runner="local"/>
         <destination id="multicore_local" runner="local">
           <param id="local_slots">4</param> <!-- Specify GALAXY_SLOTS for local jobs. -->
-          <!-- Warning: Local slot count doesn't tie up additional worker threads, to prevent over 
+          <!-- Warning: Local slot count doesn't tie up additional worker threads, to prevent over
                allocating machine define a second local runner with different name and fewer workers
                to run this destination. -->
           <param id="embed_metadata_in_job">True</param>
@@ -119,7 +121,7 @@
                try it early - it will slightly speed up local jobs by
                embedding metadata calculation in job script itself.
           -->
-          <job_metrics /> 
+          <job_metrics />
           <!-- Above element demonstrates embedded job metrics definition - see
                job_metrics_conf.xml.sample for full documentation on possible nested
                elements. This empty block will simply disable job metrics for the
@@ -134,12 +136,12 @@
                destination - but be sure to add any library paths or data incides
                that may be needed read-only.
           -->
-          <!-- 
+          <!--
           <param id="docker_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
           -->
           <!-- For a stock Galaxy instance and traditional job runner $defaults will
                expand out as:
-               
+
                $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:rw
 
                This assumes most of what is needed is available under Galaxy's root directory,
@@ -153,7 +155,7 @@
 
                $galaxy_root:ro,$tool_directory:ro,$working_directory:rw,$default_file_path:ro
 
-               If using the Pulsar, defaults will be even further restricted because the 
+               If using the Pulsar, defaults will be even further restricted because the
                Pulsar will (by default) stage all needed inputs into the job's job_directory
                (so there is not need to allow the docker container to read all the
                files - let alone write over them). Defaults in this case becomes:
@@ -173,15 +175,15 @@
           <!-- Control memory allocatable by docker container with following option:
           -->
           <!-- <param id="docker_memory">24G</param> -->
-          <!-- By default Docker will need to runnable by Galaxy using 
+          <!-- By default Docker will need to runnable by Galaxy using
                password-less sudo - this can be configured by adding the
                following line to the sudoers file of all compute nodes
                with docker enabled:
-               
+
                galaxy  ALL = (root) NOPASSWD: SETENV: /usr/bin/docker
 
-               The follow option is set to false to disable sudo (docker 
-               must likewise be configured to allow this).               
+               The follow option is set to false to disable sudo (docker
+               must likewise be configured to allow this).
           -->
           <!-- <param id="docker_sudo">false</param> -->
           <!-- Following option can be used to tweak sudo command used by
@@ -192,6 +194,16 @@
                http://docs.docker.io/reference/run/#network-settings
           -->
           <!-- <param id="docker_net">bridge</param> -->
+          <!-- By default, a container will live on past its run. By
+               adding the '\-\-rm' flag to the command line, the container
+               will be removed automatically after the program is complete.
+          -->
+          <!-- <param id="docker_auto_rm">true</param> -->
+          <!-- Override which user to launch Docker container as - defaults to 
+               Galaxy's user id. For remote job execution (e.g. Pulsar) set to
+               remote job user. Leave empty to not use the -u argument with
+               Docker. -->
+          <!-- <param id="docker_set_user">$UID</param> -->
           <!-- Following command can be used to tweak docker command. -->
           <!-- <param id="docker_cmd">/usr/local/custom_docker/docker</param> -->
           <!-- Following can be used to connect to docke server in different
@@ -265,7 +277,7 @@
             <!-- Burst out from static destination local_cluster_8_core to
             static destination shared_cluster_8_core when there are about
             50 Galaxy jobs assigned to any of the local_cluster_XXX
-            destinations (either running or queued). If there are fewer 
+            destinations (either running or queued). If there are fewer
             than 50 jobs, just use local_cluster_8_core destination.
 
             Uncomment job_state parameter to make this bursting happen when
@@ -294,8 +306,8 @@
                  configuration. -->
             <param id="private_token">123456789changeme</param>
             <!-- Uncomment the following statement to disable file staging (e.g.
-                 if there is a shared file system between Galaxy and the Pulsar 
-                 server). Alternatively action can be set to 'copy' - to replace 
+                 if there is a shared file system between Galaxy and the Pulsar
+                 server). Alternatively action can be set to 'copy' - to replace
                  http transfers with file system copies, 'remote_transfer' to cause
                  the Pulsar to initiate HTTP transfers instead of Galaxy, or
                  'remote_copy' to cause Pulsar to initiate file system copies.
@@ -337,9 +349,9 @@
                  instead. This may be required if remote host is Windows machine
                  but probably not otherwise.
             -->
-            <!-- <param id="rewrite_parameters">false</params> -->           
+            <!-- <param id="rewrite_parameters">false</params> -->
         </destination>
-        <destination id="pulsar_mq_dest" runner="amqp_pulsar" >
+        <destination id="pulsar_mq_dest" runner="pulsar_mq" >
             <!-- The RESTful Pulsar client sends a request to Pulsar
                  to populate various system properties. This
                  extra step can be disabled and these calculated here
@@ -391,8 +403,11 @@
              the terminal condition of a job will be used.
 
              The 'condition' attribute is optional, if not present, the
-             resubmit destination will be used for all conditions. Currently,
-             only the "walltime_reached" condition is implemented.
+             resubmit destination will be used for all conditions. The
+             conditions currently implemented are:
+
+               - "walltime_reached"
+               - "memory_limit_reached"
 
              The 'handler' tag is optional, if not present, the job's original
              handler will be reused for the resubmitted job.
@@ -404,6 +419,10 @@
         <destination id="long_slow" runner="sge">
             <!-- The destination that you resubmit jobs to can be any runner type -->
             <param id="nativeSpecification">-l h_rt=96:00:00</param>
+        </destination>
+        <destination id="smallmem" runner="slurm">
+            <param id="nativeSpecification">--mem-per-cpu=512</param>
+            <resubmit condition="memory_limit_reached" destination="bigmem" />
         </destination>
 
     </destinations>

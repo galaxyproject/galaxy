@@ -8,15 +8,16 @@ var View = Backbone.View.extend({
     
     // defaults options
     optionsDefault: {
-        title       : '',
-        icon        : '',
-        buttons     : null,
-        body        : null,
-        scrollable  : true,
-        nopadding   : false,
-        operations  : null,
-        placement   : 'bottom',
-        cls         : 'ui-portlet'
+        title           : '',
+        icon            : '',
+        buttons         : null,
+        body            : null,
+        scrollable      : true,
+        nopadding       : false,
+        operations      : null,
+        placement       : 'bottom',
+        cls             : 'ui-portlet',
+        operations_flt  : 'right'
     },
     
     // elements
@@ -153,18 +154,18 @@ var View = Backbone.View.extend({
     
     // fill regular modal template
     _template: function(options) {
-        var tmpl =  '<div class="' + options.cls + '">';
+        var tmpl =  '<div id="' + options.id + '" class="' + options.cls + '">';
         
         if (options.title) {
             tmpl +=     '<div id="portlet-header" class="portlet-header">' +
-                            '<div id="operations" style="float: right;"></div>' +
-                            '<h3 class="portlet-title">';
+                            '<div id="operations" style="float: ' + options.operations_flt + ';"></div>' +
+                            '<div class="portlet-title">';
                             
             if (options.icon)
                 tmpl +=         '<i class="icon fa ' + options.icon + '">&nbsp;</i>';
         
             tmpl +=             '<span id="portlet-title-text" class="portlet-title-text">' + options.title + '</span>' +
-                            '</h3>' +
+                            '</div>' +
                         '</div>';
         }
         tmpl +=         '<div id="portlet-content" class="portlet-content">';

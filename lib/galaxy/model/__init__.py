@@ -28,6 +28,7 @@ import galaxy.datatypes.registry
 import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
+import galaxy.model.orm.now
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util import ready_name_for_url
@@ -39,6 +40,7 @@ from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
         PasswordField, SelectField, TextArea, TextField, WorkflowField,
         WorkflowMappingField)
+from galaxy.model.orm import and_, or_
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
@@ -332,6 +334,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.handler = None
         self.exit_code = None
         self._init_metrics()
+        self.state_history.append( JobStateHistory( self ) )
 
     @property
     def finished( self ):
@@ -470,13 +473,10 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.post_job_actions.append( PostJobActionAssociation( pja, self ) )
     def set_state( self, state ):
         """
-        This is the only set method that performs extra work. In this case, the
-        state is propagated down to datasets.
+        Save state history
         """
         self.state = state
-        # For historical reasons state propogates down to datasets
-        for da in self.output_datasets:
-            da.dataset.state = state
+        self.state_history.append( JobStateHistory( self ) )
     def get_param_values( self, app, ignore_errors=False ):
         """
         Read encoded parameter values from the database and turn back into a
@@ -549,6 +549,11 @@ class Job( object, HasJobMetrics, Dictifiable ):
             rval['outputs'] = output_dict
 
         return rval
+
+    def set_final_state( self, final_state ):
+        self.set_state( final_state )
+        if self.workflow_invocation_step:
+            self.workflow_invocation_step.update()
 
 
 class Task( object, HasJobMetrics ):
@@ -731,6 +736,13 @@ class JobToOutputLibraryDatasetAssociation( object ):
         self.dataset = dataset
 
 
+class JobStateHistory( object ):
+    def __init__( self, job ):
+        self.job = job
+        self.state = job.state
+        self.info = job.info
+
+
 class ImplicitlyCreatedDatasetCollectionInput( object ):
     def __init__( self, name, input_dataset_collection ):
         self.name = name
@@ -877,7 +889,8 @@ class UserGroupAssociation( object ):
 class History( object, Dictifiable, UsesAnnotations, HasName ):
 
     dict_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
-    dict_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged', 'importable', 'slug', 'empty' )
+    dict_element_visible_keys = ( 'id', 'name', 'genome_build', 'deleted', 'purged', 'update_time',
+                                  'published', 'importable', 'slug', 'empty' )
     default_name = 'Unnamed history'
 
     def __init__( self, id=None, name=None, user=None ):
@@ -1026,6 +1039,9 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
         rval[ 'tags' ] = tags_str_list
+
+        if view == 'element':
+            rval[ 'size' ] = int( self.get_disk_size() )
 
         return rval
 
@@ -1357,7 +1373,7 @@ class Dataset( object ):
             self.external_filename = filename
     file_name = property( get_file_name, set_file_name )
     def get_extra_files_path( self ):
-        # Unlike get_file_name - extrnal_extra_files_path is not backed by an
+        # Unlike get_file_name - external_extra_files_path is not backed by an
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
         if not getattr( self, "external_extra_files_path", None ):
@@ -2015,6 +2031,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                      state = hda.state,
                      history_content_type=hda.history_content_type,
                      file_size = int( hda.get_size() ),
+                     create_time = hda.create_time.isoformat(),
                      update_time = hda.update_time.isoformat(),
                      data_type = hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                      genome_build = hda.dbkey,
@@ -2029,6 +2046,10 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                 tag_str += ":" + tag.user_value
             tags_str_list.append( tag_str )
         rval[ 'tags' ] = tags_str_list
+
+        #if getattr( hda, 'hidden_beneath_collection_instance', False ):
+        #    collection_id = hda.hidden_beneath_collection_instance.id
+        #    rval['collection_id'] = collection_id
 
         if hda.copied_from_library_dataset_dataset_association is not None:
             rval['copied_from_ldda_id'] = hda.copied_from_library_dataset_dataset_association.id
@@ -2171,7 +2192,7 @@ class Library( object, Dictifiable, HasName ):
         return roles
 
 class LibraryFolder( object, Dictifiable, HasName ):
-    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time' )
+    dict_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
@@ -2445,7 +2466,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance, HasName ):
             file_size = int( ldda.get_size() )
         except OSError:
             file_size = 0
-        
+
         rval = dict( id = ldda.id,
                      hda_ldda = 'ldda',
                      model_class = self.__class__.__name__,
@@ -3087,8 +3108,74 @@ class StoredWorkflowMenuEntry( object ):
 
 
 class WorkflowInvocation( object, Dictifiable ):
-    dict_collection_visible_keys = ( 'id', 'update_time', 'workflow_id' )
-    dict_element_visible_keys = ( 'id', 'update_time', 'workflow_id' )
+    dict_collection_visible_keys = ( 'id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state' )
+    dict_element_visible_keys = ( 'id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state' )
+    states = Bunch(
+        NEW='new',  # Brand new workflow invocation... maybe this should be same as READY
+        READY='ready',  # Workflow ready for another iteration of scheduling.
+        SCHEDULED='scheduled',  # Workflow has been scheduled.
+        CANCELLED='cancelled',
+        FAILED='failed',
+    )
+
+    @property
+    def active( self ):
+        """ Indicates the workflow invocation is somehow active - and in
+        particular valid actions may be performed on its
+        ``WorkflowInvocationStep``s.
+        """
+        states = WorkflowInvocation.states
+        return self.state in [ states.NEW, states.READY ]
+
+    def cancel( self ):
+        if not self.active:
+            return False
+        else:
+            self.state = WorkflowInvocation.states.CANCELLED
+            return True
+
+    def fail( self ):
+        self.state = WorkflowInvocation.states.FAILED
+
+    def step_states_by_step_id( self ):
+        step_states = {}
+        for step_state in self.step_states:
+            step_id = step_state.workflow_step_id
+            step_states[ step_id ] = step_state
+        return step_states
+
+    def step_invocations_by_step_id( self ):
+        step_invocations = {}
+        for invocation_step in self.steps:
+            step_id = invocation_step.workflow_step_id
+            if step_id not in step_invocations:
+                step_invocations[ step_id ] = []
+            step_invocations[ step_id ].append( invocation_step )
+        return step_invocations
+
+    @staticmethod
+    def poll_active_workflow_ids(
+        sa_session,
+        scheduler=None,
+        handler=None
+    ):
+        and_conditions = [
+            or_(
+                WorkflowInvocation.state == WorkflowInvocation.states.NEW,
+                WorkflowInvocation.state == WorkflowInvocation.states.READY
+            ),
+        ]
+        if scheduler is not None:
+            and_conditions.append( WorkflowInvocation.scheduler == scheduler )
+        if handler is not None:
+            and_conditions.append( WorkflowInvocation.handler == handler )
+
+        query = sa_session.query(
+            WorkflowInvocation
+        ).filter( and_( *and_conditions ) )
+        # Immediately just load all ids into memory so time slicing logic
+        # is relatively intutitive.
+        return map( lambda wi: wi.id, query.all() )
 
     def to_dict( self, view='collection', value_mapper=None ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
@@ -3112,15 +3199,71 @@ class WorkflowInvocation( object, Dictifiable ):
             rval['inputs'] = inputs
         return rval
 
+    def update( self ):
+        self.update_time = galaxy.model.orm.now.now()
+
 
 class WorkflowInvocationStep( object, Dictifiable ):
-    dict_collection_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id' )
-    dict_element_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id' )
+    dict_collection_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id', 'action' )
+    dict_element_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id', 'action' )
+
+    def update( self ):
+        self.workflow_invocation.update()
 
     def to_dict( self, view='collection', value_mapper=None ):
         rval = super( WorkflowInvocationStep, self ).to_dict( view=view, value_mapper=value_mapper )
         rval['order_index'] = self.workflow_step.order_index
+        rval['state'] = self.job.state if self.job is not None else None
         return rval
+
+
+class WorkflowRequest( object, Dictifiable ):
+    dict_collection_visible_keys = [ 'id', 'name', 'type', 'state', 'history_id', 'workflow_id' ]
+    dict_element_visible_keys = [ 'id', 'name', 'type', 'state', 'history_id', 'workflow_id' ]
+
+    def to_dict( self, view='collection', value_mapper=None ):
+        rval = super( WorkflowRequest, self ).to_dict( view=view, value_mapper=value_mapper )
+        return rval
+
+
+class WorkflowRequestInputParameter(object, Dictifiable):
+    """ Workflow-related parameters not tied to steps or inputs.
+    """
+    dict_collection_visible_keys = ['id', 'name', 'value', 'type']
+    types = Bunch(
+        REPLACEMENT_PARAMETERS='replacements',
+        META_PARAMETERS='meta',  #
+    )
+
+    def __init__( self, name=None, value=None, type=None ):
+        self.name = name
+        self.value = value
+        self.type = type
+
+
+class WorkflowRequestStepState(object, Dictifiable):
+    """ Workflow step value parameters.
+    """
+    dict_collection_visible_keys = ['id', 'name', 'value', 'workflow_step_id']
+
+    def __init__( self, workflow_step=None, name=None, value=None ):
+        self.workflow_step = workflow_step
+        self.name = name
+        self.value = value
+        self.type = type
+
+
+class WorkflowRequestToInputDatasetAssociation(object, Dictifiable):
+    """ Workflow step input dataset parameters.
+    """
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name' ]
+
+
+class WorkflowRequestToInputDatasetCollectionAssociation(object, Dictifiable):
+    """ Workflow step input dataset collection parameters.
+    """
+    dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name' ]
+
 
 class MetadataFile( object ):
 
@@ -4028,6 +4171,18 @@ class ToolTagAssociation( ItemTagAssociation ):
         self.user_tname = user_tname
         self.value = None
         self.user_value = None
+
+
+class WorkRequestTagAssociation( ItemTagAssociation ):
+    def __init__( self, id=None, user=None, workflow_request_id=None, tag_id=None, user_tname=None, value=None ):
+        self.id = id
+        self.user = user
+        self.workflow_request_id = workflow_request_id
+        self.tag_id = tag_id
+        self.user_tname = user_tname
+        self.value = None
+        self.user_value = None
+
 
 # Item annotation classes.
 

@@ -506,7 +506,20 @@ var ToolLinkView = BaseView.extend({
     tagName: 'div',
 
     render: function() {
-        this.$el.append( Handlebars.templates.tool_link(this.model.toJSON()) );
+        // create element
+        var $link = $('<div/>');
+        $link.append(Handlebars.templates.tool_link(this.model.toJSON()));
+        
+        // open upload dialog for upload tool
+        if (this.model.id === 'upload1') {
+            $link.find('a').on('click', function(e) {
+                e.preventDefault();
+                Galaxy.upload.show();
+            });
+        }
+        
+        // add element
+        this.$el.append($link);
         return this;
     }
 });

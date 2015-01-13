@@ -25,5 +25,13 @@
         </assert_contents>
       </output>
     </test>
+    <test>
+      <param name="select_ex" value="Ex1" />
+      <output name="output">
+        <assert_contents>
+          <has_line line="--ex1" />
+        </assert_contents>
+      </output>
+    </test>
   </tests>
 </tool>

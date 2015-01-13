@@ -17,6 +17,7 @@ from galaxy.util.json import dumps
 
 eggs.require('PyYAML')
 eggs.require('boto')
+eggs.require('simplejson')
 eggs.require('bioblend')
 
 from boto.exception import EC2ResponseError

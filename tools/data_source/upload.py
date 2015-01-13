@@ -113,6 +113,8 @@ def add_file( dataset, registry, json_file, output_path ):
         ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
     # Is dataset content supported sniffable binary?
     else:
+        # FIXME: This ignores the declared sniff order in datatype_conf.xml
+        # resulting in improper behavior
         type_info = Binary.is_sniffable_binary( dataset.path )
         if type_info:
             data_type = type_info[0]

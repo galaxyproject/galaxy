@@ -15,13 +15,8 @@ loads = json.loads
 
 log = logging.getLogger( __name__ )
 
-
-def to_json_string(*args, **kwargs):
-    return json.dumps(*args, **kwargs)
-
-
-def from_json_string(*args, **kwargs):
-    return json.loads(*args, **kwargs)
+to_json_string = dumps
+from_json_string = loads
 
 
 def json_fix( val ):
@@ -53,6 +48,8 @@ def swap_inf_nan( val ):
             return "__Infinity__"
         elif val == float("-inf"):
             return "__-Infinity__"
+        else:
+            return val
     else:
         return val
 

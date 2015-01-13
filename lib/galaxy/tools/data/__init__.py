@@ -10,10 +10,13 @@ import logging
 import os
 import os.path
 import shutil
+import string
 import tempfile
 
 from galaxy import util
 from galaxy.util.odict import odict
+
+from galaxy.model.item_attrs import Dictifiable
 
 log = logging.getLogger( __name__ )
 
@@ -69,7 +72,7 @@ class ToolDataTableManager( object ):
             tree = util.parse_xml( filename )
             root = tree.getroot()
             for table_elem in root.findall( 'table' ):
-                table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config )
+                table = ToolDataTable.from_elem( table_elem, tool_data_path, from_shed_config, filename=filename )
                 table_elems.append( table_elem )
                 if table.name not in self.data_tables:
                     self.data_tables[ table.name ] = table
@@ -165,16 +168,17 @@ class ToolDataTableManager( object ):
 class ToolDataTable( object ):
 
     @classmethod
-    def from_elem( cls, table_elem, tool_data_path, from_shed_config ):
+    def from_elem( cls, table_elem, tool_data_path, from_shed_config, filename ):
         table_type = table_elem.get( 'type', 'tabular' )
         assert table_type in tool_data_table_types, "Unknown data table type '%s'" % type
-        return tool_data_table_types[ table_type ]( table_elem, tool_data_path, from_shed_config=from_shed_config )
+        return tool_data_table_types[ table_type ]( table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename )
 
-    def __init__( self, config_element, tool_data_path, from_shed_config = False):
+    def __init__( self, config_element, tool_data_path, from_shed_config = False, filename=None ):
         self.name = config_element.get( 'name' )
         self.comment_char = config_element.get( 'comment_char' )
         self.empty_field_value = config_element.get( 'empty_field_value', '' )
         self.empty_field_values = {}
+        self.here = filename and os.path.dirname(filename)
         self.filenames = odict()
         self.tool_data_path = tool_data_path
         self.missing_index_file = None
@@ -223,7 +227,7 @@ class ToolDataTable( object ):
         return self._update_version()
 
 
-class TabularToolDataTable( ToolDataTable ):
+class TabularToolDataTable( ToolDataTable, Dictifiable ):
     """
     Data stored in a tabular / separated value format on disk, allows multiple
     files to be merged but all must have the same column definitions::
@@ -235,11 +239,12 @@ class TabularToolDataTable( ToolDataTable ):
         </table>
 
     """
+    dict_collection_visible_keys = [ 'name' ]
 
     type_key = 'tabular'
 
-    def __init__( self, config_element, tool_data_path, from_shed_config = False):
-        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config)
+    def __init__( self, config_element, tool_data_path, from_shed_config = False, filename=None ):
+        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config, filename)
         self.config_element = config_element
         self.data = []
         self.configure_and_load( config_element, tool_data_path, from_shed_config)
@@ -262,7 +267,7 @@ class TabularToolDataTable( ToolDataTable ):
             repo_info = None
         # Read every file
         for file_element in config_element.findall( 'file' ):
-            filename = file_path = file_element.get( 'path', None )
+            filename = file_path = expand_here_template( file_element.get( 'path', None ), here=self.here )
             found = False
             if file_path is None:
                 log.debug( "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.", util.xml_to_string( file_element ), self.name )
@@ -297,7 +302,7 @@ class TabularToolDataTable( ToolDataTable ):
 
             errors = []
             if found:
-                self.data.extend( self.parse_file_fields( open( filename ), errors=errors ) )
+                self.extend_data_with( filename, errors=errors )
                 self._update_version()
             else:
                 self.missing_index_file = filename
@@ -323,7 +328,7 @@ class TabularToolDataTable( ToolDataTable ):
 
     def handle_found_index_file( self, filename ):
         self.missing_index_file = None
-        self.data.extend( self.parse_file_fields( open( filename ) ) )
+        self.extend_data_with( filename )
 
     def get_fields( self ):
         return self.data
@@ -377,7 +382,11 @@ class TabularToolDataTable( ToolDataTable ):
         if 'name' not in self.columns:
             self.columns['name'] = self.columns['value']
 
-    def parse_file_fields( self, reader, errors=None ):
+    def extend_data_with( self, filename, errors=None ):
+        here = os.path.dirname(os.path.abspath(filename))
+        self.data.extend( self.parse_file_fields( open( filename ), errors=errors, here=here ) )
+
+    def parse_file_fields( self, reader, errors=None, here="__HERE__" ):
         """
         Parse separated lines from file and return a list of tuples.
 
@@ -391,6 +400,7 @@ class TabularToolDataTable( ToolDataTable ):
                 continue
             line = line.rstrip( "\n\r" )
             if line:
+                line = expand_here_template( line, here=here )
                 fields = line.split( self.separator )
                 if self.largest_index < len( fields ):
                     rval.append( fields )
@@ -514,10 +524,24 @@ class TabularToolDataTable( ToolDataTable ):
                 else:
                     replace = " "
         return map( lambda x: x.replace( separator, replace ), fields )
-    
+
     @property
     def xml_string( self ):
         return util.xml_to_string( self.config_element )
+
+    def to_dict(self, view='collection'):
+        rval = super(TabularToolDataTable, self).to_dict()
+        if view == 'element':
+            rval['columns'] = sorted(self.columns.keys(), key=lambda x:self.columns[x])
+            rval['fields'] = self.get_fields()
+        return rval
+
+
+def expand_here_template(content, here=None):
+    if here and content:
+        content = string.Template(content).safe_substitute( { "__HERE__": here })
+    return content
+
 
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )

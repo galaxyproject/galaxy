@@ -3,14 +3,22 @@ import urllib
 from galaxy import exceptions
 from galaxy import web, util
 from galaxy.web import _future_expose_api_anonymous
+from galaxy.web import _future_expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import dumps
 from galaxy.visualization.data_providers.genome import *
-
+from galaxy.tools.parameters import params_to_incoming, check_param
+from galaxy.tools.parameters import visit_input_values
+from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.model import HistoryDatasetAssociation
+from galaxy.util.expressions import ExpressionContext
+from collections import Iterable
+
+import galaxy.queue_worker
 
 import logging
 log = logging.getLogger( __name__ )
@@ -59,12 +67,45 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
     @_future_expose_api_anonymous
+    def build( self, trans, id, **kwd ):
+        """
+        GET /api/tools/{tool_id}/build
+        Returns a tool model including dynamic parameters and updated values, repeats block etc.
+        """
+        tool = self._get_tool( id )
+        return self._build_dict(trans, tool, kwd)
+    
+    @_future_expose_api
+    @web.require_admin
+    def reload( self, trans, tool_id, **kwd ):
+        """
+        GET /api/tools/{tool_id}/reload
+        Reload specified tool.
+        """
+        toolbox = trans.app.toolbox
+        galaxy.queue_worker.send_control_task( trans, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
+        message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
+        return { status: message }
+
+    @_future_expose_api_anonymous
     def citations( self, trans, id, **kwds ):
         tool = self._get_tool( id )
         rval = []
         for citation in tool.citations:
             rval.append( citation.to_dict( 'bibtex' ) )
         return rval
+
+    @web.expose_api_raw
+    @web.require_admin
+    def download( self, trans, id, **kwds ):
+        tool_tarball, success, message = trans.app.toolbox.package_tool( trans, id )
+        if success:
+            trans.response.set_content_type( 'application/x-gzip' )
+            download_file = open( tool_tarball )
+            os.unlink( tool_tarball )
+            tarball_path, filename = os.path.split( tool_tarball )
+            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( id )
+            return download_file
 
     @web.expose_api_anonymous
     def create( self, trans, payload, **kwd ):
@@ -437,3 +478,300 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         dataset_dict[ 'id' ] = trans.security.encode_id( dataset_dict[ 'id' ] )
         dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset )
         return dataset_dict
+
+    def _build_dict(self, trans, tool, kwd={}):
+        """
+        Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
+        """
+        job_id = kwd.get('job_id', None)
+        dataset_id = kwd.get('dataset_id', None)
+        
+        # load job details if provided
+        job = None
+        if job_id:
+            try:
+                job_id = trans.security.decode_id( job_id )
+                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+            except Exception, exception:
+                trans.response.status = 500
+                return { 'error': 'Failed to retrieve job.' }
+        elif dataset_id:
+            try:
+                dataset_id = trans.security.decode_id( dataset_id )
+                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
+                    trans.response.status = 500
+                    return { 'error': 'User has no access to dataset.' }
+                job = data.creating_job
+                if not job:
+                    trans.response.status = 500
+                    return { 'error': 'Creating job not found.' }
+            except Exception, exception:
+                trans.response.status = 500
+                return { 'error': 'Failed to get job information.' }
+        
+        # load job parameters into incoming
+        tool_message = ''
+        if job:
+            try:
+                job_params = job.get_param_values( trans.app, ignore_errors = True )
+                job_messages = tool.check_and_update_param_values( job_params, trans, update_values=False )
+                tool_message = self._compare_tool_version(trans, tool, job)
+                params_to_incoming( kwd, tool.inputs, job_params, trans.app )
+            except Exception, exception:
+                trans.response.status = 500
+                return { 'error': str( exception ) }
+                
+        # create parameter object
+        params = galaxy.util.Params( kwd, sanitize = False )
+        
+        # convert value to jsonifiable value
+        def convert(v):
+            # check if value is numeric
+            isnumber = False
+            try:
+                float(v)
+                isnumber = True
+            except Exception:
+                pass
+
+            # fix hda parsing
+            if isinstance(v, HistoryDatasetAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'src' : 'hda'
+                }
+            elif isinstance(v, bool):
+                if v is True:
+                    return 'true'
+                else:
+                    return 'false'
+            elif isinstance(v, basestring) or isnumber:
+                return v
+            else:
+                return None
+
+        # ensures that input dictionary is jsonifiable
+        def sanitize(dict):
+            # get current value
+            value = dict['value'] if 'value' in dict else None
+
+            # identify lists
+            if dict['type'] == 'data':
+                if isinstance(value, list):
+                    value = [ convert(v) for v in value ]
+                else:
+                    value = [ convert(value) ]
+                value = {
+                    'batch'     : dict['multiple'],
+                    'values'    : value
+                }
+            elif isinstance(value, list):
+                value = [ convert(v) for v in value ]
+            else:
+                value = convert(value)
+
+            # update and return
+            dict['value'] = value
+            return dict
+        
+        # initialize state using default parameters
+        def initialize_state(trans, inputs, state, context=None):
+            context = ExpressionContext(state, context)
+            for input in inputs.itervalues():
+                state[input.name] = input.get_initial_value(trans, context)
+    
+        # check the current state of a value and update it if necessary
+        def check_state(trans, input, default_value, context):
+            value = default_value
+            error = 'State validation failed.'
+            try:
+                # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
+                if input.type == 'boolean' and isinstance(default_value, basestring):
+                    value, error = [util.string_as_bool(default_value), None]
+                else:
+                    value, error = check_param(trans, input, default_value, context)
+            except Exception:
+                log.error('Checking parameter %s failed.', input.name)
+                pass
+            return [value, error]
+    
+        # populates state with incoming url parameters
+        def populate_state(trans, inputs, state, incoming, prefix="", context=None ):
+            errors = dict()
+            context = ExpressionContext(state, context)
+            for input in inputs.itervalues():
+                key = prefix + input.name
+                if input.type == 'repeat':
+                    group_state = state[input.name]
+                    group_errors = []
+                    rep_index = 0
+                    del group_state[:]
+                    while True:
+                        rep_name = "%s_%d" % (key, rep_index)
+                        if not any([incoming_key.startswith(rep_name) for incoming_key in incoming.keys()]):
+                            break
+                        if rep_index < input.max:
+                            new_state = {}
+                            new_state['__index__'] = rep_index
+                            initialize_state(trans, input.inputs, new_state, context)
+                            group_state.append(new_state)
+                            group_errors.append({})
+                            rep_errors = populate_state(trans, input.inputs, new_state, incoming, prefix=rep_name + "|", context=context)
+                            if rep_errors:
+                                group_errors[rep_index].update( rep_errors )
+                        else:
+                            group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
+                        rep_index += 1
+                elif input.type == 'conditional':
+                    group_state = state[input.name]
+                    group_prefix = "%s|" % ( key )
+                    test_param_key = group_prefix + input.test_param.name
+                    default_value = incoming.get(test_param_key, group_state.get(input.test_param.name, None))
+                    value, error = check_state(trans, input.test_param, default_value, context)
+                    if error:
+                        errors[input.name] = [error]
+                    else:
+                        current_case = input.get_current_case(value, trans)
+                        group_state = state[input.name] = {}
+                        initialize_state(trans, input.cases[current_case].inputs, group_state, context)
+                        group_errors = populate_state( trans, input.cases[current_case].inputs, group_state, incoming, prefix=group_prefix, context=context)
+                        if group_errors:
+                            errors[input.name] = group_errors
+                        group_state['__current_case__'] = current_case
+                    group_state[input.test_param.name] = value
+                else:
+                    default_value = incoming.get(key, state.get(input.name, None))
+                    value, error = check_state(trans, input, default_value, context)
+                    if error:
+                        errors[input.name] = error
+                    state[input.name] = value
+            return errors
+        
+        # builds tool model including all attributes
+        def iterate(group_inputs, inputs, tool_state, errors, other_values=None):
+            other_values = ExpressionContext( tool_state, other_values )
+            for input_index, input in enumerate( inputs.itervalues() ):
+                # create model dictionary
+                group_inputs[input_index] = input.to_dict(trans)
+                if group_inputs[input_index] is None:
+                    continue
+
+                # identify stat for subsection/group
+                group_state = tool_state[input.name]
+
+                # iterate and update values
+                if input.type == 'repeat':
+                    group_cache = group_inputs[input_index]['cache'] = {}
+                    for i in range( len( group_state ) ):
+                        group_cache[i] = {}
+                        group_errors = errors[input.name][i] if input.name in errors else dict()
+                        iterate( group_cache[i], input.inputs, group_state[i], group_errors, other_values )
+                elif input.type == 'conditional':
+                    try:
+                        test_param = group_inputs[input_index]['test_param']
+                        test_param['value'] = convert(group_state[test_param['name']])
+                    except Exception:
+                        pass
+                    i = group_state['__current_case__']
+                    group_errors = errors.get( input.name, {} )
+                    iterate(group_inputs[input_index]['cases'][i]['inputs'], input.cases[i].inputs, group_state, group_errors, other_values)
+                else:
+                    # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
+                    try:
+                        group_inputs[input_index] = input.to_dict(trans, other_values=other_values)
+                    except Exception:
+                        pass
+
+                    # update input value from tool state
+                    try:
+                        group_inputs[input_index]['value'] = tool_state[group_inputs[input_index]['name']]
+                    except Exception:
+                        pass
+
+                    # sanitize if value exists
+                    if group_inputs[input_index]['value']:
+                        group_inputs[input_index] = sanitize(group_inputs[input_index])
+
+        # do param translation here, used by datasource tools
+        if tool.input_translator:
+            tool.input_translator.translate( params )
+        
+        # create tool state
+        state_inputs = {}
+        initialize_state(trans, tool.inputs, state_inputs)
+        errors = populate_state(trans, tool.inputs, state_inputs, params.__dict__)
+
+        # create basic tool model
+        tool_model = tool.to_dict(trans)
+        tool_model['inputs'] = {}
+
+        # build tool model
+        iterate(tool_model['inputs'], tool.inputs, state_inputs, errors, '')
+
+        # load tool help
+        tool_help = ''
+        if tool.help:
+            tool_help = tool.help
+            tool_help = tool_help.render( static_path=web.url_for( '/static' ), host_url=web.url_for('/', qualified=True) )
+            if type( tool_help ) is not unicode:
+                tool_help = unicode( tool_help, 'utf-8')
+        
+        # check if citations exist
+        tool_citations = False
+        if tool.citations:
+            tool_citations = True
+
+        # add additional properties
+        tool_model.update({
+            'help'          : tool_help,
+            'citations'     : tool_citations,
+            'biostar_url'   : trans.app.config.biostar_url,
+            'message'       : tool_message
+        })
+        
+        # return enriched tool model
+        return tool_model
+
+    def _get_tool_components( self, trans, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
+        return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
+
+    def _compare_tool_version( self, trans, tool, job ):
+        """
+        Compares a tool version with the tool version from a job (from ToolRunne.
+        """
+        id = job.tool_id
+        version = job.tool_version
+        message = ''
+        try:
+            select_field, tools, tool = self._get_tool_components( trans, id, tool_version=version, get_loaded_tools_by_lineage=False, set_selected=True )
+            if tool is None:
+                trans.response.status = 500
+                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % id }
+            if ( tool.id != id and tool.old_id != id ) or tool.version != version:
+                if tool.id == id:
+                    if version == None:
+                        # for some reason jobs don't always keep track of the tool version.
+                        message = ''
+                    else:
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % version
+                        if len( tools ) > 1:
+                            message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                        else:
+                            message += 'You can re-run the job with this tool version, which is a derivation of the original tool.'
+                else:
+                    if len( tools ) > 1:
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % version
+                        message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                    else:
+                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( id, version )
+                        message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
+        except Exception, error:
+            trans.response.status = 500
+            return { 'error': str (error) }
+                
+        # can't rerun upload, external data sources, et cetera. workflow compatible will proxy this for now
+        if not tool.is_workflow_compatible:
+            trans.response.status = 500
+            return { 'error': 'The \'%s\' tool does currently not support re-running.' % tool.name }
+        return message

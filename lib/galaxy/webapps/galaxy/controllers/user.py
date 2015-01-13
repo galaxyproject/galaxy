@@ -5,32 +5,31 @@ Contains the user interface in the Universe class
 import glob
 import logging
 import os
+import random
 import socket
 import string
-import random
 import urllib
-from galaxy import web
-from galaxy import util
-from galaxy import model
-from galaxy.model.orm import and_
-from galaxy.security.validate_user_input import validate_email
-from galaxy.security.validate_user_input import validate_publicname
-from galaxy.security.validate_user_input import validate_password
-from galaxy.security.validate_user_input import transform_publicname
-from galaxy.util.json import loads
-from galaxy.util.json import dumps
-from galaxy.util import listify
-from galaxy.util import docstring_trim
-from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController
-from galaxy.web.base.controller import UsesFormDefinitionsMixin
-from galaxy.web.base.controller import CreatesUsersMixin
-from galaxy.web.base.controller import CreatesApiKeysMixin
-from galaxy.web.form_builder import CheckboxField
-from galaxy.web.form_builder import build_select_field
-from galaxy.web.framework.helpers import time_ago, grids
+
 from datetime import datetime, timedelta
-from galaxy.util import hash_util, biostar
+
+from galaxy import model
+from galaxy import util
+from galaxy import web
+from galaxy.model.orm import and_
+from galaxy.security.validate_user_input import (transform_publicname,
+                                                 validate_email,
+                                                 validate_password,
+                                                 validate_publicname)
+from galaxy.util import biostar, hash_util, docstring_trim, listify
+from galaxy.util.json import dumps, loads
+from galaxy.web import url_for
+from galaxy.web.base.controller import (BaseUIController,
+                                        CreatesApiKeysMixin,
+                                        CreatesUsersMixin,
+                                        UsesFormDefinitionsMixin)
+from galaxy.web.form_builder import build_select_field, CheckboxField
+from galaxy.web.framework.helpers import escape, grids, time_ago
+from galaxy.web.framework.helpers import time_ago, grids
 from markupsafe import escape
 
 log = logging.getLogger( __name__ )
@@ -296,7 +295,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                                   message=message,
                                                                   status='info' ) )
                 if redirect:
-                    return trans.response.send_redirect( self.__get_redirect_url( redirect ) )
+                    return trans.response.send_redirect( redirect )
                 return trans.response.send_redirect( url_for( controller='user',
                                                               action='openid_manage',
                                                               use_panels=use_panels,
@@ -348,7 +347,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                                           message=message,
                                                                           status='info' ) )
                         if redirect:
-                            return trans.response.send_redirect( self.__get_redirect_url( redirect ) )
+                            return trans.response.send_redirect( redirect )
                         return trans.response.send_redirect( url_for( controller='user',
                                                                       action='openid_manage',
                                                                       use_panels=use_panels,
@@ -454,13 +453,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         redirect = self.__get_redirect_url( kwd.get( 'redirect', trans.request.referer ).strip() )
         redirect_url = ''  # always start with redirect_url being empty
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
-        message = escape( kwd.get( 'message', '' ) )
+        message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         header = ''
         user = trans.user
         email = kwd.get( 'email', '' )
         if user:
-            # already logged in
+            # Already logged in.
             redirect_url = redirect
             message = 'You are already logged in.'
             status = 'info'
@@ -500,9 +499,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     active_view="user" )
 
     def __validate_login( self, trans, **kwd ):
-        """
-        Function validates numerous cases that might happen during the login time.
-        """
+        """Validates numerous cases that might happen during the login time."""
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'error' )
         email = kwd.get( 'email', '' )
@@ -570,7 +567,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             email = trans.user.email
         if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
-        is_activation_sent = self.send_verification_email( trans, email, username)
+        is_activation_sent = self.send_verification_email( trans, email, username )
         if is_activation_sent:
             message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % ( email, url_for( '/' ) )
             status = 'error'
@@ -630,7 +627,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         if honeypot_field != '':
             return trans.show_error_message( "You've been flagged as a possible bot. If you are not, please try registering again and fill the form out carefully. <a target=\"_top\" href=\"%s\">Go to the home page</a>." ) % url_for( '/' )
 
-        message = escape( util.restore_text( params.get( 'message', ''  ) ) )
+        message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )
         email = util.restore_text( params.get( 'email', '' ) )
@@ -660,11 +657,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             # Create the user, save all the user info and login to Galaxy
             if params.get( 'create_user_button', False ):
                 # Check email and password validity
-                # Note: message does not need to be escaped (it is clean)
                 message = self.__validate( trans, params, email, password, confirm, username )
                 if not message:
                     # All the values are valid
-                    # message does not need to be escaped here either
                     message, status, user, success = self.__register( trans,
                                                                       cntrller,
                                                                       subscribe_checked,
@@ -678,7 +673,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         trans.log_event( "User created a new account" )
                         trans.log_event( "User logged in" )
                     if success and is_admin:
-                        message = 'Created new user account (%s)' % escape( user.email )
+                        message = 'Created new user account (%s)' % user.email
                         trans.response.send_redirect( web.url_for( controller='admin',
                                                                    action='users',
                                                                    cntrller=cntrller,
@@ -746,7 +741,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if subscribe_checked:
                 # subscribe user to email list
                 if trans.app.config.smtp_server is None:
-                    error = "Now logged in as " + escape( user.email ) + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
+                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
                 else:
                     body = 'Join Mailing list.\n'
                     to = trans.app.config.mailing_join_addr
@@ -755,7 +750,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     try:
                         util.send_mail( frm, to, subject, body, trans.app.config )
                     except:
-                        error = "Now logged in as " + escape( user.email ) + ". However, subscribing to the mailing list has failed."
+                        error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
             if not error and not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
@@ -765,7 +760,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             elif not error:
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='users',
-                                                           message='Created new user account (%s)' % escape( user.email ),
+                                                           message='Created new user account (%s)' % user.email,
                                                            status=status ) )
         if error:
             message = error
@@ -775,7 +770,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
                 is_activation_sent = self.send_verification_email( trans, email, username )
                 if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( escape( user.email ), url_for( '/' ) )
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
                     success = True
                 else:
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -783,7 +778,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         message += ' Contact: %s' % trans.app.config.error_email_to
                     success = False
             else:  # User activation is OFF, proceed without sending the activation email.
-                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( escape( user.email ), url_for( '/' ) )
+                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
                 success = True
         return ( message, status, user, success )
 
@@ -818,7 +813,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def prepare_activation_link( self, trans, email ):
         """
-        Prepares the account activation link for the user.
+        Prepare the account activation link for the user.
         """
         activation_token = self.get_activation_token( trans, email )
         activation_link = url_for( controller='user', action='activate', activation_token=activation_token, email=email, qualified=True  )
@@ -826,7 +821,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def get_activation_token( self, trans, email ):
         """
-        Checks for the activation token. Creates new activation token and stores it in the database if none found.
+        Check for the activation token. Create new activation token and store it in the database if no token found.
         """
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
         activation_token = user.activation_token
@@ -840,7 +835,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.expose
     def activate( self, trans, **kwd ):
         """
-        Function checks whether token fits the user and then activates the user's account.
+        Check whether token fits the user and then activate the user's account.
         """
         params = util.Params( kwd, sanitize=False )
         email = urllib.unquote( params.get( 'email', None ) )
@@ -848,7 +843,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
         if email is None or activation_token is None:
             #  We don't have the email or activation_token, show error.
-            return trans.show_error_message( "You are using wrong activation link. Try to log-in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
+            return trans.show_error_message( "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller="root", action="index" )
         else:
             # Find the user
             user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
@@ -858,12 +853,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if user.activation_token == activation_token:
                 user.activation_token = None
                 user.active = True
-                trans.sa_session.add(user)
+                trans.sa_session.add( user )
                 trans.sa_session.flush()
                 return trans.show_ok_message( "Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
             else:
                 #  Tokens don't match. Activation is denied.
-                return trans.show_error_message( "You are using wrong activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
+                return trans.show_error_message( "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>" ) % web.url_for( controller='root', action='index' )
         return
 
     def __get_user_type_form_definition( self, trans, user=None, **kwd ):
@@ -973,7 +968,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 user.username = username
                 trans.sa_session.add( user )
                 trans.sa_session.flush()
-                message = 'The username has been updated to: %s' % escape( username )
+                message = 'The username has been updated with the changes.'
         return trans.fill_template( '/user/username.mako',
                                     cntrller=cntrller,
                                     user=user,
@@ -983,6 +978,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def edit_info( self, trans, cntrller, **kwd ):
+        """
+        Edit user information = username, email or password.
+        """
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1000,6 +998,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             # Editing email and username
             email = util.restore_text( params.get( 'email', '' ) )
             username = util.restore_text( params.get( 'username', '' ) ).lower()
+
             # Validate the new values for email and username
             message = validate_email( trans, email, user )
             if not message and username:
@@ -1007,15 +1006,30 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if message:
                 status = 'error'
             else:
-                # The user's private role name must match the user's login ( email )
-                private_role = trans.app.security_agent.get_private_user_role( user )
-                private_role.name = email
-                private_role.description = 'Private role for ' + email
-                # Now change the user info
-                user.email = email
-                user.username = username
-                trans.sa_session.add_all( ( user, private_role ) )
-                trans.sa_session.flush()
+                if ( user.email != email ):
+                    # The user's private role name must match the user's login ( email )
+                    private_role = trans.app.security_agent.get_private_user_role( user )
+                    private_role.name = email
+                    private_role.description = 'Private role for ' + email
+                    # Change the email itself
+                    user.email = email
+                    trans.sa_session.add_all( ( user, private_role ) )
+                    trans.sa_session.flush()
+                    if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                        user.active = False
+                        trans.sa_session.add( user )
+                        trans.sa_session.flush()
+                        is_activation_sent = self.send_verification_email( trans, user.email, user.username )
+                        if is_activation_sent:
+                            message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
+                        else:
+                            message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                            if trans.app.config.error_email_to is not None:
+                                message += ' Contact: %s' % trans.app.config.error_email_to
+                if ( user.username != username ):
+                    user.username = username
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
         elif user and params.get( 'change_password_button', False ):
             # Editing password.  Do not sanitize passwords, so get from kwd
@@ -1092,8 +1106,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def reset_password( self, trans, email=None, **kwd ):
+        """Reset the user's password. Send an email with the new password."""
         if trans.app.config.smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact your local Galaxy administrator." )
+            return trans.show_error_message( "Mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator." )
         message = util.sanitize_text( util.restore_text( kwd.get( 'message', '' ) ) )
         status = kwd.get( 'status', 'done' )
         if kwd.get( 'reset_password_button', False ):
@@ -1113,23 +1128,18 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     if host == 'localhost':
                         host = socket.getfqdn()
                     body = 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass )
-                    to = email
                     frm = 'galaxy-no-reply@' + host
                     subject = 'Galaxy Password Reset'
                     try:
-                        util.send_mail( frm, to, subject, body, trans.app.config )
+                        util.send_mail( frm, email, subject, body, trans.app.config )
                         reset_user.set_password_cleartext( new_pass )
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
                         trans.log_event( "User reset password: %s" % email )
-                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( escape( email ), web.url_for( controller='user', action='login' ) )
+                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( escape( email ), web.url_for( controller='user', action='login', noredirect='true' ) )
                     except Exception, e:
                         message = 'Failed to reset password: %s' % str( e )
                         status = 'error'
-                    return trans.response.send_redirect( web.url_for( controller='user',
-                                                                      action='reset_password',
-                                                                      message=message,
-                                                                      status=status ) )
             elif email is not None:
                 message = "The specified user does not exist"
                 status = 'error'
@@ -1161,7 +1171,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     @web.expose
     def set_default_permissions( self, trans, cntrller, **kwd ):
-        """Sets the user's default permissions for the new histories"""
+        """Set the user's default permissions for the new histories"""
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -1180,7 +1190,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 message = 'Default new history permissions have been changed.'
             return trans.fill_template( 'user/permissions.mako',
                                         cntrller=cntrller,
-                                        message=escape( message ),
+                                        message=message,
                                         status=status )
         else:
             # User not logged in, history group must be only public
@@ -1231,48 +1241,57 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     filters.append( dict( filterpath=filter_name, short_desc=sdesc, desc=description, checked=False ) )
             return filters
 
-        saved_user_tool_filters = list()
-        saved_user_section_filters = list()
-        saved_user_label_filters = list()
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
 
-        for name, value in trans.user.preferences.items():
-            if name == 'toolbox_tool_filters':
-                saved_user_tool_filters = listify( value, do_strip=True )
-            elif name == 'toolbox_section_filters':
-                saved_user_section_filters = listify( value, do_strip=True )
-            elif name == 'toolbox_label_filters':
-                saved_user_label_filters = listify( value, do_strip=True )
+        user_id = params.get( 'user_id', False )
+        if user_id:
+            user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+        else:
+            user = trans.user
 
-        tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
-        section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
-        label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
+        if user:
+            saved_user_tool_filters = list()
+            saved_user_section_filters = list()
+            saved_user_label_filters = list()
 
-        message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
-        status = util.restore_text( kwd.get( 'status', 'done' ) )
+            for name, value in user.preferences.items():
+                if name == 'toolbox_tool_filters':
+                    saved_user_tool_filters = listify( value, do_strip=True )
+                elif name == 'toolbox_section_filters':
+                    saved_user_section_filters = listify( value, do_strip=True )
+                elif name == 'toolbox_label_filters':
+                    saved_user_label_filters = listify( value, do_strip=True )
 
-        return trans.fill_template( 'user/toolbox_filters.mako',
-                                    cntrller=cntrller,
-                                    message=message,
-                                    tool_filters=tool_filters,
-                                    section_filters=section_filters,
-                                    label_filters=label_filters,
-                                    user=trans.user,
-                                    status=status)
+            tool_filters = get_filter_mapping( saved_user_tool_filters, trans.app.config.user_tool_filters )
+            section_filters = get_filter_mapping( saved_user_section_filters, trans.app.config.user_section_filters )
+            label_filters = get_filter_mapping( saved_user_label_filters, trans.app.config.user_label_filters )
+
+            return trans.fill_template( 'user/toolbox_filters.mako',
+                                        cntrller=cntrller,
+                                        message=message,
+                                        tool_filters=tool_filters,
+                                        section_filters=section_filters,
+                                        label_filters=label_filters,
+                                        user=user,
+                                        status=status )
+        else:
+            # User not logged in, history group must be only public
+            return trans.show_error_message( "You must be logged in to change private toolbox filters." )
 
     @web.expose
     @web.require_login( "to change the private toolbox filters" )
     def edit_toolbox_filters( self, trans, cntrller, **kwd ):
-        def validate( user_filters, filter_type ):
-            rval = []
-            config_filters = getattr( trans.app.config, 'user_%s_filters' % filter_type, [] )
-            for f in user_filters:
-                if f not in config_filters:
-                    log.warning( 'User provided filter %s which is not in user_%s_filters', f, filter_type )
-                else:
-                    rval.append( f )
-            return rval
-
         params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', '' ) )
+        user_id = params.get( 'user_id', False )
+        if not user_id:
+            # User must be logged in to create a new address
+            return trans.show_error_message( "You must be logged in to change the ToolBox filters." )
+
+        user = trans.sa_session.query( trans.app.model.User ).get( trans.security.decode_id( user_id ) )
+
         if params.get( 'edit_toolbox_filter_button', False ):
             tool_filters = list()
             section_filters = list()
@@ -1285,13 +1304,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         label_filters.append( name[2:] )
                     elif name.startswith('s_'):
                         section_filters.append( name[2:] )
-            trans.user.preferences['toolbox_tool_filters'] = ','.join( validate( tool_filters, 'tool' ) )
-            trans.user.preferences['toolbox_section_filters'] = ','.join( validate( section_filters, 'section' ) )
-            trans.user.preferences['toolbox_label_filters'] = ','.join( validate( label_filters, 'label' ) )
+            user.preferences['toolbox_tool_filters'] = ','.join( tool_filters )
+            user.preferences['toolbox_section_filters'] = ','.join( section_filters )
+            user.preferences['toolbox_label_filters'] = ','.join( label_filters )
 
-            trans.sa_session.add( trans.user )
+            trans.sa_session.add( user )
             trans.sa_session.flush()
-            message = 'ToolBox filters have been updated.'
+            message = 'ToolBox filters has been updated.'
             kwd = dict( message=message, status='done' )
 
         # Display the ToolBox filters form with the current values filled in
@@ -1520,7 +1539,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
     @web.require_login( "to undelete addresses" )
     @web.expose
     def undelete_address( self, trans, cntrller, address_id=None, **kwd ):
-         return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id=address_id, **kwd )
+        return self.__delete_undelete_address( trans, cntrller, 'undelete', address_id=address_id, **kwd )
 
     def __delete_undelete_address( self, trans, cntrller, op, address_id=None, **kwd ):
         is_admin = cntrller == 'admin' and trans.user_is_admin()
@@ -1720,7 +1739,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def __get_redirect_url( self, redirect ):
         root_url = url_for( '/', qualified=True )
-        redirect_url = ''  # always start with redirect_url being empty
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
         # or to enter a logout/login loop
         if not util.compare_urls( root_url, redirect, compare_path=False ) or util.compare_urls( url_for( controller='user', action='logout', qualified=True ), redirect ):

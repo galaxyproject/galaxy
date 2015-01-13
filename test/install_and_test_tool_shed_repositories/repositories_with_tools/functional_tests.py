@@ -441,7 +441,9 @@ def main():
             pass
     print "Database connection: ", database_connection
     print "Install database connection: ", install_database_connection
-    # Generate the shed_tool_data_table_conf.xml file.
+    # Generate the tool data table configuration files.
+    if not os.path.exists( galaxy_tool_data_table_conf_file ):
+        file( galaxy_tool_data_table_conf_file, 'w' ).write( install_and_test_base_util.tool_data_table_conf_xml_template )
     file( shed_tool_data_table_conf_file, 'w' ).write( install_and_test_base_util.tool_data_table_conf_xml_template )
     os.environ[ 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
     # ---- Start up a Galaxy instance ------------------------------------------------------

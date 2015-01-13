@@ -38,6 +38,7 @@ Subpackages
     galaxy.forms
     galaxy.jobs
     galaxy.model
+    galaxy.managers
     galaxy.objectstore
     galaxy.openid
     galaxy.quota
@@ -51,4 +52,3 @@ Subpackages
     galaxy.web
     galaxy.webapps
     galaxy.workflow
-

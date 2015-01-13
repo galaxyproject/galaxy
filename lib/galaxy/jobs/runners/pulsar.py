@@ -53,7 +53,7 @@ PULSAR_PARAM_SPECS = dict(
     ),
     galaxy_url=dict(
         map=specs.to_str_or_none,
-        default=DEFAULT_GALAXY_URL,
+        default=None,
     ),
     manager=dict(
         map=specs.to_str_or_none,
@@ -129,6 +129,8 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         super( PulsarJobRunner, self ).__init__( app, nworkers, runner_param_specs=PULSAR_PARAM_SPECS, **kwds )
         self._init_worker_threads()
         galaxy_url = self.runner_params.galaxy_url
+        if not galaxy_url:
+            galaxy_url = app.config.galaxy_infrastructure_url
         if galaxy_url:
             galaxy_url = galaxy_url.rstrip("/")
         self.galaxy_url = galaxy_url

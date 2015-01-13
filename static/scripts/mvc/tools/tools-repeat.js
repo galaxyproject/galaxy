@@ -1,14 +1,16 @@
 // dependencies
 define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc'], function(Utils, Table, Portlet, Ui) {
 
-// return
+/** This class creates a ui component which enables the dynamic creation of portlets
+*/
 var View = Backbone.View.extend({
     // default options
     optionsDefault : {
         max : null
     },
 
-    // initialize
+    /** Initialize
+    */
     initialize : function(options) {
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
@@ -38,22 +40,24 @@ var View = Backbone.View.extend({
             content : ''
         });
         
-        // add button
-        this.$el.append(Utils.wrap(this.button_new.$el));
-        
         // append button
         this.$el.append(this.table.$el);
+        
+        // add button
+        this.$el.append(Utils.wrap(this.button_new.$el));
         
         // clear list
         this.list = {};
     },
     
-    // size
+    /** Number of repeat blocks
+    */
     size: function() {
         return _.size(this.list);
     },
     
-    // append
+    /** Add new repeat block
+    */
     add: function(options) {
         // delete button
         var button_delete = new Ui.ButtonIcon({
@@ -69,10 +73,10 @@ var View = Backbone.View.extend({
         
         // create portlet
         var portlet = new Portlet.View({
-            id      : options.id,
-            title   : '<b>' + options.title + '</b>',
-            cls     : 'ui-portlet-repeat',
-            operations : {
+            id              : options.id,
+            title           : '<b>' + options.title + '</b>',
+            cls             : 'ui-portlet-repeat',
+            operations      : {
                 button_delete : button_delete
             }
         });
@@ -93,7 +97,7 @@ var View = Backbone.View.extend({
         
         // append to dom
         this.table.add(portlet.$el);
-        this.table.prepend('row_' + options.id, true);
+        this.table.append('row_' + options.id, true);
         
         // validate maximum
         if (this.options.max > 0 && this.size() >= this.options.max) {
@@ -101,12 +105,15 @@ var View = Backbone.View.extend({
         }
     },
     
-    // delete
+    /** Delete repeat block
+    */
     del: function(id) {
         if (this.list[id]) {
             // delete table row
             var table_row = this.table.get('row_' + id);
             table_row.remove();
+            
+            // remove from list
             delete this.list[id];
             
             // enable new button
@@ -114,7 +121,8 @@ var View = Backbone.View.extend({
         }
     },
     
-    // retitle
+    /** Retitle/Enumerate repeat blocks
+    */
     retitle: function(new_title) {
         var index = 0;
         for (var id in this.list) {

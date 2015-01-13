@@ -118,7 +118,8 @@ else:
 tool_data_table_conf = None
 # Set up default tool data tables. If a non-sample version is in config/, use that. Otherwise iterate through lower
 # priority versions.
-for conf in [ 'config/tool_data_table_conf.xml',
+for conf in [ 'tool_data_table_conf.test.xml',
+              'config/tool_data_table_conf.xml',
               'config/tool_data_table_conf.xml.sample',
               'tool_data_table_conf.xml',
               'tool_data_table_conf.xml.sample' ]:

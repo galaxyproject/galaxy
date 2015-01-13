@@ -254,6 +254,10 @@ var HistoryPanel = _super.extend(
     _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
         //if( !this.model ){ return this; }
         //this.log( '_setUpWebStorage', initiallyExpanded, show_deleted, show_hidden );
+        if( this.storage ){
+            this.stopListening( this.storage );
+        }
+
         this.storage = new HistoryPrefs({
             id: HistoryPrefs.historyStorageKey( this.model.get( 'id' ) )
         });
@@ -276,6 +280,18 @@ var HistoryPanel = _super.extend(
 
         this.trigger( 'new-storage', this.storage, this );
         this.log( this + ' (init\'d) storage:', this.storage.get() );
+
+        this.listenTo( this.storage, {
+            'change:show_deleted' : function( view, newVal ){
+                this.showDeleted = newVal;
+            },
+            'change:show_hidden' : function( view, newVal ){
+                this.showHidden = newVal;
+            }
+        }, this );
+        this.showDeleted = ( show_deleted !== undefined )? show_deleted : this.storage.get( 'show_deleted' );
+        this.showHidden  = ( show_hidden  !== undefined )? show_hidden  : this.storage.get( 'show_hidden' );
+
         return this;
     },
 
@@ -317,8 +333,8 @@ var HistoryPanel = _super.extend(
     _filterItem : function( model ){
         var panel = this;
         return ( _super.prototype._filterItem.call( panel, model )
-            && ( !model.hidden() || panel.storage.get( 'show_hidden' ) )
-            && ( !model.isDeletedOrPurged() || panel.storage.get( 'show_deleted' ) ) );
+            && ( !model.hidden() || panel.showHidden )
+            && ( !model.isDeletedOrPurged() || panel.showDeleted ) );
     },
 
     /** in this override, add a linktarget, and expand if id is in web storage */
@@ -372,12 +388,17 @@ var HistoryPanel = _super.extend(
      *      (2) re-rendering the history
      * @returns {Boolean} new show_deleted setting
      */
-    toggleShowDeleted : function( show ){
-        show = ( show !== undefined )?( show ):( !this.storage.get( 'show_deleted' ) );
-        this.storage.set( 'show_deleted', show );
+    toggleShowDeleted : function( show, store ){
+        show = ( show !== undefined )?( show ):( !this.showDeleted );
+        store = ( store !== undefined )?( store ):( true );
+        this.showDeleted = show;
+        if( store ){
+            this.storage.set( 'show_deleted', show );
+        }
+        this.trigger( 'show-hidden', show );
         //TODO:?? to events on storage('change:show_deleted')
         this.renderItems();
-        return this.storage.get( 'show_deleted' );
+        return this.showDeleted;
     },
 
     /** Handle the user toggling the deleted visibility by:
@@ -385,12 +406,17 @@ var HistoryPanel = _super.extend(
      *      (2) re-rendering the history
      * @returns {Boolean} new show_hidden setting
      */
-    toggleShowHidden : function( show ){
-        show = ( show !== undefined )?( show ):( !this.storage.get( 'show_hidden' ) );
-        this.storage.set( 'show_hidden', show );
-        //TODO:?? to events on storage('change:show_hidden')
+    toggleShowHidden : function( show, store ){
+        show = ( show !== undefined )?( show ):( !this.showHidden );
+        store = ( store !== undefined )?( store ):( true );
+        this.showHidden = show;
+        if( store ){
+            this.storage.set( 'show_hidden', show );
+        }
+        this.trigger( 'show-hidden', show );
+        //TODO:?? to events on storage('change:show_deleted')
         this.renderItems();
-        return this.storage.get( 'show_hidden' );
+        return this.showHidden;
     },
 
     /** On the first search, if there are no details - load them, then search */
@@ -582,9 +608,7 @@ HistoryPanel.prototype.templates = (function(){
             '<div class="title">',
                 '<div class="name"><%= history.name %></div>',
             '</div>',
-            '<div class="subtitle">',
-                //'<%= view.collection.length %>', _l( ' items' ),
-            '</div>',
+            '<div class="subtitle"></div>',
             '<div class="history-size"><%= history.nice_size %></div>',
 
             '<div class="actions"></div>',

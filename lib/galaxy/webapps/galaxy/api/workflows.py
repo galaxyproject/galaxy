@@ -16,7 +16,7 @@ from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWor
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.run import invoke
+from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_config
 
 log = logging.getLogger(__name__)
@@ -224,7 +224,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         # invoke may throw MessageExceptions on tool erors, failure
         # to match up inputs, etc...
-        outputs = invoke(
+        outputs, invocation = invoke(
             trans=trans,
             workflow=workflow,
             workflow_run_config=run_config,
@@ -235,14 +235,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         # Build legacy output - should probably include more information from
         # outputs.
         rval = {}
-        rval['history'] = trans.security.encode_id(history.id)
+        rval['history'] = trans.security.encode_id( history.id )
         rval['outputs'] = []
         for step in workflow.steps:
             if step.type == 'tool' or step.type is None:
                 for v in outputs[ step.id ].itervalues():
                     rval[ 'outputs' ].append( trans.security.encode_id( v.id ) )
 
-        return rval
+        # Newer version of this API just returns the invocation as a dict, to
+        # facilitate migration - produce the newer style response and blend in
+        # the older information.
+        invocation_response = self.__encode_invocation( trans, invocation )
+        invocation_response.update( rval )
+        return invocation_response
 
     @expose_api
     def workflow_dict( self, trans, workflow_id, **kwd ):
@@ -370,6 +375,32 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return item
 
     @expose_api
+    def workflow_request( self, trans, workflow_id, payload, **kwd ):
+        """
+        POST /api/workflows/{encoded_workflow_id}/usage
+
+        Schedule the workflow specified by `workflow_id` to run.
+        """
+        # /usage is awkward in this context but is consistent with the rest of
+        # this module. Would prefer to redo it all to use /invocation(s).
+        # Get workflow + accessibility check.
+        stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
+        workflow = stored_workflow.latest_workflow
+
+        run_config = build_workflow_run_config( trans, workflow, payload )
+        workflow_scheduler_id = payload.get( "scheduler", None )
+        # TODO: workflow scheduler hints
+        work_request_params = dict( scheduler=workflow_scheduler_id )
+
+        workflow_invocation = queue_invoke(
+            trans=trans,
+            workflow=workflow,
+            workflow_run_config=run_config,
+            request_params=work_request_params
+        )
+        return self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
+
+    @expose_api
     def workflow_usage(self, trans, workflow_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/usage
@@ -380,8 +411,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_stored_workflow_invocation_id = self.__decode_id( trans, workflow_id )
-        results = self.workflow_manager.build_invocations_query( trans, decoded_stored_workflow_invocation_id )
+        stored_workflow = self.__get_stored_workflow(trans, workflow_id)
+        results = self.workflow_manager.build_invocations_query( trans, stored_workflow.id )
         out = []
         for r in results:
             out.append( self.__encode_invocation( trans, r ) )
@@ -406,6 +437,87 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         if workflow_invocation:
             return self.__encode_invocation( trans, workflow_invocation )
         return None
+
+    @expose_api
+    def cancel_workflow_invocation(self, trans, workflow_id, usage_id, **kwd):
+        """
+        DELETE /api/workflows/{workflow_id}/usage/{usage_id}
+        Cancel the specified workflow invocation.
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :param  usage_id:      the usage id (required)
+        :type   usage_id:      str
+
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
+        decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
+        workflow_invocation = self.workflow_manager.cancel_invocation( trans, decoded_workflow_invocation_id )
+        return self.__encode_invocation( trans, workflow_invocation )
+
+    @expose_api
+    def workflow_invocation_step(self, trans, workflow_id, usage_id, step_id, **kwd):
+        """
+        GET /api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :param  usage_id:      the usage id (required)
+        :type   usage_id:      str
+
+        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
+        :type   step_id:      str
+
+        :param  payload:       payload containing update action information
+                               for running workflow.
+
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
+        decoded_invocation_step_id = self.__decode_id( trans, step_id )
+        invocation_step = self.workflow_manager.get_invocation_step(
+            trans,
+            decoded_invocation_step_id
+        )
+        return self.__encode_invocation_step( trans, invocation_step )
+
+    @expose_api
+    def workflow_invocation_step_update(self, trans, workflow_id, usage_id, step_id, payload, **kwd):
+        """
+        PUT /api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}
+        Update state of running workflow step invocation - still very nebulous
+        but this would be for stuff like confirming paused steps can proceed
+        etc....
+
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :param  usage_id:      the usage id (required)
+        :type   usage_id:      str
+
+        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
+        :type   step_id:      str
+
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
+        decoded_invocation_step_id = self.__decode_id( trans, step_id )
+        action = payload.get( "action", None )
+
+        invocation_step = self.workflow_manager.update_invocation_step(
+            trans,
+            decoded_invocation_step_id,
+            action=action,
+        )
+        return self.__encode_invocation_step( trans, invocation_step )
+
+    def __encode_invocation_step( self, trans, invocation_step ):
+        return self.encode_all_ids(
+            trans,
+            invocation_step.to_dict( 'element' ),
+            True
+        )
 
     def __get_stored_accessible_workflow( self, trans, workflow_id ):
         stored_workflow = self.__get_stored_workflow( trans, workflow_id )

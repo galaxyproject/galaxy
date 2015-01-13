@@ -832,6 +832,7 @@ var TracksterView = Backbone.View.extend({
         this.chrom = null;
         this.vis_id = obj_dict.vis_id;
         this.dbkey = obj_dict.dbkey;
+        this.stand_alone = (obj_dict.stand_alone !== undefined ? obj_dict.stand_alone : true);
         this.label_tracks = [];
         this.tracks_to_be_redrawn = [];
         this.max_low = 0;
@@ -885,9 +886,16 @@ var TracksterView = Backbone.View.extend({
                 });
             });
         });
+
         // Navigation at top
         this.nav_container = $("<div/>").addClass("trackster-nav-container").prependTo(this.top_container);
         this.nav = $("<div/>").addClass("trackster-nav").appendTo(this.nav_container);
+
+        if (this.stand_alone) {
+            this.nav_container.addClass("stand-alone");
+            this.nav.addClass("stand-alone");
+        }
+
         // Overview (scrollbar and overview plot) at bottom
         this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
         this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
@@ -1152,9 +1160,9 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         
         // Update location. Only update when there is a valid chrom; when loading vis, there may 
         // not be a valid chrom.
-        var chrom = view.chrom_select.val();
+        var chrom = this.chrom_select.val();
         if (chrom !== "") {
-            this.trigger_navigate(chrom, view.low, view.high, true);
+            this.trigger_navigate(chrom, this.low, this.high, true);
         }
     },
 

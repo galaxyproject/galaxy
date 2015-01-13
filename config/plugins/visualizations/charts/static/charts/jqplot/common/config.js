@@ -7,7 +7,6 @@ return $.extend(true, {}, config_default, {
     tag         : 'div',
     zoomable    : true,
     keywords    : 'medium',
-    query_limit : 10000,
     settings    : {
         separator_grid  : {
             title       : 'Grids',

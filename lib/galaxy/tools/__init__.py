@@ -39,6 +39,7 @@ from galaxy.jobs.error_level import StdioErrorLevel
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
 from galaxy.jobs import ParallelismInfo
+from galaxy.tools import watcher
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -144,6 +145,7 @@ class ToolBox( object, Dictifiable ):
         # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
         self.tool_root_dir = tool_root_dir
         self.app = app
+        self.tool_watcher = watcher.get_watcher( self, app.config )
         self.filter_factory = FilterFactory( self )
         self.init_dependency_manager()
         config_filenames = listify( config_filenames )
@@ -233,6 +235,9 @@ class ToolBox( object, Dictifiable ):
                 self.load_section_tag_set( elem, tool_path, load_panel_dict, index=index )
             elif elem.tag == 'label':
                 self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
+            elif elem.tag == 'tool_dir':
+                self.load_tooldir_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
+
         if parsing_shed_tool_conf:
             shed_tool_conf_dict = dict( config_filename=config_filename,
                                         tool_path=tool_path,
@@ -615,15 +620,7 @@ class ToolBox( object, Dictifiable ):
                                 tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
                                 self.sa_session.add( tta )
                                 self.sa_session.flush()
-                # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle
-                # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
-                # administrator has retrieved updates to the installed repository.  In this case, the tool may have
-                # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
-                # to only load the tool if it was not found in self.tools_by_id, but performing that check did
-                # not enable this scenario.
-                self.tools_by_id[ tool.id ] = tool
-                if load_panel_dict:
-                    self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
+                self.__add_tool( tool, load_panel_dict, panel_dict )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             if key in integrated_panel_dict or index is None:
                 integrated_panel_dict[ key ] = tool
@@ -631,6 +628,17 @@ class ToolBox( object, Dictifiable ):
                 integrated_panel_dict.insert( index, key, tool )
         except:
             log.exception( "Error reading tool from path: %s" % path )
+
+    def __add_tool( self, tool, load_panel_dict, panel_dict ):
+        # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle
+        # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
+        # administrator has retrieved updates to the installed repository.  In this case, the tool may have
+        # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
+        # to only load the tool if it was not found in self.tools_by_id, but performing that check did
+        # not enable this scenario.
+        self.tools_by_id[ tool.id ] = tool
+        if load_panel_dict:
+            self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
 
     def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
         try:
@@ -680,6 +688,8 @@ class ToolBox( object, Dictifiable ):
                 self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
             elif sub_elem.tag == 'label':
                 self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
+            elif sub_elem.tag == 'tool_dir':
+                self.load_tooldir_tag_set( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
         if load_panel_dict:
             self.tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
@@ -687,6 +697,47 @@ class ToolBox( object, Dictifiable ):
             self.integrated_tool_panel[ key ] = integrated_section
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
+
+    def load_tooldir_tag_set(self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict):
+        directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
+        recursive = string_as_bool( sub_elem.attrib.get("recursive", True) )
+        self.__watch_directory( directory, elems, integrated_elems, load_panel_dict, recursive )
+
+    def __watch_directory( self, directory, elems, integrated_elems, load_panel_dict, recursive):
+
+        def quick_load( tool_file, async=True ):
+            try:
+                tool = self.load_tool( tool_file )
+                self.__add_tool( tool, load_panel_dict, elems )
+                # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
+                key = 'tool_%s' % str( tool.id )
+                integrated_elems[ key ] = tool
+
+                if async:
+                    self.load_tool_panel()
+
+                    if self.app.config.update_integrated_tool_panel:
+                        # Write the current in-memory integrated_tool_panel to the integrated_tool_panel.xml file.
+                        # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
+                        # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
+                        # will be False when things like functional tests are the caller.
+                        self.fix_integrated_tool_panel_dict()
+                        self.write_integrated_tool_panel_config_file()
+                return tool.id
+            except Exception:
+                log.exception("Failed to load potential tool %s." % tool_file)
+                return None
+
+        tool_loaded = False
+        for name in os.listdir( directory ):
+            child_path = os.path.join(directory, name)
+            if os.path.isdir(child_path) and recursive:
+                self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
+            elif name.endswith( ".xml" ):
+                quick_load( child_path, async=False )
+                tool_loaded = True
+        if tool_loaded:
+            self.tool_watcher.watch_directory( directory, quick_load )
 
     def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
@@ -722,7 +773,13 @@ class ToolBox( object, Dictifiable ):
                     inputs.append( conditional_element )
 
             ToolClass = Tool
-        return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
+        tool = ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
+        tool_id = tool.id
+        if not tool_id.startswith("__"):
+            # do not monitor special tools written to tmp directory - no reason
+            # to monitor such a large directory.
+            self.tool_watcher.watch_file( config_file, tool.id )
+        return tool
 
     def package_tool( self, trans, tool_id ):
         """
@@ -769,7 +826,7 @@ class ToolBox( object, Dictifiable ):
                 tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
             tarball_files.append( tool_tup )
             # TODO: This feels hacky.
-            tool_command = tool.command.strip().split( ' ' )[0]
+            tool_command = tool.command.strip().split()[0]
             tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
             # Add the tool XML to the tuple that will be used to populate the tarball.
             if os.path.exists( os.path.join( tool_path, tool_command ) ):
@@ -778,6 +835,8 @@ class ToolBox( object, Dictifiable ):
             for external_file in tool.get_externally_referenced_paths( os.path.abspath( tool.config_file ) ):
                 external_file_abspath = os.path.abspath( os.path.join( tool_path, external_file ) )
                 tarball_files.append( ( external_file_abspath, external_file ) )
+            if os.path.exists( os.path.join( tool_path, "Dockerfile" ) ):
+                tarball_files.append( ( os.path.join( tool_path, "Dockerfile" ), "Dockerfile" ) )
             # Find tests, and check them for test data.
             tests = tool.tests
             if tests is not None:
@@ -818,7 +877,7 @@ class ToolBox( object, Dictifiable ):
                             if len( data_table_definitions ) > 0:
                                 # Put the data table definition XML in a temporary file.
                                 table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
-                                table_definition = table_definition % '\n'.join( data_table_definitions ) 
+                                table_definition = table_definition % '\n'.join( data_table_definitions )
                                 fd, table_conf = tempfile.mkstemp()
                                 os.close( fd )
                                 file( table_conf, 'w' ).write( table_definition )
@@ -2300,7 +2359,7 @@ class Tool( object, Dictifiable ):
             message='Your upload was interrupted. If this was uninentional, please retry it.',
             refresh_frames=[], cont=None )
 
-    def populate_state( self, trans, inputs, state, incoming, history, source, prefix="", context=None ):
+    def populate_state( self, trans, inputs, state, incoming, history=None, source="html", prefix="", context=None ):
         errors = dict()
         # Push this level onto the context stack
         context = ExpressionContext( state, context )

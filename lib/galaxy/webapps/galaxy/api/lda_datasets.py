@@ -370,8 +370,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :param  encoded_dataset_id:      the encoded id of the dataset to change
         :type   encoded_dataset_id:      an encoded id string
 
-        :rtype:     dictionary
         :returns:   dict containing information about the dataset
+        :rtype:     dictionary
         """
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         try:
@@ -400,21 +400,38 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     @expose_api
     def load( self, trans, **kwd ):
         """
-        Load dataset from the given source into the library.
-
-        :param  encoded_folder_id:      the encoded id of the folder to import dataset to
+        load( self, trans, **kwd ):
+        * POST /api/libraries/datasets
+        Load dataset from the given source into the library. 
+        Source can be:
+            user directory - root folder specified in galaxy.ini as "$user_library_import_dir"
+                example path: path/to/galaxy/$user_library_import_dir/user@example.com/{user can browse everything here}
+                the folder with the user login has to be created beforehand
+            (admin)import directory - root folder specified in galaxy ini as "$library_import_dir"
+                example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
+            (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
+         
+        :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
-        :param  source:                 source of the dataset to be loaded
+        :param  source:                 source the datasets should be loaded form
         :type   source:                 str
-        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy
+        :param  link_data:              flag whether to link the dataset to data or copy it to Galaxy, defaults to copy
+                                        while linking is set to True all symlinks will be resolved _once_
         :type   link_data:              bool
-        :param  preserve_dirs:          flag whether to preserver directory structure when importing dir
+        :param  preserve_dirs:          flag whether to preserve the directory structure when importing dir
+                                        if False only datasets will be imported
         :type   preserve_dirs:          bool
+        :param  file_type:              file type of the loaded datasets, defaults to 'auto' (autodetect)
+        :type   file_type:              str
+        :param  dbkey:                  dbkey of the loaded genome, defaults to '?' (unknown)
+        :type   dbkey:                  str
+
+        :returns:   dict containing information about the created upload job
+        :rtype:     dictionary        
         """
 
         kwd[ 'space_to_tab' ] = 'False'
         kwd[ 'to_posix_lines' ] = 'True'
-        
         kwd[ 'dbkey' ] = kwd.get( 'dbkey', '?' )
         kwd[ 'file_type' ] = kwd.get( 'file_type', 'auto' )
         kwd[' link_data_only' ] = 'link_to_files' if util.string_as_bool( kwd.get( 'link_data', False ) ) else 'copy_files'
@@ -436,18 +453,15 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 raise exceptions.AdminRequiredException( 'Only admins can import from importdir.' )
             if not trans.app.config.library_import_dir:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow admins to import into library from importdir.' )
-            user_base_dir = trans.app.config.library_import_dir
-
-
+            import_base_dir = trans.app.config.library_import_dir
+            path = os.path.join( import_base_dir, path )
         if source in [ 'userdir_file', 'userdir_folder' ]:
             user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
             if user_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException( 'The configuration of this Galaxy instance does not allow upload from user directories.' )
             full_dir = os.path.join( user_base_dir, user_login )
-            # path_to_root_import_folder = None
             if not path.lower().startswith( full_dir.lower() ):
-                # path_to_root_import_folder = path
                 path = os.path.join( full_dir, path )
             if not os.path.exists( path ):
                 raise exceptions.RequestParameterInvalidException( 'Given path does not exist on the host.' )
@@ -466,15 +480,17 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         tool.update_state( trans, tool.inputs_by_page[ 0 ], state.inputs, kwd )
         tool_params = state.inputs
         dataset_upload_inputs = []
-        for input_name, input in tool.inputs.iteritems():
+        for input in tool.inputs.itervalues():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append( input )
         library_bunch = upload_common.handle_library_params( trans, {}, trans.security.encode_id( folder.id ) )
         abspath_datasets = []
         kwd[ 'filesystem_paths' ] = path
+        if source in [ 'importdir_folder' ]:
+            kwd[ 'filesystem_paths' ] = os.path.join( import_base_dir, path )
         params = util.Params( kwd )
         # user wants to import one file only
-        if source == "userdir_file":
+        if source in [ "userdir_file", "importdir_file" ]:
             file = os.path.abspath( path )
             abspath_datasets.append( trans.webapp.controllers[ 'library_common' ].make_library_uploaded_dataset(
                 trans, 'api', params, os.path.basename( file ), file, 'server_dir', library_bunch ) )
@@ -482,14 +498,14 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if source == "userdir_folder":
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
                 trans, 'api', params, library_bunch, 200, '' )
-            uploaded_datasets = uploaded_datasets_bunch[0]
+            uploaded_datasets = uploaded_datasets_bunch[ 0 ]
             if uploaded_datasets is None:
                 raise exceptions.ObjectNotFound( 'Given folder does not contain any datasets.' )
             for ud in uploaded_datasets:
                 ud.path = os.path.abspath( ud.path )
                 abspath_datasets.append( ud )
-        #  user wants to import from path (admins only)
-        if source == "admin_path":
+        #  user wants to import from path
+        if source in [ "admin_path", "importdir_folder" ]:
             # validate the path is within root
             uploaded_datasets_bunch = trans.webapp.controllers[ 'library_common' ].get_path_paste_uploaded_datasets(
                 trans, 'api', params, library_bunch, 200, '' )
@@ -520,7 +536,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         * POST /api/libraries/datasets/download/{format}
             Downloads requested datasets (identified by encoded IDs) in requested format.
 
-        example: ``GET localhost:8080/api/libraries/datasets/download/tbz?ldda_ids%255B%255D=a0d84b45643a2678&ldda_ids%255B%255D=fe38c84dcd46c828``
+        example: ``GET localhost:8080/api/libraries/datasets/download/tbz?ld_ids%255B%255D=a0d84b45643a2678&ld_ids%255B%255D=fe38c84dcd46c828``
 
         .. note:: supported format values are: 'zip', 'tgz', 'tbz', 'uncompressed'
 
@@ -538,7 +554,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         datasets_to_download = kwd.get( 'ld_ids%5B%5D', None )
         if datasets_to_download is None:
             datasets_to_download = kwd.get( 'ld_ids', None )
-        if ( datasets_to_download is not None ):
+        if datasets_to_download is not None:
             datasets_to_download = util.listify( datasets_to_download )
             for dataset_id in datasets_to_download:
                 try:
@@ -554,128 +570,128 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             raise exceptions.RequestParameterMissingException( 'Request has to contain a list of dataset ids to download.' )
 
         if format in [ 'zip', 'tgz', 'tbz' ]:
-                # error = False
-                killme = string.punctuation + string.whitespace
-                trantab = string.maketrans( killme, '_'*len( killme ) )
-                try:
-                    outext = 'zip'
-                    if format == 'zip':
-                        # Can't use mkstemp - the file must not exist first
-                        tmpd = tempfile.mkdtemp()
-                        util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, self.app.config.gid )
-                        tmpf = os.path.join( tmpd, 'library_download.' + format )
-                        if trans.app.config.upstream_gzip:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
-                        else:
-                            archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
-                        archive.add = lambda x, y: archive.write( x, y.encode( 'CP437' ) )
-                    elif format == 'tgz':
-                        if trans.app.config.upstream_gzip:
-                            archive = StreamBall( 'w|' )
-                            outext = 'tar'
-                        else:
-                            archive = StreamBall( 'w|gz' )
-                            outext = 'tgz'
-                    elif format == 'tbz':
-                        archive = StreamBall( 'w|bz2' )
-                        outext = 'tbz2'
-                except ( OSError, zipfile.BadZipfile ):
-                    log.exception( "Unable to create archive for download" )
-                    raise exceptions.InternalServerError( "Unable to create archive for download." )
-                except Exception:
-                    log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[ 0 ] )
-                    raise exceptions.InternalServerError( "Unable to create archive for download." )
-                composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
-                seen = []
-                for ld in library_datasets:
-                    ldda = ld.library_dataset_dataset_association
-                    ext = ldda.extension
-                    is_composite = ext in composite_extensions
-                    path = ""
-                    parent_folder = ldda.library_dataset.folder
-                    while parent_folder is not None:
-                        # Exclude the now-hidden "root folder"
-                        if parent_folder.parent is None:
-                            path = os.path.join( parent_folder.library_root[ 0 ].name, path )
-                            break
-                        path = os.path.join( parent_folder.name, path )
-                        parent_folder = parent_folder.parent
-                    path += ldda.name
-                    while path in seen:
-                        path += '_'
-                    seen.append( path )
-                    zpath = os.path.split(path)[ -1 ]  # comes as base_name/fname
-                    outfname, zpathext = os.path.splitext( zpath )
+            # error = False
+            killme = string.punctuation + string.whitespace
+            trantab = string.maketrans( killme, '_'*len( killme ) )
+            try:
+                outext = 'zip'
+                if format == 'zip':
+                    # Can't use mkstemp - the file must not exist first
+                    tmpd = tempfile.mkdtemp()
+                    util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, self.app.config.gid )
+                    tmpf = os.path.join( tmpd, 'library_download.' + format )
+                    if trans.app.config.upstream_gzip:
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_STORED, True )
+                    else:
+                        archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
+                    archive.add = lambda x, y: archive.write( x, y.encode( 'CP437' ) )
+                elif format == 'tgz':
+                    if trans.app.config.upstream_gzip:
+                        archive = StreamBall( 'w|' )
+                        outext = 'tar'
+                    else:
+                        archive = StreamBall( 'w|gz' )
+                        outext = 'tgz'
+                elif format == 'tbz':
+                    archive = StreamBall( 'w|bz2' )
+                    outext = 'tbz2'
+            except ( OSError, zipfile.BadZipfile ):
+                log.exception( "Unable to create archive for download" )
+                raise exceptions.InternalServerError( "Unable to create archive for download." )
+            except Exception:
+                log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[ 0 ] )
+                raise exceptions.InternalServerError( "Unable to create archive for download." )
+            composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
+            seen = []
+            for ld in library_datasets:
+                ldda = ld.library_dataset_dataset_association
+                ext = ldda.extension
+                is_composite = ext in composite_extensions
+                path = ""
+                parent_folder = ldda.library_dataset.folder
+                while parent_folder is not None:
+                    # Exclude the now-hidden "root folder"
+                    if parent_folder.parent is None:
+                        path = os.path.join( parent_folder.library_root[ 0 ].name, path )
+                        break
+                    path = os.path.join( parent_folder.name, path )
+                    parent_folder = parent_folder.parent
+                path += ldda.name
+                while path in seen:
+                    path += '_'
+                seen.append( path )
+                zpath = os.path.split(path)[ -1 ]  # comes as base_name/fname
+                outfname, zpathext = os.path.splitext( zpath )
 
-                    if is_composite:  # need to add all the components from the extra_files_path to the zip
-                        if zpathext == '':
-                            zpath = '%s.html' % zpath  # fake the real nature of the html file
+                if is_composite:  # need to add all the components from the extra_files_path to the zip
+                    if zpathext == '':
+                        zpath = '%s.html' % zpath  # fake the real nature of the html file
+                    try:
+                        if format == 'zip':
+                            archive.add( ldda.dataset.file_name, zpath )  # add the primary of a composite set
+                        else:
+                            archive.add( ldda.dataset.file_name, zpath, check_file=True )  # add the primary of a composite set
+                    except IOError:
+                        log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
+                        raise exceptions.InternalServerError( "Unable to create archive for download." )
+                    except ObjectNotFound:
+                        log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                        raise exceptions.ObjectNotFound( "Requested dataset not found. " )
+                    except Exception, e:
+                        log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
+                        raise exceptions.InternalServerError( "Unable to add composite parent to temporary library download archive. " + str( e ) )
+
+                    flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
+                    for fpath in flist:
+                        efp, fname = os.path.split(fpath)
+                        if fname > '':
+                            fname = fname.translate(trantab)
                         try:
                             if format == 'zip':
-                                archive.add( ldda.dataset.file_name, zpath )  # add the primary of a composite set
+                                archive.add( fpath, fname )
                             else:
-                                archive.add( ldda.dataset.file_name, zpath, check_file=True )  # add the primary of a composite set
+                                archive.add( fpath, fname, check_file=True )
                         except IOError:
-                            log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
+                            log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname) )
                             raise exceptions.InternalServerError( "Unable to create archive for download." )
                         except ObjectNotFound:
-                            log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
-                            raise exceptions.ObjectNotFound( "Requested dataset not found. " )
-                        except Exception, e:
-                            log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name )
-                            raise exceptions.InternalServerError( "Unable to add composite parent to temporary library download archive. " + str( e ) )
-
-                        flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
-                        for fpath in flist:
-                            efp, fname = os.path.split(fpath)
-                            if fname > '':
-                                fname = fname.translate(trantab)
-                            try:
-                                if format == 'zip':
-                                    archive.add( fpath, fname )
-                                else:
-                                    archive.add( fpath, fname, check_file=True )
-                            except IOError:
-                                log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname) )
-                                raise exceptions.InternalServerError( "Unable to create archive for download." )
-                            except ObjectNotFound:
-                                log.exception( "Requested dataset %s does not exist on the host." % fpath )
-                                raise exceptions.ObjectNotFound( "Requested dataset not found." )
-                            except Exception, e:
-                                log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
-                                raise exceptions.InternalServerError( "Unable to add dataset to temporary library download archive . " + str( e ) )
-
-                    else:  # simple case
-                        try:
-                            if format == 'zip':
-                                archive.add( ldda.dataset.file_name, path )
-                            else:
-                                archive.add( ldda.dataset.file_name, path, check_file=True )
-                        except IOError:
-                            log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name )
-                            raise exceptions.InternalServerError( "Unable to create archive for download" )
-                        except ObjectNotFound:
-                            log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                            log.exception( "Requested dataset %s does not exist on the host." % fpath )
                             raise exceptions.ObjectNotFound( "Requested dataset not found." )
                         except Exception, e:
                             log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
-                            raise exceptions.InternalServerError( "Unknown error. " + str( e ) )
-                lname = 'selected_dataset'
-                fname = lname.replace( ' ', '_' ) + '_files'
-                if format == 'zip':
-                    archive.close()
-                    trans.response.set_content_type( "application/octet-stream" )
-                    trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % ( fname, outext )
-                    archive = util.streamball.ZipBall( tmpf, tmpd )
-                    archive.wsgi_status = trans.response.wsgi_status()
-                    archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                    return archive.stream
-                else:
-                    trans.response.set_content_type( "application/x-tar" )
-                    trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % ( fname, outext )
-                    archive.wsgi_status = trans.response.wsgi_status()
-                    archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                    return archive.stream
+                            raise exceptions.InternalServerError( "Unable to add dataset to temporary library download archive . " + str( e ) )
+
+                else:  # simple case
+                    try:
+                        if format == 'zip':
+                            archive.add( ldda.dataset.file_name, path )
+                        else:
+                            archive.add( ldda.dataset.file_name, path, check_file=True )
+                    except IOError:
+                        log.exception( "Unable to write %s to temporary library download archive" % ldda.dataset.file_name )
+                        raise exceptions.InternalServerError( "Unable to create archive for download" )
+                    except ObjectNotFound:
+                        log.exception( "Requested dataset %s does not exist on the host." % ldda.dataset.file_name )
+                        raise exceptions.ObjectNotFound( "Requested dataset not found." )
+                    except Exception, e:
+                        log.exception( "Unable to add %s to temporary library download archive %s" % ( fname, outfname ) )
+                        raise exceptions.InternalServerError( "Unknown error. " + str( e ) )
+            lname = 'selected_dataset'
+            fname = lname.replace( ' ', '_' ) + '_files'
+            if format == 'zip':
+                archive.close()
+                trans.response.set_content_type( "application/octet-stream" )
+                trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % ( fname, outext )
+                archive = util.streamball.ZipBall( tmpf, tmpd )
+                archive.wsgi_status = trans.response.wsgi_status()
+                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                return archive.stream
+            else:
+                trans.response.set_content_type( "application/x-tar" )
+                trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % ( fname, outext )
+                archive.wsgi_status = trans.response.wsgi_status()
+                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
+                return archive.stream
         elif format == 'uncompressed':
             if len(library_datasets) != 1:
                 raise exceptions.RequestParameterInvalidException( "You can download only one uncompressed file at once." )

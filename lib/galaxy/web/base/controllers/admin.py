@@ -1085,7 +1085,7 @@ class Admin( object ):
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
                     job.stderr = error_msg
-                    job.state = trans.app.model.Job.states.DELETED_NEW
+                    job.set_state( trans.app.model.Job.states.DELETED_NEW )
                     trans.sa_session.add( job )
                 else:
                     trans.app.job_manager.job_stop_queue.put( job_id, error_msg=error_msg )
@@ -1125,14 +1125,18 @@ class Admin( object ):
         last_updated = {}
         for job in jobs:
             delta = datetime.utcnow() - job.update_time
-            if delta > timedelta( minutes=60 ):
+            if delta.days > 0:
+                last_updated[job.id] = '%s hours' % ( delta.days * 24 + int( delta.seconds / 60 / 60 ) )
+            elif delta > timedelta( minutes=59 ):
                 last_updated[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
             else:
                 last_updated[job.id] = '%s minutes' % int( delta.seconds / 60 )
         finished = {}
         for job in recent_jobs:
             delta = datetime.utcnow() - job.update_time
-            if delta > timedelta( minutes=60 ):
+            if delta.days > 0:
+                finished[job.id] = '%s hours' % ( delta.days * 24 + int( delta.seconds / 60 / 60 ) )
+            elif delta > timedelta( minutes=59 ):
                 finished[job.id] = '%s hours' % int( delta.seconds / 60 / 60 )
             else:
                 finished[job.id] = '%s minutes' % int( delta.seconds / 60 )

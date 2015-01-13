@@ -278,6 +278,7 @@ class ToolRunner( BaseUIController ):
                                     toolbox=self.get_toolbox(),
                                     tool_version_select_field=tool_version_select_field,
                                     tool=tool,
+                                    job=job,
                                     util=galaxy.util,
                                     add_frame=add_frame,
                                     tool_id_version_message=tool_id_version_message,

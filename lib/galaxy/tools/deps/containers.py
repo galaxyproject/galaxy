@@ -13,6 +13,29 @@ log = logging.getLogger(__name__)
 
 DEFAULT_CONTAINER_TYPE = "docker"
 
+LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = '''
+python << EOF
+import re, tarfile, json, subprocess
+t = tarfile.TarFile("${cached_image_file}")
+meta_str = t.extractfile('repositories').read()
+meta = json.loads(meta_str)
+tag, tag_value = meta.items()[0]
+rev, rev_value = tag_value.items()[0]
+cmd = "${images_cmd}"
+proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+stdo, stde = proc.communicate()
+found = False
+for line in stdo.split("\\n"):
+    tmp = re.split(r'\s+', line)
+    if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
+        found = True
+if not found:
+    print "Loading image"
+    cmd = "cat ${cached_image_file} | ${load_cmd}"
+    subprocess.check_call(cmd, shell=True)
+EOF
+'''
+
 
 class ContainerFinder(object):
 
@@ -117,11 +140,18 @@ class ContainerRegistry():
 
 class AppInfo(object):
 
-    def __init__(self, galaxy_root_dir=None, default_file_path=None, outputs_to_working_directory=False):
+    def __init__(
+        self,
+        galaxy_root_dir=None,
+        default_file_path=None,
+        outputs_to_working_directory=False,
+        container_image_cache_path=None,
+    ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
         # TODO: Vary default value for docker_volumes based on this...
         self.outputs_to_working_directory = outputs_to_working_directory
+        self.container_image_cache_path = container_image_cache_path
 
 
 class ToolInfo(object):
@@ -199,7 +229,12 @@ class DockerContainer(Container):
             host=prop("host", docker_util.DEFAULT_HOST),
         )
 
-        cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
+        cached_image_file = self.__get_cached_image_file()
+        if not cached_image_file:
+            # TODO: Add option to cache it once here and create cached_image_file.
+            cache_command = docker_util.build_docker_cache_command(self.container_id, **docker_host_props)
+        else:
+            cache_command = self.__cache_from_file_command(cached_image_file, docker_host_props)
         run_command = docker_util.build_docker_run_command(
             command,
             self.container_id,
@@ -208,9 +243,34 @@ class DockerContainer(Container):
             env_directives=env_directives,
             working_directory=working_directory,
             net=prop("net", "none"),  # By default, docker instance has networking disabled
+            auto_rm=asbool(prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
+            set_user=prop("set_user", docker_util.DEFAULT_SET_USER),
             **docker_host_props
         )
         return "%s\n%s" % (cache_command, run_command)
+
+    def __cache_from_file_command(self, cached_image_file, docker_host_props):
+        images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
+        load_cmd = docker_util.build_docker_load_command(**docker_host_props)
+
+        return string.Template(LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(
+            cached_image_file=cached_image_file,
+            images_cmd=images_cmd,
+            load_cmd=load_cmd
+        )
+
+    def __get_cached_image_file(self):
+        container_id = self.container_id
+        cache_directory = os.path.abspath(self.__get_destination_overridable_property("container_image_cache_path"))
+        cache_path = docker_cache_path(cache_directory, container_id)
+        return cache_path if os.path.exists(cache_path) else None
+
+    def __get_destination_overridable_property(self, name):
+        prop_name = "docker_%s" % name
+        if prop_name in self.destination_info:
+            return self.destination_info[prop_name]
+        else:
+            return getattr(self.app_info, name)
 
     def __expand_str(self, value):
         if not value:
@@ -245,6 +305,12 @@ class DockerContainer(Container):
         variables["defaults"] = string.Template(defaults).safe_substitute(variables)
 
         return template.safe_substitute(variables)
+
+
+def docker_cache_path(cache_directory, container_id):
+    file_container_id = container_id.replace("/", "_slash_")
+    cache_file_name = "docker_%s.tar" % file_container_id
+    return os.path.join(cache_directory, cache_file_name)
 
 
 CONTAINER_CLASSES = dict(

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 import galaxy.model.mapping as mapping
+import uuid
 
 
 class MappingTests( unittest.TestCase ):
@@ -357,6 +358,54 @@ class MappingTests( unittest.TestCase ):
         assert contents_iter_names( ids=[ d1.id, d2.id, d3.id, d4.id ], max_in_filter_length=1 ) == [ "1", "2", "3", "4" ]
 
         assert contents_iter_names( ids=[ d1.id, d3.id ] ) == [ "1", "3" ]
+
+    def test_workflows( self ):
+        model = self.model
+        user = model.User(
+            email="testworkflows@bx.psu.edu",
+            password="password"
+        )
+        stored_workflow = model.StoredWorkflow()
+        stored_workflow.user = user
+        workflow = model.Workflow()
+        workflow_step = model.WorkflowStep()
+        workflow.steps = [ workflow_step ]
+        workflow.stored_workflow = stored_workflow
+
+        self.persist( workflow )
+        assert workflow_step.id is not None
+
+        invocation_uuid = uuid.uuid1()
+
+        workflow_invocation = model.WorkflowInvocation()
+        workflow_invocation.uuid = invocation_uuid
+
+        workflow_invocation_step1 = model.WorkflowInvocationStep()
+        workflow_invocation_step1.workflow_invocation = workflow_invocation
+        workflow_invocation_step1.workflow_step = workflow_step
+
+        workflow_invocation_step2 = model.WorkflowInvocationStep()
+        workflow_invocation_step2.workflow_invocation = workflow_invocation
+        workflow_invocation_step2.workflow_step = workflow_step
+
+        workflow_invocation.workflow = workflow
+
+        h1 = model.History( name="WorkflowHistory1", user=user)
+        d1 = self.new_hda( h1, name="1" )
+        workflow_request_dataset = model.WorkflowRequestToInputDatasetAssociation()
+        workflow_request_dataset.workflow_invocation = workflow_invocation
+        workflow_request_dataset.workflow_step = workflow_step
+        workflow_request_dataset.dataset = d1
+        self.persist( workflow_invocation )
+        assert workflow_request_dataset is not None
+        assert workflow_invocation.id is not None
+
+        self.expunge()
+
+        loaded_invocation = self.query( model.WorkflowInvocation ).get( workflow_invocation.id )
+        assert loaded_invocation.uuid == invocation_uuid, "%s != %s" % (loaded_invocation.uuid, invocation_uuid)
+        assert loaded_invocation
+        assert len( loaded_invocation.steps ) == 2
 
     def new_hda( self, history, **kwds ):
         return history.add_dataset( self.model.HistoryDatasetAssociation( create_dataset=True, sa_session=self.model.session, **kwds ) )
