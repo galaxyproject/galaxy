@@ -1155,7 +1155,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     message = "You may only reset your own password."
                     status = 'error'
                 else:
-                    prt = model.PasswordResetToken( reset_user )
+                    prt = trans.app.model.PasswordResetToken( reset_user )
                     trans.sa_session.add( prt )
                     trans.sa_session.flush()
                     host = trans.request.host.split( ':' )[ 0 ]
