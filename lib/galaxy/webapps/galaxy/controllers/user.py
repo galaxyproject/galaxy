@@ -1167,8 +1167,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     trans.sa_session.flush()
                     trans.log_event( "User reset password: %s" % email )
                 except Exception, e:
-                    status = 'error'
-                    message = 'Failed to reset password: %s' % str( e )
                     log.exception( 'Unable to reset password.' )
         return trans.fill_template( '/user/reset_password.mako',
                                     message=message,
