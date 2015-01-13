@@ -1,4 +1,5 @@
 """
+Manager and Serializer for Users.
 """
 
 import pkg_resources
@@ -17,8 +18,6 @@ log = logging.getLogger( __name__ )
 
 # =============================================================================
 class UserManager( base.ModelManager ):
-    """
-    """
     model_class = model.User
     default_order_by = ( model.User.create_time, )
     foreign_key_name = 'user'
@@ -26,9 +25,12 @@ class UserManager( base.ModelManager ):
     #TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
     #   most of which it may be unneccessary to have here
 
+    #TODO: incorp ProvidesUserContext
     #TODO: incorp BaseAPIController.validate_in_users_and_groups
     #TODO: incorp CreatesUsersMixin
     #TODO: incorp CreatesApiKeysMixin
+    #TODO: incorporate security/validate_user_input.py
+    #TODO: incorporate UsesFormDefinitionsMixin?
 
     def create( self, trans, **kwargs ):
         """
@@ -66,8 +68,6 @@ class UserManager( base.ModelManager ):
             self.app.security_agent.user_set_default_permissions( user, default_access_private=permissions )
         return user
 
-    #TODO: incorporate security/validate_user_input.py
-
     def _error_on_duplicate_email( self, trans, email ):
         """
         Check for a duplicate email and raise if found.
@@ -81,6 +81,7 @@ class UserManager( base.ModelManager ):
     # ------------------------------------------------------------------------- filters
     def by_email( self, trans, email, filters=None, **kwargs ):
         """
+        Find a user by their email.
         """
         filters = self._munge_filters( self.model_class.email == email, filters )
         try:
@@ -91,6 +92,7 @@ class UserManager( base.ModelManager ):
 
     def by_email_like( self, trans, email_with_wildcards, filters=None, order_by=None, **kwargs ):
         """
+        Find a user searching with SQL wildcards.
         """
         filters = self._munge_filters( self.model_class.email.like( email_with_wildcards ), filters )
         order_by = order_by or ( model.User.email, )
@@ -166,12 +168,16 @@ class UserManager( base.ModelManager ):
         return self.is_admin( trans, trans.user )
 
     # ------------------------------------------------------------------------- ?
-    #def tags( self, trans, **kwargs ):
-    #    # return all tags from this user
+    #def tags( self, trans, user, **kwargs ):
+    #    """
+    #    Return all tags created by this user.
+    #    """
     #    pass
 
-    #def annotations( self, trans, **kwargs ):
-    #    # return all annotations from this user
+    #def annotations( self, trans, user, **kwargs ):
+    #    """
+    #    Return all annotations created by this user.
+    #    """
     #    pass
 
     # ------------------------------------------------------------------------- api keys
@@ -189,8 +195,15 @@ class UserManager( base.ModelManager ):
         """
         query = ( self.app.model.context.query( model.APIKeys )
                     .filter_by( user=user )
-                    .order_by( model.APIKeys.create_time ) )
-        return query.first()
+                    .order_by( sqlalchemy.desc( model.APIKeys.create_time ) ) )
+        all = query.all()
+        for a in all:
+            print a.user.username, a.key, a.create_time
+        print all
+        if len( all ):
+            return all[0]
+        return None
+        #return query.first()
 
     #TODO: possibly move to ApiKeyManager
     def get_or_create_valid_api_key( self, trans, user ):

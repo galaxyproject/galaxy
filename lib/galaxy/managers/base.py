@@ -16,7 +16,8 @@ log = logging.getLogger( __name__ )
 
 # =============================================================================
 def security_check( trans, item, check_ownership=False, check_accessible=False ):
-    """ Security checks for an item: checks if (a) user owns item or (b) item
+    """
+    Security checks for an item: checks if (a) user owns item or (b) item
     is accessible to user. This is a generic method for dealing with objects
     uniformly from the older controller mixin code - however whenever possible
     the managers for a particular model should be used to perform security
@@ -48,7 +49,10 @@ def security_check( trans, item, check_ownership=False, check_accessible=False )
 
 
 def get_class( class_name ):
-    """ Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>). """
+    """
+    Returns the class object that a string denotes. Without this method, we'd have
+    to do eval(<class_name>).
+    """
     if class_name == 'History':
         item_class = model.History
     elif class_name == 'HistoryDatasetAssociation':
@@ -148,7 +152,7 @@ class ModelManager( object ):
         if eagerloads is False:
             query = query.enable_eagerloads( False )
 
-#TODO: if non-orm filters are the only option, here is where they'd go
+        #TODO: if non-orm filters are the only option, here is where they'd go
         query = self._apply_filters( query, filters )
         query = self._apply_order_by_limit_offset( query, order_by, limit, offset )
         return query
@@ -198,7 +202,6 @@ class ModelManager( object ):
         Use the manager's default_order_by if order_by is None.
         """
         if order_by is None:
-            #TODO: allow non-tuple default_order_by
             return query.order_by( *self.default_order_by )
 
         if isinstance( order_by, ( list, tuple ) ):
@@ -229,22 +232,21 @@ class ModelManager( object ):
         Call sqlalchemy's one and recast errors to serializable errors if any.
 
         :raises exceptions.ObjectNotFound: if no model is found
-        :raises exceptions.Conflict: if more than one model is found
+        :raises exceptions.InconsistentDatabase: if more than one model is found
         """
         # overridden to raise serializable errors
         try:
             return query.one()
         except sqlalchemy.orm.exc.NoResultFound, not_found:
             raise exceptions.ObjectNotFound( self.model_class.__name__ + ' not found' )
-#TODO: exceptions.InconsistentDatabase?
         except sqlalchemy.orm.exc.MultipleResultsFound, multi_found:
-            raise exceptions.Conflict( 'found more than one ' + self.model_class.__name__ )
+            raise exceptions.InconsistentDatabase( 'found more than one ' + self.model_class.__name__ )
 
     def _one_or_none( self, query ):
         """
         Return the object if found, None if it's not.
 
-        :raises exceptions.Conflict: if more than one model is found
+        :raises exceptions.InconsistentDatabase: if more than one model is found
         """
         try:
             return self._one_with_recast_errors( query )
@@ -375,58 +377,6 @@ class ModelManager( object ):
 
 
 # =============================================================================
-class DeletableModelInterface( object ):
-    """
-    A mixin/interface for a model that is deletable (i.e. has a 'deleted' attr).
-
-    Many resources in Galaxy can be marked as deleted - meaning (in most cases)
-    that they are no longer needed, should not be displayed, or may be actually
-    removed by an admin/script.
-    """
-
-    def delete( self, trans, item, flush=True, **kwargs ):
-        """
-        Mark as deleted and return.
-        """
-        trans.sa_session.add( item )
-        item.deleted = True
-        if flush:
-            trans.sa_session.flush()
-        return item
-
-    def undelete( self, trans, item, flush=True, **kwargs ):
-        """
-        Mark as not deleted and return.
-        """
-        trans.sa_session.add( item )
-        item.deleted = False
-        if flush:
-            trans.sa_session.flush()
-        return item
-
-
-# =============================================================================
-class PurgableModelInterface( DeletableModelInterface ):
-    """
-    A manager interface/mixin for a resource that allows deleting and purging where
-    purging is often removal of some additional, non-db resource (e.g. a dataset's
-    file).
-    """
-
-    def purge( self, trans, item, flush=True, **kwargs ):
-        """
-        Mark as purged and return.
-
-        Override this in subclasses to do the additional resource removal.
-        """
-        trans.sa_session.add( item )
-        item.purged = True
-        if flush:
-            trans.sa_session.flush()
-        return item
-
-
-# =============================================================================
 class AccessibleModelInterface( object ):
     """
     A security interface to check if a User can read/view an item's.
@@ -471,7 +421,7 @@ class AccessibleModelInterface( object ):
 
         :raises exceptions.ItemAccessibilityException:
         """
-        #NOTE: this will be a large, inefficient list if filters are passed in kwargs
+        #NOTE: this will be a large, inefficient list if filters are not passed in kwargs
         items = ModelManager.list( self, trans, **kwargs )
         return [ self.error_unless_accessible( trans, item, user ) for item in items ]
 
@@ -479,7 +429,7 @@ class AccessibleModelInterface( object ):
         """
         Return a list of items accessible to the user.
         """
-        #NOTE: this will be a large, inefficient list if filters are passed in kwargs
+        #NOTE: this will be a large, inefficient list if filters are not  passed in kwargs
         items = ModelManager.list( self, trans, **kwargs )
         return filter( lambda item: self.is_accessible( trans, item, user ), items )
 
@@ -523,7 +473,6 @@ class OwnableModelInterface( object ):
             return item
         raise exceptions.ItemOwnershipException( "%s is not owned by user" % ( self.model_class.__name__ ) )
 
-    #TODO:?? are these even useful? Doesn't by_user work here most often?
     def list_owned( self, trans, user, **kwargs ):
         """
         Return a list of items owned by the user, raising an error if ANY
@@ -531,22 +480,20 @@ class OwnableModelInterface( object ):
 
         :raises exceptions.ItemAccessibilityException:
         """
-        #NOTE: this will be a large, inefficient list if filters are passed in kwargs
-        items = ModelManager.list( self, trans, **kwargs )
-        return [ self.error_unless_owner( trans, item, user ) for item in items ]
+        # just alias to by_user (easier/same thing)
+        return self.by_user( trans, user, **kwargs )
 
     def filter_owned( self, trans, user, **kwargs ):
         """
         Return a list of items owned by the user.
         """
-        items = ModelManager.list( self, trans, **kwargs )
-        return filter( lambda item: self.is_owned( trans, item, user ), items )
+        # just alias to list_owned
+        return self.list_owned( trans, user, **kwargs )
 
 
 # ============================================================================= SERIALIZERS/to_dict,from_dict
-class ModelSerializingError( exceptions.ObjectAttributeInvalidException ):
+class ModelSerializingError( exceptions.InternalServerError ):
     """Thrown when request model values can't be serialized"""
-    #TODO: better as 500?
     pass
 
 
@@ -604,6 +551,7 @@ class ModelSerializer( object ):
         """
         # to be overridden in subclasses
         pass
+        #super( ModelSerializer, self ).add_serializers()
 
     def serialize( self, trans, item, keys ):
         """
@@ -645,25 +593,6 @@ class ModelSerializer( object ):
         """
         id = getattr( item, key )
         return self.app.security.encode_id( id ) if id is not None else None
-
-    #TODO: AnnotatableMixin
-    def serialize_annotation( self, trans, item, key ):
-        """
-        Get and serialize an `item`'s annotation.
-        """
-#TODO: which is correct here?
-        #user = item.user
-        user = trans.user
-        sa_session = self.app.model.context
-        return item.get_item_annotation_str( sa_session, user, item )
-
-    #TODO: TaggableMixin
-    def serialize_tags( self, trans, item, key ):
-        """
-        Get and serialize an `item`'s tags.
-        """
-#TODO: whose tags are these?
-        return [ tag.user_tname + ( ':' + tag.user_value if tag.user_value else '' ) for tag in item.tags ]
 
     # ......................................................................... serializing to a view
     # where a view is a predefied list of keys to serialize
@@ -793,37 +722,6 @@ class ModelDeserializer( object ):
         val = self.validate.genome_build( trans, key, val )
         return self.default_deserializer( trans, item, key, val )
 
-    def deserialize_annotation( self, trans, item, key, val ):
-        """
-        Make sure `val` is a valid annotation and assign it.
-        """
-        val = self.validate.nullable_basestring( key, val )
-        #TODO: have to assume trans.user here...
-        return item.add_item_annotation( trans.sa_session, trans.user, item, val )
-
-    def deserialize_tags( self, trans, item, key, val ):
-        """
-        Make sure `val` is a valid list of tag strings and assign them.
-
-        Note: this will erase any previous tags.
-        """
-        new_tags_list = self.validate.basestring_list( key, val )
-        #TODO: have to assume trans.user here...
-        user = trans.user
-        #TODO: duped from tags manager - de-dupe when moved to taggable mixin
-        tag_handler = trans.app.tag_handler
-        tag_handler.delete_item_tags( user, item )
-        new_tags_str = ','.join( new_tags_list )
-        tag_handler.apply_item_tags( user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
-        #trans.sa_session.flush()
-
-#TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
-        return item.tags
-
-    #def deserialize_rating( self, trans, item, key, val ):
-    #    val = self.validate.int_range( key, val, 0, 5 )
-    #    return self.set_rating...( trans, item, val, user=trans.user )
-
     # ......................................................................... aliases
     #def from_dict( self, trans, item, data ):
     #    self.deserialize( trans, item, data )
@@ -843,6 +741,9 @@ class ModelValidator( object ):
 
     def type( self, key, val, types ):
         """
+        Check `val` against the type (or tuple of types) in `types`.
+
+        :raises exceptions.RequestParameterInvalidException: if not an instance.
         """
         if not isinstance( val, types ):
             msg = 'must be a type: %s' % ( str( types ) )
@@ -906,93 +807,94 @@ class ModelValidator( object ):
 # =============================================================================
 # Mixins (here for now)
 # -----------------------------------------------------------------------------
+class DeletableModelInterface( object ):
+    """
+    A mixin/interface for a model that is deletable (i.e. has a 'deleted' attr).
+
+    Many resources in Galaxy can be marked as deleted - meaning (in most cases)
+    that they are no longer needed, should not be displayed, or may be actually
+    removed by an admin/script.
+    """
+
+    def delete( self, trans, item, flush=True, **kwargs ):
+        """
+        Mark as deleted and return.
+        """
+        trans.sa_session.add( item )
+        item.deleted = True
+        if flush:
+            trans.sa_session.flush()
+        return item
+
+    def undelete( self, trans, item, flush=True, **kwargs ):
+        """
+        Mark as not deleted and return.
+        """
+        trans.sa_session.add( item )
+        item.deleted = False
+        if flush:
+            trans.sa_session.flush()
+        return item
+
+
 #TODO: these are of questionable value if we don't want to enable users to delete/purge via update
 class DeletableModelDeserializer( object ):
+    pass
 
-    def add_deserializers( self ):
-        """
-        """
-        self.deserializers[ 'deleted' ] = self.deserialize_deleted
-
-    def deserialize_deleted( self, trans, item, key, val ):
-        """
-        """
-        new_deleted = self.validate.bool( key, val )
-        if new_deleted == item.deleted:
-            return item.deleted
-        #TODO:?? flush=False?
-        if new_deleted:
-            self.mgr.delete( trans, item )
-        else:
-            self.mgr.undelete( trans, item )
-        return item.deleted
+    #def add_deserializers( self ):
+    #    """
+    #    """
+    #    self.deserializers[ 'deleted' ] = self.deserialize_deleted
+    #
+    #def deserialize_deleted( self, trans, item, key, val ):
+    #    """
+    #    """
+    #    new_deleted = self.validate.bool( key, val )
+    #    if new_deleted == item.deleted:
+    #        return item.deleted
+    #    #TODO:?? flush=False?
+    #    if new_deleted:
+    #        self.mgr.delete( trans, item )
+    #    else:
+    #        self.mgr.undelete( trans, item )
+    #    return item.deleted
 
 
 # -----------------------------------------------------------------------------
+class PurgableModelInterface( DeletableModelInterface ):
+    """
+    A manager interface/mixin for a resource that allows deleting and purging where
+    purging is often removal of some additional, non-db resource (e.g. a dataset's
+    file).
+    """
+
+    def purge( self, trans, item, flush=True, **kwargs ):
+        """
+        Mark as purged and return.
+
+        Override this in subclasses to do the additional resource removal.
+        """
+        trans.sa_session.add( item )
+        item.purged = True
+        if flush:
+            trans.sa_session.flush()
+        return item
+
+
 class PurgableModelDeserializer( DeletableModelDeserializer ):
+    pass
 
-    def add_deserializers( self ):
-        """
-        """
-        self.deserializers[ 'purged' ] = self.deserialize_purged
-
-    def deserialize_purged( self, trans, item, key, val ):
-        """
-        """
-        new_purged = self.validate.bool( key, val )
-        if new_purged == item.purged:
-            return item.purged
-        if new_purged:
-            self.mgr.purge( trans, item )
-        return self.purged
-
-
-# -----------------------------------------------------------------------------
-class TaggableSerializer( object ):
-
-    def add_serializers( self ):
-        """
-        """
-        self.serializers[ 'tags' ] = self.serialize_tags
-
-    def serialize_tags( self, trans, item, key ):
-        """
-        """
-        if not hasattr( item, 'tags' ):
-            return None
-
-        tags_str_list = []
-        for tag in item.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            tags_str_list.append( tag_str )
-        print '\t tags_str_list', tags_str_list
-        return tags_str_list
-
-
-class AnnotatableSerializable( object ):
-
-    def add_serializers( self ):
-        """
-        """
-        self.serializers[ 'annotation' ] = lambda t, i, k: unicode( self.get_annotation( t, i ) )
-
-
-class RatableSerializable( object ):
-
-    def add_serializers( self ):
-        """
-        """
-        self.serializers[ 'user_rating' ] = self.serialize_user_rating
-        self.serializers[ 'community_rating' ] = self.serialize_community_rating
-
-    def serialize_user_rating( self, trans, item, key ):
-        """
-        """
-        pass
-
-    def serialize_community_rating( self, trans, item, key ):
-        """
-        """
-        pass
+    #def add_deserializers( self ):
+    #    """
+    #    """
+    #    self.deserializers[ 'purged' ] = self.deserialize_purged
+    #
+    #def deserialize_purged( self, trans, item, key, val ):
+    #    """
+    #    """
+    #    new_purged = self.validate.bool( key, val )
+    #    if new_purged == item.purged:
+    #        return item.purged
+    #    if new_purged:
+    #        self.mgr.purge( trans, item )
+    #    return self.purged

@@ -1,10 +1,23 @@
 """
+Superclass Manager and Serializers for Sharable objects.
+
+A sharable Galaxy object:
+    has an owner/creator User
+    is sharable with other, specific Users
+    is importable (copyable) by users that have access
+    has a slug which can be used as a link to view the resource
+    can be published effectively making it available to all other Users
+    can be rated
 """
+
 import re
 
 from galaxy import exceptions
 
 import base
+import taggable
+import annotatable
+import ratable
 import users
 
 import logging
@@ -12,16 +25,8 @@ log = logging.getLogger( __name__ )
 
 
 # =============================================================================
-class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.AccessibleModelInterface ):
-    """
-    Superclass for managers of a model that:
-        has an owner/creator User
-        is sharable with other, specific Users
-        is importable (copyable) by users that have access
-        has a slug which can be used as a link to view the resource
-        can be published effectively making it available to all other Users
-        can be rated
-    """
+class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.AccessibleModelInterface,
+        taggable.TaggableManagerInterface, annotatable.AnnotatableManagerInterface, ratable.RatableManagerInterface ):
     # e.g. histories, pages, stored workflows, visualizations
 
     # the model used for UserShareAssociations with this model
@@ -30,7 +35,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     def __init__( self, app ):
         super( SharableModelManager, self ).__init__( app )
         # user manager is needed to check access/ownership/admin
-        self.user_mgr = users.UserManager( app )
+        self.user_manager = users.UserManager( app )
 
     # ......................................................................... has a user
     def _query_by_user( self, trans, user, filters=None, **kwargs ):
@@ -55,11 +60,11 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
-        if self.user_mgr.is_anonymous( user ):
+        if self.user_manager.is_anonymous( user ):
             # note: this needs to be overridden in the case of anon users and session.current_history
             return False
         # ... effectively a good fit to have this here, but not semantically
-        if self.user_mgr.is_admin( trans, user ):
+        if self.user_manager.is_admin( trans, user ):
             return True
         return item.user == user
 
@@ -74,7 +79,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         # note: owners always have access - checking for accessible implicitly checks for ownership
         if self.is_owner( trans, item, user ):
             return True
-        if self.user_mgr.is_anonymous( user ):
+        if self.user_manager.is_anonymous( user ):
             return False
         if user in item.users_shared_with_dot_users:
             return True
@@ -333,8 +338,15 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
 
 
 # =============================================================================
-class SharableModelSerializer( base.ModelSerializer ):
-    pass
+class SharableModelSerializer( base.ModelSerializer,
+        taggable.TaggableSerializer, annotatable.AnnotatableSerializer, ratable.RatableSerializer ):
+#TODO: stub
+
+    def add_serializers( self ):
+        super( SharableModelSerializer, self ).add_serializers()
+        taggable.TaggableSerializer.add_serializers( self )
+        annotatable.AnnotatableSerializer.add_serializers( self )
+        ratable.RatableSerializer.add_serializers( self )
 
     # the only ones that needs any fns:
     #   user/user_id
@@ -350,24 +362,32 @@ class SharableModelSerializer( base.ModelSerializer ):
 
 
 # =============================================================================
-class SharableModelDeserializer( base.ModelDeserializer ):
+class SharableModelDeserializer( base.ModelDeserializer,
+        taggable.TaggableDeserializer, annotatable.AnnotatableDeserializer, ratable.RatableDeserializer ):
+#TODO: stub
 
-    def deserialize_published( self, trans, item, val ):
-        """
-        """
-        #TODO: call manager.publish/unpublish
-        pass
+    def add_deserializers( self ):
+        super( SharableModelDeserializer, self ).add_deserializers()
+        taggable.TaggableDeserializer.add_deserializers( self )
+        annotatable.AnnotatableDeserializer.add_deserializers( self )
+        ratable.RatableDeserializer.add_deserializers( self )
 
-    def deserialize_importable( self, trans, item, val ):
-        """
-        """
-        #TODO: call manager.make_importable/non_importable
-        pass
-
-    def deserialize_slug( self, trans, item, val ):
-        """
-        """
-        #TODO: call manager.set_slug
-        pass
+    #def deserialize_published( self, trans, item, val ):
+    #    """
+    #    """
+    #    #TODO: call manager.publish/unpublish
+    #    pass
+    #
+    #def deserialize_importable( self, trans, item, val ):
+    #    """
+    #    """
+    #    #TODO: call manager.make_importable/non_importable
+    #    pass
+    #
+    #def deserialize_slug( self, trans, item, val ):
+    #    """
+    #    """
+    #    #TODO: call manager.set_slug
+    #    pass
 
     #def deserialize_user_shares():

@@ -13,6 +13,8 @@ from galaxy import exceptions
 from galaxy import datatypes
 
 import base
+import taggable
+import annotatable
 import histories
 import datasets
 
@@ -22,13 +24,18 @@ from galaxy import objectstore
 
 
 # =============================================================================
-class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface ):
+class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface,
+        taggable.TaggableManagerInterface, annotatable.AnnotatableManagerInterface ):
     #TODO: move what makes sense into DatasetManager
     """
     Interface/service object for interacting with HDAs.
     """
     model_class = model.HistoryDatasetAssociation
+    foreign_key_name = 'history_dataset_association'
     default_order_by = ( model.HistoryDatasetAssociation.create_time, )
+
+    tag_assoc = model.HistoryDatasetAssociationTagAssociation
+    annotation_assoc = model.HistoryDatasetAssociationAnnotationAssociation
 
     #TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
@@ -41,6 +48,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     # ......................................................................... security and permissions
     def is_accessible( self, trans, hda, user ):
         """
+        Override to allow owners (those that own the associated history).
         """
         if self.is_owner( trans, hda, user ):
             return True
@@ -118,33 +126,29 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
 
     def copy_ldda( self, trans, history, ldda, **kwargs ):
         """
+        Copy this HDA as a LDDA and return.
         """
         return ldda.to_history_dataset_association( history, add_to_history=True )
 
-    def is_a_copy( self, trans, hda ):
-        pass
+    #TODO: stub
+    #def is_a_copy( self, trans, hda ):
+    #    pass
 
-    def copied_from( self, trans, hda ):
-        pass
+    #TODO: stub
+    #def copied_from( self, trans, hda ):
+    #    pass
 
-    # .........................................................................
-#    def by_history_id( self, trans, history_id, filters=None, **kwargs ):
-#        history_id_filter = self.model_class.history_id == history_id
-#        filters = self._munge_filters( history_id_filter, filters )
-#        return self.list( trans, filters=filters, **kwargs )
-
-#    #def by_history( self, trans, history, filters=None, **kwargs ):
-#    #    return history.datasets
-
+    #TODO: stub
     #def by_user( self, trans, user ):
     #    pass
 
     def purge( self, trans, hda ):
         """
+        Purge this HDA and the dataset underlying it.
         """
         # error here if disallowed - before jobs are stopped
         #TODO: poss. move to DatasetAssociationManager
-        self.dataset_mgr.error_unless_dataset_purge_allowed( trans, hda )
+        self.dataset_manager.error_unless_dataset_purge_allowed( trans, hda )
         super( HDAManager, self ).purge( trans, hda, flush=True )
 
         # signal to stop the creating job?
@@ -155,16 +159,26 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
 
         # more importantly, purge dataset as well
         if hda.dataset.user_can_purge:
-            self.dataset_mgr.purge( trans, hda.dataset )
+            self.dataset_manager.purge( trans, hda.dataset )
         return hda
 
     def error_if_uploading( self, trans, hda ):
         """
         Raise error if HDA is still uploading.
         """
+        #TODO: may be better added to an overridden get_accessible
         if hda.state == model.Dataset.states.UPLOAD:
             raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
         return hda
+
+    # ......................................................................... via history
+    #def by_history_id( self, trans, history_id, filters=None, **kwargs ):
+    #    history_id_filter = self.model_class.history_id == history_id
+    #    filters = self._munge_filters( history_id_filter, filters )
+    #    return self.list( trans, filters=filters, **kwargs )
+
+    #def by_history( self, trans, history, filters=None, **kwargs ):
+    #    return history.datasets
 
     # ......................................................................... associated
 #TODO: is this needed? Can't you use the hda.creating_job attribute? When is this None?
@@ -224,6 +238,8 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
 
     def get_visualizations( self, trans, hda ):
         """
+        Return a list of dictionaries with links to visualization pages
+        for those visualizations that apply to this hda.
         """
         # use older system if registry is off in the config
         if not self.app.visualizations_registry:
@@ -286,13 +302,14 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
 
 
 # =============================================================================
-class HDASerializer( base.ModelSerializer ):
+class HDASerializer( base.ModelSerializer,
+        taggable.TaggableSerializer, annotatable.AnnotatableSerializer ):
     #TODO: inherit from datasets.DatasetAssociationSerializer
     #TODO: move what makes sense into DatasetSerializer
 
     def __init__( self, app ):
         super( HDASerializer, self ).__init__( app )
-        self.hda_mgr = HDAManager( app )
+        self.hda_manager = HDAManager( app )
 
         # most of these views build/add to the previous view
         summary_view = [
@@ -360,6 +377,10 @@ class HDASerializer( base.ModelSerializer ):
         self.default_view = 'summary'
 
     def add_serializers( self ):
+        super( HDASerializer, self ).add_serializers()
+        taggable.TaggableSerializer.add_serializers( self )
+        annotatable.AnnotatableSerializer.add_serializers( self )
+
         self.serializers.update({
             'model_class'   : lambda *a: 'HistoryDatasetAssociation',
             #TODO: accessible needs to go away
@@ -403,9 +424,9 @@ class HDASerializer( base.ModelSerializer ):
             'annotation'    : self.serialize_annotation,
             'tags'          : self.serialize_tags,
 
-            'display_apps'  : lambda t, i, k: self.hda_mgr.get_display_apps( t, i ),
-            'display_types' : lambda t, i, k: self.hda_mgr.get_old_display_applications( t, i ),
-            'visualizations': lambda t, i, k: self.hda_mgr.get_visualizations( t, i ),
+            'display_apps'  : lambda t, i, k: self.hda_manager.get_display_apps( t, i ),
+            'display_types' : lambda t, i, k: self.hda_manager.get_old_display_applications( t, i ),
+            'visualizations': lambda t, i, k: self.hda_manager.get_visualizations( t, i ),
 
             'dataset_uuid'  : lambda t, i, k: str( i.dataset.uuid ) if i.dataset.uuid else None,
             'uuid'          : lambda t, i, k: self.serializers[ 'dataset_uuid' ]( t, i, k ),
@@ -428,6 +449,7 @@ class HDASerializer( base.ModelSerializer ):
 
     def serialize( self, trans, hda, keys ):
         """
+        Override to add metadata as flattened keys on the serialized HDA.
         """
         # if 'metadata' isn't removed from keys here serialize will retrieve the un-serializable MetadataCollection
         #TODO: remove these when metadata is sub-object
@@ -470,6 +492,7 @@ class HDASerializer( base.ModelSerializer ):
 
     def serialize_metadata( self, trans, hda, key, excluded=None ):
         """
+        Cycle through metadata and return as dictionary.
         """
         # dbkey is a repeat actually (metadata_dbkey == genome_build)
         #excluded = [ 'dbkey' ] if excluded is None else excluded
@@ -497,6 +520,7 @@ class HDASerializer( base.ModelSerializer ):
     # add to serialize_metadata above
     def serialize_meta_files( self, trans, hda, key ):
         """
+        Cycle through meta files and return them as a list of dictionaries.
         """
         meta_files = []
         for meta_type in hda.metadata.spec.keys():
@@ -508,6 +532,7 @@ class HDASerializer( base.ModelSerializer ):
     #TODO: and to dataset instead (passing through object store)
     def serialize_file_path( self, trans, hda, key ):
         """
+        Return the `file_name` of the HDA if the config exposes it, None otherwise.
         """
 #TODO: allow admin
         if self.app.config.expose_dataset_path:
@@ -519,6 +544,7 @@ class HDASerializer( base.ModelSerializer ):
 
     def serialize_urls( self, trans, hda, key ):
         """
+        Return web controller urls useful for this HDA.
         """
         url_for = galaxy.web.url_for
         encoded_id = self.security.encode_id( hda.id )
@@ -539,102 +565,22 @@ class HDASerializer( base.ModelSerializer ):
         return urls
 
 
-    #TODO: move into serializer below
-    #def get_hda_dict( self, trans, hda ):
-    #    """
-    #    Return full details of this HDA in dictionary form.
-    #    """
-    #    #precondition: the user's access to this hda has already been checked
-    #    #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-    #    expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
-    #    hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
-    #    hda_dict[ 'api_type' ] = "file"
-    #
-    #    # Add additional attributes that depend on trans must be added here rather than at the model level.
-    #    can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-    #    can_access_hda = ( trans.user_is_admin() or can_access_hda )
-    #    if not can_access_hda:
-    #        return self.get_inaccessible_hda_dict( trans, hda )
-    #    hda_dict[ 'accessible' ] = True
-    #
-    #    #TODO: I'm unclear as to which access pattern is right
-    #    hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, hda.history.user, hda )
-    #    #annotation = getattr( hda, 'annotation', hda.get_item_annotation_str( trans.sa_session, trans.user, hda ) )
-    #
-    #    # ---- return here if deleted AND purged OR can't access
-    #    purged = ( hda.purged or hda.dataset.purged )
-    #    if ( hda.deleted and purged ):
-    #        #TODO: to_dict should really go AFTER this - only summary data
-    #        return trans.security.encode_dict_ids( hda_dict )
-    #
-    #    if expose_dataset_path:
-    #        try:
-    #            hda_dict[ 'file_name' ] = hda.file_name
-    #        except objectstore.ObjectNotFound:
-    #            log.exception( 'objectstore.ObjectNotFound, HDA %s.', hda.id )
-    #
-    #    hda_dict[ 'download_url' ] = galaxy.web.url_for( 'history_contents_display',
-    #        history_id = trans.security.encode_id( hda.history.id ),
-    #        history_content_id = trans.security.encode_id( hda.id ) )
-    #
-    #    # indeces, assoc. metadata files, etc.
-    #    meta_files = []
-    #    for meta_type in hda.metadata.spec.keys():
-    #        if isinstance( hda.metadata.spec[ meta_type ].param, galaxy.datatypes.metadata.FileParameter ):
-    #            meta_files.append( dict( file_type=meta_type ) )
-    #    if meta_files:
-    #        hda_dict[ 'meta_files' ] = meta_files
-    #
-    #    # currently, the viz reg is optional - handle on/off
-    #    if trans.app.visualizations_registry:
-    #        hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
-    #    else:
-    #        hda_dict[ 'visualizations' ] = hda.get_visualizations()
-    #    #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
-    #    #           when the visualizations button is clicked (instead of preloading/pre-checking)
-    #
-    #    # ---- return here if deleted
-    #    if hda.deleted and not purged:
-    #        return trans.security.encode_dict_ids( hda_dict )
-    #
-    #    return trans.security.encode_dict_ids( hda_dict )
-
-    #def get_inaccessible_hda_dict( self, trans, hda ):
-    #    return trans.security.encode_dict_ids({
-    #        'id'        : hda.id,
-    #        'history_id': hda.history.id,
-    #        'hid'       : hda.hid,
-    #        'name'      : hda.name,
-    #        'state'     : hda.state,
-    #        'deleted'   : hda.deleted,
-    #        'visible'   : hda.visible,
-    #        'accessible': False
-    #    })
-
-    #def get_hda_dict_with_error( self, trans, hda=None, history_id=None, id=None, error_msg='Error' ):
-    #    return trans.security.encode_dict_ids({
-    #        'id'        : hda.id if hda else id,
-    #        'history_id': hda.history.id if hda else history_id,
-    #        'hid'       : hda.hid if hda else '(unknown)',
-    #        'name'      : hda.name if hda else '(unknown)',
-    #        'error'     : error_msg,
-    #        'state'     : trans.model.Dataset.states.NEW
-    #    })
-
-
 # =============================================================================
-class HDADeserializer( base.ModelDeserializer ):
+class HDADeserializer( base.ModelDeserializer,
+        taggable.TaggableDeserializer, annotatable.AnnotatableDeserializer ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
 
     def __init__( self, app ):
         super( HDADeserializer, self ).__init__( app )
-        self.hda_mgr = HDAManager( app )
+        self.hda_manager = HDAManager( app )
 
     #assumes: incoming from json.loads and sanitized
     def add_deserializers( self ):
         super( HDADeserializer, self ).add_deserializers()
+        taggable.TaggableDeserializer.add_deserializers( self )
+        annotatable.AnnotatableDeserializer.add_deserializers( self )
         self.deserializers.update({
             'name'          : self.deserialize_basestring,
             'visible'       : self.deserialize_bool,

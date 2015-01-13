@@ -7,12 +7,11 @@ created (or copied) by users over the course of an analysis.
 
 from galaxy import exceptions
 from galaxy import model
-from galaxy.model import orm
 
 import base
 import sharable
 import hdas
-import galaxy.managers.collections_util
+import collections_util
 
 import galaxy.web
 
@@ -22,27 +21,31 @@ log = logging.getLogger( __name__ )
 
 # =============================================================================
 class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface ):
-    """
-    """
 
     model_class = model.History
     default_order_by = ( model.History.create_time, )
     foreign_key_name = 'history'
     user_share_model = model.HistoryUserShareAssociation
 
+    tag_assoc = model.HistoryTagAssociation
+    annotation_assoc = model.HistoryAnnotationAssociation
+    rating_assoc = model.HistoryRatingAssociation
+
+    #TODO: incorporate imp/exp (or link to)
+
     def __init__( self, app, *args, **kwargs ):
-        """
-        """
         super( HistoryManager, self ).__init__( app, *args, **kwargs )
-        self.hda_mgr = hdas.HDAManager( app )
+        self.hda_manager = hdas.HDAManager( app )
 
     def copy( self, trans, history, user, **kwargs ):
         """
+        Copy and return the given `history`.
         """
         return history.copy( target_user=user, **kwargs )
 
     def most_recent( self, trans, user, **kwargs ):
         """
+        Return the most recently update history for the user.
         """
 #TODO: normalize this
         if not user:
@@ -58,7 +61,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         ordered by update time.
         """
         # handle default and/or anonymous user (which still may not have a history yet)
-        if self.user_mgr.is_anonymous( user ):
+        if self.user_manager.is_anonymous( user ):
             current_history = trans.get_history()
             return [ current_history ] if current_history else []
 
@@ -69,20 +72,21 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         True if the current user is the owner of the given history.
         """
         # anon users are only allowed to view their current history
-        if self.user_mgr.is_anonymous( user ) and history == trans.get_history():
+        if self.user_manager.is_anonymous( user ) and history == trans.get_history():
             return True
         return super( HistoryManager, self ).is_owner( trans, history, user )
 
     # ......................................................................... purgable
     def purge( self, trans, history, flush=True, **kwargs ):
         """
+        Purge this history and all HDAs, Collections, and Datasets inside this history.
         """
-        self.hda_mgr.dataset_mgr.error_unless_dataset_purge_allowed( trans, history )
+        self.hda_manager.dataset_manager.error_unless_dataset_purge_allowed( trans, history )
 
         # First purge all the datasets
         for hda in history.datasets:
             if not hda.purged:
-                self.hda_mgr.purge( trans, hda, flush=True )
+                self.hda_manager.purge( trans, hda, flush=True )
 
         # Now mark the history as purged
         super( HistoryManager, self ).purge( trans, history, flush=flush, **kwargs )
@@ -93,17 +97,20 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
     # ......................................................................... current
     def get_current( self, trans ):
         """
+        Return the current history.
         """
         return trans.get_history()
 
     def set_current( self, trans, history ):
         """
+        Set the current history.
         """
         trans.set_history( history )
         return history
 
     def set_current_by_id( self, trans, history_id ):
         """
+        Set the current history by an id.
         """
         return self.set_current( trans, self.by_id( trans, history_id ) )
 
@@ -117,7 +124,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         #TODO: instantiate here? really?
         history_serializer = HistorySerializer( self.app )
         hda_serializer = hdas.HDASerializer( self.app )
-        collection_dictifier = galaxy.managers.collections_util.dictify_dataset_collection_instance
+        collection_dictifier = collections_util.dictify_dataset_collection_instance
 
         history_dictionary = {}
         contents_dictionaries = []
@@ -163,6 +170,8 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
     # remove this
     def get_state_counts( self, trans, history, exclude_deleted=True, exclude_hidden=False ):
         """
+        Return a dictionary keyed to possible dataset states and valued with the number
+        of datasets in this history that have those states.
         """
         #TODO: the default flags above may not make a lot of sense (T,T?)
         state_counts = {}
@@ -181,6 +190,8 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
     # remove this
     def get_state_ids( self, trans, history ):
         """
+        Return a dictionary keyed to possible dataset states and valued with lists
+        containing the ids of each HDA in that state.
         """
         state_ids = {}
         for state in model.Dataset.states.values():
@@ -195,7 +206,8 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
 
     #TODO: remove this (is state used/useful?)
     def get_history_state( self, trans, history ):
-        """Returns the history state based on the states of the HDAs it contains.
+        """
+        Returns the history state based on the states of the HDAs it contains.
         """
         states = model.Dataset.states
 
@@ -237,8 +249,8 @@ class HistorySerializer( sharable.SharableModelSerializer ):
 
     def __init__( self, app ):
         super( HistorySerializer, self ).__init__( app )
-        self.history_mgr = HistoryManager( app )
-        self.hda_mgr = hdas.HDAManager( app )
+        self.history_manager = HistoryManager( app )
+        self.hda_manager = hdas.HDAManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
 
         summary_view = [
@@ -291,17 +303,15 @@ class HistorySerializer( sharable.SharableModelSerializer ):
             'size'          : lambda t, i, k: int( i.get_disk_size() ),
             'nice_size'     : lambda t, i, k: i.get_disk_size( nice_size=True ),
 
-            'annotation'    : self.serialize_annotation,
-            'tags'          : self.serialize_tags,
             'url'           : lambda t, i, k: galaxy.web.url_for( 'history', id=t.security.encode_id( i.id ) ),
             'contents_url'  : lambda t, i, k:
                 galaxy.web.url_for( 'history_contents', history_id=t.security.encode_id( i.id ) ),
             'empty'         : lambda t, i, k: len( i.datasets ) <= 0,
 
             'hdas'          : lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],
-            'state'         : lambda t, i, k: self.history_mgr.get_history_state( t, i ),
-            'state_details' : lambda t, i, k: self.history_mgr.get_state_counts( t, i ),
-            'state_ids'     : lambda t, i, k: self.history_mgr.get_state_ids( t, i ),
+            'state'         : lambda t, i, k: self.history_manager.get_history_state( t, i ),
+            'state_details' : lambda t, i, k: self.history_manager.get_state_counts( t, i ),
+            'state_ids'     : lambda t, i, k: self.history_manager.get_state_ids( t, i ),
             'contents'      : self.serialize_contents
         })
 
@@ -333,7 +343,7 @@ class HistoryDeserializer( sharable.SharableModelDeserializer ):
 
     def __init__( self, app ):
         super( HistoryDeserializer, self ).__init__( app )
-        self.history_mgr = HistoryManager( app )
+        self.history_manager = HistoryManager( app )
 
     #assumes: incoming from json.loads and sanitized
     def add_deserializers( self ):
@@ -341,10 +351,6 @@ class HistoryDeserializer( sharable.SharableModelDeserializer ):
         self.deserializers.update({
             'name'          : self.deserialize_basestring,
             'genome_build'  : self.deserialize_genome_build,
-            # mixin: annotatable
-            'annotation'    : self.deserialize_annotation,
-            # mixin: taggable
-            'tags'          : self.deserialize_tags,
 
             # mixin: deletable
             'deleted'       : self.deserialize_bool,

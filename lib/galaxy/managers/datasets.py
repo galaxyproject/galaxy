@@ -26,7 +26,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     def __init__( self, app ):
         super( DatasetManager, self ).__init__( app )
         # need for admin test
-        self.user_mgr = users.UserManager( app )
+        self.user_manager = users.UserManager( app )
 
     # ......................................................................... create
     def create( self, trans, flush=True, **kwargs ):
@@ -93,7 +93,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
         """
         Is this dataset readable/viewable to user?
         """
-        if self.user_mgr.is_admin( trans, user ):
+        if self.user_manager.is_admin( trans, user ):
             return True
         if self.has_access_permission( trans, dataset, user ):
             return True
@@ -241,25 +241,25 @@ class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterfac
     default_order_by = ( model.Dataset.create_time, )
 
     def __init__( self, app ):
-        """
-        """
         super( DatasetAssociationManager, self ).__init__( app )
-        self.dataset_mgr = DatasetManager( app )
+        self.dataset_manager = DatasetManager( app )
 
     def is_accessible( self, trans, dataset_assoc, user ):
         """
+        Is this DA accessible to `user`?
         """
         # defer to the dataset
-        return self.dataset_mgr.is_accessible( trans, dataset_assoc.dataset, user )
+        return self.dataset_manager.is_accessible( trans, dataset_assoc.dataset, user )
 
-    def metadata( self, trans, dataset_assoc ):
-        """
-        """
-        # get metadata
-        pass
+    #def metadata( self, trans, dataset_assoc ):
+    #    """
+    #    Return the metadata collection.
+    #    """
+    #    # get metadata
+    #    pass
 
-    def is_being_used( self, trans, dataset_assoc ):
-        """
-        """
-        #TODO: check history_associations, library_associations
-        pass
+    #def is_being_used( self, trans, dataset_assoc ):
+    #    """
+    #    """
+    #    #TODO: check history_associations, library_associations
+    #    pass
