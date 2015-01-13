@@ -2,10 +2,12 @@ import os
 import tempfile
 
 from galaxy import model
+from galaxy.util.object_wrapper import wrap_with_safe_string
 from galaxy.util.bunch import Bunch
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.template import fill_template
 from galaxy.tools.wrappers import (
+    ToolParameterValueWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
     LibraryDatasetValueWrapper,
@@ -109,6 +111,9 @@ class ToolEvaluator( object ):
         self.__populate_input_dataset_wrappers(param_dict, input_datasets, input_dataset_paths)
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, output_paths, job_working_directory)
         self.__populate_unstructured_path_rewrites(param_dict)
+        # Call param dict sanitizer, before non-job params are added, as we don't want to sanitize filenames.
+        self.__sanitize_param_dict( param_dict )
+        # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
 
         # Return the dictionary of parameters
@@ -308,6 +313,24 @@ class ToolEvaluator( object ):
             # The tools weren't "wrapped" yet, but need to be in order to get
             #the paths rewritten.
             self.__walk_inputs( self.tool.inputs, param_dict, rewrite_unstructured_paths )
+
+    def __sanitize_param_dict( self, param_dict ):
+        """
+        Sanitize all values that will be substituted on the command line, with the exception of ToolParameterValueWrappers,
+        which already have their own specific sanitization rules and also exclude special-cased named values.
+        We will only examine the first level for values to skip; the wrapping function will recurse as necessary.
+        
+        Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
+        """
+        # chromInfo is a filename, do not sanitize it.
+        skip = [ 'chromInfo' ]
+        if not self.tool or not self.tool.options or self.tool.options.sanitize:
+            for key, value in param_dict.items():
+                if key not in skip:
+                    # Remove key so that new wrapped object will occupy key slot
+                    del param_dict[key]
+                    # And replace with new wrapped key
+                    param_dict[ wrap_with_safe_string( key, no_wrap_classes=ToolParameterValueWrapper ) ] = wrap_with_safe_string( value, no_wrap_classes=ToolParameterValueWrapper )
 
     def build( self ):
         """
