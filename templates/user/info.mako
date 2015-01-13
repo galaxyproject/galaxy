@@ -7,7 +7,7 @@
     <script type="text/javascript">
         $(document).ready(function() {
 
-            function validateString(test_string, type) { 
+            function validateString(test_string, type) {
                 var mail_re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
                 var username_re = /^[a-z0-9\-]{4,255}$/;
                 if (type === 'email') {
@@ -15,7 +15,7 @@
                 } else if (type === 'username'){
                     return username_re.test(test_string);
                 }
-            } 
+            }
 
             function renderError(message) {
                 $(".donemessage").hide();
@@ -26,8 +26,9 @@
                     div.className = "errormessage";
                     div.innerHTML = message;
                     document.body.insertBefore( div, document.body.firstChild );
-                    }
                 }
+            }
+
             function renderDone(message) {
                 $(".errormessage").hide();
                 if ($(".donemessage").length === 1) {
@@ -37,8 +38,8 @@
                     div.className = "donemessage";
                     div.innerHTML = message;
                     document.body.insertBefore( div, document.body.firstChild );
-                    }
                 }
+            }
 
             original_email = $( '#email_input' ).val();
             original_username = $( '#name_input' ).val();
@@ -55,7 +56,6 @@
                 var hidden_input = '<input type="hidden" id="login_info_button" name="login_info_button" value="Submit"/>';
                 $( '#send' ).attr( 'disabled', 'disabled' );
                 $( "#email_input" ).before( hidden_input );
-                
                 if ( original_email !== email ){
                     if ( email.length > 255 ){ renderError( error_text_email_long ); validForm = false; }
                     else if ( !validateString( email, "email" ) ){ renderError( error_text_email ); validForm = false; }
@@ -66,7 +66,7 @@
                 if ( nothing_changed ){
                     renderDone( "Nothing has changed." );
                 }
-                if ( !validForm  || nothing_changed ) { 
+                if ( !validForm  || nothing_changed ) {
                     e.preventDefault();
                     // reactivate the button if the form wasn't submitted
                     $( '#send' ).removeAttr( 'disabled' );
