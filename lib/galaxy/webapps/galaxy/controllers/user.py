@@ -1142,8 +1142,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                              "and password reset information cannot be sent."
                                              "Please contact your local Galaxy administrator." )
         message = None
-        status = None
+        status = 'done'
         if kwd.get( 'reset_password_button', False ):
+            # Default to a non-userinfo-leaking response message
+            message = "Your reset request for %s has been received.  Please check your email account for more instructions.  If you do not receive an email shortly, please contact an administrator." % ( escape( email ) )
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
             user = trans.get_user()
             if reset_user:
@@ -1170,16 +1172,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
                         trans.log_event( "User reset password: %s" % email )
-                        message = "An email has been sent to %s.  Please refer to that email for more instructions." % ( escape( email ) )
                     except Exception, e:
                         status = 'error'
                         message = 'Failed to reset password: %s' % str( e )
                         log.exception( 'Unable to reset password.' )
-            elif email is not None:
-                message = "The specified user does not exist."
-                status = 'error'
-            elif email is None:
-                email = ""
         return trans.fill_template( '/user/reset_password.mako',
                                     message=message,
                                     status=status )
