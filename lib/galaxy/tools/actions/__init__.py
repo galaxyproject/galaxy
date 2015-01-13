@@ -6,6 +6,7 @@ from galaxy.tools.parameters import *
 from galaxy.tools.parameters.grouping import *
 from galaxy.util.template import fill_template
 from galaxy.util.none_like import NoneDataset
+from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.web import url_for
 from galaxy.exceptions import ObjectInvalid
 import galaxy.tools
@@ -214,7 +215,7 @@ class DefaultToolAction( object ):
             
             if not chrom_info:
                 # Default to built-in build.
-                chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % input_dbkey )
+                chrom_info = os.path.join( trans.app.config.len_file_path, "%s.len" % ( sanitize_lists_to_string( input_dbkey ) ) )
             incoming[ "chromInfo" ] = chrom_info
         inp_data.update( db_datasets )
         

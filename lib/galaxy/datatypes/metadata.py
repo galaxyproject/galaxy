@@ -20,6 +20,7 @@ from os.path import abspath
 
 import galaxy.model
 from galaxy.util import listify, stringify_dictionary_keys, string_as_bool
+from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 from sqlalchemy.orm import object_session
@@ -187,7 +188,10 @@ class MetadataParameter( object ):
     
     def to_string( self, value ):
         return str( value )
-    
+
+    def to_safe_string( self, value ):
+        return sanitize_lists_to_string( self.to_string( value ) )
+
     def make_copy( self, value, target_context = None, source_context = None ):
         return copy.deepcopy( value )
     
@@ -405,6 +409,10 @@ class DictParameter( MetadataParameter ):
     def to_string( self, value ):
         return  simplejson.dumps( value )
 
+    def to_safe_string( self, value ):
+        # We do not sanitize json dicts
+        return simplejson.dumps( value )
+
 class PythonObjectParameter( MetadataParameter ):
     
     def to_string( self, value ):
@@ -428,7 +436,11 @@ class FileParameter( MetadataParameter ):
         if not value:
             return str( self.spec.no_value )
         return value.file_name
-    
+
+    def to_safe_string( self, value ):
+        # We do not sanitize file names
+        return self.to_string( value )
+
     def get_html_field( self, value=None, context={}, other_values={}, **kwd ):
         return form_builder.TextField( self.spec.name, value=str( value.id ) )
 
