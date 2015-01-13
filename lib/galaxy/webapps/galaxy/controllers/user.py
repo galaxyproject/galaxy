@@ -28,12 +28,10 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 from galaxy.web.framework.helpers import escape, grids, time_ago
-from galaxy.web.framework.helpers import time_ago, grids
-from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
-require_login_template = """
+REQUIRE_LOGIN_TEMPLATE = """
 <p>
     This %s has been configured such that only users who are logged in may use it.%s
 </p>
@@ -47,6 +45,7 @@ To reset your Galaxy password for the instance at %s, use the following link:
 
 If you did not make this request, no action is necessary on your part, though
 you may want to notify an administrator."""
+
 
 class UserOpenIDGrid( grids.Grid ):
     use_panels = False
@@ -483,14 +482,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
                     web.url_for( controller='user', action='create', cntrller='user' )
                 if trans.webapp.name == 'galaxy':
-                    header = require_login_template % ( "Galaxy instance", create_account_str )
+                    header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy instance", create_account_str )
                 else:
-                    header = require_login_template % ( "Galaxy tool shed", create_account_str )
+                    header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy tool shed", create_account_str )
             else:
                 if trans.webapp.name == 'galaxy':
-                    header = require_login_template % ( "Galaxy instance", "" )
+                    header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy instance", "" )
                 else:
-                    header = require_login_template % ( "Galaxy tool shed", "" )
+                    header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy tool shed", "" )
         return trans.fill_template( '/user/login.mako',
                                     email=email,
                                     header=header,
@@ -1135,14 +1134,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     status=status,
                                     message=message )
 
-
     @web.expose
     def reset_password( self, trans, email=None, token=None, **kwd ):
         """Reset the user's password. Send an email with the new password."""
         if trans.app.config.smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this"
-                "Galaxy instance and password reset information cannot be sent."
-                "Please contact your local Galaxy administrator." )
+            return trans.show_error_message( "Mail is not configured for this Galaxy instance "
+                                             "and password reset information cannot be sent."
+                                             "Please contact your local Galaxy administrator." )
         message = None
         status = None
         if kwd.get( 'reset_password_button', False ):
