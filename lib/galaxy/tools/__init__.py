@@ -65,6 +65,8 @@ from galaxy.web.form_builder import SelectField
 from galaxy.model.item_attrs import Dictifiable
 from tool_shed.util import shed_util_common
 from .loader import load_tool, template_macro_params
+from galaxy.util.object_wrapper import wrap_with_safe_string
+from galaxy import exceptions
 
 
 log = logging.getLogger( __name__ )
@@ -2560,7 +2562,9 @@ class Tool( object, Dictifiable ):
                 return self.app.tool_data_tables[ table_name ].get_entry( query_attr, query_val, return_attr )
 
         param_dict['__get_data_table_entry__'] = get_data_table_entry
-
+        # Call param dict sanitizer, before non-job params are added, as we don't want to sanitize filenames.
+        self.__sanitize_param_dict( param_dict )
+        # Parameters added after this line are not sanitized
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
         # More convienent access to app.config.new_file_path; we don't need to
@@ -2579,6 +2583,23 @@ class Tool( object, Dictifiable ):
         param_dict['__user__'] = RawObjectWrapper( param_dict.get( '__user__', None ) )
         # Return the dictionary of parameters
         return param_dict
+    def __sanitize_param_dict( self, param_dict ):
+        """
+        Sanitize all values that will be substituted on the command line, with the exception of ToolParameterValueWrappers,
+        which already have their own specific sanitization rules and also exclude special-cased named values.
+        We will only examine the first level for values to skip; the wrapping function will recurse as necessary.
+        
+        Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
+        """
+        # chromInfo is a filename, do not sanitize it.
+        skip = [ 'chromInfo' ]
+        if not self.options or self.options.sanitize:
+            for key, value in param_dict.items():
+                if key not in skip:
+                    # Remove key so that new wrapped object will occupy key slot
+                    del param_dict[key]
+                    # And replace with new wrapped key
+                    param_dict[ wrap_with_safe_string( key, no_wrap_classes=ToolParameterValueWrapper ) ] = wrap_with_safe_string( value, no_wrap_classes=ToolParameterValueWrapper )
     def build_param_file( self, param_dict, directory=None ):
         """
         Build temporary file for file based parameter transfer if needed
@@ -3352,10 +3373,13 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
             if name in self.metadata.spec:
                 if rval is None:
                     rval = self.metadata.spec[name].no_value
-                rval = self.metadata.spec[name].param.to_string( rval )
+                rval = self.metadata.spec[ name ].param.to_safe_string( rval )
                 # Store this value, so we don't need to recalculate if needed
                 # again
                 setattr( self, name, rval )
+            else:
+                #escape string value of non-defined metadata value
+                rval = wrap_with_safe_string( rval )
             return rval
         def __nonzero__( self ):
             return self.metadata.__nonzero__()
@@ -3376,9 +3400,13 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 ext = tool.inputs[name].extensions[0]
             except:
                 ext = 'data'
-            self.dataset = NoneDataset( datatypes_registry = datatypes_registry, ext = ext )
+            self.dataset = wrap_with_safe_string( NoneDataset( datatypes_registry=datatypes_registry, ext=ext ), no_wrap_classes=ToolParameterValueWrapper )
         else:
-            self.dataset = dataset
+            # Tool wrappers should not normally be accessing .dataset directly, 
+            # so we will wrap it and keep the original around for file paths
+            # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
+            self.unsanitized = dataset
+            self.dataset = wrap_with_safe_string( dataset, no_wrap_classes=ToolParameterValueWrapper )
             self.metadata = self.MetadataWrapper( dataset.metadata )
         self.false_path = false_path
 
@@ -3386,10 +3414,28 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         if self.false_path is not None:
             return self.false_path
         else:
-            return self.dataset.file_name
+            return self.unsanitized.file_name
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
             return self.false_path
+        #does not implement support for false_extra_files_path
+        elif key == 'extra_files_path':
+            try:
+                # Assume it is an output and that this wrapper
+                # will be set with correct "files_path" for this
+                # job.
+                return self.files_path
+            except AttributeError:
+                # Otherwise, we have an input - delegate to model and
+                # object store to find the static location of this
+                # directory.
+                try:
+                    return self.unsanitized.extra_files_path
+                except exceptions.ObjectNotFound:
+                    # NestedObjectstore raises an error here
+                    # instead of just returning a non-existent
+                    # path like DiskObjectStore.
+                    raise
         else:
             return getattr( self.dataset, key )
     def __nonzero__( self ):
