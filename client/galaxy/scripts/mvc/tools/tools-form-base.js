@@ -131,6 +131,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     this.element_list[i].reset();
                 }
             });
+            
+            // refresh
+            this.trigger('refresh');
         },
 
         /** Renders the UI elements required for the form
