@@ -244,7 +244,7 @@ class HasDatasets:
         return DatasetFilenameWrapper( dataset, **wrapper_kwds )
 
 
-class DatasetListWrapper( list, HasDatasets ):
+class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
     """
     """
     def __init__( self, datasets, dataset_paths=[], **kwargs ):
@@ -259,7 +259,7 @@ class DatasetListWrapper( list, HasDatasets ):
         return ','.join( map( str, self ) )
 
 
-class DatasetCollectionWrapper( object, HasDatasets ):
+class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
 
     def __init__( self, has_collection, dataset_paths=[], **kwargs ):
         super(DatasetCollectionWrapper, self).__init__()
