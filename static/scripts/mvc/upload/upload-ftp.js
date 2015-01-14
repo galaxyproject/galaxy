@@ -78,8 +78,8 @@ return Backbone.View.extend({
 
                 // change state of the sub-checkboxes
                 for(i = 0; i < len; i++){
-                if(allChecked)
-                {
+                    if(allChecked)
+                    {
                         // all checkboxes should be checked
                         if(checkboxes.eq(i).hasClass('fa-square-o'))
                         {
@@ -97,7 +97,7 @@ return Backbone.View.extend({
                     }
                 }
                 return;
-            } );
+            });
 
         } else {
             // add info
@@ -134,24 +134,24 @@ return Backbone.View.extend({
         $icon.addClass(icon_class);
         
         $it.on('addToUpBox', function(){
-// find model
-var model_index = self._find(ftp_file);
+        // find model
+        var model_index = self._find(ftp_file);
 
             // update icon
             $icon.removeClass();
 
             // add model
             if (!model_index) {
-            // add to uploadbox
-            self.app.uploadbox.add([{
-                mode        : 'ftp',
-                name        : ftp_file.path,
-                size        : ftp_file.size,
-                path        : ftp_file.path
-            }]);
+                // add to uploadbox
+                self.app.uploadbox.add([{
+                    mode        : 'ftp',
+                    name        : ftp_file.path,
+                    size        : ftp_file.size,
+                    path        : ftp_file.path
+                }]);
 
-            // add new icon class
-            $icon.addClass(self.options.class_remove);
+                // add new icon class
+                $icon.addClass(self.options.class_remove);
             } else {
                 // remove
                 self.app.collection.remove(model_index);
