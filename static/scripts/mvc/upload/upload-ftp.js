@@ -63,17 +63,17 @@ return Backbone.View.extend({
                 $this = $(this);
 
                 // change state of the selectAll checkbox
-                if($this.hasClass('fa-square-o')){
-                    // in unchecked, change to checked
-                    $this.removeClass('fa-square-o fa-minus-square-o');
-                    $this.addClass('fa-check-square-o');
-                    allChecked=true;
-                }
-                else{
-                    // if checked, change to unchecked
+                if($this.hasClass('fa-check-square-o')){
                     $this.removeClass('fa-check-square-o fa-minus-square-o');
                     $this.addClass('fa-square-o');
                     allChecked=false;
+                    
+                }
+                else{
+                  // in unchecked, change to checked
+                    $this.removeClass('fa-square-o fa-minus-square-o');
+                    $this.addClass('fa-check-square-o');
+                    allChecked=true;
                 }
 
                 // change state of the sub-checkboxes
