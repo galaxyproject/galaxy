@@ -111,7 +111,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.tree.finalize();
             
             // show errors
-            if (!this.workflow && options.errors) {
+            if (options.errors) {
                 var error_messages = this.tree.matchResponse(options.errors);
                 for (var input_id in error_messages) {
                     this.highlight(input_id, error_messages[input_id], true);
@@ -145,7 +145,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var requirements_button = new Ui.ButtonIcon({
                 icon    : 'fa-info-circle',
-                title   : 'Requirements',
+                title   : (!self.workflow && 'Requirements') || null,
                 tooltip : 'Display tool requirements',
                 onclick : function() {
                     if (!this.visible) {
@@ -170,7 +170,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
                 icon    : 'fa-cubes',
-                title   : 'Versions',
+                title   : (!self.workflow && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
             if (options.versions && options.versions.length > 1) {
@@ -200,7 +200,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-caret-down',
-                title   : 'Options',
+                title   : (!self.workflow && 'Options') || null,
                 tooltip : 'View available options'
             });
             

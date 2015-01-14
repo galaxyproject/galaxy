@@ -12,6 +12,7 @@ define([], function() {
             
             // link field
             this.field = options.field;
+            this.defaultvalue = options.defaultvalue;
             
             // set element
             this.setElement(this._template(options));
@@ -25,9 +26,17 @@ define([], function() {
             // add field element
             this.$field.prepend(this.field.$el);
             
-            // start with enabled optional fields
+            // decide wether to expand or collapse optional fields
             this.field.skip = false;
-            
+            if (options.optional) {
+                if ((this.field.validate && !this.field.validate()) ||
+                    (this.field.value && !this.field.value()) ||
+                    (this.field.value && Number(this.field.value()) == Number(this.defaultvalue)) ||
+                    (this.field.value && JSON.stringify(this.field.value()) == JSON.stringify(this.defaultvalue))) {
+                    this.field.skip = true;
+                }
+            }
+       
             // refresh view
             this._refresh();
                 
@@ -63,11 +72,12 @@ define([], function() {
             if (!this.field.skip) {
                 this.$field.fadeIn('fast');
                 this.$title_optional.html('Disable');
-                this.app.trigger('refresh');
             } else {
                 this.$field.hide();
                 this.$title_optional.html('Enable');
+                this.field.value(this.defaultvalue);
             }
+            this.app.trigger('refresh');
         },
         
         /** Main Template

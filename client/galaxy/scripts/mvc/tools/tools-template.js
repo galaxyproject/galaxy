@@ -4,7 +4,7 @@ define([], function() {
 // tool form templates
 return {
     help: function(content) {
-        return  '<div class="toolHelp">' +
+        return  '<div class="toolHelp" style="overflow: auto;">' +
                     '<div class="toolHelpBody">' +
                         content +
                     '</div>' +

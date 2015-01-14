@@ -122,13 +122,21 @@ return Backbone.Model.extend({
                                     value = patch[input.type](value);
                                 }
                                 
-                                // handle default value
+                                // handle simple value
                                 if (!field.skip) {
-                                    if (field.validate && !field.validate(value)) {
+                                    if (field.validate && !field.validate()) {
                                         value = null;
                                     }
-                                    if (input.ignore === undefined || (value && input.ignore != value)) {
+                                    if (input.ignore === undefined || (value !== null && input.ignore != value)) {
+                                        // add value to submission
                                         add (job_input_id, input.id, value);
+                             
+                                        // add payload to submission
+                                        if (input.payload) {
+                                            for (var p_id in input.payload) {
+                                                add (p_id, input.id, input.payload[p_id]);
+                                            }
+                                        }
                                     }
                                 }
                             }
