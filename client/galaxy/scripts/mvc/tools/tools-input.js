@@ -28,15 +28,12 @@ define([], function() {
             
             // decide wether to expand or collapse optional fields
             this.field.skip = false;
-            if (options.optional) {
-                if ((this.field.validate && !this.field.validate()) ||
-                    (this.field.value && !this.field.value()) ||
-                    (this.field.value && Number(this.field.value()) == Number(this.defaultvalue)) ||
-                    (this.field.value && JSON.stringify(this.field.value()) == JSON.stringify(this.defaultvalue))) {
-                    this.field.skip = true;
-                }
-            }
-       
+            var v = this.field.value && this.field.value();
+            this.field.skip = Boolean(options.optional &&
+                                        ((this.field.validate && !this.field.validate()) || !v ||
+                                        (v == this.defaultvalue) || (Number(v) == Number(this.defaultvalue)) ||
+                                        (JSON.stringify(v) == JSON.stringify(this.defaultvalue))));
+            
             // refresh view
             this._refresh();
                 
@@ -75,7 +72,7 @@ define([], function() {
             } else {
                 this.$field.hide();
                 this.$title_optional.html('Enable');
-                this.field.value(this.defaultvalue);
+                this.field.value && this.field.value(this.defaultvalue);
             }
             this.app.trigger('refresh');
         },
@@ -92,7 +89,7 @@ define([], function() {
             
             // is optional
             if (options.optional) {
-                tmp +=          'Optional: ' + options.label +
+                tmp +=          options.label +
                                 '<span>&nbsp[<span class="ui-table-form-title-optional"/>]</span>';
             } else {
                 tmp +=          options.label;

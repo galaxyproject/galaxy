@@ -148,7 +148,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var requirements_button = new Ui.ButtonIcon({
                 icon    : 'fa-info-circle',
-                title   : (!self.workflow && 'Requirements') || null,
+                title   : (!this.workflow && 'Requirements') || null,
                 tooltip : 'Display tool requirements',
                 onclick : function() {
                     if (!this.visible) {
@@ -173,7 +173,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
                 icon    : 'fa-cubes',
-                title   : (!self.workflow && 'Versions') || null,
+                title   : (!this.workflow && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
             if (options.versions && options.versions.length > 1) {
@@ -203,7 +203,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-caret-down',
-                title   : (!self.workflow && 'Options') || null,
+                title   : (!this.workflow && 'Options') || null,
                 tooltip : 'View available options'
             });
             

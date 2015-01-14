@@ -19,10 +19,19 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             this.workflow = true;
             this.options = options;
 
-            // traverse through dictionary
+            // declare fields as optional
             Utils.deepeach(options.inputs, function(item) {
-                if (item.type && (['data', 'data_hidden', 'hidden']).indexOf(item.type) == -1) {
-                    item.optional = true;
+                if (item.type) {
+                    item.optional = (['data', 'data_hidden', 'hidden', 'drill_down']).indexOf(item.type) == -1;
+                }
+            });
+       
+            // declare conditional fields as not optional
+            Utils.deepeach(options.inputs, function(item) {
+                if (item.type) {
+                    if (item.type == 'conditional') {
+                        item.test_param.optional = false;
+                    }
                 }
             });
 
@@ -272,7 +281,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 data    : current_state,
                 success : function(data) {
                     // update node in workflow module
-                    self.node.update_field_data(data, true);
+                    self.node.update_field_data(data);
                     
                     // process completed
                     self.deferred.done(process_id);
