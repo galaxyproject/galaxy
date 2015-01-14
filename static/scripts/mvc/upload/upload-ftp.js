@@ -49,6 +49,48 @@ return Backbone.View.extend({
             // update stats
             this.$el.find('#upload-ftp-number').html(ftp_files.length + ' files');
             this.$el.find('#upload-ftp-disk').html(Utils.bytesToString (size, true));
+		// ADD THINGS HERE
+		//
+			$($('.upload-ftp')[0]).find('#selectAll').on('click', function(){
+				var checkboxes=$(this).parent().parent().parent().parent().find('tr.upload-ftp-row>td>div');
+				var len = checkboxes.length;
+				var allChecked;
+ 				$this = $(this);
+				//
+				if($this.hasClass("fa-square-o")){
+					$this.removeClass("fa-square-o");
+					$this.removeClass("fa-minus-square-o");
+					$this.addClass("fa-check-square-o");
+					allChecked=true;
+				}
+				else{
+					$this.removeClass("fa-check-square-o");
+					$this.removeClass("fa-minus-square-o");
+					$this.addClass("fa-square-o");
+					allChecked=false;
+				}
+				//
+				for(i = 0; i < len; i++){
+					if(allChecked)
+					{
+					
+						checkboxes.eq(i).removeClass("fa-square-o"); 
+						checkboxes.eq(i).addClass("fa-check-square-o");
+					}
+					else{
+						checkboxes.eq(i).removeClass("fa-check-square-o"); 
+						checkboxes.eq(i).addClass("fa-square-o");
+					}
+				}
+				console.log(checkboxes, allChecked);
+				return;
+			} );
+
+		
+
+		// END JC ADD
+
+
         } else {
             // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
@@ -56,6 +98,10 @@ return Backbone.View.extend({
         
         // hide spinner
         this.$el.find('#upload-ftp-wait').hide();
+
+
+
+
     },
     
     // add
@@ -110,7 +156,40 @@ return Backbone.View.extend({
                 // add new icon class
                 $icon.addClass(self.options.class_add);
             }
+
+				var selectBox=$icon.parent().parent().parent().parent().find('#selectAll');
+				var checkboxes=$icon.parent().parent().parent().parent().find('tr.upload-ftp-row>td>div');
+				var checkedCheckboxes=$icon.parent().parent().parent().parent().find('tr.upload-ftp-row>td>div.fa-check-square-o');
+				var lenAll = checkboxes.length;
+				var lenChecked = checkedCheckboxes.length;
+//				var checked = 0;
+			//	console.log("BeforeLoop " + checked);
+			//	for (i = 0; i < len; i++) {
+			//		console.log("In loop "+checked, checkboxes.eq(i));
+			//		if (checkboxes.eq(i).hasClass("fa-check-square-o")) {
+			//		  checked++;
+			//			console.log("In if "+checked);
+			//		}
+			//	}
+				if(lenChecked > 0 && lenChecked !== lenAll){
+					selectBox.removeClass("fa-square-o");
+					selectBox.removeClass("fa-check-square-o");
+					selectBox.addClass("fa-minus-square-o");
+				}
+				else if(lenChecked === lenAll){
+					selectBox.removeClass("fa-square-o");
+					selectBox.addClass("fa-check-square-o");
+					selectBox.removeClass("fa-minus-square-o");
+				}
+				else if(lenChecked === 0){
+					selectBox.addClass("fa-square-o");
+					selectBox.removeClass("fa-check-square-o");
+					selectBox.removeClass("fa-minus-square-o");
+				}
+				console.log(checkboxes,lenChecked);
+
         });
+
     },
     
     // get model index
@@ -130,7 +209,7 @@ return Backbone.View.extend({
     // template row
     _templateRow: function(options) {
         return  '<tr class="upload-ftp-row" style="cursor: pointer;">' +
-                    '<td><div class="icon"/></td>' +
+                    '<td><div class="icon " /></td>' +
                     '<td style="width: 200px"><p style="width: inherit; word-wrap: break-word;">' + options.path + '</p></td>' +
                     '<td style="white-space: nowrap;">' + Utils.bytesToString(options.size) + '</td>' +
                     '<td style="white-space: nowrap;">' + options.ctime + '</td>' +
@@ -149,7 +228,9 @@ return Backbone.View.extend({
                 '<table class="grid" style="float: left;">' +
                     '<thead>' +
                         '<tr>' +
-                            '<th></th>' +
+//jc added
+                            '<th><div id="selectAll" class="upload-icon-button fa fa-square-o" ></th>' +
+//end jc added
                             '<th>Name</th>' +
                             '<th>Size</th>' +
                             '<th>Created</th>' +
@@ -171,7 +252,11 @@ return Backbone.View.extend({
         return  '<div class="upload-ftp">' +
                     '<div id="upload-ftp-wait" class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
                     '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.app.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +
-                    '<div id="upload-ftp-content"></div>' +
+                    '<div id="upload-ftp-content">'
+//jc added
+
+//end jc added	
+			'</div>' +
                 '<div>';
     }
     
