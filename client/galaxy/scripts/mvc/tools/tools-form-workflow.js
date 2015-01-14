@@ -9,6 +9,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
         initialize: function(options) {
             // link with node representation in workflow module
             this.node = workflow.active_node;
+
             if (!this.node) {
                 console.debug('FAILED - tools-form-workflow:initialize() - Node not found in workflow.');
                 return;
@@ -17,6 +18,22 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             // initialize parameters
             this.workflow = true;
             this.options = options;
+
+            // declare fields as optional
+            Utils.deepeach(options.inputs, function(item) {
+                if (item.type) {
+                    item.optional = (['data', 'data_hidden', 'hidden', 'drill_down']).indexOf(item.type) == -1;
+                }
+            });
+       
+            // declare conditional fields as not optional
+            Utils.deepeach(options.inputs, function(item) {
+                if (item.type) {
+                    if (item.type == 'conditional') {
+                        item.test_param.optional = false;
+                    }
+                }
+            });
 
             // load extension
             var self = this;
@@ -38,6 +55,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             inputs[Utils.uuid()] = {
                 label   : 'Edit Step Attributes',
                 type    : 'section',
+                expand  : this.node.annotation,
                 inputs  : [{
                     label   : 'Annotation / Notes',
                     name    : 'annotation',
@@ -160,7 +178,10 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     type        : 'boolean',
                     value       : 'false',
                     ignore      : 'false',
-                    help        : 'This action will send an email notifying you when the job is done.'
+                    help        : 'This action will send an email notifying you when the job is done.',
+                    payload     : {
+                        'host'  : window.location.host
+                    }
                 },{
                     action      : 'DeleteIntermediatesAction',
                     label       : 'Delete non-outputs',
@@ -173,31 +194,51 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             
             // visit input nodes and enrich by name/value pairs from server data
             var self = this;
-            function visit (inputs) {
-                for (var i in inputs) {
-                    var input = inputs[i];
+            function visit (head, head_list) {
+                head_list = head_list || [];
+                head_list.push(head);
+                for (var i in head.inputs) {
+                    var input = head.inputs[i];
                     if (input.action) {
+                        // construct identifier as expected by backend
                         input.name = 'pja__' + output_id + '__' + input.action;
                         if (input.argument) {
                             input.name += '__' + input.argument;
                         }
+                        
+                        // modify names of payload arguments
+                        if (input.payload) {
+                            for (var p_id in input.payload) {
+                                var p = input.payload[p_id];
+                                input.payload[input.name + '__' + p_id] = p;
+                                delete p;
+                            }
+                        }
+                        
+                        // access/verify existence of value
                         var d = self.post_job_actions[input.action + output_id];
                         if (d) {
+                            // mark as expanded
+                            for (var j in head_list) {
+                                head_list[j].expand = true;
+                            }
+
+                            // update input field value
                             if (input.argument) {
                                 input.value = d.action_arguments && d.action_arguments[input.argument] || input.value;
                             } else {
                                 input.value = 'true';
                             }
                         }
-                    } else {
-                        if (input.inputs) {
-                            visit(input.inputs);
-                        }
+                    }
+                    // continue with sub section
+                    if (input.inputs) {
+                        visit(input, head_list.slice(0));
                     }
                 }
             }
-            visit(input_config.inputs);
-            
+            visit(input_config);
+                        
             // return final configuration
             return input_config;
         },
@@ -205,6 +246,15 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
         /** Builds a new model through api call and recreates the entire form
         */
         _buildModel: function() {
+            Galaxy.modal.show({
+                title   : 'Coming soon...',
+                body    : 'This feature has not been implemented yet.',
+                buttons : {
+                    'Close' : function() {
+                        Galaxy.modal.hide();
+                    }
+                }
+            });
         },
         
         /** Request a new model for an already created tool form and updates the form inputs
@@ -231,7 +281,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 data    : current_state,
                 success : function(data) {
                     // update node in workflow module
-                    self.node.update_field_data(data, true);
+                    self.node.update_field_data(data);
                     
                     // process completed
                     self.deferred.done(process_id);

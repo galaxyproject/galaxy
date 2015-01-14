@@ -12,6 +12,7 @@ define([], function() {
             
             // link field
             this.field = options.field;
+            this.defaultvalue = options.defaultvalue;
             
             // set element
             this.setElement(this._template(options));
@@ -25,8 +26,13 @@ define([], function() {
             // add field element
             this.$field.prepend(this.field.$el);
             
-            // start with enabled optional fields
+            // decide wether to expand or collapse optional fields
             this.field.skip = false;
+            var v = this.field.value && this.field.value();
+            this.field.skip = Boolean(options.optional &&
+                                        ((this.field.validate && !this.field.validate()) || !v ||
+                                        (v == this.defaultvalue) || (Number(v) == Number(this.defaultvalue)) ||
+                                        (JSON.stringify(v) == JSON.stringify(this.defaultvalue))));
             
             // refresh view
             this._refresh();
@@ -63,11 +69,12 @@ define([], function() {
             if (!this.field.skip) {
                 this.$field.fadeIn('fast');
                 this.$title_optional.html('Disable');
-                this.app.trigger('refresh');
             } else {
                 this.$field.hide();
                 this.$title_optional.html('Enable');
+                this.field.value && this.field.value(this.defaultvalue);
             }
+            this.app.trigger('refresh');
         },
         
         /** Main Template
@@ -82,7 +89,7 @@ define([], function() {
             
             // is optional
             if (options.optional) {
-                tmp +=          'Optional: ' + options.label +
+                tmp +=          options.label +
                                 '<span>&nbsp[<span class="ui-table-form-title-optional"/>]</span>';
             } else {
                 tmp +=          options.label;
