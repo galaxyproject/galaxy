@@ -6,6 +6,18 @@
 // dependencies
 define(["libs/underscore"], function(_) {
 
+/** Traverse through json
+*/
+function deepeach(dict, callback) {
+    for (var i in dict) {
+        var d = dict[i];
+        if (d && typeof(d) == "object") {
+            callback(d);
+            deepeach(d, callback);
+        }
+    }
+}
+
 /**
  * Sanitize/escape a string
  * @param{String}   content - Content to be sanitized
@@ -248,7 +260,8 @@ return {
     request: request,
     sanitize: sanitize,
     textify: textify,
-    validate: validate
+    validate: validate,
+    deepeach: deepeach
 };
 
 });

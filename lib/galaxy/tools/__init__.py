@@ -12,8 +12,10 @@ import shutil
 import threading
 import types
 import urllib
+import copy
 
-from galaxy import eggs
+from galaxy import eggs, util
+
 eggs.require( "MarkupSafe" )  # MarkupSafe must load before mako
 eggs.require( "Mako" )
 eggs.require( "elementtree" )
@@ -2150,9 +2152,9 @@ class Tool( object, Dictifiable ):
                 return None
 
         # ensures that input dictionary is jsonifiable
-        def sanitize(dict):
+        def sanitize(dict, key='value'):
             # get current value
-            value = dict['value'] if 'value' in dict else None
+            value = dict[key] if key in dict else None
 
             # jsonify by type
             if dict['type'] in ['data']:
@@ -2167,15 +2169,8 @@ class Tool( object, Dictifiable ):
                 value = jsonify(value)
 
             # update and return
-            dict['value'] = value
-            return dict
+            dict[key] = value
         
-        # initialize state using default parameters
-        def initialize_state(trans, inputs, state, context=None):
-            context = ExpressionContext(state, context)
-            for input in inputs.itervalues():
-                state[input.name] = input.get_initial_value(trans, context)
-    
         # check the current state of a value and update it if necessary
         def check_state(trans, input, default_value, context):
             value = default_value
@@ -2195,6 +2190,7 @@ class Tool( object, Dictifiable ):
         def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):
             context = ExpressionContext(state, context)
             for input in inputs.itervalues():
+                state[input.name] = input.get_initial_value(trans, context)
                 key = prefix + input.name
                 if input.type == 'repeat':
                     group_state = state[input.name]
@@ -2207,7 +2203,6 @@ class Tool( object, Dictifiable ):
                         if rep_index < input.max:
                             new_state = {}
                             new_state['__index__'] = rep_index
-                            initialize_state(trans, input.inputs, new_state, context)
                             group_state.append(new_state)
                             populate_state(trans, input.inputs, new_state, errors, incoming, prefix=rep_name + "|", context=context)
                         rep_index += 1
@@ -2223,7 +2218,6 @@ class Tool( object, Dictifiable ):
                         try:
                             current_case = input.get_current_case(value, trans)
                             group_state = state[input.name] = {}
-                            initialize_state(trans, input.cases[current_case].inputs, group_state, context)
                             populate_state( trans, input.cases[current_case].inputs, group_state, errors, incoming, prefix=group_prefix, context=context)
                             group_state['__current_case__'] = current_case
                         except Exception, e:
@@ -2272,13 +2266,17 @@ class Tool( object, Dictifiable ):
                     # identify name
                     input_name = tool_dict.get('name')
                     if input_name:
+                        # backup default value
+                        tool_dict['defaultvalue'] = input.get_initial_value(trans, other_values)
+                        
                         # update input value from tool state
                         if input_name in state_inputs:
                             tool_dict['value'] = state_inputs[input_name]
-
-                        # sanitize if value exists
-                        tool_dict = sanitize(tool_dict)
-            
+                        
+                        # sanitize values
+                        sanitize(tool_dict, 'value')
+                        sanitize(tool_dict, 'defaultvalue')
+                        
                 # backup final input dictionary
                 group_inputs[input_index] = tool_dict
 
@@ -2303,7 +2301,6 @@ class Tool( object, Dictifiable ):
         # initialize and populate tool state
         state_inputs = {}
         state_errors = {}
-        initialize_state(trans, self.inputs, state_inputs)
         populate_state(trans, self.inputs, state_inputs, state_errors, params.__dict__)
 
         # create basic tool model

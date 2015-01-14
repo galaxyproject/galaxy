@@ -232,9 +232,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             
             // create input field wrapper
             var input_element = new InputElement(this.app, {
-                label       : input_def.title,
-                help        : input_def.help,
-                field       : repeat
+                label   : input_def.title,
+                help    : input_def.help,
+                field   : repeat
             });
             
             // displays as grouped subsection
@@ -292,6 +292,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                 }
             });
             
+            // show sub section if requested
+            if (input_def.expand) {
+                portlet.$header.trigger('click');
+            }
+            
             // create table row
             this.table.add(portlet.$el);
 
@@ -313,10 +318,11 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             
             // create input field wrapper
             var input_element = new InputElement(this.app, {
-                label       : input_def.label,
-                optional    : input_def.optional,
-                help        : input_def.help,
-                field       : field
+                label           : input_def.label,
+                defaultvalue    : input_def.defaultvalue,
+                optional        : input_def.optional,
+                help            : input_def.help,
+                field           : field
             });
             
             // add to element list
