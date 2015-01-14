@@ -37,7 +37,7 @@ class AnnotatableSerializer( object ):
 class AnnotatableDeserializer( object ):
 
     def add_deserializers( self ):
-        self.deserializers[ 'tags' ] = self.deserialize_annotation
+        self.deserializers[ 'annotation' ] = self.deserialize_annotation
 
     def deserialize_annotation( self, trans, item, key, val ):
         """

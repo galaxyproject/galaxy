@@ -1,8 +1,9 @@
-from galaxy.managers import base as manager_base
+#from galaxy.managers import base as manager_base
 
 
-class LDDAManager( manager_base.ModelManager ):
-    """ A fairly sparse manager for LDDAs.
+class LDDAManager( object ):
+    """
+    A fairly sparse manager for LDDAs.
     """
 
     def __init__( self, app ):

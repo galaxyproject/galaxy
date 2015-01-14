@@ -8,12 +8,11 @@ created (or copied) by users over the course of an analysis.
 from galaxy import exceptions
 from galaxy import model
 
-import base
-import sharable
-import hdas
-import collections_util
-
 import galaxy.web
+
+from galaxy.managers import base
+from galaxy.managers import sharable
+from galaxy.managers import hdas
 
 import logging
 log = logging.getLogger( __name__ )
@@ -35,6 +34,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
 
     def __init__( self, app, *args, **kwargs ):
         super( HistoryManager, self ).__init__( app, *args, **kwargs )
+
         self.hda_manager = hdas.HDAManager( app )
 
     def copy( self, trans, history, user, **kwargs ):
@@ -51,7 +51,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         if not user:
             return None if trans.history.deleted else trans.history
         desc_update_time = self.model_class.table.c.update_time
-        return self.by_user( trans, user, order_by=desc_update_time, limit=1, **kwargs )
+        return self._query_by_user( trans, user, order_by=desc_update_time, limit=1, **kwargs ).first()
 
     # ......................................................................... sharable
     # overriding to handle anonymous users' current histories in both cases
@@ -124,7 +124,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         #TODO: instantiate here? really?
         history_serializer = HistorySerializer( self.app )
         hda_serializer = hdas.HDASerializer( self.app )
-        collection_dictifier = collections_util.dictify_dataset_collection_instance
+        collection_dictifier = managers.collections_util.dictify_dataset_collection_instance
 
         history_dictionary = {}
         contents_dictionaries = []
@@ -242,14 +242,17 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
 
 
 ## =============================================================================
-class HistorySerializer( sharable.SharableModelSerializer ):
+class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSerializer ):
     """
     Interface/service object for serializing histories into dictionaries.
     """
+    SINGLE_CHAR_ABBR = 'h'
 
     def __init__( self, app ):
         super( HistorySerializer, self ).__init__( app )
         self.history_manager = HistoryManager( app )
+
+        from galaxy.managers import hdas
         self.hda_manager = hdas.HDAManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
 
@@ -257,12 +260,14 @@ class HistorySerializer( sharable.SharableModelSerializer ):
             'id',
             'model_class',
             'name',
-            'deleted', 'purged',
-            'published',
+            'deleted',
+            #'purged',
             #'count'
+            'url',
+            #TODO: why these?
+            'published',
             'annotation',
             'tags',
-            'url'
         ]
         # in the Historys' case, each of these views includes the keys from the previous
         detailed_view = summary_view + [
@@ -272,9 +277,8 @@ class HistorySerializer( sharable.SharableModelSerializer ):
             'size', 'nice_size',
             'user_id',
             'create_time', 'update_time',
-            'importable', 'slug',
+            'importable', 'slug', 'username_and_slug',
             'genome_build',
-            #username_and_slug = ( '/' ).join(( 'u', history.user.username, 'h', history_dict[ 'slug' ] ))
             #TODO: remove the next three - instead getting the same info from the 'hdas' list
             'state',
             'state_details',
@@ -293,13 +297,14 @@ class HistorySerializer( sharable.SharableModelSerializer ):
     #assumes: outgoing to json.dumps and sanitized
     def add_serializers( self ):
         super( HistorySerializer, self ).add_serializers()
+        base.PurgableModelSerializer.add_serializers( self )
+
         self.serializers.update({
             'model_class'   : lambda *a: 'History',
             'id'            : self.serialize_id,
             'count'         : lambda trans, item, key: len( item.datasets ),
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
-            'user_id'       : self.serialize_id,
             'size'          : lambda t, i, k: int( i.get_disk_size() ),
             'nice_size'     : lambda t, i, k: i.get_disk_size( nice_size=True ),
 
@@ -336,26 +341,22 @@ class HistorySerializer( sharable.SharableModelSerializer ):
 
 
 # =============================================================================
-class HistoryDeserializer( sharable.SharableModelDeserializer ):
+class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableModelDeserializer ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
+    model_manager_class = HistoryManager
 
     def __init__( self, app ):
         super( HistoryDeserializer, self ).__init__( app )
-        self.history_manager = HistoryManager( app )
+        self.history_manager = self.manager
 
     #assumes: incoming from json.loads and sanitized
     def add_deserializers( self ):
         super( HistoryDeserializer, self ).add_deserializers()
+        base.PurgableModelDeserializer.add_deserializers( self )
+
         self.deserializers.update({
             'name'          : self.deserialize_basestring,
             'genome_build'  : self.deserialize_genome_build,
-
-            # mixin: deletable
-            'deleted'       : self.deserialize_bool,
-            # sharable
-            'published'     : self.deserialize_bool,
-            'importable'    : self.deserialize_bool,
         })
-        self.deserializable_keys = self.deserializers.keys()

@@ -8,9 +8,10 @@ import sqlalchemy
 
 from galaxy import model
 from galaxy import exceptions
-import api_keys
 
-import base
+from galaxy.managers import base
+from galaxy.managers import api_keys
+
 
 import logging
 log = logging.getLogger( __name__ )

@@ -11,17 +11,15 @@ import gettext
 from galaxy import model
 from galaxy import exceptions
 from galaxy import datatypes
-
-import base
-import taggable
-import annotatable
-import histories
-import datasets
-
 import galaxy.web
 import galaxy.datatypes.metadata
 from galaxy import objectstore
 
+from galaxy.managers import datasets
+from galaxy.managers import base
+from galaxy.managers import taggable
+from galaxy.managers import annotatable
+from galaxy.managers import users
 
 # =============================================================================
 class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface,
@@ -44,6 +42,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         Set up and initialize other managers needed by hdas.
         """
         super( HDAManager, self ).__init__( app )
+        self.user_manager = users.UserManager( app )
 
     # ......................................................................... security and permissions
     def is_accessible( self, trans, hda, user ):
@@ -58,8 +57,13 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         """
         Use history to see if current user owns HDA.
         """
-        #TODO: this may be slow due to HistoryManager instantiation and possible 2nd transaction to get the hda.history
-        return histories.HistoryManager( self.app ).is_owner( trans, hda.history, user )
+        history = hda.history
+        #TODO: some dup here with historyManager.is_owner but prevents circ import
+        if self.user_manager.is_admin( trans, user ):
+            return True
+        if self.user_manager.is_anonymous( user ) and history == trans.get_history():
+            return True
+        return history.user == user
 
     # ......................................................................... create and copy
     def create( self, trans, history=None, dataset=None, flush=True, **kwargs ):
@@ -302,7 +306,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
 
 
 # =============================================================================
-class HDASerializer( base.ModelSerializer,
+class HDASerializer( datasets.DatasetAssociationSerializer,
         taggable.TaggableSerializer, annotatable.AnnotatableSerializer ):
     #TODO: inherit from datasets.DatasetAssociationSerializer
     #TODO: move what makes sense into DatasetSerializer
@@ -314,8 +318,10 @@ class HDASerializer( base.ModelSerializer,
         # most of these views build/add to the previous view
         summary_view = [
             'id', 'name',
-            'history_id', 'hid', 'history_content_type',
-            #'dataset_id',
+            'history_id', 'hid',
+            # why include if model_class is there?
+            'history_content_type',
+            'dataset_id',
             'state', 'extension',
             'deleted', 'purged', 'visible', 'resubmitted',
             'type', 'url'
@@ -324,15 +330,13 @@ class HDASerializer( base.ModelSerializer,
             'id', 'name', 'history_id', 'hid', 'history_content_type',
             'state', 'deleted', 'visible'
         ]
-        detailed_view = [
-            'id', 'name', 'model_class',
+        detailed_view = summary_view + [
+            'model_class',
             'history_id', 'hid',
             # why include if model_class is there?
-            'hda_ldda', 'history_content_type',
-            'state',
+            'hda_ldda',
             #TODO: accessible needs to go away
             'accessible',
-            'deleted', 'purged', 'visible', 'resubmitted',
 
             # remapped
             'genome_build', 'misc_info', 'misc_blurb',
@@ -355,15 +359,11 @@ class HDASerializer( base.ModelSerializer,
             #'url',
             'download_url',
 
-            #mixin: annotatable
-            'annotation',
-            #mixin: taggable
-            'tags',
+            'annotation', 'tags',
 
             'api_type'
         ]
         extended_view = detailed_view + [
-            #NOTE: sending raw 'peek' (not get_display_peek)
             'tool_version', 'parent_id', 'designation',
         ]
 
@@ -452,14 +452,15 @@ class HDASerializer( base.ModelSerializer,
         Override to add metadata as flattened keys on the serialized HDA.
         """
         # if 'metadata' isn't removed from keys here serialize will retrieve the un-serializable MetadataCollection
-        #TODO: remove these when metadata is sub-object
+#TODO: remove these when metadata is sub-object
         KEYS_HANDLED_SEPARATELY = ( 'metadata', )
         left_to_handle = self.pluck_from_list( keys, KEYS_HANDLED_SEPARATELY )
         serialized = super( HDASerializer, self ).serialize( trans, hda, keys )
 
         if 'metadata' in left_to_handle:
             # we currently add metadata directly to the dict instead of as a sub-object
-            serialized.update( self.prefixed_metadata( trans, hda ) )
+            metadata = self.prefixed_metadata( trans, hda )
+            serialized.update( metadata )
         return serialized
 
     #TODO: this is more util/gen. use
@@ -566,15 +567,16 @@ class HDASerializer( base.ModelSerializer,
 
 
 # =============================================================================
-class HDADeserializer( base.ModelDeserializer,
+class HDADeserializer( datasets.DatasetAssociationDeserializer,
         taggable.TaggableDeserializer, annotatable.AnnotatableDeserializer ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
+    model_manager_class = HDAManager
 
     def __init__( self, app ):
         super( HDADeserializer, self ).__init__( app )
-        self.hda_manager = HDAManager( app )
+        self.hda_manager = self.manager
 
     #assumes: incoming from json.loads and sanitized
     def add_deserializers( self ):

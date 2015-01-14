@@ -132,6 +132,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :rtype:     dict
         :returns:   dictionary containing detailed HDA information
         """
+        history = self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
+
         contents_type = kwd.get('type', 'dataset')
         if contents_type == 'dataset':
             return self.__show_dataset( trans, id, **kwd )
@@ -246,6 +248,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         elif source == 'hda':
             unencoded_hda_id = self.decode_id( content )
             original = self.hda_manager.get_accessible( trans, unencoded_hda_id, trans.user )
+            # check for access on history that contains the original hda as well
+            self.history_manager.error_unless_accessible( trans, original.history, trans.user )
             data_copy = original.copy( copy_children=True )
             hda = history.add_dataset( data_copy )
 
@@ -317,7 +321,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if trans.user == None:
             hda = self.hda_manager.by_id( trans, self.decode_id( id ) )
             if hda.history != trans.history:
-                raise exceptions.AuthenticationRequired( 'You must be logged in to update this dataset' )
+                raise exceptions.AuthenticationRequired( 'API authentication required for this request' )
             hda = self.hda_manager.error_if_uploading( trans, hda )
 
             anon_allowed_payload = {}
@@ -329,8 +333,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         # logged in user: use full payload, check state if deleting, and make sure the history is theirs
         else:
-            hda = self.hda_manager.get_accessible( trans, self.decode_id( id ), trans.user )
-            self.history_manager.error_unless_owner( trans, hda.history, trans.user )
+            hda = self.hda_manager.get_owned( trans, self.decode_id( id ), trans.user )
 
             # only check_state if not deleting, otherwise cannot delete uploading files
             check_state = not payload.get( 'deleted', False )
@@ -396,8 +399,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             # payload takes priority
             purge = util.string_as_bool( kwd['payload'].get( 'purge', purge ) )
 
-        hda = self.hda_manager.by_id( trans, self.decode_id( id ), trans.user )
-        self.history_manager.error_unless_ownership( trans, hda.history, trans.user )
+        hda = self.hda_manager.get_owned( trans, self.decode_id( id ), trans.user )
         self.hda_manager.error_if_uploading( trans, hda )
 
         if purge:

@@ -43,6 +43,8 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.log( "should be able to create a new history" )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
         self.assertIsInstance( history1, model.History )
+        self.assertEqual( history1.name, 'history1' )
+        self.assertEqual( history1.user, user2 )
         self.assertEqual( history1, self.trans.sa_session.query( model.History ).get( history1.id ) )
         self.assertEqual( history1,
             self.trans.sa_session.query( model.History ).filter( model.History.name == 'history1' ).one() )

@@ -8,11 +8,10 @@ from within Galaxy.
 
 from galaxy import exceptions
 from galaxy import model
-
-import base
-import sharable
-
 import galaxy.web
+
+from galaxy.managers import base
+from galaxy.managers import sharable
 
 import logging
 log = logging.getLogger( __name__ )
@@ -77,10 +76,11 @@ class PageDeserializer( sharable.SharableModelDeserializer ):
     Interface/service object for validating and deserializing dictionaries
     into pages.
     """
+    model_manager_class = PageManager
 
     def __init__( self, app ):
         super( PageDeserializer, self ).__init__( app )
-        self.page_manager = PageManager( app )
+        self.page_manager = self.manager
 
     def add_deserializers( self ):
         super( PageDeserializer, self ).add_deserializers()

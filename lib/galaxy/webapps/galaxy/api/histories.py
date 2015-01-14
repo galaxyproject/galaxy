@@ -7,6 +7,9 @@ API operations on a history.
 import pkg_resources
 pkg_resources.require( "Paste" )
 
+pkg_resources.require( "SQLAlchemy >= 0.4" )
+import sqlalchemy
+
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -59,7 +62,9 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         if string_as_bool( deleted ):
             deleted_filter = ( self.app.model.History.deleted == True )
 
-        histories = self.history_manager.by_user( trans, user=trans.user, filters=deleted_filter )
+        #TODO: create time? is this right?
+        order_by = sqlalchemy.desc( self.app.model.History.create_time )
+        histories = self.history_manager.by_user( trans, user=trans.user, filters=deleted_filter, order_by=order_by )
         for history in histories:
             history_dict = self.history_serializer.serialize_to_view( trans, history, **serialization_params )
             rval.append( history_dict )
@@ -152,7 +157,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         # otherwise, create a new empty history
         else:
-            new_history = trans.app.model.History( user=trans.user, name=hist_name )
+            new_history = self.history_manager.create( trans, user=trans.user, name=hist_name )
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
@@ -193,7 +198,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         if purge:
             self.history_manager.purge( trans, history )
 
-        return self.history_serializer.serialize_to_view( trans, new_history,
+        return self.history_serializer.serialize_to_view( trans, history,
             **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
@@ -238,7 +243,6 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         history = self.history_manager.get_owned( trans, self.decode_id( id ), trans.user )
 
-        #TODO: flushing in deserialize is an iffy pattern...
         self.history_deserializer.deserialize( trans, history, payload )
         return self.history_serializer.serialize_to_view( trans, history,
             **self._parse_serialization_params( kwd, 'detailed' ) )

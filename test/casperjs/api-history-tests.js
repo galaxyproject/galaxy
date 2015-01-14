@@ -108,9 +108,9 @@ spaceghost.openHomePage().then( function(){
     // ------------------------------------------------------------------------------------------- UNDELETE
     this.test.comment( 'calling undelete should undelete the given history and re-include it in index' );
     var undeletedHistory = this.api.histories.undelete( createdHistory.id );
-    //this.debug( 'returned from undelete:\n' + this.jsonStr( undeletedHistory ) );
-    this.test.assert( undeletedHistory === 'OK',
-        "Undeletion returned 'OK' - even though that's not a great, informative response: " + undeletedHistory );
+    this.debug( 'returned from undelete:\n' + this.jsonStr( undeletedHistory ) );
+    this.test.assert( ( undeletedHistory.id === createdHistory.id ) && ( !undeletedHistory.deleted ),
+        "Undeletion new, updated JSON for the history" );
 
     newFirstHistory = this.api.histories.index()[0];
     //this.debug( 'newFirstHistory:\n' + this.jsonStr( newFirstHistory ) );
@@ -130,13 +130,8 @@ spaceghost.openHomePage().then( function(){
     historyShow = this.api.histories.show( newFirstHistory.id );
     this.test.assert( historyShow.name === 'New name', "Name successfully set via update: " + historyShow.name );
 
-    this.test.comment( 'update should sanitize any new name' );
-    returned = this.api.histories.update( newFirstHistory.id, {
-        name : 'New name<script type="text/javascript" src="bler">alert("blah");</script>'
-    });
-    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-    historyShow = this.api.histories.show( newFirstHistory.id );
-    this.test.assert( historyShow.name === 'New name', "Update sanitized name: " + historyShow.name );
+    // no sanitizing input
+    //this.test.comment( 'update should sanitize any new name' );
 
     //NOTE!: this fails on sqlite3 (with default setup)
     this.test.comment( 'update should allow unicode in names' );
@@ -197,25 +192,18 @@ spaceghost.openHomePage().then( function(){
     this.test.assert( historyShow.genome_build === 'hg18',
         "genome_build successfully set via update: " + historyShow.genome_build );
 
-    this.test.comment( 'update should sanitize any genome_build' );
-    returned = this.api.histories.update( newFirstHistory.id, {
-        genome_build : 'hg18<script type="text/javascript" src="bler">alert("blah");</script>'
-    });
-    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-    historyShow = this.api.histories.show( newFirstHistory.id );
-    this.test.assert( historyShow.genome_build === 'hg18',
-        "Update sanitized genome_build: " + historyShow.genome_build );
+    // no sanitizing input
+    //this.test.comment( 'update should sanitize any genome_build' );
 
-    // removing for now until I can determine the relationship between unicode and genome_builds
-    this.test.comment( 'update should allow unicode in genome builds' );
-    var unicodeBuild = '桜12';
-    returned = this.api.histories.update( newFirstHistory.id, {
-        genome_build : unicodeBuild
-    });
-    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-    historyShow = this.api.histories.show( newFirstHistory.id );
-    this.test.assert( historyShow.genome_build === unicodeBuild,
-        "Update accepted unicode genome_build: " + historyShow.genome_build );
+    // removed since we have no pre-installed unicode builds
+    //this.test.comment( 'update should allow unicode in genome builds' );
+
+    spaceghost.test.comment( 'An unknown reference/genome_build should return a 400' );
+    this.api.assertRaises( function(){
+        returned = this.api.histories.update( newFirstHistory.id, {
+            genome_build : 'wookiee12'
+        });
+    }, 400, 'invalid reference', 'Bad Request with invalid id: show' );
 
 
     // ........................................................................................... annotation
@@ -224,19 +212,13 @@ spaceghost.openHomePage().then( function(){
     returned = this.api.histories.update( newFirstHistory.id, {
         annotation : newAnnotation
     });
-    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+    this.debug( 'returned:\n' + this.jsonStr( returned ) );
     historyShow = this.api.histories.show( newFirstHistory.id );
     this.test.assert( historyShow.annotation === newAnnotation,
         "Annotation successfully set via update: " + historyShow.annotation );
 
-    this.test.comment( 'update should sanitize any new annotation' );
-    returned = this.api.histories.update( newFirstHistory.id, {
-        annotation : 'New annotation<script type="text/javascript" src="bler">alert("blah");</script>'
-    });
-    //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-    historyShow = this.api.histories.show( newFirstHistory.id );
-    this.test.assert( historyShow.annotation === 'New annotation',
-        "Update sanitized annotation: " + historyShow.annotation );
+    // no sanitizing input
+    //this.test.comment( 'update should sanitize any new annotation' );
 
     this.test.comment( 'update should allow unicode in annotations' );
     var unicodeAnnotation = 'お願いは、それが落下させない';
@@ -261,13 +243,6 @@ spaceghost.openHomePage().then( function(){
 
     // ------------------------------------------------------------------------------------------- ERRORS
     // ........................................................................................... idiot proofing
-    this.test.comment( 'updating to the current value should return no value (no change)' );
-    historyShow = this.api.histories.show( newFirstHistory.id );
-    returned = this.api.histories.update( newFirstHistory.id, {
-        name : historyShow.name
-    });
-    this.test.assert( this.countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
-
     this.test.comment( 'updating using a nonsense key should fail silently' );
     returned = this.api.histories.update( newFirstHistory.id, {
         konamiCode : 'uuddlrlrba'
@@ -298,25 +273,25 @@ spaceghost.openHomePage().then( function(){
         updatedAttrs[ key ] = false;
         spaceghost.api.assertRaises( function(){
             returned = spaceghost.api.histories.update( newFirstHistory.id, updatedAttrs );
-        }, 400, key + ' must be a string or unicode', 'type validation error' );
+        // note: annotation can be basestring or null (a tuple) so just use the partial error string
+        }, 400, 'must be a type', 'type validation error' );
     });
     [ 'deleted', 'importable', 'published' ].forEach( function( key ){
         var updatedAttrs = {};
         updatedAttrs[ key ] = 'straaang';
         spaceghost.api.assertRaises( function(){
             returned = spaceghost.api.histories.update( newFirstHistory.id, updatedAttrs );
-        }, 400, key + ' must be a boolean', 'type validation error' );
+        }, 400, "must be a type: <type 'bool'>", 'type validation error' );
     });
-    [ 'you\'re it', [ true ] ].forEach( function( badVal ){
-        spaceghost.api.assertRaises( function(){
-            returned = spaceghost.api.histories.update( newFirstHistory.id, { tags: badVal });
-        }, 400, 'tags must be a list', 'type validation error' );
-    });
+    spaceghost.api.assertRaises( function(){
+        returned = spaceghost.api.histories.update( newFirstHistory.id, { tags: 'you\'re it' });
+    }, 400, "must be a type: <type 'list'>", 'type validation error' );
+    spaceghost.api.assertRaises( function(){
+        returned = spaceghost.api.histories.update( newFirstHistory.id, { tags: [ true ] });
+    }, 400, "must be a type: <type 'basestring'>", 'type validation error' );
 
-    this.test.comment( 'calling show with /deleted should raise a bad request' );
-    this.api.assertRaises( function(){
-        this.api.histories.show( newFirstHistory.id, true );
-    }, 400, 'is not deleted', 'Bad Request returned for non-deleted' );
+    // no longer throws if showing deleted...
+    //this.test.comment( 'calling show with /deleted should raise a bad request' );
 /*
 */
     //this.debug( this.jsonStr( historyShow ) );

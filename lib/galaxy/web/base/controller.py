@@ -15,6 +15,7 @@ from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
 from galaxy.exceptions import MessageException
+from galaxy import exceptions
 
 from galaxy import web
 from galaxy import model

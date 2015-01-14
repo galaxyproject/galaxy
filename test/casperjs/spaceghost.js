@@ -911,6 +911,7 @@ SpaceGhost.prototype.hasKeys = function hasKeys( object, keysArray ){
     if( !utils.isObject( object ) ){ return false; }
     for( var i=0; i<keysArray.length; i += 1 ){
         if( !object.hasOwnProperty( keysArray[i] ) ){
+            this.debug( 'missing key: ' + keysArray[i] );
             return false;
         }
     }

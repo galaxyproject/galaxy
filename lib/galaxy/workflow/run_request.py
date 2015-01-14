@@ -196,7 +196,7 @@ def build_workflow_run_config( trans, workflow, payload ):
         # Passing an existing history to use.
         encoded_history_id = history_param[ 8: ]
         history_id = __decode_id( trans, encoded_history_id, model_type="history" )
-        history = history_manager.owned_by_id( trans, history_id, trans.user )
+        history = history_manager.get_owned( trans, history_id, trans.user )
     else:
         # Send workflow outputs to new history.
         history = app.model.History(name=history_param, user=trans.user)

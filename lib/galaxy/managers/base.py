@@ -529,14 +529,12 @@ class ModelSerializer( object ):
         
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
         self.serializers = {}
-        # add subclass serializers defined there
-        self.add_serializers()
         # a list of valid serializable keys that can use the default (string) serializer
         #   this allows us to: 'mention' the key without adding the default serializer
         #NOTE: if a key is requested that is in neither serializable_keys or serializers, it is not returned
-        #TODO: rename to 'keys_using_default_serializer'
-        #TODO: or (alt) allow key in serializers with None as value (indicating use default_serializer)
         self.serializable_keys = []
+        # add subclass serializers defined there
+        self.add_serializers()
 
         # views are collections of serializable attributes (a named array of keys)
         #   inspired by model.dict_{view}_visible_keys
@@ -633,12 +631,7 @@ class ModelSerializer( object ):
             view = self.default_view
         if view not in self.views:
             raise ModelSerializingError( 'unknown view', view=view, available_views=self.views )
-        return self.views[ view ]
-
-    # ......................................................................... aliases
-    #def to_dict( self, trans, item, view=None, view_keys=None ):
-    #    view_keys = view_keys or self.view_to_list( view )
-    #    return self.serialize( trans, item, view_keys )
+        return self.views[ view ][:]
 
 
 # -----------------------------------------------------------------------------
@@ -647,7 +640,8 @@ class ModelDeserializer( object ):
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
-    #TODO:?? I'm not convinces the following two need to exist...
+    #: the class used to create this deserializer's generically accessible model_manager
+    model_manager_class = None
 
     def __init__( self, app ):
         """
@@ -656,12 +650,16 @@ class ModelDeserializer( object ):
         self.app = app
 
         self.deserializers = {}
-        self.add_deserializers()
         self.deserializable_keys = []
+        self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = ModelValidator( self.app )
 
-    # ......................................................................... deserializing
+        # create a generically accessible manager for the model this deserializer works with/for
+        self.manager = None
+        if self.model_manager_class:
+           self.manager = self.model_manager_class( self.app )
+
     def add_deserializers( self ):
         """
         Register a map of attribute keys -> functions that will deserialize data
@@ -721,10 +719,6 @@ class ModelDeserializer( object ):
         """
         val = self.validate.genome_build( trans, key, val )
         return self.default_deserializer( trans, item, key, val )
-
-    # ......................................................................... aliases
-    #def from_dict( self, trans, item, data ):
-    #    self.deserialize( trans, item, data )
 
 
 # -----------------------------------------------------------------------------
@@ -837,27 +831,31 @@ class DeletableModelInterface( object ):
         return item
 
 
+class DeletableModelSerializer( object ):
+
+    def add_serializers( self ):
+        pass
+
+
 #TODO: these are of questionable value if we don't want to enable users to delete/purge via update
 class DeletableModelDeserializer( object ):
-    pass
 
-    #def add_deserializers( self ):
-    #    """
-    #    """
-    #    self.deserializers[ 'deleted' ] = self.deserialize_deleted
-    #
-    #def deserialize_deleted( self, trans, item, key, val ):
-    #    """
-    #    """
-    #    new_deleted = self.validate.bool( key, val )
-    #    if new_deleted == item.deleted:
-    #        return item.deleted
-    #    #TODO:?? flush=False?
-    #    if new_deleted:
-    #        self.mgr.delete( trans, item )
-    #    else:
-    #        self.mgr.undelete( trans, item )
-    #    return item.deleted
+    def add_deserializers( self ):
+        self.deserializers[ 'deleted' ] = self.deserialize_deleted
+
+    def deserialize_deleted( self, trans, item, key, val ):
+        """
+        Delete or undelete `item` based on `val` then return `item.deleted`.
+        """
+        new_deleted = self.validate.bool( key, val )
+        if new_deleted == item.deleted:
+            return item.deleted
+        #TODO:?? flush=False?
+        if new_deleted:
+            self.manager.delete( trans, item, flush=False )
+        else:
+            self.manager.undelete( trans, item, flush=False )
+        return item.deleted
 
 
 # -----------------------------------------------------------------------------
@@ -881,20 +879,23 @@ class PurgableModelInterface( DeletableModelInterface ):
         return item
 
 
-class PurgableModelDeserializer( DeletableModelDeserializer ):
+class PurgableModelSerializer( DeletableModelSerializer ):
     pass
 
-    #def add_deserializers( self ):
-    #    """
-    #    """
-    #    self.deserializers[ 'purged' ] = self.deserialize_purged
-    #
-    #def deserialize_purged( self, trans, item, key, val ):
-    #    """
-    #    """
-    #    new_purged = self.validate.bool( key, val )
-    #    if new_purged == item.purged:
-    #        return item.purged
-    #    if new_purged:
-    #        self.mgr.purge( trans, item )
-    #    return self.purged
+
+class PurgableModelDeserializer( DeletableModelDeserializer ):
+
+    def add_deserializers( self ):
+        DeletableModelDeserializer.add_deserializers( self )
+        self.deserializers[ 'purged' ] = self.deserialize_purged
+
+    def deserialize_purged( self, trans, item, key, val ):
+        """
+        If `val` is True, purge `item` and return `item.purged`.
+        """
+        new_purged = self.validate.bool( key, val )
+        if new_purged == item.purged:
+            return item.purged
+        if new_purged:
+            self.manager.purge( trans, item, flush=False )
+        return self.purged

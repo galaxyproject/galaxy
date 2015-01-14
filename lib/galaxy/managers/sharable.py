@@ -14,11 +14,11 @@ import re
 
 from galaxy import exceptions
 
-import base
-import taggable
-import annotatable
-import ratable
-import users
+from galaxy.managers import base
+from galaxy.managers import taggable
+from galaxy.managers import annotatable
+from galaxy.managers import ratable
+from galaxy.managers import users
 
 import logging
 log = logging.getLogger( __name__ )
@@ -28,9 +28,13 @@ log = logging.getLogger( __name__ )
 class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.AccessibleModelInterface,
         taggable.TaggableManagerInterface, annotatable.AnnotatableManagerInterface, ratable.RatableManagerInterface ):
     # e.g. histories, pages, stored workflows, visualizations
+    # base.DeleteableModelInterface?
 
     # the model used for UserShareAssociations with this model
     user_share_model = None
+
+    #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
+    SINGLE_CHAR_ABBR = None
 
     def __init__( self, app ):
         super( SharableModelManager, self ).__init__( app )
@@ -86,8 +90,6 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         return False
 
     # ......................................................................... importable
-#TODO: the relationship between importable and published is ill defined
-#??: can a published item be non-importable?
     def make_importable( self, trans, item, flush=True ):
         """
         Makes item accessible--viewable and importable--and sets item's slug.
@@ -107,12 +109,10 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         Does not flush/commit changes, however. Item must have name, user,
         importable, and slug attributes.
         """
-        #if item.published:
-        #    if unpublish:
-        #        self.unpublish( trans, item, flush=False )
-        #    else:
-        #        raise exceptions.BadRequest( 'Item must be non-published to be inaccessible', item=item )
+        # item must be unpublished if non-importable
         self.app.model.context.add( item )
+        if item.published:
+            self.unpublish( trans, item, flush=False )
         item.importable = False
         if flush:
             self.app.model.context.flush()
@@ -132,19 +132,11 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    return self.list( trans, query=query, **kwargs )
 
     # ......................................................................... published
-#TODO: the relationship between importable and published is ill defined
-    #def publish( self, trans, item, make_accessible=True, flush=True ):
-    #    if not item.importable:
-    #        if make_accessible:
-    #            self.make_accessible( trans, item, flush=False )
-    #        else:
-    #            raise exceptions.RequestParameterInvalidException( 'Item must be importable to be published',
-    #                                                               item=str( item ) )
-    # a published item is also/already importable(=True) implicitly
     def publish( self, trans, item, flush=True ):
         """
         Set both the importable and published flags on `item` to True.
         """
+        # item must be importable to be published
         if not item.importable:
             self.make_importable( trans, item, flush=False )
         self.app.model.context.add( item )
@@ -246,6 +238,23 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     # ......................................................................... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
     #TODO: as validator, deserializer, etc. (maybe another object entirely?)
+    def set_slug( self, trans, item, new_slug, flush=True ):
+        """
+        Validate and set the new slug for `item`.
+        """
+        # precondition: has been validated
+        if not self.is_valid_slug( new_slug ):
+            raise exceptions.RequestParameterInvalidException( "Invalid slug", slug=new_slug )
+
+        # error if slug is already in use
+        if self._slug_exists( trans, user, slug ):
+            raise exceptions.Conflict( "Slug already exists", slug=new_slug )
+
+        item.slug = new_slug
+        if flush:
+            self.app.model.context.flush()
+        return item
+
     def is_valid_slug( self, slug ):
         """
         Returns true if `slug` is valid.
@@ -253,23 +262,31 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
         return VALID_SLUG_RE.match( slug )
 
-    def set_slug( self, trans, item, new_slug, flush=True ):
-        """
-        Validate and set the new slug for `item`.
-        """
-        if not self.is_valid_slug( new_slug ):
-            raise exceptions.RequestParameterInvalidException( "Invalid slug", slug=new_slug )
+    def _existing_set_of_slugs( self, trans, user ):
+        query = ( self.app.model.context.query( self.model_class.slug )
+                    .filter_by( user=user ) )
+        return set( query.all() )
 
-        # error if slug is already in use
-        existing_match = ( self.app.model.context.query( self.model_class )
-            .filter_by( user=item.user, slug=new_slug, importable=True ) )
-        if( existing_match.count() != 0 ):
-            raise exceptions.BadRequest( "Slug already exists", slug=new_slug )
+    def _slug_exists( self, trans, user, slug ):
+        query = ( self.app.model.context.query( self.model_class.slug )
+                    .filter_by( user=user, slug=slug ) )
+        return query.count() != 0
 
-        item.slug = new_slug
-        if flush:
-            self.app.model.context.flush()
-        return item
+    def _slugify( self, start_with ):
+        # Replace whitespace with '-'
+        slug_base = re.sub( "\s+", "-", start_with )
+        # Remove all non-alphanumeric characters.
+        slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
+        # Remove trailing '-'.
+        if slug_base.endswith('-'):
+            slug_base = slug_base[:-1]
+        return slug_base
+
+    def _default_slug_base( self, trans, item ):
+        # override in subclasses
+        if hasattr( item, 'title' ):
+            return item.title.lower()
+        return item.name.lower()
 
     def get_unique_slug( self, trans, item ):
         """
@@ -280,19 +297,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
 
         # Setup slug base.
         if cur_slug is None or cur_slug == "":
-            # Item can have either a name or a title.
-#TODO: this depends on the model having name or title
-            if hasattr( item, 'name' ):
-                item_name = item.name
-            elif hasattr( item, 'title' ):
-                item_name = item.title
-            # Replace whitespace with '-'
-            slug_base = re.sub( "\s+", "-", item_name.lower() )
-            # Remove all non-alphanumeric characters.
-            slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
-            # Remove trailing '-'.
-            if slug_base.endswith('-'):
-                slug_base = slug_base[:-1]
+            slug_base = self._slugify( self._default_slug_base( trans, item ) )
         else:
             slug_base = cur_slug
 
@@ -341,12 +346,26 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
 class SharableModelSerializer( base.ModelSerializer,
         taggable.TaggableSerializer, annotatable.AnnotatableSerializer, ratable.RatableSerializer ):
 #TODO: stub
+    SINGLE_CHAR_ABBR = None
 
     def add_serializers( self ):
         super( SharableModelSerializer, self ).add_serializers()
         taggable.TaggableSerializer.add_serializers( self )
         annotatable.AnnotatableSerializer.add_serializers( self )
         ratable.RatableSerializer.add_serializers( self )
+
+        self.serializers.update({
+            'user_id'           : self.serialize_id,
+            'username_and_slug' : self.serialize_username_and_slug
+        })
+        self.serializable_keys.extend([
+            'importable', 'published', 'slug'
+        ])
+
+    def serialize_username_and_slug( self, trans, item, key ):
+        if not ( item.user and item.slug and self.SINGLE_CHAR_ABBR ):
+            return None
+        return ( '/' ).join(( 'u', item.user.username, self.SINGLE_CHAR_ABBR, item.slug ) )
 
     # the only ones that needs any fns:
     #   user/user_id
@@ -372,18 +391,37 @@ class SharableModelDeserializer( base.ModelDeserializer,
         annotatable.AnnotatableDeserializer.add_deserializers( self )
         ratable.RatableDeserializer.add_deserializers( self )
 
-    #def deserialize_published( self, trans, item, val ):
-    #    """
-    #    """
-    #    #TODO: call manager.publish/unpublish
-    #    pass
-    #
-    #def deserialize_importable( self, trans, item, val ):
-    #    """
-    #    """
-    #    #TODO: call manager.make_importable/non_importable
-    #    pass
-    #
+        self.deserializers.update({
+            'published'     : self.deserialize_published,
+            'importable'    : self.deserialize_importable,
+        })
+
+    def deserialize_published( self, trans, item, key, val ):
+        """
+        """
+        val = self.validate.bool( key, val )
+        if item.published == val:
+            return val
+
+        if val:
+            self.manager.publish( trans, item, flush=False )
+        else:
+            self.manager.unpublish( trans, item, flush=False )
+        return item.published
+
+    def deserialize_importable( self, trans, item, key, val ):
+        """
+        """
+        val = self.validate.bool( key, val )
+        if item.importable == val:
+            return val
+
+        if val:
+            self.manager.make_importable( trans, item, flush=False )
+        else:
+            self.manager.make_non_importable( trans, item, flush=False )
+        return item.published
+
     #def deserialize_slug( self, trans, item, val ):
     #    """
     #    """

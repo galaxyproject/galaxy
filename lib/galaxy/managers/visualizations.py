@@ -7,11 +7,10 @@ reproduce a specific view in a Galaxy visualization.
 
 from galaxy import exceptions
 from galaxy import model
-
-import base
-import sharable
-
 import galaxy.web
+
+from galaxy.managers import base
+from galaxy.managers import sharable
 
 import logging
 log = logging.getLogger( __name__ )
@@ -78,10 +77,11 @@ class VisualizationDeserializer( sharable.SharableModelDeserializer ):
     Interface/service object for validating and deserializing
     dictionaries into visualizations.
     """
+    model_manager_class = VisualizationManager
 
     def __init__( self, app ):
         super( VisualizationDeserializer, self ).__init__( app )
-        self.visualization_manager = VisualizationManager( app )
+        self.visualization_manager = self.manager
 
     def add_deserializers( self ):
         super( VisualizationDeserializer, self ).add_deserializers()

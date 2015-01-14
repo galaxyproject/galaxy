@@ -4,8 +4,8 @@ Manager and Serializer for Datasets.
 from galaxy import model
 from galaxy import exceptions
 
-import base
-import users
+from galaxy.managers import base
+from galaxy.managers import users
 
 import logging
 log = logging.getLogger( __name__ )
@@ -191,7 +191,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     # ......................................................................... data, object_store
 
 
-# =============================================================================
+# -----------------------------------------------------------------------------
 class DatasetSerializer( base.ModelSerializer ):
 
     def __init__( self, app ):
@@ -227,9 +227,13 @@ class DatasetSerializer( base.ModelSerializer ):
         })
 
 
-class DatasetDeserializer( base.ModelDeserializer ):
-    pass
+# -----------------------------------------------------------------------------
+class DatasetDeserializer( base.ModelDeserializer, base.PurgableModelDeserializer ):
+    model_manager_class = DatasetManager
 
+    def add_deserializers( self ):
+        super( DatasetDeserializer, self ).add_deserializers()
+        base.PurgableModelDeserializer.add_deserializers( self )
 
 # =============================================================================
 class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
@@ -238,7 +242,6 @@ class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterfac
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
     model_class = model.DatasetInstance
-    default_order_by = ( model.Dataset.create_time, )
 
     def __init__( self, app ):
         super( DatasetAssociationManager, self ).__init__( app )
@@ -263,3 +266,21 @@ class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterfac
     #    """
     #    #TODO: check history_associations, library_associations
     #    pass
+
+
+# -----------------------------------------------------------------------------
+class DatasetAssociationSerializer( base.ModelSerializer ):
+
+    def __init__( self, app ):
+        super( DatasetAssociationSerializer, self ).__init__( app )
+
+    def add_serializers( self ):
+        super( DatasetAssociationSerializer, self ).add_serializers()
+
+
+# -----------------------------------------------------------------------------
+class DatasetAssociationDeserializer( base.ModelDeserializer, base.PurgableModelDeserializer ):
+
+    def add_deserializers( self ):
+        super( DatasetAssociationDeserializer, self ).add_deserializers()
+        base.PurgableModelDeserializer.add_deserializers( self )
