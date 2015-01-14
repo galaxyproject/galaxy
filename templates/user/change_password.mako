@@ -10,7 +10,7 @@
         <div class="toolFormTitle">Change Password</div>
         %if token:
             <input type="hidden" name="token" value="${token|h}"/>
-        %elif not is_admin:
+        %else:
             <div class="form-row">
                 <label>Current password:</label>
                 <input type="password" name="current" value="" size="40"/>
