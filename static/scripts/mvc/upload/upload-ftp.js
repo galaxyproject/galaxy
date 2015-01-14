@@ -56,41 +56,36 @@ return Backbone.View.extend({
             this._updateSelectAll(selectAll);
 
             // selectAll checkbox has been clicked
-            selectAll.on('click', function(){
+            selectAll.on('click', function() {
                 var checkboxes=$(this).parents().find('tr.upload-ftp-row>td>div');
                 var len = checkboxes.length;
                 var allChecked;
                 $this = $(this);
 
                 // change state of the selectAll checkbox
-                if($this.hasClass('fa-check-square-o')){
-                    $this.removeClass('fa-check-square-o fa-minus-square-o');
+                if($this.hasClass('fa-check-square-o')) {
+                    // if checked change to unchecked
+                    $this.removeClass('fa-check-square-o');
                     $this.addClass('fa-square-o');
                     allChecked=false;
-                    
-                }
-                else{
-                  // in unchecked, change to checked
+                } else {
+                    // if checked or partially checked, change to checked
                     $this.removeClass('fa-square-o fa-minus-square-o');
                     $this.addClass('fa-check-square-o');
                     allChecked=true;
                 }
 
                 // change state of the sub-checkboxes
-                for(i = 0; i < len; i++){
-                    if(allChecked)
-                    {
+                for(i = 0; i < len; i++) {
+                    if(allChecked) {
                         // all checkboxes should be checked
-                        if(checkboxes.eq(i).hasClass('fa-square-o'))
-                        {
+                        if(checkboxes.eq(i).hasClass('fa-square-o')) {
                             // if they are not checked, check them
                             checkboxes.eq(i).trigger('addToUpBox');
                         }
-                    }
-                    else{
+                    } else {
                         // no checkboxes should be checked
-                        if(checkboxes.eq(i).hasClass('fa-check-square-o'))
-                        {
+                        if(checkboxes.eq(i).hasClass('fa-check-square-o')) {
                             // if they are checked, uncheck them
                             checkboxes.eq(i).trigger('addToUpBox');
                         }
@@ -133,9 +128,9 @@ return Backbone.View.extend({
         // add icon class
         $icon.addClass(icon_class);
         
-        $it.on('addToUpBox', function(){
-        // find model
-        var model_index = self._find(ftp_file);
+        $it.on('addToUpBox', function() {
+            // find model
+            var model_index = self._find(ftp_file);
 
             // update icon
             $icon.removeClass();
@@ -174,7 +169,7 @@ return Backbone.View.extend({
         });
     },
 
-    _updateSelectAll: function(selectBox){
+    _updateSelectAll: function(selectBox) {
         // array of all checkboxes
         var checkboxes=selectBox.parents().find('tr.upload-ftp-row>td>div');
         // array of only checked checkboxes
@@ -183,17 +178,15 @@ return Backbone.View.extend({
         var lenChecked = checkedCheckboxes.length;
 
         // determine which state the selectAll checkbox needs to be and setting it
-        if(lenChecked > 0 && lenChecked !== lenAll){
+        if(lenChecked > 0 && lenChecked !== lenAll) {
             // indeterminate state
             selectBox.removeClass('fa-square-o fa-check-square-o');
             selectBox.addClass('fa-minus-square-o');
-        }
-        else if(lenChecked === lenAll){
+        } else if(lenChecked === lenAll) {
             // checked state
             selectBox.removeClass('fa-square-o fa-minus-square-o');
             selectBox.addClass('fa-check-square-o');
-        }
-        else if(lenChecked === 0){
+        } else if(lenChecked === 0) {
             // unchecked state
             selectBox.removeClass('fa-check-square-o fa-minus-square-o');
             selectBox.addClass('fa-square-o');
