@@ -103,6 +103,7 @@ return Backbone.View.extend({
             // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
         }
+
         // hide spinner
         this.$el.find('#upload-ftp-wait').hide();
     },
@@ -128,10 +129,12 @@ return Backbone.View.extend({
         } else {
             icon_class = this.options.class_add;
         }
+
         // add icon class
         $icon.addClass(icon_class);
         
         $it.on('addToUpBox', function(){
+        	// find model
         	var model_index = self._find(ftp_file);
 
 			// update icon
@@ -146,16 +149,19 @@ return Backbone.View.extend({
 					size        : ftp_file.size,
 					path        : ftp_file.path
 				}]);
+
 				// add new icon class
 				$icon.addClass(self.options.class_remove);
 			} else {
 				// remove
 				self.app.collection.remove(model_index);
+				
 				// add new icon class
 				$icon.addClass(self.options.class_add);
 			}
         });
 
+        // click to add ftp files
 		$it.on('click', function() {
 	        //trigger my new event
 	        $icon.trigger('addToUpBox');
@@ -232,9 +238,7 @@ return Backbone.View.extend({
                 '<table class="grid" style="float: left;">' +
                     '<thead>' +
                         '<tr>' +
-//jc added
                             '<th><div id="selectAll" class="upload-icon-button fa fa-square-o" ></th>' +
-//end jc added
                             '<th>Name</th>' +
                             '<th>Size</th>' +
                             '<th>Created</th>' +
@@ -257,9 +261,7 @@ return Backbone.View.extend({
                     '<div id="upload-ftp-wait" class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
                     '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.app.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +
                     '<div id="upload-ftp-content">'
-//jc added
 
-//end jc added	
 			'</div>' +
                 '<div>';
     }
