@@ -56,48 +56,48 @@ return Backbone.View.extend({
             this._updateSelectAll(selectAll);
 
             // selectAll checkbox has been clicked
-			selectAll.on('click', function(){
-				var checkboxes=$(this).parents().find('tr.upload-ftp-row>td>div');
-				var len = checkboxes.length;
-				var allChecked;
- 				$this = $(this);
+            selectAll.on('click', function(){
+                var checkboxes=$(this).parents().find('tr.upload-ftp-row>td>div');
+                var len = checkboxes.length;
+                var allChecked;
+                $this = $(this);
 
-				// change state of the selectAll checkbox
-				if($this.hasClass('fa-square-o')){
-					// in unchecked, change to checked
-					$this.removeClass('fa-square-o fa-minus-square-o');
-					$this.addClass('fa-check-square-o');
-					allChecked=true;
-				}
-				else{
-					// if checked, change to unchecked
-					$this.removeClass('fa-check-square-o fa-minus-square-o');
-					$this.addClass('fa-square-o');
-					allChecked=false;
-				}
+                // change state of the selectAll checkbox
+                if($this.hasClass('fa-square-o')){
+                    // in unchecked, change to checked
+                    $this.removeClass('fa-square-o fa-minus-square-o');
+                    $this.addClass('fa-check-square-o');
+                    allChecked=true;
+                }
+                else{
+                    // if checked, change to unchecked
+                    $this.removeClass('fa-check-square-o fa-minus-square-o');
+                    $this.addClass('fa-square-o');
+                    allChecked=false;
+                }
 
-				// change state of the sub-checkboxes
-				for(i = 0; i < len; i++){
-					if(allChecked)
-					{
-						// all checkboxes should be checked
+                // change state of the sub-checkboxes
+                for(i = 0; i < len; i++){
+                if(allChecked)
+                {
+                        // all checkboxes should be checked
                         if(checkboxes.eq(i).hasClass('fa-square-o'))
                         {
-                        	// if they are not checked, check them
+                            // if they are not checked, check them
                             checkboxes.eq(i).trigger('addToUpBox');
                         }
-					}
-					else{
-						// no checkboxes should be checked
+                    }
+                    else{
+                        // no checkboxes should be checked
                         if(checkboxes.eq(i).hasClass('fa-check-square-o'))
                         {
-                        	// if they are checked, uncheck them
-                        	checkboxes.eq(i).trigger('addToUpBox');
+                            // if they are checked, uncheck them
+                            checkboxes.eq(i).trigger('addToUpBox');
                         }
-					}
-				}
-				return;
-			} );
+                    }
+                }
+                return;
+            } );
 
         } else {
             // add info
@@ -134,74 +134,74 @@ return Backbone.View.extend({
         $icon.addClass(icon_class);
         
         $it.on('addToUpBox', function(){
-        	// find model
-        	var model_index = self._find(ftp_file);
+// find model
+var model_index = self._find(ftp_file);
 
-			// update icon
-			$icon.removeClass();
+            // update icon
+            $icon.removeClass();
 
-			// add model
-			if (!model_index) {
-				// add to uploadbox
-				self.app.uploadbox.add([{
-					mode        : 'ftp',
-					name        : ftp_file.path,
-					size        : ftp_file.size,
-					path        : ftp_file.path
-				}]);
+            // add model
+            if (!model_index) {
+            // add to uploadbox
+            self.app.uploadbox.add([{
+                mode        : 'ftp',
+                name        : ftp_file.path,
+                size        : ftp_file.size,
+                path        : ftp_file.path
+            }]);
 
-				// add new icon class
-				$icon.addClass(self.options.class_remove);
-			} else {
-				// remove
-				self.app.collection.remove(model_index);
-				
-				// add new icon class
-				$icon.addClass(self.options.class_add);
-			}
+            // add new icon class
+            $icon.addClass(self.options.class_remove);
+            } else {
+                // remove
+                self.app.collection.remove(model_index);
+
+                // add new icon class
+                $icon.addClass(self.options.class_add);
+            }
         });
 
         // click to add ftp files
-		$it.on('click', function() {
-	        //trigger my new event
-	        $icon.trigger('addToUpBox');
+        $it.on('click', function() {
+            //trigger my new event
+            $icon.trigger('addToUpBox');
 
-	        // click to add ftp files
-	    	// modify selectAll box based on number of checkboxes checked
-			var selectBox=$icon.parents().find('#selectAll');
-			// determine and set state of selectAll after sub-checkbox clicked
-			self._updateSelectAll(selectBox);
-		});
-	},
+            // click to add ftp files
+            // modify selectAll box based on number of checkboxes checked
+            var selectBox=$icon.parents().find('#selectAll');
+            // determine and set state of selectAll after sub-checkbox clicked
+            self._updateSelectAll(selectBox);
+        });
+    },
 
-	_updateSelectAll: function(selectBox){
-			// array of all checkboxes
-			var checkboxes=selectBox.parents().find('tr.upload-ftp-row>td>div');
-			// array of only checked checkboxes
-			var checkedCheckboxes=selectBox.parents().find('tr.upload-ftp-row>td>div.fa-check-square-o');
-			var lenAll = checkboxes.length;
-			var lenChecked = checkedCheckboxes.length;
+    _updateSelectAll: function(selectBox){
+        // array of all checkboxes
+        var checkboxes=selectBox.parents().find('tr.upload-ftp-row>td>div');
+        // array of only checked checkboxes
+        var checkedCheckboxes=selectBox.parents().find('tr.upload-ftp-row>td>div.fa-check-square-o');
+        var lenAll = checkboxes.length;
+        var lenChecked = checkedCheckboxes.length;
 
-			// determine which state the selectAll checkbox needs to be and setting it
-			if(lenChecked > 0 && lenChecked !== lenAll){
-				// indeterminate state
-				selectBox.removeClass('fa-square-o fa-check-square-o');
-				selectBox.addClass('fa-minus-square-o');
-			}
-			else if(lenChecked === lenAll){
-				// checked state
-				selectBox.removeClass('fa-square-o fa-minus-square-o');
-				selectBox.addClass('fa-check-square-o');
-			}
-			else if(lenChecked === 0){
-				// unchecked state
-				selectBox.removeClass('fa-check-square-o fa-minus-square-o');
-				selectBox.addClass('fa-square-o');
-			}
-	},
+        // determine which state the selectAll checkbox needs to be and setting it
+        if(lenChecked > 0 && lenChecked !== lenAll){
+            // indeterminate state
+            selectBox.removeClass('fa-square-o fa-check-square-o');
+            selectBox.addClass('fa-minus-square-o');
+        }
+        else if(lenChecked === lenAll){
+            // checked state
+            selectBox.removeClass('fa-square-o fa-minus-square-o');
+            selectBox.addClass('fa-check-square-o');
+        }
+        else if(lenChecked === 0){
+            // unchecked state
+            selectBox.removeClass('fa-check-square-o fa-minus-square-o');
+            selectBox.addClass('fa-square-o');
+        }
+    },
 
 
-		    
+
     // get model index
     _find: function(ftp_file) {
         // check if exists already
