@@ -48,6 +48,7 @@ class VisualizationSerializer( sharable.SharableModelSerializer ):
     """
     Interface/service object for serializing visualizations into dictionaries.
     """
+    SINGLE_CHAR_ABBR = 'v'
 
     def __init__( self, app ):
         super( VisualizationSerializer, self ).__init__( app )

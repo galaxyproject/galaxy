@@ -192,7 +192,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
 
 
 # -----------------------------------------------------------------------------
-class DatasetSerializer( base.ModelSerializer ):
+class DatasetSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
 
     def __init__( self, app ):
         super( DatasetSerializer, self ).__init__( app )
@@ -219,6 +219,7 @@ class DatasetSerializer( base.ModelSerializer ):
         self.default_view = 'summary'
 
     def add_serializers( self ):
+        base.PurgableModelSerializer.add_serializers( self )
         self.serializers.update({
             'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
@@ -234,6 +235,7 @@ class DatasetDeserializer( base.ModelDeserializer, base.PurgableModelDeserialize
     def add_deserializers( self ):
         super( DatasetDeserializer, self ).add_deserializers()
         base.PurgableModelDeserializer.add_deserializers( self )
+
 
 # =============================================================================
 class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
@@ -269,13 +271,11 @@ class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterfac
 
 
 # -----------------------------------------------------------------------------
-class DatasetAssociationSerializer( base.ModelSerializer ):
-
-    def __init__( self, app ):
-        super( DatasetAssociationSerializer, self ).__init__( app )
+class DatasetAssociationSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
 
     def add_serializers( self ):
         super( DatasetAssociationSerializer, self ).add_serializers()
+        base.PurgableModelSerializer.add_serializers( self )
 
 
 # -----------------------------------------------------------------------------

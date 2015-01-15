@@ -47,6 +47,7 @@ class PageSerializer( sharable.SharableModelSerializer ):
     """
     Interface/service object for serializing pages into dictionaries.
     """
+    SINGLE_CHAR_ABBR = 'p'
 
     def __init__( self, app ):
         super( PageSerializer, self ).__init__( app )

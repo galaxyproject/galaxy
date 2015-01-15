@@ -1,3 +1,30 @@
+"""
+Keeps the older BaseController security and fetching methods and also
+defines a base ModelManager, ModelSerializer, and ModelDeserializer.
+
+ModelManagers are used for operations on models that occur outside the scope of
+a single model object, such as:
+    - object creation
+    - object lookup
+    - interactions between 2+ objects of different model classes
+
+(Since these were to replace model Mixins from
+web/framework/base/controller.py the rule of thumb used there also generally
+has been applied here: if it uses the trans or sa_session, put it in a manager
+and not the model.)
+
+ModelSerializers allow flexible conversion of model objects to dictionaries.
+They control what keys are sent, how values are simplified, can remap keys,
+and allow both predefined and user controlled key sets.
+
+ModelDeserializers control how a model validates and process an incoming
+attribute change to a model object.
+"""
+#TODO: it may be there's a better way to combine the above three classes
+#   such as: a single flat class, serializers being singletons in the manager, etc.
+#   instead of the three separate classes. With no 'apparent' perfect scheme
+#   I'm opting to just keep them separate.
+
 import re
 
 import pkg_resources
@@ -177,7 +204,7 @@ class ModelManager( object ):
 
         (While allowing them to be None, non-lists, or lists.)
         """
-        # ... which sounds like a euphamism for something
+        #TODO: there's nothing specifically filter or model-related here - move to util
         if filtersA is None:
             return filtersB
         if filtersB is None:
@@ -219,7 +246,6 @@ class ModelManager( object ):
         return query
 
     # ......................................................................... common queries
-    #TODO: needed?
     def one( self, trans, **kwargs ):
         """
         Sends kwargs to build the query and returns one and only one model.
@@ -253,12 +279,7 @@ class ModelManager( object ):
         except exceptions.ObjectNotFound, not_found:
             return None
 
-    #def get( self, trans, id, **kwargs ):
-    #    """
-    #    """
-    #    #TODO: either remove to prevent confusion with sqlalx get or make it behave *much* more like it: obj/None
-    #    id_filter = self.model_class.id == id
-    #    return self.one( trans, filters=id_filter, **kwargs )
+    #TODO: get?
 
     def by_id( self, trans, id, **kwargs ):
         """
@@ -376,121 +397,6 @@ class ModelManager( object ):
     #    return item
 
 
-# =============================================================================
-class AccessibleModelInterface( object ):
-    """
-    A security interface to check if a User can read/view an item's.
-
-    This can also be thought of as 'read but not modify' privileges.
-    """
-
-    # don't want to override by_id since consumers will also want to fetch w/o any security checks
-    def is_accessible( self, trans, item, user ):
-        """
-        Return True if the item accessible to user.
-        """
-        # override here
-        raise exceptions.NotImplemented( "Abstract Interface Method" )
-        #OR? return False
-
-    def get_accessible( self, trans, id, user, **kwargs ):
-        """
-        Return the item with the given id if it's accessible to user,
-        otherwise raise an error.
-
-        :raises exceptions.ItemAccessibilityException:
-        """
-        item = ModelManager.by_id( self, trans, id )
-        return self.error_unless_accessible( trans, item, user )
-
-    def error_unless_accessible( self, trans, item, user ):
-        """
-        Raise an error if the item is NOT accessible to user, otherwise return the item.
-
-        :raises exceptions.ItemAccessibilityException:
-        """
-        if self.is_accessible( trans, item, user ):
-            return item
-        raise exceptions.ItemAccessibilityException( "%s is not accessible by user" % ( self.model_class.__name__ ) )
-
-    #TODO:?? are these even useful?
-    def list_accessible( self, trans, user, **kwargs ):
-        """
-        Return a list of items accessible to the user, raising an error if ANY
-        are inaccessible.
-
-        :raises exceptions.ItemAccessibilityException:
-        """
-        #NOTE: this will be a large, inefficient list if filters are not passed in kwargs
-        items = ModelManager.list( self, trans, **kwargs )
-        return [ self.error_unless_accessible( trans, item, user ) for item in items ]
-
-    def filter_accessible( self, trans, user, **kwargs ):
-        """
-        Return a list of items accessible to the user.
-        """
-        #NOTE: this will be a large, inefficient list if filters are not  passed in kwargs
-        items = ModelManager.list( self, trans, **kwargs )
-        return filter( lambda item: self.is_accessible( trans, item, user ), items )
-
-
-# =============================================================================
-class OwnableModelInterface( object ):
-    """
-    A security interface to check if a User is an item's owner.
-
-    Some resources are associated with the User that created or imported them
-    and these Users can be considered the models' owner.
-
-    This can also be thought of as write/edit privileges.
-    """
-
-    def is_owner( self, trans, item, user ):
-        """
-        Return True if user owns the item.
-        """
-        # override here
-        raise exceptions.NotImplemented( "Abstract Interface Method" )
-        #OR? return False
-
-    def get_owned( self, trans, id, user, **kwargs ):
-        """
-        Return the item with the given id if owned by the user,
-        otherwise raise an error.
-
-        :raises exceptions.ItemOwnershipException:
-        """
-        item = ModelManager.by_id( self, trans, id )
-        return self.error_unless_owner( trans, item, user )
-
-    def error_unless_owner( self, trans, item, user ):
-        """
-        Raise an error if the item is NOT owned by user, otherwise return the item.
-
-        :raises exceptions.ItemAccessibilityException:
-        """
-        if self.is_owner( trans, item, user ):
-            return item
-        raise exceptions.ItemOwnershipException( "%s is not owned by user" % ( self.model_class.__name__ ) )
-
-    def list_owned( self, trans, user, **kwargs ):
-        """
-        Return a list of items owned by the user, raising an error if ANY
-        are not.
-
-        :raises exceptions.ItemAccessibilityException:
-        """
-        # just alias to by_user (easier/same thing)
-        return self.by_user( trans, user, **kwargs )
-
-    def filter_owned( self, trans, user, **kwargs ):
-        """
-        Return a list of items owned by the user.
-        """
-        # just alias to list_owned
-        return self.list_owned( trans, user, **kwargs )
-
-
 # ============================================================================= SERIALIZERS/to_dict,from_dict
 class ModelSerializingError( exceptions.InternalServerError ):
     """Thrown when request model values can't be serialized"""
@@ -549,7 +455,6 @@ class ModelSerializer( object ):
         """
         # to be overridden in subclasses
         pass
-        #super( ModelSerializer, self ).add_serializers()
 
     def serialize( self, trans, item, keys ):
         """
@@ -800,6 +705,121 @@ class ModelValidator( object ):
 
 # =============================================================================
 # Mixins (here for now)
+# =============================================================================
+class AccessibleModelInterface( object ):
+    """
+    A security interface to check if a User can read/view an item's.
+
+    This can also be thought of as 'read but not modify' privileges.
+    """
+
+    # don't want to override by_id since consumers will also want to fetch w/o any security checks
+    def is_accessible( self, trans, item, user ):
+        """
+        Return True if the item accessible to user.
+        """
+        # override in subclasses
+        raise exceptions.NotImplemented( "Abstract Interface Method" )
+
+    def get_accessible( self, trans, id, user, **kwargs ):
+        """
+        Return the item with the given id if it's accessible to user,
+        otherwise raise an error.
+
+        :raises exceptions.ItemAccessibilityException:
+        """
+        item = ModelManager.by_id( self, trans, id )
+        return self.error_unless_accessible( trans, item, user )
+
+    def error_unless_accessible( self, trans, item, user ):
+        """
+        Raise an error if the item is NOT accessible to user, otherwise return the item.
+
+        :raises exceptions.ItemAccessibilityException:
+        """
+        if self.is_accessible( trans, item, user ):
+            return item
+        raise exceptions.ItemAccessibilityException( "%s is not accessible by user" % ( self.model_class.__name__ ) )
+
+    #TODO:?? are these even useful?
+    def list_accessible( self, trans, user, **kwargs ):
+        """
+        Return a list of items accessible to the user, raising an error if ANY
+        are inaccessible.
+
+        :raises exceptions.ItemAccessibilityException:
+        """
+        raise exceptions.NotImplemented( "Abstract Interface Method" )
+        #NOTE: this will be a large, inefficient list if filters are not passed in kwargs
+        #items = ModelManager.list( self, trans, **kwargs )
+        #return [ self.error_unless_accessible( trans, item, user ) for item in items ]
+
+    def filter_accessible( self, trans, user, **kwargs ):
+        """
+        Return a list of items accessible to the user.
+        """
+        raise exceptions.NotImplemented( "Abstract Interface Method" )
+        #NOTE: this will be a large, inefficient list if filters are not  passed in kwargs
+        #items = ModelManager.list( self, trans, **kwargs )
+        #return filter( lambda item: self.is_accessible( trans, item, user ), items )
+
+
+# =============================================================================
+class OwnableModelInterface( object ):
+    """
+    A security interface to check if a User is an item's owner.
+
+    Some resources are associated with the User that created or imported them
+    and these Users can be considered the models' owner.
+
+    This can also be thought of as write/edit privileges.
+    """
+
+    def is_owner( self, trans, item, user ):
+        """
+        Return True if user owns the item.
+        """
+        # override in subclasses
+        raise exceptions.NotImplemented( "Abstract Interface Method" )
+
+    def get_owned( self, trans, id, user, **kwargs ):
+        """
+        Return the item with the given id if owned by the user,
+        otherwise raise an error.
+
+        :raises exceptions.ItemOwnershipException:
+        """
+        item = ModelManager.by_id( self, trans, id )
+        return self.error_unless_owner( trans, item, user )
+
+    def error_unless_owner( self, trans, item, user ):
+        """
+        Raise an error if the item is NOT owned by user, otherwise return the item.
+
+        :raises exceptions.ItemAccessibilityException:
+        """
+        if self.is_owner( trans, item, user ):
+            return item
+        raise exceptions.ItemOwnershipException( "%s is not owned by user" % ( self.model_class.__name__ ) )
+
+    def list_owned( self, trans, user, **kwargs ):
+        """
+        Return a list of items owned by the user, raising an error if ANY
+        are not.
+
+        :raises exceptions.ItemAccessibilityException:
+        """
+        # just alias to by_user (easier/same thing)
+        return self.by_user( trans, user, **kwargs )
+
+    def filter_owned( self, trans, user, **kwargs ):
+        """
+        Return a list of items owned by the user.
+        """
+        # just alias to list_owned
+        return self.list_owned( trans, user, **kwargs )
+
+
 # -----------------------------------------------------------------------------
 class DeletableModelInterface( object ):
     """
@@ -880,7 +900,9 @@ class PurgableModelInterface( DeletableModelInterface ):
 
 
 class PurgableModelSerializer( DeletableModelSerializer ):
-    pass
+
+    def add_serializers( self ):
+        DeletableModelSerializer.add_serializers( self )
 
 
 class PurgableModelDeserializer( DeletableModelDeserializer ):

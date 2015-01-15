@@ -338,8 +338,6 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    """ Set user's public username and delegate to sharing() """
     #def sharing( self, trans, id, **kwargs ):
     #    """ Handle item sharing. """
-    #def get_name_and_link_async( self, trans, id=None ):
-    #    """ Returns item's name and link. """
 
 
 # =============================================================================

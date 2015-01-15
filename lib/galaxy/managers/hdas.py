@@ -578,11 +578,11 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
         super( HDADeserializer, self ).__init__( app )
         self.hda_manager = self.manager
 
-    #assumes: incoming from json.loads and sanitized
     def add_deserializers( self ):
         super( HDADeserializer, self ).add_deserializers()
         taggable.TaggableDeserializer.add_deserializers( self )
         annotatable.AnnotatableDeserializer.add_deserializers( self )
+
         self.deserializers.update({
             'name'          : self.deserialize_basestring,
             'visible'       : self.deserialize_bool,
@@ -603,4 +603,4 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
             'importable'    : self.deserialize_bool,
 
         })
-        self.deserializable_keys = self.deserializers.keys()
+        self.deserializable_keys.extend( self.deserializers.keys() )

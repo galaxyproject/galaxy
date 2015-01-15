@@ -26,7 +26,6 @@ class UserManager( base.ModelManager ):
     #TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
     #   most of which it may be unneccessary to have here
 
-    #TODO: incorp ProvidesUserContext
     #TODO: incorp BaseAPIController.validate_in_users_and_groups
     #TODO: incorp CreatesUsersMixin
     #TODO: incorp CreatesApiKeysMixin

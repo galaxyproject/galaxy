@@ -252,7 +252,6 @@ class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSer
         super( HistorySerializer, self ).__init__( app )
         self.history_manager = HistoryManager( app )
 
-        from galaxy.managers import hdas
         self.hda_manager = hdas.HDAManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
 

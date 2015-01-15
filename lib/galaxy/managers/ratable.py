@@ -35,7 +35,6 @@ class RatableSerializer( object ):
 
 # =============================================================================
 class RatableDeserializer( object ):
-    pass
 
     def add_deserializers( self ):
         pass
@@ -44,4 +43,3 @@ class RatableDeserializer( object ):
     #def deserialize_rating( self, trans, item, key, val ):
     #    val = self.validate.int_range( key, val, 0, 5 )
     #    return self.set_rating...( trans, item, val, user=trans.user )
-
