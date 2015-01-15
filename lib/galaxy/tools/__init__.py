@@ -496,6 +496,10 @@ class Tool( object, Dictifiable ):
                                                                                                  self.installed_changeset_revision )
         return None
 
+    @property
+    def produces_collections( self ):
+        return any( o.collection for o in self.outputs.values() )
+
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
 
@@ -1099,10 +1103,15 @@ class Tool( object, Dictifiable ):
         if self.tool_type.startswith( 'data_source' ):
             return False
 
+        if self.produces_collections:
+            # Someday we will get there!
+            return False
+
         if hasattr( tool_source, "root"):
             root = tool_source.root
             if not string_as_bool( root.get( "workflow_compatible", "True" ) ):
                 return False
+
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
