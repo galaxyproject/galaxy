@@ -286,7 +286,7 @@ class DefaultToolAction( object ):
 
                     elements = odict()
                     input_collections = dict( [ (k, v[0]) for k, v in inp_dataset_collections.iteritems() ] )
-                    known_outputs = output.known_outputs( input_collections )
+                    known_outputs = output.known_outputs( input_collections, collections_manager.type_registry )
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
                     for output_part_def in known_outputs:

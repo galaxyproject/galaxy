@@ -35,6 +35,7 @@
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
   <tool file="collection_creates_pair.xml" />
+  <tool file="collection_creates_pair_from_type.xml" />
   <tool file="collection_creates_list.xml" />
   <tool file="collection_creates_list_2.xml" />
   <tool file="collection_optional_param.xml" />

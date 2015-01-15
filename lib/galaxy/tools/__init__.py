@@ -315,7 +315,7 @@ class ToolOutputCollection( ToolOutputBase ):
         self.metadata_source = default_metadata_source
         self.format_source = default_format_source
 
-    def known_outputs( self, inputs ):
+    def known_outputs( self, inputs, type_registry ):
         if self.dynamic_structure:
             return []
 
@@ -324,13 +324,17 @@ class ToolOutputCollection( ToolOutputBase ):
 
         # This line is probably not right - should verify structured_like
         # or have outputs and all outputs have name.
-        if not self.structure.structured_like and self.outputs:
+        if len( self.outputs ) > 1:
             outputs = self.outputs
         else:
+            # either must have specified structured_like or something worse
+            if self.structure.structured_like:
+                collection_prototype = inputs[ self.structure.structured_like ].collection
+            else:
+                collection_prototype = type_registry.prototype( self.structure.collection_type )
             # TODO: Handle nested structures.
-            input_collection = inputs[ self.structure.structured_like ]
             outputs = odict()
-            for element in input_collection.collection.elements:
+            for element in collection_prototype.elements:
                 name = element.element_identifier
                 format = self.default_format
                 if self.inherit_format:
