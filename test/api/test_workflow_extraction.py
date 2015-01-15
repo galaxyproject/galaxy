@@ -182,6 +182,97 @@ test_data:
         collection_step_state = loads( collection_step[ "tool_state" ] )
         self.assertEquals( collection_step_state[ "collection_type" ], u"list:paired" )
 
+    def test_extract_workflow_with_output_collections( self ):
+        jobs_summary = self._run_jobs("""
+steps:
+  - label: text_input1
+    type: input
+  - label: text_input2
+    type: input
+  - label: cat_inputs
+    tool_id: cat1
+    state:
+      input1:
+        $link: text_input1
+      queries:
+        - input2:
+            $link: text_input2
+  - label: split_up
+    tool_id: collection_split_on_column
+    state:
+      input1:
+        $link: cat_inputs#out_file1
+  - tool_id: cat_list
+    state:
+      input1:
+        $link: split_up#split_output
+test_data:
+  text_input1: "samp1\t10.0\nsamp2\t20.0\n"
+  text_input2: "samp1\t30.0\nsamp2\t40.0\n"
+""")
+        tool_ids = [ "cat1", "collection_split_on_column", "cat_list" ]
+        job_ids = map( functools.partial(self._job_id_for_tool, jobs_summary.jobs ), tool_ids )
+        downloaded_workflow = self._extract_and_download_workflow(
+            dataset_ids=[ "1", "2" ],
+            job_ids=job_ids,
+        )
+        self.__check_workflow(
+            downloaded_workflow,
+            step_count=5,
+            verify_connected=True,
+            data_input_count=2,
+            data_collection_input_count=0,
+            tool_ids=tool_ids,
+        )
+
+    def test_extract_with_mapped_output_collections( self ):
+        jobs_summary = self._run_jobs("""
+steps:
+  - label: text_input1
+    type: input_collection
+  - label: cat_inputs
+    tool_id: cat1
+    state:
+      input1:
+        $link: text_input1
+  - label: pair_off
+    tool_id: collection_creates_pair
+    state:
+      input1:
+        $link: cat_inputs#out_file1
+  - label: cat_pairs
+    tool_id: cat_collection
+    state:
+      input1:
+        $link: pair_off#paired_output
+  - tool_id: cat_list
+    state:
+      input1:
+        $link: cat_pairs#out_file1
+test_data:
+  text_input1:
+    type: list
+    elements:
+      - identifier: samp1
+        content: "samp1\t10.0\nsamp2\t20.0\n"
+      - identifier: samp2
+        content: "samp1\t30.0\nsamp2\t40.0\n"
+""")
+        tool_ids = [ "cat1", "collection_creates_pair", "cat_collection", "cat_list" ]
+        job_ids = map( functools.partial(self._job_id_for_tool, jobs_summary.jobs ), tool_ids )
+        downloaded_workflow = self._extract_and_download_workflow(
+            dataset_collection_ids=[ "3" ],
+            job_ids=job_ids,
+        )
+        self.__check_workflow(
+            downloaded_workflow,
+            step_count=5,
+            verify_connected=True,
+            data_input_count=0,
+            data_collection_input_count=1,
+            tool_ids=tool_ids,
+        )
+
     def _job_id_for_tool( self, jobs, tool_id ):
         return self._job_for_tool( jobs, tool_id )[ "id" ]
 

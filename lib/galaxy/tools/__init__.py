@@ -314,6 +314,7 @@ class ToolOutputCollection( ToolOutputBase ):
 
         self.metadata_source = default_metadata_source
         self.format_source = default_format_source
+        self.change_format = []  # TODO
 
     def known_outputs( self, inputs, type_registry ):
         if self.dynamic_structure:

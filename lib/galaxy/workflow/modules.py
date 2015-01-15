@@ -649,7 +649,9 @@ class ToolModule( WorkflowModule ):
         data_outputs = []
         data_inputs = None
         for name, tool_output in self.tool.outputs.iteritems():
-            if tool_output.format_source != None:
+            if tool_output.collection:
+                formats = [ 'input' ]
+            elif tool_output.format_source != None:
                 formats = [ 'input' ]  # default to special name "input" which remove restrictions on connections
                 if data_inputs == None:
                     data_inputs = self.get_data_inputs()
