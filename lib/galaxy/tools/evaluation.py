@@ -348,7 +348,7 @@ class ToolEvaluator( object ):
         Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
         """
         # chromInfo is a filename, do not sanitize it.
-        skip = [ 'chromInfo' ]
+        skip = [ 'chromInfo' ] + self.tool.template_macro_params.keys()
         if not self.tool or not self.tool.options or self.tool.options.sanitize:
             for key, value in param_dict.items():
                 if key not in skip:
