@@ -29,6 +29,7 @@ class DatasetCollectionManager( object ):
     Abstraction for interfacing with dataset collections instance - ideally abstarcts
     out model and plugin details.
     """
+    ELEMENTS_UNINITIALIZED = object()
 
     def __init__( self, app ):
         self.type_registry = DatasetCollectionTypesRegistry( app )
@@ -75,7 +76,11 @@ class DatasetCollectionManager( object ):
                 for input_name, input_collection in implicit_collection_info[ "implicit_inputs" ]:
                     dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                 for output_dataset in implicit_collection_info.get( "outputs" ):
-                    output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
+                    if isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
+                        dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
+                    else:
+                        # dataset collection, don't need to do anything...
+                        pass
                     trans.sa_session.add( output_dataset )
 
                 dataset_collection_instance.implicit_output_name = implicit_collection_info[ "implicit_output_name" ]
@@ -98,6 +103,18 @@ class DatasetCollectionManager( object ):
 
         return self.__persist( dataset_collection_instance )
 
+    def create_dataset_collection(
+        self,
+        trans,
+        collection_type,
+        elements=None,
+    ):
+        return self.__create_dataset_collection(
+            trans=trans,
+            collection_type=collection_type,
+            elements=elements,
+        )
+
     def __create_dataset_collection(
         self,
         trans,
@@ -119,9 +136,24 @@ class DatasetCollectionManager( object ):
             elements = self.__load_elements( trans, element_identifiers )
         # else if elements is set, it better be an ordered dict!
 
-        type_plugin = collection_type_description.rank_type_plugin()
-        dataset_collection = builder.build_collection( type_plugin, elements )
+        if elements is not self.ELEMENTS_UNINITIALIZED:
+            type_plugin = collection_type_description.rank_type_plugin()
+            dataset_collection = builder.build_collection( type_plugin, elements )
+        else:
+            dataset_collection = model.DatasetCollection( populated=False )
         dataset_collection.collection_type = collection_type
+        return dataset_collection
+
+    def set_collection_elements( self, dataset_collection, dataset_instances ):
+        if dataset_collection.populated:
+            raise Exception("Cannot reset elements of an already populated dataset collection.")
+
+        collection_type = dataset_collection.collection_type
+        collection_type_description = self.collection_type_descriptions.for_collection_type( collection_type )
+        type_plugin = collection_type_description.rank_type_plugin()
+        builder.set_collection_elements( dataset_collection, type_plugin, dataset_instances )
+        dataset_collection.mark_as_populated()
+
         return dataset_collection
 
     def delete( self, trans, instance_type, id ):

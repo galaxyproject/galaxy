@@ -59,6 +59,9 @@ class ToolEvaluator( object ):
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
 
+        out_collections = dict( [ ( obj.name, obj.dataset_collection_instance ) for obj in job.output_dataset_collection_instances ] )
+        out_collections.update( [ ( obj.name, obj.dataset_collection ) for obj in job.output_dataset_collections ] )
+
         if get_special:
 
             # Set up output dataset association for export history jobs. Because job
@@ -84,6 +87,7 @@ class ToolEvaluator( object ):
             incoming,
             inp_data,
             out_data,
+            output_collections=out_collections,
             output_paths=compute_environment.output_paths(),
             job_working_directory=compute_environment.working_directory(),
             input_paths=compute_environment.input_paths()
@@ -98,7 +102,7 @@ class ToolEvaluator( object ):
 
         self.param_dict = param_dict
 
-    def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths, job_working_directory, input_paths=[] ):
+    def build_param_dict( self, incoming, input_datasets, output_datasets, output_collections, output_paths, job_working_directory, input_paths=[] ):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
@@ -115,6 +119,7 @@ class ToolEvaluator( object ):
         self.__populate_wrappers(param_dict, input_dataset_paths)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets, input_dataset_paths)
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, output_paths, job_working_directory)
+        self.__populate_output_collection_wrappers(param_dict, output_collections, output_paths, job_working_directory)
         self.__populate_unstructured_path_rewrites(param_dict)
         # Call param dict sanitizer, before non-job params are added, as we don't want to sanitize filenames.
         self.__sanitize_param_dict( param_dict )
@@ -268,6 +273,35 @@ class ToolEvaluator( object ):
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
+
+    def __populate_output_collection_wrappers(self, param_dict, output_collections, output_paths, job_working_directory):
+        output_dataset_paths = dataset_path_rewrites( output_paths )
+        tool = self.tool
+        for name, out_collection in output_collections.items():
+            if name not in tool.output_collections:
+                continue
+                #message_template = "Name [%s] not found in tool.output_collections %s"
+                #message = message_template % ( name, tool.output_collections )
+                #raise AssertionError( message )
+
+            wrapper_kwds = dict(
+                datatypes_registry=self.app.datatypes_registry,
+                dataset_paths=output_dataset_paths,
+                tool=tool,
+                name=name
+            )
+            wrapper = DatasetCollectionWrapper(
+                out_collection,
+                **wrapper_kwds
+            )
+            param_dict[ name ] = wrapper
+            # TODO: Handle nested collections...
+            output_def = tool.output_collections[ name ]
+            for element_identifier, output_def in output_def.outputs.items():
+                if not output_def.implicit:
+                    dataset_wrapper = wrapper[ element_identifier ]
+                    param_dict[ output_def.name ] = dataset_wrapper
+                    log.info("Updating param_dict for %s with %s" % (output_def.name, dataset_wrapper) )
 
     def __populate_output_dataset_wrappers(self, param_dict, output_datasets, output_paths, job_working_directory):
         output_dataset_paths = dataset_path_rewrites( output_paths )

@@ -292,10 +292,13 @@ class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
             # It is a HistoryDatasetCollectionAssociation
             collection = has_collection.collection
             self.name = has_collection.name
-        else:
+        elif hasattr( has_collection, "child_collection" ):
             # It is a DatasetCollectionElement instance referencing another collection
             collection = has_collection.child_collection
             self.name = has_collection.element_identifier
+        else:
+            collection = has_collection
+            self.name = None
 
         elements = collection.elements
         element_instances = odict.odict()

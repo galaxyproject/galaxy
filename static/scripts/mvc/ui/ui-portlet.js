@@ -44,17 +44,8 @@ var View = Backbone.View.extend({
         // link header
         this.$header = this.$el.find('.portlet-header');
         
-        // set content format
+        // link portlet content (wraps 'content')
         var $portlet_content = this.$el.find('.portlet-content');
-        if (!this.options.scrollable) {
-            if (this.options.title) {
-                $portlet_content.addClass('no-scroll');
-            } else {
-                $portlet_content.addClass('no-scroll-no-title');
-            }
-        } else {
-            $portlet_content.addClass('scroll');
-        }
         
         // set content padding
         if (this.options.nopadding) {

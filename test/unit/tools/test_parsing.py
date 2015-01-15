@@ -167,8 +167,9 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert containers[0].identifier == "mycool/bwa"
 
     def test_outputs(self):
-        outputs = self._tool_source.parse_outputs(object())
+        outputs, output_collections = self._tool_source.parse_outputs(object())
         assert len(outputs) == 1
+        assert len(output_collections) == 0
 
     def test_stdio(self):
         exit, regexes = self._tool_source.parse_stdio()
@@ -273,8 +274,9 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         assert containers[0].identifier == "awesome/bowtie"
 
     def test_outputs(self):
-        outputs = self._tool_source.parse_outputs(object())
+        outputs, output_collections = self._tool_source.parse_outputs(object())
         assert len(outputs) == 1
+        assert len(output_collections) == 0
 
     def test_stdio(self):
         exit, regexes = self._tool_source.parse_stdio()

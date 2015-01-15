@@ -649,7 +649,9 @@ class ToolModule( WorkflowModule ):
         data_outputs = []
         data_inputs = None
         for name, tool_output in self.tool.outputs.iteritems():
-            if tool_output.format_source != None:
+            if tool_output.collection:
+                formats = [ 'input' ]
+            elif tool_output.format_source != None:
                 formats = [ 'input' ]  # default to special name "input" which remove restrictions on connections
                 if data_inputs == None:
                     data_inputs = self.get_data_inputs()
@@ -821,6 +823,7 @@ class ToolModule( WorkflowModule ):
             step_outputs = dict( execution_tracker.implicit_collections )
         else:
             step_outputs = dict( execution_tracker.output_datasets )
+            step_outputs.update( execution_tracker.output_collections )
         progress.set_step_outputs( step, step_outputs )
         jobs = execution_tracker.successful_jobs
         for job in jobs:
@@ -900,6 +903,11 @@ class ToolModule( WorkflowModule ):
             if replacement_value.hidden_beneath_collection_instance:
                 replacement_value = replacement_value.hidden_beneath_collection_instance
             outputs[ replacement_name ] = replacement_value
+        for job_output_collection in job_0.output_dataset_collection_instances:
+            replacement_name = job_output_collection.name
+            replacement_value = job_output_collection.dataset_collection_instance
+            outputs[ replacement_name ] = replacement_value
+
         progress.set_step_outputs( step, outputs )
 
 

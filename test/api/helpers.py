@@ -134,7 +134,7 @@ class DatasetPopulator( object ):
 
     def get_history_dataset_details( self, history_id, **kwds ):
         dataset_id = self.__history_dataset_id( history_id, **kwds )
-        details_response = self.__get_contents_request( history_id, "/%s" % dataset_id )
+        details_response = self.__get_contents_request( history_id, "/datasets/%s" % dataset_id )
         assert details_response.status_code == 200
         return details_response.json()
 

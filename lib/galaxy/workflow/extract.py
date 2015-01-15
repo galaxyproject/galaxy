@@ -11,6 +11,7 @@ from galaxy.tools.parameters.basic import (
     SelectToolParameter,
     UnvalidatedValue
 )
+from galaxy.tools import ToolOutputCollectionPart
 from galaxy.tools.parameters.grouping import (
     Conditional,
     Repeat
@@ -115,6 +116,8 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
                 input_collection = an_implicit_output_collection.find_implicit_input_collection( input_name )
                 if input_collection:
                     other_hid = input_collection.hid
+                else:
+                    log.info("Cannot find implicit input collection for %s" % input_name)
             if other_hid in hid_to_output_pair:
                 other_step, other_name = hid_to_output_pair[ other_hid ]
                 conn = model.WorkflowStepConnection()
@@ -126,18 +129,26 @@ def extract_steps( trans, history=None, job_ids=None, dataset_ids=None, dataset_
         steps.append( step )
         steps_by_job_id[ job_id ] = step
         # Store created dataset hids
-        for assoc in job.output_datasets:
+        for assoc in (job.output_datasets + job.output_dataset_collection_instances):
+            assoc_name = assoc.name
+            if ToolOutputCollectionPart.is_named_collection_part_name( assoc_name ):
+                continue
             if job in summary.implicit_map_jobs:
                 hid = None
                 for implicit_pair in jobs[ job ]:
                     query_assoc_name, dataset_collection = implicit_pair
-                    if query_assoc_name == assoc.name:
+                    if query_assoc_name == assoc_name:
                         hid = dataset_collection.hid
                 if hid is None:
-                    log.warn("Failed to find matching implicit job.")
+                    template = "Failed to find matching implicit job - job is %s, jobs are %s, assoc_name is %s."
+                    message = template % ( job.id, jobs, assoc.name )
+                    log.warn( message )
                     raise Exception( "Failed to extract job." )
             else:
-                hid = assoc.dataset.hid
+                if hasattr( assoc, "dataset" ):
+                    hid = assoc.dataset.hid
+                else:
+                    hid = assoc.dataset_collection_instance.hid
             hid_to_output_pair[ hid ] = ( step, assoc.name )
     return steps
 
@@ -210,11 +221,18 @@ class WorkflowSummary( object ):
         dataset_collection = content
         hid = content.hid
         self.collection_types[ hid ] = content.collection.collection_type
-        if not content.implicit_output_name:
-            job = DatasetCollectionCreationJob( content )
-            self.jobs[ job ] = [ ( None, content ) ]
-        else:
-            dataset_collection = content
+        if content.creating_job_associations:
+            for assoc in content.creating_job_associations:
+                job = assoc.job
+                if job not in self.jobs or self.jobs[ job ][ 0 ][ 1 ].history_content_type == "dataset":
+                    self.jobs[ job ] = [ ( assoc.name, dataset_collection ) ]
+                    if content.implicit_output_name:
+                        self.implicit_map_jobs.append( job )
+                else:
+                    self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
+        # This whole elif condition may no longer be needed do to additional
+        # tracking with creating_job_associations. Will delete at some point.
+        elif content.implicit_output_name:
             # TODO: Optimize db call
             dataset_instance = dataset_collection.collection.dataset_instances[ 0 ]
             if not self.__check_state( dataset_instance ):
@@ -235,6 +253,9 @@ class WorkflowSummary( object ):
                     self.implicit_map_jobs.append( job )
                 else:
                     self.jobs[ job ].append( ( assoc.name, dataset_collection ) )
+        else:
+            job = DatasetCollectionCreationJob( content )
+            self.jobs[ job ] = [ ( None, content ) ]
 
     def __summarize_dataset( self, dataset ):
         if not self.__check_state( dataset ):

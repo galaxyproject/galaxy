@@ -1202,6 +1202,11 @@ class JobWrapper( object ):
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+
+        # TODO: eliminate overlap with tools/evaluation.py
+        out_collections = dict( [ ( obj.name, obj.dataset_collection_instance ) for obj in job.output_dataset_collection_instances ] )
+        out_collections.update( [ ( obj.name, obj.dataset_collection ) for obj in job.output_dataset_collections ] )
+
         input_ext = 'data'
         for _, data in inp_data.items():
             # For loop odd, but sort simulating behavior in galaxy.tools.actions
@@ -1218,6 +1223,12 @@ class JobWrapper( object ):
             'children': self.tool.collect_child_datasets(out_data, self.working_directory),
             'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext)
         }
+        self.tool.collect_dynamic_collections(
+            out_collections,
+            job_working_directory=self.working_directory,
+            inp_data=inp_data,
+            job=job,
+        )
         param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).

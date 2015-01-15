@@ -215,6 +215,85 @@ class ToolsTestCase( api.ApiTestCase ):
         contents = self.dataset_populator.get_history_dataset_content( history_id, hid=4 )
         assert contents.strip() == "123\n456", contents
 
+    @skip_without_tool( "collection_creates_pair" )
+    def test_paired_collection_output( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123\n456\n789\n0ab' )
+        inputs = {
+            "input1": {"src": "hda", "id": new_dataset1["id"]},
+        }
+        # TODO: shouldn't need this wait
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create = self._run( "collection_creates_pair", history_id, inputs, assert_ok=True )
+        output_collection = self._assert_one_job_one_collection_run( create )
+        element0, element1 = self._assert_elements_are( output_collection, "forward", "reverse" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self._verify_element( history_id, element0, contents="123\n789\n", file_ext="txt" )
+        self._verify_element( history_id, element1, contents="456\n0ab\n", file_ext="txt" )
+
+    @skip_without_tool( "collection_creates_list" )
+    def test_list_collection_output( self ):
+        history_id = self.dataset_populator.new_history()
+        create_response = self.dataset_collection_populator.create_list_in_history( history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"] )
+        hdca_id = create_response.json()[ "id" ]
+        inputs = {
+            "input1": { "src": "hdca", "id": hdca_id },
+        }
+        # TODO: real problem here - shouldn't have to have this wait.
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create = self._run( "collection_creates_list", history_id, inputs, assert_ok=True )
+        output_collection = self._assert_one_job_one_collection_run( create )
+        element0, element1 = self._assert_elements_are( output_collection, "data1", "data2" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self._verify_element( history_id, element0, contents="identifier is data1\n", file_ext="txt" )
+        self._verify_element( history_id, element1, contents="identifier is data2\n", file_ext="txt" )
+
+    @skip_without_tool( "collection_creates_list_2" )
+    def test_list_collection_output_format_source( self ):
+        # test using format_source with a tool
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='#col1\tcol2' )
+        create_response = self.dataset_collection_populator.create_list_in_history( history_id, contents=["a\tb\nc\td", "e\tf\ng\th"] )
+        hdca_id = create_response.json()[ "id" ]
+        inputs = {
+            "header": { "src": "hda", "id": new_dataset1["id"] },
+            "input_collect": { "src": "hdca", "id": hdca_id },
+        }
+        # TODO: real problem here - shouldn't have to have this wait.
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create = self._run( "collection_creates_list_2", history_id, inputs, assert_ok=True )
+        output_collection = self._assert_one_job_one_collection_run( create )
+        element0, element1 = self._assert_elements_are( output_collection, "data1", "data2" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self._verify_element( history_id, element0, contents="#col1\tcol2\na\tb\nc\td\n", file_ext="txt" )
+        self._verify_element( history_id, element1, contents="#col1\tcol2\ne\tf\ng\th\n", file_ext="txt" )
+
+    @skip_without_tool( "collection_split_on_column" )
+    def test_dynamic_list_output( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='samp1\t1\nsamp1\t3\nsamp2\t2\nsamp2\t4\n' )
+        inputs = {
+            'input1': dataset_to_param( new_dataset1 ),
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create = self._run( "collection_split_on_column", history_id, inputs, assert_ok=True )
+
+        output_collection = self._assert_one_job_one_collection_run( create )
+        self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
+        assert not output_collection[ "populated" ]
+        assert len( output_collection[ "elements" ] ) == 0
+
+        self.dataset_populator.wait_for_job( create["jobs"][0]["id"], assert_ok=True )
+
+        get_collection_response = self._get( "dataset_collections/%s" % output_collection[ "id" ], data={"instance_type": "history"} )
+        self._assert_status_code_is( get_collection_response, 200 )
+
+        output_collection = get_collection_response.json()
+        self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
+        assert output_collection[ "populated" ]
+        assert len( output_collection[ "elements" ] ) == 2
+        # TODO: verify element identifiers
+
     @skip_without_tool( "cat1" )
     def test_run_cat1_with_two_inputs( self ):
         # Run tool with an multiple data parameter and grouping (repeat)
@@ -347,6 +426,42 @@ class ToolsTestCase( api.ApiTestCase ):
         assert "456\n0ab" in outputs_contents
         assert "123\n0ab" in outputs_contents
         assert "456\n789" in outputs_contents
+
+    def _assert_one_job_one_collection_run( self, create ):
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        collections = create[ 'output_collections' ]
+
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( implicit_collections ), 0 )
+        self.assertEquals( len( collections ), 1 )
+
+        output_collection = collections[ 0 ]
+        return output_collection
+
+    def _assert_elements_are( self, collection, *args ):
+        elements = collection["elements"]
+        self.assertEquals(len(elements), len(args))
+        for index, element in enumerate(elements):
+            arg = args[index]
+            self.assertEquals(arg, element["element_identifier"])
+        return elements
+
+    def _verify_element( self, history_id, element, **props ):
+        object_id = element["object"]["id"]
+
+        if "contents" in props:
+            expected_contents = props["contents"]
+
+            contents = self.dataset_populator.get_history_dataset_content( history_id, dataset_id=object_id)
+            self.assertEquals( contents, expected_contents )
+
+            del props["contents"]
+
+        if props:
+            details = self.dataset_populator.get_history_dataset_details( history_id, dataset_id=object_id)
+            for key, value in props.items():
+                self.assertEquals( details[key], value )
 
     def _setup_repeat_multirun( self ):
         history_id = self.dataset_populator.new_history()
@@ -534,6 +649,52 @@ class ToolsTestCase( api.ApiTestCase ):
 
         self.assertEquals( len( response_object[ 'jobs' ] ), 2 )
         self.assertEquals( len( response_object[ 'implicit_collections' ] ), 1 )
+
+    @skip_without_tool( "collection_creates_pair" )
+    def test_map_over_collection_output( self ):
+        history_id = self.dataset_populator.new_history()
+        create_response = self.dataset_collection_populator.create_list_in_history( history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"] )
+        hdca_id = create_response.json()[ "id" ]
+        inputs = {
+            "input1|__collection_multirun__": {"src": "hdca", "id": hdca_id},
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create = self._run( "collection_creates_pair", history_id, inputs, assert_ok=True )
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 2 )
+        self.assertEquals( len( implicit_collections ), 1 )
+        implicit_collection = implicit_collections[ 0 ]
+        assert implicit_collection[ "collection_type" ] == "list:paired", implicit_collection
+        outer_elements = implicit_collection[ "elements" ]
+        assert len( outer_elements ) == 2
+        element0, element1 = outer_elements
+        assert element0[ "element_identifier" ] == "data1"
+        assert element1[ "element_identifier" ] == "data2"
+
+        pair0, pair1 = element0["object"], element1["object"]
+        pair00, pair01 = pair0["elements"]
+        pair10, pair11 = pair1["elements"]
+
+        for pair in pair0, pair1:
+            assert "collection_type" in pair, pair
+            assert pair["collection_type"] == "paired", pair
+
+        pair_ids = []
+        for pair_element in pair00, pair01, pair10, pair11:
+            assert "object" in pair_element
+            pair_ids.append(pair_element["object"]["id"])
+
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        expected_contents = [
+            "a\nc\n",
+            "b\nd\n",
+            "e\ng\n",
+            "f\nh\n",
+        ]
+        for i in range(4):
+            contents = self.dataset_populator.get_history_dataset_content( history_id, dataset_id=pair_ids[i])
+            self.assertEquals(expected_contents[i], contents)
 
     @skip_without_tool( "cat1" )
     def test_cannot_map_over_incompatible_collections( self ):

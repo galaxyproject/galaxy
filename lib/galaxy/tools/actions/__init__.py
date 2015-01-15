@@ -149,7 +149,7 @@ class DefaultToolAction( object ):
         tool.visit_inputs( param_values, visitor )
         return input_dataset_collections
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, set_output_history=True, history=None, job_params=None, rerun_remap_job_id=None, mapping_over_collection=False):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -160,6 +160,8 @@ class DefaultToolAction( object ):
             history = tool.get_default_history_by_trans( trans, create=True )
 
         out_data = odict()
+        out_collections = {}
+        out_collection_instances = {}
         # Track input dataset collections - but replace with simply lists so collect
         # input datasets can process these normally.
         inp_dataset_collections = self.collect_input_dataset_collections( tool, incoming )
@@ -243,8 +245,16 @@ class DefaultToolAction( object ):
             # This may not be neccesary with the new parent/child associations
             data.designation = name
             # Copy metadata from one of the inputs if requested.
-            if output.metadata_source:
-                data.init_meta( copy_from=inp_data[output.metadata_source] )
+
+            # metadata source can be either a string referencing an input
+            # or an actual object to copy.
+            metadata_source = output.metadata_source
+            if metadata_source:
+                if isinstance( metadata_source, basestring ):
+                    metadata_source = inp_data[metadata_source]
+
+            if metadata_source is not None:
+                data.init_meta( copy_from=metadata_source )
             else:
                 data.init_meta()
             # Take dbkey from LAST input
@@ -264,10 +274,59 @@ class DefaultToolAction( object ):
                 output.actions.apply_action( data, output_action_params )
             # Store all changes to database
             trans.sa_session.flush()
+            return data
 
         for name, output in tool.outputs.items():
             if not filter_output(output, incoming):
-                handle_output( name, output )
+                if output.collection:
+                    collections_manager = trans.app.dataset_collections_service
+
+                    # As far as I can tell - this is always true - but just verify
+                    assert set_output_history, "Cannot create dataset collection for this kind of tool."
+
+                    elements = odict()
+                    input_collections = dict( [ (k, v[0]) for k, v in inp_dataset_collections.iteritems() ] )
+                    known_outputs = output.known_outputs( input_collections, collections_manager.type_registry )
+                    # Just to echo TODO elsewhere - this should be restructured to allow
+                    # nested collections.
+                    for output_part_def in known_outputs:
+                        effective_output_name = output_part_def.effective_output_name
+                        element = handle_output( effective_output_name, output_part_def.output_def )
+                        # Following hack causes dataset to no be added to history...
+                        child_dataset_names.add( effective_output_name )
+
+                        if set_output_history:
+                            history.add_dataset( element, set_hid=set_output_hid )
+                        trans.sa_session.add( element )
+                        trans.sa_session.flush()
+
+                        elements[ output_part_def.element_identifier ] = element
+
+                    if output.dynamic_structure:
+                        assert not elements  # known_outputs must have been empty
+                        elements = collections_manager.ELEMENTS_UNINITIALIZED
+
+                    if mapping_over_collection:
+                        dc = collections_manager.create_dataset_collection(
+                            trans,
+                            collection_type=output.structure.collection_type,
+                            elements=elements,
+                        )
+                        out_collections[ name ] = dc
+                    else:
+                        hdca_name = self.get_output_name( output, None, tool, on_text, trans, incoming, history, wrapped_params.params, job_params )
+                        hdca = collections_manager.create(
+                            trans,
+                            history,
+                            name=hdca_name,
+                            collection_type=output.structure.collection_type,
+                            elements=elements,
+                        )
+                        # name here is name of the output element - not name
+                        # of the hdca.
+                        out_collection_instances[ name ] = hdca
+                else:
+                    handle_output( name, output )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
@@ -322,6 +381,10 @@ class DefaultToolAction( object ):
                 job.add_input_dataset( name, None )
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
+        for name, dataset_collection in out_collections.iteritems():
+            job.add_implicit_output_dataset_collection( name, dataset_collection )
+        for name, dataset_collection_instance in out_collection_instances.iteritems():
+            job.add_output_dataset_collection( name, dataset_collection_instance )
         job.object_store_id = object_store_populator.object_store_id
         if job_params:
             job.params = dumps( job_params )
