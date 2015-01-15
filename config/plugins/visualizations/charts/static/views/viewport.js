@@ -45,6 +45,14 @@ return Backbone.View.extend({
             var $info = self.$el.find('#info');
             var $container = self.$el.find('.charts-viewport-container');
             
+            // prevent window scrolling
+            var initial_overflow = $('body').css('overflow');
+            $container.on('mouseover', function() {
+                $('body').css('overflow', 'hidden');
+            }).on('mouseout', function() {
+                $('body').css('overflow', initial_overflow);
+            });
+            
             // get icon
             var $icon = $info.find('#icon');
             

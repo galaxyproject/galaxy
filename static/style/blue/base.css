@@ -1416,7 +1416,6 @@ label{font-weight:normal}
 .ui-portlet .portlet-header .portlet-title .icon,.ui-portlet-slim .portlet-header .portlet-title .icon{font-size:1.2em;vertical-align:middle}
 .ui-portlet .portlet-buttons,.ui-portlet-slim .portlet-buttons{height:50px;padding:10px}
 .ui-portlet .portlet-content,.ui-portlet-slim .portlet-content{height:inherit;padding:10px;clear:both}.ui-portlet .portlet-content .content,.ui-portlet-slim .portlet-content .content{padding:10px;height:100%;width:100%}.ui-portlet .portlet-content .content .buttons,.ui-portlet-slim .portlet-content .content .buttons{height:50px;padding:10px}
-.ui-portlet .no-scroll,.ui-portlet-slim .no-scroll{height:calc(100% - 80px)}
 .ui-portlet-slim{max-width:900px}
 .ui-portlet-repeat,.ui-portlet-section,.ui-portlet-section{border:none;border-left:solid 3px #ebd9b2;border-radius:5px}.ui-portlet-repeat .portlet-header,.ui-portlet-section .portlet-header{background:#ebd9b2;border-radius:3px;border-bottom-left-radius:0px;padding:0px 2px}
 .ui-portlet-repeat .portlet-content,.ui-portlet-section .portlet-content{padding:0px}.ui-portlet-repeat .portlet-content .content,.ui-portlet-section .portlet-content .content{padding:0px;padding-left:10px}
