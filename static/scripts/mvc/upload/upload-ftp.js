@@ -62,21 +62,6 @@ return Backbone.View.extend({
                 var len = checkboxes.length;
                 $this = $(this);
                 var allChecked = !($this.hasClass('fa-check-square-o'));
-               
-
-
-                // change state of the selectAll checkbox
-                // if($this.hasClass('fa-check-square-o')) {
-                //     // if checked change to unchecked
-                //     $this.removeClass('fa-check-square-o');
-                //     $this.addClass('fa-square-o');
-                //     allChecked=false;
-                // } else {
-                //     // if checked or partially checked, change to checked
-                //     $this.removeClass('fa-square-o fa-minus-square-o');
-                //     $this.addClass('fa-check-square-o');
-                //     allChecked=true;
-                // }
 
                 // change state of the sub-checkboxes
                 for(i = 0; i < len; i++) {
@@ -94,8 +79,8 @@ return Backbone.View.extend({
                         }
                     }
                 }
+
                 self._updateSelectAll(selectAll);
-                return;
             });
 
         } else {
