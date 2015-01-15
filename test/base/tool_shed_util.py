@@ -44,48 +44,6 @@ def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_
     return last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision
 
 
-def log_reason_repository_cannot_be_uninstalled( app, repository ):
-    # This method should be altered if / when the app.install_model.ToolShedRepository.can_uninstall()
-    # method is altered.  Any block returning  a False value from that method should be handled here.
-    name = str( repository.name )
-    owner = str( repository.owner )
-    installed_changeset_revision = str( repository.installed_changeset_revision )
-    log.debug( "Revision %s of repository %s owned by %s cannot be uninstalled because:" %
-               ( installed_changeset_revision, name, owner ) )
-    if repository.status == app.install_model.ToolShedRepository.installation_status.UNINSTALLED:
-        log.debug( 'it is already uninstalled.' )
-    else:
-        irm = app.installed_repository_manager
-        repository_tup = ( str( repository.tool_shed ), name, owner, installed_changeset_revision )
-        # Find other installed repositories that require this repository.
-        installed_dependent_repository_tups = \
-            irm.installed_dependent_repositories_of_installed_repositories.get( repository_tup, [] )
-        if installed_dependent_repository_tups:
-            for installed_dependent_repository_tup in installed_dependent_repository_tups:
-                idr_tool_shed, idr_name, idr_owner, idr_installed_changeset_revision = installed_dependent_repository_tup
-                log.debug( "it is required by revision %s of repository %s owned by %s" %
-                           ( idr_installed_changeset_revision, idr_name, idr_owner ) )
-        else:
-            # Find installed tool dependencies that require this repository's installed tool dependencies.
-            installed_dependent_td_tups = None
-            installed_tool_dependency_tups = irm.installed_tool_dependencies_of_installed_repositories.get( repository_tup, [] )
-            for td_tup in installed_tool_dependency_tups:
-                installed_dependent_td_tups = \
-                    irm.installed_runtime_dependent_tool_dependencies_of_installed_tool_dependencies.get( td_tup, [] )
-            if installed_dependent_td_tups is not None:
-                # This repository cannot be uninstalled because it contains installed tool dependencies that
-                # are required at run time by other installed tool dependencies.
-                log.debug( "it contains installed tool dependencies that are required at run time by these installed tool dependencies:" )
-                for installed_dependent_td_tup in installed_dependent_td_tups:
-                    repository_id, td_name, td_version, td_type = installed_dependent_td_tup
-                    dependent_repository = test_db_util.get_repository( repository_id )
-                    dr_name = str( dependent_repository.name )
-                    dr_owner = str( dependent_repository.owner )
-                    dr_installed_changeset_revison = str( dependent_repository.installed_changeset_revision )
-                    log.debug( "- version %s of %s %s contained in revision %s of repository %s owned by %s" %
-                               ( td_version, td_type, td_name, dr_installed_changeset_revison, dr_name, dr_owner ) )
-
-
 def parse_tool_panel_config( config, shed_tools_dict ):
     """
     Parse a shed-related tool panel config to generate the shed_tools_dict. This only happens when testing tools installed from the tool shed.
