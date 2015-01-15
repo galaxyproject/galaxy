@@ -102,7 +102,6 @@ return Backbone.View.extend({
             // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
         }
-
         // hide spinner
         this.$el.find('#upload-ftp-wait').hide();
     },
@@ -128,17 +127,14 @@ return Backbone.View.extend({
         } else {
             icon_class = this.options.class_add;
         }
-
         // add icon class
         $icon.addClass(icon_class);
         
         $it.on('addToUpBox', function() {
             // find model
             var model_index = self._find(ftp_file);
-
             // update icon
             $icon.removeClass();
-
             // add model
             if (!model_index) {
                 // add to uploadbox
@@ -148,13 +144,11 @@ return Backbone.View.extend({
                     size        : ftp_file.size,
                     path        : ftp_file.path
                 }]);
-
                 // add new icon class
                 $icon.addClass(self.options.class_remove);
             } else {
                 // remove
                 self.app.collection.remove(model_index);
-
                 // add new icon class
                 $icon.addClass(self.options.class_add);
             }
@@ -216,7 +210,7 @@ return Backbone.View.extend({
     // template row
     _templateRow: function(options) {
         return  '<tr class="upload-ftp-row" style="cursor: pointer;">' +
-                    '<td><div class="icon" /></td>' +
+                    '<td><div class="icon"/></td>' +
                     '<td style="width: 200px"><p style="width: inherit; word-wrap: break-word;">' + options.path + '</p></td>' +
                     '<td style="white-space: nowrap;">' + Utils.bytesToString(options.size) + '</td>' +
                     '<td style="white-space: nowrap;">' + options.ctime + '</td>' +
