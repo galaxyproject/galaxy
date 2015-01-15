@@ -63,7 +63,6 @@ galaxy_test_tmp_dir = os.path.join( test_home_directory, 'tmp' )
 # File containing information about problematic repositories to exclude from test runs.
 exclude_list_file = os.path.abspath( os.path.join( test_home_directory, 'exclude.xml' ) )
 default_galaxy_locales = 'en'
-default_galaxy_test_file_dir = "test-data"
 os.environ[ 'GALAXY_INSTALL_TEST_TMP_DIR' ] = galaxy_test_tmp_dir
 
 # Use separate databases for Galaxy and tool shed install info by default,
@@ -371,9 +370,6 @@ def main():
     tool_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_PATH', 'tools' )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
-    galaxy_test_file_dir = os.environ.get( 'GALAXY_INSTALL_TEST_FILE_DIR', default_galaxy_test_file_dir )
-    if not os.path.isabs( galaxy_test_file_dir ):
-        galaxy_test_file_dir = os.path.abspath( galaxy_test_file_dir )
     use_distributed_object_store = os.environ.get( 'GALAXY_INSTALL_TEST_USE_DISTRIBUTED_OBJECT_STORE', False )
     if not os.path.isdir( galaxy_test_tmp_dir ):
         os.mkdir( galaxy_test_tmp_dir )
