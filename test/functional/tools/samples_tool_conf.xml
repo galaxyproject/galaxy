@@ -37,6 +37,7 @@
   <tool file="collection_creates_pair.xml" />
   <tool file="collection_creates_list.xml" />
   <tool file="collection_optional_param.xml" />
+  <tool file="collection_split_on_column.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />

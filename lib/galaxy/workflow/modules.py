@@ -901,6 +901,11 @@ class ToolModule( WorkflowModule ):
             if replacement_value.hidden_beneath_collection_instance:
                 replacement_value = replacement_value.hidden_beneath_collection_instance
             outputs[ replacement_name ] = replacement_value
+        for job_output_collection in job_0.output_dataset_collection_instances:
+            replacement_name = job_output_collection.name
+            replacement_value = job_output_collection.dataset_collection_instance
+            outputs[ replacement_name ] = replacement_value
+
         progress.set_step_outputs( step, outputs )
 
 

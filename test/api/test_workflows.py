@@ -538,6 +538,44 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         self.assertEquals("a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content( history_id, hid=0 ) )
 
+    def test_workflow_run_dynamic_output_collections(self):
+        history_id = self.dataset_populator.new_history()
+        workflow_id = self._upload_yaml_workflow("""
+- label: text_input1
+  type: input
+- label: text_input2
+  type: input
+- label: cat_inputs
+  tool_id: cat1
+  state:
+    input1:
+      $link: text_input1
+    queries:
+      - input2:
+          $link: text_input2
+- label: split_up
+  tool_id: collection_split_on_column
+  state:
+    input1:
+      $link: cat_inputs#out_file1
+- tool_id: cat_list
+  state:
+    input1:
+      $link: split_up#split_output
+""")
+        hda1 = self.dataset_populator.new_dataset( history_id, content="samp1\t10.0\nsamp2\t20.0\n" )
+        hda2 = self.dataset_populator.new_dataset( history_id, content="samp1\t30.0\nsamp2\t40.0\n" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        inputs = {
+            '0': self._ds_entry(hda1),
+            '1': self._ds_entry(hda2),
+        }
+        self.__invoke_workflow( history_id, workflow_id, inputs )
+        # TODO: wait on workflow invocations
+        time.sleep(10)
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.assertEquals("10.0\n30.0\n20.0\n40.0\n", self.dataset_populator.get_history_dataset_content( history_id, hid=0 ) )
+
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
         workflow_request, history_id = self._setup_workflow_run( workflow )

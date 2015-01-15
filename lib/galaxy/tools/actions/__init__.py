@@ -289,6 +289,10 @@ class DefaultToolAction( object ):
 
                         elements[ output_part_def.element_identifier ] = element
 
+                    if output.dynamic_structure:
+                        assert not elements  # known_outputs must have been empty
+                        elements = collections_manager.ELEMENTS_UNINITIALIZED
+
                     if mapping_over_collection:
                         dc = collections_manager.create_dataset_collection(
                             trans,

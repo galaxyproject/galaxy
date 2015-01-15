@@ -153,9 +153,13 @@ class XmlToolSource(ToolSource):
             default_format = collection_elem.get( "format", "data" )
             collection_type = collection_elem.get( "type", None )
             structured_like = collection_elem.get( "structured_like", None )
+            dataset_collectors = None
+            if collection_elem.find( "discover_datasets" ) is not None:
+                dataset_collectors = output_collect.dataset_collectors_from_elem( collection_elem )
             structure = galaxy.tools.ToolOutputCollectionStructure(
                 collection_type=collection_type,
                 structured_like=structured_like,
+                dataset_collectors=dataset_collectors,
             )
             output_collection = galaxy.tools.ToolOutputCollection(
                 name,

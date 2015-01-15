@@ -276,6 +276,40 @@ class ToolsTestCase( api.ApiTestCase ):
         contents1 = self.dataset_populator.get_history_dataset_content( history_id, dataset_id=element1["object"]["id"])
         assert contents1 == "1\n", contents1
 
+    @skip_without_tool( "collection_split_on_column" )
+    def test_dynamic_list_output( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='samp1\t1\nsamp1\t3\nsamp2\t2\nsamp2\t4\n' )
+        inputs = {
+            'input1': dataset_to_param( new_dataset1 ),
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        create = self._run( "collection_split_on_column", history_id, inputs, assert_ok=True )
+
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        collections = create[ 'output_collections' ]
+
+        self.assertEquals( len( jobs ), 1 )
+        job_id = jobs[ 0 ][ "id" ]
+        self.assertEquals( len( implicit_collections ), 0 )
+        self.assertEquals( len( collections ), 1 )
+
+        output_collection = collections[0]
+        self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
+        assert not output_collection[ "populated" ]
+        assert len( output_collection[ "elements" ] ) == 0
+
+        self.dataset_populator.wait_for_job( job_id, assert_ok=True )
+
+        get_collection_response = self._get( "dataset_collections/%s" % output_collection[ "id" ], data={"instance_type": "history"} )
+        self._assert_status_code_is( get_collection_response, 200 )
+
+        output_collection = get_collection_response.json()
+        self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
+        assert output_collection[ "populated" ]
+        assert len( output_collection[ "elements" ] ) == 2
+
     @skip_without_tool( "cat1" )
     def test_run_cat1_with_two_inputs( self ):
         # Run tool with an multiple data parameter and grouping (repeat)

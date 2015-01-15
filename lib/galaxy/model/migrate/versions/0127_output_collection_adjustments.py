@@ -38,6 +38,18 @@ def upgrade(migrate_engine):
     for table in TABLES:
         __create(table)
 
+    try:
+        dataset_collection_table = Table( "dataset_collection", metadata, autoload=True )
+        # need server_default because column in non-null
+        populated_state_column = Column( 'populated_state', TrimmedString( 64 ), default='ok', server_default="ok", nullable=False )
+        populated_state_column.create( dataset_collection_table )
+
+        populated_message_column = Column( 'populated_state_message', TEXT, nullable=True )
+        populated_message_column.create( dataset_collection_table )
+    except Exception as e:
+        print str(e)
+        log.exception( "Creating dataset collection populated column failed." )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -45,6 +57,16 @@ def downgrade(migrate_engine):
 
     for table in TABLES:
         __drop(table)
+
+    try:
+        dataset_collection_table = Table( "dataset_collection", metadata, autoload=True )
+        populated_state_column = dataset_collection_table.c.populated_state
+        populated_state_column.drop()
+        populated_message_column = dataset_collection_table.c.populated_state_message
+        populated_message_column.drop()
+    except Exception as e:
+        print str(e)
+        log.exception( "Dropping dataset collection populated_state/ column failed." )
 
 
 def __create(table):

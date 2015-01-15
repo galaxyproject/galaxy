@@ -621,6 +621,8 @@ model.TransferJob.table = Table( "transfer_job", metadata,
 model.DatasetCollection.table = Table( "dataset_collection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "collection_type", Unicode(255), nullable=False ),
+    Column( "populated_state", TrimmedString( 64 ), default='ok', nullable=False ),
+    Column( "populated_state_message", TEXT ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
 )

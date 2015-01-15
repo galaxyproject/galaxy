@@ -2676,14 +2676,37 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     """
     dict_collection_visible_keys = ( 'id', 'collection_type' )
     dict_element_visible_keys = ( 'id', 'collection_type' )
+    populated_states = Bunch(
+        NEW='new',  # New dataset collection, unpopulated elements
+        OK='ok',  # Collection elements populated (HDAs may or may not have errors)
+        FAILED='failed',  # some problem populating state, won't be populated
+    )
 
     def __init__(
         self,
         id=None,
         collection_type=None,
+        populated=True,
     ):
         self.id = id
         self.collection_type = collection_type
+        if not populated:
+            self.populated_state = DatasetCollection.populated_states.NEW
+
+    @property
+    def populated( self ):
+        return self.populated_state == DatasetCollection.populated_states.OK
+
+    @property
+    def waiting_for_elements( self ):
+        return self.populated_state == DatasetCollection.populated_states.NEW
+
+    def mark_as_populated( self ):
+        self.populated_state = DatasetCollection.populated_states.OK
+
+    def handle_population_failed( self, message ):
+        self.populated_state = DatasetCollection.populated_states.FAILED
+        self.populated_state_message = message
 
     @property
     def dataset_instances( self ):
