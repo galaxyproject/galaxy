@@ -35,6 +35,7 @@ return Backbone.View.extend({
     
     // fill table
     _fill: function(ftp_files) {
+        var self = this;
         if (ftp_files && ftp_files.length > 0) {
             // add table
             this.$el.find('#upload-ftp-content').html($(this._templateTable()));
@@ -59,21 +60,23 @@ return Backbone.View.extend({
             selectAll.on('click', function() {
                 var checkboxes=$(this).parents().find('tr.upload-ftp-row>td>div');
                 var len = checkboxes.length;
-                var allChecked;
                 $this = $(this);
+                var allChecked = !($this.hasClass('fa-check-square-o'));
+               
+
 
                 // change state of the selectAll checkbox
-                if($this.hasClass('fa-check-square-o')) {
-                    // if checked change to unchecked
-                    $this.removeClass('fa-check-square-o');
-                    $this.addClass('fa-square-o');
-                    allChecked=false;
-                } else {
-                    // if checked or partially checked, change to checked
-                    $this.removeClass('fa-square-o fa-minus-square-o');
-                    $this.addClass('fa-check-square-o');
-                    allChecked=true;
-                }
+                // if($this.hasClass('fa-check-square-o')) {
+                //     // if checked change to unchecked
+                //     $this.removeClass('fa-check-square-o');
+                //     $this.addClass('fa-square-o');
+                //     allChecked=false;
+                // } else {
+                //     // if checked or partially checked, change to checked
+                //     $this.removeClass('fa-square-o fa-minus-square-o');
+                //     $this.addClass('fa-check-square-o');
+                //     allChecked=true;
+                // }
 
                 // change state of the sub-checkboxes
                 for(i = 0; i < len; i++) {
@@ -91,6 +94,7 @@ return Backbone.View.extend({
                         }
                     }
                 }
+                self._updateSelectAll(selectAll);
                 return;
             });
 
@@ -212,7 +216,7 @@ return Backbone.View.extend({
     // template row
     _templateRow: function(options) {
         return  '<tr class="upload-ftp-row" style="cursor: pointer;">' +
-                    '<td><div class="icon " /></td>' +
+                    '<td><div class="icon" /></td>' +
                     '<td style="width: 200px"><p style="width: inherit; word-wrap: break-word;">' + options.path + '</p></td>' +
                     '<td style="white-space: nowrap;">' + Utils.bytesToString(options.size) + '</td>' +
                     '<td style="white-space: nowrap;">' + options.ctime + '</td>' +
@@ -253,9 +257,7 @@ return Backbone.View.extend({
         return  '<div class="upload-ftp">' +
                     '<div id="upload-ftp-wait" class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
                     '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.app.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +
-                    '<div id="upload-ftp-content">'
-
-			'</div>' +
+                    '<div id="upload-ftp-content"></div>' +
                 '<div>';
     }
     
