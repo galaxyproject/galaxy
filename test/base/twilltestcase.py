@@ -1506,10 +1506,6 @@ class TwillTestCase( unittest.TestCase ):
                 break
         self.assertNotEqual(count, maxiter)
 
-    def load_cookies( self, file, shed_tool_id=None ):
-        filename = self.get_filename( file, shed_tool_id=shed_tool_id )
-        tc.load_cookies(filename)
-
     def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
