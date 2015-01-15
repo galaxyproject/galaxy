@@ -821,6 +821,7 @@ class ToolModule( WorkflowModule ):
             step_outputs = dict( execution_tracker.implicit_collections )
         else:
             step_outputs = dict( execution_tracker.output_datasets )
+            step_outputs.update( execution_tracker.output_collections )
         progress.set_step_outputs( step, step_outputs )
         jobs = execution_tracker.successful_jobs
         for job in jobs:

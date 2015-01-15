@@ -130,7 +130,8 @@ class ToolSource(object):
 
     @abstractmethod
     def parse_outputs(self, tool):
-        """ Return a list of ToolOutput objects.
+        """ Return a pair of output and output collections ordered
+        dictionaries for use by Tool.
         """
 
     @abstractmethod

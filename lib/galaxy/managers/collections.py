@@ -72,7 +72,11 @@ class DatasetCollectionManager( object ):
                 for input_name, input_collection in implicit_collection_info[ "implicit_inputs" ]:
                     dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                 for output_dataset in implicit_collection_info.get( "outputs" ):
-                    output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
+                    if isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
+                        dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
+                    else:
+                        # dataset collection, don't need to do anything...
+                        pass
                     trans.sa_session.add( output_dataset )
 
                 dataset_collection_instance.implicit_output_name = implicit_collection_info[ "implicit_output_name" ]
@@ -91,6 +95,18 @@ class DatasetCollectionManager( object ):
             raise MessageException( message )
 
         return self.__persist( dataset_collection_instance )
+
+    def create_dataset_collection(
+        self,
+        trans,
+        collection_type,
+        elements=None,
+    ):
+        return self.__create_dataset_collection(
+            trans=trans,
+            collection_type=collection_type,
+            elements=elements,
+        )
 
     def __create_dataset_collection(
         self,

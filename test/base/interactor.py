@@ -214,6 +214,7 @@ class GalaxyInteractorApi( object ):
             return Bunch(
                 inputs=inputs_tree,
                 outputs=self.__dictify_outputs( submit_response_object ),
+                output_collections=self.__dictify_output_collections( submit_response_object ),
                 jobs=submit_response_object[ 'jobs' ],
             )
         except KeyError:
@@ -246,6 +247,12 @@ class GalaxyInteractorApi( object ):
                 element[ "name" ] = element_name
             element_identifiers.append( element )
         return element_identifiers
+
+    def __dictify_output_collections( self, submit_response ):
+        output_collections_dict = odict()
+        for output_collection in submit_response[ 'output_collections' ]:
+            output_collections_dict[ output_collection.get("output_name") ] = output_collection
+        return output_collections_dict
 
     def __dictify_outputs( self, datasets_object ):
         ## Convert outputs list to a dictionary that can be accessed by
