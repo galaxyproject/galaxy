@@ -44,10 +44,8 @@ from base.tool_shed_util import parse_tool_panel_config
 from galaxy.app import UniverseApplication
 from galaxy.util.json import loads
 from galaxy.util import asbool
-from galaxy.util import unicodify
 from galaxy.web import buildapp
 from functional_tests import generate_config_file
-from nose.plugins import Plugin
 from paste import httpserver
 
 from functional import database_contexts
@@ -77,7 +75,8 @@ else:
     can_update_tool_shed = True
 
 test_framework = install_and_test_base_util.REPOSITORIES_WITH_TOOLS
-    
+
+
 def get_failed_test_dicts( test_result, from_tool_test=True ):
     """Extract any useful data from the test_result.failures and test_result.errors attributes."""
     failed_test_dicts = []
@@ -97,7 +96,6 @@ def get_failed_test_dicts( test_result, from_tool_test=True ):
         log_output = re.sub( r'\n+', r'\n', log_output )
         appending_to = 'output'
         tmp_output = {}
-        output = {}
         # Iterate through the functional test output and extract only the important data. Captured
         # logging and stdout are not recorded.
         for line in log_output.split( '\n' ):
@@ -126,6 +124,7 @@ def get_failed_test_dicts( test_result, from_tool_test=True ):
         failed_test_dicts.append( test_status_dict )
     return failed_test_dicts
 
+
 def get_tool_info_from_test_id( test_id ):
     """
     Test IDs come in the form test_tool_number
@@ -136,6 +135,7 @@ def get_tool_info_from_test_id( test_id ):
     tool_version = parts[ -1 ]
     tool_id = parts[ -2 ]
     return tool_id, tool_version
+
 
 def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed_tool_conf_file, galaxy_shed_tool_path ):
     # We must make sure that functional.test_toolbox is always imported after database_contexts.galaxy_content
@@ -218,7 +218,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                     if error_message:
                         remove_tests( app, repository )
                         # The repository installation failed.
-                        print  'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+                        print 'Installation failed for revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
                         processed_repositories_with_installation_error = \
                             install_and_test_statistics_dict.get( 'repositories_with_installation_error', [] )
                         if repository_identifier_tup not in processed_repositories_with_installation_error:
@@ -241,7 +241,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                         # The repository was successfully installed.
                         print 'Installation succeeded for revision %s of repository %s owned by %s.' % \
                             ( changeset_revision, name, owner )
-                        # Add an empty 'missing_test_results' entry if it is missing from the tool_test_results_dict.  The 
+                        # Add an empty 'missing_test_results' entry if it is missing from the tool_test_results_dict.  The
                         # ~/tool_shed/scripts/check_repositories_for_functional_tests.py will have entered information in the
                         # 'missing_test_components' entry of the tool_test_results_dict dictionary for repositories that are
                         # missing test components.
@@ -349,6 +349,7 @@ def install_and_test_repositories( app, galaxy_shed_tools_dict_file, galaxy_shed
                     print 'it was previously installed and currently has status %s' % str( repository.status )
     return install_and_test_statistics_dict, error_message
 
+
 def main():
     if install_and_test_base_util.tool_shed_api_key is None:
         # If the tool shed URL specified in any dict is not present in the tool_sheds_conf.xml, the installation will fail.
@@ -370,7 +371,6 @@ def main():
     tool_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_PATH', 'tools' )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
         os.environ[ 'HTTP_ACCEPT_LANGUAGE' ] = default_galaxy_locales
-    use_distributed_object_store = os.environ.get( 'GALAXY_INSTALL_TEST_USE_DISTRIBUTED_OBJECT_STORE', False )
     if not os.path.isdir( galaxy_test_tmp_dir ):
         os.mkdir( galaxy_test_tmp_dir )
     # Set up the configuration files for the Galaxy instance.
@@ -391,7 +391,7 @@ def main():
     galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF',
                                                   os.path.join( galaxy_test_tmp_dir, 'test_tool_sheds_conf.xml' ) )
     galaxy_shed_tools_dict_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DICT_FILE',
-                                                       os.path.join( galaxy_test_tmp_dir, 'shed_tool_dict' ) )
+                                                  os.path.join( galaxy_test_tmp_dir, 'shed_tool_dict' ) )
     install_and_test_base_util.populate_galaxy_shed_tools_dict_file( galaxy_shed_tools_dict_file, shed_tools_dict=None )
     # Set the GALAXY_TOOL_SHED_TEST_FILE environment variable to the path of the shed_tools_dict file so that
     # test.base.twilltestcase.setUp will find and parse it properly.
@@ -409,7 +409,6 @@ def main():
         galaxy_db_path = os.path.join( tempdir, 'database' )
     # Configure the paths Galaxy needs to install and test tools.
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
-    new_repos_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     galaxy_tempfiles = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     galaxy_migrated_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     # Set up the tool dependency path for the Galaxy instance.
@@ -457,34 +456,34 @@ def main():
     install_and_test_base_util.populate_shed_conf_file( galaxy_migrated_tool_conf_file, galaxy_migrated_tool_path, xml_elems=None )
     # Write the embedded web application's specific configuration to a temporary file. This is necessary in order for
     # the external metadata script to find the right datasets.
-    kwargs = dict( admin_users = 'test@bx.psu.edu',
-                   master_api_key = install_and_test_base_util.default_galaxy_master_api_key,
-                   allow_user_creation = True,
-                   allow_user_deletion = True,
-                   allow_library_path_paste = True,
-                   database_connection = database_connection,
-                   datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                   file_path = galaxy_file_path,
-                   id_secret = install_and_test_base_util.galaxy_encode_secret,
-                   install_database_connection = install_database_connection,
-                   job_config_file = galaxy_job_conf_file,
-                   job_queue_workers = 5,
-                   log_destination = "stdout",
-                   migrated_tools_config = galaxy_migrated_tool_conf_file,
-                   new_file_path = galaxy_tempfiles,
-                   running_functional_tests = True,
-                   shed_tool_data_table_config = shed_tool_data_table_conf_file,
-                   shed_tool_path = galaxy_shed_tool_path,
-                   template_path = "templates",
-                   tool_config_file = ','.join( [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ] ),
-                   tool_data_path = tool_data_path,
-                   tool_data_table_config_path = galaxy_tool_data_table_conf_file,
-                   tool_dependency_dir = tool_dependency_dir,
-                   tool_path = tool_path,
-                   tool_parse_help = False,
-                   tool_sheds_config_file = galaxy_tool_sheds_conf_file,
-                   update_integrated_tool_panel = False,
-                   use_heartbeat = False )
+    kwargs = dict( admin_users='test@bx.psu.edu',
+                   master_api_key=install_and_test_base_util.default_galaxy_master_api_key,
+                   allow_user_creation=True,
+                   allow_user_deletion=True,
+                   allow_library_path_paste=True,
+                   database_connection=database_connection,
+                   datatype_converters_config_file="datatype_converters_conf.xml.sample",
+                   file_path=galaxy_file_path,
+                   id_secret=install_and_test_base_util.galaxy_encode_secret,
+                   install_database_connection=install_database_connection,
+                   job_config_file=galaxy_job_conf_file,
+                   job_queue_workers=5,
+                   log_destination="stdout",
+                   migrated_tools_config=galaxy_migrated_tool_conf_file,
+                   new_file_path=galaxy_tempfiles,
+                   running_functional_tests=True,
+                   shed_tool_data_table_config=shed_tool_data_table_conf_file,
+                   shed_tool_path=galaxy_shed_tool_path,
+                   template_path="templates",
+                   tool_config_file=','.join( [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ] ),
+                   tool_data_path=tool_data_path,
+                   tool_data_table_config_path=galaxy_tool_data_table_conf_file,
+                   tool_dependency_dir=tool_dependency_dir,
+                   tool_path=tool_path,
+                   tool_parse_help=False,
+                   tool_sheds_config_file=galaxy_tool_sheds_conf_file,
+                   update_integrated_tool_panel=False,
+                   use_heartbeat=False )
     galaxy_config_file = os.environ.get( 'GALAXY_INSTALL_TEST_INI_FILE', None )
     # If the user has passed in a path for the .ini file, do not overwrite it.
     if not galaxy_config_file:
@@ -535,8 +534,10 @@ def main():
                     continue
                 raise
         else:
-            raise Exception( "Unable to open a port between %s and %s to start Galaxy server" % \
-                ( install_and_test_base_util.default_galaxy_test_port_min, install_and_test_base_util.default_galaxy_test_port_max ) )
+            message = "Unable to open a port between %s and %s to start Galaxy server" % (
+                install_and_test_base_util.default_galaxy_test_port_min, install_and_test_base_util.default_galaxy_test_port_max
+            )
+            raise Exception( message )
     os.environ[ 'GALAXY_INSTALL_TEST_PORT' ] = galaxy_test_port
     # Start the server.
     t = threading.Thread( target=server.serve_forever )
@@ -575,8 +576,11 @@ def main():
                                                                    install_and_test_statistics_dict,
                                                                    error_message )
     except Exception, e:
-        log.exception( 'Attempting to print the following dictionary...\n\n%s\n\n...threw the following exception...\n\n%s\n\n' % \
-            ( str( install_and_test_statistics_dict ), str( e ) ) )
+        message = 'Attempting to print the following dictionary...\n\n%s\n\n...threw the following exception...\n\n%s\n\n' % (
+            str( install_and_test_statistics_dict ),
+            str( e )
+        )
+        log.exception( message )
     log.debug( "Shutting down..." )
     # Gracefully shut down the embedded web server and UniverseApplication.
     if server:
@@ -602,6 +606,7 @@ def main():
         log.debug( 'GALAXY_INSTALL_TEST_NO_CLEANUP set, not cleaning up.' )
     # Return a "successful" response to buildbot.
     return 0
+
 
 def remove_tests( app, repository ):
     """
@@ -658,6 +663,7 @@ def remove_tests( app, repository ):
             print 'Deleting tool id %s from app.toolbox[ tools_by_id ].' % str( tool_id )
             del app.toolbox.tools_by_id[ tool_id ]
     print '\n-------------------------------------------------------------\n'
+
 
 def test_repository_tools( app, repository, repository_dict, tool_test_results_dicts, tool_test_results_dict,
                            install_and_test_statistics_dict ):
