@@ -23,7 +23,6 @@ class PageManager( sharable.SharableModelManager ):
     """
 
     model_class = model.Page
-    default_order_by = ( model.Page.create_time, )
     foreign_key_name = 'page'
     user_share_model = model.PageUserShareAssociation
 

@@ -158,11 +158,17 @@ class ModelManager( object ):
     over the ORM.
     """
     model_class = object
-    default_order_by = None
     foreign_key_name = None
 
     def __init__( self, app ):
         self.app = app
+        self.default_order_by = None
+
+    def _default_order_by( self ):
+        """
+        Returns a tuple of columns for the default order when getting multiple models.
+        """
+        return ( self.model_class.create_time, )
 
     #NOTE: at this layer, all ids are expected to be decoded and in int form
     # ------------------------------------------------------------------------- get/read/query
@@ -229,7 +235,7 @@ class ModelManager( object ):
         Use the manager's default_order_by if order_by is None.
         """
         if order_by is None:
-            return query.order_by( *self.default_order_by )
+            return query.order_by( *self.default_order_by() )
 
         if isinstance( order_by, ( list, tuple ) ):
             return query.order_by( *order_by )

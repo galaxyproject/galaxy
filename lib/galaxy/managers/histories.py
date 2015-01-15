@@ -22,7 +22,6 @@ log = logging.getLogger( __name__ )
 class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface ):
 
     model_class = model.History
-    default_order_by = ( model.History.create_time, )
     foreign_key_name = 'history'
     user_share_model = model.HistoryUserShareAssociation
 

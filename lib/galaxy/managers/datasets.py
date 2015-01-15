@@ -18,7 +18,6 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     """
 
     model_class = model.Dataset
-    default_order_by = ( model.Dataset.create_time, )
     foreign_key_name = 'dataset'
 
     #TODO:?? get + error_if_uploading is common pattern, should upload check be worked into access/owed?

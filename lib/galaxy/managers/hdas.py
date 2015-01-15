@@ -30,7 +30,6 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     """
     model_class = model.HistoryDatasetAssociation
     foreign_key_name = 'history_dataset_association'
-    default_order_by = ( model.HistoryDatasetAssociation.create_time, )
 
     tag_assoc = model.HistoryDatasetAssociationTagAssociation
     annotation_assoc = model.HistoryDatasetAssociationAnnotationAssociation

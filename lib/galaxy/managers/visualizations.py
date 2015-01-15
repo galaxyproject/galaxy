@@ -22,7 +22,6 @@ class VisualizationManager( sharable.SharableModelManager ):
     """
 
     model_class = model.Visualization
-    default_order_by = ( model.Visualization.create_time, )
     foreign_key_name = 'visualization'
     user_share_model = model.VisualizationUserShareAssociation
 

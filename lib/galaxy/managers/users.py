@@ -20,7 +20,6 @@ log = logging.getLogger( __name__ )
 # =============================================================================
 class UserManager( base.ModelManager ):
     model_class = model.User
-    default_order_by = ( model.User.create_time, )
     foreign_key_name = 'user'
 
     #TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
