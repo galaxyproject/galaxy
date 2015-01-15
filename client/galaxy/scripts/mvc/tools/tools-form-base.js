@@ -76,6 +76,20 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
         },
         
+        /** Highlights errors
+        */
+        _errors: function(options) {
+            if (options && options.errors) {
+                var error_messages = this.tree.matchResponse(options.errors);
+                for (var input_id in this.element_list) {
+                    var input = this.element_list[input_id];
+                    if (error_messages[input_id]) {
+                        this.highlight(input_id, error_messages[input_id], true);
+                    }
+                }
+            }
+        },
+        
         /** Main tool form build function. This function is called once a new model is available.
         */
         _buildForm: function() {
@@ -111,16 +125,11 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.tree.finalize();
             
             // show errors
-            if (options.errors) {
-                var error_messages = this.tree.matchResponse(options.errors);
-                for (var input_id in error_messages) {
-                    this.highlight(input_id, error_messages[input_id], true);
-                }
-            }
+            this._errors(options);
             
             // add refresh listener
             this.on('refresh', function() {
-                // by using/reseting the deferred ajax queue the number of redundant calls is reduced
+                // by using/resetting the deferred ajax queue the number of redundant calls is reduced
                 self.deferred.reset();
                 self.deferred.execute(function(){self._updateModel()});
             });

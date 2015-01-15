@@ -51,9 +51,11 @@ define([], function() {
         /** Set error text
         */
         error: function(text) {
-            this.$error_text.html(text);
-            this.$error.fadeIn();
-            this.$el.addClass('ui-error');
+            if (!this.field.skip) {
+                this.$error_text.html(text);
+                this.$error.fadeIn();
+                this.$el.addClass('ui-error');
+            }
         },
         
         /** Reset this view
@@ -70,6 +72,7 @@ define([], function() {
                 this.$field.fadeIn('fast');
                 this.$title_optional.html('Disable');
             } else {
+                this.reset();
                 this.$field.hide();
                 this.$title_optional.html('Enable');
                 this.field.value && this.field.value(this.defaultvalue);

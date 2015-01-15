@@ -282,7 +282,10 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 success : function(data) {
                     // update node in workflow module
                     self.node.update_field_data(data);
-                    
+            
+                    // highlight errors
+                    self._errors(data && data.tool_model);
+
                     // process completed
                     self.deferred.done(process_id);
             

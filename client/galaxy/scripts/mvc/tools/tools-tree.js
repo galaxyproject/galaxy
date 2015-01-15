@@ -123,7 +123,7 @@ return Backbone.Model.extend({
                                 }
                                 
                                 // handle simple value
-                                if (!field.skip || self.app.workflow) {
+                                if (!field.skip ) {
                                     if (field.validate && !field.validate()) {
                                         value = null;
                                     }
