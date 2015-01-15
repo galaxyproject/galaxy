@@ -290,15 +290,30 @@ class ToolOutputCollection( ToolOutputBase ):
     <outputs>
     """
 
-    def __init__( self, name, structure, label=None, filters=None, hidden=False, default_format="data" ):
+    def __init__(
+        self,
+        name,
+        structure,
+        label=None,
+        filters=None,
+        hidden=False,
+        default_format="data",
+        default_format_source=None,
+        default_metadata_source=None,
+        inherit_format=False,
+        inherit_metadata=False
+    ):
         super( ToolOutputCollection, self ).__init__( name, label=label, filters=filters, hidden=hidden )
         self.collection = True
         self.default_format = default_format
         self.structure = structure
         self.outputs = odict()
 
-        # TODO:
-        self.metadata_source = None
+        self.inherit_format = inherit_format
+        self.inherit_metadata = inherit_metadata
+
+        self.metadata_source = default_metadata_source
+        self.format_source = default_format_source
 
     def known_outputs( self, inputs ):
         if self.dynamic_structure:
@@ -317,7 +332,19 @@ class ToolOutputCollection( ToolOutputBase ):
             outputs = odict()
             for element in input_collection.collection.elements:
                 name = element.element_identifier
-                output = ToolOutput( name, format=self.default_format, implicit=True )
+                format = self.default_format
+                if self.inherit_format:
+                    format = element.dataset_instance.ext
+                output = ToolOutput(
+                    name,
+                    format=format,
+                    format_source=self.format_source,
+                    metadata_source=self.metadata_source,
+                    implicit=True,
+                )
+                if self.inherit_metadata:
+                    output.metadata_source = element.dataset_instance
+
                 outputs[ element.element_identifier ] = output
 
         return map( to_part, outputs.items() )

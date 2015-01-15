@@ -245,8 +245,16 @@ class DefaultToolAction( object ):
             # This may not be neccesary with the new parent/child associations
             data.designation = name
             # Copy metadata from one of the inputs if requested.
-            if output.metadata_source:
-                data.init_meta( copy_from=inp_data[output.metadata_source] )
+
+            # metadata source can be either a string referencing an input
+            # or an actual object to copy.
+            metadata_source = output.metadata_source
+            if metadata_source:
+                if isinstance( metadata_source, basestring ):
+                    metadata_source = inp_data[metadata_source]
+
+            if metadata_source is not None:
+                data.init_meta( copy_from=metadata_source )
             else:
                 data.init_meta()
             # Take dbkey from LAST input
@@ -286,6 +294,11 @@ class DefaultToolAction( object ):
                         element = handle_output( effective_output_name, output_part_def.output_def )
                         # Following hack causes dataset to no be added to history...
                         child_dataset_names.add( effective_output_name )
+
+                        if set_output_history:
+                            history.add_dataset( element, set_hid=set_output_hid )
+                        trans.sa_session.add( element )
+                        trans.sa_session.flush()
 
                         elements[ output_part_def.element_identifier ] = element
 

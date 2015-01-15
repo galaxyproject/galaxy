@@ -141,8 +141,8 @@ class XmlToolSource(ToolSource):
 
         data_dict = odict()
 
-        def _parse(data_elem, default_format="data"):
-            output_def = self._parse_output(data_elem, tool, default_format=default_format)
+        def _parse(data_elem, **kwds):
+            output_def = self._parse_output(data_elem, tool, **kwds)
             data_dict[output_def.name] = output_def
             return output_def
 
@@ -153,6 +153,14 @@ class XmlToolSource(ToolSource):
             default_format = collection_elem.get( "format", "data" )
             collection_type = collection_elem.get( "type", None )
             structured_like = collection_elem.get( "structured_like", None )
+            inherit_format = False
+            inherit_metadata = False
+            if structured_like:
+                inherit_format = string_as_bool( collection_elem.get( "inherit_format", None ) )
+                inherit_metadata = string_as_bool( collection_elem.get( "inherit_metadata", None ) )
+            default_format_source = collection_elem.get( "format_source", None )
+            default_metadata_source = collection_elem.get( "metadata_source", "" )
+
             dataset_collectors = None
             if collection_elem.find( "discover_datasets" ) is not None:
                 dataset_collectors = output_collect.dataset_collectors_from_elem( collection_elem )
@@ -164,12 +172,21 @@ class XmlToolSource(ToolSource):
             output_collection = galaxy.tools.ToolOutputCollection(
                 name,
                 structure,
-                default_format=default_format
+                default_format=default_format,
+                inherit_format=inherit_format,
+                inherit_metadata=inherit_metadata,
+                default_format_source=default_format_source,
+                default_metadata_source=default_metadata_source,
             )
             outputs[output_collection.name] = output_collection
 
             for data_elem in collection_elem.findall("data"):
-                _parse( data_elem, default_format=default_format )
+                _parse(
+                    data_elem,
+                    default_format=default_format,
+                    default_format_source=default_format_source,
+                    default_metadata_source=default_metadata_source,
+                )
 
             for data_elem in collection_elem.findall("data"):
                 output_name = data_elem.get("name")
@@ -183,12 +200,19 @@ class XmlToolSource(ToolSource):
             outputs[output_def.name] = output_def
         return outputs, output_collections
 
-    def _parse_output(self, data_elem, tool, default_format):
+    def _parse_output(
+        self,
+        data_elem,
+        tool,
+        default_format="data",
+        default_format_source=None,
+        default_metadata_source="",
+    ):
         output = galaxy.tools.ToolOutput( data_elem.get("name") )
         output.format = data_elem.get("format", default_format)
         output.change_format = data_elem.findall("change_format")
-        output.format_source = data_elem.get("format_source", None)
-        output.metadata_source = data_elem.get("metadata_source", "")
+        output.format_source = data_elem.get("format_source", default_format_source)
+        output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
         output.parent = data_elem.get("parent", None)
         output.label = xml_text( data_elem, "label" )
         output.count = int( data_elem.get("count", 1) )

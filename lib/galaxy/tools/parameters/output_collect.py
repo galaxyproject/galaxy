@@ -174,6 +174,8 @@ class JobContext( object ):
 
         # Associate new dataset with job
         if self.job:
+            self.job.history.add_dataset( primary_data )
+
             assoc = app.model.JobToOutputDatasetAssociation( '__new_primary_file_%s|%s__' % ( name, designation ), primary_data )
             assoc.job = self.job
             sa_session.add( assoc )
