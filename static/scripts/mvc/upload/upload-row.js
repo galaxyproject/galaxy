@@ -83,7 +83,7 @@ return Backbone.View.extend({
             },
             data: self.app.list_extensions,
             container: it.find('#extension'),
-            value: self.model.get('extension')
+            value: self.app.select_extension.value()
         });
         
         // initialize extension
@@ -139,6 +139,7 @@ return Backbone.View.extend({
         this.app.collection.on('reset', function() {
             self.remove();
         });
+        self.model.set('row', self);
     },
     
     // render

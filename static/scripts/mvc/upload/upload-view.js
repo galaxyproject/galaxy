@@ -6,6 +6,7 @@ define(["utils/utils",
         "mvc/upload/upload-ftp",
         "mvc/ui/ui-popover",
         "mvc/ui/ui-modal",
+        "mvc/ui/ui-select",
         "utils/uploadbox"],
        
         function(   Utils,
@@ -14,7 +15,8 @@ define(["utils/utils",
                     UploadItem,
                     UploadFtp,
                     Popover,
-                    Modal
+                    Modal,
+                    Select
                 ) {
 
 // galaxy upload
@@ -35,6 +37,9 @@ return Backbone.View.extend({
     
     // current history
     current_history: null,
+
+    // extension selector
+    select_extension : null,
     
     // current upload size
     upload_size: 0,
@@ -218,6 +223,23 @@ return Backbone.View.extend({
                 title       : 'FTP files',
                 container   : button
             });
+
+             // select extension
+            this.select_extension = new Select.View({
+                css: 'extension',
+                onchange : function() {
+                    var newExten =self.select_extension.value()
+                    var len = self.collection.models.length;
+                    for(i = 0; i < len; i++)
+                    {
+                        self.collection.models[i].attributes['row'].select_extension.value(newExten);
+                    }
+                },
+                data: self.list_extensions,
+                container: self.$el.find('#extension'),
+                value: self.list_extensions[0]
+            });
+
         }
         
         // show modal
@@ -228,6 +250,66 @@ return Backbone.View.extend({
         
         // setup info
         this._updateScreen();
+
+         // handle extension info popover
+        self.$el.find('#extension-info').on('click' , function(e) { self._showExtensionInfo(); })
+                                  .on('mousedown', function(e) { e.preventDefault(); });
+
+    },
+
+    _showExtensionInfo : function() {
+        // initialize
+        var self = this;
+        var $el = $(this.el).find('#extension-info');
+        var extension = self.select_extension.value();
+  
+        var title = this.select_extension.text();
+
+        var description = _.findWhere(self.list_extensions, {'id': extension});
+        //console.log(extension, $el);
+
+        // create popup
+        if (!this.extension_popup) {
+            this.extension_popup = new Popover.View({
+                placement: 'bottom',
+                container: $el
+            });
+        }
+        //console.log(description);
+        // show / hide popup
+        if (!this.extension_popup.visible) {
+            this.extension_popup.title(title);
+            this.extension_popup.empty();
+            this.extension_popup.append(this._templateDescription(description));
+            this.extension_popup.show();
+        } else {
+            this.extension_popup.hide();
+        }
+    },
+
+    _showSettings : function() {
+        // check if popover is visible
+        if (!this.settings.visible) {
+            // show popover
+            this.settings.empty();
+            this.settings.append((new UploadSettings(this)).$el);
+            this.settings.show();
+        } else {
+            // hide popover
+            this.settings.hide();
+        }
+    },
+
+    _templateDescription: function(options) {
+        if (options.description) {
+            var tmpl = options.description;
+            if (options.description_url) {
+                tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
+            }
+            return tmpl;
+        } else {
+            return 'There is no description available for this file extension.';
+        }
     },
 
     //
@@ -513,6 +595,9 @@ return Backbone.View.extend({
             
             // remove from queue
             this.uploadbox.reset();
+
+            // reset value for universal type drop-down
+            this.select_extension.value(this.list_extensions[0]);
             
             // reset button
             this.ui_button.set('percentage', 0);
@@ -612,7 +697,10 @@ return Backbone.View.extend({
                             '<tr>' +
                                 '<th>Name</th>' +
                                 '<th>Size</th>' +
-                                '<th>Type</th>' +
+                                '<th>Type' +
+                                '<div id="extension" class="extension" style="float: left;"/>&nbsp;&nbsp' +
+                                '<div id="extension-info" class="upload-icon-button fa fa-search"/>' +
+                                '</th>' +
                                 '<th>Genome</th>' +
                                 '<th>Settings</th>' +
                                 '<th>Status</th>' +
