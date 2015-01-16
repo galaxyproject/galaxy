@@ -18,6 +18,7 @@ import json
 import socket
 import time
 import numbers
+from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 from string import Template
 from itertools import ifilter
@@ -31,7 +32,7 @@ from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 import galaxy.model.orm.now
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
-from galaxy.util import ready_name_for_url
+from galaxy.util import ready_name_for_url, unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.directory_hash import directory_hash_id
@@ -261,6 +262,14 @@ class User( object, Dictifiable ):
         environment = User.user_template_environment( user )
         return Template( in_string ).safe_substitute( environment )
 
+class PasswordResetToken( object ):
+    def __init__( self, user, token=None):
+        if token:
+            self.token = token
+        else:
+            self.token = unique_id()
+        self.user = user
+        self.expiration_time = datetime.now() + timedelta(hours=24)
 
 class BaseJobMetric( object ):
 
@@ -320,6 +329,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.input_datasets = []
         self.output_datasets = []
         self.input_dataset_collections = []
+        self.output_dataset_collection_instances = []
         self.output_dataset_collections = []
         self.input_library_datasets = []
         self.output_library_datasets = []
@@ -463,8 +473,10 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
     def add_input_dataset_collection( self, name, dataset ):
         self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
-    def add_output_dataset_collection( self, name, dataset ):
-        self.output_dataset_collections.append( JobToOutputDatasetCollectionAssociation( name, dataset ) )
+    def add_output_dataset_collection( self, name, dataset_collection_instance ):
+        self.output_dataset_collection_instances.append( JobToOutputDatasetCollectionAssociation( name, dataset_collection_instance ) )
+    def add_implicit_output_dataset_collection( self, name, dataset_collection ):
+        self.output_dataset_collections.append( JobToImplicitOutputDatasetCollectionAssociation( name, dataset_collection ) )
     def add_input_library_dataset( self, name, dataset ):
         self.input_library_datasets.append( JobToInputLibraryDatasetAssociation( name, dataset ) )
     def add_output_library_dataset( self, name, dataset ):
@@ -725,7 +737,18 @@ class JobToInputDatasetCollectionAssociation( object ):
         self.dataset = dataset
 
 
+# Many jobs may map to one HistoryDatasetCollection using these for a given
+# tool output (if mapping over an input collection).
 class JobToOutputDatasetCollectionAssociation( object ):
+    def __init__( self, name, dataset_collection_instance ):
+        self.name = name
+        self.dataset_collection_instance = dataset_collection_instance
+
+
+# A DatasetCollection will be mapped to at most one job per tool output
+# using these. (You can think of many of these models as going into the
+# creation of a JobToOutputDatasetCollectionAssociation.)
+class JobToImplicitOutputDatasetCollectionAssociation( object ):
     def __init__( self, name, dataset_collection ):
         self.name = name
         self.dataset_collection = dataset_collection
@@ -2653,14 +2676,37 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     """
     dict_collection_visible_keys = ( 'id', 'collection_type' )
     dict_element_visible_keys = ( 'id', 'collection_type' )
+    populated_states = Bunch(
+        NEW='new',  # New dataset collection, unpopulated elements
+        OK='ok',  # Collection elements populated (HDAs may or may not have errors)
+        FAILED='failed',  # some problem populating state, won't be populated
+    )
 
     def __init__(
         self,
         id=None,
         collection_type=None,
+        populated=True,
     ):
         self.id = id
         self.collection_type = collection_type
+        if not populated:
+            self.populated_state = DatasetCollection.populated_states.NEW
+
+    @property
+    def populated( self ):
+        return self.populated_state == DatasetCollection.populated_states.OK
+
+    @property
+    def waiting_for_elements( self ):
+        return self.populated_state == DatasetCollection.populated_states.NEW
+
+    def mark_as_populated( self ):
+        self.populated_state = DatasetCollection.populated_states.OK
+
+    def handle_population_failed( self, message ):
+        self.populated_state = DatasetCollection.populated_states.FAILED
+        self.populated_state_message = message
 
     @property
     def dataset_instances( self ):

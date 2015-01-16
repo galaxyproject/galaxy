@@ -46,6 +46,7 @@ class ToolParameter( object, Dictifiable ):
         self.refresh_on_change_values = []
         self.name = input_source.get("name")
         self.type = input_source.get("type")
+        self.hidden = input_source.get("hidden", False)
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
         sanitizer_elem = input_source.parse_sanitizer_elem()
@@ -213,6 +214,7 @@ class ToolParameter( object, Dictifiable ):
 
         tool_dict[ 'model_class' ] = self.__class__.__name__
         tool_dict[ 'optional' ] = self.optional
+        tool_dict[ 'hidden' ] = self.hidden
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
         return tool_dict
@@ -487,7 +489,7 @@ class BooleanToolParameter( ToolParameter ):
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
         return d
-    
+
     @property
     def legal_values( self ):
         return [ self.truevalue, self.falsevalue ]
@@ -630,6 +632,7 @@ class HiddenToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.value = input_source.get( 'value' )
+        self.hidden = True
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self.value )
@@ -670,7 +673,7 @@ class BaseURLToolParameter( ToolParameter ):
     def get_label( self ):
         # BaseURLToolParameters are ultimately "hidden" parameters
         return None
-    
+
     def to_dict( self, trans, view='collection', value_mapper=None ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
         d['value'] = self.get_value( trans )
@@ -782,8 +785,11 @@ class SelectToolParameter( ToolParameter ):
         if self.options:
             return self.options.get_options( trans, other_values )
         elif self.dynamic_options:
+            call_other_values = {"__trans__": trans}
+            if other_values:
+                call_other_values.update( other_values.dict )
             try:
-                return eval( self.dynamic_options, self.tool.code_namespace, other_values )
+                return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
             except Exception:
                 return []
         else:
@@ -1033,7 +1039,7 @@ class SelectToolParameter( ToolParameter ):
                     # Found selected option.
                     value = option[1]
             d[ 'value' ] = value
-            
+
         d['display'] = self.display
         d['multiple'] = self.multiple
         d['is_dynamic'] = self.is_dynamic
@@ -1114,7 +1120,7 @@ class GenomeBuildParameter( SelectToolParameter ):
             'display'   : self.display,
             'multiple'  : self.multiple
         })
-        
+
         return d
 
     def _get_dbkey_names( self, trans=None ):
@@ -1316,10 +1322,10 @@ class ColumnListParameter( SelectToolParameter ):
 
         # add data reference
         d['data_ref'] = self.data_ref
-        
+
         # add numerical flag
         d['numerical'] = self.numerical
-        
+
         # return
         return d
 
@@ -2082,7 +2088,6 @@ class DataToolParameter( BaseDataToolParameter ):
         for instance should I just be checking dynamic options).
         """
         allow = True
-        # TODO: allow should be false in some in cases...
         return allow
 
     def _options_filter_attribute( self, value ):
@@ -2111,7 +2116,7 @@ class DataToolParameter( BaseDataToolParameter ):
         d['multiple'] = self.multiple
         d['is_dynamic'] = True
         d['options'] = {'hda': [], 'hdca': []}
-        
+
         # return default content if context is not available
         if other_values is None:
             return d
@@ -2120,7 +2125,7 @@ class DataToolParameter( BaseDataToolParameter ):
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         history = trans.history
         multiple = self.multiple
-        
+
         # add datasets
         for hda in history.active_datasets_children_and_roles:
             match = dataset_matcher.hda_match( hda )
@@ -2133,7 +2138,7 @@ class DataToolParameter( BaseDataToolParameter ):
                     'name'          : m.name,
                     'src'           : 'hda'
                 })
-            
+
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
@@ -2352,7 +2357,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         d['multiple'] = self.multiple
         d['is_dynamic'] = False
         d['options'] = {'hda': [], 'hdca': []}
-        
+
         # return default content if context is not available
         if other_values is None:
             return d
@@ -2360,7 +2365,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         history = trans.history
-        
+
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({

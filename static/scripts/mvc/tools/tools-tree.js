@@ -108,22 +108,37 @@ return Backbone.Model.extend({
                                 convert(job_input_id, head[input.id + '-section-' + selectedCase]);
                             }
                             break;
+                        // handle custom sub sections
+                        case 'section':
+                            convert('', node);
+                            break;
                         default:
                             // get field
                             var field = self.app.field_list[input.id];
-                            
-                            // get and patch field value
-                            var value = field.value();
-                            if (patch[input.type]) {
-                                value = patch[input.type](value);
-                            }
-                            
-                            // handle default value
-                            if (!field.skip) {
-                                if (field.validate && !field.validate(value)) {
-                                    value = null;
+                            if (field && field.value) {
+                                // get and patch field value
+                                var value = field.value();
+                                if (patch[input.type]) {
+                                    value = patch[input.type](value);
                                 }
-                                add (job_input_id, input.id, value);
+                                
+                                // handle simple value
+                                if (!field.skip ) {
+                                    if (field.validate && !field.validate()) {
+                                        value = null;
+                                    }
+                                    if (input.ignore === undefined || (value !== null && input.ignore != value)) {
+                                        // add value to submission
+                                        add (job_input_id, input.id, value);
+                             
+                                        // add payload to submission
+                                        if (input.payload) {
+                                            for (var p_id in input.payload) {
+                                                add (p_id, input.id, input.payload[p_id]);
+                                            }
+                                        }
+                                    }
+                                }
                             }
                     }
                 }

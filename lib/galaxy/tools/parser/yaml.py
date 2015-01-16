@@ -5,6 +5,7 @@ from .interface import InputSource
 
 from galaxy.tools.deps import requirements
 from galaxy.tools.parameters import output_collect
+from galaxy.util.odict import odict
 import galaxy.tools
 
 
@@ -76,7 +77,11 @@ class YamlToolSource(ToolSource):
         output_defs = []
         for name, output_dict in outputs.items():
             output_defs.append(self._parse_output(tool, name, output_dict))
-        return output_defs
+        outputs = odict()
+        for output in output_defs:
+            outputs[output.name] = output
+        # TODO: parse outputs collections
+        return output_defs, odict()
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format

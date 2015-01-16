@@ -123,6 +123,7 @@ class ToolTestBuilder( object ):
 
             self.inputs = self.__process_raw_inputs( self.tool.inputs, test_dict["inputs"] )
             self.outputs = test_dict["outputs"]
+            self.output_collections = test_dict["output_collections"]
             num_outputs = test_dict.get( 'expect_num_outputs', None )
             if num_outputs:
                 num_outputs = int( num_outputs )

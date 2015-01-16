@@ -193,6 +193,12 @@ var ButtonIcon = Backbone.View.extend({
         this.disabled = false;
     },
     
+    // change icon
+    setIcon: function(icon_cls) {
+        this.$('i').removeClass(this.options.icon).addClass(icon_cls);
+        this.options.icon = icon_cls;
+    },
+    
     // template
     _template: function(options) {
         // width

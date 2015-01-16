@@ -216,7 +216,7 @@ class BaseJobRunner( object ):
         job_tool = job_wrapper.tool
         for (joda, dataset) in self._walk_dataset_outputs( job ):
             if joda and job_tool:
-                hda_tool_output = job_tool.outputs.get( joda.name, None )
+                hda_tool_output = job_tool.find_output_def( joda.name )
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
                     # TODO: move instead of copy to save time?

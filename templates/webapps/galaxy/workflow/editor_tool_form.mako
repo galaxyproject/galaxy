@@ -18,18 +18,12 @@
         })
     %>
     <script>
-        parent.__NEWTOOLFORM__ = true;
         require(['mvc/tools/tools-form-workflow'], function(ToolsForm){
            $(function(){
                 var form = new ToolsForm.View(${ h.dumps(self.form_config) });
             });
         });
     </script>
-    <form method="post" action="${h.url_for(controller='workflow', action='editor_form_post' )}">
-        <div class="toolForm">
-            <input type="hidden" name="tool_id" value="${tool.id}" />
-        </div>
-    </form>
 %else:
     <%
     from galaxy.tools.parameters import DataToolParameter, RuntimeValue

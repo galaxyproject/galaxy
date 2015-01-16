@@ -1,0 +1,35 @@
+<tool id="collection_creates_pair_from_type" name="collection_creates_pair_from_type" version="0.1.0">
+  <command>
+    sed 'n;d' $input1 > $paired_output.forward;
+    sed -n 'g;n;p' $input1 > $paired_output.reverse;
+  </command>
+  <inputs>
+    <param name="input1" type="data" label="Input" help="Input to be split." />
+  </inputs>
+  <outputs>
+    <!-- unlike lists - structure of paired outputs can be predetermined
+         so we can use $output.identifier in command block, see
+         collection_creates_pair.xml for examples of actually labelling
+         pieces and allowing stuff like from_work_dir.
+    -->
+    <collection name="paired_output" type="paired" label="Split Pair" format_source="input1">
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="simple_lines_interleaved.txt" ftype="txt" />
+      <output_collection name="paired_output" type="paired">
+        <element name="forward" ftype="txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="reverse" ftype="txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

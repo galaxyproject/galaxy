@@ -1,0 +1,22 @@
+<tool id="collection_creates_list_2" name="collection_creates_list_2" version="0.1.0">
+  <!-- go through and a header to each item in a collection - should use implicit
+       mapping the non-collectiony add header tool to do this in a real analysis.
+  -->
+  <command>
+    #for $key in $list_output.keys()#
+    cat "$header" > "$list_output[$key]";
+    cat "$input_collect[$key]" >> "$list_output[$key]";
+    #end for#
+    echo 'ensure not empty';
+  </command>
+  <inputs>
+    <param name="header" type="data" label="Input Data" help="Input data..." />
+    <param name="input_collect" type="data_collection" collection_type="list" label="Input Collect" help="Input collection..." />
+  </inputs>
+  <outputs>
+    <collection name="list_output" type="list" label="Duplicate List" structured_like="input_collect" format_source="header">
+    </collection>
+  </outputs>
+  <tests>
+  </tests>
+</tool>

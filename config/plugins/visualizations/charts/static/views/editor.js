@@ -108,7 +108,9 @@ return Backbone.View.extend({
         // append element
         var $main = $('<div/>');
         $main.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
-        $main.append(Utils.wrap(this.title.$el));
+        $main.append(this.title.$el);
+        $main.append($('<div/>').addClass('ui-table-form-info').html('This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.'));
+        $main.append(Utils.wrap());
         $main.append(Utils.wrap(this.types.$el));
         
         // add tab
@@ -189,7 +191,9 @@ return Backbone.View.extend({
     _refreshTitle: function() {
         var title = this.chart.get('title');
         this.portlet.title(title);
-        this.title.value(title);
+        if (this.title.value() != title) {
+            this.title.value(title);
+        }
     },
     
     // refresh group

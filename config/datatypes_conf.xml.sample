@@ -140,6 +140,7 @@
     <datatype extension="rgb" type="galaxy.datatypes.images:Rgb" mimetype="image/rgb"/>
     <datatype extension="pbm" type="galaxy.datatypes.images:Pbm" mimetype="image/pbm"/>
     <datatype extension="pgm" type="galaxy.datatypes.images:Pgm" mimetype="image/pgm"/>
+    <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="True"/>
     <datatype extension="searchgui_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="True" display_in_upload="True"/>
     <datatype extension="peptideshaker_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="True" display_in_upload="True"/>
     <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>

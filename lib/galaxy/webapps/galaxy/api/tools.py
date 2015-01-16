@@ -192,6 +192,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         output_datasets = vars.get( 'out_data', [] )
         rval = {
             "outputs": [],
+            "output_collections": [],
             "jobs": [],
             "implicit_collections": [],
         }
@@ -213,6 +214,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
 
         for job in vars.get('jobs', []):
             rval[ 'jobs' ].append( self.encode_all_ids( trans, job.to_dict( view='collection' ), recursive=True ) )
+
+        for output_name, collection_instance in vars.get('output_collections', []):
+            history = target_history or trans.history
+            output_dict = dictify_dataset_collection_instance( collection_instance, security=trans.security, parent=history )
+            output_dict[ 'output_name' ] = output_name
+            rval[ 'output_collections' ].append( output_dict )
 
         for output_name, collection_instance in vars.get( 'implicit_collections', {} ).iteritems():
             history = target_history or trans.history

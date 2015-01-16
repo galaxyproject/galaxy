@@ -99,7 +99,6 @@ return Backbone.View.extend({
         this.portlet = new Portlet.View({
             icon : 'fa-bar-chart-o',
             title: 'Viewport',
-            scrollable: false,
             operations: {
                 edit_button: new Ui.ButtonIcon({
                     icon    : 'fa-edit',

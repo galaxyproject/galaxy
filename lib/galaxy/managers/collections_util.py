@@ -77,7 +77,9 @@ def dictify_dataset_collection_instance( dataset_colleciton_instance, parent, se
         # TODO: Work in progress - this end-point is not right yet...
         dict_value[ 'url' ] = web.url_for( 'library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id )
     if view == "element":
-        dict_value[ 'elements' ] = map( dictify_element, dataset_colleciton_instance.collection.elements )
+        collection = dataset_colleciton_instance.collection
+        dict_value[ 'elements' ] = map( dictify_element, collection.elements )
+        dict_value[ 'populated' ] = collection.populated
     security.encode_all_ids( dict_value, recursive=True )  # TODO: Use Kyle's recusrive formulation of this.
     return dict_value
 
@@ -87,7 +89,9 @@ def dictify_element( element ):
     object_detials = element.element_object.to_dict()
     if element.child_collection:
         # Recursively yield elements for each nested collection...
-        object_detials[ "elements" ] = map( dictify_element, element.child_collection.elements )
+        child_collection = element.child_collection
+        object_detials[ "elements" ] = map( dictify_element, child_collection.elements )
+        object_detials[ "populated" ] = child_collection.populated
 
     dictified[ "object" ] = object_detials
     return dictified

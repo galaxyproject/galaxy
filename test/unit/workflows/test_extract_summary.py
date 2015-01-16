@@ -135,6 +135,7 @@ class MockHdca( object ):
         self.implicit_output_name = implicit_output_name
         self.hid = 1
         self.collection = model.DatasetCollection()
+        self.creating_job_associations = []
         element = model.DatasetCollectionElement(
             collection=self.collection,
             element=model.HistoryDatasetAssociation(),
