@@ -2386,7 +2386,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.LibraryField( self.name, value=value, trans=trans )
 
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return None
 
     def from_html( self, value, trans, other_values={} ):
