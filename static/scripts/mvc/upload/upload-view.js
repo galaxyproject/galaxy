@@ -335,8 +335,8 @@ return Backbone.View.extend({
         tool_input['dbkey'] = genome;
         tool_input['file_type'] = extension;
         tool_input['files_0|type'] = 'upload_dataset';
-        tool_input['space_to_tabs'] = space_to_tabs;
-        tool_input['to_posix_lines'] = to_posix_lines;
+        tool_input['files_0|space_to_tab'] = space_to_tabs && 'Yes' || null;
+        tool_input['files_0|to_posix_lines'] = to_posix_lines && 'Yes' || null;
         
         // setup data
         data = {};
