@@ -364,7 +364,7 @@ var GalaxyMastheadTab = Backbone.View.extend({
         var $popover_element = $(this.el).find('.head');
         $popover_element.popover({
             html: true,
-            content: 'Please <a href="' + galaxy_config.root + '/user/login">log in</a> or <a href="' + galaxy_config.root + '/user/create">register</a> to use this feature.',
+            content: 'Please <a href="' + galaxy_config.root + 'user/login">log in</a> or <a href="' + galaxy_config.root + 'user/create">register</a> to use this feature.',
             placement: 'bottom'
         }).on('shown.bs.popover', function() { // hooking on bootstrap event to automatically hide popovers after delay
             setTimeout(function() {
