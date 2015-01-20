@@ -124,7 +124,7 @@ return Backbone.View.extend({
                         description_url : datatypes[key].description_url
                     });
                 }
-                
+
                 // sort
                 self.list_extensions.sort(function(a, b) {
                     return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
@@ -264,7 +264,6 @@ return Backbone.View.extend({
         
         // setup info
         this._updateScreen();
-
     },
 
     _showExtensionInfo : function() {

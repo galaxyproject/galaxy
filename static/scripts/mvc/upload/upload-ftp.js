@@ -82,7 +82,6 @@ return Backbone.View.extend({
 
                 self._updateSelectAll(selectAll);
             });
-
         } else {
             // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
@@ -117,6 +116,7 @@ return Backbone.View.extend({
         // add icon class
         $icon.addClass(icon_class);
         
+        // add files to the uploadbox
         $it.on('addToUpBox', function() {
             // find model
             var model_index = self._find(ftp_file);
@@ -181,8 +181,6 @@ return Backbone.View.extend({
             selectBox.addClass('fa-square-o');
         }
     },
-
-
 
     // get model index
     _find: function(ftp_file) {
