@@ -42,6 +42,9 @@ return Backbone.View.extend({
         // link app
         this.app = app;
         
+        // default value for extension of files
+        var default_ext = 'Auto-detect';
+
         // link this
         var self = this;
         
@@ -75,6 +78,12 @@ return Backbone.View.extend({
         // initialize genome
         this.model.set('genome', self.select_genome.value());
 
+        // ensure files added after an individual row has changed 
+        // default to Auto-detect instead of ---
+        if(!(this.app.select_extension.value()=='---')){
+            this.default_ext=this.app.select_extension.value();
+        }
+
         // select extension
         this.select_extension = new Select.View({
             css: 'extension',
@@ -90,7 +99,7 @@ return Backbone.View.extend({
             },
             data: self.app.list_extensions,
             container: it.find('#extension'),
-            value: self.app.select_extension.value()
+            value: self.default_ext
         });
         
         // initialize extension
