@@ -129,6 +129,14 @@ return Backbone.View.extend({
                 self.list_extensions.sort(function(a, b) {
                     return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                 });
+
+                // add the '---' extension for use when the row types are changed individually
+                self.list_extensions.push({
+                        id              : "---",
+                        text            : "---",
+                        description     : "",
+                        description_url : ""
+                    });
                 
                 // add auto field
                 if (!self.options.datatypes_disable_auto) {
@@ -230,16 +238,22 @@ return Backbone.View.extend({
                 onchange : function() {
                     var newExten =self.select_extension.value()
                     var len = self.collection.models.length;
-                    for(i = 0; i < len; i++)
-                    {
-                        self.collection.models[i].attributes['row'].select_extension.value(newExten);
+                    // Only trigger changing the rows if the "set all" isn't set to '---' 
+                    // Prevents recursively changing the rows after an individual row has been changed
+                    if(!(newExten=='---')){
+                        for(i = 0; i < len; i++){
+                            self.collection.models[i].attributes['row'].select_extension.value(newExten);
+                        }
                     }
                 },
                 data: self.list_extensions,
-                container: self.$el.find('#extension'),
+                container: self.$el.parents().find('#extension'),
                 value: self.list_extensions[0]
             });
 
+            // handle extension info popover
+            self.$el.parents().find('#extension-info_out').on('click' , function(e) { self._showExtensionInfo(); })
+                                                          .on('mousedown', function(e) { e.preventDefault(); });
         }
         
         // show modal
@@ -251,22 +265,17 @@ return Backbone.View.extend({
         // setup info
         this._updateScreen();
 
-         // handle extension info popover
-        self.$el.find('#extension-info').on('click' , function(e) { self._showExtensionInfo(); })
-                                  .on('mousedown', function(e) { e.preventDefault(); });
-
     },
 
     _showExtensionInfo : function() {
         // initialize
         var self = this;
-        var $el = $(this.el).find('#extension-info');
+        var $el = $(this.el).parents().find('#extension-info_out');
         var extension = self.select_extension.value();
   
         var title = this.select_extension.text();
 
         var description = _.findWhere(self.list_extensions, {'id': extension});
-        //console.log(extension, $el);
 
         // create popup
         if (!this.extension_popup) {
@@ -275,7 +284,7 @@ return Backbone.View.extend({
                 container: $el
             });
         }
-        //console.log(description);
+
         // show / hide popup
         if (!this.extension_popup.visible) {
             this.extension_popup.title(title);
@@ -691,26 +700,36 @@ return Backbone.View.extend({
 
     // load html template
     _template: function(id, idInfo) {
-        return  '<div id="' + id + '" class="upload-box">' +
-                    '<table id="upload-table" class="table table-striped" style="display: none;">' +
-                        '<thead>' +
-                            '<tr>' +
-                                '<th>Name</th>' +
-                                '<th>Size</th>' +
-                                '<th>Type' +
-                                '<div id="extension" class="extension" style="float: left;"/>&nbsp;&nbsp' +
-                                '<div id="extension-info" class="upload-icon-button fa fa-search"/>' +
-                                '</th>' +
-                                '<th>Genome</th>' +
-                                '<th>Settings</th>' +
-                                '<th>Status</th>' +
-                                '<th></th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody></tbody>' +
-                    '</table>' +
-                '</div>' +
-                '<h6 id="' + idInfo + '" class="upload-info"></h6>';
+        return '<div class="uploadwrap">' +
+                    '<div id="uploadhead" class="uploadhead">' +
+                        '<span class="fftext">"Set All" Types:&nbsp;&nbsp</span>' +
+                        '<span id="extension" class="extension"/>&nbsp;&nbsp' +
+                        '<span id="extension-info_out" class="upload-icon-button fa fa-search"/> ' +
+                    '</div>' +
+                    '<div class="uploadcont">' +
+                        '<div class="uploadcont-wrap">' +
+                            '<div id="' + id + '" class="upload-box">' +
+                                '<table id="upload-table" class="table table-striped" style="display: none;">' +
+                                    '<thead>' +
+                                        '<tr>' +
+                                            '<th>Name</th>' +
+                                            '<th>Size</th>' +
+                                            '<th>Type</th>' +
+                                            '<th>Genome</th>' +
+                                            '<th>Settings</th>' +
+                                            '<th>Status</th>' +
+                                            '<th></th>' +
+                                        '</tr>' +
+                                    '</thead>' +
+                                    '<tbody></tbody>' +
+                                '</table>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="uploadfoot">' +
+                        '<h6 id="' + idInfo + '" class="upload-info"></h6>' +
+                    '</div>' +
+                '</div>';
     }
 });
 

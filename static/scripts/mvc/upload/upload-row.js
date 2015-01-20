@@ -80,6 +80,13 @@ return Backbone.View.extend({
             css: 'extension',
             onchange : function() {
                 self.model.set('extension', self.select_extension.value());
+                // if user has changed individual row type, then change "set all" 
+                // type to '---'
+                if(!(self.select_extension.value() == app.select_extension.value()))
+                {
+                    var newExte = '---';
+                    app.select_extension.value(newExte);
+                }
             },
             data: self.app.list_extensions,
             container: it.find('#extension'),
