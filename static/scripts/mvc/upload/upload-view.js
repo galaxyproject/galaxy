@@ -236,11 +236,11 @@ return Backbone.View.extend({
             this.select_extension = new Select.View({
                 css: 'extension',
                 onchange : function() {
-                    var newExten =self.select_extension.value()
+                    var newExten = self.select_extension.value()
                     var len = self.collection.models.length;
                     // Only trigger changing the rows if the "set all" isn't set to '---' 
                     // Prevents recursively changing the rows after an individual row has been changed
-                    if(!(newExten=='---')){
+                    if(!(newExten === '---')){
                         for(i = 0; i < len; i++){
                             self.collection.models[i].attributes['row'].select_extension.value(newExten);
                         }

@@ -80,8 +80,8 @@ return Backbone.View.extend({
 
         // ensure files added after an individual row has changed 
         // default to Auto-detect instead of ---
-        if(!(this.app.select_extension.value()=='---')){
-            this.default_ext=this.app.select_extension.value();
+        if(!(this.app.select_extension.value() === '---')){
+            this.default_ext = this.app.select_extension.value();
         }
 
         // select extension
@@ -91,7 +91,7 @@ return Backbone.View.extend({
                 self.model.set('extension', self.select_extension.value());
                 // if user has changed individual row type, then change "set all" 
                 // type to '---'
-                if(!(self.select_extension.value() == app.select_extension.value()))
+                if(!(self.select_extension.value() === app.select_extension.value()))
                 {
                     var newExte = '---';
                     app.select_extension.value(newExte);
