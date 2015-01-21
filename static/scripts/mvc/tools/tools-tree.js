@@ -123,14 +123,14 @@ return Backbone.Model.extend({
                                 }
                                 
                                 // handle simple value
-                                if (!field.skip || self.app.workflow) {
+                                if (!field.skip || self.app.options.send_all) {
                                     if (field.validate && !field.validate()) {
                                         value = null;
                                     }
                                     if (input.ignore === undefined || (value !== null && input.ignore != value)) {
                                         // add value to submission
                                         add (job_input_id, input.id, value);
-                             
+
                                         // add payload to submission
                                         if (input.payload) {
                                             for (var p_id in input.payload) {

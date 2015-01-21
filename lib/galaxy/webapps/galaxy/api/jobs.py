@@ -219,7 +219,8 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
 
     @expose_api
     def create( self, trans, payload, **kwd ):
-        raise NotImplementedError()
+        """ See the create method in tools.py in order to submit a job. """
+        raise NotImplementedError( 'Please POST to /api/tools instead.' )
 
     @expose_api
     def search( self, trans, payload, **kwd ):

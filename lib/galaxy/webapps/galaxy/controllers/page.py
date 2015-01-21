@@ -729,9 +729,8 @@ class PageController( BaseUIController, SharableMixin,
         """
         #TODO: should be moved to history controller and/or called via ajax from the template
         decoded_id = self.decode_id( id )
+        # histories embedded in pages are set to importable when embedded, check for access here
         history = self.history_manager.get_accessible( trans, decoded_id, trans.user )
-        if not history:
-            return None
 
         # create ownership flag for template, dictify models
         # note: adding original annotation since this is published - get_dict returns user-based annos

@@ -272,7 +272,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             var process_id = this.deferred.register();
 
             // build model url for request
-            var model_url = galaxy_config.root + 'workflow/editor_form_post?tool_id=' + this.options.id;
+            var model_url = galaxy_config.root + 'workflow/editor_form_post?tool_id=' + this.options.id + '&__is_dynamic__=False';
             
             // post job
             Utils.request({
@@ -282,7 +282,10 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 success : function(data) {
                     // update node in workflow module
                     self.node.update_field_data(data);
-                    
+
+                    // highlight errors
+                    self._errors(data && data.tool_model);
+
                     // process completed
                     self.deferred.done(process_id);
             

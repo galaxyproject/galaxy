@@ -111,7 +111,7 @@ function request (options) {
         } else {
             ajaxConfig.url += '&';
         }
-        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data);
+        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data, true);
         ajaxConfig.data     = null;
     } else {
         ajaxConfig.dataType = 'json';

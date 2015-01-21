@@ -11,8 +11,23 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
     return Backbone.View.extend({
         // initialize
         initialize: function(options) {
+            // options
+            this.optionsDefault = {
+                // uses dynamic fields instead of text fields
+                is_dynamic      : true,
+                // shows form in compact view mode
+                compact         : false,
+                // shows errors on start
+                initial_errors  : false,
+                // ensures that all data including disabled optional fields are submitted to the server
+                send_all        : false
+            };
+    
+            // configure options
+            this.options = Utils.merge(options, this.optionsDefault);
+    
             // log options
-            console.debug(options);
+            console.debug(this.options);
             
             // link galaxy modal or create one
             var galaxy = parent.Galaxy;
@@ -28,9 +43,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             } else {
                 this.is_admin = false;
             }
-            
-            // link options
-            this.options = options;
             
             // link container
             this.container = this.options.container || 'body';
@@ -76,6 +88,24 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
         },
         
+        /** Highlights errors
+        */
+        _errors: function(options) {
+            // hide previous error statements
+            this.trigger('reset');
+        
+            // highlight all errors
+            if (options && options.errors) {
+                var error_messages = this.tree.matchResponse(options.errors);
+                for (var input_id in this.element_list) {
+                    var input = this.element_list[input_id];
+                    if (error_messages[input_id]) {
+                        this.highlight(input_id, error_messages[input_id], true);
+                    }
+                }
+            }
+        },
+        
         /** Main tool form build function. This function is called once a new model is available.
         */
         _buildForm: function() {
@@ -110,17 +140,14 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // rebuild the underlying data structure
             this.tree.finalize();
             
-            // show errors
-            if (options.errors) {
-                var error_messages = this.tree.matchResponse(options.errors);
-                for (var input_id in error_messages) {
-                    this.highlight(input_id, error_messages[input_id], true);
-                }
+            // show errors on startup
+            if (options.initial_errors) {
+                this._errors(options);
             }
             
             // add refresh listener
             this.on('refresh', function() {
-                // by using/reseting the deferred ajax queue the number of redundant calls is reduced
+                // by using/resetting the deferred ajax queue the number of redundant calls is reduced
                 self.deferred.reset();
                 self.deferred.execute(function(){self._updateModel()});
             });
@@ -148,7 +175,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var requirements_button = new Ui.ButtonIcon({
                 icon    : 'fa-info-circle',
-                title   : (!this.workflow && 'Requirements') || null,
+                title   : (!options.compact && 'Requirements') || null,
                 tooltip : 'Display tool requirements',
                 onclick : function() {
                     if (!this.visible) {
@@ -173,7 +200,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
                 icon    : 'fa-cubes',
-                title   : (!this.workflow && 'Versions') || null,
+                title   : (!options.compact && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
             if (options.versions && options.versions.length > 1) {
@@ -203,7 +230,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-caret-down',
-                title   : (!this.workflow && 'Options') || null,
+                title   : (!options.compact && 'Options') || null,
                 tooltip : 'View available options'
             });
             
@@ -280,7 +307,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // remove padding
-            if (this.options.workflow) {
+            if (options.compact) {
                 this.portlet.$content.css('padding', '0px');
             }
             
