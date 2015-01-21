@@ -96,9 +96,6 @@ function get (options) {
  * @param{Function} error   - Callback on error
  */
 function request (options) {
-    // this avoids adding brackets to array parameter names
-    $.ajaxSetup({ traditional: true });
-    
     // prepare ajax
     var ajaxConfig = {
         contentType : 'application/json',
@@ -114,7 +111,7 @@ function request (options) {
         } else {
             ajaxConfig.url += '&';
         }
-        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data);
+        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data, true);
         ajaxConfig.data     = null;
     } else {
         ajaxConfig.dataType = 'json';

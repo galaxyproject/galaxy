@@ -263,6 +263,12 @@ class TextToolParameter( ToolParameter ):
         else:
             return form_builder.TextField( self.name, self.size, value )
 
+    def to_html_value( self, value, app ):
+        if not value:
+            return ''
+        else:
+            return self.to_string( value, app )
+
     def get_initial_value( self, trans, context, history=None ):
         return self.value
 

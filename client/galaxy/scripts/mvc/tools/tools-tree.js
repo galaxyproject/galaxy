@@ -130,7 +130,7 @@ return Backbone.Model.extend({
                                     if (input.ignore === undefined || (value !== null && input.ignore != value)) {
                                         // add value to submission
                                         add (job_input_id, input.id, value);
-                             
+
                                         // add payload to submission
                                         if (input.payload) {
                                             for (var p_id in input.payload) {
