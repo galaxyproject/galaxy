@@ -1014,8 +1014,12 @@ def nice_size(size):
     '95.4 MB'
     """
     words = [ 'bytes', 'KB', 'MB', 'GB', 'TB' ]
+    prefix = ''
     try:
         size = float( size )
+        if size < 0:
+            size = abs( size )
+            prefix = '-'
     except:
         return '??? bytes'
     for ind, word in enumerate(words):
@@ -1023,8 +1027,8 @@ def nice_size(size):
         if step > size:
             size = size / float(1024 ** ind)
             if word == 'bytes':  # No decimals for bytes
-                return "%d bytes" % size
-            return "%.1f %s" % (size, word)
+                return "%s%d bytes" % ( prefix, size )
+            return "%s%.1f %s" % ( prefix, size, word )
     return '??? bytes'
 
 
