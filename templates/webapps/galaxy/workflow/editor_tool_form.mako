@@ -15,7 +15,10 @@
             'id'                : tool.id,
             'job_id'            : trans.security.encode_id( job.id ) if job else None,
             'history_id'        : trans.security.encode_id( trans.history.id ),
-            'workflow'          : True,
+            'is_dynamic'        : False,
+            'compact'           : True,
+            'initial_errors'    : True,
+            'send_all'          : True,
             'container'         : '#right-content'
         })
     %>

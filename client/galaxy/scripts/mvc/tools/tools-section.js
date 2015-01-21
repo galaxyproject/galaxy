@@ -448,7 +448,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
         /** Data input field
         */
         _fieldData : function(input_def) {
-            if (this.app.workflow) {
+            if (!this.app.options.is_dynamic) {
                 input_def.info = 'Data input \'' + input_def.name + '\' (' + Utils.textify(input_def.extensions.toString()) + ')';
                 input_def.value = null;
                 return this._fieldHidden(input_def);
@@ -469,8 +469,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
         /** Select/Checkbox/Radio options field
         */
         _fieldSelect : function (input_def) {
-            // show text field in workflow
-            if (this.app.workflow && input_def.is_dynamic) {
+            // show text field in if dynamic fields are disabled e.g. in workflow editor
+            if (!this.app.options.is_dynamic && input_def.is_dynamic) {
                 return this._fieldText(input_def);
             }
 
@@ -512,8 +512,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
         /** Drill down options field
         */
         _fieldDrilldown : function (input_def) {
-            // show text field in workflow
-            if (this.app.workflow && input_def.is_dynamic) {
+            // show text field in if dynamic fields are disabled e.g. in workflow editor
+            if (!this.app.options.is_dynamic && input_def.is_dynamic) {
                 return this._fieldText(input_def);
             }
             
