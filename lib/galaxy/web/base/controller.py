@@ -272,7 +272,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         # allow current history
         if history == trans.history:
             return history
-        raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
+        raise ItemOwnershipException( "You must be logged in to interact with this Galaxy history", type='error' )
 
     def get_user_histories( self, trans, user=None, include_deleted=False, only_deleted=False ):
         """
@@ -591,7 +591,7 @@ class UsesHistoryDatasetAssociationMixin:
             # Verify ownership.
             user = trans.get_user()
             if not user:
-                error( "Must be logged in to manage Galaxy items" )
+                error( "You must be logged in to interact with this Galaxy dataset" )
             if data.history.user != user:
                 error( "%s is not owned by current user" % data.__class__.__name__ )
 
