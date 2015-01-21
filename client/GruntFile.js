@@ -70,12 +70,13 @@ module.exports = function(grunt) {
       "jquery": [ "dist/jquery.js", "jquery/jquery.js" ],
       "jquery-migrate-official": [ "index.js", "jquery/jquery.migrate.js" ],
 
-      // these need to be updated and tested
-      //"traceKit": [ "tracekit.js", "tracekit.js" ],
+      "traceKit": [ "tracekit.js", "tracekit.js" ],
       //"ravenjs": [ "dist/raven.js", "raven.js" ],
-      //"require": [ "build/require.js", "require.js" ],
       //"underscore": [ "underscore.js", "underscore.js" ],
       //"backbone": [ "backbone.js", "backbone/backbone.js" ],
+
+      // these need to be updated and tested
+      //"require": [ "build/require.js", "require.js" ],
       //"d3": [ "d3.js", "d3.js" ],
       //"farbtastic": [ "src/farbtastic.js", "farbtastic.js" ],
       //"jQTouch": [ "src/reference/jqtouch.js", "jquery/jqtouch.js" ],
