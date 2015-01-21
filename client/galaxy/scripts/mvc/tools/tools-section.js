@@ -449,8 +449,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
         */
         _fieldData : function(input_def) {
             if (this.app.workflow) {
-                var extensions = Utils.textify(input_def.extensions.toString());
-                input_def.info = 'Data input \'' + input_def.name + '\' (' + extensions + ')';
+                input_def.info = 'Data input \'' + input_def.name + '\' (' + Utils.textify(input_def.extensions.toString()) + ')';
+                input_def.value = null;
                 return this._fieldHidden(input_def);
             }
             var self = this;
@@ -471,9 +471,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
         _fieldSelect : function (input_def) {
             // show text field in workflow
             if (this.app.workflow && input_def.is_dynamic) {
-                if (!Utils.validate(input_def.value)) {
-                    input_def.value = '';
-                }
                 return this._fieldText(input_def);
             }
             
@@ -515,6 +512,12 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
         /** Drill down options field
         */
         _fieldDrilldown : function (input_def) {
+            // show text field in workflow
+            if (this.app.workflow && input_def.is_dynamic) {
+                return this._fieldText(input_def);
+            }
+            
+            // create drill down field
             var self = this;
             return new Ui.Drilldown.View({
                 id          : 'field-' + input_def.id,
@@ -529,6 +532,24 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
         /** Text input field
         */
         _fieldText : function(input_def) {
+            // format field for multiple entries
+            if (input_def.multiple) {
+                // show text area field
+                input_def.area = true;
+                
+                // format value to text
+                if (!Utils.validate(input_def.value)) {
+                    input_def.value = '';
+                } else {
+                    if (input_def.value instanceof Array) {
+                        input_def.value = value.toString();
+                    } else {
+                        input_def.value = String(input_def.value).replace(/[\[\]'"\s]/g, '').replace(/,/g, '\n');
+                    }
+                }
+            }
+            
+            // create input element
             var self = this;
             return new Ui.Input({
                 id          : 'field-' + input_def.id,

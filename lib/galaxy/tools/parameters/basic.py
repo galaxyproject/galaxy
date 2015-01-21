@@ -47,6 +47,7 @@ class ToolParameter( object, Dictifiable ):
         self.name = input_source.get("name")
         self.type = input_source.get("type")
         self.hidden = input_source.get("hidden", False)
+        self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
         sanitizer_elem = input_source.parse_sanitizer_elem()
@@ -215,6 +216,7 @@ class ToolParameter( object, Dictifiable ):
         tool_dict[ 'model_class' ] = self.__class__.__name__
         tool_dict[ 'optional' ] = self.optional
         tool_dict[ 'hidden' ] = self.hidden
+        tool_dict[ 'is_dynamic' ] = self.is_dynamic
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
         return tool_dict
@@ -1042,7 +1044,6 @@ class SelectToolParameter( ToolParameter ):
 
         d['display'] = self.display
         d['multiple'] = self.multiple
-        d['is_dynamic'] = self.is_dynamic
 
         return d
 
@@ -1451,7 +1452,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             if not os.path.isabs( from_file ):
                 from_file = os.path.join( tool.app.config.tool_data_path, from_file )
             elem = XML( "<root>%s</root>" % open( from_file ).read() )
-        self.is_dynamic = False
         self.dynamic_options = elem.get( 'dynamic_options', None )
         if self.dynamic_options:
             self.is_dynamic = True
@@ -1541,6 +1541,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 else:
                     value = value.split( "\n" )
             return UnvalidatedValue( value )
+        if not value and not self.optional:
+            raise ValueError( "An invalid option was selected for %s, 'None', please verify" % (self.name) )
         if not value:
             return None
         if not isinstance( value, list ):
@@ -1663,9 +1665,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             # will sometimes error if self.is_dynamic and self.filtered
             #   bc we dont/cant fill out other_values above ({})
             pass
-        d[ 'options' ] = options
-        d[ 'display' ] = self.display
-        d[ 'is_dynamic' ] = self.is_dynamic
+        d['options'] = options
+        d['display'] = self.display
         return d
 
 
@@ -1768,6 +1769,7 @@ class DataToolParameter( BaseDataToolParameter ):
             self.validators.append( validation.MetadataValidator() )
         self._parse_formats( trans, tool, input_source )
         self.multiple = input_source.get_bool('multiple', False)
+        self.is_dynamic = True
         self._parse_options( input_source )
         # Load conversions required for the dataset input
         self.conversions = []
@@ -2114,7 +2116,6 @@ class DataToolParameter( BaseDataToolParameter ):
         d = super( DataToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
-        d['is_dynamic'] = True
         d['options'] = {'hda': [], 'hdca': []}
 
         # return default content if context is not available
@@ -2169,6 +2170,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         self._parse_formats( trans, tool, input_source )
         self._collection_type = input_source.get("collection_type", None)
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
+        self.is_dynamic = True
         self._parse_options( input_source )  # TODO: Review and test.
 
     @property
@@ -2355,7 +2357,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
-        d['is_dynamic'] = False
         d['options'] = {'hda': [], 'hdca': []}
 
         # return default content if context is not available

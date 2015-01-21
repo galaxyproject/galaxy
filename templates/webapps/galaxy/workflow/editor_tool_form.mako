@@ -6,7 +6,9 @@
         ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
         ## This avoids making two separate requests since the classic form requires the mako anyway.
         from galaxy.tools.parameters import params_to_incoming
-        incoming = {}
+        incoming = {
+            '__is_dynamic__' : False
+        }
         params_to_incoming( incoming, tool.inputs, module.state.inputs, trans.app )
         self.form_config = tool.to_json(trans, **incoming)
         self.form_config.update({
