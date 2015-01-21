@@ -729,7 +729,8 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         Returns html suitable for embedding in another page.
         """
         #TODO: should be moved to history controller and/or called via ajax from the template
-        history = self.get_history( trans, id, False, True )
+        # histories embedded in pages are set to importable when embedded, check for access here
+        history = self.get_history( trans, id, check_ownership=False, check_accessible=True )
         if not history:
             return None
 

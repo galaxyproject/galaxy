@@ -255,15 +255,25 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """
         Get a History from the database by id, verifying ownership.
         """
-        if trans.user is None and trans.history:
-            if id == trans.security.encode_id( trans.history.id ):
-                return trans.history
-            raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
+        if not trans.user:
+            return self._anonymous_get_history( trans, id,
+                check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
         history = self.get_object( trans, id, 'History',
             check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
         history = self.security_check( trans, history, check_ownership, check_accessible )
         return history
+
+    def _anonymous_get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
+        history = self.get_object( trans, id, 'History',
+            check_ownership=False, check_accessible=False, deleted=deleted )
+        # access public histories
+        if history.importable:
+            return history
+        # allow current history
+        if history == trans.history:
+            return history
+        raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
 
     def get_user_histories( self, trans, user=None, include_deleted=False, only_deleted=False ):
         """
