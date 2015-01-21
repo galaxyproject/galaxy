@@ -160,7 +160,7 @@ def _flatten_step_params( param_dict, prefix="" ):
 
 def build_workflow_run_config( trans, workflow, payload ):
     app = trans.app
-    history_manager = histories.HistoryManager()
+    history_manager = histories.HistoryManager( app )
 
     # Pull other parameters out of payload.
     param_map = payload.get( 'parameters', {} )
@@ -196,7 +196,7 @@ def build_workflow_run_config( trans, workflow, payload ):
         # Passing an existing history to use.
         encoded_history_id = history_param[ 8: ]
         history_id = __decode_id( trans, encoded_history_id, model_type="history" )
-        history = history_manager.get( trans, history_id, check_ownership=True )
+        history = history_manager.get_owned( trans, history_id, trans.user )
     else:
         # Send workflow outputs to new history.
         history = app.model.History(name=history_param, user=trans.user)

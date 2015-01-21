@@ -28,7 +28,6 @@ def api_payload_to_create_params( payload ):
         element_identifiers=payload.get( "element_identifiers" ),
         name=payload.get( "name", None ),
     )
-
     return params
 
 
@@ -65,9 +64,9 @@ def validate_input_element_identifiers( element_identifiers ):
             validate_input_element_identifiers( element_identifier[ "element_identifiers" ] )
 
 
-def dictify_dataset_collection_instance( dataset_colleciton_instance, parent, security, view="element" ):
-    dict_value = dataset_colleciton_instance.to_dict( view=view )
-    encoded_id = security.encode_id( dataset_colleciton_instance.id )
+def dictify_dataset_collection_instance( dataset_collection_instance, parent, security, view="element" ):
+    dict_value = dataset_collection_instance.to_dict( view=view )
+    encoded_id = security.encode_id( dataset_collection_instance.id )
     if isinstance( parent, model.History ):
         encoded_history_id = security.encode_id( parent.id )
         dict_value[ 'url' ] = web.url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset_collection" )

@@ -872,10 +872,10 @@ var ModelListPanel = ListPanel.extend({
         this.log( this + '._setUpModelListeners', this.model );
         // bounce model errors up to the panel
         this.model.on( 'error', function(){
-            //TODO: namespace?
-            //var args = Array.prototype.slice.call( arguments, 0 );
-            //args[0] = 'model:' + args[0];
-            this.trigger.apply( panel, arguments );
+            var args = Array.prototype.slice.call( arguments, 0 );
+            //args.unshift( 'model:error' );
+            args.unshift( 'error' );
+            this.trigger.apply( this, args );
         }, this );
         return this;
     },

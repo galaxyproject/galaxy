@@ -9,17 +9,21 @@ from sqlalchemy.orm import aliased
 import json
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy import exceptions
 from galaxy import util
 from galaxy import model
+from galaxy import managers
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
+class JobController( BaseAPIController, UsesLibraryMixinItems ):
+
+    def __init__( self, app ):
+        super( JobController, self ).__init__( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     @expose_api
     def index( self, trans, **kwd ):
@@ -85,7 +89,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
         history_id = kwd.get( 'history_id', None )
         if history_id is not None:
             try:
-                decoded_history_id = trans.security.decode_id(history_id)
+                decoded_history_id = self.decode_id(history_id)
                 query = query.filter( trans.app.model.Job.history_id == decoded_history_id )
             except:
                 raise exceptions.ObjectAttributeInvalidException()
@@ -195,7 +199,7 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
 
     def __get_job( self, trans, id ):
         try:
-            decoded_job_id = trans.security.decode_id( id )
+            decoded_job_id = self.decode_id( id )
         except Exception:
             raise exceptions.MalformedId()
         query = trans.sa_session.query( trans.app.model.Job )
@@ -257,7 +261,8 @@ class JobController( BaseAPIController, UsesHistoryDatasetAssociationMixin, Uses
             if isinstance( v, dict ):
                 if 'id' in v:
                     if 'src' not in v or v[ 'src' ] == 'hda':
-                        dataset = self.get_dataset( trans, v['id'], check_ownership=False, check_accessible=True )
+                        hda_id = self.decode_id( v['id'] )
+                        dataset = self.hda_manager.get_accessible( trans, hda_id, trans.user )
                     else:
                         dataset = self.get_library_dataset_dataset_association( trans, v['id'] )
                     if dataset is None:

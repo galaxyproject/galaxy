@@ -7,6 +7,7 @@ from galaxy import model
 from galaxy.exceptions import MessageException
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.managers import base
 from galaxy.managers import hdas  # TODO: Refactor all mixin use into managers.
 from galaxy.managers import histories
 from galaxy.managers import lddas
@@ -35,10 +36,11 @@ class DatasetCollectionManager( object ):
         self.collection_type_descriptions = CollectionTypeDescriptionFactory( self.type_registry )
         self.model = app.model
         self.security = app.security
-        self.hda_manager = hdas.HDAManager()
-        self.history_manager = histories.HistoryManager()
+
+        self.hda_manager = hdas.HDAManager( app )
+        self.history_manager = histories.HistoryManager( app )
         self.tag_manager = tags.TagManager( app )
-        self.ldda_manager = lddas.LDDAManager( )
+        self.ldda_manager = lddas.LDDAManager( app )
 
     def create(
         self,
@@ -64,6 +66,7 @@ class DatasetCollectionManager( object ):
             element_identifiers=element_identifiers,
             elements=elements,
         )
+
         if isinstance( parent, model.History ):
             dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
@@ -81,15 +84,18 @@ class DatasetCollectionManager( object ):
                     trans.sa_session.add( output_dataset )
 
                 dataset_collection_instance.implicit_output_name = implicit_collection_info[ "implicit_output_name" ]
+
             log.debug("Created collection with %d elements" % ( len( dataset_collection_instance.collection.elements ) ) )
             # Handle setting hid
             parent.add_dataset_collection( dataset_collection_instance )
+
         elif isinstance( parent, model.LibraryFolder ):
             dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 folder=parent,
                 name=name,
             )
+
         else:
             message = "Internal logic error - create called with unknown parent type %s" % type( parent )
             log.exception( message )
@@ -186,8 +192,6 @@ class DatasetCollectionManager( object ):
         return source_hdca
 
     def _set_from_dict( self, trans, dataset_collection_instance, new_data ):
-        # Blatantly stolen from UsesHistoryDatasetAssociationMixin.set_hda_from_dict.
-
         # send what we can down into the model
         changed = dataset_collection_instance.set_from_dict( new_data )
         # the rest (often involving the trans) - do here
@@ -276,7 +280,7 @@ class DatasetCollectionManager( object ):
 
         if src_type == 'hda':
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )
-            element = self.hda_manager.get( trans, decoded_id, check_ownership=False )
+            element = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
         elif src_type == 'ldda':
             element = self.ldda_manager.get( trans, encoded_id )
         elif src_type == 'hdca':
@@ -310,7 +314,10 @@ class DatasetCollectionManager( object ):
     def __get_history_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):
         instance_id = int( trans.app.security.decode_id( id ) )
         collection_instance = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( instance_id )
-        self.history_manager.secure( trans, collection_instance.history, check_ownership=check_ownership, check_accessible=check_accessible )
+        if check_ownership:
+            self.history_manager.error_unless_owner( trans, collection_instance.history, trans.user )
+        if check_accessible:
+            self.history_manager.error_unless_accessible( trans, collection_instance.history, trans.user )
         return collection_instance
 
     def __get_library_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):

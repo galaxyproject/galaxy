@@ -122,7 +122,11 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
 
             else:
                 payload = self._validate_and_parse_payload( payload )
+                # must have a type (I've taken this to be the visualization name)
+                if 'type' not in payload:
+                    raise ValueError( "key/value 'type' is required" )
                 vis_type = payload.pop( 'type', False )
+
                 payload[ 'save' ] = True
                 # generate defaults - this will err if given a weird key?
                 visualization = self.create_visualization( trans, vis_type, **payload )
@@ -221,10 +225,6 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         #TODO: deleted
         #TODO: importable
 
-        # must have a type (I've taken this to be the visualization name)
-        if 'type' not in payload:
-            raise ValueError( "key/value 'type' is required" )
-
         validated_payload = {}
         for key, val in payload.items():
             #TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
@@ -256,8 +256,9 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
                     raise ValueError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
 
-            #elif key not in valid_but_uneditable_keys:
-            #    raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+            elif key not in valid_but_uneditable_keys:
+                continue
+                #raise AttributeError( 'unknown key: %s' %( str( key ) ) )
 
             validated_payload[ key ] = val
         return validated_payload

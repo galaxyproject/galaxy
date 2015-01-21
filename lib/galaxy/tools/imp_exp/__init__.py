@@ -9,7 +9,6 @@ from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.json import loads, dumps
-from galaxy.web.base.controller import UsesHistoryMixin
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ def load_history_imp_exp_tools( toolbox ):
     log.debug( "Loaded history import tool: %s", history_imp_tool.id )
 
 
-class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
+class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
     """
         Class provides support for performing jobs that import a history from
         an archive.
@@ -315,13 +314,27 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 self.sa_session.flush()
 
 
-class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
+class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
     """
-        Class provides support for performing jobs that export a history to an
-        archive.
+    Class provides support for performing jobs that export a history to an
+    archive.
     """
     def __init__( self, job_id ):
         self.job_id = job_id
+
+    def get_history_datasets( self, trans, history ):
+        """
+        Returns history's datasets.
+        """
+        query = ( trans.sa_session.query( trans.model.HistoryDatasetAssociation )
+                    .filter( trans.model.HistoryDatasetAssociation.history == history )
+                    .options( eagerload( "children" ) )
+                    .join( "dataset" )
+                    .options( eagerload_all( "dataset.actions" ) )
+                    .order_by( trans.model.HistoryDatasetAssociation.hid )
+                    .filter( trans.model.HistoryDatasetAssociation.deleted == False )
+                    .filter( trans.model.Dataset.purged == False ) )
+        return query.all()
 
     # TODO: should use db_session rather than trans in this method.
     def setup_job( self, trans, jeha, include_hidden=False, include_deleted=False ):

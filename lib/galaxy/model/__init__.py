@@ -1134,15 +1134,16 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
     def active_datasets_children_and_roles( self ):
         if not hasattr(self, '_active_datasets_children_and_roles'):
             db_session = object_session( self )
-            query = db_session.query( HistoryDatasetAssociation ).filter( HistoryDatasetAssociation.table.c.history_id == self.id ). \
-                filter( not_( HistoryDatasetAssociation.deleted ) ). \
-                order_by( HistoryDatasetAssociation.table.c.hid.asc() ). \
-                options(
-                    joinedload("children"),
-                    joinedload("dataset"),
-                    joinedload("dataset.actions"),
-                    joinedload("dataset.actions.role"),
-                )
+            query = ( db_session.query( HistoryDatasetAssociation )
+                        .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                        .filter( not_( HistoryDatasetAssociation.deleted ) )
+                        .order_by( HistoryDatasetAssociation.table.c.hid.asc() )
+                        .options(
+                            joinedload("children"),
+                            joinedload("dataset"),
+                            joinedload("dataset.actions"),
+                            joinedload("dataset.actions.role"),
+                        ))
             self._active_datasets_children_and_roles = query.all()
         return self._active_datasets_children_and_roles
 
@@ -1356,6 +1357,14 @@ class Dataset( object ):
                     FAILED_METADATA = 'failed_metadata',
                     RESUBMITTED = 'resubmitted' )
     # failed_metadata and resubmitted are only valid as DatasetInstance states currently
+    
+    non_ready_states = (
+        states.UPLOAD,
+        states.QUEUED,
+        states.RUNNING,
+        states.SETTING_METADATA
+    )
+    ready_states = tuple( set( states.__dict__.values() ) - set( non_ready_states ) )
 
     conversion_messages = Bunch( PENDING = "pending",
                                  NO_DATA = "no data",
@@ -1384,6 +1393,9 @@ class Dataset( object ):
             self.uuid = uuid4()
         else:
             self.uuid = UUID(str(uuid))
+
+    def in_ready_state( self ):
+        return self.state in self.ready_states
 
     def get_file_name( self ):
         if not self.external_filename:
@@ -1522,6 +1534,8 @@ class DatasetInstance( object ):
         self.tool_version = tool_version
         self.extension = extension
         self.designation = designation
+        # set private variable to None here, since the attribute may be needed in by MetadataCollection.__init__
+        self._metadata = None
         self.metadata = metadata or dict()
         self.extended_metadata = extended_metadata
         if dbkey: #dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
@@ -1563,7 +1577,9 @@ class DatasetInstance( object ):
     def datatype( self ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
     def get_metadata( self ):
-        if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self: #using weakref to store parent (to prevent circ ref), does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
+        # using weakref to store parent (to prevent circ ref),
+        #   does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
+        if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self:
             self._metadata_collection = MetadataCollection( self )
         return self._metadata_collection
     def set_metadata( self, bunch ):
@@ -2090,6 +2106,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             rval['extended_metadata'] = hda.extended_metadata.data
 
         rval[ 'peek' ] = to_unicode( hda.display_peek() )
+
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
