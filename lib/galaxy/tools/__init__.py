@@ -2251,7 +2251,8 @@ class Tool( object, Dictifiable ):
         """
         job_id = kwd.get('job_id', None)
         dataset_id = kwd.get('dataset_id', None)
-        
+        is_dynamic = string_as_bool(kwd.get('__is_dynamic__', True))
+
         # load job details if provided
         job = None
         if job_id:
@@ -2345,10 +2346,16 @@ class Tool( object, Dictifiable ):
         def check_state(trans, input, default_value, context):
             value = default_value
             error = 'State validation failed.'
+            
+            # skip dynamic fields if deactivated
+            if not is_dynamic and input.is_dynamic:
+                return [value, None]
+            
+            # validate value content
             try:
                 # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
                 if input.type == 'boolean' and isinstance(default_value, basestring):
-                    value, error = [util.string_as_bool(default_value), None]
+                    value, error = [string_as_bool(default_value), None]
                 else:
                     value, error = check_param(trans, input, default_value, context)
             except Exception, err:
@@ -2463,7 +2470,7 @@ class Tool( object, Dictifiable ):
                         sanitize_state(state[k])
                     else:
                         state[k] = jsonify(state[k])
-            
+
         # do param translation here, used by datasource tools
         if self.input_translator:
             self.input_translator.translate( params )

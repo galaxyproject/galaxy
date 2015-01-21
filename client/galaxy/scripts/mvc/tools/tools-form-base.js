@@ -79,6 +79,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         /** Highlights errors
         */
         _errors: function(options) {
+            // hide previous error statements
+            this.trigger('reset');
+        
+            // highlight all errors
             if (options && options.errors) {
                 var error_messages = this.tree.matchResponse(options.errors);
                 for (var input_id in this.element_list) {
@@ -123,9 +127,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // rebuild the underlying data structure
             this.tree.finalize();
-            
-            // show errors
-            this._errors(options);
             
             // add refresh listener
             this.on('refresh', function() {

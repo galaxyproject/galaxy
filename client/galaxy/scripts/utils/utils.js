@@ -96,6 +96,9 @@ function get (options) {
  * @param{Function} error   - Callback on error
  */
 function request (options) {
+    // this avoids adding brackets to array parameter names
+    $.ajaxSetup({ traditional: true });
+    
     // prepare ajax
     var ajaxConfig = {
         contentType : 'application/json',

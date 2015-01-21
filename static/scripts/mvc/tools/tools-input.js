@@ -53,7 +53,7 @@ define([], function() {
         error: function(text) {
             if (!this.field.skip) {
                 this.$error_text.html(text);
-                this.$error.fadeIn();
+                this.$error.fadeIn('fast');
                 this.$el.addClass('ui-error');
             }
         },
