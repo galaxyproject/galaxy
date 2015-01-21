@@ -108,12 +108,9 @@ tool-data/shared/jars/
 # CSS build artifacts.
 sprite-*.less
 
-# Local node_modules directories
+# Local node_modules and bower_components directories
 node_modules
-
-# Testing
-selenium-server.jar
-selenium_results.html
+bower_components
 
 # Documentation build files.
 doc/build

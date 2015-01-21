@@ -1,0 +1,40 @@
+{
+  "name": "galaxy-client-libs",
+  "version": "0.0.0",
+  "description": "External client-side libraries used by Galaxy",
+  "keywords": [
+    "galaxy",
+    "galaxyproject"
+  ],
+  "homepage": "usegalaxy.org",
+  "dependencies": {
+    "jquery": "~1.11.1",
+    "jquery-migrate-official": "http://code.jquery.com/jquery-migrate-1.2.1.js",
+    "traceKit": "*",
+    "ravenjs": "~1.1.16",
+    "require": "*",
+    "underscore": "~1.7.0",
+    "backbone": "~1.1.2",
+    "bootstrap": "~3.3.2",
+    "d3": "~3.5.3",
+    "farbtastic": "~2.0.0-alpha.1",
+    "toastr": "~2.1.0",
+    "jQTouch": "git://github.com/senchalabs/jQTouch#~1.0.0",
+    "bib2json": "git://github.com/mayanklahiri/bib2json",
+    "jquery-form": "~3.46.0",
+    "jquery-autocomplete": "git://github.com/dyve/jquery-autocomplete",
+    "select2": "~3.5.2",
+    "jStorage": "~0.4.12",
+    "jquery.cookie": "~1.4.1",
+    "dynatree": "~1.2.5",
+    "jquery-mousewheel": "~3.1.12",
+    "wymeditor": "~1.0.0-rc.1",
+    "jstree": "~3.0.9",
+    "jquery-ui": "git://github.com/jquery/jquery-ui.git#~1.11.2",
+    "jquery.event.drag-drop": "~2.2.1",
+    "handlebars.js": "~2.0.0"
+  },
+  "resolutions": {
+    "jquery": "~1.11.1"
+  }
+}
