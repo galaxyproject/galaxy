@@ -5,11 +5,7 @@ Visualizations are saved configurations/variables used to
 reproduce a specific view in a Galaxy visualization.
 """
 
-from galaxy import exceptions
 from galaxy import model
-import galaxy.web
-
-from galaxy.managers import base
 from galaxy.managers import sharable
 
 import logging
@@ -39,10 +35,10 @@ class VisualizationManager( sharable.SharableModelManager ):
         """
         pass
 
-    #TODO: revisions
+    # TODO: revisions
 
 
-## =============================================================================
+# =============================================================================
 class VisualizationSerializer( sharable.SharableModelSerializer ):
     """
     Interface/service object for serializing visualizations into dictionaries.
