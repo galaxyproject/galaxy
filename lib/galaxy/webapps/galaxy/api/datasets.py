@@ -43,7 +43,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # Get dataset.
         try:
             dataset = self.get_hda_or_ldda( trans, hda_ldda=hda_ldda, dataset_id=id )
-        except Exception, e:
+        except Exception as e:
             return str( e )
 
         # Use data type to return particular type of data.
@@ -70,7 +70,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 else:
                     rval = dataset.to_dict()
 
-        except Exception, e:
+        except Exception as e:
             rval = "Error in dataset API at listing contents: " + str( e )
             log.error( rval + ": %s" % str(e), exc_info=True )
             trans.response.status = 500
@@ -296,7 +296,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     del display_kwd["key"]
                 rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **display_kwd )
 
-        except Exception, exception:
+        except Exception as exception:
             log.error( "Error getting display data for dataset (%s) from history (%s): %s",
                        history_content_id, history_id, str( exception ), exc_info=True )
             trans.response.status = 500
