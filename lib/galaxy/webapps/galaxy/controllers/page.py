@@ -640,7 +640,7 @@ class PageController( BaseUIController, SharableMixin,
         page = self.get_page( trans, id )
 
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ['True', 'true', 't', 'T'];
+        importable = accessible in ['True', 'true', 't', 'T']
         if page.importable != importable:
             if importable:
                 self._make_item_accessible( trans.sa_session, page )
