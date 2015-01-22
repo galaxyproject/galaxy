@@ -235,7 +235,8 @@ class ModelManager( object ):
         Use the manager's default_order_by if order_by is None.
         """
         if order_by is None:
-            return query.order_by( *self.default_order_by() )
+            default_order_by = self.default_order_by or self._default_order_by()
+            return query.order_by( *default_order_by )
 
         if isinstance( order_by, ( list, tuple ) ):
             return query.order_by( *order_by )
