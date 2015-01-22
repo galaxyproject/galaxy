@@ -6,11 +6,7 @@ Pages are markup created and saved by users that can contain Galaxy objects
 from within Galaxy.
 """
 
-from galaxy import exceptions
 from galaxy import model
-import galaxy.web
-
-from galaxy.managers import base
 from galaxy.managers import sharable
 
 import logging
@@ -41,7 +37,7 @@ class PageManager( sharable.SharableModelManager ):
         pass
 
 
-## =============================================================================
+# =============================================================================
 class PageSerializer( sharable.SharableModelSerializer ):
     """
     Interface/service object for serializing pages into dictionaries.
@@ -59,8 +55,8 @@ class PageSerializer( sharable.SharableModelSerializer ):
         ]
         self.serializable_keys = detailed_view + []
         self.views = {
-            'summary'   : summary_view,
-            'detailed'  : detailed_view
+            'summary': summary_view,
+            'detailed': detailed_view
         }
         self.default_view = 'summary'
 
