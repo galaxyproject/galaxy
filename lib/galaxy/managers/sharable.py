@@ -203,8 +203,9 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         self.associate( trans, user_share_assoc, item )
         user_share_assoc.user = user
 
-        # waat?
-        self.create_unique_slug( trans, item )
+        # ensure an item slug so shared users can access
+        if not item.slug:
+            self.create_unique_slug( trans, item )
 
         if flush:
             self.app.model.context.flush()

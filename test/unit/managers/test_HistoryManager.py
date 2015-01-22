@@ -223,6 +223,7 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         self.log( "should be unshared by default" )
         self.assertEqual( self.history_mgr.get_share_assocs( self.trans, item1 ), [] )
+        self.assertEqual( item1.slug, None )
 
         self.log( "should be able to share with specific users" )
         share_assoc = self.history_mgr.share_with( self.trans, item1, non_owner )
@@ -232,6 +233,7 @@ class HistoryManagerTestCase( BaseTestCase ):
             len( self.history_mgr.get_share_assocs( self.trans, item1 ) ), 1 )
         self.assertEqual(
             len( self.history_mgr.get_share_assocs( self.trans, item1, user=non_owner ) ), 1 )
+        self.assertIsInstance( item1.slug, basestring )
 
         self.log( "should be able to unshare with specific users" )
         share_assoc = self.history_mgr.unshare_with( self.trans, item1, non_owner )
