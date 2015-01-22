@@ -1,21 +1,18 @@
-from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
-from galaxy.dataset_collections.matching import MatchingCollections
-from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
-from galaxy.dataset_collections import builder
-
 from galaxy import model
-from galaxy.exceptions import MessageException
+from galaxy.dataset_collections import builder
+from galaxy.dataset_collections.matching import MatchingCollections
+from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
+from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
 from galaxy.exceptions import ItemAccessibilityException
+from galaxy.exceptions import MessageException
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.managers import base
 from galaxy.managers import hdas  # TODO: Refactor all mixin use into managers.
 from galaxy.managers import histories
 from galaxy.managers import lddas
 from galaxy.managers import tags
 from galaxy.managers.collections_util import validate_input_element_identifiers
-from galaxy.util import validation
 from galaxy.util import odict
-
+from galaxy.util import validation
 import logging
 log = logging.getLogger( __name__ )
 
@@ -259,7 +256,7 @@ class DatasetCollectionManager( object ):
         return elements
 
     def __load_element( self, trans, element_identifier ):
-        #if not isinstance( element_identifier, dict ):
+        # if not isinstance( element_identifier, dict ):
         #    # Is allowing this to just be the id of an hda too clever? Somewhat
         #    # consistent with other API methods though.
         #    element_identifier = dict( src='hda', id=str( element_identifier ) )
