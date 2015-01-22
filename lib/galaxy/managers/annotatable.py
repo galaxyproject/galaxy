@@ -2,9 +2,6 @@
 Mixins for Annotatable model managers and serializers.
 """
 
-from galaxy import exceptions
-from galaxy import model
-
 import logging
 log = logging.getLogger( __name__ )
 
@@ -13,7 +10,7 @@ log = logging.getLogger( __name__ )
 class AnnotatableManagerInterface( object ):
     annotation_assoc = None
 
-    #TODO: most of this seems to be covered by item_attrs.UsesAnnotations
+    # TODO: most of this seems to be covered by item_attrs.UsesAnnotations
 
 
 # =============================================================================
@@ -26,8 +23,8 @@ class AnnotatableSerializer( object ):
         """
         Get and serialize an `item`'s annotation.
         """
-        #TODO: have to assume trans.user here...
-        #user = item.user
+        # TODO: have to assume trans.user here...
+        # user = item.user
         user = trans.user
         sa_session = self.app.model.context
         returned = item.get_item_annotation_str( sa_session, user, item )
@@ -49,11 +46,11 @@ class AnnotatableDeserializer( object ):
         val = self.validate.nullable_basestring( key, val )
 
         sa_session = self.app.model.context
-        #TODO: have to assume trans.user here...
+        # TODO: have to assume trans.user here...
         user = trans.user
         if val is None:
             item.delete_item_annotation( sa_session, user, item )
             return None
 
-        model = item.add_item_annotation( sa_session, user, item, val )
-        return model.annotation
+        annotated_item = item.add_item_annotation( sa_session, user, item, val )
+        return annotated_item.annotation
