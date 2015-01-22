@@ -265,7 +265,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history_ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
             # Display no message by default
             status, message = None, None
-            refresh_history = False
             # Load the histories and ensure they all belong to the current user
             histories = []
             for history_id in history_ids:
@@ -425,7 +424,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.require_login( "work with shared histories" )
     def list_shared( self, trans, **kwargs ):
         """List histories shared with current user by others"""
-        msg = galaxy.util.restore_text( kwargs.get( 'msg', '' ) )
         status = message = None
         if 'operation' in kwargs:
             ids = galaxy.util.listify( kwargs.get( 'id', [] ) )
@@ -999,10 +997,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
         histories = histories or {}
         msg = ""
-        sent_to_emails = []
-        for send_to_user in histories.keys():
-            sent_to_emails.append( send_to_user.email )
-        emails = ",".join( e for e in sent_to_emails )
         if not histories:
             send_to_err += "No users have been specified or no histories can be sent without changing permissions or associating a sharing role.  "
         else:
@@ -1149,7 +1143,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if not history:
             return trans.show_error_message( "The specified history does not exist." )
         # Rate history.
-        history_rating = self.rate_item( trans.sa_session, trans.get_user(), history, rating )
+        self.rate_item( trans.sa_session, trans.get_user(), history, rating )
         return self.get_ave_item_rating_data( trans.sa_session, history )
         #TODO: used in display_base.mako
 
@@ -1271,7 +1265,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.expose
     def imp( self, trans, id=None, confirm=False, **kwd ):
         """Import another user's history via a shared URL"""
-        msg = ""
         user = trans.get_user()
         user_history = trans.get_history()
         # Set referer message
