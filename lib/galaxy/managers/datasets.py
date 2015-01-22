@@ -115,7 +115,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
 
         # get a list of role ids to check access for (defaulting to all_roles)
         user_roles = [ role ] if role else user.all_roles()
-        user_role_ids = [ role.id for role in user_roles ]
+        user_role_ids = [ r.id for r in user_roles ]
         query = ( self.app.model.context.query( model.DatasetPermissions )
                     .filter( model.DatasetPermissions.action == access_action )
                     .filter( model.DatasetPermissions.dataset == dataset )
