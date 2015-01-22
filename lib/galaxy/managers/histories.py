@@ -13,6 +13,8 @@ import galaxy.web
 from galaxy.managers import base
 from galaxy.managers import sharable
 from galaxy.managers import hdas
+from galaxy.managers import collections_util
+
 
 import logging
 log = logging.getLogger( __name__ )
@@ -91,7 +93,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         super( HistoryManager, self ).purge( trans, history, flush=flush, **kwargs )
 
     # ......................................................................... contents
-    
+
 
     # ......................................................................... current
     def get_current( self, trans ):
@@ -123,7 +125,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         #TODO: instantiate here? really?
         history_serializer = HistorySerializer( self.app )
         hda_serializer = hdas.HDASerializer( self.app )
-        collection_dictifier = managers.collections_util.dictify_dataset_collection_instance
+        collection_dictifier = collections_util.dictify_dataset_collection_instance
 
         history_dictionary = {}
         contents_dictionaries = []
