@@ -13,5 +13,7 @@ class LDDAManager( object ):
         pass
 
     def get( self, trans, id, check_accessible=True ):
-        return manager_base.get_object( trans, id, 'LibraryDatasetDatasetAssociation',
-                                        check_ownership=False, check_accessible=check_accessible )
+        return manager_base.get_object( trans, id,
+                                        'LibraryDatasetDatasetAssociation',
+                                        check_ownership=False,
+                                        check_accessible=check_accessible )
