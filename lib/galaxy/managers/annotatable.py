@@ -28,7 +28,6 @@ class AnnotatableSerializer( object ):
         user = trans.user
         sa_session = self.app.model.context
         returned = item.get_item_annotation_str( sa_session, user, item )
-        print 'annotation:', returned, type( returned )
         return returned
 
 
