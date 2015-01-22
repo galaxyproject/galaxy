@@ -111,7 +111,7 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                 history_attrs = loads( history_attr_str )
 
                 # Create history.
-                new_history = model.History( name='imported from archive: %s' % history_attrs['name'].encode( 'utf-8' ), \
+                new_history = model.History( name='imported from archive: %s' % history_attrs['name'].encode( 'utf-8' ),
                                              user=user )
                 new_history.importing = True
                 new_history.hid_counter = history_attrs['hid_counter']
@@ -170,7 +170,7 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                                                            sa_session=self.sa_session )
                     if 'uuid' in dataset_attrs:
                         hda.dataset.uuid = dataset_attrs["uuid"]
-                    if dataset_attrs.get('exported', True) == False:
+                    if dataset_attrs.get('exported', True) is False:
                         hda.state = hda.states.DISCARDED
                         hda.deleted = True
                         hda.purged = True
@@ -181,10 +181,10 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                     new_history.add_dataset( hda, genome_build=None )
                     hda.hid = dataset_attrs['hid']  # Overwrite default hid set when HDA added to history.
                     # TODO: Is there a way to recover permissions? Is this needed?
-                    #permissions = trans.app.security_agent.history_get_default_permissions( new_history )
-                    #trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
+                    # permissions = trans.app.security_agent.history_get_default_permissions( new_history )
+                    # trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
                     self.sa_session.flush()
-                    if dataset_attrs.get('exported', True) == True:
+                    if dataset_attrs.get('exported', True) is True:
                         # Do security check and move/copy dataset data.
                         temp_dataset_file_name = \
                             os.path.abspath( os.path.join( archive_dir, dataset_attrs['file_name'] ) )
@@ -195,7 +195,7 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                         else:
                             datasets_usage_counts[ temp_dataset_file_name ] -= 1
                             shutil.copyfile( temp_dataset_file_name, hda.file_name )
-                        hda.dataset.set_total_size() #update the filesize record in the database
+                        hda.dataset.set_total_size()  # update the filesize record in the database
 
                     # Set tags, annotations.
                     if user:
@@ -227,8 +227,8 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                     """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by
                         the encoded object. This only works because HDAs are created above. """
                     if obj_dct.get( '__HistoryDatasetAssociation__', False ):
-                            return self.sa_session.query( model.HistoryDatasetAssociation ) \
-                                            .filter_by( history=new_history, hid=obj_dct['hid'] ).first()
+                            return self.sa_session.query( model.HistoryDatasetAssociation
+                                                          ).filter_by( history=new_history, hid=obj_dct['hid'] ).first()
                     return obj_dct
                 jobs_attrs = loads( jobs_attr_str, object_hook=as_hda )
 
@@ -278,14 +278,14 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                             input_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
                                             .filter_by( history=new_history, hid=value.hid ).first()
                             value = input_hda.id
-                        #print "added parameter %s-->%s to job %i" % ( name, value, imported_job.id )
+                        # print "added parameter %s-->%s to job %i" % ( name, value, imported_job.id )
                         imported_job.add_parameter( name, dumps( value, cls=HistoryDatasetAssociationIDEncoder ) )
 
                     # TODO: Connect jobs to input datasets.
 
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs[ 'output_datasets' ]:
-                        #print "%s job has output dataset %i" % (imported_job.id, output_hid)
+                        # print "%s job has output dataset %i" % (imported_job.id, output_hid)
                         output_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
                                         .filter_by( history=new_history, hid=output_hid ).first()
                         if output_hda:
@@ -294,12 +294,10 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                     # Connect jobs to input datasets.
                     if 'input_mapping' in job_attrs:
                         for input_name, input_hid in job_attrs[ 'input_mapping' ].items():
-                            #print "%s job has input dataset %i" % (imported_job.id, input_hid)
                             input_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
                                             .filter_by( history=new_history, hid=input_hid ).first()
                             if input_hda:
                                 imported_job.add_input_dataset( input_name, input_hda )
-
 
                     self.sa_session.flush()
 
@@ -328,13 +326,13 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
         Returns history's datasets.
         """
         query = ( trans.sa_session.query( trans.model.HistoryDatasetAssociation )
-                    .filter( trans.model.HistoryDatasetAssociation.history == history )
-                    .options( eagerload( "children" ) )
-                    .join( "dataset" )
-                    .options( eagerload_all( "dataset.actions" ) )
-                    .order_by( trans.model.HistoryDatasetAssociation.hid )
-                    .filter( trans.model.HistoryDatasetAssociation.deleted == False )
-                    .filter( trans.model.Dataset.purged == False ) )
+                  .filter( trans.model.HistoryDatasetAssociation.history == history )
+                  .options( eagerload( "children" ) )
+                  .join( "dataset" )
+                  .options( eagerload_all( "dataset.actions" ) )
+                  .order_by( trans.model.HistoryDatasetAssociation.hid )
+                  .filter( trans.model.HistoryDatasetAssociation.deleted == False ) #noqa
+                  .filter( trans.model.Dataset.purged == False ) )
         return query.all()
 
     # TODO: should use db_session rather than trans in this method.
@@ -388,7 +386,7 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                         "deleted": obj.deleted,
                         "visible": obj.visible,
                         "file_name": obj.file_name,
-                        "uuid" :  ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
+                        "uuid":  ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
                         "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags": get_item_tag_dict( obj ),
                     }
@@ -492,7 +490,6 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
             job_attrs[ 'create_time' ] = job.create_time.isoformat()
             job_attrs[ 'update_time' ] = job.update_time.isoformat()
 
-
             # Get the job's parameters
             try:
                 params_objects = job.get_param_values( trans.app )
@@ -533,9 +530,11 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
         options = ""
         if jeha.compressed:
             options = "-G"
-        return "python %s %s %s %s %s" % (
-            os.path.join( os.path.abspath( os.getcwd() ), "lib/galaxy/tools/imp_exp/export_history.py" ), \
-            options, history_attrs_filename, datasets_attrs_filename, jobs_attrs_filename )
+        return "python %s %s %s %s %s" % ( os.path.join( os.path.abspath( os.getcwd() ),
+                                           "lib/galaxy/tools/imp_exp/export_history.py" ),
+                                           options, history_attrs_filename,
+                                           datasets_attrs_filename,
+                                           jobs_attrs_filename )
 
     def cleanup_after_job( self, db_session ):
         """ Remove temporary directory and attribute files generated during setup for this job. """
