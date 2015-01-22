@@ -162,7 +162,6 @@ class ModelManager( object ):
 
     def __init__( self, app ):
         self.app = app
-        self.default_order_by = None
 
     def _default_order_by( self ):
         """
@@ -235,8 +234,7 @@ class ModelManager( object ):
         Use the manager's default_order_by if order_by is None.
         """
         if order_by is None:
-            default_order_by = self.default_order_by or self._default_order_by()
-            return query.order_by( *default_order_by )
+            return query.order_by( *self._default_order_by() )
 
         if isinstance( order_by, ( list, tuple ) ):
             return query.order_by( *order_by )
@@ -439,7 +437,7 @@ class ModelSerializer( object ):
         Set up serializer map, any additional serializable keys, and views here.
         """
         self.app = app
-        
+
         # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
         self.serializers = {}
         # a list of valid serializable keys that can use the default (string) serializer
