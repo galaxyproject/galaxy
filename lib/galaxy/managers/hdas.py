@@ -21,6 +21,9 @@ from galaxy.managers import taggable
 from galaxy.managers import annotatable
 from galaxy.managers import users
 
+import logging
+log = logging.getLogger( __name__ )
+
 # =============================================================================
 class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface,
         taggable.TaggableManagerInterface, annotatable.AnnotatableManagerInterface ):
