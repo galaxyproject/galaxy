@@ -145,14 +145,14 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     #def by_user( self, trans, user ):
     #    pass
 
-    def purge( self, trans, hda ):
+    def purge( self, trans, hda, flush=True ):
         """
         Purge this HDA and the dataset underlying it.
         """
         # error here if disallowed - before jobs are stopped
         #TODO: poss. move to DatasetAssociationManager
         self.dataset_manager.error_unless_dataset_purge_allowed( trans, hda )
-        super( HDAManager, self ).purge( trans, hda, flush=True )
+        super( HDAManager, self ).purge( trans, hda, flush=flush )
 
         # signal to stop the creating job?
         if hda.creating_job_associations:
@@ -354,7 +354,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'display_apps',
             'display_types',
             'visualizations',
-            
+
             #'url',
             'download_url',
 
