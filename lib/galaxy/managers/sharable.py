@@ -248,7 +248,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             raise exceptions.RequestParameterInvalidException( "Invalid slug", slug=new_slug )
 
         # error if slug is already in use
-        if self._slug_exists( trans, user, slug ):
+        if self._slug_exists( trans, trans.user, new_slug ):
             raise exceptions.Conflict( "Slug already exists", slug=new_slug )
 
         item.slug = new_slug
