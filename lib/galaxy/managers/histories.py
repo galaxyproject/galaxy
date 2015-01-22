@@ -5,15 +5,12 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 
-from galaxy import exceptions
-from galaxy import model
-
 import galaxy.web
-
+from galaxy import model
 from galaxy.managers import base
-from galaxy.managers import sharable
 from galaxy.managers import hdas
-from galaxy.managers import collections_util
+from galaxy.managers import sharable
+from galaxy.managers.collections_util import dictify_dataset_collection_instance
 
 
 import logging
@@ -125,8 +122,6 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         #TODO: instantiate here? really?
         history_serializer = HistorySerializer( self.app )
         hda_serializer = hdas.HDASerializer( self.app )
-        collection_dictifier = collections_util.dictify_dataset_collection_instance
-
         history_dictionary = {}
         contents_dictionaries = []
         try:
@@ -147,7 +142,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
                             instance_type='history',
                             id=self.app.security.encode_id( content.id ),
                         )
-                        contents_dict = collection_dictifier( dataset_collection_instance,
+                        contents_dict = dictify_dataset_collection_instance( dataset_collection_instance,
                             security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
                     except Exception, exc:
@@ -321,13 +316,15 @@ class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSer
         })
 
     def serialize_contents( self, trans, history, key ):
+        contents_dictionaries = []
         for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
             contents_dict = {}
             if isinstance( content, model.HistoryDatasetAssociation ):
-                contents_dict = self.hda_serializer.serialize_to_view( trans, hda, view='detailed' )
+                contents_dict = self.hda_serializer.serialize_to_view( trans, content, view='detailed' )
             elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-                contents_dict = self.serialize_collection( trans, collection )
+                contents_dict = self.serialize_collection( trans, content )
             contents_dictionaries.append( contents_dict )
+        return contents_dictionaries
 
     def serialize_collection( self, trans, collection ):
         service = self.app.dataset_collections_service
@@ -336,7 +333,7 @@ class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSer
             instance_type='history',
             id=self.security.encode_id( collection.id ),
         )
-        return collection_dictifier( dataset_collection_instance,
+        return dictify_dataset_collection_instance( dataset_collection_instance,
             security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
 
