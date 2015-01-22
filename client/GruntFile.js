@@ -71,7 +71,7 @@ module.exports = function(grunt) {
       "jquery-migrate-official": [ "index.js", "jquery/jquery.migrate.js" ],
 
       "traceKit": [ "tracekit.js", "tracekit.js" ],
-      //"ravenjs": [ "dist/raven.js", "raven.js" ],
+      "ravenjs": [ "dist/raven.js", "raven.js" ],
       //"underscore": [ "underscore.js", "underscore.js" ],
       //"backbone": [ "backbone.js", "backbone/backbone.js" ],
 
