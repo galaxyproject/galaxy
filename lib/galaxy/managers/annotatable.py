@@ -26,11 +26,13 @@ class AnnotatableSerializer( object ):
         """
         Get and serialize an `item`'s annotation.
         """
-#TODO: which is correct here?
+        #TODO: have to assume trans.user here...
         #user = item.user
         user = trans.user
         sa_session = self.app.model.context
-        return item.get_item_annotation_str( sa_session, user, item )
+        returned = item.get_item_annotation_str( sa_session, user, item )
+        print 'annotation:', returned, type( returned )
+        return returned
 
 
 # =============================================================================
@@ -41,10 +43,17 @@ class AnnotatableDeserializer( object ):
 
     def deserialize_annotation( self, trans, item, key, val ):
         """
-        Make sure `val` is a valid annotation and assign it.
+        Make sure `val` is a valid annotation and assign it, deleting any existing
+        if `val` is None.
         """
-#TODO: no validate here...
         val = self.validate.nullable_basestring( key, val )
-        #TODO: have to assume trans.user here...
-        return item.add_item_annotation( trans.sa_session, trans.user, item, val )
 
+        sa_session = self.app.model.context
+        #TODO: have to assume trans.user here...
+        user = trans.user
+        if val is None:
+            item.delete_item_annotation( sa_session, user, item )
+            return None
+
+        model = item.add_item_annotation( sa_session, user, item, val )
+        return model.annotation

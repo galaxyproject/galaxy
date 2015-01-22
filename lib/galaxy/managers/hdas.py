@@ -590,12 +590,7 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
             'genome_build'  : lambda t, i, k, v: self.deserialize_genome_build( t, i, 'dbkey', v ),
             'misc_info'     : lambda t, i, k, v: self.deserialize_basestring( t, i, 'info', v ),
 
-            # mixin: annotatable
-            'annotation'    : self.deserialize_annotation,
-            # mixin: taggable
-            'tags'          : self.deserialize_tags,
-
-            # mixin: deletable
+            #TODO: mixin: deletable
             'deleted'       : self.deserialize_bool,
             # sharable
             'published'     : self.deserialize_bool,
