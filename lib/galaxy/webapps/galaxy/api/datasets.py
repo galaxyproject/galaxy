@@ -66,7 +66,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             else:
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
-                    return self.hda_serializer.serialize_to_view( trans, hda, view=kwd.get( 'view', 'detailed' ) )
+                    return self.hda_serializer.serialize_to_view( trans, dataset, view=kwd.get( 'view', 'detailed' ) )
                 else:
                     rval = dataset.to_dict()
 
@@ -210,8 +210,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 # FIXME: increase region 1M each way to provide sequence for
                 # spliced/gapped reads. Probably should provide refseq object
                 # directly to data provider.
-                region = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, 
-                                                     low=( max( 0, int( low  ) - 1000000 ) ), 
+                region = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom,
+                                                     low=( max( 0, int( low  ) - 1000000 ) ),
                                                      high=( int( high ) + 1000000 ) )
 
             # Get mean depth.
