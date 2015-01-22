@@ -20,21 +20,18 @@ and allow both predefined and user controlled key sets.
 ModelDeserializers control how a model validates and process an incoming
 attribute change to a model object.
 """
-#TODO: it may be there's a better way to combine the above three classes
+# TODO: it may be there's a better way to combine the above three classes
 #   such as: a single flat class, serializers being singletons in the manager, etc.
 #   instead of the three separate classes. With no 'apparent' perfect scheme
 #   I'm opting to just keep them separate.
-
-import re
 
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy
 
-from galaxy import model
 from galaxy import exceptions
+from galaxy import model
 from galaxy.model import tool_shed_install
-from galaxy.util import sanitize_html
 
 
 import logging
@@ -169,7 +166,7 @@ class ModelManager( object ):
         """
         return ( self.model_class.create_time, )
 
-    #NOTE: at this layer, all ids are expected to be decoded and in int form
+    # NOTE: at this layer, all ids are expected to be decoded and in int form
     # ------------------------------------------------------------------------- get/read/query
     def query( self, trans, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
@@ -177,14 +174,13 @@ class ModelManager( object ):
 
         Set eagerloads to False to disable them for this query.
         """
-        #print 'query:', eagerloads, filters, order_by, limit, offset, kwargs
         query = trans.sa_session.query( self.model_class )
 
         # joined table loading
         if eagerloads is False:
             query = query.enable_eagerloads( False )
 
-        #TODO: if non-orm filters are the only option, here is where they'd go
+        # TODO: if non-orm filters are the only option, here is where they'd go
         query = self._apply_filters( query, filters )
         query = self._apply_order_by_limit_offset( query, order_by, limit, offset )
         return query
@@ -198,7 +194,7 @@ class ModelManager( object ):
 
         if not isinstance( filters, list ):
             filters = [ filters ]
-        #note: implicit AND
+        # note: implicit AND
         for filter in filters:
             query = query.filter( filter )
         return query
@@ -209,7 +205,7 @@ class ModelManager( object ):
 
         (While allowing them to be None, non-lists, or lists.)
         """
-        #TODO: there's nothing specifically filter or model-related here - move to util
+        # TODO: there's nothing specifically filter or model-related here - move to util
         if filtersA is None:
             return filtersB
         if filtersB is None:
@@ -268,9 +264,9 @@ class ModelManager( object ):
         # overridden to raise serializable errors
         try:
             return query.one()
-        except sqlalchemy.orm.exc.NoResultFound, not_found:
+        except sqlalchemy.orm.exc.NoResultFound:
             raise exceptions.ObjectNotFound( self.model_class.__name__ + ' not found' )
-        except sqlalchemy.orm.exc.MultipleResultsFound, multi_found:
+        except sqlalchemy.orm.exc.MultipleResultsFound:
             raise exceptions.InconsistentDatabase( 'found more than one ' + self.model_class.__name__ )
 
     def _one_or_none( self, query ):
@@ -281,10 +277,10 @@ class ModelManager( object ):
         """
         try:
             return self._one_with_recast_errors( query )
-        except exceptions.ObjectNotFound, not_found:
+        except exceptions.ObjectNotFound:
             return None
 
-    #TODO: get?
+    # TODO: get?
 
     def by_id( self, trans, id, **kwargs ):
         """
@@ -312,14 +308,13 @@ class ModelManager( object ):
         Returns an in-order list of models with the matching ids in `ids`.
         """
         found = self._query_by_ids( trans, ids, **kwargs ).all()
-        #TODO: this does not order by the original 'ids' array
+        # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
-        #return map( trans.sa_session.query( self.model_class ).get, ids )
+        # return map( trans.sa_session.query( self.model_class ).get, ids )
 
         # ...could implement own version here - slow?
         return self._order_items_by_id( ids, found )
-        #return found
 
     def _order_items_by_id( self, ids, items ):
         """
@@ -330,9 +325,9 @@ class ModelManager( object ):
         id, they will not be in the returned list.
         """
         ID_ATTR_NAME = 'id'
-        #TODO:?? aside from sqlalx.get mentioned above, I haven't seen an in-SQL way
+        # TODO:?? aside from sqlalx.get mentioned above, I haven't seen an in-SQL way
         #   to make this happen. This may not be the most efficient way either.
-        #NOTE: that this isn't sorting by id - this is matching the order in items to the order in ids
+        # NOTE: that this isn't sorting by id - this is matching the order in items to the order in ids
         # move items list into dict by id
         item_dict = {}
         for item in items:
@@ -379,7 +374,7 @@ class ModelManager( object ):
             trans.sa_session.flush()
         return item
 
-    #TODO: yagni?
+    # TODO: yagni?
     def associate( self, trans, associate_with, item, foreign_key_name=None ):
         """
         Generically associate `item` with `associate_with` based on `foreign_key_name`.
@@ -398,7 +393,7 @@ class ModelManager( object ):
 
     # ------------------------------------------------------------------------- delete
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
-    #def destroy( self, trans, item, **kwargs ):
+    # def destroy( self, trans, item, **kwargs ):
     #    return item
 
 
@@ -442,7 +437,7 @@ class ModelSerializer( object ):
         self.serializers = {}
         # a list of valid serializable keys that can use the default (string) serializer
         #   this allows us to: 'mention' the key without adding the default serializer
-        #NOTE: if a key is requested that is in neither serializable_keys or serializers, it is not returned
+        # NOTE: if a key is requested that is in neither serializable_keys or serializers, it is not returned
         self.serializable_keys = []
         # add subclass serializers defined there
         self.add_serializers()
@@ -484,7 +479,7 @@ class ModelSerializer( object ):
         """
         Serialize the `item`'s attribute named `key`.
         """
-        #TODO:?? point of change but not really necessary?
+        # TODO:?? point of change but not really necessary?
         return getattr( item, key )
 
     # ......................................................................... serializers for common galaxy objects
@@ -568,7 +563,7 @@ class ModelDeserializer( object ):
         # create a generically accessible manager for the model this deserializer works with/for
         self.manager = None
         if self.model_manager_class:
-           self.manager = self.model_manager_class( self.app )
+            self.manager = self.model_manager_class( self.app )
 
     def add_deserializers( self ):
         """
@@ -588,9 +583,9 @@ class ModelDeserializer( object ):
         for key, val in data.items():
             if key in self.deserializers:
                 new_dict[ key ] = self.deserializers[ key ]( trans, item, key, val )
-            #!important: don't error on unreg. keys -- many clients will add weird ass keys onto the model
+            # !important: don't error on unreg. keys -- many clients will add weird ass keys onto the model
 
-        #TODO:?? add and flush here or in manager?
+        # TODO:?? add and flush here or in manager?
         if flush and len( new_dict ):
             sa_session.add( item )
             sa_session.flush()
@@ -603,7 +598,7 @@ class ModelDeserializer( object ):
         If the incoming `val` is different than the `item` value change it
         and, in either case, return the value.
         """
-        #TODO: sets the item attribute to value (this may not work in all instances)
+        # TODO: sets the item attribute to value (this may not work in all instances)
 
         # only do the following if val == getattr( item, key )
         if hasattr( item, key ) and getattr( item, key ) != val:
@@ -632,7 +627,7 @@ class ModelDeserializer( object ):
 
 
 # -----------------------------------------------------------------------------
-#TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
+# TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 class ModelValidator( object ):
     """
     An object that inspects a dictionary (generally meant to be a set of
@@ -685,7 +680,7 @@ class ModelValidator( object ):
         """
         Must be a list of basestrings.
         """
-        #TODO: Here's where compound types start becoming a nightmare. Any more or more complex
+        # TODO: Here's where compound types start becoming a nightmare. Any more or more complex
         #   and should find a different way.
         val = self.type( key, val, list )
         return [ self.basestring( key, elem ) for elem in val ]
@@ -695,7 +690,7 @@ class ModelValidator( object ):
         """
         Must be a valid genome_build/dbkey/reference/whatever-the-hell-were-calling-them-now.
         """
-        #TODO: is this correct?
+        # TODO: is this correct?
         if val is None:
             return '?'
         for genome_build_shortname, longname in self.app.genome_builds.get_genome_build_names( trans=trans ):
@@ -703,7 +698,7 @@ class ModelValidator( object ):
                 return val
         raise exceptions.RequestParameterInvalidException( "invalid reference", key=key, val=val )
 
-    #def slug( self, trans, item, key, val ):
+    # def slug( self, trans, item, key, val ):
     #    """validate slug"""
     #    pass
 
@@ -746,7 +741,7 @@ class AccessibleModelInterface( object ):
             return item
         raise exceptions.ItemAccessibilityException( "%s is not accessible by user" % ( self.model_class.__name__ ) )
 
-    #TODO:?? are these even useful?
+    # TODO:?? are these even useful?
     def list_accessible( self, trans, user, **kwargs ):
         """
         Return a list of items accessible to the user, raising an error if ANY
@@ -755,18 +750,18 @@ class AccessibleModelInterface( object ):
         :raises exceptions.ItemAccessibilityException:
         """
         raise exceptions.NotImplemented( "Abstract Interface Method" )
-        #NOTE: this will be a large, inefficient list if filters are not passed in kwargs
-        #items = ModelManager.list( self, trans, **kwargs )
-        #return [ self.error_unless_accessible( trans, item, user ) for item in items ]
+        # NOTE: this will be a large, inefficient list if filters are not passed in kwargs
+        # items = ModelManager.list( self, trans, **kwargs )
+        # return [ self.error_unless_accessible( trans, item, user ) for item in items ]
 
     def filter_accessible( self, trans, user, **kwargs ):
         """
         Return a list of items accessible to the user.
         """
         raise exceptions.NotImplemented( "Abstract Interface Method" )
-        #NOTE: this will be a large, inefficient list if filters are not  passed in kwargs
-        #items = ModelManager.list( self, trans, **kwargs )
-        #return filter( lambda item: self.is_accessible( trans, item, user ), items )
+        # NOTE: this will be a large, inefficient list if filters are not  passed in kwargs
+        # items = ModelManager.list( self, trans, **kwargs )
+        # return filter( lambda item: self.is_accessible( trans, item, user ), items )
 
 
 # =============================================================================
@@ -862,7 +857,7 @@ class DeletableModelSerializer( object ):
         pass
 
 
-#TODO: these are of questionable value if we don't want to enable users to delete/purge via update
+# TODO: these are of questionable value if we don't want to enable users to delete/purge via update
 class DeletableModelDeserializer( object ):
 
     def add_deserializers( self ):
@@ -875,7 +870,7 @@ class DeletableModelDeserializer( object ):
         new_deleted = self.validate.bool( key, val )
         if new_deleted == item.deleted:
             return item.deleted
-        #TODO:?? flush=False?
+        # TODO:?? flush=False?
         if new_deleted:
             self.manager.delete( trans, item, flush=False )
         else:
