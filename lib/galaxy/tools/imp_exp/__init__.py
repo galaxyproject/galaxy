@@ -5,10 +5,11 @@ import tempfile
 import json
 import datetime
 from galaxy import model
-from galaxy.tools.parameters.basic import UnvalidatedValue
-from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.json import loads, dumps
+from galaxy.model.orm import eagerload, eagerload_all
+from galaxy.tools.parameters.basic import UnvalidatedValue
+from galaxy.util.json import dumps, loads
+from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger(__name__)
 
