@@ -76,7 +76,7 @@ def dictify_dataset_collection_instance( dataset_collection_instance, parent, se
         # TODO: Work in progress - this end-point is not right yet...
         dict_value[ 'url' ] = web.url_for( 'library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id )
     if view == "element":
-        collection = dataset_colleciton_instance.collection
+        collection = dataset_collection_instance.collection
         dict_value[ 'elements' ] = map( dictify_element, collection.elements )
         dict_value[ 'populated' ] = collection.populated
     security.encode_all_ids( dict_value, recursive=True )  # TODO: Use Kyle's recusrive formulation of this.
