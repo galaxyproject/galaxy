@@ -1,4 +1,4 @@
-#from galaxy.managers import base as manager_base
+from galaxy.managers import base as manager_base
 
 
 class LDDAManager( object ):
