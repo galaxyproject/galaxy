@@ -35,6 +35,7 @@ return Backbone.View.extend({
     
     // fill table
     _fill: function(ftp_files) {
+        var self = this;
         if (ftp_files && ftp_files.length > 0) {
             // add table
             this.$el.find('#upload-ftp-content').html($(this._templateTable()));
@@ -49,11 +50,43 @@ return Backbone.View.extend({
             // update stats
             this.$el.find('#upload-ftp-number').html(ftp_files.length + ' files');
             this.$el.find('#upload-ftp-disk').html(Utils.bytesToString (size, true));
+
+            var selectAll = this.$el.find('#selectAll');
+
+            // call method to determine and set selectAll status on loading
+            this._updateSelectAll(selectAll);
+
+            // selectAll checkbox has been clicked
+            selectAll.on('click', function() {
+                var checkboxes=$(this).parents().find('tr.upload-ftp-row>td>div');
+                var len = checkboxes.length;
+                $this = $(this);
+                var allChecked = !($this.hasClass('fa-check-square-o'));
+
+                // change state of the sub-checkboxes
+                for(i = 0; i < len; i++) {
+                    if(allChecked) {
+                        // all checkboxes should be checked
+                        if(checkboxes.eq(i).hasClass('fa-square-o')) {
+                            // if they are not checked, check them
+                            checkboxes.eq(i).trigger('updateUpBox');
+                        }
+                    } else {
+                        // no checkboxes should be checked
+                        if(checkboxes.eq(i).hasClass('fa-check-square-o')) {
+                            // if they are checked, uncheck them
+                            checkboxes.eq(i).trigger('updateUpBox');
+                        }
+                    }
+                }
+
+                self._updateSelectAll(selectAll);
+            });
         } else {
             // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
         }
-        
+
         // hide spinner
         this.$el.find('#upload-ftp-wait').hide();
     },
@@ -79,18 +112,18 @@ return Backbone.View.extend({
         } else {
             icon_class = this.options.class_add;
         }
-        
+
         // add icon class
         $icon.addClass(icon_class);
-
-        // click to add ftp files
-        $it.on('click', function() {
+        
+        // add files to the uploadbox
+        $it.on('updateUpBox', function() {
             // find model
             var model_index = self._find(ftp_file);
-            
+
             // update icon
             $icon.removeClass();
-                
+
             // add model
             if (!model_index) {
                 // add to uploadbox
@@ -100,19 +133,55 @@ return Backbone.View.extend({
                     size        : ftp_file.size,
                     path        : ftp_file.path
                 }]);
-                
+
                 // add new icon class
                 $icon.addClass(self.options.class_remove);
             } else {
                 // remove
                 self.app.collection.remove(model_index);
-                
+
                 // add new icon class
                 $icon.addClass(self.options.class_add);
             }
         });
+
+        // click to add ftp files
+        $it.on('click', function() {
+            //trigger my new event
+            $icon.trigger('updateUpBox');
+
+            // click to add ftp files
+            // modify selectAll box based on number of checkboxes checked
+            var selectBox=$icon.parents().find('#selectAll');
+            // determine and set state of selectAll after sub-checkbox clicked
+            self._updateSelectAll(selectBox);
+        });
     },
-    
+
+    _updateSelectAll: function(selectBox) {
+        // array of all checkboxes
+        var checkboxes=selectBox.parents().find('tr.upload-ftp-row>td>div');
+        // array of only checked checkboxes
+        var checkedCheckboxes=selectBox.parents().find('tr.upload-ftp-row>td>div.fa-check-square-o');
+        var lenAll = checkboxes.length;
+        var lenChecked = checkedCheckboxes.length;
+
+        // determine which state the selectAll checkbox needs to be and setting it
+        if(lenChecked > 0 && lenChecked !== lenAll) {
+            // indeterminate state
+            selectBox.removeClass('fa-square-o fa-check-square-o');
+            selectBox.addClass('fa-minus-square-o');
+        } else if(lenChecked === lenAll) {
+            // checked state
+            selectBox.removeClass('fa-square-o fa-minus-square-o');
+            selectBox.addClass('fa-check-square-o');
+        } else if(lenChecked === 0) {
+            // unchecked state
+            selectBox.removeClass('fa-check-square-o fa-minus-square-o');
+            selectBox.addClass('fa-square-o');
+        }
+    },
+
     // get model index
     _find: function(ftp_file) {
         // check if exists already
@@ -149,7 +218,7 @@ return Backbone.View.extend({
                 '<table class="grid" style="float: left;">' +
                     '<thead>' +
                         '<tr>' +
-                            '<th></th>' +
+                            '<th><div id="selectAll" class="upload-icon-button fa fa-square-o" ></th>' +
                             '<th>Name</th>' +
                             '<th>Size</th>' +
                             '<th>Created</th>' +

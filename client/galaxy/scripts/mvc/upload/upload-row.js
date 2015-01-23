@@ -42,6 +42,9 @@ return Backbone.View.extend({
         // link app
         this.app = app;
         
+        // default value for extension of files
+        var default_ext = 'Auto-detect';
+
         // link this
         var self = this;
         
@@ -75,15 +78,28 @@ return Backbone.View.extend({
         // initialize genome
         this.model.set('genome', self.select_genome.value());
 
+        // ensure files added after an individual row has changed 
+        // default to Auto-detect instead of ---
+        if(!(this.app.select_extension.value() === '---')){
+            this.default_ext = this.app.select_extension.value();
+        }
+
         // select extension
         this.select_extension = new Select.View({
             css: 'extension',
             onchange : function() {
                 self.model.set('extension', self.select_extension.value());
+                // if user has changed individual row type, then change "set all" 
+                // type to '---'
+                if(!(self.select_extension.value() === app.select_extension.value()))
+                {
+                    var newExte = '---';
+                    app.select_extension.value(newExte);
+                }
             },
             data: self.app.list_extensions,
             container: it.find('#extension'),
-            value: self.model.get('extension')
+            value: self.default_ext
         });
         
         // initialize extension
@@ -139,6 +155,7 @@ return Backbone.View.extend({
         this.app.collection.on('reset', function() {
             self.remove();
         });
+        self.model.set('row', self);
     },
     
     // render
