@@ -6,7 +6,8 @@ return Backbone.View.extend({
     // options
     options: {
         class_add       : 'upload-icon-button fa fa-square-o',
-        class_remove    : 'upload-icon-button fa fa-check-square-o'
+        class_remove    : 'upload-icon-button fa fa-check-square-o',
+        class_partial   : 'upload-icon-button fa fa-minus-square-o'
     },
 
     // render
@@ -19,6 +20,9 @@ return Backbone.View.extend({
 
         // set template
         this.setElement(this._template());
+
+        // list of rows
+        this.rows = [];
 
         // load extension
         Utils.get({
@@ -35,7 +39,6 @@ return Backbone.View.extend({
 
     // fill table
     _fill: function(ftp_files) {
-        var self = this;
         if (ftp_files && ftp_files.length > 0) {
             // add table
             this.$el.find('#upload-ftp-content').html($(this._templateTable()));
@@ -43,7 +46,7 @@ return Backbone.View.extend({
             // add files to table
             var size = 0;
             for (key in ftp_files) {
-                this.add(ftp_files[key]);
+                this.rows.push(this._add(ftp_files[key]));
                 size += ftp_files[key].size;
             }
 
@@ -51,37 +54,23 @@ return Backbone.View.extend({
             this.$el.find('#upload-ftp-number').html(ftp_files.length + ' files');
             this.$el.find('#upload-ftp-disk').html(Utils.bytesToString (size, true));
 
-            var selectAll = this.$el.find('#selectAll');
-
-            // call method to determine and set selectAll status on loading
-            this._updateSelectAll(selectAll);
-
-            // selectAll checkbox has been clicked
-            selectAll.on('click', function() {
-                var checkboxes=$(this).parents().find('tr.upload-ftp-row>td>div');
-                var len = checkboxes.length;
-                $this = $(this);
-                var allChecked = !($this.hasClass('fa-check-square-o'));
-
-                // change state of the sub-checkboxes
-                for(i = 0; i < len; i++) {
-                    if(allChecked) {
-                        // all checkboxes should be checked
-                        if(checkboxes.eq(i).hasClass('fa-square-o')) {
-                            // if they are not checked, check them
-                            checkboxes.eq(i).trigger('updateUpBox');
-                        }
-                    } else {
-                        // no checkboxes should be checked
-                        if(checkboxes.eq(i).hasClass('fa-check-square-o')) {
-                            // if they are checked, uncheck them
-                            checkboxes.eq(i).trigger('updateUpBox');
-                        }
+            // add event handler to select/unselect all
+            this.$select_all = $('#upload-selectall');
+            this.$select_all.addClass(this.options.class_add);
+            var self = this;
+            this.$select_all.on('click', function() {
+                var add = self.$select_all.hasClass(self.options.class_add);
+                for (key in ftp_files) {
+                    var ftp_file = ftp_files[key];
+                    var model_index = self._find(ftp_file);
+                    if(!model_index && add || model_index && !add) {
+                        self.rows[key].trigger('click');
                     }
                 }
-
-                self._updateSelectAll(selectAll);
             });
+
+            // refresh
+            self._refresh();
         } else {
             // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
@@ -92,7 +81,7 @@ return Backbone.View.extend({
     },
 
     // add
-    add: function(ftp_file) {
+    _add: function(ftp_file) {
         // link this
         var self = this;
 
@@ -116,8 +105,8 @@ return Backbone.View.extend({
         // add icon class
         $icon.addClass(icon_class);
 
-        // add files to the uploadbox
-        $it.on('updateUpBox', function() {
+        // click to add ftp files
+        $it.on('click', function() {
             // find model
             var model_index = self._find(ftp_file);
 
@@ -133,67 +122,51 @@ return Backbone.View.extend({
                     size        : ftp_file.size,
                     path        : ftp_file.path
                 }]);
-
+                
                 // add new icon class
                 $icon.addClass(self.options.class_remove);
             } else {
                 // remove
                 self.app.collection.remove(model_index);
-
+                
                 // add new icon class
                 $icon.addClass(self.options.class_add);
             }
+
+            // update select all checkbox
+            self._refresh();
         });
 
-        // click to add ftp files
-        $it.on('click', function() {
-            //trigger my new event
-            $icon.trigger('updateUpBox');
-
-            // click to add ftp files
-            // modify selectAll box based on number of checkboxes checked
-            var selectBox=$icon.parents().find('#selectAll');
-            // determine and set state of selectAll after sub-checkbox clicked
-            self._updateSelectAll(selectBox);
-        });
+        // return dom handler
+        return $it;
     },
 
-    _updateSelectAll: function(selectBox) {
-        // array of all checkboxes
-        var checkboxes=selectBox.parents().find('tr.upload-ftp-row>td>div');
-        // array of only checked checkboxes
-        var checkedCheckboxes=selectBox.parents().find('tr.upload-ftp-row>td>div.fa-check-square-o');
-        var lenAll = checkboxes.length;
-        var lenChecked = checkedCheckboxes.length;
-
-        // determine which state the selectAll checkbox needs to be and setting it
-        if(lenChecked > 0 && lenChecked !== lenAll) {
-            // indeterminate state
-            selectBox.removeClass('fa-square-o fa-check-square-o');
-            selectBox.addClass('fa-minus-square-o');
-        } else if(lenChecked === lenAll) {
-            // checked state
-            selectBox.removeClass('fa-square-o fa-minus-square-o');
-            selectBox.addClass('fa-check-square-o');
-        } else if(lenChecked === 0) {
-            // unchecked state
-            selectBox.removeClass('fa-check-square-o fa-minus-square-o');
-            selectBox.addClass('fa-square-o');
+    // refresh
+    _refresh: function() {
+        var filtered = this.app.collection.where({file_mode : 'ftp'});
+        this.$select_all.removeClass();
+        if (filtered.length == 0) {
+            this.$select_all.addClass(this.options.class_add);
+        } else {
+            if (filtered.length == this.rows.length) {
+                this.$select_all.addClass(this.options.class_remove);
+            } else {
+                this.$select_all.addClass(this.options.class_partial);
+            }
         }
     },
 
     // get model index
     _find: function(ftp_file) {
-        // check if exists already
-        var filtered = this.app.collection.where({file_path : ftp_file.path});
-        var model_index = null;
-        for (var key in filtered) {
-            var item = filtered[key];
-            if (item.get('status') == 'init' && item.get('file_mode') == 'ftp') {
-                model_index = item.get('id');
-            }
+        var item = this.app.collection.findWhere({
+            file_path   : ftp_file.path,
+            status      : 'init',
+            file_mode   : 'ftp'
+        });
+        if (item) {
+            return item.get('id');
         }
-        return model_index;
+        return null;
     },
 
     // template row
@@ -218,7 +191,7 @@ return Backbone.View.extend({
                 '<table class="grid" style="float: left;">' +
                     '<thead>' +
                         '<tr>' +
-                            '<th><div id="selectAll" class="upload-icon-button fa fa-square-o" ></th>' +
+                            '<th><div id="upload-selectall"></th>' +
                             '<th>Name</th>' +
                             '<th>Size</th>' +
                             '<th>Created</th>' +
@@ -243,7 +216,6 @@ return Backbone.View.extend({
                     '<div id="upload-ftp-content"></div>' +
                 '<div>';
     }
-
 });
 
 });
