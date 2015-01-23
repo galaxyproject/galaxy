@@ -121,21 +121,21 @@ return Backbone.Model.extend({
                                 if (patch[input.type]) {
                                     value = patch[input.type](value);
                                 }
-                                
-                                // handle simple value
-                                if (!field.skip || self.app.options.send_all) {
-                                    if (field.validate && !field.validate()) {
-                                        value = null;
-                                    }
-                                    if (input.ignore === undefined || (value !== null && input.ignore != value)) {
-                                        // add value to submission
-                                        add (job_input_id, input.id, value);
 
-                                        // add payload to submission
-                                        if (input.payload) {
-                                            for (var p_id in input.payload) {
-                                                add (p_id, input.id, input.payload[p_id]);
-                                            }
+                                // validate value
+                                if ((field.skip && input.optional) || (field.validate && !field.validate())) {
+                                    value = null;
+                                }
+                             
+                                // ignore certain values
+                                if (input.ignore === undefined || (value !== null && input.ignore != value)) {
+                                    // add value to submission
+                                    add (job_input_id, input.id, value);
+
+                                    // add payload to submission
+                                    if (input.payload) {
+                                        for (var p_id in input.payload) {
+                                            add (p_id, input.id, input.payload[p_id]);
                                         }
                                     }
                                 }

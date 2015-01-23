@@ -10,9 +10,13 @@ define([], function() {
             // link app
             this.app = app;
             
+            // set text labels
+            this.text_enable = app.options.text_enable || 'Enable';
+            this.text_disable = app.options.text_disable || 'Disable';
+
             // link field
             this.field = options.field;
-            this.defaultvalue = options.defaultvalue;
+            this.default_value = options.default_value;
             
             // set element
             this.setElement(this._template(options));
@@ -30,10 +34,11 @@ define([], function() {
             this.field.skip = false;
             var v = this.field.value && this.field.value();
             this.field.skip = Boolean(options.optional &&
+                                        ((this.default_value === undefined) ||
                                         ((this.field.validate && !this.field.validate()) || !v ||
-                                        (v == this.defaultvalue) || (Number(v) == Number(this.defaultvalue)) ||
-                                        (JSON.stringify(v) == JSON.stringify(this.defaultvalue))));
-            
+                                        (v == this.default_value) || (Number(v) == Number(this.default_value)) ||
+                                        (JSON.stringify(v) == JSON.stringify(this.default_value)))));
+
             // refresh view
             this._refresh();
                 
@@ -53,7 +58,7 @@ define([], function() {
         error: function(text) {
             if (!this.field.skip) {
                 this.$error_text.html(text);
-                this.$error.fadeIn('fast');
+                this.$error.show();
                 this.$el.addClass('ui-error');
             }
         },
@@ -70,12 +75,12 @@ define([], function() {
         _refresh: function() {
             if (!this.field.skip) {
                 this.$field.fadeIn('fast');
-                this.$title_optional.html('Disable');
+                this.$title_optional.html(this.text_disable);
             } else {
                 this.reset();
                 this.$field.hide();
-                this.$title_optional.html('Enable');
-                this.field.value && this.field.value(this.defaultvalue);
+                this.$title_optional.html(this.text_enable);
+                this.field.value && this.field.value(this.default_value);
             }
             this.app.trigger('refresh');
         },

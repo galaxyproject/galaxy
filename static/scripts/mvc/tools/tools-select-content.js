@@ -50,6 +50,7 @@ var View = Backbone.View.extend({
         if (this.mode == 'single') {
             radio_buttons.push({icon: 'fa-file-o', label : 'Single dataset', value : 'single'});
             this.select_single = new Ui.Select.View({
+                optional    : options.optional,
                 error_text  : hda_error,
                 onchange    : function() {
                     self.trigger('change');
@@ -82,6 +83,7 @@ var View = Backbone.View.extend({
             radio_buttons.push({icon: 'fa-folder-o', label : 'Dataset collection',  value : 'collection' });
             this.select_collection = new Ui.Select.View({
                 error_text  : hdca_error,
+                optional    : options.optional,
                 onchange    : function() {
                     self.trigger('change');
                 }
@@ -180,39 +182,38 @@ var View = Backbone.View.extend({
     },
     
     /** Return the currently selected dataset values */
-    value : function (dict) {
+    value : function (new_value) {
         // update current value
-        if (dict && dict.values) {
-            try {
-                // create list
-                var list = [];
-                for (var i in dict.values) {
-                    list.push(dict.values[i].id);
-                }
-                
-                // identify suitable select field
-                if (dict && dict.values.length > 0 && dict.values[0].src == 'hcda') {
-                    this.current = 'collection';
-                    this.select_collection.value(list[0]);
-                } else {
-                    if (this.mode == 'multiple') {
-                        this.current = 'multiple';
-                        this.select_multiple.value(list);
-                    } else {
-                        this.current = 'single';
-                        this.select_single.value(list[0]);
+        if (new_value !== undefined) {
+            if (new_value && new_value.values) {
+                try {
+                    // create list with values
+                    var list = [];
+                    for (var i in new_value.values) {
+                        list.push(new_value.values[i].id);
                     }
+                    
+                    // identify suitable select field
+                    if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hcda') {
+                        this.current = 'collection';
+                        this.select_collection.value(list[0]);
+                    } else {
+                        if (this.mode == 'multiple') {
+                            this.current = 'multiple';
+                            this.select_multiple.value(list);
+                        } else {
+                            this.current = 'single';
+                            this.select_single.value(list[0]);
+                        }
+                    }
+                } catch (err) {
+                    console.debug('tools-select-content::value() - Skipped.');
                 }
-                this.refresh();
-        
-                // check if value has been set
-                var select = this._select();
-                if (!select.validate()) {
-                    select.value(select.first());
-                }
-            } catch (err) {
-                console.debug('tools-select-content::value() - Skipped.');
+            } else {
+                this.current = 'single';
+                this.select_single.value('__null__');
             }
+            this.refresh();
         }
         
         // transform into an array
@@ -247,6 +248,7 @@ var View = Backbone.View.extend({
     
     /** Refreshes data selection view */
     refresh: function() {
+        this.button_type.value(this.current);
         for (var i in this.list) {
             var $el = this.list[i].field.$el;
             if (this.current == i) {

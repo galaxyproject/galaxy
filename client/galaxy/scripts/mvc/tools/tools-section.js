@@ -319,7 +319,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             // create input field wrapper
             var input_element = new InputElement(this.app, {
                 label           : input_def.label,
-                defaultvalue    : input_def.defaultvalue,
+                default_value   : input_def.default_value,
                 optional        : input_def.optional,
                 help            : input_def.help,
                 field           : field
@@ -457,6 +457,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             return new SelectContent.View(this.app, {
                 id          : 'field-' + input_def.id,
                 extensions  : input_def.extensions,
+                optional    : input_def.optional,
                 multiple    : input_def.multiple,
                 type        : input_def.type,
                 data        : input_def.options,

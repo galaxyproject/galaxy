@@ -16,13 +16,16 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             }
             
             // initialize parameters
-            this.workflow = true;
             this.options = options;
-
+            
+            // set labels
+            this.options.text_enable = 'In Advance';
+            this.options.text_disable = 'At Runtime';
+            
             // declare fields as optional
             Utils.deepeach(options.inputs, function(item) {
                 if (item.type) {
-                    item.optional = (['data', 'data_hidden', 'hidden', 'drill_down']).indexOf(item.type) == -1;
+                    item.optional = (['data', 'data_hidden', 'hidden', 'drill_down', 'repeat', 'conditional']).indexOf(item.type) == -1;
                 }
             });
        

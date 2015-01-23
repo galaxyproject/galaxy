@@ -18,9 +18,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 // shows form in compact view mode
                 compact         : false,
                 // shows errors on start
-                initial_errors  : false,
-                // ensures that all data including disabled optional fields are submitted to the server
-                send_all        : false
+                initial_errors  : false
             };
     
             // configure options

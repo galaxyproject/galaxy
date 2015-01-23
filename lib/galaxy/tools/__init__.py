@@ -2333,7 +2333,10 @@ class Tool( object, Dictifiable ):
                     value = [ jsonify(v) for v in value ]
                 else:
                     value = [ jsonify(value) ]
-                value = { 'values': value }
+                if None in value:
+                    value = None
+                else:
+                    value = { 'values': value }
             elif isinstance(value, list):
                 value = [ jsonify(v) for v in value ]
             else:
@@ -2444,15 +2447,19 @@ class Tool( object, Dictifiable ):
                     input_name = tool_dict.get('name')
                     if input_name:
                         # backup default value
-                        tool_dict['defaultvalue'] = input.get_initial_value(trans, other_values)
+                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
                         
                         # update input value from tool state
                         if input_name in state_inputs:
                             tool_dict['value'] = state_inputs[input_name]
-                        
+
                         # sanitize values
                         sanitize(tool_dict, 'value')
-                        sanitize(tool_dict, 'defaultvalue')
+                        sanitize(tool_dict, 'default_value')
+
+                        # set default value if necessary
+                        if not tool_dict['value']:
+                            tool_dict['value'] = tool_dict['default_value']
                         
                 # backup final input dictionary
                 group_inputs[input_index] = tool_dict

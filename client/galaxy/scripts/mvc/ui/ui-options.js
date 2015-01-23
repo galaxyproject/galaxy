@@ -182,7 +182,7 @@ var Base = Backbone.View.extend({
         // get selected values
         var selected = this.$el.find(':checked');
         if (selected.length == 0) {
-            return 'null';
+            return '__null__';
         }
         
         // return multiple or single value

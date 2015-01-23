@@ -18,7 +18,6 @@
             'is_dynamic'        : False,
             'compact'           : True,
             'initial_errors'    : True,
-            'send_all'          : True,
             'container'         : '#right-content'
         })
     %>

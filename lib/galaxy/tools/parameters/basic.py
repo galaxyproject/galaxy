@@ -866,6 +866,8 @@ class SelectToolParameter( ToolParameter ):
                         value = value.split()
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, context )
+        if not legal_values and self.optional:
+            return None
         assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
         if isinstance( value, list ):
             if not(self.repeat):
@@ -878,7 +880,7 @@ class SelectToolParameter( ToolParameter ):
             return rval
         else:
             value_is_none = ( value == "None" and "None" not in legal_values )
-            if value_is_none:
+            if value_is_none or not value:
                 if self.multiple:
                     if self.optional:
                         return []
