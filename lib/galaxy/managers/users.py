@@ -12,12 +12,10 @@ from galaxy import exceptions
 from galaxy.managers import base
 from galaxy.managers import api_keys
 
-
 import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class UserManager( base.ModelManager ):
     model_class = model.User
     foreign_key_name = 'user'
@@ -77,7 +75,7 @@ class UserManager( base.ModelManager ):
         if self.by_email( trans, email ) is not None:
             raise exceptions.Conflict( 'Email must be unique', email=email )
 
-    # ------------------------------------------------------------------------- filters
+    # ---- filters
     def by_email( self, trans, email, filters=None, **kwargs ):
         """
         Find a user by their email.
@@ -97,7 +95,7 @@ class UserManager( base.ModelManager ):
         order_by = order_by or ( model.User.email, )
         return super( UserManager, self ).list( trans, filters=filters, order_by=order_by, **kwargs )
 
-    # ------------------------------------------------------------------------- admin
+    # ---- admin
     def is_admin( self, trans, user ):
         """
         Return True if this user is an admin.
@@ -129,7 +127,7 @@ class UserManager( base.ModelManager ):
             raise exceptions.AdminRequiredException( msg, **kwargs )
         return user
 
-    # ------------------------------------------------------------------------- anonymous
+    # ---- anonymous
     def is_anonymous( self, user ):
         """
         Return True if `user` is anonymous.
@@ -146,7 +144,7 @@ class UserManager( base.ModelManager ):
             raise exceptions.AuthenticationFailed( msg, **kwargs )
         return user
 
-    # ------------------------------------------------------------------------- current
+    # ---- current
     def is_current_user( self, trans, user ):
         """
         Return True if this user is the trans' current user.
@@ -166,7 +164,7 @@ class UserManager( base.ModelManager ):
         """
         return self.is_admin( trans, trans.user )
 
-    # ------------------------------------------------------------------------- ?
+    # ---- User-created notes/metadata on other models
     #def tags( self, trans, user, **kwargs ):
     #    """
     #    Return all tags created by this user.
@@ -179,7 +177,7 @@ class UserManager( base.ModelManager ):
     #    """
     #    pass
 
-    # ------------------------------------------------------------------------- api keys
+    # ---- api keys
     def create_api_key( self, trans, user ):
         """
         Create and return an API key for `user`.
@@ -215,7 +213,7 @@ class UserManager( base.ModelManager ):
             return existing
         return self.create_api_key( self, trans, user )
 
-    # ------------------------------------------------------------------------- roles
+    # ---- roles
     def private_role( self, trans, user ):
         """
         Return the security agent's private role for `user`.
@@ -224,7 +222,6 @@ class UserManager( base.ModelManager ):
         return self.app.security_agent.get_private_user_role( user )
 
 
-# =============================================================================
 class UserSerializer( base.ModelSerializer ):
 
     def __init__( self ):

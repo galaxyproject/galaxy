@@ -12,10 +12,12 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class VisualizationManager( sharable.SharableModelManager ):
     """
+    Handle operations outside and between visualizations and other models.
     """
+
+    # TODO: revisions
 
     model_class = model.Visualization
     foreign_key_name = 'visualization'
@@ -30,15 +32,12 @@ class VisualizationManager( sharable.SharableModelManager ):
         """
         super( VisualizationManager, self ).__init__( app, *args, **kwargs )
 
-    def copy( self, trans, visualization, user, **kwargs ):
-        """
-        """
-        pass
-
-    # TODO: revisions
+    #def copy( self, trans, visualization, user, **kwargs ):
+    #    """
+    #    """
+    #    pass
 
 
-# =============================================================================
 class VisualizationSerializer( sharable.SharableModelSerializer ):
     """
     Interface/service object for serializing visualizations into dictionaries.
@@ -67,7 +66,6 @@ class VisualizationSerializer( sharable.SharableModelSerializer ):
         })
 
 
-# =============================================================================
 class VisualizationDeserializer( sharable.SharableModelDeserializer ):
     """
     Interface/service object for validating and deserializing

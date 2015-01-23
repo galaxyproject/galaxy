@@ -13,7 +13,6 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class PageManager( sharable.SharableModelManager ):
     """
     """
@@ -37,7 +36,6 @@ class PageManager( sharable.SharableModelManager ):
         pass
 
 
-# =============================================================================
 class PageSerializer( sharable.SharableModelSerializer ):
     """
     Interface/service object for serializing pages into dictionaries.
@@ -66,7 +64,6 @@ class PageSerializer( sharable.SharableModelSerializer ):
         })
 
 
-# =============================================================================
 class PageDeserializer( sharable.SharableModelDeserializer ):
     """
     Interface/service object for validating and deserializing dictionaries

@@ -11,12 +11,10 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
-
     model_class = model.Dataset
     foreign_key_name = 'dataset'
 
@@ -27,7 +25,6 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
         # need for admin test
         self.user_manager = users.UserManager( app )
 
-    # ......................................................................... create
     def create( self, trans, flush=True, **kwargs ):
         """
         Create and return a new Dataset object.
@@ -47,7 +44,6 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     #    """
     #    pass
 
-    # ......................................................................... add to dataset association
     #def to_hda( self, trans, dataset, history, **kwargs ):
     #    """
     #    Create an hda from this dataset.
@@ -60,7 +56,6 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     #    """
     #    pass
 
-    # ......................................................................... delete
     #TODO: this may be more conv. somewhere else
 #TODO: how to allow admin bypass?
     def error_unless_dataset_purge_allowed( self, trans, item, msg=None ):
@@ -85,7 +80,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
             self.app.model.context.flush()
         return dataset
 
-    # ......................................................................... accessibility
+    # .... accessibility
     # datasets can implement the accessible interface, but accessibility is checked in an entirely different way
     #   than those resources that have a user attribute (histories, pages, etc.)
     def is_accessible( self, trans, dataset, user ):
@@ -105,7 +100,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
         roles = user.all_roles() if user else []
         return self.app.security_agent.can_access_dataset( roles, dataset )
 
-#TODO: these need work
+    #TODO: these need work
     def _access_permission( self, trans, dataset, user=None, role=None ):
         """
         Return most recent DatasetPermissions for the dataset and user.
@@ -168,7 +163,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     #    """
     #    pass
 
-    # ......................................................................... manage/modify
+    # .... manage/modify
     #def has_manage_permission( self, trans, dataset, user ):
     #    """
     #    """
@@ -187,10 +182,9 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     #TODO: implement above for groups
     #TODO: datatypes?
 
-    # ......................................................................... data, object_store
+    # .... data, object_store
 
 
-# -----------------------------------------------------------------------------
 class DatasetSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
 
     def __init__( self, app ):
@@ -227,7 +221,6 @@ class DatasetSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
         })
 
 
-# -----------------------------------------------------------------------------
 class DatasetDeserializer( base.ModelDeserializer, base.PurgableModelDeserializer ):
     model_manager_class = DatasetManager
 
@@ -236,9 +229,12 @@ class DatasetDeserializer( base.ModelDeserializer, base.PurgableModelDeserialize
         base.PurgableModelDeserializer.add_deserializers( self )
 
 
-# =============================================================================
+
 class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
     """
+    DatasetAssociation/DatasetInstances are intended to be working
+    proxies to a Dataset, associated with either a library or a
+    user/history (HistoryDatasetAssociation).
     """
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
@@ -269,7 +265,6 @@ class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterfac
     #    pass
 
 
-# -----------------------------------------------------------------------------
 class DatasetAssociationSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
 
     def add_serializers( self ):
@@ -277,7 +272,6 @@ class DatasetAssociationSerializer( base.ModelSerializer, base.PurgableModelSeri
         base.PurgableModelSerializer.add_serializers( self )
 
 
-# -----------------------------------------------------------------------------
 class DatasetAssociationDeserializer( base.ModelDeserializer, base.PurgableModelDeserializer ):
 
     def add_deserializers( self ):

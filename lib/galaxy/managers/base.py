@@ -33,12 +33,11 @@ from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
 
-
 import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
+# ==== accessors from base/controller.py
 def security_check( trans, item, check_ownership=False, check_accessible=False ):
     """
     Security checks for an item: checks if (a) user owns item or (b) item
@@ -166,8 +165,6 @@ class ModelManager( object ):
         """
         return ( self.model_class.create_time, )
 
-    # NOTE: at this layer, all ids are expected to be decoded and in int form
-    # ------------------------------------------------------------------------- get/read/query
     def query( self, trans, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
@@ -246,7 +243,6 @@ class ModelManager( object ):
             query = query.offset( offset )
         return query
 
-    # ......................................................................... common queries
     def one( self, trans, **kwargs ):
         """
         Sends kwargs to build the query and returns one and only one model.
@@ -280,8 +276,7 @@ class ModelManager( object ):
         except exceptions.ObjectNotFound:
             return None
 
-    # TODO: get?
-
+    #NOTE: at this layer, all ids are expected to be decoded and in int form
     def by_id( self, trans, id, **kwargs ):
         """
         Gets a model by primary id.
@@ -341,7 +336,6 @@ class ModelManager( object ):
                 in_order.append( item_dict[ id ] )
         return in_order
 
-    # ------------------------------------------------------------------------- create
     def create( self, trans, flush=True, *args, **kwargs ):
         """
         Generically create a new model.
@@ -359,7 +353,6 @@ class ModelManager( object ):
         """
         raise exceptions.NotImplemented( 'Abstract method' )
 
-    # ------------------------------------------------------------------------- update
     def update( self, trans, item, new_values, flush=True, **kwargs ):
         """
         Given a dictionary of new values, update `item` and return it.
@@ -391,13 +384,12 @@ class ModelManager( object ):
         foreign_key = getattr( associated_model_class, foreign_key_name )
         return trans.sa_session.query( associated_model_class ).filter( foreign_key == item )
 
-    # ------------------------------------------------------------------------- delete
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
     # def destroy( self, trans, item, **kwargs ):
     #    return item
 
 
-# ============================================================================= SERIALIZERS/to_dict,from_dict
+# ==== SERIALIZERS/to_dict,from_dict
 class ModelSerializingError( exceptions.InternalServerError ):
     """Thrown when request model values can't be serialized"""
     pass
@@ -410,7 +402,6 @@ class ModelDeserializingError( exceptions.ObjectAttributeInvalidException ):
     pass
 
 
-# -----------------------------------------------------------------------------
 class ModelSerializer( object ):
     """
     Turns models into JSONable dicts.
@@ -447,7 +438,6 @@ class ModelSerializer( object ):
         self.views = {}
         self.default_view = None
 
-    # ......................................................................... serializing
     def add_serializers( self ):
         """
         Register a map of attribute keys -> serializing functions that will serialize
@@ -482,7 +472,7 @@ class ModelSerializer( object ):
         # TODO:?? point of change but not really necessary?
         return getattr( item, key )
 
-    # ......................................................................... serializers for common galaxy objects
+    # serializers for common galaxy objects
     def serialize_date( self, trans, item, key ):
         """
         Serialize a date attribute of `item`.
@@ -497,8 +487,7 @@ class ModelSerializer( object ):
         id = getattr( item, key )
         return self.app.security.encode_id( id ) if id is not None else None
 
-    # ......................................................................... serializing to a view
-    # where a view is a predefied list of keys to serialize
+    # serializing to a view where a view is a predefied list of keys to serialize
     def serialize_to_view( self, trans, item, view=None, keys=None, default_view=None ):
         """
         Use a predefined list of keys (the string `view`) and any additional keys
@@ -539,7 +528,6 @@ class ModelSerializer( object ):
         return self.views[ view ][:]
 
 
-# -----------------------------------------------------------------------------
 class ModelDeserializer( object ):
     """
     An object that converts an incoming serialized dict into values that can be
@@ -547,6 +535,8 @@ class ModelDeserializer( object ):
     """
     #: the class used to create this deserializer's generically accessible model_manager
     model_manager_class = None
+
+    #TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
     def __init__( self, app ):
         """
@@ -626,8 +616,6 @@ class ModelDeserializer( object ):
         return self.default_deserializer( trans, item, key, val )
 
 
-# -----------------------------------------------------------------------------
-# TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 class ModelValidator( object ):
     """
     An object that inspects a dictionary (generally meant to be a set of
@@ -703,9 +691,7 @@ class ModelValidator( object ):
     #    pass
 
 
-# =============================================================================
-# Mixins (here for now)
-# =============================================================================
+# ==== Security Mixins
 class AccessibleModelInterface( object ):
     """
     A security interface to check if a User can read/view an item's.
@@ -764,7 +750,6 @@ class AccessibleModelInterface( object ):
         # return filter( lambda item: self.is_accessible( trans, item, user ), items )
 
 
-# =============================================================================
 class OwnableModelInterface( object ):
     """
     A security interface to check if a User is an item's owner.
@@ -820,7 +805,7 @@ class OwnableModelInterface( object ):
         return self.list_owned( trans, user, **kwargs )
 
 
-# -----------------------------------------------------------------------------
+# ---- Deletable and Purgable models
 class DeletableModelInterface( object ):
     """
     A mixin/interface for a model that is deletable (i.e. has a 'deleted' attr).
@@ -878,7 +863,6 @@ class DeletableModelDeserializer( object ):
         return item.deleted
 
 
-# -----------------------------------------------------------------------------
 class PurgableModelInterface( DeletableModelInterface ):
     """
     A manager interface/mixin for a resource that allows deleting and purging where

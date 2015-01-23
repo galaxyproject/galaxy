@@ -24,13 +24,12 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.AccessibleModelInterface,
         taggable.TaggableManagerInterface, annotatable.AnnotatableManagerInterface, ratable.RatableManagerInterface ):
     # e.g. histories, pages, stored workflows, visualizations
-    # base.DeleteableModelInterface?
+    # base.DeleteableModelInterface? (all four are deletable)
 
-    # the model used for UserShareAssociations with this model
+    #: the model used for UserShareAssociations with this model
     user_share_model = None
 
     #: the single character abbreviation used in username_and_slug: e.g. 'h' for histories: u/user/h/slug
@@ -41,7 +40,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         # user manager is needed to check access/ownership/admin
         self.user_manager = users.UserManager( app )
 
-    # ......................................................................... has a user
+    # .... has a user
     def _query_by_user( self, trans, user, filters=None, **kwargs ):
         """
         Return query for all items (of model_class type) associated with the given
@@ -59,7 +58,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         query = self._query_by_user( trans, user, **kwargs )
         return self.list( trans, query=query, **kwargs )
 
-    # ......................................................................... owned model interface
+    # .... owned model interface
     def is_owner( self, trans, item, user ):
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
@@ -72,7 +71,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             return True
         return item.user == user
 
-    # ......................................................................... accessible interface
+    # .... accessible interface
     def is_accessible( self, trans, item, user ):
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
@@ -89,7 +88,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
             return True
         return False
 
-    # ......................................................................... importable
+    # .... importable
     def make_importable( self, trans, item, flush=True ):
         """
         Makes item accessible--viewable and importable--and sets item's slug.
@@ -131,7 +130,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    query = self._query_importable( trans, user, **kwargs )
     #    return self.list( trans, query=query, **kwargs )
 
-    # ......................................................................... published
+    # .... published
     def publish( self, trans, item, flush=True ):
         """
         Set both the importable and published flags on `item` to True.
@@ -168,7 +167,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    query = self._query_published( trans, user, **kwargs )
     #    return self.list( trans, query=query, **kwargs )
 
-    # ......................................................................... user sharing
+    # .... user sharing
     # sharing is often done via a 3rd table btwn a User and an item -> a <Item>UserShareAssociation
     def get_share_assocs( self, trans, item, user=None ):
         """
@@ -236,7 +235,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    query = self._query_shared_with( trans, user, **kwargs )
     #    return self.list( trans, query=query, **kwargs )
 
-    # ......................................................................... slugs
+    # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
     #TODO: as validator, deserializer, etc. (maybe another object entirely?)
     def set_slug( self, trans, item, new_slug, flush=True ):
@@ -331,7 +330,7 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    """
     #    pass
 
-    # ......................................................................... display
+    # .... display
     #def display_by_username_and_slug( self, trans, username, slug ):
     #    """ Display item by username and slug. """
 
@@ -341,7 +340,6 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
     #    """ Handle item sharing. """
 
 
-# =============================================================================
 class SharableModelSerializer( base.ModelSerializer,
         taggable.TaggableSerializer, annotatable.AnnotatableSerializer, ratable.RatableSerializer ):
 #TODO: stub
@@ -379,10 +377,8 @@ class SharableModelSerializer( base.ModelSerializer,
     #    return url
 
 
-# =============================================================================
 class SharableModelDeserializer( base.ModelDeserializer,
         taggable.TaggableDeserializer, annotatable.AnnotatableDeserializer, ratable.RatableDeserializer ):
-#TODO: stub
 
     def add_deserializers( self ):
         super( SharableModelDeserializer, self ).add_deserializers()

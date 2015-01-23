@@ -12,12 +12,10 @@ from galaxy.managers import hdas
 from galaxy.managers import sharable
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 
-
 import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface ):
 
     model_class = model.History
@@ -28,7 +26,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
     annotation_assoc = model.HistoryAnnotationAssociation
     rating_assoc = model.HistoryRatingAssociation
 
-    #TODO: incorporate imp/exp (or link to)
+    #TODO: incorporate imp/exp (or alias to)
 
     def __init__( self, app, *args, **kwargs ):
         super( HistoryManager, self ).__init__( app, *args, **kwargs )
@@ -41,17 +39,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         """
         return history.copy( target_user=user, **kwargs )
 
-    def most_recent( self, trans, user, **kwargs ):
-        """
-        Return the most recently update history for the user.
-        """
-#TODO: normalize this
-        if not user:
-            return None if trans.history.deleted else trans.history
-        desc_update_time = self.model_class.table.c.update_time
-        return self._query_by_user( trans, user, order_by=desc_update_time, limit=1, **kwargs ).first()
-
-    # ......................................................................... sharable
+    # .... sharable
     # overriding to handle anonymous users' current histories in both cases
     def by_user( self, trans, user, **kwargs ):
         """
@@ -74,7 +62,18 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
             return True
         return super( HistoryManager, self ).is_owner( trans, history, user )
 
-    # ......................................................................... purgable
+    #TODO: possibly to sharable
+    def most_recent( self, trans, user, **kwargs ):
+        """
+        Return the most recently update history for the user.
+        """
+        #TODO: normalize this return value
+        if not user:
+            return None if trans.history.deleted else trans.history
+        desc_update_time = self.model_class.table.c.update_time
+        return self._query_by_user( trans, user, order_by=desc_update_time, limit=1, **kwargs ).first()
+
+    # .... purgable
     def purge( self, trans, history, flush=True, **kwargs ):
         """
         Purge this history and all HDAs, Collections, and Datasets inside this history.
@@ -89,10 +88,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         # Now mark the history as purged
         super( HistoryManager, self ).purge( trans, history, flush=flush, **kwargs )
 
-    # ......................................................................... contents
-
-
-    # ......................................................................... current
+    # .... current
     def get_current( self, trans ):
         """
         Return the current history.
@@ -112,7 +108,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         """
         return self.set_current( trans, self.by_id( trans, history_id ) )
 
-    # ......................................................................... serialization
+    # .... serialization
     #TODO: move to serializer (i.e. history with contents attr)
     def _get_history_data( self, trans, history ):
         """
@@ -237,7 +233,6 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         return state
 
 
-## =============================================================================
 class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSerializer ):
     """
     Interface/service object for serializing histories into dictionaries.
@@ -337,7 +332,6 @@ class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSer
             security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
 
-# =============================================================================
 class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableModelDeserializer ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.

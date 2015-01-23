@@ -9,14 +9,13 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class TaggableManagerInterface( object ):
+    #: class of TagAssociation (e.g. HistoryTagAssociation)
     tag_assoc = None
 
     #TODO: most of this can be done by delegating to the TagManager?
 
 
-# =============================================================================
 class TaggableSerializer( object ):
 
     def add_serializers( self ):
@@ -38,7 +37,6 @@ class TaggableSerializer( object ):
         return tags_str_list
 
 
-# =============================================================================
 class TaggableDeserializer( object ):
 
     def add_deserializers( self ):
@@ -60,6 +58,6 @@ class TaggableDeserializer( object ):
         tag_handler.apply_item_tags( user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
         #trans.sa_session.flush()
 
-#TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
+        #TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
         return item.tags
 

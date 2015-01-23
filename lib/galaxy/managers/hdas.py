@@ -24,10 +24,9 @@ from galaxy.managers import users
 import logging
 log = logging.getLogger( __name__ )
 
-# =============================================================================
+
 class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface,
         taggable.TaggableManagerInterface, annotatable.AnnotatableManagerInterface ):
-    #TODO: move what makes sense into DatasetManager
     """
     Interface/service object for interacting with HDAs.
     """
@@ -37,6 +36,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     tag_assoc = model.HistoryDatasetAssociationTagAssociation
     annotation_assoc = model.HistoryDatasetAssociationAnnotationAssociation
 
+    #TODO: move what makes sense into DatasetManager
     #TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
     def __init__( self, app ):
@@ -46,7 +46,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         super( HDAManager, self ).__init__( app )
         self.user_manager = users.UserManager( app )
 
-    # ......................................................................... security and permissions
+    # .... security and permissions
     def is_accessible( self, trans, hda, user ):
         """
         Override to allow owners (those that own the associated history).
@@ -67,7 +67,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
             return True
         return history.user == user
 
-    # ......................................................................... create and copy
+    # .... create and copy
     def create( self, trans, history=None, dataset=None, flush=True, **kwargs ):
         """
         Create a new hda optionally passing in it's history and dataset.
@@ -177,7 +177,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
             raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
         return hda
 
-    # ......................................................................... via history
+    # .... via history
     #def by_history_id( self, trans, history_id, filters=None, **kwargs ):
     #    history_id_filter = self.model_class.history_id == history_id
     #    filters = self._munge_filters( history_id_filter, filters )
@@ -186,16 +186,16 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
     #def by_history( self, trans, history, filters=None, **kwargs ):
     #    return history.datasets
 
-    # ......................................................................... associated
-#TODO: is this needed? Can't you use the hda.creating_job attribute? When is this None?
+    # .... associated
     def creating_job( self, trans, hda ):
+        #TODO: is this needed? Can't you use the hda.creating_job attribute? When is this None?
         job = None
         for job_output_assoc in hda.creating_job_associations:
             job = job_output_assoc.job
             break
         return job
 
-    # ......................................................................... serialization
+    # .... serialization
     def get_display_apps( self, trans, hda ):
         """
         Return dictionary containing new-style display app urls.
@@ -307,7 +307,6 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
         return False
 
 
-# =============================================================================
 class HDASerializer( datasets.DatasetAssociationSerializer,
         taggable.TaggableSerializer, annotatable.AnnotatableSerializer ):
     #TODO: inherit from datasets.DatasetAssociationSerializer
@@ -454,7 +453,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
         Override to add metadata as flattened keys on the serialized HDA.
         """
         # if 'metadata' isn't removed from keys here serialize will retrieve the un-serializable MetadataCollection
-#TODO: remove these when metadata is sub-object
+        #TODO: remove these when metadata is sub-object
         KEYS_HANDLED_SEPARATELY = ( 'metadata', )
         left_to_handle = self.pluck_from_list( keys, KEYS_HANDLED_SEPARATELY )
         serialized = super( HDASerializer, self ).serialize( trans, hda, keys )
@@ -537,7 +536,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
         """
         Return the `file_name` of the HDA if the config exposes it, None otherwise.
         """
-#TODO: allow admin
+        #TODO: allow admin
         if self.app.config.expose_dataset_path:
             try:
                 return hda.file_name
@@ -568,7 +567,6 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
         return urls
 
 
-# =============================================================================
 class HDADeserializer( datasets.DatasetAssociationDeserializer,
         taggable.TaggableDeserializer, annotatable.AnnotatableDeserializer ):
     """

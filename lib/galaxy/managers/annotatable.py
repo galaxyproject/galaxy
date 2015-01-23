@@ -6,14 +6,13 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class AnnotatableManagerInterface( object ):
+    #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
     annotation_assoc = None
 
     # TODO: most of this seems to be covered by item_attrs.UsesAnnotations
 
 
-# =============================================================================
 class AnnotatableSerializer( object ):
 
     def add_serializers( self ):
@@ -31,7 +30,6 @@ class AnnotatableSerializer( object ):
         return returned
 
 
-# =============================================================================
 class AnnotatableDeserializer( object ):
 
     def add_deserializers( self ):
