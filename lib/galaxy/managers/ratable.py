@@ -18,21 +18,20 @@ class RatableManagerInterface( object ):
 
 
 class RatableSerializer( object ):
-    pass
 
-    #def add_serializers( self ):
-    #    self.serializers[ 'user_rating' ] = self.serialize_user_rating
-    #    self.serializers[ 'community_rating' ] = self.serialize_community_rating
+    def add_serializers( self ):
+        self.serializers[ 'user_rating' ] = self.serialize_user_rating
+        self.serializers[ 'community_rating' ] = self.serialize_community_rating
 
-    #def serialize_user_rating( self, trans, item, key ):
-    #    """
-    #    """
-    #    pass
+    def serialize_user_rating( self, trans, item, key ):
+        """
+        """
+        pass
 
-    #def serialize_community_rating( self, trans, item, key ):
-    #    """
-    #    """
-    #    pass
+    def serialize_community_rating( self, trans, item, key ):
+        """
+        """
+        pass
 
 class RatableDeserializer( object ):
 
