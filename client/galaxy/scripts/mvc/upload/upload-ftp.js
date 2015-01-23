@@ -122,13 +122,13 @@ return Backbone.View.extend({
                     size        : ftp_file.size,
                     path        : ftp_file.path
                 }]);
-                
+
                 // add new icon class
                 $icon.addClass(self.options.class_remove);
             } else {
                 // remove
                 self.app.collection.remove(model_index);
-                
+
                 // add new icon class
                 $icon.addClass(self.options.class_add);
             }
