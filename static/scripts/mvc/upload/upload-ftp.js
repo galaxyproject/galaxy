@@ -69,13 +69,13 @@ return Backbone.View.extend({
                         // all checkboxes should be checked
                         if(checkboxes.eq(i).hasClass('fa-square-o')) {
                             // if they are not checked, check them
-                            checkboxes.eq(i).trigger('addToUpBox');
+                            checkboxes.eq(i).trigger('updateUpBox');
                         }
                     } else {
                         // no checkboxes should be checked
                         if(checkboxes.eq(i).hasClass('fa-check-square-o')) {
                             // if they are checked, uncheck them
-                            checkboxes.eq(i).trigger('addToUpBox');
+                            checkboxes.eq(i).trigger('updateUpBox');
                         }
                     }
                 }
@@ -117,7 +117,7 @@ return Backbone.View.extend({
         $icon.addClass(icon_class);
         
         // add files to the uploadbox
-        $it.on('addToUpBox', function() {
+        $it.on('updateUpBox', function() {
             // find model
             var model_index = self._find(ftp_file);
 
@@ -148,7 +148,7 @@ return Backbone.View.extend({
         // click to add ftp files
         $it.on('click', function() {
             //trigger my new event
-            $icon.trigger('addToUpBox');
+            $icon.trigger('updateUpBox');
 
             // click to add ftp files
             // modify selectAll box based on number of checkboxes checked
