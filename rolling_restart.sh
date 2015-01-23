@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 cd `dirname $0`
 
 check_if_not_started(){
@@ -8,7 +8,7 @@ check_if_not_started(){
 	current_pid_in_file=$(cat $2);
 	# If they're equivalent, then the current pid file agrees with our logs
 	# and we've succesfully started
-	if [[ $latest_pid -eq $current_pid_in_file ]];
+	if [ $latest_pid -eq $current_pid_in_file ];
 	then
 		echo 0;
 	else
@@ -16,17 +16,29 @@ check_if_not_started(){
 	fi
 }
 
+# If there is a .venv/ directory, assume it contains a virtualenv that we
+# should run this instance in.
+if [ -d .venv ];
+then
+    . .venv/bin/activate
+fi
 
-GALAXY_CONFIG_FILE=config/galaxy.ini
-if [ ! -f $GALAXY_CONFIG_FILE ]; then
-    GALAXY_CONFIG_FILE=universe_wsgi.ini
+if [ -z "$GALAXY_CONFIG_FILE" ]; then
+    if [ -f universe_wsgi.ini ]; then
+        GALAXY_CONFIG_FILE=universe_wsgi.ini
+    elif [ -f config/galaxy.ini ]; then
+        GALAXY_CONFIG_FILE=config/galaxy.ini
+    else
+        GALAXY_CONFIG_FILE=config/galaxy.ini.sample
+    fi
+    export GALAXY_CONFIG_FILE
 fi
 
 servers=`sed -n 's/^\[server:\(.*\)\]/\1/  p' $GALAXY_CONFIG_FILE | xargs echo`
 for server in $servers;
 do
 	# If there's a pid
-	if [[ -e $server.pid ]]
+	if [ -e $server.pid ]
 	then
 		# Then kill it
 		echo "Killing $server"
@@ -44,12 +56,11 @@ do
 	pid=`cat $server.pid`
 	result=1
 	# Wait for the latest pid in the file to be the pid we've grabbed
-	while [[ $result -eq 1 ]]
+	while [ $result -eq 1 ]
 	do
 		result=$(check_if_not_started $server.log $server.pid)
-		echo -n "."
+		printf "."
 		sleep 1
 	done
-	echo ""
+	echo
 done
-
