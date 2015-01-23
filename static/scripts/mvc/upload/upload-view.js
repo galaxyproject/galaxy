@@ -699,36 +699,30 @@ return Backbone.View.extend({
 
     // load html template
     _template: function(id, idInfo) {
-        return '<div class="uploadwrap">' +
-                    '<div id="uploadhead" class="uploadhead">' +
-                        '<span class="fftext">"Set All" Types:&nbsp;&nbsp</span>' +
-                        '<span id="extension" class="extension"/>&nbsp;&nbsp' +
-                        '<span id="extension-info_out" class="upload-icon-button fa fa-search"/> ' +
-                    '</div>' +
-                    '<div class="uploadcont">' +
-                        '<div class="uploadcont-wrap">' +
-                            '<div id="' + id + '" class="upload-box">' +
-                                '<table id="upload-table" class="table table-striped" style="display: none;">' +
-                                    '<thead>' +
-                                        '<tr>' +
-                                            '<th>Name</th>' +
-                                            '<th>Size</th>' +
-                                            '<th>Type</th>' +
-                                            '<th>Genome</th>' +
-                                            '<th>Settings</th>' +
-                                            '<th>Status</th>' +
-                                            '<th></th>' +
-                                        '</tr>' +
-                                    '</thead>' +
-                                    '<tbody></tbody>' +
-                                '</table>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="uploadfoot">' +
-                        '<h6 id="' + idInfo + '" class="upload-info"></h6>' +
-                    '</div>' +
-                '</div>';
+        return '<div id="uploadhead" class="uploadhead">' +
+                    '<span class="fftext">"Set All" Types:&nbsp;&nbsp</span>' +
+                    '<span id="extension" class="extension"/>&nbsp;&nbsp' +
+                    '<span id="extension-info_out" class="upload-icon-button fa fa-search"/> ' +
+                '</div>' +
+                '<div id="' + id + '" class="upload-box">' +
+                    '<table id="upload-table" class="table table-striped" style="display: none;">' +
+                        '<thead>' +
+                            '<tr>' +
+                                '<th>Name</th>' +
+                                '<th>Size</th>' +
+                                '<th>Type</th>' +
+                                '<th>Genome</th>' +
+                                '<th>Settings</th>' +
+                                '<th>Status</th>' +
+                                '<th></th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody></tbody>' +
+                    '</table>' +
+                '</div>' +
+                '<div class="uploadfoot">' +
+                    '<h6 id="' + idInfo + '" class="upload-info"></h6>' +
+                '</div>' ;
     }
 });
 
