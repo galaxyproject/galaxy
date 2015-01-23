@@ -8,18 +8,18 @@ return Backbone.View.extend({
         class_add       : 'upload-icon-button fa fa-square-o',
         class_remove    : 'upload-icon-button fa fa-check-square-o'
     },
-    
+
     // render
     initialize: function(app) {
         // link app
         this.app = app;
-        
+
         // link this
         var self = this;
-        
+
         // set template
         this.setElement(this._template());
-        
+
         // load extension
         Utils.get({
             url     : galaxy_config.root + 'api/ftp_files',
@@ -27,26 +27,26 @@ return Backbone.View.extend({
             error   : function() { self._fill(); }
         });
     },
-    
+
     // events
     events: {
         'mousedown' : function(e) { e.preventDefault(); }
     },
-    
+
     // fill table
     _fill: function(ftp_files) {
         var self = this;
         if (ftp_files && ftp_files.length > 0) {
             // add table
             this.$el.find('#upload-ftp-content').html($(this._templateTable()));
-            
+
             // add files to table
             var size = 0;
             for (key in ftp_files) {
                 this.add(ftp_files[key]);
                 size += ftp_files[key].size;
             }
-            
+
             // update stats
             this.$el.find('#upload-ftp-number').html(ftp_files.length + ' files');
             this.$el.find('#upload-ftp-disk').html(Utils.bytesToString (size, true));
@@ -90,21 +90,21 @@ return Backbone.View.extend({
         // hide spinner
         this.$el.find('#upload-ftp-wait').hide();
     },
-    
+
     // add
     add: function(ftp_file) {
         // link this
         var self = this;
-        
+
         // create new item
         var $it = $(this._templateRow(ftp_file));
-        
+
         // identify icon
         var $icon = $it.find('.icon');
-        
+
         // append to table
         $(this.el).find('tbody').append($it);
-        
+
         // find model and set initial 'add' icon class
         var icon_class = '';
         if (this._find(ftp_file)) {
@@ -115,7 +115,7 @@ return Backbone.View.extend({
 
         // add icon class
         $icon.addClass(icon_class);
-        
+
         // add files to the uploadbox
         $it.on('updateUpBox', function() {
             // find model
@@ -195,7 +195,7 @@ return Backbone.View.extend({
         }
         return model_index;
     },
-    
+
     // template row
     _templateRow: function(options) {
         return  '<tr class="upload-ftp-row" style="cursor: pointer;">' +
@@ -205,7 +205,7 @@ return Backbone.View.extend({
                     '<td style="white-space: nowrap;">' + options.ctime + '</td>' +
                 '</tr>';
     },
-    
+
     // load table template
     _templateTable: function() {
         return  '<span style="whitespace: nowrap; float: left;">Available files: </span>' +
@@ -227,14 +227,14 @@ return Backbone.View.extend({
                     '<tbody></tbody>' +
                 '</table>';
     },
-    
+
     // load table template
     _templateInfo: function() {
         return  '<div class="upload-ftp-warning warningmessage">' +
                     'Your FTP directory does not contain any files.' +
                 '</div>';
     },
-    
+
     // load html template
     _template: function() {
         return  '<div class="upload-ftp">' +
@@ -243,7 +243,7 @@ return Backbone.View.extend({
                     '<div id="upload-ftp-content"></div>' +
                 '<div>';
     }
-    
+
 });
 
 });
