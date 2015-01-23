@@ -26,6 +26,10 @@ file_path = database/files
 # Temporary storage for additional datasets, this should be shared through the cluster
 new_file_path = database/tmp
 
+# Mako templates are compiled as needed and cached for reuse, this directory is
+# used for the cache
+# template_cache_path = database/compiled_templates
+
 # Session support (beaker)
 use_beaker_session = True
 session_type = memory
