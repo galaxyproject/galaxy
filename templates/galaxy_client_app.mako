@@ -83,7 +83,7 @@ ${ h.dumps( get_config_dict() )}
                 users_api_controller = trans.webapp.api_controllers[ 'users' ]
                 tags_used = []
                 for tag in users_api_controller.get_user_tags_used( trans, user=trans.user ):
-                    tag = tag | h
+                    tag = escape( tag )
                     if tag:
                         tags_used.append( tag )
                 user_dict[ 'tags_used' ] = tags_used
@@ -106,6 +106,8 @@ ${ h.dumps( get_config_dict() )}
 
         except Exception, exc:
             pass
+            #TODO: no logging available?
+            #log.exception( exc )
 
         return user_dict
     %>
