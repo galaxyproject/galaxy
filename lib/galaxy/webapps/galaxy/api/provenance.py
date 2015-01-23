@@ -41,7 +41,7 @@ class BaseProvenanceController( BaseAPIController ):
     def _get_provenance( self, trans, item_class_name, item_id, follow=True ):
         provenance_item = self.get_object( trans, item_id, item_class_name, check_ownership=False, check_accessible=False)
         if item_class_name == "HistoryDatasetAssociation":
-            self.hda_manager.error_unless_accessible( trans, provenance_item )
+            self.hda_manager.error_unless_accessible( trans, provenance_item, trans.user )
         else:
             self.security_check( trans, provenance_item, check_accessible=True )
         out = self._get_record( trans, provenance_item, follow )
