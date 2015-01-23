@@ -295,19 +295,6 @@ return Backbone.View.extend({
         }
     },
 
-    _showSettings : function() {
-        // check if popover is visible
-        if (!this.settings.visible) {
-            // show popover
-            this.settings.empty();
-            this.settings.append((new UploadSettings(this)).$el);
-            this.settings.show();
-        } else {
-            // hide popover
-            this.settings.hide();
-        }
-    },
-
     _templateDescription: function(options) {
         if (options.description) {
             var tmpl = options.description;
