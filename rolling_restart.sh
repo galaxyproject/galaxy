@@ -2,21 +2,6 @@
 
 cd `dirname $0`
 
-check_if_not_started(){
-    # Search for all pids in the logs and tail for the last one
-    latest_pid=`egrep '^Starting server in PID [0-9]+\.$' $1 -o | sed 's/Starting server in PID //g;s/\.$//g' | tail -n 1`
-    # Grab the current pid from the file we were given
-    current_pid_in_file=$(cat $2);
-    # If they're equivalent, then the current pid file agrees with our logs
-    # and we've succesfully started
-    if [ $latest_pid -eq $current_pid_in_file ];
-    then
-        echo 0;
-    else
-        echo 1;
-    fi
-}
-
 # If there is a .venv/ directory, assume it contains a virtualenv that we
 # should run this instance in.
 if [ -d .venv ];
@@ -45,11 +30,9 @@ if [ -z "$GALAXY_CONFIG_FILE" ]; then
 fi
 
 servers=`sed -n 's/^\[server:\(.*\)\]/\1/  p' $GALAXY_CONFIG_FILE | xargs echo`
-for server in $servers;
-do
+for server in $servers; do
     # If there's a pid
-    if [ -e $server.pid ]
-    then
+    if [ -e $server.pid ]; then
         # Then kill it
         echo "Killing $server"
         pid=`cat $server.pid`
@@ -60,17 +43,19 @@ do
     fi
     # Start the server (and background) (should this be nohup'd?)
     python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log --daemon $@
-    # Wait for the server to start
-    sleep 1
-    # Grab the new pid
-    pid=`cat $server.pid`
-    result=1
-    # Wait for the latest pid in the file to be the pid we've grabbed
-    while [ $result -eq 1 ]
-    do
-        result=$(check_if_not_started $server.log $server.pid)
-        printf "."
+    while true; do
         sleep 1
+        printf "."
+        # Grab the current pid from the pid file
+        if ! current_pid_in_file=$(cat $server.pid); then
+            echo "A Galaxy process died, interrupting" >&2
+            exit 1
+        fi
+        # Search for all pids in the logs and tail for the last one
+        latest_pid=`egrep '^Starting server in PID [0-9]+\.$' $server.log -o | sed 's/Starting server in PID //g;s/\.$//g' | tail -n 1`
+        # If they're equivalent, then the current pid file agrees with our logs
+        # and we've succesfully started
+        [ -n "$latest_pid" ] && [ $latest_pid -eq $current_pid_in_file ] && break
     done
     echo
 done
