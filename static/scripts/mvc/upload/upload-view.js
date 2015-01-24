@@ -23,7 +23,7 @@ define(["utils/utils",
 return Backbone.View.extend({
     // options
     options : {
-        nginx_upload_path : ''
+        nginx_upload_path   : ''
     },
 
     // own modal
@@ -40,6 +40,9 @@ return Backbone.View.extend({
 
     // extension selector
     select_extension : null,
+    
+    // genome selector
+    select_genome: null,
 
     // current upload size
     upload_size: 0,
@@ -130,14 +133,6 @@ return Backbone.View.extend({
                     return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                 });
 
-                // add the '---' extension for use when the row types are changed individually
-                self.list_extensions.push({
-                        id              : "---",
-                        text            : "---",
-                        description     : "",
-                        description_url : ""
-                    });
-
                 // add auto field
                 if (!self.options.datatypes_disable_auto) {
                     self.list_extensions.unshift(self.auto);
@@ -166,14 +161,6 @@ return Backbone.View.extend({
         // events
         this.collection.on('remove', function(item) {
             self._eventRemove(item);
-        });
-        this.collection.on('change:genome', function(item) {
-            var genome = item.get('genome');
-            self.collection.each(function(item) {
-                if (item.get('status') == 'init' && item.get('genome') == '?') {
-                    item.set('genome', genome);
-                }
-            });
         });
     },
 
@@ -232,28 +219,30 @@ return Backbone.View.extend({
                 container   : button
             });
 
-             // select extension
+            // select extension
             this.select_extension = new Select.View({
-                css: 'extension',
-                onchange : function() {
-                    var newExten = self.select_extension.value()
-                    var len = self.collection.models.length;
-                    // Only trigger changing the rows if the "set all" isn't set to '---'
-                    // Prevents recursively changing the rows after an individual row has been changed
-                    if(!(newExten === '---')){
-                        for(i = 0; i < len; i++){
-                            self.collection.models[i].attributes['row'].select_extension.value(newExten);
-                        }
-                    }
-                },
-                data: self.list_extensions,
-                container: self.$el.parents().find('#extension'),
-                value: self.list_extensions[0]
+                css         : 'header-selection',
+                data        : self.list_extensions,
+                container   : self.$el.parent().find('#header-extension'),
+                value       : self.list_extensions[0]
             });
-
+                
             // handle extension info popover
-            self.$el.parents().find('#extension-info_out').on('click' , function(e) { self._showExtensionInfo(); })
-                                                          .on('mousedown', function(e) { e.preventDefault(); });
+            self.$el.parent().find('#header-extension-info').on('click' , function(e) {
+                self.showExtensionInfo({
+                    $el         : $(e.target),
+                    title       : self.select_extension.text(),
+                    extension   : self.select_extension.value()
+                });
+            }).on('mousedown', function(e) { e.preventDefault(); });
+            
+            // genome extension
+            this.select_genome = new Select.View({
+                css         : 'header-selection',
+                data        : self.list_genomes,
+                container   : self.$el.parent().find('#header-genome'),
+                value       : self.list_genomes[0]
+            });
         }
 
         // show modal
@@ -266,45 +255,27 @@ return Backbone.View.extend({
         this._updateScreen();
     },
 
-    _showExtensionInfo : function() {
+    showExtensionInfo : function(options) {
         // initialize
         var self = this;
-        var $el = $(this.el).parents().find('#extension-info_out');
-        var extension = self.select_extension.value();
-
-        var title = this.select_extension.text();
-
+        var $el = options.$el;
+        var extension = options.extension;
+        var title = options.title;
         var description = _.findWhere(self.list_extensions, {'id': extension});
 
         // create popup
-        if (!this.extension_popup) {
-            this.extension_popup = new Popover.View({
-                placement: 'bottom',
-                container: $el
-            });
-        }
-
-        // show / hide popup
-        if (!this.extension_popup.visible) {
-            this.extension_popup.title(title);
-            this.extension_popup.empty();
-            this.extension_popup.append(this._templateDescription(description));
-            this.extension_popup.show();
-        } else {
-            this.extension_popup.hide();
-        }
-    },
-
-    _templateDescription: function(options) {
-        if (options.description) {
-            var tmpl = options.description;
-            if (options.description_url) {
-                tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
-            }
-            return tmpl;
-        } else {
-            return 'There is no description available for this file extension.';
-        }
+        this.extension_popup && this.extension_popup.remove();
+        this.extension_popup = new Popover.View({
+            placement: 'bottom',
+            container: $el,
+            destroy: true
+        });
+        
+        // add content and show popup
+        this.extension_popup.title(title);
+        this.extension_popup.empty();
+        this.extension_popup.append(this._templateDescription(description));
+        this.extension_popup.show();
     },
 
     //
@@ -593,6 +564,7 @@ return Backbone.View.extend({
 
             // reset value for universal type drop-down
             this.select_extension.value(this.list_extensions[0]);
+            this.select_genome.value(this.list_genomes[0]);
 
             // reset button
             this.ui_button.set('percentage', 0);
@@ -684,12 +656,28 @@ return Backbone.View.extend({
         return (this.upload_completed + (percentage * size)) / this.upload_size;
     },
 
+
+    // template for extensions description
+    _templateDescription: function(options) {
+        if (options.description) {
+            var tmpl = options.description;
+            if (options.description_url) {
+                tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
+            }
+            return tmpl;
+        } else {
+            return 'There is no description available for this file extension.';
+        }
+    },
+    
     // load html template
     _template: function(id, idInfo) {
-        return '<div id="uploadhead" class="uploadhead">' +
-                    '<span class="fftext">"Set All" Types:&nbsp;&nbsp</span>' +
-                    '<span id="extension" class="extension"/>&nbsp;&nbsp' +
-                    '<span id="extension-info_out" class="upload-icon-button fa fa-search"/> ' +
+        return '<div id="upload-header" class="upload-header">' +
+                    '<span class="header-title">Type (default):</span>' +
+                    '<span id="header-extension"/>' +
+                    '<span id="header-extension-info" class="upload-icon-button fa fa-search"/> ' +
+                    '<span class="header-title">Genome (default):</span>' +
+                    '<span id="header-genome"/>' +
                 '</div>' +
                 '<div id="' + id + '" class="upload-box">' +
                     '<table id="upload-table" class="table table-striped" style="display: none;">' +
@@ -707,7 +695,7 @@ return Backbone.View.extend({
                         '<tbody></tbody>' +
                     '</table>' +
                 '</div>' +
-                '<div class="uploadfoot">' +
+                '<div class="upload-footer">' +
                     '<h6 id="' + idInfo + '" class="upload-info"></h6>' +
                 '</div>' ;
     }

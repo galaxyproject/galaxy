@@ -3,7 +3,7 @@ define(['utils/utils',
         'mvc/upload/upload-model',
         'mvc/upload/upload-settings',
         'mvc/ui/ui-popover',
-        'mvc/ui/ui-select'],
+        'mvc/ui/ui-select',],
 
         function(   Utils,
                     UploadModel,
@@ -42,9 +42,6 @@ return Backbone.View.extend({
         // link app
         this.app = app;
 
-        // default value for extension of files
-        var default_ext = 'Auto-detect';
-
         // link this
         var self = this;
 
@@ -64,6 +61,9 @@ return Backbone.View.extend({
             placement   : 'bottom'
         });
 
+        // initialize default genome through default select field
+        var default_genome = this.app.select_genome.value();
+        
         // select genomes
         this.select_genome = new Select.View({
             css: 'genome',
@@ -72,39 +72,29 @@ return Backbone.View.extend({
             },
             data: self.app.list_genomes,
             container: it.find('#genome'),
-            value: self.model.get('genome')
+            value: default_genome
         });
 
         // initialize genome
-        this.model.set('genome', self.select_genome.value());
+        this.model.set('genome', default_genome);
 
-        // ensure files added after an individual row has changed
-        // default to Auto-detect instead of ---
-        if(!(this.app.select_extension.value() === '---')){
-            this.default_ext = this.app.select_extension.value();
-        }
-
+        // initialize default extension through default select field
+        var default_extension = this.app.select_extension.value();
+        
         // select extension
         this.select_extension = new Select.View({
             css: 'extension',
             onchange : function() {
                 self.model.set('extension', self.select_extension.value());
-                // if user has changed individual row type, then change "set all"
-                // type to '---'
-                if(!(self.select_extension.value() === app.select_extension.value()))
-                {
-                    var newExte = '---';
-                    app.select_extension.value(newExte);
-                }
             },
             data: self.app.list_extensions,
             container: it.find('#extension'),
-            value: self.default_ext
+            value: default_extension
         });
 
         // initialize extension
-        this.model.set('extension', self.select_extension.value());
-
+        this.model.set('extension', default_extension);
+        
         //
         // ui events
         //
@@ -113,8 +103,13 @@ return Backbone.View.extend({
         it.find('#symbol').on('click', function() { self._removeRow(); });
 
         // handle extension info popover
-        it.find('#extension-info').on('click' , function(e) { self._showExtensionInfo(); })
-                                  .on('mousedown', function(e) { e.preventDefault(); });
+        it.find('#extension-info').on('click' , function(e) {
+            self.app.showExtensionInfo({
+                $el         : $(e.target),
+                title       : self.select_extension.text(),
+                extension   : self.select_extension.value()
+            });
+        }).on('mousedown', function(e) { e.preventDefault(); });
 
         // handle settings popover
         it.find('#settings').on('click' , function(e) { self._showSettings(); })
@@ -130,7 +125,7 @@ return Backbone.View.extend({
         it.find('#space_to_tabs').on('change', function(e) {
             self.model.set('space_to_tabs', $(e.target).prop('checked'));
         });
-
+        
         //
         // model events
         //
@@ -146,6 +141,9 @@ return Backbone.View.extend({
         this.model.on('change:genome', function() {
             self._refreshGenome();
         });
+        this.model.on('change:extension', function() {
+            self._refreshExtension();
+        });
         this.model.on('change:file_size', function() {
             self._refreshFileSize();
         });
@@ -155,7 +153,6 @@ return Backbone.View.extend({
         this.app.collection.on('reset', function() {
             self.remove();
         });
-        self.model.set('row', self);
     },
 
     // render
@@ -175,8 +172,9 @@ return Backbone.View.extend({
         it.find('#size').html(Utils.bytesToString (file_size));
 
         // remove mode class
-        it.find('#mode').removeClass()
-                        .addClass('mode');
+        it.find('#mode')
+            .removeClass()
+            .addClass('mode');
 
         // activate text field if file is new
         if (file_mode == 'new') {
@@ -229,11 +227,14 @@ return Backbone.View.extend({
     // handle model events
     //
 
-    // genome
+    // update extension
+    _refreshExtension: function() {
+        this.select_extension.value(this.model.get('extension'));
+    },
+    
+    // update genome
     _refreshGenome: function() {
-        // update genome info on screen
-        var genome = this.model.get('genome');
-        this.select_genome.value(genome);
+        this.select_genome.value(this.model.get('genome'));
     },
 
     // progress
@@ -327,33 +328,6 @@ return Backbone.View.extend({
     },
 
     // attach file info popup
-    _showExtensionInfo : function() {
-        // initialize
-        var $el = $(this.el).find('#extension-info');
-        var extension = this.model.get('extension');
-        var title = this.select_extension.text();
-        var description = _.findWhere(this.app.list_extensions, {'id': extension});
-
-        // create popup
-        if (!this.extension_popup) {
-            this.extension_popup = new Popover.View({
-                placement: 'bottom',
-                container: $el
-            });
-        }
-
-        // show / hide popup
-        if (!this.extension_popup.visible) {
-            this.extension_popup.title(title);
-            this.extension_popup.empty();
-            this.extension_popup.append(this._templateDescription(description));
-            this.extension_popup.show();
-        } else {
-            this.extension_popup.hide();
-        }
-    },
-
-    // attach file info popup
     _showSettings : function() {
         // check if popover is visible
         if (!this.settings.visible) {
@@ -368,23 +342,10 @@ return Backbone.View.extend({
     },
 
     // template
-    _templateDescription: function(options) {
-        if (options.description) {
-            var tmpl = options.description;
-            if (options.description_url) {
-                tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
-            }
-            return tmpl;
-        } else {
-            return 'There is no description available for this file extension.';
-        }
-    },
-
-    // template
     _template: function(options) {
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
-                        '<div style="position: relative;">' +
+                        '<div class="name-column">' +
                             '<div id="mode"></div>' +
                             '<div id="title" class="title"></div>' +
                             '<div id="text" class="text">' +

@@ -448,6 +448,54 @@ var Hidden = Backbone.View.extend({
     }
 });
 
+// plugin
+var CheckButton = Backbone.View.extend({
+
+    // default options
+    optionsDefault: {
+        class_add       : 'fa fa-square-o',
+        class_remove    : 'fa fa-check-square-o',
+        class_partial   : 'fa fa-minus-square-o',
+        value           : false
+    },
+        
+    // initialize
+    initialize : function(options) {
+        // configure options
+        this.options = Utils.merge(options, this.optionsDefault);
+        
+        // create new element
+        this.setElement($('<div/>'));
+        
+        // set initial value
+        this.value(Boolean(this.options.value));
+        
+        // add event handler
+        var self = this;
+        this.$el.on('click', function() {
+            self.value(!self.current);
+        });
+    },
+    
+    // value
+    value : function (new_val) {
+        if (new_val !== undefined) {
+            this.current = new_val;
+            if (new_val) {
+                this.$el.removeClass()
+                        .addClass('ui-checkbutton')
+                        .addClass(this.options.class_remove);
+            } else {
+                this.$el.removeClass()
+                        .addClass('ui-checkbutton')
+                        .addClass(this.options.class_add);
+            }
+            this.options.onchange && this.options.onchange(new_val);
+        }
+        return this.current;
+    }
+});
+
 // return
 return {
     Anchor      : Anchor,
@@ -463,6 +511,7 @@ return {
     RadioButton : Options.RadioButton,
     Checkbox    : Options.Checkbox,
     Radio       : Options.Radio,
+    CheckButton : CheckButton,
     Searchbox   : Searchbox,
     Select      : Select,
     Hidden      : Hidden,
