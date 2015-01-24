@@ -1,4 +1,5 @@
 #!/bin/sh
+
 cd `dirname $0`
 
 check_if_not_started(){
@@ -21,6 +22,15 @@ check_if_not_started(){
 if [ -d .venv ];
 then
     . .venv/bin/activate
+fi
+
+python ./scripts/check_python.py
+[ $? -ne 0 ] && exit 1
+
+./scripts/common_startup.sh
+
+if [ -n "$GALAXY_UNIVERSE_CONFIG_DIR" ]; then
+    python ./scripts/build_universe_config.py "$GALAXY_UNIVERSE_CONFIG_DIR"
 fi
 
 if [ -z "$GALAXY_CONFIG_FILE" ]; then
