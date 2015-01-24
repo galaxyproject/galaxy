@@ -3,7 +3,7 @@ define(['utils/utils',
         'mvc/upload/upload-model',
         'mvc/upload/upload-settings',
         'mvc/ui/ui-popover',
-        'mvc/ui/ui-select',],
+        'mvc/ui/ui-select'],
 
         function(   Utils,
                     UploadModel,
@@ -125,7 +125,7 @@ return Backbone.View.extend({
         it.find('#space_to_tabs').on('change', function(e) {
             self.model.set('space_to_tabs', $(e.target).prop('checked'));
         });
-        
+
         //
         // model events
         //

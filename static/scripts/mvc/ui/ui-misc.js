@@ -458,25 +458,25 @@ var CheckButton = Backbone.View.extend({
         class_partial   : 'fa fa-minus-square-o',
         value           : false
     },
-        
+
     // initialize
     initialize : function(options) {
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
-        
+
         // create new element
         this.setElement($('<div/>'));
-        
+
         // set initial value
         this.value(Boolean(this.options.value));
-        
+
         // add event handler
         var self = this;
         this.$el.on('click', function() {
             self.value(!self.current);
         });
     },
-    
+
     // value
     value : function (new_val) {
         if (new_val !== undefined) {

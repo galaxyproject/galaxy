@@ -40,7 +40,7 @@ return Backbone.View.extend({
 
     // extension selector
     select_extension : null,
-    
+
     // genome selector
     select_genome: null,
 
@@ -226,7 +226,7 @@ return Backbone.View.extend({
                 container   : self.$el.parent().find('#header-extension'),
                 value       : self.list_extensions[0]
             });
-                
+
             // handle extension info popover
             self.$el.parent().find('#header-extension-info').on('click' , function(e) {
                 self.showExtensionInfo({
