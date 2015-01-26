@@ -6,6 +6,7 @@ cd `dirname $0`
 # should run this instance in.
 if [ -d .venv ];
 then
+    printf "Activating virtualenv at %s/.venv\n" $(pwd)
     . .venv/bin/activate
 fi
 
