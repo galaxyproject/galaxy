@@ -85,6 +85,11 @@ def app_factory( global_conf, **kwargs ):
                            controller='authenticate',
                            action='get_tool_shed_api_key',
                            conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( 'repo_search',
+                           '/api/search/',
+                           controller='search',
+                           action='search',
+                           conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'category',
                             'categories',
                             controller='categories',

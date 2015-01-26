@@ -40,6 +40,9 @@ class Configuration( object ):
         self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
+        # Whoosh search
+        self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", False ) )
+        self.toolshed_whoosh_index_dir = kwargs.get( "toolshed_whoosh_index_dir", None )
         # Analytics
         self.ga_code = kwargs.get( "ga_code", None )
         # Where dataset files are stored
