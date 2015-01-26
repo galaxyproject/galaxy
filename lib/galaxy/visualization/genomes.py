@@ -179,33 +179,59 @@ class Genomes( object ):
     """
 
     def __init__( self, app ):
+        self.app = app
         # Create list of genomes from app.genome_builds
         self.genomes = {}
-        for key, description in app.genome_builds.get_genome_build_names():
+        # Store internal versions of data tables for twobit and __dbkey__
+        self._table_versions = { 'twobit': None, '__dbkeys__': None }
+        self.reload_genomes()
+
+    def reload_genomes( self ):
+        self.genomes = {}
+        # Store table versions for later
+        for table_name in self._table_versions.keys():
+            table = self.app.tool_data_tables.get( table_name, None )
+            if table is not None:
+                self._table_versions[ table_name ] = table._loaded_content_version
+        
+        twobit_table = self.app.tool_data_tables.get( 'twobit', None )
+        twobit_fields = {}
+        if twobit_table is None:
+            # Add genome data (twobit files) to genomes, directly from twobit.loc
+            try:
+                for line in open( os.path.join( self.app.config.tool_data_path, "twobit.loc" ) ):
+                    if line.startswith("#"): continue
+                    val = line.split()
+                    if len( val ) == 2:
+                        key, path = val
+                        twobit_fields[ key ] = path
+            except IOError, e:
+                # Thrown if twobit.loc does not exist.
+                log.exception( "Error reading twobit.loc: %s", e )
+        for key, description in self.app.genome_builds.get_genome_build_names():
             self.genomes[ key ] = Genome( key, description )
+            # Add len files to genomes.
+            self.genomes[ key ].len_file = self.app.genome_builds.get_chrom_info( key )[0]
+            if self.genomes[ key ].len_file:
+                if not os.path.exists( self.genomes[ key ].len_file ):
+                    self.genomes[ key ].len_file = None
+            # Add genome data (twobit files) to genomes.
+            if twobit_table is not None:
+                self.genomes[ key ].twobit_file = twobit_table.get_entry( 'value', key, 'path', default=None )
+            elif key in twobit_fields:
+                self.genomes[ key ].twobit_file = twobit_fields[ key ]
+                
 
-        # Add len files to genomes.
-        len_files = glob.glob( os.path.join( app.config.len_file_path, "*.len" ) )
-        for f in len_files:
-            key = os.path.split( f )[1].split( ".len" )[0]
-            if key in self.genomes:
-                self.genomes[ key ].len_file = f
-
-        # Add genome data (twobit files) to genomes.
-        try:
-            for line in open( os.path.join( app.config.tool_data_path, "twobit.loc" ) ):
-                if line.startswith("#"): continue
-                val = line.split()
-                if len( val ) == 2:
-                    key, path = val
-                    if key in self.genomes:
-                        self.genomes[ key ].twobit_file = path
-        except IOError, e:
-            # Thrown if twobit.loc does not exist.
-            log.exception( str( e ) )
+    def check_and_reload( self ):
+        # Check if tables have been modified, if so reload
+        for table_name, table_version in self._table_versions.iteritems():
+            table = self.app.tool_data_tables.get( table_name, None )
+            if table is not None and not table.is_current_version( table_version ):
+                return self.reload_genomes()  
 
     def get_build( self, dbkey ):
         """ Returns build for the given key. """
+        self.check_and_reload()
         rval = None
         if dbkey in self.genomes:
             rval = self.genomes[ dbkey ]
@@ -214,6 +240,7 @@ class Genomes( object ):
     def get_dbkeys( self, trans, chrom_info=False, **kwd ):
         """ Returns all known dbkeys. If chrom_info is True, only dbkeys with
             chromosome lengths are returned. """
+        self.check_and_reload()
         dbkeys = []
 
         # Add user's custom keys to dbkeys.
@@ -241,7 +268,7 @@ class Genomes( object ):
         Returns a naturally sorted list of chroms/contigs for a given dbkey.
         Use either chrom or low to specify the starting chrom in the return list.
         """
-
+        self.check_and_reload()
         # If there is no dbkey owner, default to current user.
         dbkey_owner, dbkey = decode_dbkey( dbkey )
         if dbkey_owner:
@@ -303,6 +330,7 @@ class Genomes( object ):
         Returns true if there is reference data for the specified dbkey. If dbkey is custom,
         dbkey_owner is needed to determine if there is reference data.
         """
+        self.check_and_reload()
         # Look for key in built-in builds.
         if dbkey in self.genomes and self.genomes[ dbkey ].twobit_file:
             # There is built-in reference data.
@@ -323,7 +351,7 @@ class Genomes( object ):
         """
         Return reference data for a build.
         """
-
+        self.check_and_reload()
         # If there is no dbkey owner, default to current user.
         dbkey_owner, dbkey = decode_dbkey( dbkey )
         if dbkey_owner:

@@ -60,4 +60,9 @@
         <columns>value, dbkey, name, path</columns>
         <file path="tool-data/mosaik_index.loc" />
     </table>
+    <!-- Locations of indexes in the 2bit format -->
+    <table name="twobit" comment_char="#">
+        <columns>value, path</columns>
+        <file path="tool-data/twobit.loc" />
+    </table>
 </tables>
