@@ -759,9 +759,9 @@ class AbstractToolBox( object, Dictifiable ):
     def _load_tooldir_tag_set(self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict):
         directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
         recursive = string_as_bool( sub_elem.attrib.get("recursive", True) )
-        self.__watch_directory( directory, elems, integrated_elems, load_panel_dict, recursive )
+        self.__watch_directory( directory, elems, integrated_elems, load_panel_dict, recursive, force_watch=True )
 
-    def __watch_directory( self, directory, elems, integrated_elems, load_panel_dict, recursive):
+    def __watch_directory( self, directory, elems, integrated_elems, load_panel_dict, recursive, force_watch=False ):
 
         def quick_load( tool_file, async=True ):
             try:
@@ -793,7 +793,7 @@ class AbstractToolBox( object, Dictifiable ):
             elif name.endswith( ".xml" ):
                 quick_load( child_path, async=False )
                 tool_loaded = True
-        if tool_loaded:
+        if tool_loaded or force_watch:
             self._tool_watcher.watch_directory( directory, quick_load )
 
     def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
