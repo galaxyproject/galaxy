@@ -64,7 +64,7 @@ class RemoteUser( object ):
 
         # If the secret header is enabled, we expect upstream to send along some key
         # in HTTP_GX_SECRET, so we'll need to compare that here to the correct value
-        # 
+        #
         # This is not an ideal location for this function.  The reason being
         # that because this check is done BEFORE the REMOTE_USER check,  it is
         # possible to attack the GX_SECRET key without having correct
@@ -79,8 +79,8 @@ class RemoteUser( object ):
                 title = "Access to Galaxy is denied"
                 message = """
                 Galaxy is configured to authenticate users via an external
-                method (such as HTTP authentication in Apache), but an 
-                incorrect shared secret key was provided by the 
+                method (such as HTTP authentication in Apache), but an
+                incorrect shared secret key was provided by the
                 upstream (proxy) server.</p>
                 <p>Please contact your local Galaxy administrator.  The
                 variable <code>remote_user_secret</code> and
@@ -88,7 +88,7 @@ class RemoteUser( object ):
                 access Galaxy.
                 """
                 return self.error( start_response, title, message )
-             
+
         if not environ.get(self.remote_user_header, '(null)').startswith('(null)'):
             if not environ[ self.remote_user_header ].count( '@' ):
                 if self.maildomain is not None:
@@ -114,6 +114,8 @@ class RemoteUser( object ):
                 pass  # admins can create users
             elif path_info.startswith( '/user/logout' ) and environ[ self.remote_user_header ] in self.admin_users:
                 pass  # Admin users may be impersonating, allow logout.
+            elif path_info.startswith( '/user/manage_user_info' ) and environ[ self.remote_user_header ] in self.admin_users:
+                pass  # Admin users need to be able to change user information
             elif path_info.startswith( '/user/api_keys' ):
                 pass  # api keys can be managed when remote_user is in use
             elif path_info.startswith( '/user/edit_username' ):
