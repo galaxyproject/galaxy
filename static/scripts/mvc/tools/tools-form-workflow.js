@@ -21,6 +21,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             // set labels
             this.options.text_enable = 'In Advance';
             this.options.text_disable = 'At Runtime';
+            this.options.use_defaults = true;
             
             // declare fields as optional
             Utils.deepeach(options.inputs, function(item) {

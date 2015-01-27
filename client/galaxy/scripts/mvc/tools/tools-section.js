@@ -14,10 +14,13 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             // link inputs
             this.inputs = options.inputs;
 
+            // fix table style
+            options.cls = 'ui-table-plain';
+
             // add table class for tr tag
             // this assist in transforming the form into a json structure
             options.cls_tr = 'section-row';
-
+            
             // create table
             this.table = new Table.View(options);
 
@@ -132,8 +135,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
 
                 // create sub section
                 var sub_section = new View(this.app, {
-                    inputs  : input_def.cases[i].inputs,
-                    cls     : 'ui-table-plain'
+                    inputs  : input_def.cases[i].inputs
                 });
 
                 // displays as grouped subsection
@@ -181,8 +183,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
 
                 // create sub section
                 var sub_section = new View(self.app, {
-                    inputs  : inputs,
-                    cls     : 'ui-table-plain'
+                    inputs  : inputs
                 });
 
                 // add tab
@@ -255,8 +256,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             
             // create sub section
             var sub_section = new View(self.app, {
-                inputs  : input_def.inputs,
-                cls     : 'ui-table-plain'
+                inputs  : input_def.inputs
             });
 
             // delete button

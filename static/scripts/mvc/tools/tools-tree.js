@@ -123,8 +123,16 @@ return Backbone.Model.extend({
                                 }
 
                                 // validate value
-                                if ((field.skip && input.optional) || (field.validate && !field.validate())) {
-                                    value = null;
+                                var skipped = field.skip && input.optional;
+                                var unvalidated = field.validate && !field.validate();
+                                if (!self.app.options.use_defaults) {
+                                    if (skipped || unvalidated) {
+                                        value = null;
+                                    }
+                                } else {
+                                    if (!skipped && unvalidated) {
+                                        value = null;
+                                    }
                                 }
                              
                                 // ignore certain values

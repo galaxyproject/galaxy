@@ -1397,7 +1397,7 @@ label{font-weight:normal}
 .ui-error{-moz-border-radius:3px;border-radius:3px;background:#f9c7c5;padding:5px}
 .ui-table-form-error{display:none}.ui-table-form-error .ui-table-form-error-text{padding-left:5px}
 .ui-table tbody{cursor:pointer}
-.ui-table-plain tbody td{padding:5px 0px 5px 0px !important;border:none !important}
+.ui-table-plain{table-layout:fixed}.ui-table-plain tbody td{padding:5px 0px 5px 0px !important;border:none !important}
 .ui-table-plain tbody{cursor:auto !important}
 .ui-table-form-element .ui-table-form-title-optional{font-weight:bold;text-decoration:underline;cursor:pointer}
 .ui-table-form-element .ui-table-form-field{margin-top:5px}
