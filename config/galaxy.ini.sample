@@ -764,6 +764,25 @@ use_interactive = True
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
+
+# Enable beta workflow modules that should not yet be considered part of Galaxy's
+# stable API.
+#enable_beta_workflow_modules = False
+
+# Force usage of Galaxy's beta workflow scheduler under certain circumstances -
+# this workflow scheduling forces Galaxy to schedule workflows in the background
+# so initial submission of the workflows is signficantly sped up. This does
+# however force the user to refresh their history manually to see newly scheduled
+# steps (for "normal" workflows - steps are still scheduled far in advance of
+# them being queued and scheduling here doesn't refer to actual cluster job
+# scheduling).
+# Workflows containing more than the specified number of steps will always use
+# the Galaxy's beta workflow scheduling.
+#force_beta_workflow_scheduled_min_steps=250
+# Switch to using Galaxy's beta workflow scheduling for all workflows involving
+# ccollections.
+#force_beta_workflow_scheduled_for_collections=False
+
 # Enable authentication via OpenID.  Allows users to log in to their Galaxy
 # account by authenticating with an OpenID provider.
 #enable_openid = False

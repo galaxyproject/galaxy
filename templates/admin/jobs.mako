@@ -55,11 +55,7 @@
         </tr>
         %for job in jobs:
                 <td>
-                    %if job.state == 'upload':
-                        &nbsp;
-                    %else:
-                        <input type="checkbox" name="stop" value="${job.id}"/>
-                    %endif
+                    <input type="checkbox" name="stop" value="${job.id}"/>
                 </td>
                 <td>${job.id}</td>
                 %if job.history and job.history.user:

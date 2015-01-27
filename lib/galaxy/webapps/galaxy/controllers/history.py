@@ -1351,31 +1351,46 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         id = galaxy.util.listify( id )
         name = galaxy.util.listify( name )
         histories = []
-        cur_names = []
+
         for history_id in id:
             history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
             if history and history.user_id == user.id:
                 histories.append( history )
-                cur_names.append( history.get_display_name() )
         if not name or len( histories ) != len( name ):
             return trans.fill_template( "/history/rename.mako", histories=histories )
-        change_msg = ""
-        for i in range(len(histories)):
-            if histories[i].user_id == user.id:
-                if name[i] == histories[i].get_display_name():
-                    change_msg = change_msg + "<p>History: "+cur_names[i]+" is already named: "+name[i]+"</p>"
-                elif name[i] not in [None,'',' ']:
-                    name[i] = escape(name[i])
-                    histories[i].name = sanitize_html( name[i] )
-                    trans.sa_session.add( histories[i] )
-                    trans.sa_session.flush()
-                    change_msg = change_msg + "<p>History: "+cur_names[i]+" renamed to: "+name[i]+"</p>"
-                    trans.log_event( "History renamed: id: %s, renamed to: '%s'" % (str(histories[i].id), name[i] ) )
-                else:
-                    change_msg = change_msg + "<p>You must specify a valid name for History: "+cur_names[i]+"</p>"
-            else:
-                change_msg = change_msg + "<p>History: "+cur_names[i]+" does not appear to belong to you.</p>"
-        return trans.show_message( "<p>%s" % change_msg, refresh_frames=['history'] )
+
+        change_msgs = []
+        for i in range( len( histories ) ):
+            cur_name = histories[i].get_display_name()
+            new_name = name[i]
+
+            # skip if name is empty
+            if not isinstance( new_name, basestring ) or not new_name.strip():
+                change_msgs.append( "You must specify a valid name for History: " + cur_name )
+                continue
+
+            # skip if not the owner
+            #??: isn't this already handled in get_history/if statement above?
+            if histories[i].user_id != user.id:
+                change_msgs.append( "History: " + cur_name + " does not appear to belong to you." )
+                continue
+
+            # skip if it wouldn't be a change
+            if new_name == cur_name:
+                change_msgs.append( "History: " + cur_name + " is already named: " + new_name )
+                continue
+
+            # escape, sanitize, set, and log the change
+            new_name = escape( new_name )
+            histories[i].name = sanitize_html( new_name )
+            trans.sa_session.add( histories[i] )
+            trans.sa_session.flush()
+
+            trans.log_event( "History renamed: id: %s, renamed to: '%s'" % ( str( histories[i].id ), new_name ) )
+            change_msgs.append( "History: " + cur_name + " renamed to: " + new_name )
+
+        change_msg = '<br />'.join( change_msgs )
+        return trans.show_message( change_msg, refresh_frames=['history'] )
 
     @web.expose
     @web.require_login( "copy shared Galaxy history" )

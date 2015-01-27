@@ -201,6 +201,27 @@ class ToolsTestCase( api.ApiTestCase ):
         response = self._run( "validation_default", history_id, inputs )
         self._assert_status_code_is( response, 400 )
 
+    @skip_without_tool( "multi_select" )
+    def test_select_legal_values( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            'select_ex': 'not_option',
+        }
+        response = self._run( "multi_select", history_id, inputs )
+        self._assert_status_code_is( response, 400 )
+
+    @skip_without_tool( "column_param" )
+    def test_column_legal_values( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='#col1\tcol2' )
+        inputs = {
+            'input1': { "src": "hda", "id": new_dataset1["id"] },
+            'col': "' ; echo 'moo",
+        }
+        response = self._run( "column_param", history_id, inputs )
+        # TODO: make this test pass...
+        self._assert_status_code_is( response, 400 )
+
     @skip_without_tool( "collection_paired_test" )
     def test_collection_parameter( self ):
         history_id = self.dataset_populator.new_history()
