@@ -24,6 +24,7 @@ import tempfile
 import threading
 
 from galaxy.util import json
+from datetime import datetime
 
 from email.MIMEText import MIMEText
 
@@ -334,6 +335,63 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
                 right_index += 1
         value = "%s%s%s" % ( value[:left_index], join_by, value[-right_index:] )
     return value
+
+
+def pretty_print_time_interval( time = False, precise = False ):
+    """
+    Get a datetime object or a int() Epoch timestamp and return a
+    pretty string like 'an hour ago', 'Yesterday', '3 months ago',
+    'just now', etc
+    credit: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
+    """
+    now = datetime.now()
+    if type( time ) is int:
+        diff = now - datetime.fromtimestamp( time )
+    elif isinstance( time, datetime ):
+        diff = now - time
+    elif not time:
+        diff = now - now
+    second_diff = diff.seconds
+    day_diff = diff.days
+
+    if day_diff < 0:
+        return ''
+
+    if precise:
+        if day_diff == 0:
+                if second_diff < 10:
+                    return "just now"
+                if second_diff < 60:
+                    return str(second_diff) + " seconds ago"
+                if second_diff < 120:
+                    return "a minute ago"
+                if second_diff < 3600:
+                    return str(second_diff / 60) + " minutes ago"
+                if second_diff < 7200:
+                    return "an hour ago"
+                if second_diff < 86400:
+                    return str(second_diff / 3600) + " hours ago"
+        if day_diff == 1:
+            return "Yesterday"
+        if day_diff < 7:
+            return str( day_diff ) + " days ago"
+        if day_diff < 31:
+            return str( day_diff / 7 ) + " weeks ago"
+        if day_diff < 365:
+            return str( day_diff / 30 ) + " months ago"
+        return str( day_diff / 365 ) + " years ago"
+    else:
+        if day_diff == 0:
+            return "Today"
+        if day_diff == 1:
+            return "Yesterday"
+        if day_diff < 7:
+            return "this week"
+        if day_diff < 31:
+            return "this month"
+        if day_diff < 365:
+            return "this year"
+        return str( day_diff / 365 ) + " years ago"
 
 
 def pretty_print_json(json_data, is_json_string=False):
