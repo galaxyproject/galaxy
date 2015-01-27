@@ -1,8 +1,8 @@
 """Module for searching the toolshed repositories"""
 import datetime
-import dateutil.relativedelta
 from galaxy import exceptions
 from galaxy import eggs
+from galaxy.util import pretty_print_time_interval
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed import model
 from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
@@ -117,18 +117,9 @@ class RepoSearch( object ):
                         hit_dict[ 'url'] = generate_sharable_link_for_repository_in_tool_shed( repo )
 
                         # Format the time since last update to be nicely readable.
-                        dt1 = repo.update_time
-                        dt2 = datetime.datetime.now()
-                        rd = dateutil.relativedelta.relativedelta (dt2, dt1)
-                        time_ago = ''
-                        if rd.years > 0:
-                            time_ago += str( rd.years ) + 'years'
-                        if rd.months > 0:
-                            time_ago += str( rd.months ) + ' months'
-                        if rd.days > 0:
-                            time_ago += str( rd.days ) + ' days ago'
+                        time_ago = pretty_print_time_interval( repo.update_time )
                         hit_dict[ 'last_updated' ] =  time_ago
-
+                        hit_dict[ 'full_last_updated' ] =  repo.update_time.strftime( "%Y-%m-%d %I:%M %p" )
                         hit_dict[ 'times_downloaded' ] = repo.times_downloaded
                         hit_dict[ 'approved' ] = approved
                         results[ 'hits' ].append( {'repository':  hit_dict, 'matched_terms': hit.matched_terms() } )
