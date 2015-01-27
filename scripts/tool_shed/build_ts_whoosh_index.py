@@ -17,7 +17,7 @@ try:
     import whoosh.index
     import galaxy.webapps.tool_shed.model.mapping
     from whoosh.filedb.filestore import FileStorage
-    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
+    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT, STORED
     from whoosh.scoring import BM25F
     from whoosh.qparser import MultifieldParser
     from whoosh.index import Index
@@ -25,14 +25,15 @@ try:
     
     whoosh_ready = True
     schema = Schema(
-        id=STORED,
-        name=TEXT,
-        description=TEXT,
-        long_description=TEXT,
-        repo_type=TEXT,
-        homepage_url=TEXT,
-        remote_repository_url=TEXT,
-        repo_owner_username=TEXT )
+        id = STORED,
+        name = TEXT( field_boost = 1.7 ),
+        description = TEXT( field_boost = 1.5 ),
+        long_description = TEXT,
+        repo_type = TEXT,
+        homepage_url = TEXT,
+        remote_repository_url = TEXT,
+        repo_owner_username = TEXT,
+        times_downloaded = STORED )
 
 except ImportError, e:
     print 'import error'
@@ -50,15 +51,16 @@ def build_index( sa_session, toolshed_whoosh_index_dir ):
             return a_basestr
 
     repos_indexed = 0
-    for id, name, description, long_description, repo_type, homepage_url, remote_repository_url, repo_owner_username in get_repos( sa_session ):
-        writer.add_document( id=id,
-                             name=to_unicode( name ),
-                             description=to_unicode( description ), 
-                             long_description=to_unicode( long_description ), 
-                             repo_type=to_unicode( repo_type ), 
-                             homepage_url=to_unicode( homepage_url ), 
-                             remote_repository_url=to_unicode( remote_repository_url ), 
-                             repo_owner_username=to_unicode( repo_owner_username ) )
+    for id, name, description, long_description, repo_type, homepage_url, remote_repository_url, repo_owner_username, times_downloaded in get_repos( sa_session ):
+        writer.add_document( id = id,
+                             name = to_unicode( name ),
+                             description = to_unicode( description ), 
+                             long_description = to_unicode( long_description ), 
+                             repo_type = to_unicode( repo_type ), 
+                             homepage_url = to_unicode( homepage_url ), 
+                             remote_repository_url = to_unicode( remote_repository_url ), 
+                             repo_owner_username = to_unicode( repo_owner_username ),
+                             times_downloaded = times_downloaded )
         repos_indexed += 1
     writer.commit()
     print "Number of repos indexed: ", repos_indexed
@@ -72,13 +74,14 @@ def get_repos( sa_session ):
         repo_type = repo.type
         homepage_url = repo.homepage_url
         remote_repository_url = repo.remote_repository_url
+        times_downloaded = repo.times_downloaded
 
         repo_owner_username = ""
         if repo.user_id is not None:
             user = sa_session.query( model.User ).filter( model.User.id == repo.user_id ).one()
             repo_owner_username = user.username
 
-        yield id, name, description, long_description, repo_type, homepage_url, remote_repository_url, repo_owner_username
+        yield id, name, description, long_description, repo_type, homepage_url, remote_repository_url, repo_owner_username, times_downloaded
 
 def get_sa_session_and_needed_config_settings( ini_file ):
     conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )

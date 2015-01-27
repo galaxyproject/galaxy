@@ -15,27 +15,47 @@ log = logging.getLogger( __name__ )
 try:
     eggs.require( "Whoosh" )
     import whoosh.index
-    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
+    from whoosh import scoring
+    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT, STORED
     from whoosh.scoring import BM25F
     from whoosh.qparser import MultifieldParser
     from whoosh.index import Index
     search_ready = True
 
     schema = Schema(
-        id=STORED,
-        name=TEXT,
-        description=TEXT,
-        long_description=TEXT,
-        repo_type=TEXT,
-        homepage_url=TEXT,
-        remote_repository_url=TEXT,
-        repo_owner_username=TEXT )
+        id = STORED,
+        name = TEXT( field_boost = 1.7 ),
+        description = TEXT( field_boost = 1.5 ),
+        long_description = TEXT,
+        repo_type = TEXT,
+        homepage_url = TEXT,
+        remote_repository_url = TEXT,
+        repo_owner_username = TEXT,
+        times_downloaded = STORED )
+
 except ImportError, e:
     search_ready = False
     schema = None
 
+    
+class RepoWeighting( scoring.BM25F ):
+    """
+    Affect the BM25G scoring model through the final method.
+    source: https://groups.google.com/forum/#!msg/whoosh/1AKNbW8R_l8/XySW0OecH6gJ
+    """
+    use_final = True
 
-class RepoSearch ( object ):
+    def final( self, searcher, docnum, score ):
+
+        maxhits = 300
+        hitcount = searcher.stored_fields( docnum )[ "times_downloaded" ]
+        log.debug( 'hitcount: ' + str( hitcount ) )
+
+        # Multiply the computed score for this document by the popularity
+        return score * ( hitcount / maxhits )
+
+
+class RepoSearch( object ):
 
     def search( self, trans, search_term, **kwd ):
         """
@@ -43,8 +63,7 @@ class RepoSearch ( object ):
 
         :param search_term: unicode encoded string with the search term(s)
 
-        :returns results: dictionary containing number of hits,
-                            hits themselves and matched terms for each
+        :returns results: dictionary containing number of hits, hits themselves and matched terms for each
         """
         if search_ready:
             toolshed_whoosh_index_dir = trans.app.config.toolshed_whoosh_index_dir
@@ -55,42 +74,46 @@ class RepoSearch ( object ):
                     # Some literature about BM25F:
                     # http://trec.nist.gov/pubs/trec13/papers/microsoft-cambridge.web.hard.pdf
                     # http://en.wikipedia.org/wiki/Okapi_BM25
-                    # Basically the higher number the bigger weight.
-                    searcher = index.searcher( weighting=BM25F( field_B={ 
-                                                                      'name_B' : 0.9,
-                                                                      'description_B' : 0.6,
-                                                                      'long_description_B' : 0.5,
-                                                                      'homepage_url_B' : 0.3,
-                                                                      'remote_repository_url_B' : 0.2,
-                                                                      'repo_owner_username' : 0.3,
-                                                                      'repo_type_B' : 0.1 } ) )
+                    # __Basically__ the higher number the bigger weight.
+                    repo_weighting = RepoWeighting( field_B = { 'name_B' : 0.9,
+                                                                'description_B' : 0.6,
+                                                                'long_description_B' : 0.5,
+                                                                'homepage_url_B' : 0.3,
+                                                                'remote_repository_url_B' : 0.2,
+                                                                'repo_owner_username' : 0.3,
+                                                                'repo_type_B' : 0.1 } )
+
+                    # log.debug(repo_weighting.__dict__)
+                    searcher = index.searcher( weighting = repo_weighting )
+
                     parser = MultifieldParser( [
-                    'name',
-                    'description',
-                    'long_description',
-                    'repo_type',
-                    'homepage_url',
-                    'remote_repository_url',
-                    'repo_owner_username' ], schema=schema )
+                        'name',
+                        'description',
+                        'long_description',
+                        'repo_type',
+                        'homepage_url',
+                        'remote_repository_url',
+                        'repo_owner_username' ], schema = schema )
 
                     # user_query = parser.parse( search_term )
                     user_query = parser.parse( '*' + search_term + '*' )
 
-                    # hits = searcher.search( user_query, terms = True )
-                    hits = searcher.search_page( user_query, 1, pagelen = 1, terms = True )
+                    hits = searcher.search( user_query, terms = True )
+                    # hits = searcher.search_page( user_query, 1, pagelen = 1, terms = True )
+                    log.debug( 'searching for: #' +  str( search_term ) )
                     log.debug( 'total hits: ' +  str( len( hits ) ) )
                     log.debug( 'scored hits: ' + str( hits.scored_length() ) )
                     results = {}
                     results[ 'total_results'] = len( hits )
                     results[ 'hits' ] = []
                     for hit in hits:
-                        repo = trans.sa_session.query( model.Repository ).filter_by( id=hit[ 'id' ] ).one()
+                        repo = trans.sa_session.query( model.Repository ).filter_by( id = hit[ 'id' ] ).one()
                         approved = 'no'
                         for review in repo.reviews:
                             if review.approved == 'yes':
                                 approved = 'yes'
                                 break
-                        hit_dict = repo.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'user_id': trans.security.encode_id } )
+                        hit_dict = repo.to_dict( view = 'element', value_mapper = { 'id': trans.security.encode_id, 'user_id': trans.security.encode_id } )
                         hit_dict[ 'url'] = generate_sharable_link_for_repository_in_tool_shed( repo )
 
                         # Format the time since last update to be nicely readable.
