@@ -14,6 +14,7 @@ from datetime import datetime
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import umask_fix_perms
+from galaxy.util import string_as_bool
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
@@ -76,8 +77,7 @@ class S3ObjectStore(ObjectStore):
             self.secret_key = a_xml.get('secret_key')
             b_xml = config_xml.findall('bucket')[0]
             self.bucket = b_xml.get('name')
-            self.use_rr= {'true': True,
-                          'false': False}.get(b_xml.get('use_reduced_redundancy', 'False').lower())
+            self.use_rr= string_as_bool(b_xml.get('use_reduced_redundancy', 'False'))
             self.max_chunk_size = int(b_xml.get('max_chunk_size', 250))
             cn_xml = config_xml.findall('connection')
             if not cn_xml:
@@ -86,10 +86,8 @@ class S3ObjectStore(ObjectStore):
                 cn_xml = cn_xml[0]
             self.host = cn_xml.get('host', None)
             self.port = int(cn_xml.get('port', 6000))
-            self.multipart = {'true': True,
-                              'false': False}.get(cn_xml.get('multipart', 'True').lower())
-            self.is_secure = {'true': True,
-                              'false': False}.get(cn_xml.get('is_secure', 'True').lower())
+            self.multipart = string_as_bool(cn_xml.get('multipart', 'True'))
+            self.is_secure = string_as_bool(cn_xml.get('is_secure', 'True'))
             self.conn_path = cn_xml.get('conn_path', '/')
             c_xml = config_xml.findall('cache')[0]
             self.cache_size = float(c_xml.get('size', -1))
