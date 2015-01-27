@@ -4,7 +4,7 @@ ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
 ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
 
 ## skip new tool form code if disabled
-##%if trans.app.config.get('toolform_upgrade',  False):
+##%if util.string_as_bool(trans.app.config.get('toolform_upgrade',  False)):
     <%
         ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
         ## This avoids making two separate requests since the classic form requires the mako anyway.
