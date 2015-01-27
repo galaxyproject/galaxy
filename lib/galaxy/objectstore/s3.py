@@ -84,7 +84,8 @@ class S3ObjectStore(ObjectStore):
                 cn_xml = cn_xml[0]
             self.host = cn_xml.get('host', None)
             self.port = int(cn_xml.get('port', 6000))
-            self.is_secure = cn_xml.get('is_secure', True)
+            self.is_secure = {'true': True,
+                              'false': False}.get(cn_xml.get('is_secure', 'True').lower())
             self.conn_path = cn_xml.get('conn_path', '/')
             c_xml = config_xml.findall('cache')[0]
             self.cache_size = float(c_xml.get('size', -1))
