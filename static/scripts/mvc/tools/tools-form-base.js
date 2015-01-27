@@ -18,7 +18,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 // shows form in compact view mode
                 compact         : false,
                 // shows errors on start
-                initial_errors  : false
+                initial_errors  : false,
+                // use default value for disabled fields
+                use_defaults    : false
             };
     
             // configure options
@@ -280,8 +282,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
             // create tool form section
             this.section = new ToolSection.View(self, {
-                inputs : options.inputs,
-                cls    : 'ui-table-plain'
+                inputs : options.inputs
             });
             
             // switch to classic tool form mako if the form definition is incompatible
