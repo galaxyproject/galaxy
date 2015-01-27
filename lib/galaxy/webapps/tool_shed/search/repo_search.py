@@ -1,11 +1,11 @@
 """Module for searching the toolshed repositories"""
+import datetime
+import dateutil.relativedelta
 from galaxy import exceptions
 from galaxy import eggs
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed import model
 from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
-
-
 import logging
 log = logging.getLogger( __name__ )
 
@@ -33,6 +33,7 @@ try:
 except ImportError, e:
     search_ready = False
     schema = None
+
 
 class RepoSearch ( object ):
 
@@ -72,9 +73,15 @@ class RepoSearch ( object ):
                     'remote_repository_url',
                     'repo_owner_username' ], schema=schema )
 
-                    hits = searcher.search( parser.parse( '*' + search_term + '*' ), terms = True )
+                    # user_query = parser.parse( search_term )
+                    user_query = parser.parse( '*' + search_term + '*' )
+
+                    # hits = searcher.search( user_query, terms = True )
+                    hits = searcher.search_page( user_query, 1, pagelen = 1, terms = True )
+                    log.debug( 'total hits: ' +  str( len( hits ) ) )
+                    log.debug( 'scored hits: ' + str( hits.scored_length() ) )
                     results = {}
-                    results[ 'length'] = len( hits )
+                    results[ 'total_results'] = len( hits )
                     results[ 'hits' ] = []
                     for hit in hits:
                         repo = trans.sa_session.query( model.Repository ).filter_by( id=hit[ 'id' ] ).one()
@@ -85,7 +92,20 @@ class RepoSearch ( object ):
                                 break
                         hit_dict = repo.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'user_id': trans.security.encode_id } )
                         hit_dict[ 'url'] = generate_sharable_link_for_repository_in_tool_shed( repo )
-                        hit_dict[ 'last_updated' ] = repo.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+
+                        # Format the time since last update to be nicely readable.
+                        dt1 = repo.update_time
+                        dt2 = datetime.datetime.now()
+                        rd = dateutil.relativedelta.relativedelta (dt2, dt1)
+                        time_ago = ''
+                        if rd.years > 0:
+                            time_ago += str( rd.years ) + 'years'
+                        if rd.months > 0:
+                            time_ago += str( rd.months ) + ' months'
+                        if rd.days > 0:
+                            time_ago += str( rd.days ) + ' days ago'
+                        hit_dict[ 'last_updated' ] =  time_ago
+
                         hit_dict[ 'times_downloaded' ] = repo.times_downloaded
                         hit_dict[ 'approved' ] = approved
                         results[ 'hits' ].append( {'repository':  hit_dict, 'matched_terms': hit.matched_terms() } )
