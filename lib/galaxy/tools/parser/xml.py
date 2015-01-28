@@ -79,7 +79,7 @@ class XmlToolSource(ToolSource):
 
     def parse_command(self):
         command_el = self._command_el
-        return (command_el is not None) and command_el.text
+        return ( ( command_el is not None ) and command_el.text ) or None
 
     def parse_interpreter(self):
         command_el = self._command_el
