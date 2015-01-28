@@ -56,11 +56,9 @@ define([], function() {
         /** Set error text
         */
         error: function(text) {
-            if (!this.field.skip) {
-                this.$error_text.html(text);
-                this.$error.show();
-                this.$el.addClass('ui-error');
-            }
+            this.$error_text.html(text);
+            this.$error.show();
+            this.$el.addClass('ui-error');
         },
         
         /** Reset this view
