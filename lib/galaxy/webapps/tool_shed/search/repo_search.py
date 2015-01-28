@@ -2,10 +2,7 @@
 import datetime
 from galaxy import exceptions
 from galaxy import eggs
-from galaxy.util import pretty_print_time_interval
-from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed import model
-from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
 import logging
 log = logging.getLogger( __name__ )
 
@@ -27,11 +24,11 @@ try:
         name = TEXT( field_boost = 1.7 ),
         description = TEXT( field_boost = 1.5 ),
         long_description = TEXT,
-        repo_type = TEXT,
         homepage_url = TEXT,
         remote_repository_url = TEXT,
         repo_owner_username = TEXT,
-        times_downloaded = STORED )
+        times_downloaded = STORED,
+        approved = STORED )
 
 except ImportError, e:
     search_ready = False
@@ -46,13 +43,25 @@ class RepoWeighting( scoring.BM25F ):
     use_final = True
 
     def final( self, searcher, docnum, score ):
+        log.debug('score before: ' +  str(score) )
+        
+        # Arbitrary for now
+        reasonable_hits = 100.0
+        times_downloaded = int( searcher.stored_fields( docnum )[ "times_downloaded" ] )
+        # Add 1 to prevent 0 being divided
+        if times_downloaded == 0:
+            times_downloaded = 1
+        popularity_modifier = ( times_downloaded / reasonable_hits )
+        log.debug('popularity_modifier: ' +  str(popularity_modifier) )
 
-        maxhits = 300
-        hitcount = searcher.stored_fields( docnum )[ "times_downloaded" ]
-        log.debug( 'hitcount: ' + str( hitcount ) )
+        cert_modifier = 2 if searcher.stored_fields( docnum )[ "approved" ] == 'yes' else 1
+        log.debug('cert_modifier: ' +  str(cert_modifier) )
 
-        # Multiply the computed score for this document by the popularity
-        return score * ( hitcount / maxhits )
+        # Adjust the computed score for this document by the popularity
+        # and by the certification level.
+        final_score = score * popularity_modifier * cert_modifier
+        log.debug('score after: ' +  str( final_score ) )
+        return final_score
 
 
 class RepoSearch( object ):
@@ -80,8 +89,7 @@ class RepoSearch( object ):
                                                                 'long_description_B' : 0.5,
                                                                 'homepage_url_B' : 0.3,
                                                                 'remote_repository_url_B' : 0.2,
-                                                                'repo_owner_username' : 0.3,
-                                                                'repo_type_B' : 0.1 } )
+                                                                'repo_owner_username' : 0.3 } )
 
                     # log.debug(repo_weighting.__dict__)
                     searcher = index.searcher( weighting = repo_weighting )
@@ -90,7 +98,6 @@ class RepoSearch( object ):
                         'name',
                         'description',
                         'long_description',
-                        'repo_type',
                         'homepage_url',
                         'remote_repository_url',
                         'repo_owner_username' ], schema = schema )
@@ -99,30 +106,28 @@ class RepoSearch( object ):
                     user_query = parser.parse( '*' + search_term + '*' )
 
                     hits = searcher.search( user_query, terms = True )
+                    # hits = searcher.search( user_query )
                     # hits = searcher.search_page( user_query, 1, pagelen = 1, terms = True )
                     log.debug( 'searching for: #' +  str( search_term ) )
                     log.debug( 'total hits: ' +  str( len( hits ) ) )
                     log.debug( 'scored hits: ' + str( hits.scored_length() ) )
                     results = {}
-                    results[ 'total_results'] = len( hits )
+                    results[ 'total_results'] = str( hits.scored_length() )
                     results[ 'hits' ] = []
                     for hit in hits:
-                        repo = trans.sa_session.query( model.Repository ).filter_by( id = hit[ 'id' ] ).one()
-                        approved = 'no'
-                        for review in repo.reviews:
-                            if review.approved == 'yes':
-                                approved = 'yes'
-                                break
-                        hit_dict = repo.to_dict( view = 'element', value_mapper = { 'id': trans.security.encode_id, 'user_id': trans.security.encode_id } )
-                        hit_dict[ 'url'] = generate_sharable_link_for_repository_in_tool_shed( repo )
-
-                        # Format the time since last update to be nicely readable.
-                        time_ago = pretty_print_time_interval( repo.update_time )
-                        hit_dict[ 'last_updated' ] =  time_ago
-                        hit_dict[ 'full_last_updated' ] =  repo.update_time.strftime( "%Y-%m-%d %I:%M %p" )
-                        hit_dict[ 'times_downloaded' ] = repo.times_downloaded
-                        hit_dict[ 'approved' ] = approved
-                        results[ 'hits' ].append( {'repository':  hit_dict, 'matched_terms': hit.matched_terms() } )
+                        hit_dict = {}
+                        hit_dict[ 'id' ] = trans.security.encode_id( hit.get( 'id' ) )
+                        hit_dict[ 'repo_owner_username' ] = hit.get( 'repo_owner_username' )
+                        hit_dict[ 'name' ] = hit.get( 'name' )
+                        hit_dict[ 'long_description' ] = hit.get( 'long_description' )
+                        hit_dict[ 'remote_repository_url' ] = hit.get( 'remote_repository_url' )
+                        hit_dict[ 'homepage_url' ] = hit.get( 'homepage_url' )
+                        hit_dict[ 'description' ] = hit.get( 'description' )
+                        hit_dict[ 'last_updated' ] = hit.get( 'last_updated' )
+                        hit_dict[ 'full_last_updated' ] = hit.get( 'full_last_updated' )
+                        hit_dict[ 'approved' ] = hit.get( 'approved' )
+                        hit_dict[ 'times_downloaded' ] = hit.get( 'times_downloaded' )
+                        results[ 'hits' ].append( {'repository':  hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score } )
                     return results
                 finally:
                     searcher.close()

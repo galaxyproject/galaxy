@@ -1,21 +1,26 @@
 # !/usr/bin/env python
 """ Build indeces for searching the TS """
-import sys, os, csv, urllib, urllib2, ConfigParser
+import sys
+import os
+import csv
+import urllib
+import urllib2
+import ConfigParser
     
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
+from galaxy.util import pretty_print_time_interval
 from galaxy import eggs
+eggs.require( "SQLAlchemy" )
+
+import galaxy.webapps.tool_shed.model.mapping
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether search is enabled.
 try:
     eggs.require( "Whoosh" )
-    import pkg_resources
-    pkg_resources.require( "SQLAlchemy >= 0.4" )
-
     import whoosh.index
-    import galaxy.webapps.tool_shed.model.mapping
     from whoosh.filedb.filestore import FileStorage
     from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT, STORED
     from whoosh.scoring import BM25F
@@ -26,14 +31,16 @@ try:
     whoosh_ready = True
     schema = Schema(
         id = STORED,
-        name = TEXT( field_boost = 1.7 ),
-        description = TEXT( field_boost = 1.5 ),
-        long_description = TEXT,
-        repo_type = TEXT,
-        homepage_url = TEXT,
-        remote_repository_url = TEXT,
-        repo_owner_username = TEXT,
-        times_downloaded = STORED )
+        name = TEXT( field_boost = 1.7, stored = True ),
+        description = TEXT( field_boost = 1.5, stored = True ),
+        long_description = TEXT( stored = True ),
+        homepage_url = TEXT( stored = True ),
+        remote_repository_url = TEXT( stored = True ),
+        repo_owner_username = TEXT( stored = True ),
+        times_downloaded = STORED,
+        approved = STORED,
+        last_updated = STORED,
+        full_last_updated = STORED )
 
 except ImportError, e:
     print 'import error'
@@ -51,16 +58,29 @@ def build_index( sa_session, toolshed_whoosh_index_dir ):
             return a_basestr
 
     repos_indexed = 0
-    for id, name, description, long_description, repo_type, homepage_url, remote_repository_url, repo_owner_username, times_downloaded in get_repos( sa_session ):
+    for ( id,
+            name, 
+            description, 
+            long_description,
+            homepage_url,
+            remote_repository_url,
+            repo_owner_username,
+            times_downloaded,
+            approved,
+            last_updated,
+            full_last_updated ) in get_repos( sa_session ):
+
         writer.add_document( id = id,
                              name = to_unicode( name ),
                              description = to_unicode( description ), 
                              long_description = to_unicode( long_description ), 
-                             repo_type = to_unicode( repo_type ), 
                              homepage_url = to_unicode( homepage_url ), 
                              remote_repository_url = to_unicode( remote_repository_url ), 
                              repo_owner_username = to_unicode( repo_owner_username ),
-                             times_downloaded = times_downloaded )
+                             times_downloaded = times_downloaded,
+                             approved = approved,
+                             last_updated = last_updated,
+                             full_last_updated = full_last_updated )
         repos_indexed += 1
     writer.commit()
     print "Number of repos indexed: ", repos_indexed
@@ -71,17 +91,36 @@ def get_repos( sa_session ):
         name = repo.name
         description = repo.description
         long_description = repo.long_description
-        repo_type = repo.type
         homepage_url = repo.homepage_url
         remote_repository_url = repo.remote_repository_url
         times_downloaded = repo.times_downloaded
 
-        repo_owner_username = ""
+        repo_owner_username = ''
         if repo.user_id is not None:
             user = sa_session.query( model.User ).filter( model.User.id == repo.user_id ).one()
             repo_owner_username = user.username
 
-        yield id, name, description, long_description, repo_type, homepage_url, remote_repository_url, repo_owner_username, times_downloaded
+        approved = 'no'
+        for review in repo.reviews:
+            if review.approved == 'yes':
+                approved = 'yes'
+                break
+
+        # Format the time since last update to be nicely readable.
+        last_updated = pretty_print_time_interval( repo.update_time )
+        full_last_updated = repo.update_time.strftime( "%Y-%m-%d %I:%M %p" )
+
+        yield ( id, 
+                name,
+                description,
+                long_description,
+                homepage_url,
+                remote_repository_url,
+                repo_owner_username,
+                times_downloaded,
+                approved,
+                last_updated,
+                full_last_updated )
 
 def get_sa_session_and_needed_config_settings( ini_file ):
     conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )

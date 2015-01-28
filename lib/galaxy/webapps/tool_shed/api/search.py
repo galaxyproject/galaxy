@@ -6,7 +6,9 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_raw_anonymous as expose_api_raw_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
+from galaxy.web import url_for
 import json
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -28,7 +30,6 @@ class SearchController ( BaseAPIController ):
 
         repo_search = RepoSearch()
         results = repo_search.search( trans, search_term )
-
-        response = '%s(%s);' % ( kwd.get('callback'), json.dumps(results) )
-        log.debug(response)
+        results[ 'hostname' ] = url_for( '/', qualified = True )
+        response = '%s(%s);' % ( kwd.get( 'callback' ), json.dumps( results ) )
         return response
