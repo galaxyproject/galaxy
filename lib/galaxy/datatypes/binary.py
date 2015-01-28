@@ -264,10 +264,23 @@ class Bam( Binary ):
         ##$ samtools index
         ##Usage: samtools index <in.bam> [<out.index>]
         stderr_name = tempfile.NamedTemporaryFile( prefix = "bam_index_stderr" ).name
-        command = 'samtools index %s %s' % ( dataset.file_name, index_file.file_name )
-        proc = subprocess.Popen( args=command, shell=True, stderr=open( stderr_name, 'wb' ) )
+        command = [ 'samtools', 'index', dataset.file_name, index_file.file_name ]
+        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
         exit_code = proc.wait()
         #Did index succeed?
+        if exit_code == -6:
+            # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
+            dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
+                    '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+            os.symlink( dataset.file_name, dataset_symlink )
+            try:
+                command = [ 'samtools', 'index', dataset_symlink ]
+                exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
+                shutil.move( dataset_symlink + '.bai', index_file.file_name )
+            except Exception, e:
+                open( stderr_name, 'ab+' ).write( 'Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n' % e)
+            finally:
+                os.unlink( dataset_symlink )
         stderr = open( stderr_name ).read().strip()
         if stderr:
             if exit_code != 0:
