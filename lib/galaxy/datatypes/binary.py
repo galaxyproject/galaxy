@@ -246,13 +246,18 @@ class Bam( Binary ):
         #Did index succeed?
         if exit_code == -6:
             # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
-            command = [ 'samtools', 'index', dataset.file_name ]
-            proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
-            exit_code = proc.wait()
-            if os.path.exists( os.path.join( dataset.file_name, '.bai' ) ):
-                shutil.move( os.path.join( dataset.file_name, '.bai' ), index_file.file_name )
-            else:
-                open( stderr_name, 'ab+' ).write( 'Galaxy attempted to build the BAM index with samtools 1.0+ but failed\n')
+            dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
+                    '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+            os.symlink( dataset.file_name, dataset_symlink )
+            try:
+                command = [ 'samtools', 'index', dataset_symlink ]
+                proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
+                exit_code = proc.wait()
+                shutil.move( dataset_symlink + '.bai', index_file.file_name )
+            except Exception, e:
+                open( stderr_name, 'ab+' ).write( 'Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n' % e)
+            finally:
+                os.unlink( dataset_symlink )
         stderr = open( stderr_name ).read().strip()
         if stderr:
             if exit_code != 0:
