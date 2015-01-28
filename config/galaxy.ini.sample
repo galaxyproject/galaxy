@@ -629,10 +629,6 @@ use_interactive = True
 # lot of CPU.
 #use_heartbeat = False
 
-# Enable the memory debugging interface (careful, negatively impacts server
-# performance).
-#use_memdump = False
-
 # -- Data Libraries
 
 # These library upload options are described in much more detail in the wiki:

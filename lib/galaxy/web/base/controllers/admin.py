@@ -1026,48 +1026,6 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def memdump( self, trans, ids = 'None', sorts = 'None', pages = 'None', new_id = None, new_sort = None, **kwd ):
-        if self.app.memdump is None:
-            return trans.show_error_message( "Memdump is not enabled (set <code>use_memdump = True</code> in galaxy.ini)" )
-        heap = self.app.memdump.get()
-        p = util.Params( kwd )
-        msg = None
-        if p.dump:
-            heap = self.app.memdump.get( update = True )
-            msg = "Heap dump complete"
-        elif p.setref:
-            self.app.memdump.setref()
-            msg = "Reference point set (dump to see delta from this point)"
-        ids = ids.split( ',' )
-        sorts = sorts.split( ',' )
-        if new_id is not None:
-            ids.append( new_id )
-            sorts.append( 'None' )
-        elif new_sort is not None:
-            sorts[-1] = new_sort
-        breadcrumb = "<a href='%s' class='breadcrumb'>heap</a>" % web.url_for(controller='admin', action='memdump')
-        # new lists so we can assemble breadcrumb links
-        new_ids = []
-        new_sorts = []
-        for id, sort in zip( ids, sorts ):
-            new_ids.append( id )
-            if id != 'None':
-                breadcrumb += "<a href='%s' class='breadcrumb'>[%s]</a>" % ( web.url_for(controller='admin', action='memdump', ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), id )
-                heap = heap[int(id)]
-            new_sorts.append( sort )
-            if sort != 'None':
-                breadcrumb += "<a href='%s' class='breadcrumb'>.by('%s')</a>" % ( web.url_for(controller='admin', action='memdump', ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), sort )
-                heap = heap.by( sort )
-        ids = ','.join( new_ids )
-        sorts = ','.join( new_sorts )
-        if p.theone:
-            breadcrumb += ".theone"
-            heap = heap.theone
-        return trans.fill_template( '/admin/memdump.mako', heap = heap, ids = ids, sorts = sorts, breadcrumb = breadcrumb, msg = msg )
-
-
-    @web.expose
-    @web.require_admin
     def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, job_lock = None, ajl_submit = None, **kwd ):
         deleted = []
         msg = None

@@ -107,10 +107,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             self.quota_agent = galaxy.quota.QuotaAgent( self.model )
         else:
             self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )
-        # Heartbeat and memdump for thread / heap profiling
+        # Heartbeat for thread profiling
         self.heartbeat = None
-        self.memdump = None
-        self.memory_usage = None
         # Container for OpenID authentication routines
         if self.config.enable_openid:
             from galaxy.web.framework import openid_manager
@@ -125,11 +123,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                 self.heartbeat = heartbeat.Heartbeat( fname=self.config.heartbeat_log )
                 self.heartbeat.daemon = True
                 self.heartbeat.start()
-        # Enable the memdump signal catcher if configured and available
-        if self.config.use_memdump:
-            from galaxy.util import memdump
-            if memdump.Memdump:
-                self.memdump = memdump.Memdump()
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from galaxy.jobs import transfer_manager
