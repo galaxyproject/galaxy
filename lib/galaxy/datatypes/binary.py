@@ -251,8 +251,7 @@ class Bam( Binary ):
             os.symlink( dataset.file_name, dataset_symlink )
             try:
                 command = [ 'samtools', 'index', dataset_symlink ]
-                proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
-                exit_code = proc.wait()
+                exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
                 shutil.move( dataset_symlink + '.bai', index_file.file_name )
             except Exception, e:
                 open( stderr_name, 'ab+' ).write( 'Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n' % e)
