@@ -21,14 +21,16 @@ try:
 
     schema = Schema(
         id = STORED,
-        name = TEXT( field_boost = 1.7 ),
-        description = TEXT( field_boost = 1.5 ),
-        long_description = TEXT,
-        homepage_url = TEXT,
-        remote_repository_url = TEXT,
-        repo_owner_username = TEXT,
+        name = TEXT( field_boost = 1.7, stored = True ),
+        description = TEXT( field_boost = 1.5, stored = True ),
+        long_description = TEXT( stored = True ),
+        homepage_url = TEXT( stored = True ),
+        remote_repository_url = TEXT( stored = True ),
+        repo_owner_username = TEXT( stored = True ),
         times_downloaded = STORED,
-        approved = STORED )
+        approved = STORED,
+        last_updated = STORED,
+        full_last_updated = STORED )
 
 except ImportError, e:
     search_ready = False
