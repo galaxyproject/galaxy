@@ -772,8 +772,6 @@ class SelectToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', False )
-        # Multiple selects are optional by default, single selection is the inverse.
-        self.optional = input_source.parse_optional( self.multiple )
         self.display = input_source.get( 'display', None )
         self.separator = input_source.get( 'separator', ',' )
         self.legal_values = set()
