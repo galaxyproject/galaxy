@@ -73,7 +73,7 @@ class RepoWeighting( scoring.BM25F ):
 
 class RepoSearch( object ):
 
-    def search( self, trans, search_term, **kwd ):
+    def search( self, trans, search_term, page, **kwd ):
         """
         Perform the search on the given search_term
 
@@ -98,7 +98,6 @@ class RepoSearch( object ):
                                                                 'remote_repository_url_B' : 0.2,
                                                                 'repo_owner_username' : 0.3 } )
 
-                    # log.debug(repo_weighting.__dict__)
                     searcher = index.searcher( weighting = repo_weighting )
 
                     parser = MultifieldParser( [
@@ -112,9 +111,8 @@ class RepoSearch( object ):
                     # user_query = parser.parse( search_term )
                     user_query = parser.parse( '*' + search_term + '*' )
 
-                    hits = searcher.search( user_query, terms = True )
-                    # hits = searcher.search( user_query )
-                    # hits = searcher.search_page( user_query, 1, pagelen = 1, terms = True )
+                    # hits = searcher.search( user_query, terms = True )
+                    hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
                     log.debug( 'searching for: #' +  str( search_term ) )
                     log.debug( 'total hits: ' +  str( len( hits ) ) )
                     log.debug( 'scored hits: ' + str( hits.scored_length() ) )

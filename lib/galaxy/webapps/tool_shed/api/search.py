@@ -27,9 +27,14 @@ class SearchController ( BaseAPIController ):
             raise exceptions.ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
         if not self.app.config.toolshed_whoosh_index_dir:
             raise exceptions.ConfigDoesNotAllowException( 'There is no directory for the search index specified. Please ontact the administrator.' )
+        if len( search_term ) < 3:
+            raise exceptions.RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
+
+        page = kwd.get( 'page', 1 )
+        callback = kwd.get( 'callback', 'callback' )
 
         repo_search = RepoSearch()
-        results = repo_search.search( trans, search_term )
+        results = repo_search.search( trans, search_term, page )
         results[ 'hostname' ] = url_for( '/', qualified = True )
-        response = '%s(%s);' % ( kwd.get( 'callback' ), json.dumps( results ) )
+        response = '%s(%s);' % ( callback, json.dumps( results ) )
         return response
