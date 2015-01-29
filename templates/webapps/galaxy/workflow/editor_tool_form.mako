@@ -1,5 +1,5 @@
 ## TEMPORARY SWITCH FOR THE NEW TOOL FORM
-%if False:
+%if util.string_as_bool(trans.app.config.get('workflow_toolform_upgrade',  False)):
     ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
     ${h.css('jquery-ui/smoothness/jquery-ui')}
     <%

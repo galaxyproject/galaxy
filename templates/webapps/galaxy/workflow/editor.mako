@@ -33,7 +33,9 @@
 
     <script type='text/javascript'>
         // Switch for new tool form
-        __NEWTOOLFORM__ = false;
+        %if util.string_as_bool(trans.app.config.get('workflow_toolform_upgrade',  False)):
+        __NEWTOOLFORM__ = true;
+        %endif
         
         // Globals
         workflow = null;

@@ -757,6 +757,9 @@ use_interactive = True
 # Use new tool form
 #toolform_upgrade = True
 
+# Use new tool form in workflow editor
+#workflow_toolform_upgrade = False
+
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
