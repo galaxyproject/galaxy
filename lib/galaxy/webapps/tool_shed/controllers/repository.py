@@ -1690,7 +1690,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     description_lines = []
                     # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
                     # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
-                    time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
+                    if repository_metadata.time_last_tested is None:
+                      time_tested = 'Thu, 01 Jan 1970 00:00:00 UT'
+                    else:
+                      time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
                     # Generate a citable URL for this repository with owner and changeset revision.
                     repository_citable_url = common_util.url_join( tool_shed_url,
                                                                    'view',
