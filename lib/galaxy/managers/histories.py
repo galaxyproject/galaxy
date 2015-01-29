@@ -384,12 +384,12 @@ class HistoryFilters( base.FilterParser ):
         #TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user
         self.fn_filter_parsers.update({
             #TODO: add this in annotatable mixin
-            'annotation' : { 'op': { 'in' : self.filter_annotation_contains, } },
+            'annotation' : { 'op': { 'has' : self.filter_annotation_contains, } },
             #TODO: add this in taggable mixin
             'tag' : {
                 'op': {
                     'eq' : self.filter_has_tag,
-                    'in' : self.filter_has_partial_tag,
+                    'has': self.filter_has_partial_tag,
                 }
             }
         })

@@ -56,6 +56,44 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         :rtype:     list
         :returns:   list of dictionaries containing summary history information
+
+        The following are optional parameters:
+            view:   string, one of ('summary','detailed'), defaults to 'summary'
+                    controls which set of properties to return
+            keys:   comma separated strings, unused by default
+                    keys/names of individual properties to return
+
+        If neither keys or views are sent, the default view (set of keys) is returned.
+        If both a view and keys are sent, the key list and the view's keys are
+        combined.
+        If keys are send and no view, only those properties in keys are returned.
+
+        For which properties are available see:
+            galaxy/managers/histories/HistorySerializer
+
+        The list returned can be filtered by using two optional parameters:
+            q:      string, generally a property name to filter by followed
+                    by an (often optional) hyphen and operator string.
+            qv:     string, the value to filter by
+
+        ..example:
+            To filter the list to only those created after 2015-01-29,
+            the query string would look like:
+                '?q=create_time-gt&qv=2015-01-29'
+
+            Multiple filters can be sent in using multiple q/qv pairs:
+                '?q=create_time-gt&qv=2015-01-29&q=tag-has&qv=experiment-1'
+
+        The list returned can be paginated using two optional parameters:
+            limit:  integer, defaults to no value and no limit (return all)
+                    how many items to return
+            offset: integer, defaults to 0 and starts at the beginning
+                    skip the first ( offset - 1 ) items and begin returning
+                    at the Nth item
+
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=5&offset=3'
         """
         serialization_params = self._parse_serialization_params( kwd, 'summary' )
         limit, offset = self.parse_limit_offset( kwd )
@@ -126,6 +164,9 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :type   deleted: boolean
         :param  deleted: if True, allow information on a deleted history to be shown.
 
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
+
         :rtype:     dictionary
         :returns:   detailed history information
         """
@@ -171,6 +212,9 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             * history_id:       the id of the history to copy
             * archive_source:   the url that will generate the archive to import
             * archive_type:     'url' (default)
+
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
 
         :rtype:     dict
         :returns:   element view of new history
@@ -220,6 +264,9 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             * payload:     a dictionary itself containing:
                 * purge:   if True, purge the history and all of its HDAs
 
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
+
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing:
             * id:         the encoded id of the history,
@@ -250,6 +297,9 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :type   id:     str
         :param  id:     the encoded id of the history to undelete
 
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
+
         :rtype:     str
         :returns:   'OK' if the history was undeleted
         """
@@ -274,6 +324,9 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             fields in :func:`galaxy.model.History.to_dict` and/or the following:
 
             * annotation: an annotation for the history
+
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
 
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing
