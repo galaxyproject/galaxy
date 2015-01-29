@@ -938,31 +938,34 @@ class FilterParser( object ):
         return val in owner_annotation
 
     #TODO: to taggable
-    def _filter_tags( self, item, val, fn_name='__eq__' ):
+    def _tag_str_gen( self, item ):
         """
-        Test whether the string version of any tag `fn_name`s (__eq__, contains)
-        `val`.
+        Return a list of strings built from the item's tags.
         """
         #TODO: which user is this? all?
         for tag in item.tags:
             tag_str = tag.user_tname
             if tag.value is not None:
                 tag_str += ":" + tag.user_value
-            if tag_str[ fn_name ]( val ):
-                return True
-        return False
+            yield tag_str
 
     def filter_has_partial_tag( self, item, val ):
         """
         Return True if any tag partially contains `val`.
         """
-        return self._filter_tags( item, val, fn_name='contains' )
+        for tag_str in self._tag_str_gen( item ):
+            if val in tag_str:
+                return True
+        return False
 
     def filter_has_tag( self, item, val ):
         """
         Return True if any tag exactly equals `val`.
         """
-        return self._filter_tags( item, val, fn_name='__eq__' )
+        for tag_str in self._tag_str_gen( item ):
+            if val == tag_str:
+                return True
+        return False
 
     def parse_bool( self, bool_string ):
         """
