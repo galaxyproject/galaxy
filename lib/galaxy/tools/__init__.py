@@ -2405,7 +2405,9 @@ class Tool( object, Dictifiable ):
                             pass
                     group_state[input.test_param.name] = value
                 else:
-                    default_value = incoming.get(key, state.get(input.name, None))
+                    default_value = incoming.get(key, None)
+                    if not default_value:
+                        default_value = state[input.name]
                     value, error = check_state(trans, input, default_value, context)
                     if error:
                         errors[key] = error
@@ -2456,10 +2458,6 @@ class Tool( object, Dictifiable ):
                         # sanitize values
                         sanitize(tool_dict, 'value')
                         sanitize(tool_dict, 'default_value')
-
-                        # set default value if necessary
-                        if not tool_dict['value']:
-                            tool_dict['value'] = tool_dict['default_value']
                         
                 # backup final input dictionary
                 group_inputs[input_index] = tool_dict

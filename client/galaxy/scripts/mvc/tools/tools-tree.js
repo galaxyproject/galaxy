@@ -122,15 +122,11 @@ return Backbone.Model.extend({
                                     value = patch[input.type](value);
                                 }
 
-                                // validate value
-                                var skipped = field.skip && input.optional;
-                                var unvalidated = field.validate && !field.validate();
-                                if (!self.app.options.use_defaults) {
-                                    if (skipped || unvalidated) {
-                                        value = null;
-                                    }
-                                } else {
-                                    if (!skipped && unvalidated) {
+                                // validate field value
+                                if (field.skip || (field.validate && !field.validate())) {
+                                    if (self.app.options.use_defaults) {
+                                        value = input.default_value;
+                                    } else {
                                         value = null;
                                     }
                                 }
