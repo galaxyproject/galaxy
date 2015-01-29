@@ -179,6 +179,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'form', 'forms', path_prefix='/api' )
     webapp.mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
     webapp.mapper.resource( 'role', 'roles', path_prefix='/api' )
+    webapp.mapper.connect( '/api/ftp_files', controller='remote_files' )
     webapp.mapper.resource( 'remote_file', 'remote_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
