@@ -618,12 +618,18 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             'tool_state': tool_state
         } )
         
+        # create tool model and default tool state (if missing)
+        tool_model = None
+        if type == 'tool' and not tool_state:
+            tool_model = module.tool.to_json(trans, **incoming)
+            module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
+        
         # update module state
         module.update_state( incoming )
         
         if type == 'tool':
             return {
-                'tool_model': None,
+                'tool_model': tool_model,
                 'tool_state': module.get_state(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
@@ -653,12 +659,15 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         trans.workflow_building_mode = True
         module = module_factory.new( trans, type, **kwargs )
+        tool_model = None
+        if type == 'tool':
+            tool_model = module.tool.to_json(trans)
         return {
             'type': module.type,
             'name': module.get_name(),
             'tool_id': module.get_tool_id(),
             'tool_state': module.get_state(),
-            'tool_model': None,
+            'tool_model': tool_model,
             'tooltip': module.get_tooltip( static_path=url_for( '/static' ) ),
             'data_inputs': module.get_data_inputs(),
             'data_outputs': module.get_data_outputs(),
