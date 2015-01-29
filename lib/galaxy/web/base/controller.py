@@ -100,6 +100,7 @@ class BaseController( object ):
     def get_role( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Role', check_ownership=False, check_accessible=False, deleted=deleted )
 
+    # ---- parsing query params
     def decode_id( self, id ):
         try:
             return self.app.security.decode_id( id )
@@ -114,6 +115,53 @@ class BaseController( object ):
         It might be useful to turn this in to a decorator
         """
         return trans.security.encode_all_ids( rval, recursive=recursive )
+
+    def parse_filter_params( self, qdict, filter_attr_key='q', filter_value_key='qv', attr_op_split_char='-' ):
+        """
+        """
+        #TODO: import DEFAULT_OP from FilterParser
+        DEFAULT_OP = 'eq'
+        if filter_attr_key not in qdict:
+            return []
+        #precondition: attrs/value pairs are in-order in the qstring
+        attrs = qdict.get( filter_attr_key )
+        if not isinstance( attrs, list ):
+            attrs = [ attrs ]
+        # ops are strings placed after the attr strings and separated by a split char (e.g. 'create_time-lt')
+        # ops are optional and default to 'eq'
+        reparsed_attrs = []
+        ops = []
+        for attr in attrs:
+            op = DEFAULT_OP
+            if attr_op_split_char in attr:
+                #note: only split the last (e.g. q=community-tags-in&qv=rna yields ( 'community-tags', 'in', 'rna' )
+                attr, op = attr.rsplit( attr_op_split_char, 1 )
+            ops.append( op )
+            reparsed_attrs.append( attr )
+        attrs = reparsed_attrs
+
+        values = qdict.get( filter_value_key, [] )
+        if not isinstance( values, list ):
+            values = [ values ]
+        #TODO: it may be more helpful to the consumer if we error on incomplete 3-tuples
+        #   (instead of relying on zip to shorten)
+        return zip( attrs, ops, values )
+
+    def parse_limit_offset( self, qdict ):
+        """
+        """
+        def _parse_pos_int( i ):
+            try:
+                new_val = int( i )
+                if new_val >= 0:
+                    return new_val
+            except ( TypeError, ValueError ):
+                pass
+            return None
+
+        limit = _parse_pos_int( qdict.get( 'limit', None ) )
+        offset = _parse_pos_int( qdict.get( 'offset', None ) )
+        return ( limit, offset )
 
 
 Root = BaseController

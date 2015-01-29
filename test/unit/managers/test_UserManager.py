@@ -110,8 +110,8 @@ class UserManagerTestCase( BaseTestCase ):
         user3 = self.user_mgr.create( self.trans, **user3_data )
 
         self.log( "should be able to tell if a user is the current (trans) user" )
-        self.assertTrue( self.user_mgr.is_current_user( self.trans, self.admin_user ) )
-        self.assertFalse( self.user_mgr.is_current_user( self.trans, user2 ) )
+        self.assertEqual( self.user_mgr.current_user( self.trans ), self.admin_user )
+        self.assertNotEqual( self.user_mgr.current_user( self.trans ), user2 )
 
     def test_api_keys( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )

@@ -18,6 +18,9 @@ from galaxy.util.bunch import Bunch
 
 
 # =============================================================================
+class OpenObject( object ):
+    pass
+
 class MockAppConfig( Bunch ):
     def __init__( self, **kwargs ):
         Bunch.__init__( self, **kwargs )

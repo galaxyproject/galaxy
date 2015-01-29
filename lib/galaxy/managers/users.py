@@ -145,37 +145,9 @@ class UserManager( base.ModelManager ):
         return user
 
     # ---- current
-    def is_current_user( self, trans, user ):
-        """
-        Return True if this user is the trans' current user.
-        """
+    def current_user( self, trans ):
         # define here for single point of change and make more readable
-        return user == trans.user
-
-    def is_current_user_anonymous( self, trans ):
-        """
-        Return True if the current user is anonymous.
-        """
-        return self.is_anonymous( trans.user )
-
-    def is_current_user_admin( self, trans ):
-        """
-        Return True if the current user is admin.
-        """
-        return self.is_admin( trans, trans.user )
-
-    # ---- User-created notes/metadata on other models
-    #def tags( self, trans, user, **kwargs ):
-    #    """
-    #    Return all tags created by this user.
-    #    """
-    #    pass
-
-    #def annotations( self, trans, user, **kwargs ):
-    #    """
-    #    Return all annotations created by this user.
-    #    """
-    #    pass
+        return trans.user
 
     # ---- api keys
     def create_api_key( self, trans, user ):

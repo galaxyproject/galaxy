@@ -32,6 +32,7 @@ import sqlalchemy
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
+from galaxy.managers import filters as filter_parser
 
 import logging
 log = logging.getLogger( __name__ )
@@ -159,12 +160,7 @@ class ModelManager( object ):
     def __init__( self, app ):
         self.app = app
 
-    def _default_order_by( self ):
-        """
-        Returns a tuple of columns for the default order when getting multiple models.
-        """
-        return ( self.model_class.create_time, )
-
+    # .... query foundation wrapper
     def query( self, trans, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
@@ -172,17 +168,17 @@ class ModelManager( object ):
         Set eagerloads to False to disable them for this query.
         """
         query = trans.sa_session.query( self.model_class )
-
         # joined table loading
         if eagerloads is False:
             query = query.enable_eagerloads( False )
 
-        # TODO: if non-orm filters are the only option, here is where they'd go
-        query = self._apply_filters( query, filters )
-        query = self._apply_order_by_limit_offset( query, order_by, limit, offset )
+        query = self._apply_orm_filters( query, filters )
+        query = self._apply_order_by( query, order_by )
+        query = self._apply_orm_limit_offset( query, limit, offset )
         return query
 
-    def _apply_filters( self, query, filters ):
+    # .... filters
+    def _apply_orm_filters( self, query, filters ):
         """
         Add any filters to the given query.
         """
@@ -213,13 +209,7 @@ class ModelManager( object ):
             filtersB = [ filtersB ]
         return filtersA + filtersB
 
-    def _apply_order_by_limit_offset( self, query, order_by, limit, offset ):
-        """
-        Return the query after adding the order_by, limit, and offset clauses.
-        """
-        query = self._apply_order_by( query, order_by )
-        return self._apply_limit_offset( query, limit, offset )
-
+    # .... order, limit, and offset
     def _apply_order_by( self, query, order_by ):
         """
         Return the query after adding the order_by clauses.
@@ -233,7 +223,13 @@ class ModelManager( object ):
             return query.order_by( *order_by )
         return query.order_by( order_by )
 
-    def _apply_limit_offset( self, query, limit, offset ):
+    def _default_order_by( self ):
+        """
+        Returns a tuple of columns for the default order when getting multiple models.
+        """
+        return ( self.model_class.create_time, )
+
+    def _apply_orm_limit_offset( self, query, limit, offset ):
         """
         Return the query after applying the given limit and offset (if not None).
         """
@@ -243,6 +239,7 @@ class ModelManager( object ):
             query = query.offset( offset )
         return query
 
+    # .... query resolution
     def one( self, trans, **kwargs ):
         """
         Sends kwargs to build the query and returns one and only one model.
@@ -284,25 +281,94 @@ class ModelManager( object ):
         id_filter = self.model_class.id == id
         return self.one( trans, filters=id_filter, **kwargs )
 
-    def list( self, trans, query=None, **kwargs ):
+    # .... multirow queries
+    def _orm_list( self, trans, query=None, **kwargs ):
         """
         Sends kwargs to build the query return all models found.
         """
         query = query or self.query( trans, **kwargs )
         return query.all()
 
-    def _query_by_ids( self, trans, ids, filters=None, **kwargs ):
+    #def list( self, trans, query=None, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    def list( self, trans, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
-        Builds a query to find a list of models with the given list of `ids`.
+        Returns all objects matching the given filters
         """
-        ids_filter = self.model_class.id.in_( ids )
-        return self.query( trans, filters=self._munge_filters( ids_filter, filters ), **kwargs )
+        orm_filters, fn_filters = self._split_filters( filters )
+        if not fn_filters:
+            # if no fn_filtering required, we can use the 'all orm' version with limit offset
+            return self._orm_list( trans, filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs )
 
-    def by_ids( self, trans, ids, **kwargs ):
+        # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
+        query = self.query( trans, filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs )
+        items = query.all()
+
+        # apply limit, offset after SQL filtering
+        items = self._apply_fn_filters_gen( items, fn_filters )
+        return list( self._apply_fn_limit_offset_gen( items, limit, offset ) )
+
+    def _split_filters( self, filters ):
+        """
+        Splits `filters` into a tuple of two lists:
+            a list of filters to be added to the SQL query
+        and a list of functional filters to be applied after the SQL query.
+        """
+        orm_filters, fn_filters = ( [], [] )
+        if filters is None:
+            return ( orm_filters, fn_filters )
+        if not isinstance( filters, list ):
+            filters = [ filters ]
+        for filter_ in filters:
+            if self._is_fn_filter( filter_ ):
+                fn_filters.append( filter_ )
+            else:
+                orm_filters.append( filter_ )
+        return ( orm_filters, fn_filters )
+
+    def _is_fn_filter( self, filter_ ):
+        """
+        Returns True if `filter_` is a functional filter to be applied after the SQL query.
+        """
+        return callable( filter_ )
+
+    def _apply_fn_filters_gen( self, items, filters ):
+        """
+        If all the filter functions in `filters` return True for an item in `items`,
+        yield that item.
+        """
+        #cpu-expensive
+        for item in items:
+            filter_results = map( lambda f: f( item ), filters )
+            if all( filter_results ):
+                yield item
+
+    def _apply_fn_limit_offset_gen( self, items, limit, offset ):
+        """
+        Iterate over `items` and begin yielding items after
+        `offset` number of items and stop when we've yielded
+        `limit` number of items.
+        """
+        # change negative limit, offset to None
+        if limit is not None and limit < 0:
+            limit = None
+        if offset is not None and offset < 0:
+            offset = None
+
+        yielded = 0
+        for i, item in enumerate( items ):
+            if offset is not None and i < offset:
+                continue
+            if limit is not None and yielded >= limit:
+                break
+            yield item
+            yielded += 1
+
+    def by_ids( self, trans, ids, filters=None, **kwargs ):
         """
         Returns an in-order list of models with the matching ids in `ids`.
         """
-        found = self._query_by_ids( trans, ids, **kwargs ).all()
+        ids_filter = self.model_class.id.in_( ids )
+        found = self.list( trans, filters=self._munge_filters( ids_filter, filters ), **kwargs )
         # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
@@ -607,6 +673,9 @@ class ModelDeserializer( object ):
         val = self.validate.int_range( key, val, min, max )
         return self.default_deserializer( trans, item, key, val )
 
+    #def deserialize_date( self, trans, item, key, val ):
+    #   #TODO: parse isoformat date into date object
+
     # ... common deserializers for Galaxy
     def deserialize_genome_build( self, trans, item, key, val ):
         """
@@ -689,6 +758,229 @@ class ModelValidator( object ):
     # def slug( self, trans, item, key, val ):
     #    """validate slug"""
     #    pass
+
+
+# ==== Building query filters based on model data
+class FilterParser( object ):
+    """
+    Converts string tuples (partially converted query string params) of
+    attr, op, val into either:
+        - ORM based filters (filters that can be applied by the ORM at the SQL
+        level) or
+        - functional filters (filters that use derived values or values not
+        within the SQL tables)
+    These filters can then be applied to queries.
+
+    This abstraction allows 'smarter' application of limit and offset at either the
+    SQL level or the generator/list level based on the presence of functional
+    filters. In other words, if no functional filters are present, limit and offset
+    may be applied at the SQL level. If functional filters are present, limit and
+    offset need to applied at the list level.
+
+    These might be safely be replaced in the future by creating SQLAlchemy
+    hybrid properties or more thoroughly mapping derived values.
+    """
+    #??: this class kindof 'lives' in both the world of the controllers/param-parsing and to models/orm
+    # (as the model informs how the filter params are parsed)
+    # I have no great idea where this 'belongs', so it's here for now
+
+    #: model class
+    model_class = None
+
+    def __init__( self, app ):
+        """
+        Set up serializer map, any additional serializable keys, and views here.
+        """
+        self.app = app
+
+        #: dictionary containing parsing data for ORM/SQLAlchemy-based filters
+        #..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
+        #:   over potentially expensive queries
+        self.orm_filter_parsers = {}
+
+        #: dictionary containing parsing data for functional filters - applied after a query is made
+        self.fn_filter_parsers = {}
+
+        # set up both of the above
+        self._add_parsers()
+
+    def _add_parsers( self ):
+        """
+        Set up, extend, or alter `orm_filter_parsers` and `fn_filter_parsers`.
+        """
+        pass
+        
+    def parse_filters( self, filter_tuple_list ):
+        """
+        Parse string 3-tuples (attr, op, val) into orm or functional filters.
+        """
+        parsed = []
+        for ( attr, op, val ) in filter_tuple_list:
+            filter_ = self.parse_filter( attr, op, val )
+            parsed.append( filter_ )
+        return parsed
+
+    def parse_filter( self, attr, op, val ):
+        """
+        Attempt to parse filter as a custom/fn filter, then an orm filter, and
+        if neither work - raise an error.
+
+        :raises exceptions.RequestParameterInvalidException: if no functional or orm
+            filter can be parsed.
+        """
+        try:
+            # check for a custom filter
+            fn_filter = self._parse_fn_filter( attr, op, val )
+            if fn_filter is not None:
+                return fn_filter
+
+            # if no custom filter found, try to make an ORM filter
+            #note: have to use explicit is None here, bool( sqlalx.filter ) == False
+            orm_filter = self._parse_orm_filter( attr, op, val )
+            if orm_filter is not None:
+                return orm_filter
+
+        # by convention, assume most val parsers raise ValueError
+        except ValueError, val_err:
+            raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
+                column=attr, operation=op, value=val )
+
+        # if neither of the above work, raise an error with how-to info
+        #TODO: send back all valid filter keys in exception for added user help
+        raise exceptions.RequestParameterInvalidException( 'bad filter', column=attr, operation=op )
+
+    # ---- fn filters
+    def _parse_fn_filter( self, attr, op, val ):
+        """
+        """
+        # fn_filter_list is a dict: fn_filter_list[ attr ] = { 'opname1' : opfn1, 'opname2' : opfn2, etc. }
+
+        # attr, op is a nested dictionary pointing to the filter fn
+        attr_map = self.fn_filter_parsers.get( attr, None )
+        if not attr_map:
+            return None
+        allowed_ops = attr_map.get( 'op' )
+        # allowed ops is a map here, op => fn
+        filter_fn = allowed_ops.get( op, None )
+        if not filter_fn:
+            return None
+        # parse the val from string using the 'val' parser if present (otherwise, leave as string)
+        val_parser = attr_map.get( 'val', None )
+        if val_parser:
+            val = val_parser( val )
+
+        # curry/partial and fold the val in there now
+        return lambda i: filter_fn( i, val )
+
+    # ---- ORM filters
+    def _parse_orm_filter( self, attr, op, val ):
+        """
+        """
+        # orm_filter_list is a dict: orm_filter_list[ attr ] = <list of allowed ops>
+        # attr must be a whitelisted column
+        column = self.model_class.table.columns.get( attr )
+        column_map = self.orm_filter_parsers.get( attr, None )
+        if column is None or not column_map:
+            return None
+        # op must be whitelisted: contained in the list orm_filter_list[ attr ][ 'op' ]
+        allowed_ops = column_map.get( 'op' )
+        if op not in allowed_ops:
+            return None
+        op = self._convert_op_string_to_fn( column, op )
+        # parse the val from string using the 'val' parser if present (otherwise, leave as string)
+        val_parser = column_map.get( 'val', None )
+        if val_parser:
+            val = val_parser( val )
+
+        orm_filter = op( val )
+        return orm_filter
+
+    #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them
+    UNDERSCORED_OPS = ( 'lt', 'le', 'eq', 'ne', 'ge', 'gt' )
+    #UNCHANGED_OPS = ( 'like' )
+    def _convert_op_string_to_fn( self, column, op_string ):
+        """
+        """
+        # correct op_string to usable function key
+        fn_name = op_string
+        if   op_string in self.UNDERSCORED_OPS:
+            fn_name = '__' + op_string + '__'
+        elif op_string == 'in':
+            fn_name = 'in_'
+
+        # get the column fn using the op_string and error if not a callable attr
+        #TODO: special case 'not in' - or disallow?
+        op_fn = getattr( column, fn_name, None )
+        if not op_fn or not callable( op_fn ):
+            return None
+        return op_fn
+
+    # --- more parsers! yay!
+#TODO: These should go somewhere central - we've got ~6 parser modules/sections now
+    #TODO: to annotatable
+    def _owner_annotation( self, item ):
+        """
+        Get the annotation by the item's owner.
+        """
+        if not item.user:
+            return None
+        for annotation in item.annotations:
+            if annotation.user == item.user:
+                return annotation.annotation
+        return None
+
+    def filter_annotation_contains( self, item, val ):
+        """
+        Test whether `val` is in the owner's annotation.
+        """
+        owner_annotation = self._owner_annotation( item )
+        if owner_annotation is None:
+            return False
+        return val in owner_annotation
+
+    #TODO: to taggable
+    def _filter_tags( self, item, val, fn_name='__eq__' ):
+        """
+        Test whether the string version of any tag `fn_name`s (__eq__, contains)
+        `val`.
+        """
+        #TODO: which user is this? all?
+        for tag in item.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            if tag_str[ fn_name ]( val ):
+                return True
+        return False
+
+    def filter_has_partial_tag( self, item, val ):
+        """
+        Return True if any tag partially contains `val`.
+        """
+        return self._filter_tags( item, val, fn_name='contains' )
+
+    def filter_has_tag( self, item, val ):
+        """
+        Return True if any tag exactly equals `val`.
+        """
+        return self._filter_tags( item, val, fn_name='__eq__' )
+
+    def parse_bool( self, bool_string ):
+        """
+        Parse a boolean from a string.
+        """
+        #Be strict here to remove complexity of options.
+        if bool_string in ( 'True', True ):
+            return True
+        if bool_string in ( 'False', False ):
+            return False
+        raise ValueError( 'invalid boolean: ' + str( bool_string ) )
+
+    def parse_id_list( self, id_list_string, sep=',' ):
+        """
+        Split `id_list_string` at `sep`.
+        """
+        return id_list_string.split( sep )
 
 
 # ==== Security Mixins
@@ -794,8 +1086,9 @@ class OwnableModelInterface( object ):
 
         :raises exceptions.ItemAccessibilityException:
         """
+        raise exceptions.NotImplemented( "Abstract Interface Method" )
         # just alias to by_user (easier/same thing)
-        return self.by_user( trans, user, **kwargs )
+        #return self.by_user( trans, user, **kwargs )
 
     def filter_owned( self, trans, user, **kwargs ):
         """

@@ -19,7 +19,7 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
 
-from galaxy.managers import histories, citations
+from galaxy.managers import histories, citations, users
 
 from galaxy import util
 from galaxy.util import string_as_bool
@@ -35,9 +35,11 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
     def __init__( self, app ):
         super( HistoriesController, self ).__init__( app )
         self.citations_manager = citations.CitationsManager( app )
+        self.user_manager = users.UserManager( app )
         self.history_manager = histories.HistoryManager( app )
         self.history_serializer = histories.HistorySerializer( app )
         self.history_deserializer = histories.HistoryDeserializer( app )
+        self.history_filters = histories.HistoryFilters( app )
 
     @expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
@@ -55,21 +57,58 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :rtype:     list
         :returns:   list of dictionaries containing summary history information
         """
-        rval = []
         serialization_params = self._parse_serialization_params( kwd, 'summary' )
+        limit, offset = self.parse_limit_offset( kwd )
+        filter_params = self.parse_filter_params( kwd )
 
-        deleted_filter = ( self.app.model.History.deleted == False )
-        if string_as_bool( deleted ):
-            deleted_filter = ( self.app.model.History.deleted == True )
+        # bail early with current history if user is anonymous
+        current_user = self.user_manager.current_user( trans )
+        if self.user_manager.is_anonymous( current_user ):
+            current_history = self.history_manager.get_current( trans )
+            #note: ignores filters, limit, offset
+            return [ self.history_serializer.serialize_to_view( trans, current_history, **serialization_params ) ]
 
-        #TODO: create time? is this right?
+        filters = []
+        # support the old default of not-returning/filtering-out deleted histories
+        filters += self._get_deleted_filter( deleted, filter_params )
+        # users are limited to requesting only their own histories (here)
+        filters += [ self.app.model.History.user == current_user ]
+        # and any sent in from the query string
+        filters += self.history_filters.parse_filters( filter_params )
+
+        #TODO: eventually make order_by a param as well
         order_by = sqlalchemy.desc( self.app.model.History.create_time )
-        histories = self.history_manager.by_user( trans, user=trans.user, filters=deleted_filter, order_by=order_by )
+        histories = self.history_manager.list( trans, filters=filters, order_by=order_by, limit=limit, offset=offset )
+
+        rval = []
         for history in histories:
             history_dict = self.history_serializer.serialize_to_view( trans, history, **serialization_params )
             rval.append( history_dict )
-
         return rval
+
+    def _get_deleted_filter( self, deleted, filter_params ):
+        #TODO: this should all be removed (along with the default) in v2
+        # support the old default of not-returning/filtering-out deleted histories
+        try:
+            # the consumer must explicitly ask for both deleted and non-deleted
+            #   but pull it from the parsed params (as the filter system will error on None)
+            deleted_filter_index = filter_params.index( ( 'deleted', 'eq', 'None' ) )
+            filter_params.pop( deleted_filter_index )
+            return []
+        except ValueError:
+            pass
+
+        # the deleted string bool was also used as an 'include deleted' flag
+        if deleted in ( 'True', 'true' ):
+            return [ self.app.model.History.deleted == True ]
+
+        # the third option not handled here is 'return only deleted'
+        #   if this is passed in (in the form below), simply return and let the filter system handle it
+        if ( 'deleted', 'eq', 'True' ) in filter_params:
+            return []
+
+        # otherwise, do the default filter of removing the deleted histories
+        return [ self.app.model.History.deleted == False ]
 
     @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):

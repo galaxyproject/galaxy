@@ -41,22 +41,14 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
         self.user_manager = users.UserManager( app )
 
     # .... has a user
-    def _query_by_user( self, trans, user, filters=None, **kwargs ):
-        """
-        Return query for all items (of model_class type) associated with the given
-        `user`.
-        """
-        user_filter = self.model_class.user_id == user.id
-        filters=self._munge_filters( user_filter, filters )
-        return self.query( trans, filters=filters, **kwargs )
-
-    def by_user( self, trans, user, **kwargs ):
+    def by_user( self, trans, user, filters=None, **kwargs ):
         """
         Return list for all items (of model_class type) associated with the given
         `user`.
         """
-        query = self._query_by_user( trans, user, **kwargs )
-        return self.list( trans, query=query, **kwargs )
+        user_filter = self.model_class.user_id == user.id
+        filters=self._munge_filters( user_filter, filters )
+        return self.list( trans, filters=filters, **kwargs )
 
     # .... owned model interface
     def is_owner( self, trans, item, user ):

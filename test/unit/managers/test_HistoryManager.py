@@ -20,6 +20,7 @@ from galaxy.util.bunch import Bunch
 import mock
 from test_ModelManager import BaseTestCase
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.histories import HistoryFilters
 
 
 # =============================================================================
@@ -91,9 +92,6 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.log( "should be able to list items by user" )
         user_histories = self.history_mgr.by_user( self.trans, owner )
         self.assertEqual( user_histories, [ item1, item2 ] )
-
-        query = self.history_mgr._query_by_user( self.trans, owner )
-        self.assertEqual( query.all(), user_histories )
 
     def test_ownable( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )
@@ -305,6 +303,239 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( self.history_mgr.get_current( self.trans ), history2 )
         self.assertEqual( self.history_mgr.set_current_by_id( self.trans, history1.id ), history1 )
         self.assertEqual( self.history_mgr.get_current( self.trans ), history1 )
+
+
+    # ---- functional and orm filter splitting and resolution
+    def test_parse_filters( self ):
+        filter_parser = HistoryFilters( self.app )
+        filters = filter_parser.parse_filters([
+            ( 'name', 'eq', 'wot' ),
+            ( 'deleted', 'eq', 'True' ),
+            ( 'annotation', 'in', 'hrrmm' )
+        ])
+        self.log( 'both orm and fn filters should be parsed and returned' )
+        self.assertEqual( len( filters ), 3 )
+
+        self.log( 'values should be parsed' )
+        self.assertEqual( filters[1].right.value, True )
+
+    def test_parse_filters_invalid_filters( self ):
+        filter_parser = HistoryFilters( self.app )
+        self.log( 'should error on non-column attr')
+        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+            ( 'merp', 'eq', 'wot' ),
+        ])
+        self.log( 'should error on non-whitelisted attr')
+        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+            ( 'user_id', 'eq', 'wot' ),
+        ])
+        self.log( 'should error on non-whitelisted op')
+        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+            ( 'name', 'lt', 'wot' ),
+        ])
+        self.log( 'should error on non-listed fn op')
+        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+            ( 'annotation', 'like', 'wot' ),
+        ])
+        self.log( 'should error on val parsing error')
+        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+            ( 'deleted', 'eq', 'true' ),
+        ])
+
+    def test_orm_filter_parsing( self ):
+        filter_parser = HistoryFilters( self.app )
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+        history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
+        history3 = self.history_mgr.create( self.trans, name='history3', user=user2 )
+
+        filters = filter_parser.parse_filters([
+            ( 'name', 'like', 'history%' ),
+        ])
+        histories = self.history_mgr.list( self.trans, filters=filters )
+        #for h in histories:
+        #    print h.name
+        self.assertEqual( histories, [ history1, history2, history3 ])
+
+        filters = filter_parser.parse_filters([ ( 'name', 'like', '%2' ), ])
+        self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history2 ])
+
+        filters = filter_parser.parse_filters([ ( 'name', 'eq', 'history2' ), ])
+        self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history2 ])
+
+        self.history_mgr.update( self.trans, history1, dict( deleted=True ) )
+        filters = filter_parser.parse_filters([ ( 'deleted', 'eq', 'True' ), ])
+        self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history1 ])
+        filters = filter_parser.parse_filters([ ( 'deleted', 'eq', 'False' ), ])
+        self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history2, history3 ])
+        self.assertEqual( self.history_mgr.list( self.trans ), [ history1, history2, history3 ])
+
+        self.history_mgr.update( self.trans, history3, dict( deleted=True ) )
+        self.history_mgr.update( self.trans, history1, dict( importable=True ) )
+        self.history_mgr.update( self.trans, history2, dict( importable=True ) )
+        filters = filter_parser.parse_filters([
+            ( 'deleted', 'eq', 'True' ),
+            ( 'importable', 'eq', 'True' ),
+        ])
+        self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history1 ])
+        self.assertEqual( self.history_mgr.list( self.trans ), [ history1, history2, history3 ])
+
+    def test_fn_filter_parsing( self ):
+        filter_parser = HistoryFilters( self.app )
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+        history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
+        history3 = self.history_mgr.create( self.trans, name='history3', user=user2 )
+
+        filters = filter_parser.parse_filters([ ( 'annotation', 'in', 'no play' ), ])
+        anno_filter = filters[0]
+
+        history3.add_item_annotation( self.trans.sa_session, user2, history3, "All work and no play" )
+        self.trans.sa_session.flush()
+
+        self.assertTrue( anno_filter( history3 ) )
+        self.assertFalse( anno_filter( history2 ) )
+
+        self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history3 ])
+
+        self.log( 'should allow combinations of orm and fn filters' )
+        self.history_mgr.update( self.trans, history3, dict( importable=True ) )
+        self.history_mgr.update( self.trans, history2, dict( importable=True ) )
+        history1.add_item_annotation( self.trans.sa_session, user2, history1, "All work and no play" )
+        self.trans.sa_session.flush()
+
+        shining_examples = self.history_mgr.list( self.trans, filters=filter_parser.parse_filters([
+            ( 'importable', 'eq', 'True' ),
+            ( 'annotation', 'in', 'no play' ),
+        ]))
+        self.assertEqual( shining_examples, [ history3 ])
+
+    def test_fn_filter_currying( self ):
+        filter_parser = HistoryFilters( self.app )
+        filter_parser.fn_filter_parsers = {
+            'name_len' : { 'op': { 'lt' : lambda i, v: len( i.name ) < v }, 'val': int }
+        }
+        self.log( 'should be 2 filters now' )
+        self.assertEqual( len( filter_parser.fn_filter_parsers ), 1 )
+        filters = filter_parser.parse_filters([
+            ( 'name_len', 'lt', '4' )
+        ])
+        self.log( 'should have parsed out a single filter' )
+        self.assertEqual( len( filters ), 1 )
+
+        filter_ = filters[0]
+        fake = mock.OpenObject()
+        fake.name = '123'
+        self.log( '123 should return true through the filter' )
+        self.assertTrue( filter_( fake ) )
+        fake.name = '1234'
+        self.log( '1234 should return false through the filter' )
+        self.assertFalse( filter_( fake ) )
+
+    def test_list( self ):
+        """
+        Test limit and offset in conjunction with both orm and fn filtering.
+        """
+        filter_parser = HistoryFilters( self.app )
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+        history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
+        history3 = self.history_mgr.create( self.trans, name='history3', user=user2 )
+        history4 = self.history_mgr.create( self.trans, name='history4', user=user2 )
+
+        self.history_mgr.delete( self.trans, history1 )
+        self.history_mgr.delete( self.trans, history2 )
+        self.history_mgr.delete( self.trans, history3 )
+
+        test_annotation = "testing"
+        history2.add_item_annotation( self.trans.sa_session, user2, history2, test_annotation )
+        self.trans.sa_session.flush()
+        history3.add_item_annotation( self.trans.sa_session, user2, history3, test_annotation )
+        self.trans.sa_session.flush()
+        history3.add_item_annotation( self.trans.sa_session, user2, history4, test_annotation )
+        self.trans.sa_session.flush()
+
+        all_histories = [ history1, history2, history3, history4 ]
+        deleted_and_annotated = [ history2, history3 ]
+
+        self.log( "no offset, no limit should work" )
+        self.assertEqual( self.history_mgr.list( self.trans, offset=None, limit=None ), all_histories )
+        self.assertEqual( self.history_mgr.list( self.trans ), all_histories )
+        self.log( "no offset, limit should work" )
+        self.assertEqual( self.history_mgr.list( self.trans, limit=2 ), [ history1, history2 ] )
+        self.log( "offset, no limit should work" )
+        self.assertEqual( self.history_mgr.list( self.trans, offset=1 ), [ history2, history3, history4 ] )
+        self.log( "offset, limit should work" )
+        self.assertEqual( self.history_mgr.list( self.trans, offset=1, limit=1 ), [ history2 ] )
+
+        self.log( "zero limit should return empty list" )
+        self.assertEqual( self.history_mgr.list( self.trans, limit=0 ), [] )
+        self.log( "past len offset should return empty list" )
+        self.assertEqual( self.history_mgr.list( self.trans, offset=len( all_histories ) ), [] )
+        self.log( "negative limit should return full list" )
+        self.assertEqual( self.history_mgr.list( self.trans, limit=-1 ), all_histories )
+        self.log( "negative offset should return full list" )
+        self.assertEqual( self.history_mgr.list( self.trans, offset=-1 ), all_histories )
+
+        filters = [ model.History.deleted == True ]
+        self.log( "orm filtered, no offset, no limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters )
+        self.assertEqual( found, [ history1, history2, history3 ] )
+        self.log( "orm filtered, no offset, limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, limit=2 )
+        self.assertEqual( found, [ history1, history2 ] )
+        self.log( "orm filtered, offset, no limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, offset=1 )
+        self.assertEqual( found, [ history2, history3 ] )
+        self.log( "orm filtered, offset, limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, offset=1, limit=1 )
+        self.assertEqual( found, [ history2 ] )
+
+        filters = filter_parser.parse_filters([ ( 'annotation', 'in', test_annotation ) ])
+        self.log( "fn filtered, no offset, no limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters )
+        self.assertEqual( found, [ history2, history3, history4 ] )
+        self.log( "fn filtered, no offset, limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, limit=2 )
+        self.assertEqual( found, [ history2, history3 ] )
+        self.log( "fn filtered, offset, no limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, offset=1 )
+        self.assertEqual( found, [ history3, history4 ] )
+        self.log( "fn filtered, offset, limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, offset=1, limit=1 )
+        self.assertEqual( found, [ history3 ] )
+
+        filters = filter_parser.parse_filters([
+            ( 'deleted', 'eq', 'True' ),
+            ( 'annotation', 'in', test_annotation )
+        ])
+        self.log( "orm and fn filtered, no offset, no limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters )
+        self.assertEqual( found, [ history2, history3 ] )
+        self.log( "orm and fn filtered, no offset, limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, limit=1 )
+        self.assertEqual( found, [ history2 ] )
+        self.log( "orm and fn filtered, offset, no limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, offset=1 )
+        self.assertEqual( found, [ history3 ] )
+        self.log( "orm and fn filtered, offset, limit should work" )
+        found = self.history_mgr.list( self.trans, filters=filters, offset=1, limit=1 )
+        self.assertEqual( found, [ history3 ] )
+
+        self.log( "orm and fn filtered, zero limit should return empty list" )
+        found = self.history_mgr.list( self.trans, filters=filters, limit=0 )
+        self.assertEqual( found, [] )
+        self.log( "orm and fn filtered, past len offset should return empty list" )
+        found = self.history_mgr.list( self.trans, filters=filters, offset=len( deleted_and_annotated ) )
+        self.assertEqual( found, [] )
+        self.log( "orm and fn filtered, negative limit should return full list" )
+        found = self.history_mgr.list( self.trans, filters=filters, limit=-1 )
+        self.assertEqual( found, deleted_and_annotated )
+        self.log( "orm and fn filtered, negative offset should return full list" )
+        found = self.history_mgr.list( self.trans, filters=filters, offset=-1 )
+        self.assertEqual( found, deleted_and_annotated )
+
+
 
 
 # =============================================================================

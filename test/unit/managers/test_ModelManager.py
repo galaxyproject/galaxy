@@ -22,6 +22,7 @@ from galaxy.util.bunch import Bunch
 import mock
 from galaxy.managers.users import UserManager
 
+from galaxy.managers import base
 
 # =============================================================================
 admin_email = 'admin@admin.admin'

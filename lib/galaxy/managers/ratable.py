@@ -16,6 +16,9 @@ class RatableManagerInterface( object ):
 
     #TODO: most of this seems to be covered by item_attrs.UsesItemRatings
 
+    #def by_user( self, trans, user, **kwargs ):
+    #    pass
+
 
 class RatableSerializer( object ):
 
@@ -32,6 +35,7 @@ class RatableSerializer( object ):
         """
         """
         pass
+
 
 class RatableDeserializer( object ):
 

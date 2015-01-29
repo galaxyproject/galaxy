@@ -63,7 +63,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         return super( HistoryManager, self ).is_owner( trans, history, user )
 
     #TODO: possibly to sharable
-    def most_recent( self, trans, user, **kwargs ):
+    def most_recent( self, trans, user, filters=None, **kwargs ):
         """
         Return the most recently update history for the user.
         """
@@ -71,7 +71,8 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         if not user:
             return None if trans.history.deleted else trans.history
         desc_update_time = self.model_class.table.c.update_time
-        return self._query_by_user( trans, user, order_by=desc_update_time, limit=1, **kwargs ).first()
+        filters = self._munge_filters( filters, self.model_class.user_id == user.id )
+        return self.query( trans, filters=filters, order_by=desc_update_time, limit=1, **kwargs ).first()
 
     # .... purgable
     def purge( self, trans, history, flush=True, **kwargs ):
@@ -109,7 +110,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         return self.set_current( trans, self.by_id( trans, history_id ) )
 
     # .... serialization
-    #TODO: move to serializer (i.e. history with contents attr)
+#TODO: move to serializer (i.e. history with contents attr)
     def _get_history_data( self, trans, history ):
         """
         Returns a dictionary containing ``history`` and ``contents``, serialized
@@ -342,7 +343,6 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableMode
         super( HistoryDeserializer, self ).__init__( app )
         self.history_manager = self.manager
 
-    #assumes: incoming from json.loads and sanitized
     def add_deserializers( self ):
         super( HistoryDeserializer, self ).add_deserializers()
         base.PurgableModelDeserializer.add_deserializers( self )
@@ -350,4 +350,46 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableMode
         self.deserializers.update({
             'name'          : self.deserialize_basestring,
             'genome_build'  : self.deserialize_genome_build,
+        })
+
+
+class HistoryFilters( base.FilterParser ):
+    model_class = model.History
+
+    def _add_parsers( self ):
+        super( HistoryFilters, self )._add_parsers()
+        self.orm_filter_parsers.update({
+            #TODO: these three are (prob.) applicable to all models
+            'id'            : { 'op': ( 'in' ), 'val': self.parse_id_list },
+            # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
+            'create_time'   : { 'op': ( 'le', 'ge' ) },
+            'update_time'   : { 'op': ( 'le', 'ge' ) },
+
+            # history specific
+            'name'          : { 'op': ( 'eq', 'contains', 'like' ) },
+            'genome_build'  : { 'op': ( 'eq', 'contains', 'like' ) },
+
+            #TODO: purgable
+            'deleted'       : { 'op': ( 'eq' ), 'val': self.parse_bool },
+            'purged'        : { 'op': ( 'eq' ), 'val': self.parse_bool },
+
+            #TODO: sharable
+            'importable'    : { 'op': ( 'eq' ), 'val': self.parse_bool },
+            'published'     : { 'op': ( 'eq' ), 'val': self.parse_bool },
+            'slug'          : { 'op': ( 'eq', 'contains', 'like' ) },
+            # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
+            #'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
+        })
+
+        #TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user
+        self.fn_filter_parsers.update({
+            #TODO: add this in annotatable mixin
+            'annotation' : { 'op': { 'in' : self.filter_annotation_contains, } },
+            #TODO: add this in taggable mixin
+            'tag' : {
+                'op': {
+                    'eq' : self.filter_has_tag,
+                    'in' : self.filter_has_partial_tag,
+                }
+            }
         })

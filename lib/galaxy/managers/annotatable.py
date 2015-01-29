@@ -11,6 +11,26 @@ class AnnotatableManagerInterface( object ):
     annotation_assoc = None
 
     # TODO: most of this seems to be covered by item_attrs.UsesAnnotations
+    # TODO: use these below (serializer/deserializer)
+    def user_annotation( self, trans, item, user ):
+        return item.get_item_annotation_str( self.app.model.context, user, item )
+
+    def owner_annotation( self, trans, item ):
+        return self.user_annotation( trans, item, item.user )
+
+    def delete_annotation( self, trans, item, user ):
+        return item.delete_item_annotation( self.app.model.context, user, item )
+
+    def annotate( self, trans, item, user, annotation ):
+        if annotation is None:
+            self.delete_annotation( self, trans, item, user )
+            return None
+
+        annotation_obj = item.add_item_annotation( self.app.model.context, user, item, annotation )
+        return annotation_obj.annotation
+
+    #def by_user( self, trans, user, **kwargs ):
+    #    pass
 
 
 class AnnotatableSerializer( object ):

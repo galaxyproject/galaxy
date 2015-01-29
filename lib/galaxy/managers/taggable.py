@@ -15,6 +15,9 @@ class TaggableManagerInterface( object ):
 
     #TODO: most of this can be done by delegating to the TagManager?
 
+    #def by_user( self, trans, user, **kwargs ):
+    #    pass
+
 
 class TaggableSerializer( object ):
 
