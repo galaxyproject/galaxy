@@ -593,7 +593,7 @@ return Backbone.View.extend({
             }
         });
     },
-    
+
     // update genome for all models
     updateGenome: function(genome) {
         var self = this;
@@ -603,7 +603,7 @@ return Backbone.View.extend({
             }
         });
     },
-    
+
     // update uset
     _updateUser: function() {
         // backup current history
