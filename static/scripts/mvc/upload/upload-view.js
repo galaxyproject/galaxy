@@ -138,7 +138,7 @@ return Backbone.View.extend({
                     self.list_extensions.unshift(self.auto);
                 }
 
-                // set default extensions
+                // set default extension
                 self.default_extension = self.list_extensions[0] && self.list_extensions[0].id;
             }
         });
@@ -159,7 +159,7 @@ return Backbone.View.extend({
                     return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                 });
 
-                // set default extensions
+                // set default genome
                 self.default_genome = self.list_genomes[0] && self.list_genomes[0].id;
             }
         });
