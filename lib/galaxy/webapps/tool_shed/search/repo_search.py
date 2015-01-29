@@ -49,7 +49,12 @@ class RepoWeighting( scoring.BM25F ):
         
         # Arbitrary for now
         reasonable_hits = 100.0
-        times_downloaded = int( searcher.stored_fields( docnum )[ "times_downloaded" ] )
+
+        stored_times_downloaded = searcher.stored_fields( docnum )[ "times_downloaded" ]
+        if not isinstance( stored_times_downloaded, ( int, long ) ):
+            times_downloaded = int( stored_times_downloaded )
+        else:
+            times_downloaded = stored_times_downloaded
         # Add 1 to prevent 0 being divided
         if times_downloaded == 0:
             times_downloaded = 1

@@ -93,7 +93,10 @@ def get_repos( sa_session ):
         long_description = repo.long_description
         homepage_url = repo.homepage_url
         remote_repository_url = repo.remote_repository_url
+        
         times_downloaded = repo.times_downloaded
+        if not isinstance( times_downloaded, ( int, long ) ):
+            times_downloaded = 0
 
         repo_owner_username = ''
         if repo.user_id is not None:
