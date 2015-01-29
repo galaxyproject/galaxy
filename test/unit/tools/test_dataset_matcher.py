@@ -1,11 +1,10 @@
 from unittest import TestCase
+from xml.etree.ElementTree import XML
 
 from galaxy import model
 from galaxy.util import bunch
 from galaxy.tools.parameters import basic
 from galaxy.tools.parameters import dataset_matcher
-
-from elementtree.ElementTree import XML
 
 import tools_support
 from .test_data_parameters import MockHistoryDatasetAssociation

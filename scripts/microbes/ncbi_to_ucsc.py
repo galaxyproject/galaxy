@@ -7,7 +7,7 @@ Uses UCSC Archaea DSN.
 
 import sys, os
 import urllib
-from elementtree import ElementTree
+from xml.etree import ElementTree
 from BeautifulSoup import BeautifulSoup
 from shutil import move
 
@@ -17,7 +17,7 @@ def __main__():
         base_dir = sys.argv[1]
     except:
         print "using default base_dir:", base_dir
-    
+
     organisms = {}
     for result in os.walk(base_dir):
         this_base_dir,sub_dirs,files = result
@@ -76,7 +76,7 @@ def __main__():
         org_page.pop(0)
         if org_page[-1]=="":
             org_page.pop(-1)
-        
+
         for row in org_page:
             chr = row.split("</a>")[0].split(">")[-1]
             refseq = row.split("</a>")[-2].split(">")[-1]
@@ -87,20 +87,20 @@ def __main__():
                             builds[org]={'chrs':{},'build':build}
                         builds[org]['chrs'][refseq]=chr
                         #print build,org,chr,refseq
-        
+
     print
     ext_to_edit = ['bed', 'info', ]
     for org in builds:
         print org,"changed to",builds[org]['build']
-        
+
         #org info file
         info_file_old = os.path.join(base_dir+org,org+".info")
         info_file_new = os.path.join(base_dir+org,builds[org]['build']+".info")
-        
-        
+
+
         old_dir = base_dir+org
         new_dir = base_dir+builds[org]['build']
-        
+
         #open and edit org info file
         info_file_contents = open(info_file_old).read()
         info_file_contents = info_file_contents+"build="+builds[org]['build']+"\n"
@@ -114,31 +114,31 @@ def __main__():
                         old_name = os.path.join(this_base_dir,file)
                         new_name = os.path.join(this_base_dir,builds[org]['chrs'][chrom]+file[len(chrom):])
                         move(old_name,new_name)
-                        
+
                         #edit contents of file, skiping those in list
                         if file.split(".")[-1] not in ext_to_edit: continue
-                        
+
                         file_contents = open(new_name).read()
                         file_contents = file_contents.replace(chrom,builds[org]['chrs'][chrom])
-                        
+
                         #special case fixes...
                         if file[-5:] == ".info":
                             file_contents = file_contents.replace("organism="+org,"organism="+builds[org]['build'])
                             file_contents = file_contents.replace("refseq="+builds[org]['chrs'][chrom],"refseq="+chrom)
-                        
+
                         #write out new file
                         file_out = open(new_name,'w')
                         file_out.write(file_contents)
                         file_out.close()
-                        
-        
-        
+
+
+
         #write out org info file and remove old file
         org_info_out = open(info_file_new,'w')
         org_info_out.write(info_file_contents)
         org_info_out.close()
         os.unlink(info_file_old)
-        
+
         #change org directory name
         move(old_dir,new_dir)
         

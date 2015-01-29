@@ -40,8 +40,7 @@ eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-eggs.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
+from xml.etree import ElementTree, ElementInclude
 
 eggs.require( "wchartype" )
 import wchartype

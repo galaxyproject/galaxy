@@ -1,6 +1,7 @@
 import os
-
+from xml.etree.ElementTree import XML
 from unittest import TestCase
+
 from galaxy.model import Job
 from galaxy.model import History
 from galaxy.model import Dataset
@@ -21,7 +22,6 @@ from galaxy.tools.parameters.grouping import ConditionalWhen
 from galaxy.tools.parameters.basic import IntegerToolParameter
 from galaxy.tools.parameters.basic import SelectToolParameter
 from galaxy.tools.parameters.basic import DataToolParameter
-from elementtree.ElementTree import XML  # Import after model, to ensure elementtree
 
 
 # Test fixtures for Galaxy infrastructure.

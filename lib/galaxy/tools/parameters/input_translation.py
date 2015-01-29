@@ -13,7 +13,7 @@ class ToolInputTranslator( object ):
     This is used for data source tools
 
     >>> from galaxy.util import Params
-    >>> from elementtree.ElementTree import XML
+    >>> from xml.etree.ElementTree import XML
     >>> translator = ToolInputTranslator.from_element( XML(
     ... '''
     ... <request_param_translation>

@@ -22,10 +22,9 @@ from galaxy.web.framework.helpers import iff, escape
 from urlparse import urlparse
 
 from galaxy import eggs
-eggs.require( "elementtree" )
 eggs.require( 'twill' )
 
-from elementtree import ElementTree
+from xml.etree import ElementTree
 
 import twill
 import twill.commands as tc
