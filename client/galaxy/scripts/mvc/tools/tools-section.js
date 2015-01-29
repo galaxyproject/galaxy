@@ -275,6 +275,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                 }
             });
             portlet.append(sub_section.$el);
+            portlet.append($('<div/>').addClass('ui-table-form-info').html(input_def.help));
 
             // add event handler visibility button
             var visible = false;

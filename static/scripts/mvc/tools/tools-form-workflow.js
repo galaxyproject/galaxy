@@ -9,27 +9,29 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
         initialize: function(options) {
             // link with node representation in workflow module
             this.node = workflow.active_node;
-
             if (!this.node) {
                 console.debug('FAILED - tools-form-workflow:initialize() - Node not found in workflow.');
                 return;
             }
-            
+
+            // link actions
+            this.post_job_actions = this.node.post_job_actions || {};
+
             // initialize parameters
             this.options = options;
-            
+
             // set labels
             this.options.text_enable = 'In Advance';
             this.options.text_disable = 'At Runtime';
             this.options.use_defaults = true;
-            
+
             // declare fields as optional
             Utils.deepeach(options.inputs, function(item) {
                 if (item.type) {
                     item.optional = (['data', 'data_hidden', 'hidden', 'drill_down', 'repeat', 'conditional']).indexOf(item.type) == -1;
                 }
             });
-       
+
             // declare conditional fields as not optional
             Utils.deepeach(options.inputs, function(item) {
                 if (item.type) {
@@ -51,32 +53,53 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 }
             });
         },
-        
+
         /** Builds all sub sections
         */
         _makeSections: function(inputs){
             // for annotation
             inputs[Utils.uuid()] = {
-                label   : 'Edit Step Attributes',
-                type    : 'section',
-                expand  : this.node.annotation,
-                inputs  : [{
-                    label   : 'Annotation / Notes',
-                    name    : 'annotation',
-                    type    : 'text',
-                    area    : true,
-                    help    : 'Add an annotation or notes to this step; annotations are available when a workflow is viewed.',
-                    value   : this.node.annotation
-                }]
+                label   : 'Annotation / Notes',
+                name    : 'annotation',
+                type    : 'text',
+                area    : true,
+                help    : 'Add an annotation or note for this step. It will be shown with the workflow.',
+                value   : this.node.annotation
             }
-            
-            // for actions
-            this.post_job_actions = this.node.post_job_actions;
-            for (var i in this.node.output_terminals) {
-                inputs[Utils.uuid()] = this._makeSection(i);
+
+            // get first output id
+            var output_id = this.node.output_terminals && Object.keys(this.node.output_terminals)[0];
+            if (output_id) {
+                // send email on job completion
+                inputs[Utils.uuid()] = {
+                    name        : 'pja__' + output_id + '__EmailAction',
+                    label       : 'Email notification',
+                    type        : 'boolean',
+                    value       : String(Boolean(this.post_job_actions['EmailAction' + output_id])),
+                    ignore      : 'false',
+                    help        : 'An email notification will be send when the job has completed.',
+                    payload     : {
+                        'host'  : window.location.host
+                    }
+                };
+
+                // delete non-output files
+                inputs[Utils.uuid()] = {
+                    name        : 'pja__' + output_id + '__DeleteIntermediatesAction',
+                    label       : 'Output cleanup',
+                    type        : 'boolean',
+                    value       : String(Boolean(this.post_job_actions['DeleteIntermediatesAction' + output_id])),
+                    ignore      : 'false',
+                    help        : 'Delete intermediate outputs if they are not used as input for another job.'
+                };
+
+                // add output specific actions
+                for (var i in this.node.output_terminals) {
+                    inputs[Utils.uuid()] = this._makeSection(i);
+                }
             }
         },
-        
+
         /** Builds sub section with step actions/annotation
         */
         _makeSection: function(output_id){
@@ -88,12 +111,12 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     1 : this.datatypes[key]
                 });
             }
-            
+
             // sort extensions
             extensions.sort(function(a, b) {
                 return a.label > b.label ? 1 : a.label < b.label ? -1 : 0;
             });
-            
+
             // add additional options
             extensions.unshift({
                 0 : 'Sequences',
@@ -105,12 +128,12 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             });
             extensions.unshift({
                 0 : 'Leave unchanged',
-                1 : 'None'
+                1 : ''
             });
-            
+
             // create custom sub section
             var input_config = {
-                label   : 'Edit Step Action: \'' + output_id + '\'',
+                label   : 'Add Actions: \'' + output_id + '\'',
                 type    : 'section',
                 inputs  : [{
                     action      : 'RenameDatasetAction',
@@ -125,7 +148,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     argument    : 'newtype',
                     label       : 'Change datatype',
                     type        : 'select',
-                    ignore      : 'None',
+                    ignore      : '',
                     options     : extensions,
                     help        : 'This action will change the datatype of the output to the indicated value.'
                 },{
@@ -143,59 +166,42 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                         action      : 'ColumnSetAction',
                         argument    : 'chromCol',
                         label       : 'Chrom column',
-                        type        : 'text',
+                        type        : 'integer',
                         value       : '',
                         ignore      : ''
                     },{
                         action      : 'ColumnSetAction',
                         argument    : 'startCol',
                         label       : 'Start column',
-                        type        : 'text',
+                        type        : 'integer',
                         value       : '',
                         ignore      : ''
                     },{
                         action      : 'ColumnSetAction',
                         argument    : 'endCol',
                         label       : 'End column',
-                        type        : 'text',
+                        type        : 'integer',
                         value       : '',
                         ignore      : ''
                     },{
                         action      : 'ColumnSetAction',
                         argument    : 'strandCol',
                         label       : 'Strand column',
-                        type        : 'text',
+                        type        : 'integer',
                         value       : '',
                         ignore      : ''
                     },{
                         action      : 'ColumnSetAction',
                         argument    : 'nameCol',
                         label       : 'Name column',
-                        type        : 'text',
+                        type        : 'integer',
                         value       : '',
                         ignore      : ''
                     }],
                     help    : 'This action will set column assignments in the output dataset. Blank fields are ignored.'
-                },{
-                    action      : 'EmailAction',
-                    label       : 'Email notification',
-                    type        : 'boolean',
-                    value       : 'false',
-                    ignore      : 'false',
-                    help        : 'This action will send an email notifying you when the job is done.',
-                    payload     : {
-                        'host'  : window.location.host
-                    }
-                },{
-                    action      : 'DeleteIntermediatesAction',
-                    label       : 'Delete non-outputs',
-                    type        : 'boolean',
-                    value       : 'false',
-                    ignore      : 'false',
-                    help        : 'All non-output steps of this workflow will have datasets deleted if they are no longer being used as job inputs when the job this action is attached to is finished. You *must* be using workflow outputs (the snowflake) in your workflow for this to have any effect.'
                 }]
             };
-            
+
             // visit input nodes and enrich by name/value pairs from server data
             var self = this;
             function visit (head, head_list) {
@@ -209,7 +215,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                         if (input.argument) {
                             input.name += '__' + input.argument;
                         }
-                        
+
                         // modify names of payload arguments
                         if (input.payload) {
                             for (var p_id in input.payload) {
@@ -218,7 +224,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                                 delete p;
                             }
                         }
-                        
+
                         // access/verify existence of value
                         var d = self.post_job_actions[input.action + output_id];
                         if (d) {
@@ -242,11 +248,11 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 }
             }
             visit(input_config);
-                        
+
             // return final configuration
             return input_config;
         },
-        
+
         /** Builds a new model through api call and recreates the entire form
         */
         _buildModel: function() {
@@ -260,24 +266,24 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 }
             });
         },
-        
+
         /** Request a new model for an already created tool form and updates the form inputs
         */
         _updateModel: function() {
             // create the request dictionary
             var self = this;
             var current_state = this.tree.finalize();
-            
+
             // log tool state
             console.debug('tools-form-workflow::_refreshForm() - Refreshing states.');
             console.debug(current_state);
-            
+
             // register process
             var process_id = this.deferred.register();
 
             // build model url for request
             var model_url = galaxy_config.root + 'workflow/editor_form_post?tool_id=' + this.options.id + '&__is_dynamic__=False';
-            
+
             // post job
             Utils.request({
                 type    : 'GET',
