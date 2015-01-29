@@ -137,6 +137,9 @@ return Backbone.View.extend({
                 if (!self.options.datatypes_disable_auto) {
                     self.list_extensions.unshift(self.auto);
                 }
+
+                // set default extensions
+                self.default_extension = self.list_extensions[0] && self.list_extensions[0].id;
             }
         });
 
@@ -155,6 +158,9 @@ return Backbone.View.extend({
                 self.list_genomes.sort(function(a, b) {
                     return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
                 });
+
+                // set default extensions
+                self.default_genome = self.list_genomes[0] && self.list_genomes[0].id;
             }
         });
 
@@ -222,9 +228,16 @@ return Backbone.View.extend({
             // select extension
             this.select_extension = new Select.View({
                 css         : 'header-selection',
-                data        : self.list_extensions,
-                container   : self.$el.parent().find('#header-extension'),
-                value       : self.list_extensions[0]
+                data        : this.list_extensions,
+                container   : this.$el.parent().find('#header-extension'),
+                value       : this.default_extension,
+                onchange    : function(extension) {
+                    self.collection.each(function(item) {
+                        if (item.get('status') == 'init' && item.get('extension') == self.default_extension) {
+                            item.set('extension', extension);
+                        }
+                    });
+                }
             });
 
             // handle extension info popover
@@ -232,16 +245,24 @@ return Backbone.View.extend({
                 self.showExtensionInfo({
                     $el         : $(e.target),
                     title       : self.select_extension.text(),
-                    extension   : self.select_extension.value()
+                    extension   : self.select_extension.value(),
+                    placement   : 'top'
                 });
             }).on('mousedown', function(e) { e.preventDefault(); });
             
             // genome extension
             this.select_genome = new Select.View({
                 css         : 'header-selection',
-                data        : self.list_genomes,
-                container   : self.$el.parent().find('#header-genome'),
-                value       : self.list_genomes[0]
+                data        : this.list_genomes,
+                container   : this.$el.parent().find('#header-genome'),
+                value       : this.default_genome,
+                onchange    : function(genome) {
+                    self.collection.each(function(item) {
+                        if (item.get('status') == 'init' && item.get('genome') == self.default_genome) {
+                            item.set('genome', genome);
+                        }
+                    });
+                }
             });
         }
 
@@ -266,7 +287,7 @@ return Backbone.View.extend({
         // create popup
         this.extension_popup && this.extension_popup.remove();
         this.extension_popup = new Popover.View({
-            placement: 'bottom',
+            placement: options.placement || 'bottom',
             container: $el,
             destroy: true
         });
@@ -403,7 +424,7 @@ return Backbone.View.extend({
         it.set('percentage', percentage);
 
         // update ui button
-        this.ui_button.set('percentage', this._upload_percentage(percentage, file.size));
+        this.ui_button.set('percentage', this._uploadPercentage(percentage, file.size));
     },
 
     // success
@@ -417,7 +438,7 @@ return Backbone.View.extend({
         var file_size = it.get('file_size');
 
         // update ui button
-        this.ui_button.set('percentage', this._upload_percentage(100, file_size));
+        this.ui_button.set('percentage', this._uploadPercentage(100, file_size));
 
         // update completed
         this.upload_completed += file_size * 100;
@@ -444,7 +465,7 @@ return Backbone.View.extend({
         it.set('info', message);
 
         // update ui button
-        this.ui_button.set('percentage', this._upload_percentage(100, file.size));
+        this.ui_button.set('percentage', this._uploadPercentage(100, file.size));
         this.ui_button.set('status', 'danger');
 
         // update completed
@@ -563,8 +584,8 @@ return Backbone.View.extend({
             this.uploadbox.reset();
 
             // reset value for universal type drop-down
-            this.select_extension.value(this.list_extensions[0]);
-            this.select_genome.value(this.list_genomes[0]);
+            this.select_extension.value(this.default_extension);
+            this.select_genome.value(this.default_genome);
 
             // reset button
             this.ui_button.set('percentage', 0);
@@ -652,10 +673,9 @@ return Backbone.View.extend({
     },
 
     // calculate percentage of all queued uploads
-    _upload_percentage: function(percentage, size) {
+    _uploadPercentage: function(percentage, size) {
         return (this.upload_completed + (percentage * size)) / this.upload_size;
     },
-
 
     // template for extensions description
     _templateDescription: function(options) {
