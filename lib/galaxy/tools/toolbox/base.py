@@ -38,13 +38,17 @@ log = logging.getLogger( __name__ )
 
 
 INTEGRATED_TOOL_PANEL_DESCRIPTION = """
-This is Galaxy's integrated tool panel and probably should not be modified
-directly. It will be regenerated each time Galaxy starts up. To modify locally
-managed tools (e.g. from tool_conf.xml) modify that file directly and restart
-Galaxy. Whenever possible Tool Shed managed tools (e.g. from shed_tool_conf.xml)
-should be managed from within the Galaxy interface of via is UI - but if changes
-are nessecary (such as to hide a tool or re-assign its section) modify that file
-and restart Galaxy.
+This is Galaxy's integrated tool panel and should be modified directly only for
+reordering tools inside a section. Each time Galaxy starts up, this file is
+synchronized with the various tool config files: tools, sections and labels
+added to one of these files, will be added also here in the appropriate place,
+while elements removed from the tool config files will be correspondingly
+deleted from this file.
+To modify locally managed tools (e.g. from tool_conf.xml) modify that file
+directly and restart Galaxy. Whenever possible Tool Shed managed tools (e.g.
+from shed_tool_conf.xml) should be managed from within the Galaxy interface or
+via its API - but if changes are necessary (such as to hide a tool or re-assign
+its section) modify that file and restart Galaxy.
 """
 
 
