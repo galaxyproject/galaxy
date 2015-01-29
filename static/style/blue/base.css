@@ -1388,6 +1388,8 @@ label{font-weight:normal}
 .upload-ftp{height:250px;width:500px;overflow:auto}.upload-ftp .upload-ftp-wait{font-size:1.2em;position:absolute;bottom:10px;right:10px}
 .upload-ftp .upload-ftp-help{margin-bottom:10px}
 .upload-ftp .upload-ftp-warning{text-align:center;margin-top:20px}
+.upload-ftp .upload-ftp-row{cursor:pointer}.upload-ftp .upload-ftp-row .label{width:240px}.upload-ftp .upload-ftp-row .label p{width:inherit;word-wrap:break-word}
+.upload-ftp .upload-ftp-row .nonlabel{white-space:nowrap}
 .upload-settings .upload-settings-cover{position:absolute;width:100%;height:100%;top:0px;left:0px;background:#fff;opacity:0.4;cursor:no-drop}
 .upload-header{height:5%;text-align:left;max-height:20px;line-height:18px;margin-top:10px}.upload-header .header-title{font-weight:bold;padding-left:60px;padding-right:20px}
 .upload-header .header-selection{width:200px;min-width:200px;font-size:11px;padding-right:10px}

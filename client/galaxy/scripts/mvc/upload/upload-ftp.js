@@ -171,11 +171,11 @@ return Backbone.View.extend({
 
     // template row
     _templateRow: function(options) {
-        return  '<tr class="upload-ftp-row" style="cursor: pointer;">' +
+        return  '<tr class="upload-ftp-row">' +
                     '<td><div class="icon"/></td>' +
-                    '<td style="width: 200px"><p style="width: inherit; word-wrap: break-word;">' + options.path + '</p></td>' +
-                    '<td style="white-space: nowrap;">' + Utils.bytesToString(options.size) + '</td>' +
-                    '<td style="white-space: nowrap;">' + options.ctime + '</td>' +
+                    '<td class="label"><p>' + options.path + '</p></td>' +
+                    '<td class="nonlabel">' + Utils.bytesToString(options.size) + '</td>' +
+                    '<td class="nonlabel">' + options.ctime + '</td>' +
                 '</tr>';
     },
 
