@@ -672,12 +672,8 @@ return Backbone.View.extend({
     
     // load html template
     _template: function(id, idInfo) {
-        return '<div id="upload-header" class="upload-header">' +
-                    '<span class="header-title">Type (default):</span>' +
-                    '<span id="header-extension"/>' +
-                    '<span id="header-extension-info" class="upload-icon-button fa fa-search"/> ' +
-                    '<span class="header-title">Genome (default):</span>' +
-                    '<span id="header-genome"/>' +
+        return  '<div class="upload-top">' +
+                    '<h6 id="' + idInfo + '" class="upload-info"></h6>' +
                 '</div>' +
                 '<div id="' + id + '" class="upload-box">' +
                     '<table id="upload-table" class="table table-striped" style="display: none;">' +
@@ -695,9 +691,13 @@ return Backbone.View.extend({
                         '<tbody></tbody>' +
                     '</table>' +
                 '</div>' +
-                '<div class="upload-footer">' +
-                    '<h6 id="' + idInfo + '" class="upload-info"></h6>' +
-                '</div>' ;
+                '<div id="upload-header" class="upload-header">' +
+                    '<span class="header-title">Type (default):</span>' +
+                    '<span id="header-extension"/>' +
+                    '<span id="header-extension-info" class="upload-icon-button fa fa-search"/> ' +
+                    '<span class="header-title">Genome (default):</span>' +
+                    '<span id="header-genome"/>' +
+                '</div>';
     }
 });
 
