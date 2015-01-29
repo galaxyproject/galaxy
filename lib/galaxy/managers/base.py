@@ -32,7 +32,6 @@ import sqlalchemy
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
-from galaxy.managers import filters as filter_parser
 
 import logging
 log = logging.getLogger( __name__ )
