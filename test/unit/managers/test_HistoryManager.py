@@ -311,7 +311,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         filters = filter_parser.parse_filters([
             ( 'name', 'eq', 'wot' ),
             ( 'deleted', 'eq', 'True' ),
-            ( 'annotation', 'in', 'hrrmm' )
+            ( 'annotation', 'has', 'hrrmm' )
         ])
         self.log( 'both orm and fn filters should be parsed and returned' )
         self.assertEqual( len( filters ), 3 )
@@ -387,7 +387,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
         history3 = self.history_mgr.create( self.trans, name='history3', user=user2 )
 
-        filters = filter_parser.parse_filters([ ( 'annotation', 'in', 'no play' ), ])
+        filters = filter_parser.parse_filters([ ( 'annotation', 'has', 'no play' ), ])
         anno_filter = filters[0]
 
         history3.add_item_annotation( self.trans.sa_session, user2, history3, "All work and no play" )
@@ -406,7 +406,7 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         shining_examples = self.history_mgr.list( self.trans, filters=filter_parser.parse_filters([
             ( 'importable', 'eq', 'True' ),
-            ( 'annotation', 'in', 'no play' ),
+            ( 'annotation', 'has', 'no play' ),
         ]))
         self.assertEqual( shining_examples, [ history3 ])
 
@@ -491,7 +491,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         found = self.history_mgr.list( self.trans, filters=filters, offset=1, limit=1 )
         self.assertEqual( found, [ history2 ] )
 
-        filters = filter_parser.parse_filters([ ( 'annotation', 'in', test_annotation ) ])
+        filters = filter_parser.parse_filters([ ( 'annotation', 'has', test_annotation ) ])
         self.log( "fn filtered, no offset, no limit should work" )
         found = self.history_mgr.list( self.trans, filters=filters )
         self.assertEqual( found, [ history2, history3, history4 ] )
@@ -507,7 +507,7 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         filters = filter_parser.parse_filters([
             ( 'deleted', 'eq', 'True' ),
-            ( 'annotation', 'in', test_annotation )
+            ( 'annotation', 'has', test_annotation )
         ])
         self.log( "orm and fn filtered, no offset, no limit should work" )
         found = self.history_mgr.list( self.trans, filters=filters )

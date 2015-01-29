@@ -9,7 +9,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class TaggableManagerInterface( object ):
+class TaggableManagerMixin( object ):
     #: class of TagAssociation (e.g. HistoryTagAssociation)
     tag_assoc = None
 
@@ -19,7 +19,7 @@ class TaggableManagerInterface( object ):
     #    pass
 
 
-class TaggableSerializer( object ):
+class TaggableSerializerMixin( object ):
 
     def add_serializers( self ):
         self.serializers[ 'tags' ] = self.serialize_tags
@@ -40,7 +40,7 @@ class TaggableSerializer( object ):
         return tags_str_list
 
 
-class TaggableDeserializer( object ):
+class TaggableDeserializerMixin( object ):
 
     def add_deserializers( self ):
         self.deserializers[ 'tags' ] = self.deserialize_tags

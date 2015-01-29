@@ -25,8 +25,8 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface,
-        taggable.TaggableManagerInterface, annotatable.AnnotatableManagerInterface ):
+class HDAManager( datasets.DatasetAssociationManager, base.OwnableManagerMixin,
+        taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin ):
     """
     Interface/service object for interacting with HDAs.
     """
@@ -308,7 +308,7 @@ class HDAManager( datasets.DatasetAssociationManager, base.OwnableModelInterface
 
 
 class HDASerializer( datasets.DatasetAssociationSerializer,
-        taggable.TaggableSerializer, annotatable.AnnotatableSerializer ):
+        taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin ):
     #TODO: inherit from datasets.DatasetAssociationSerializer
     #TODO: move what makes sense into DatasetSerializer
 
@@ -379,8 +379,8 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
 
     def add_serializers( self ):
         super( HDASerializer, self ).add_serializers()
-        taggable.TaggableSerializer.add_serializers( self )
-        annotatable.AnnotatableSerializer.add_serializers( self )
+        taggable.TaggableSerializerMixin.add_serializers( self )
+        annotatable.AnnotatableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
             'model_class'   : lambda *a: 'HistoryDatasetAssociation',
@@ -568,7 +568,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
 
 
 class HDADeserializer( datasets.DatasetAssociationDeserializer,
-        taggable.TaggableDeserializer, annotatable.AnnotatableDeserializer ):
+        taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
@@ -580,8 +580,8 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
 
     def add_deserializers( self ):
         super( HDADeserializer, self ).add_deserializers()
-        taggable.TaggableDeserializer.add_deserializers( self )
-        annotatable.AnnotatableDeserializer.add_deserializers( self )
+        taggable.TaggableDeserializerMixin.add_deserializers( self )
+        annotatable.AnnotatableDeserializerMixin.add_deserializers( self )
 
         self.deserializers.update({
             'name'          : self.deserialize_basestring,

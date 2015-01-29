@@ -24,10 +24,10 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.AccessibleModelInterface,
-        taggable.TaggableManagerInterface, annotatable.AnnotatableManagerInterface, ratable.RatableManagerInterface ):
+class SharableModelManager( base.ModelManager, base.OwnableManagerMixin, base.AccessibleManagerMixin,
+        taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin ):
     # e.g. histories, pages, stored workflows, visualizations
-    # base.DeleteableModelInterface? (all four are deletable)
+    # base.DeleteableModelMixin? (all four are deletable)
 
     #: the model used for UserShareAssociations with this model
     user_share_model = None
@@ -333,15 +333,15 @@ class SharableModelManager( base.ModelManager, base.OwnableModelInterface, base.
 
 
 class SharableModelSerializer( base.ModelSerializer,
-        taggable.TaggableSerializer, annotatable.AnnotatableSerializer, ratable.RatableSerializer ):
+        taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin ):
 #TODO: stub
     SINGLE_CHAR_ABBR = None
 
     def add_serializers( self ):
         super( SharableModelSerializer, self ).add_serializers()
-        taggable.TaggableSerializer.add_serializers( self )
-        annotatable.AnnotatableSerializer.add_serializers( self )
-        ratable.RatableSerializer.add_serializers( self )
+        taggable.TaggableSerializerMixin.add_serializers( self )
+        annotatable.AnnotatableSerializerMixin.add_serializers( self )
+        ratable.RatableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
             'user_id'           : self.serialize_id,
@@ -370,13 +370,13 @@ class SharableModelSerializer( base.ModelSerializer,
 
 
 class SharableModelDeserializer( base.ModelDeserializer,
-        taggable.TaggableDeserializer, annotatable.AnnotatableDeserializer, ratable.RatableDeserializer ):
+        taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin ):
 
     def add_deserializers( self ):
         super( SharableModelDeserializer, self ).add_deserializers()
-        taggable.TaggableDeserializer.add_deserializers( self )
-        annotatable.AnnotatableDeserializer.add_deserializers( self )
-        ratable.RatableDeserializer.add_deserializers( self )
+        taggable.TaggableDeserializerMixin.add_deserializers( self )
+        annotatable.AnnotatableDeserializerMixin.add_deserializers( self )
+        ratable.RatableDeserializerMixin.add_deserializers( self )
 
         self.deserializers.update({
             'published'     : self.deserialize_published,
@@ -418,7 +418,7 @@ class SharableModelDeserializer( base.ModelDeserializer,
     #def deserialize_user_shares():
 
 
-class SharableModelFilters( base.FilterParser ):
+class SharableModelFilters( base.ModelFilterParser ):
 
     def _add_parsers( self ):
         super( SharableModelFilters, self )._add_parsers()

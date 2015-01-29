@@ -760,7 +760,7 @@ class ModelValidator( object ):
 
 
 # ==== Building query filters based on model data
-class FilterParser( object ):
+class ModelFilterParser( object ):
     """
     Converts string tuples (partially converted query string params) of
     attr, op, val into either:
@@ -996,7 +996,7 @@ class FilterParser( object ):
 
 
 # ==== Security Mixins
-class AccessibleModelInterface( object ):
+class AccessibleManagerMixin( object ):
     """
     A security interface to check if a User can read/view an item's.
 
@@ -1009,7 +1009,7 @@ class AccessibleModelInterface( object ):
         Return True if the item accessible to user.
         """
         # override in subclasses
-        raise exceptions.NotImplemented( "Abstract Interface Method" )
+        raise exceptions.NotImplemented( "Abstract interface Method" )
 
     def get_accessible( self, trans, id, user, **kwargs ):
         """
@@ -1039,7 +1039,7 @@ class AccessibleModelInterface( object ):
 
         :raises exceptions.ItemAccessibilityException:
         """
-        raise exceptions.NotImplemented( "Abstract Interface Method" )
+        raise exceptions.NotImplemented( "Abstract interface Method" )
         # NOTE: this will be a large, inefficient list if filters are not passed in kwargs
         # items = ModelManager.list( self, trans, **kwargs )
         # return [ self.error_unless_accessible( trans, item, user ) for item in items ]
@@ -1048,13 +1048,13 @@ class AccessibleModelInterface( object ):
         """
         Return a list of items accessible to the user.
         """
-        raise exceptions.NotImplemented( "Abstract Interface Method" )
+        raise exceptions.NotImplemented( "Abstract interface Method" )
         # NOTE: this will be a large, inefficient list if filters are not  passed in kwargs
         # items = ModelManager.list( self, trans, **kwargs )
         # return filter( lambda item: self.is_accessible( trans, item, user ), items )
 
 
-class OwnableModelInterface( object ):
+class OwnableManagerMixin( object ):
     """
     A security interface to check if a User is an item's owner.
 
@@ -1069,7 +1069,7 @@ class OwnableModelInterface( object ):
         Return True if user owns the item.
         """
         # override in subclasses
-        raise exceptions.NotImplemented( "Abstract Interface Method" )
+        raise exceptions.NotImplemented( "Abstract interface Method" )
 
     def get_owned( self, trans, id, user, **kwargs ):
         """
@@ -1098,7 +1098,7 @@ class OwnableModelInterface( object ):
 
         :raises exceptions.ItemAccessibilityException:
         """
-        raise exceptions.NotImplemented( "Abstract Interface Method" )
+        raise exceptions.NotImplemented( "Abstract interface Method" )
         # just alias to by_user (easier/same thing)
         #return self.by_user( trans, user, **kwargs )
 
@@ -1111,7 +1111,7 @@ class OwnableModelInterface( object ):
 
 
 # ---- Deletable and Purgable models
-class DeletableModelInterface( object ):
+class DeletableManagerMixin( object ):
     """
     A mixin/interface for a model that is deletable (i.e. has a 'deleted' attr).
 
@@ -1141,14 +1141,14 @@ class DeletableModelInterface( object ):
         return item
 
 
-class DeletableModelSerializer( object ):
+class DeletableSerializerMixin( object ):
 
     def add_serializers( self ):
         pass
 
 
 # TODO: these are of questionable value if we don't want to enable users to delete/purge via update
-class DeletableModelDeserializer( object ):
+class DeletableDeserializerMixin( object ):
 
     def add_deserializers( self ):
         self.deserializers[ 'deleted' ] = self.deserialize_deleted
@@ -1168,7 +1168,7 @@ class DeletableModelDeserializer( object ):
         return item.deleted
 
 
-class DeletableModelFilters( object ):
+class DeletableFiltersMixin( object ):
 
     def _add_parsers( self ):
         self.orm_filter_parsers.update({
@@ -1176,7 +1176,7 @@ class DeletableModelFilters( object ):
         })
 
 
-class PurgableModelInterface( DeletableModelInterface ):
+class PurgableManagerMixin( DeletableManagerMixin ):
     """
     A manager interface/mixin for a resource that allows deleting and purging where
     purging is often removal of some additional, non-db resource (e.g. a dataset's
@@ -1196,16 +1196,16 @@ class PurgableModelInterface( DeletableModelInterface ):
         return item
 
 
-class PurgableModelSerializer( DeletableModelSerializer ):
+class PurgableSerializerMixin( DeletableSerializerMixin ):
 
     def add_serializers( self ):
-        DeletableModelSerializer.add_serializers( self )
+        DeletableSerializerMixin.add_serializers( self )
 
 
-class PurgableModelDeserializer( DeletableModelDeserializer ):
+class PurgableDeserializerMixin( DeletableDeserializerMixin ):
 
     def add_deserializers( self ):
-        DeletableModelDeserializer.add_deserializers( self )
+        DeletableDeserializerMixin.add_deserializers( self )
         self.deserializers[ 'purged' ] = self.deserialize_purged
 
     def deserialize_purged( self, trans, item, key, val ):
@@ -1220,10 +1220,10 @@ class PurgableModelDeserializer( DeletableModelDeserializer ):
         return self.purged
 
 
-class PurgableModelFilters( DeletableModelFilters ):
+class PurgableFiltersMixin( DeletableFiltersMixin ):
 
     def _add_parsers( self ):
-        DeletableModelFilters._add_parsers( self )
+        DeletableFiltersMixin._add_parsers( self )
         self.orm_filter_parsers.update({
             'purged'        : { 'op': ( 'eq' ), 'val': self.parse_bool }
         })

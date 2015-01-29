@@ -6,7 +6,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class AnnotatableManagerInterface( object ):
+class AnnotatableManagerMixin( object ):
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
     annotation_assoc = None
 
@@ -33,7 +33,7 @@ class AnnotatableManagerInterface( object ):
     #    pass
 
 
-class AnnotatableSerializer( object ):
+class AnnotatableSerializerMixin( object ):
 
     def add_serializers( self ):
         self.serializers[ 'annotation' ] = self.serialize_annotation
@@ -50,7 +50,7 @@ class AnnotatableSerializer( object ):
         return returned
 
 
-class AnnotatableDeserializer( object ):
+class AnnotatableDeserializerMixin( object ):
 
     def add_deserializers( self ):
         self.deserializers[ 'annotation' ] = self.deserialize_annotation

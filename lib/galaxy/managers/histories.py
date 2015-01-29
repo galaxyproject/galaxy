@@ -16,7 +16,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface ):
+class HistoryManager( sharable.SharableModelManager, base.PurgableManagerMixin ):
 
     model_class = model.History
     foreign_key_name = 'history'
@@ -234,7 +234,7 @@ class HistoryManager( sharable.SharableModelManager, base.PurgableModelInterface
         return state
 
 
-class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSerializer ):
+class HistorySerializer( sharable.SharableModelSerializer, base.PurgableSerializerMixin ):
     """
     Interface/service object for serializing histories into dictionaries.
     """
@@ -288,7 +288,7 @@ class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSer
     #assumes: outgoing to json.dumps and sanitized
     def add_serializers( self ):
         super( HistorySerializer, self ).add_serializers()
-        base.PurgableModelSerializer.add_serializers( self )
+        base.PurgableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
             'model_class'   : lambda *a: 'History',
@@ -333,7 +333,7 @@ class HistorySerializer( sharable.SharableModelSerializer, base.PurgableModelSer
             security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
 
-class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableModelDeserializer ):
+class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableDeserializerMixin ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
@@ -345,7 +345,7 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableMode
 
     def add_deserializers( self ):
         super( HistoryDeserializer, self ).add_deserializers()
-        base.PurgableModelDeserializer.add_deserializers( self )
+        base.PurgableDeserializerMixin.add_deserializers( self )
 
         self.deserializers.update({
             'name'          : self.deserialize_basestring,
@@ -353,12 +353,12 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableMode
         })
 
 
-class HistoryFilters( sharable.SharableModelFilters, base.PurgableModelFilters ):
+class HistoryFilters( sharable.SharableModelFilters, base.PurgableFiltersMixin ):
     model_class = model.History
 
     def _add_parsers( self ):
         super( HistoryFilters, self )._add_parsers()
-        base.PurgableModelFilters._add_parsers( self )
+        base.PurgableFiltersMixin._add_parsers( self )
 
         self.orm_filter_parsers.update({
             # history specific

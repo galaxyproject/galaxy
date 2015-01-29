@@ -10,7 +10,7 @@ log = logging.getLogger( __name__ )
 
 
 #TODO: stub
-class RatableManagerInterface( object ):
+class RatableManagerMixin( object ):
     #: class of RatingAssociation (e.g. HistoryRatingAssociation)
     rating_assoc = None
 
@@ -20,7 +20,7 @@ class RatableManagerInterface( object ):
     #    pass
 
 
-class RatableSerializer( object ):
+class RatableSerializerMixin( object ):
 
     def add_serializers( self ):
         self.serializers[ 'user_rating' ] = self.serialize_user_rating
@@ -37,7 +37,7 @@ class RatableSerializer( object ):
         pass
 
 
-class RatableDeserializer( object ):
+class RatableDeserializerMixin( object ):
 
     def add_deserializers( self ):
         pass

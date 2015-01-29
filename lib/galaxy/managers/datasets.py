@@ -11,7 +11,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
+class DatasetManager( base.ModelManager, base.AccessibleManagerMixin, base.PurgableManagerMixin ):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
@@ -185,7 +185,7 @@ class DatasetManager( base.ModelManager, base.AccessibleModelInterface, base.Pur
     # .... data, object_store
 
 
-class DatasetSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
+class DatasetSerializer( base.ModelSerializer, base.PurgableSerializerMixin ):
 
     def __init__( self, app ):
         super( DatasetSerializer, self ).__init__( app )
@@ -212,7 +212,8 @@ class DatasetSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
         self.default_view = 'summary'
 
     def add_serializers( self ):
-        base.PurgableModelSerializer.add_serializers( self )
+        super( DatasetSerializer, self ).add_serializers()
+        base.PurgableSerializerMixin.add_serializers( self )
         self.serializers.update({
             'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
@@ -221,16 +222,16 @@ class DatasetSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
         })
 
 
-class DatasetDeserializer( base.ModelDeserializer, base.PurgableModelDeserializer ):
+class DatasetDeserializer( base.ModelDeserializer, base.PurgableDeserializerMixin ):
     model_manager_class = DatasetManager
 
     def add_deserializers( self ):
         super( DatasetDeserializer, self ).add_deserializers()
-        base.PurgableModelDeserializer.add_deserializers( self )
+        base.PurgableDeserializerMixin.add_deserializers( self )
 
 
 
-class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterface, base.PurgableModelInterface ):
+class DatasetAssociationManager( base.ModelManager, base.AccessibleManagerMixin, base.PurgableManagerMixin ):
     """
     DatasetAssociation/DatasetInstances are intended to be working
     proxies to a Dataset, associated with either a library or a
@@ -265,15 +266,15 @@ class DatasetAssociationManager( base.ModelManager, base.AccessibleModelInterfac
     #    pass
 
 
-class DatasetAssociationSerializer( base.ModelSerializer, base.PurgableModelSerializer ):
+class DatasetAssociationSerializer( base.ModelSerializer, base.PurgableSerializerMixin ):
 
     def add_serializers( self ):
         super( DatasetAssociationSerializer, self ).add_serializers()
-        base.PurgableModelSerializer.add_serializers( self )
+        base.PurgableSerializerMixin.add_serializers( self )
 
 
-class DatasetAssociationDeserializer( base.ModelDeserializer, base.PurgableModelDeserializer ):
+class DatasetAssociationDeserializer( base.ModelDeserializer, base.PurgableDeserializerMixin ):
 
     def add_deserializers( self ):
         super( DatasetAssociationDeserializer, self ).add_deserializers()
-        base.PurgableModelDeserializer.add_deserializers( self )
+        base.PurgableDeserializerMixin.add_deserializers( self )
