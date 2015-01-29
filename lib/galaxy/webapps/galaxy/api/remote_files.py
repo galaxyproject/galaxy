@@ -14,12 +14,12 @@ from operator import itemgetter
 import logging
 log = logging.getLogger( __name__ )
 
-class FTPFilesAPIController( BaseAPIController ):
+class RemoteFilesAPIController( BaseAPIController ):
 
     @expose_api
     def index( self, trans, **kwd ):
         """
-        GET /api/ftp_files/
+        GET /api/remote_files/
 
         Displays remote files.
 
