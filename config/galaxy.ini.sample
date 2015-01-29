@@ -8,7 +8,7 @@
 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
-# values are set to the default value. Relative paths are relative to the root
+# values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
 #
 # Examples of many of these options are explained in more detail in the wiki:
@@ -118,10 +118,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #database_query_profiling_proxy = False
 
 # By default, Galaxy will use the same database to track user data and
-# tool shed install data. There are many situtations in which it is
+# tool shed install data.  There are many situtations in which it is
 # valuable to seperate these - for instance bootstrapping fresh Galaxy
-# instances with pretested installs. The following optin can be used to
-# separate the tool shed install database (all other options listed above 
+# instances with pretested installs.  The following optin can be used to
+# separate the tool shed install database (all other options listed above
 # but prefixed with install_ are also available).
 #install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
@@ -139,14 +139,16 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # config/tool_conf.xml does not exist).
 #tool_config_file = config/tool_conf.xml,config/shed_tool_conf.xml
 
-# Enable / disable checking if any tools defined in the above non-shed tool_config_files
-# (i.e., tool_conf.xml) have been migrated from the Galaxy code distribution to the Tool
-# Shed.  This setting should generally be set to False only for development Galaxy environments
-# that are often rebuilt from scratch where migrated tools do not need to be available in the
-# Galaxy tool panel.  If the following setting remains commented, the default setting will be True.
+# Enable / disable checking if any tools defined in the above non-shed
+# tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
+# code distribution to the Tool Shed.  This setting should generally be set to
+# False only for development Galaxy environments that are often rebuilt from
+# scratch where migrated tools do not need to be available in the Galaxy tool
+# panel.  If the following setting remains commented, the default setting will
+# be True.
 #check_migrate_tools = True
 
-# Tool config maintained by tool migration scripts. If you use the migration
+# Tool config maintained by tool migration scripts.  If you use the migration
 # scripts to install tools that have been migrated to the tool shed upon a new
 # release, they will be added to this tool config file.
 #migrated_tools_config = config/migrated_tools_conf.xml
@@ -154,11 +156,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # File that contains the XML section and tool tags from all tool panel config
 # files integrated into a single file that defines the tool panel layout.  This
 # file can be changed by the Galaxy administrator to alter the layout of the
-# tool panel. If not present, Galaxy will create it.
+# tool panel.  If not present, Galaxy will create it.
 #integrated_tool_panel_config = integrated_tool_panel.xml
 
 # Default path to the directory containing the tools defined in tool_conf.xml.
-# Other tool config files must include the tool_path as an attribute in the <toolbox> tag.
+# Other tool config files must include the tool_path as an attribute in the
+# <toolbox> tag.
 #tool_path = tools
 
 # Path to the directory in which tool dependencies are placed.  This is used by
@@ -181,26 +184,28 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #watch_tools = False
 
 # Enable automatic polling of relative tool sheds to see if any updates
-# are available for installed repositories.  Ideally only one Galaxy 
+# are available for installed repositories.  Ideally only one Galaxy
 # server process should be able to check for repository updates.  The
 # setting for hours_between_check should be an integer between 1 and 24.
 #enable_tool_shed_check = False
 #hours_between_check = 12
 
-# Enable use of an in-memory registry with bi-directional relationships
-# between repositories (i.e., in addition to lists of dependencies for a
-# repository, keep an in-memory registry of dependent items for each repository.
+# Enable use of an in-memory registry with bi-directional relationships between
+# repositories (i.e., in addition to lists of dependencies for a repository,
+# keep an in-memory registry of dependent items for each repository.
 #manage_dependency_relationships = False
 
 # XML config file that contains data table entries for the
-# ToolDataTableManager. This file is manually # maintained by the Galaxy
+# ToolDataTableManager.  This file is manually # maintained by the Galaxy
 # administrator (.sample used if default does not exist).
 #tool_data_table_config_path = config/tool_data_table_conf.xml
 
-# XML config file that contains additional data table entries for the ToolDataTableManager.  This file
-# is automatically generated based on the current installed tool shed repositories that contain valid
-# tool_data_table_conf.xml.sample files.  At the time of installation, these entries are automatically
-# added to the following file, which is parsed and applied to the ToolDataTableManager at server start up.
+# XML config file that contains additional data table entries for the
+# ToolDataTableManager.  This file is automatically generated based on the
+# current installed tool shed repositories that contain valid
+# tool_data_table_conf.xml.sample files.  At the time of installation, these
+# entries are automatically added to the following file, which is parsed and
+# applied to the ToolDataTableManager at server start up.
 #shed_tool_data_table_config = config/shed_tool_data_table_conf.xml
 
 # Directory where data used by tools is located, see the samples in that
@@ -215,24 +220,26 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #len_file_path = tool-data/shared/ucsc/chrom
 
 # Datatypes config file(s), defines what data (file) types are available in
-# Galaxy (.sample is used if default does not exist). If a datatype appears in
-# multiple files - the last definition is used (though the first sniffer is used
+# Galaxy (.sample is used if default does not exist).  If a datatype appears in
+# multiple files, the last definition is used (though the first sniffer is used
 # so limit sniffer definitions to one file).
 #datatypes_config_file = config/datatypes_conf.xml
 
 # Disable the 'Auto-detect' option for file uploads
 #datatypes_disable_auto = False
 
-# Visualizations config directory: where to look for individual visualization plugins.
-# The path is relative to the Galaxy root dir. To use an absolute path begin the path
-# with '/'. This is a comma separated list. Defaults to "config/plugins/visualizations".
+# Visualizations config directory: where to look for individual visualization
+# plugins.  The path is relative to the Galaxy root dir.  To use an absolute
+# path begin the path with '/'.  This is a comma separated list.
+# Defaults to "config/plugins/visualizations".
 #visualization_plugins_directory = config/plugins/visualizations
 
-# Interactive environment plugins root directory: where to look for interactive environment
-# plugins. By default none will be loaded. Set to config/plugins/interactive_environments
-# to load Galaxy's stock plugins (currently just IPython). These will require Docker
-# to be configured and have security considerations so proceed with caution.
-#interactive_environment_plugins_directory = 
+# Interactive environment plugins root directory: where to look for interactive
+# environment plugins.  By default none will be loaded.  Set to
+# config/plugins/interactive_environments to load Galaxy's stock plugins
+# (currently just IPython).  These will require Docker to be configured and
+# have security considerations, so proceed with caution.
+#interactive_environment_plugins_directory =
 
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
@@ -247,18 +254,20 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # used for the cache
 #template_cache_path = database/compiled_templates
 
-# Citation related caching. Tool citations information maybe fetched from
-# external sources such as http://dx.doi.org/ by Galaxy - the following parameters
-# can be used to control the caching used to store this information.
+# Citation related caching.  Tool citations information maybe fetched from
+# external sources such as http://dx.doi.org/ by Galaxy - the following
+# parameters can be used to control the caching used to store this information.
 #citation_cache_type = file
 #citation_cache_data_dir = database/citations/data
 #citation_cache_lock_dir = database/citations/lock
 
-# External service types config file, defines what types of external_services configurations 
-# are available in Galaxy (.sample is used if default does not exist).
+# External service types config file, defining what types of external_services
+# configurations are available in Galaxy (.sample is used if default does not
+# exist).
 #external_service_type_config_file = config/external_service_types_conf.xml
 
-# Path to the directory containing the external_service_types defined in the config.
+# Path to the directory containing the external_service_types defined in the
+# config.
 #external_service_type_path = external_service_types
 
 # Tools with a number of outputs not known until runtime can write these
@@ -316,10 +325,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # -- Mail and notification
 
-# Galaxy sends mail for various things: Subscribing users to the mailing list
-# if they request it, emailing password resets, notification from the Galaxy
-# Sample Tracking system, reporting dataset errors, and sending activation emails.
-# To do this, it needs to send mail through an SMTP server, which you may define here (host:port).
+# Galaxy sends mail for various things: subscribing users to the mailing list
+# if they request it, password resets, notifications from the Galaxy Sample
+# Tracking system, reporting dataset errors, and sending activation emails.
+# To do this, it needs to send mail through an SMTP server, which you may
+# define here (host:port).
 # Galaxy will automatically try STARTTLS but will continue upon failure.
 #smtp_server = None
 
@@ -337,37 +347,44 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #mailing_join_addr = galaxy-announce-join@bx.psu.edu
 
 # Datasets in an error state include a link to report the error.  Those reports
-# will be sent to this address.  Error reports are disabled if no address is set.
-# Also this email is shown as a contact to user in case of Galaxy misconfiguration and other events user may encounter.
+# will be sent to this address.  Error reports are disabled if no address is
+# set.  Also this email is shown as a contact to user in case of Galaxy
+# misconfiguration and other events user may encounter.
 #error_email_to = None
 
-# Activation email is used as a sender ('from' field) for the account activation mail.
-# We recommend using string in the following format: Galaxy Project <galaxy-no-reply@example.com>
+# Activation email is used as a sender ('from' field) for the account
+# activation mail.  We recommend using string in the following format:
+# Galaxy Project <galaxy-no-reply@example.com>
 #activation_email = None
 
-# URL of the support resource for the galaxy instance. Used in activation emails.
+# URL of the support resource for the galaxy instance.  Used in activation
+# emails.
 #instance_resource_url = http://wiki.galaxyproject.org/
 
-# E-mail domains blacklist is used for filtering out users that are using disposable email address
-# during the registration. If their address domain matches any domain in the BL they are refused the registration.
+# E-mail domains blacklist is used for filtering out users that are using
+# disposable email address during the registration.  If their address domain
+# matches any domain in the blacklist, they are refused the registration.
 #blacklist_file = config/disposable_email_blacklist.conf
 
-# Registration warning message is used to discourage people from registering multiple accounts. Applies mostly for the main Galaxy instance.
+# Registration warning message is used to discourage people from registering
+# multiple accounts.  Applies mostly for the main Galaxy instance.
 # If no message specified the warning box will not be shown.
 #registration_warning_message = Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
 
 
 # -- Account activation
 
-# This is user account activation feature global flag. If set to "False" the rest of the Account 
-# activation configuration is ignored and user activation is disabled (a.k.a. accounts are active since registration).
-# Note the activation is also not working in case the smtp server is not defined.
+# User account activation feature global flag.  If set to "False", the rest of
+# the Account activation configuration is ignored and user activation is
+# disabled (i.e. accounts are active since registration).
+# The activation is also not working in case the SMTP server is not defined.
 #user_activation_on = False
 
-# Activation grace period. Activation is not forced (login is not disabled) until 
-# grace period has passed. Users under grace period can't run jobs (see inactivity_box_content).
-# In hours. Default is 3. Enter 0 to disable grace period. 
-# Users with OpenID logins have grace period forever. 
+# Activation grace period (in hours).  Activation is not forced (login is not
+# disabled) until grace period has passed.  Users under grace period can't run
+# jobs (see inactivity_box_content).  Default is 3.  Enter 0 to disable grace
+# period.
+# Users with OpenID logins have grace period forever.
 #activation_grace_period = 0
 
 # Used for warning box for inactive accounts (unable to run jobs).
@@ -378,7 +395,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # -- Analytics
 
 # You can enter tracking code here to track visitor's behavior
-# through your Google Analytics account. Example: UA-XXXXXXXX-Y
+# through your Google Analytics account.  Example: UA-XXXXXXXX-Y
 #ga_code = None
 
 # -- Display sites
@@ -401,17 +418,19 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # them).
 #display_servers = hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
 
-# To disable the old-style display applications that are hardcoded into datatype classes,
-# set enable_old_display_applications = False.
-# This may be desirable due to using the new-style, XML-defined, display applications that
-# have been defined for many of the datatypes that have the old-style.
+# To disable the old-style display applications that are hardcoded into
+# datatype classes, set enable_old_display_applications = False.
+# This may be desirable due to using the new-style, XML-defined, display
+# applications that have been defined for many of the datatypes that have the
+# old-style.
 # There is also a potential security concern with the old-style applications,
-# where a malicious party could provide a link that appears to reference the Galaxy server,
-# but contains a redirect to a third-party server, tricking a Galaxy user to access said
-# site.
+# where a malicious party could provide a link that appears to reference the
+# Galaxy server, but contains a redirect to a third-party server, tricking a
+# Galaxy user to access said site.
 #enable_old_display_applications = True
 
-# -- Next gen LIMS interface on top of existing Galaxy Sample/Request management code.
+# -- Next gen LIMS interface on top of existing Galaxy Sample/Request
+# management code.
 
 use_nglims = False
 nglims_config_file = tool-data/nglims.yaml
@@ -428,18 +447,20 @@ nglims_config_file = tool-data/nglims.yaml
 
 # Format string used when showing date and time information.
 # The string may contain:
-# - the directives used by Python time.strftime() function (see http://docs.python.org/2/library/time.html#time.strftime ),
+# - the directives used by Python time.strftime() function (see
+#   http://docs.python.org/2/library/time.html#time.strftime ),
 # - $locale (complete format string for the server locale),
-# - $iso8601 (complete format string as specified by ISO 8601 international standard).
+# - $iso8601 (complete format string as specified by ISO 8601 international
+#   standard).
 # pretty_datetime_format = $locale (UTC)
 
-# URL (with schema http/https) of the Galaxy instance as accessible within your local
-# network - if specified used as a default by pulsar file staging and IPython docker
-# container for communicating back with Galaxy via the API.
+# URL (with schema http/https) of the Galaxy instance as accessible within your
+# local network - if specified used as a default by pulsar file staging and
+# IPython Docker container for communicating back with Galaxy via the API.
 #galaxy_infrastructure_url = http://localhost:8080
 
-# The URL of the page to display in Galaxy's middle pane when loaded. This can be 
-# an absolute or relative URL.
+# The URL of the page to display in Galaxy's middle pane when loaded.  This can
+# be an absolute or relative URL.
 #welcome_url = /static/welcome.html
 
 # The URL linked by the "Galaxy/brand" text.
@@ -470,7 +491,7 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Galaxy Q&A" link in the "Help" menu
 # The Galaxy Q&A site is under development; when the site is done, this URL
 # will be set and uncommented.
-#qa_url = 
+#qa_url =
 
 # Serve static content, which must be enabled if you're not serving it via a
 # proxy server.  These options should be self explanatory and so are not
@@ -527,9 +548,9 @@ nglims_config_file = tool-data/nglims.yaml
 # will cause modern web browsers to not allow Galaxy to be embedded in
 # the frames of web applications hosted at other hosts - this can help
 # prevent a class of attack called clickjacking
-# (https://www.owasp.org/index.php/Clickjacking). If you configure a
+# (https://www.owasp.org/index.php/Clickjacking).  If you configure a
 # proxy in front of Galaxy - please ensure this header remains intact
-# to protect your users. Uncomment and leave empty to not set the
+# to protect your users.  Uncomment and leave empty to not set the
 # `X-Frame-Options` header.
 #x_frame_options = SAMEORIGIN
 
@@ -545,10 +566,10 @@ nglims_config_file = tool-data/nglims.yaml
 #nginx_upload_path = False
 
 # Have Galaxy manage dynamic proxy component for routing requests to other
-# services based on Galaxy's session cookie. It will attempt to do this by
+# services based on Galaxy's session cookie.  It will attempt to do this by
 # default though you do need to install node+npm and do an npm install from
-# `lib/galaxy/web/proxy/js`. It is generally more robust to configure this
-# externally managing it however Galaxy is managed. If True Galaxy will only
+# `lib/galaxy/web/proxy/js`.  It is generally more robust to configure this
+# externally managing it however Galaxy is managed.  If True Galaxy will only
 # launch the proxy if it is actually going to be used (e.g. for IPython).
 #dynamic_proxy_manage=True
 
@@ -564,7 +585,8 @@ nglims_config_file = tool-data/nglims.yaml
 # Enable verbose debugging of Galaxy-managed dynamic proxy.
 #dynamic_proxy_debug=False
 
-# The dynamic proxy is proxied by an external proxy (e.g. apache frontend to nodejs to wrap connections in SSL)
+# The dynamic proxy is proxied by an external proxy (e.g. apache frontend to
+# nodejs to wrap connections in SSL).
 #dynamic_proxy_external_proxy=False
 
 # -- Logging and Debugging
@@ -582,28 +604,28 @@ nglims_config_file = tool-data/nglims.yaml
 # Turn on logging of application events and some user events to the database.
 #log_events = True
 
-# Turn on logging of user actions to the database. Actions currently logged are
-# grid views, tool searches, and use of "recently" used tools menu.  The
+# Turn on logging of user actions to the database.  Actions currently logged
+# are grid views, tool searches, and use of "recently" used tools menu.  The
 # log_events and log_actions functionality will eventually be merged.
 #log_actions = True
 
-# Sanitize All HTML Tool Output By default, all tool output served as
-# 'text/html' will be sanitized thoroughly. This can be disabled if
-# you have special tools that require unaltered output. WARNING:
-# Disabling this does make the Galxy instance susceptible to XSS
-# attacks initiated by your users.
+# Sanitize all HTML tool output.  By default, all tool output served as
+# 'text/html' will be sanitized thoroughly.  This can be disabled if you have
+# special tools that require unaltered output.  WARNING: disabling this does
+# make the Galaxy instance susceptible to XSS attacks initiated by your users.
 #sanitize_all_html = True
 
 # By default Galaxy will serve non-HTML tool output that may potentially
-# contain browser executable JavaScript content as plain text. This will for
+# contain browser executable JavaScript content as plain text.  This will for
 # instance cause SVG datasets to not render properly and so may be disabled
 # by setting the following option to True.
 #serve_xss_vulnerable_mimetypes = False
 
-# Set the following to True to use ipython nbconvert to build HTML from IPython
-# notebooks in Galaxy histories. This process may allow users to execute arbitrary
-# code or serve arbitrary HTML. If enabled ipython must be available and on Galaxy's
-# PATH, to do this run `pip install jinja2 pygments ipython` in Galaxy's virtualenv.
+# Set the following to True to use IPython nbconvert to build HTML from IPython
+# notebooks in Galaxy histories.  This process may allow users to execute
+# arbitrary code or serve arbitrary HTML.  If enabled, IPython must be
+# available and on Galaxy's PATH, to do this run
+# `pip install jinja2 pygments ipython` in Galaxy's virtualenv.
 #trust_ipython_notebook_conversion = False
 
 # Debug enables access to various config options useful for development and
@@ -659,7 +681,7 @@ use_interactive = True
 # if testing shows that Galaxy is able to create files using these formats.
 # Specific formats can be disabled with this option, separate more than one
 # format with commas.  Available formats are currently 'zip', 'gz', and 'bz2'.
-#disable_library_comptypes = 
+#disable_library_comptypes =
 
 # Some sequencer integration features in beta allow you to automatically
 # transfer datasets.  This is done using a lightweight transfer manager which
@@ -710,10 +732,11 @@ use_interactive = True
 #remote_user_header = HTTP_REMOTE_USER
 
 # If use_remote_user is enabled, anyone who can log in to the Galaxy host may
-# impersonate any other user by simply sending the appropriate header. Thus a
+# impersonate any other user by simply sending the appropriate header.  Thus a
 # secret shared between the upstream proxy server, and Galaxy is required.
-# If anyone other than the Galaxy user is using the server, then apache/nginx should
-# pass a value in the header 'GX_SECRET' that is identical the one below
+# If anyone other than the Galaxy user is using the server, then apache/nginx
+# should pass a value in the header 'GX_SECRET' that is identical to the one
+# below.
 #remote_user_secret = USING THE DEFAULT IS NOT SECURE!
 
 # If use_remote_user is enabled, you can set this to a URL that will log your
@@ -798,8 +821,9 @@ use_interactive = True
 #api_allow_run_as = None
 
 # Master key that allows many API admin actions to be used without actually
-# having a defined admin user in the database/config. Only set this if you need
-# to bootstrap Galaxy, you probably do not want to set this on public servers.
+# having a defined admin user in the database/config.  Only set this if you
+# need to bootstrap Galaxy, you probably do not want to set this on public
+# servers.
 #master_api_key = changethis
 
 # Enable tool tags (associating tools with tags).  This has its own option
@@ -807,7 +831,7 @@ use_interactive = True
 # large servers.
 #enable_tool_tags = False
 
-# Enable a feature when running workflows. When enabled, default datasets
+# Enable a feature when running workflows.  When enabled, default datasets
 # are selected for "Set at Runtime" inputs from the history such that the
 # same input will not be selected twice, unless there are more inputs than
 # compatible datasets in the history.
@@ -843,7 +867,7 @@ use_interactive = True
 # File where Data Managers are configured (.sample used if default does not
 # exist)
 #data_manager_config_file = config/data_manager_conf.xml
-# File where Tool Shed based Data Managers are configured 
+# File where Tool Shed based Data Managers are configured
 #shed_data_manager_config_file = config/shed_data_manager_conf.xml
 # Directory to store Data Manager based tool-data; defaults to tool_data_path
 #galaxy_data_manager_data_path = tool-data
@@ -870,7 +894,8 @@ use_interactive = True
 # following option to True or False.
 #track_jobs_in_database = None
 
-# This enables splitting of jobs into tasks, if specified by the particular tool config.
+# This enables splitting of jobs into tasks, if specified by the particular tool
+# config.
 # This is a new feature and not recommended for production servers yet.
 #use_tasked_jobs = False
 #local_task_queue_workers = 2
@@ -921,7 +946,8 @@ use_interactive = True
 
 # Optional file containing job resource data entry fields definition.
 # These fields will be presented to users in the tool forms and allow them to
-# overwrite default job resources such as number of processors, memory, and walltime.
+# overwrite default job resources such as number of processors, memory and
+# walltime.
 #job_resource_params_file = config/job_resource_params_conf.xml
 
 # If using job concurrency limits (configured in job_config_file), several
@@ -940,7 +966,7 @@ use_interactive = True
 # the following lines.  tool_* filters will be applied for all users
 # and can not be changed by them.  user_tool_* filters will be shown
 # under user preferences and can be toogled on and off by
-# runtime. Example shown below are not real defaults (no custom
+# runtime.  Example shown below are not real defaults (no custom
 # filters applied by defualt) but can be enabled with by renaming the
 # example.py.sample in the filters directory to example.py.
 
@@ -972,11 +998,12 @@ use_interactive = True
 
 # ---- Galaxy External Message Queue -------------------------------------------------
 
-# Galaxy uses AMQ protocol to receive messages from external sources like 
-# bar code scanners. Galaxy has been tested against RabbitMQ AMQP implementation.
-# For Galaxy to receive messages from a message queue the RabbitMQ server has 
-# to be set up with a user account and other parameters listed below. The 'host'
-# and 'port' fields should point to where the RabbitMQ server is running. 
+# Galaxy uses Advanced Message Queuing Protocol (AMQP) to receive messages from
+# external sources like barcode scanners.  Galaxy has been tested against
+# RabbitMQ AMQP implementation.  For Galaxy to receive messages from a message
+# queue, the RabbitMQ server has to be set up with a user account and other
+# parameters listed below.  The 'host' and 'port' fields should point to where
+# the RabbitMQ server is running.
 
 [galaxy_amqp]
 
