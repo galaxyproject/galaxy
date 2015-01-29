@@ -807,7 +807,13 @@ class FilterParser( object ):
         """
         Set up, extend, or alter `orm_filter_parsers` and `fn_filter_parsers`.
         """
-        pass
+        self.orm_filter_parsers.update({
+            # (prob.) applicable to all models
+            'id'            : { 'op': ( 'in' ), 'val': self.parse_id_list },
+            # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
+            'create_time'   : { 'op': ( 'le', 'ge' ) },
+            'update_time'   : { 'op': ( 'le', 'ge' ) },
+        })
         
     def parse_filters( self, filter_tuple_list ):
         """
@@ -899,6 +905,8 @@ class FilterParser( object ):
     #UNCHANGED_OPS = ( 'like' )
     def _convert_op_string_to_fn( self, column, op_string ):
         """
+        Convert the query string filter op shorthand into actual ORM usable
+        function names, then return the ORM function.
         """
         # correct op_string to usable function key
         fn_name = op_string
@@ -971,7 +979,7 @@ class FilterParser( object ):
         """
         Parse a boolean from a string.
         """
-        #Be strict here to remove complexity of options.
+        # Be strict here to remove complexity of options (but allow already parsed).
         if bool_string in ( 'True', True ):
             return True
         if bool_string in ( 'False', False ):
@@ -982,7 +990,9 @@ class FilterParser( object ):
         """
         Split `id_list_string` at `sep`.
         """
-        return id_list_string.split( sep )
+        #TODO: move id decoding out
+        id_list = [ self.app.security.decode_id( id_ ) for id_ in id_list_string.split( sep ) ]
+        return id_list
 
 
 # ==== Security Mixins
@@ -1158,6 +1168,14 @@ class DeletableModelDeserializer( object ):
         return item.deleted
 
 
+class DeletableModelFilters( object ):
+
+    def _add_parsers( self ):
+        self.orm_filter_parsers.update({
+            'deleted'       : { 'op': ( 'eq' ), 'val': self.parse_bool }
+        })
+
+
 class PurgableModelInterface( DeletableModelInterface ):
     """
     A manager interface/mixin for a resource that allows deleting and purging where
@@ -1200,3 +1218,12 @@ class PurgableModelDeserializer( DeletableModelDeserializer ):
         if new_purged:
             self.manager.purge( trans, item, flush=False )
         return self.purged
+
+
+class PurgableModelFilters( DeletableModelFilters ):
+
+    def _add_parsers( self ):
+        DeletableModelFilters._add_parsers( self )
+        self.orm_filter_parsers.update({
+            'purged'        : { 'op': ( 'eq' ), 'val': self.parse_bool }
+        })

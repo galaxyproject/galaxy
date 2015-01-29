@@ -353,32 +353,17 @@ class HistoryDeserializer( sharable.SharableModelDeserializer, base.PurgableMode
         })
 
 
-class HistoryFilters( base.FilterParser ):
+class HistoryFilters( sharable.SharableModelFilters, base.PurgableModelFilters ):
     model_class = model.History
 
     def _add_parsers( self ):
         super( HistoryFilters, self )._add_parsers()
-        self.orm_filter_parsers.update({
-            #TODO: these three are (prob.) applicable to all models
-            'id'            : { 'op': ( 'in' ), 'val': self.parse_id_list },
-            # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'create_time'   : { 'op': ( 'le', 'ge' ) },
-            'update_time'   : { 'op': ( 'le', 'ge' ) },
+        base.PurgableModelFilters._add_parsers( self )
 
+        self.orm_filter_parsers.update({
             # history specific
             'name'          : { 'op': ( 'eq', 'contains', 'like' ) },
             'genome_build'  : { 'op': ( 'eq', 'contains', 'like' ) },
-
-            #TODO: purgable
-            'deleted'       : { 'op': ( 'eq' ), 'val': self.parse_bool },
-            'purged'        : { 'op': ( 'eq' ), 'val': self.parse_bool },
-
-            #TODO: sharable
-            'importable'    : { 'op': ( 'eq' ), 'val': self.parse_bool },
-            'published'     : { 'op': ( 'eq' ), 'val': self.parse_bool },
-            'slug'          : { 'op': ( 'eq', 'contains', 'like' ) },
-            # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
-            #'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
         })
 
         #TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user
