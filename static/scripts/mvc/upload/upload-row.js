@@ -67,8 +67,9 @@ return Backbone.View.extend({
         // select genomes
         this.select_genome = new Select.View({
             css: 'genome',
-            onchange : function() {
-                self.model.set('genome', self.select_genome.value());
+            onchange : function(genome) {
+                self.model.set('genome', genome);
+                self.app.updateGenome(genome);
             },
             data: self.app.list_genomes,
             container: it.find('#genome'),
@@ -84,8 +85,9 @@ return Backbone.View.extend({
         // select extension
         this.select_extension = new Select.View({
             css: 'extension',
-            onchange : function() {
-                self.model.set('extension', self.select_extension.value());
+            onchange : function(extension) {
+                self.model.set('extension', extension);
+                self.app.updateExtension(extension);
             },
             data: self.app.list_extensions,
             container: it.find('#extension'),

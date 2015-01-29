@@ -232,11 +232,7 @@ return Backbone.View.extend({
                 container   : this.$el.parent().find('#header-extension'),
                 value       : this.default_extension,
                 onchange    : function(extension) {
-                    self.collection.each(function(item) {
-                        if (item.get('status') == 'init' && item.get('extension') == self.default_extension) {
-                            item.set('extension', extension);
-                        }
-                    });
+                    self.updateExtension(extension);
                 }
             });
 
@@ -257,11 +253,7 @@ return Backbone.View.extend({
                 container   : this.$el.parent().find('#header-genome'),
                 value       : this.default_genome,
                 onchange    : function(genome) {
-                    self.collection.each(function(item) {
-                        if (item.get('status') == 'init' && item.get('genome') == self.default_genome) {
-                            item.set('genome', genome);
-                        }
-                    });
+                    self.updateGenome(genome);
                 }
             });
         }
@@ -592,6 +584,26 @@ return Backbone.View.extend({
         }
     },
 
+    // update extension for all models
+    updateExtension: function(extension) {
+        var self = this;
+        this.collection.each(function(item) {
+            if (item.get('status') == 'init' && item.get('extension') == self.default_extension) {
+                item.set('extension', extension);
+            }
+        });
+    },
+    
+    // update genome for all models
+    updateGenome: function(genome) {
+        var self = this;
+        this.collection.each(function(item) {
+            if (item.get('status') == 'init' && item.get('genome') == self.default_genome) {
+                item.set('genome', genome);
+            }
+        });
+    },
+    
     // update uset
     _updateUser: function() {
         // backup current history
