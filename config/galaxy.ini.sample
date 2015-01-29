@@ -42,7 +42,8 @@ use_threadpool = True
 # Number of threads in the web server thread pool.
 #threadpool_workers = 10
 
-# Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
+# Set the number of seconds a thread can work before you should kill it
+# (assuming it will never finish) to 3 hours.  Default is 600 (10 minutes).
 threadpool_kill_thread_limit = 10800
 
 # ---- Filters --------------------------------------------------------------
@@ -172,10 +173,11 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # install from in the admin interface (.sample used if default does not exist).
 #tool_sheds_config_file = config/tool_sheds_conf.xml
 
-# If the following option is set to True - Galaxy will monitor individual tools
-# and tool directories specified in tool_conf.xml for changes and reload these
-# tools. Watchdog must be installed and available to Galaxy to use this option.
-# See https://pypi.python.org/pypi/watchdog.
+# Enable monitoring of tools and tool directories listed in any tool config file
+# specified in tool_config_file option.  If changes are found, tools are
+# automatically reloaded.
+# Watchdog ( https://pypi.python.org/pypi/watchdog ) must be installed and
+# available to Galaxy to use this option.
 #watch_tools = False
 
 # Enable automatic polling of relative tool sheds to see if any updates
@@ -685,6 +687,8 @@ use_interactive = True
 # used by the algorithm that encodes and decodes these values.  It can be any
 # string.  If left unchanged, anyone could construct a cookie that would grant
 # them access to others' sessions.
+# One simple way to generate a value for this is with the shell command:
+#   python -c 'import time; print time.time()' | md5sum | cut -f 1 -d ' '
 #id_secret = USING THE DEFAULT IS NOT SECURE!
 
 # User authentication can be delegated to an upstream proxy server (usually
