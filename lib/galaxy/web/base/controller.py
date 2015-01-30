@@ -40,6 +40,7 @@ from galaxy.managers import api_keys
 from galaxy.managers import tags
 from galaxy.managers import workflows
 from galaxy.managers import base as managers_base
+from galaxy.managers import users
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
@@ -69,6 +70,7 @@ class BaseController( object ):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context
+        self.user_manager = users.UserManager( app )
 
     def get_toolbox(self):
         """Returns the application toolbox"""

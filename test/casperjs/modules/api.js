@@ -187,7 +187,7 @@ ConfigurationAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 ConfigurationAPI.prototype.urlTpls = {
-    index   : 'api/configuration'
+    index   : '/api/configuration'
 };
 
 ConfigurationAPI.prototype.index = function index( deleted ){
@@ -209,12 +209,12 @@ HistoriesAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 HistoriesAPI.prototype.urlTpls = {
-    index   : 'api/histories',
-    show    : 'api/histories/%s',
-    create  : 'api/histories',
-    delete_ : 'api/histories/%s',
-    undelete: 'api/histories/deleted/%s/undelete',
-    update  : 'api/histories/%s',
+    index   : '/api/histories',
+    show    : '/api/histories/%s',
+    create  : '/api/histories',
+    delete_ : '/api/histories/%s',
+    undelete: '/api/histories/deleted/%s/undelete',
+    update  : '/api/histories/%s',
 };
 
 HistoriesAPI.prototype.index = function index( deleted ){
@@ -292,10 +292,10 @@ HDAAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 HDAAPI.prototype.urlTpls = {
-    index   : 'api/histories/%s/contents',
-    show    : 'api/histories/%s/contents/%s',
-    create  : 'api/histories/%s/contents',
-    update  : 'api/histories/%s/contents/%s'
+    index   : '/api/histories/%s/contents',
+    show    : '/api/histories/%s/contents/%s',
+    create  : '/api/histories/%s/contents',
+    update  : '/api/histories/%s/contents/%s'
 };
 
 HDAAPI.prototype.index = function index( historyId, ids ){
@@ -375,9 +375,9 @@ ToolsAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 ToolsAPI.prototype.urlTpls = {
-    index   : 'api/tools',
-    show    : 'api/tools/%s',
-    create  : 'api/tools'
+    index   : '/api/tools',
+    show    : '/api/tools/%s',
+    create  : '/api/tools'
 };
 
 ToolsAPI.prototype.index = function index( in_panel, trackster ){
@@ -651,14 +651,14 @@ WorkflowsAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 WorkflowsAPI.prototype.urlTpls = {
-    index   : 'api/workflows',
-    show    : 'api/workflows/%s',
+    index   : '/api/workflows',
+    show    : '/api/workflows/%s',
     // run a workflow
-    create  : 'api/workflows',
-    update  : 'api/workflows/%s',
+    create  : '/api/workflows',
+    update  : '/api/workflows/%s',
 
-    upload  : 'api/workflows/upload', // POST
-    download: 'api/workflows/download/%s' // GET
+    upload  : '/api/workflows/upload', // POST
+    download: '/api/workflows/download/%s' // GET
 };
 
 WorkflowsAPI.prototype.index = function index(){
@@ -712,12 +712,12 @@ UsersAPI.prototype.toString = function toString(){
 // -------------------------------------------------------------------
 //NOTE: lots of admin only functionality in this section
 UsersAPI.prototype.urlTpls = {
-    index   : 'api/users',
-    show    : 'api/users/%s',
-    create  : 'api/users',
-    delete_ : 'api/users/%s',
-    undelete: 'api/users/deleted/%s/undelete',
-    update  : 'api/users/%s'
+    index   : '/api/users',
+    show    : '/api/users/%s',
+    create  : '/api/users',
+    delete_ : '/api/users/%s',
+    undelete: '/api/users/deleted/%s/undelete',
+    update  : '/api/users/%s'
 };
 
 UsersAPI.prototype.index = function index( deleted ){
@@ -795,12 +795,12 @@ VisualizationsAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 VisualizationsAPI.prototype.urlTpls = {
-    index   : 'api/visualizations',
-    show    : 'api/visualizations/%s',
-    create  : 'api/visualizations',
-    //delete_ : 'api/visualizations/%s',
-    //undelete: 'api/visualizations/deleted/%s/undelete',
-    update  : 'api/visualizations/%s'
+    index   : '/api/visualizations',
+    show    : '/api/visualizations/%s',
+    create  : '/api/visualizations',
+    //delete_ : '/api/visualizations/%s',
+    //undelete: '/api/visualizations/deleted/%s/undelete',
+    update  : '/api/visualizations/%s'
 };
 
 VisualizationsAPI.prototype.index = function index(){
