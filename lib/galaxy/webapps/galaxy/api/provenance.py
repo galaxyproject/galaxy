@@ -53,10 +53,6 @@ class BaseProvenanceController( BaseAPIController ):
                 item = item.copied_from_library_dataset_dataset_association
             job = item.creating_job
             if job is not None:
-                m = dict( (a.metric_name, str(a.metric_value)) for a in job.text_metrics )
-                m2 = dict( (a.metric_name, float(a.metric_value)) for a in job.numeric_metrics )
-                for a in m2:
-                    m[a] = m2[a]
                 return {
                     "id": trans.security.encode_id(item.id),
                     "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
@@ -65,9 +61,6 @@ class BaseProvenanceController( BaseAPIController ):
                     "parameters": self._get_job_record(trans, job, follow),
                     "stderr": job.stderr,
                     "stdout": job.stdout,
-                    "update_time": job.update_time.isoformat(),
-                    "create_time": job.create_time.isoformat(),
-                    "metrics" : m
                 }
             else:
                 return {
