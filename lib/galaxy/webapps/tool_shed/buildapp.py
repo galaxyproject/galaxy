@@ -171,6 +171,14 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
+    # If sentry logging is enabled, log here before propogating up to
+    # the error middleware
+    # TODO sentry config is duplicated between tool_shed/galaxy, refactor this.
+    sentry_dsn = conf.get( 'sentry_dsn', None )
+    if sentry_dsn:
+        from galaxy.web.framework.middleware.sentry import Sentry
+        log.debug( "Enabling 'sentry' middleware" )
+        app = Sentry( app, sentry_dsn )
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
