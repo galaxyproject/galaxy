@@ -69,7 +69,7 @@ return Backbone.View.extend({
             css: 'genome',
             onchange : function(genome) {
                 self.model.set('genome', genome);
-                self.app.updateGenome(genome);
+                self.app.updateGenome(genome, true);
             },
             data: self.app.list_genomes,
             container: it.find('#genome'),
@@ -87,7 +87,7 @@ return Backbone.View.extend({
             css: 'extension',
             onchange : function(extension) {
                 self.model.set('extension', extension);
-                self.app.updateExtension(extension);
+                self.app.updateExtension(extension, true);
             },
             data: self.app.list_extensions,
             container: it.find('#extension'),
