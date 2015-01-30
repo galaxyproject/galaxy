@@ -26,6 +26,10 @@ return Backbone.View.extend({
         nginx_upload_path   : ''
     },
 
+    // default for selection fields
+    default_extension : 'auto',
+    default_genome : '?',
+
     // own modal
     modal : null,
 
@@ -130,16 +134,13 @@ return Backbone.View.extend({
 
                 // sort
                 self.list_extensions.sort(function(a, b) {
-                    return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
                 });
 
                 // add auto field
                 if (!self.options.datatypes_disable_auto) {
                     self.list_extensions.unshift(self.auto);
                 }
-
-                // set default extension
-                self.default_extension = self.list_extensions[0] && self.list_extensions[0].id;
             }
         });
 
@@ -156,11 +157,10 @@ return Backbone.View.extend({
 
                 // sort
                 self.list_genomes.sort(function(a, b) {
-                    return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                    if (a.id == self.default_genome) { return -1; }
+                    if (b.id == self.default_genome) { return 1; }
+                    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
                 });
-
-                // set default genome
-                self.default_genome = self.list_genomes[0] && self.list_genomes[0].id;
             }
         });
 
