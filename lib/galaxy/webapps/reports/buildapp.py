@@ -16,6 +16,7 @@ from galaxy.util import asbool
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework.webapp
+from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger( __name__ )
 
@@ -46,6 +47,9 @@ def add_ui_controllers( webapp, app ):
 def app_factory( global_conf, **kwargs ):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy application unless passed in
+    kwargs = load_app_properties(
+        kwds=kwargs
+    )
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
     else:

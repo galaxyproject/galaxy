@@ -22,9 +22,9 @@ log_level = DEBUG
 # database_connection = postgres:///galaxy_test?user=postgres&password=postgres 
 
 # Where dataset files are saved
-file_path = database/files
+#file_path = database/files
 # Temporary storage for additional datasets, this should be shared through the cluster
-new_file_path = database/tmp
+#new_file_path = database/tmp
 
 # Mako templates are compiled as needed and cached for reuse, this directory is
 # used for the cache
