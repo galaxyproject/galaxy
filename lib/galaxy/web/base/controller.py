@@ -103,9 +103,11 @@ class BaseController( object ):
     # ---- parsing query params
     def decode_id( self, id ):
         try:
-            return self.app.security.decode_id( id )
-        except:
-            msg = "Malformed History id ( %s ) specified, unable to decode" % ( str( id ) )
+            # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
+            #   resulting in error for valid id
+            return self.app.security.decode_id( str( id ) )
+        except ( ValueError, TypeError ):
+            msg = "Malformed id ( %s ) specified, unable to decode" % ( str( id ) )
             raise exceptions.MalformedId( msg, id=str( id ) )
 
     def encode_all_ids( self, trans, rval, recursive=False ):
