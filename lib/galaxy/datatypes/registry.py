@@ -346,7 +346,7 @@ class Registry( object ):
         """
         sniffer_elem_classes = [ e.attrib[ 'type' ] for e in self.sniffer_elems ]
         sniffers = root.find( 'sniffers' )
-        if sniffers:
+        if sniffers is not None:
             for elem in sniffers.findall( 'sniffer' ):
                 # Keep a status of the process steps to enable stopping the process of handling the sniffer if necessary.
                 ok = True
