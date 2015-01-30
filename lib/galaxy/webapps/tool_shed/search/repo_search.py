@@ -45,7 +45,7 @@ class RepoWeighting( scoring.BM25F ):
     use_final = True
 
     def final( self, searcher, docnum, score ):
-        log.debug('score before: ' +  str(score) )
+        # log.debug('score before: ' +  str(score) )
         
         # Arbitrary for now
         reasonable_hits = 100.0
@@ -59,15 +59,15 @@ class RepoWeighting( scoring.BM25F ):
         if times_downloaded == 0:
             times_downloaded = 1
         popularity_modifier = ( times_downloaded / reasonable_hits )
-        log.debug('popularity_modifier: ' +  str(popularity_modifier) )
+        # log.debug('popularity_modifier: ' +  str(popularity_modifier) )
 
         cert_modifier = 2 if searcher.stored_fields( docnum )[ "approved" ] == 'yes' else 1
-        log.debug('cert_modifier: ' +  str(cert_modifier) )
+        # log.debug('cert_modifier: ' +  str(cert_modifier) )
 
         # Adjust the computed score for this document by the popularity
         # and by the certification level.
         final_score = score * popularity_modifier * cert_modifier
-        log.debug('score after: ' +  str( final_score ) )
+        # log.debug('score after: ' +  str( final_score ) )
         return final_score
 
 
@@ -108,16 +108,14 @@ class RepoSearch( object ):
                         'remote_repository_url',
                         'repo_owner_username' ], schema = schema )
 
-                    # user_query = parser.parse( search_term )
                     user_query = parser.parse( '*' + search_term + '*' )
-
-                    # hits = searcher.search( user_query, terms = True )
                     hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
+
                     log.debug( 'searching for: #' +  str( search_term ) )
                     log.debug( 'total hits: ' +  str( len( hits ) ) )
                     log.debug( 'scored hits: ' + str( hits.scored_length() ) )
                     results = {}
-                    results[ 'total_results'] = str( hits.scored_length() )
+                    results[ 'total_results'] = str( len( hits ) )
                     results[ 'hits' ] = []
                     for hit in hits:
                         hit_dict = {}
