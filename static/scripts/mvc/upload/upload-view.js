@@ -585,20 +585,20 @@ return Backbone.View.extend({
     },
 
     // update extension for all models
-    updateExtension: function(extension) {
+    updateExtension: function(extension, defaults_only) {
         var self = this;
         this.collection.each(function(item) {
-            if (item.get('status') == 'init' && item.get('extension') == self.default_extension) {
+            if (item.get('status') == 'init' && (item.get('extension') == self.default_extension || !defaults_only)) {
                 item.set('extension', extension);
             }
         });
     },
 
     // update genome for all models
-    updateGenome: function(genome) {
+    updateGenome: function(genome, defaults_only) {
         var self = this;
         this.collection.each(function(item) {
-            if (item.get('status') == 'init' && item.get('genome') == self.default_genome) {
+            if (item.get('status') == 'init' && (item.get('genome') == self.default_genome || !defaults_only)) {
                 item.set('genome', genome);
             }
         });
@@ -724,10 +724,10 @@ return Backbone.View.extend({
                     '</table>' +
                 '</div>' +
                 '<div id="upload-header" class="upload-header">' +
-                    '<span class="header-title">Type (default):</span>' +
+                    '<span class="header-title">Type (set all):</span>' +
                     '<span id="header-extension"/>' +
                     '<span id="header-extension-info" class="upload-icon-button fa fa-search"/> ' +
-                    '<span class="header-title">Genome (default):</span>' +
+                    '<span class="header-title">Genome (set all):</span>' +
                     '<span id="header-genome"/>' +
                 '</div>';
     }
