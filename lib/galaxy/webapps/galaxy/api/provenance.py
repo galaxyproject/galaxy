@@ -52,15 +52,21 @@ class BaseProvenanceController( BaseAPIController ):
             if item.copied_from_library_dataset_dataset_association:
                 item = item.copied_from_library_dataset_dataset_association
             job = item.creating_job
-            return {
-                "id": trans.security.encode_id(item.id),
-                "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
-                "job_id": trans.security.encode_id( job.id ),
-                "tool_id": job.tool_id,
-                "parameters": self._get_job_record(trans, job, follow),
-                "stderr": job.stderr,
-                "stdout": job.stdout,
-            }
+            if job is not None:
+                return {
+                    "id": trans.security.encode_id(item.id),
+                    "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid),
+                    "job_id": trans.security.encode_id( job.id ),
+                    "tool_id": job.tool_id,
+                    "parameters": self._get_job_record(trans, job, follow),
+                    "stderr": job.stderr,
+                    "stdout": job.stdout,
+                }
+            else:
+                return {
+                    "id": trans.security.encode_id(item.id),
+                    "uuid": ( lambda uuid: str( uuid ) if uuid else None )( item.dataset.uuid)
+                }
         return None
 
     def _get_job_record(self, trans, job, follow):
