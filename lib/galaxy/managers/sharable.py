@@ -15,6 +15,7 @@ import re
 from galaxy import exceptions
 
 from galaxy.managers import base
+from galaxy.managers import secured
 from galaxy.managers import taggable
 from galaxy.managers import annotatable
 from galaxy.managers import ratable
@@ -24,7 +25,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class SharableModelManager( base.ModelManager, base.OwnableManagerMixin, base.AccessibleManagerMixin,
+class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin,
         taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin ):
     # e.g. histories, pages, stored workflows, visualizations
     # base.DeleteableModelMixin? (all four are deletable)

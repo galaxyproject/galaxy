@@ -16,7 +16,7 @@ import galaxy.datatypes.metadata
 from galaxy import objectstore
 
 from galaxy.managers import datasets
-from galaxy.managers import base
+from galaxy.managers import secured
 from galaxy.managers import taggable
 from galaxy.managers import annotatable
 from galaxy.managers import users
@@ -25,7 +25,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HDAManager( datasets.DatasetAssociationManager, base.OwnableManagerMixin,
+class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixin,
         taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin ):
     """
     Interface/service object for interacting with HDAs.
