@@ -42,8 +42,8 @@ class AnnotatableSerializerMixin( object ):
         """
         Get and serialize an `item`'s annotation.
         """
-        # TODO: have to assume trans.user here...
         # user = item.user
+        #TODO: trans
         user = trans.user
         sa_session = self.app.model.context
         returned = item.get_item_annotation_str( sa_session, user, item )
@@ -63,7 +63,7 @@ class AnnotatableDeserializerMixin( object ):
         val = self.validate.nullable_basestring( key, val )
 
         sa_session = self.app.model.context
-        # TODO: have to assume trans.user here...
+        #TODO: trans
         user = trans.user
         if val is None:
             item.delete_item_annotation( sa_session, user, item )

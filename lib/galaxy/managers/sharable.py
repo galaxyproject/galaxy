@@ -88,12 +88,8 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         Does not flush/commit changes, however. Item must have name, user,
         importable, and slug attributes.
         """
-        self.app.model.context.add( item )
-        item.importable = True
         self.create_unique_slug( trans, item, flush=False )
-        if flush:
-            self.app.model.context.flush()
-        return item
+        return self._session_setattr( item, 'importable', True, flush=flush )
 
     def make_non_importable( self, trans, item, flush=True ):
         """
@@ -102,26 +98,9 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         importable, and slug attributes.
         """
         # item must be unpublished if non-importable
-        self.app.model.context.add( item )
         if item.published:
             self.unpublish( trans, item, flush=False )
-        item.importable = False
-        if flush:
-            self.app.model.context.flush()
-        return item
-
-    #def _query_importable( self, trans, filters=None, **kwargs ):
-    #    """
-    #    """
-    #    importable_filter = self.model_class.importable == True
-    #    filters = self._munge_filters( importable_filter, filters )
-    #    return self.list( trans, filters=filters, **kwargs )
-    #
-    #def list_importable( self, trans, **kwargs ):
-    #    """
-    #    """
-    #    query = self._query_importable( trans, user, **kwargs )
-    #    return self.list( trans, query=query, **kwargs )
+        return self._session_setattr( item, 'importable', False, flush=flush )
 
     # .... published
     def publish( self, trans, item, flush=True ):
@@ -131,21 +110,13 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         # item must be importable to be published
         if not item.importable:
             self.make_importable( trans, item, flush=False )
-        self.app.model.context.add( item )
-        item.published = True
-        if flush:
-            self.app.model.context.flush()
-        return item
+        return self._session_setattr( item, 'published', True, flush=flush )
 
     def unpublish( self, trans, item, flush=True ):
         """
         Set the published flag on `item` to False.
         """
-        self.app.model.context.add( item )
-        item.published = False
-        if flush:
-            self.app.model.context.flush()
-        return item
+        return self._session_setattr( item, 'published', False, flush=flush )
 
     #def _query_published( self, trans, filters=None, **kwargs ):
     #    """

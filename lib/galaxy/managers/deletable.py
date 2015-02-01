@@ -23,21 +23,13 @@ class DeletableManagerMixin( object ):
         """
         Mark as deleted and return.
         """
-        trans.sa_session.add( item )
-        item.deleted = True
-        if flush:
-            trans.sa_session.flush()
-        return item
+        return self._session_setattr( item, 'deleted', True, flush=flush )
 
     def undelete( self, trans, item, flush=True, **kwargs ):
         """
         Mark as not deleted and return.
         """
-        trans.sa_session.add( item )
-        item.deleted = False
-        if flush:
-            trans.sa_session.flush()
-        return item
+        return self._session_setattr( item, 'deleted', False, flush=flush )
 
 
 class DeletableSerializerMixin( object ):
@@ -88,11 +80,7 @@ class PurgableManagerMixin( DeletableManagerMixin ):
 
         Override this in subclasses to do the additional resource removal.
         """
-        trans.sa_session.add( item )
-        item.purged = True
-        if flush:
-            trans.sa_session.flush()
-        return item
+        return self._session_setattr( item, 'purged', True, flush=flush )
 
 
 class PurgableSerializerMixin( DeletableSerializerMixin ):

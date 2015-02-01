@@ -49,6 +49,7 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         """
         # handle default and/or anonymous user (which still may not have a history yet)
         if self.user_manager.is_anonymous( user ):
+            #TODO: trans
             current_history = trans.get_history()
             return [ current_history ] if current_history else []
 
@@ -59,6 +60,7 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         True if the current user is the owner of the given history.
         """
         # anon users are only allowed to view their current history
+        #TODO: trans
         if self.user_manager.is_anonymous( user ) and history == trans.get_history():
             return True
         return super( HistoryManager, self ).is_owner( trans, history, user )
@@ -68,11 +70,12 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         """
         Return the most recently update history for the user.
         """
-        #TODO: normalize this return value
+        #TODO: trans
         if not user:
             return None if trans.history.deleted else trans.history
         desc_update_time = self.model_class.table.c.update_time
         filters = self._munge_filters( filters, self.model_class.user_id == user.id )
+        #TODO: normalize this return value
         return self.query( trans, filters=filters, order_by=desc_update_time, limit=1, **kwargs ).first()
 
     # .... purgable
@@ -95,12 +98,14 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         """
         Return the current history.
         """
+        #TODO: trans
         return trans.get_history()
 
     def set_current( self, trans, history ):
         """
         Set the current history.
         """
+        #TODO: trans
         trans.set_history( history )
         return history
 

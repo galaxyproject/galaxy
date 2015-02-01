@@ -53,13 +53,13 @@ class TaggableDeserializerMixin( object ):
         """
         new_tags_list = self.validate.basestring_list( key, val )
         #TODO: have to assume trans.user here...
+        #TODO: trans
         user = trans.user
         #TODO: duped from tags manager - de-dupe when moved to taggable mixin
-        tag_handler = trans.app.tag_handler
+        tag_handler = self.app.tag_handler
         tag_handler.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
         tag_handler.apply_item_tags( user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
-        #trans.sa_session.flush()
 
         #TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
         return item.tags

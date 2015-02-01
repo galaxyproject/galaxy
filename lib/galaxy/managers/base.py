@@ -159,6 +159,20 @@ class ModelManager( object ):
     def __init__( self, app ):
         self.app = app
 
+    def session( self ):
+        return self.app.model.context
+
+    def _session_setattr( self, item, attr, val, fn=None, flush=True ):
+        if fn:
+            fn( item, attr, val )
+        else:
+            setattr( item, attr, val )
+
+        self.session().add( item )
+        if flush:
+            self.session().flush()
+        return item
+
     # .... query foundation wrapper
     def query( self, trans, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
@@ -166,7 +180,7 @@ class ModelManager( object ):
 
         Set eagerloads to False to disable them for this query.
         """
-        query = trans.sa_session.query( self.model_class )
+        query = self.session().query( self.model_class )
         # joined table loading
         if eagerloads is False:
             query = query.enable_eagerloads( False )
@@ -371,7 +385,7 @@ class ModelManager( object ):
         # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
-        # return map( trans.sa_session.query( self.model_class ).get, ids )
+        # return map( self.session().query( self.model_class ).get, ids )
 
         # ...could implement own version here - slow?
         return self._order_items_by_id( ids, found )
@@ -407,9 +421,9 @@ class ModelManager( object ):
         """
         # override in subclasses
         item = self.model_class( *args, **kwargs )
-        trans.sa_session.add( item )
+        self.session().add( item )
         if flush:
-            trans.sa_session.flush()
+            self.session().flush()
         return item
 
     def copy( self, trans, item, **kwargs ):
@@ -424,12 +438,12 @@ class ModelManager( object ):
 
         ..note: NO validation or deserialization occurs here.
         """
-        trans.sa_session.add( item )
+        self.session().add( item )
         for key, value in new_values.items():
             if hasattr( item, key ):
                 setattr( item, key, value )
         if flush:
-            trans.sa_session.flush()
+            self.session().flush()
         return item
 
     # TODO: yagni?
@@ -447,7 +461,7 @@ class ModelManager( object ):
         """
         foreign_key_name = foreign_key_name or self.foreign_key_name
         foreign_key = getattr( associated_model_class, foreign_key_name )
-        return trans.sa_session.query( associated_model_class ).filter( foreign_key == item )
+        return self.session().query( associated_model_class ).filter( foreign_key == item )
 
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
     # def destroy( self, trans, item, **kwargs ):

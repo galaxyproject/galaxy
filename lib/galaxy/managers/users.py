@@ -58,7 +58,7 @@ class UserManager( base.ModelManager ):
         # can throw an sqlalx.IntegrityError if username not unique
 
         self.app.security_agent.create_private_user_role( user )
-#TODO: any other route to webapp?
+        #TODO: trans
         if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             permissions = self.app.config.new_user_dataset_access_role_default_private
