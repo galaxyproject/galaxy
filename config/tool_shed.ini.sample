@@ -125,3 +125,6 @@ use_new_layout = true
 #static_favicon_dir = static/favicon.ico
 #static_scripts_dir = static/scripts/
 #static_style_dir = static/style/blue
+
+# Sentry (getsentry.com) DSN for catching bugs.
+#sentry_dsn = None

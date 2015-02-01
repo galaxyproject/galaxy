@@ -22,9 +22,9 @@ log_level = DEBUG
 # database_connection = postgres:///galaxy_test?user=postgres&password=postgres 
 
 # Where dataset files are saved
-file_path = database/files
+#file_path = database/files
 # Temporary storage for additional datasets, this should be shared through the cluster
-new_file_path = database/tmp
+#new_file_path = database/tmp
 
 # Mako templates are compiled as needed and cached for reuse, this directory is
 # used for the cache
@@ -64,10 +64,10 @@ mailing_join_addr = galaxy-user-join@bx.psu.edu
 use_new_layout = true
 
 # Serving static files (needed if running standalone)
-static_enabled = True
-static_cache_time = 360
-static_dir = %(here)s/static/
-static_images_dir = %(here)s/static/images
-static_favicon_dir = %(here)s/static/favicon.ico
-static_scripts_dir = %(here)s/static/scripts/
-static_style_dir = %(here)s/static/june_2007_style/blue
+# static_enabled = True
+# static_cache_time = 360
+# static_dir = %(here)s/static/
+# static_images_dir = %(here)s/static/images
+# static_favicon_dir = %(here)s/static/favicon.ico
+# static_scripts_dir = %(here)s/static/scripts/
+# static_style_dir = %(here)s/static/june_2007_style/blue

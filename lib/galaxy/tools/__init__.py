@@ -18,12 +18,11 @@ from galaxy import eggs, util
 
 eggs.require( "MarkupSafe" )  # MarkupSafe must load before mako
 eggs.require( "Mako" )
-eggs.require( "elementtree" )
 eggs.require( "Paste" )
 eggs.require( "SQLAlchemy >= 0.4" )
 
 from cgi import FieldStorage
-from elementtree import ElementTree
+from xml.etree import ElementTree
 from mako.template import Template
 from paste import httpexceptions
 
@@ -2280,7 +2279,7 @@ class Tool( object, Dictifiable ):
                 trans.response.status = 500
                 log.error('Failed to get job information.')
                 return { 'error': 'Failed to get job information.' }
-            
+
         # load job parameters into incoming
         tool_message = ''
         if job:
@@ -2295,7 +2294,7 @@ class Tool( object, Dictifiable ):
 
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize = False )
-        
+
         # convert value to jsonifiable value
         def jsonify(v):
             # check if value is numeric
@@ -2344,16 +2343,16 @@ class Tool( object, Dictifiable ):
 
             # update and return
             dict[key] = value
-        
+
         # check the current state of a value and update it if necessary
         def check_state(trans, input, default_value, context):
             value = default_value
             error = 'State validation failed.'
-            
+
             # skip dynamic fields if deactivated
             if not is_dynamic and input.is_dynamic:
                 return [value, None]
-            
+
             # validate value content
             try:
                 # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
@@ -2365,7 +2364,7 @@ class Tool( object, Dictifiable ):
                 log.error('Checking parameter failed. %s', str(err))
                 pass
             return [value, error]
-    
+
         # populates state with incoming url parameters
         def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):
             context = ExpressionContext(state, context)
@@ -2410,7 +2409,7 @@ class Tool( object, Dictifiable ):
                     if error:
                         errors[key] = error
                     state[input.name] = value
-        
+
         # builds tool model including all attributes
         def iterate(group_inputs, inputs, state_inputs, other_values=None):
             other_values = ExpressionContext( state_inputs, other_values )
@@ -2442,13 +2441,13 @@ class Tool( object, Dictifiable ):
                         tool_dict = input.to_dict(trans, other_values=other_values)
                     except Exception:
                         pass
-                
+
                     # identify name
                     input_name = tool_dict.get('name')
                     if input_name:
                         # backup default value
                         tool_dict['default_value'] = input.get_initial_value(trans, other_values)
-                        
+
                         # update input value from tool state
                         if input_name in state_inputs:
                             tool_dict['value'] = state_inputs[input_name]
@@ -2481,7 +2480,7 @@ class Tool( object, Dictifiable ):
         # do param translation here, used by datasource tools
         if self.input_translator:
             self.input_translator.translate( params )
-        
+
         # initialize and populate tool state
         state_inputs = {}
         state_errors = {}
@@ -2490,7 +2489,7 @@ class Tool( object, Dictifiable ):
         # create basic tool model
         tool_model = self.to_dict(trans)
         tool_model['inputs'] = {}
-        
+
         # build tool model and tool state
         iterate(tool_model['inputs'], self.inputs, state_inputs, '')
 
@@ -2504,18 +2503,18 @@ class Tool( object, Dictifiable ):
             tool_help = tool_help.render( static_path=url_for( '/static' ), host_url=url_for('/', qualified=True) )
             if type( tool_help ) is not unicode:
                 tool_help = unicode( tool_help, 'utf-8')
-        
+
         # check if citations exist
         tool_citations = False
         if self.citations:
             tool_citations = True
-    
+
         # get tool versions
         tool_versions = []
         tools = self.app.toolbox.get_loaded_tools_by_lineage(self.id)
         for t in tools:
             tool_versions.append(t.version)
-        
+
         ## add information with underlying requirements and their versions
         tool_requirements = []
         if self.requirements:
@@ -2577,13 +2576,13 @@ class Tool( object, Dictifiable ):
         except Exception, error:
             trans.response.status = 500
             return { 'error': str (error) }
-                
+
         # can't rerun upload, external data sources, et cetera. workflow compatible will proxy this for now
         #if not self.is_workflow_compatible:
         #    trans.response.status = 500
         #    return { 'error': 'The \'%s\' tool does currently not support re-running.' % self.name }
         return message
-        
+
     def get_default_history_by_trans( self, trans, create=False ):
         return trans.get_history( create=create )
 

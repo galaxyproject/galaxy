@@ -40,6 +40,7 @@ from galaxy.managers import api_keys
 from galaxy.managers import tags
 from galaxy.managers import workflows
 from galaxy.managers import base as managers_base
+from galaxy.managers import users
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
@@ -69,6 +70,7 @@ class BaseController( object ):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context
+        self.user_manager = users.UserManager( app )
 
     def get_toolbox(self):
         """Returns the application toolbox"""
@@ -103,9 +105,11 @@ class BaseController( object ):
     # ---- parsing query params
     def decode_id( self, id ):
         try:
-            return self.app.security.decode_id( id )
-        except:
-            msg = "Malformed History id ( %s ) specified, unable to decode" % ( str( id ) )
+            # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
+            #   resulting in error for valid id
+            return self.app.security.decode_id( str( id ) )
+        except ( ValueError, TypeError ):
+            msg = "Malformed id ( %s ) specified, unable to decode" % ( str( id ) )
             raise exceptions.MalformedId( msg, id=str( id ) )
 
     def encode_all_ids( self, trans, rval, recursive=False ):

@@ -610,26 +610,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     return app
 
 def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
-    from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-    urlmap = URLMap()
-    # Merge the global and local configurations
-    conf = global_conf.copy()
-    conf.update(local_conf)
-    # Get cache time in seconds
-    cache_time = conf.get( "static_cache_time", None )
-    if cache_time is not None:
-        cache_time = int( cache_time )
-    # Send to dynamic app by default
-    urlmap["/"] = app
-    # Define static mappings from config
-    urlmap["/static"] = Static( conf.get( "static_dir", "./static/" ), cache_time )
-    urlmap["/images"] = Static( conf.get( "static_images_dir", "./static/images" ), cache_time )
-    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", "./static/scripts/" ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir", "./static/style/blue" ), cache_time )
-    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", "./static/favicon.ico" ), cache_time )
-    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", "./static/robots.txt" ), cache_time )
-
+    urlmap, cache_time = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     # wrap any static dirs for plugins
     plugin_frameworks = plugin_frameworks or []
     for framework in plugin_frameworks:

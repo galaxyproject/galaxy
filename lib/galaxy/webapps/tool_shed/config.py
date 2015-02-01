@@ -2,11 +2,13 @@
 Universe configuration builder.
 """
 import os
+import re
 import sys
 import logging
 import logging.config
 from optparse import OptionParser
 import ConfigParser
+from galaxy import eggs
 from galaxy.util import string_as_bool, listify
 
 log = logging.getLogger( __name__ )
@@ -132,6 +134,19 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "database/tool_shed_citations/data" ), self.root )
         self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )
+
+    @property
+    def sentry_dsn_public( self ):
+        """
+        Sentry URL with private key removed for use in client side scripts,
+        sentry server will need to be configured to accept events
+        """
+        # TODO refactor this to a common place between toolshed/galaxy config, along
+        # with other duplicated methods.
+        if self.sentry_dsn:
+            return re.sub( r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn )
+        else:
+            return None
 
     def __parse_config_file_options( self, kwargs ):
         defaults = dict(
@@ -274,3 +289,11 @@ def configure_logging( config ):
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )
+    # If sentry is configured, also log to it
+    if config.sentry_dsn:
+        eggs.require( "raven" )
+        from raven.handlers.logging import SentryHandler
+        sentry_handler = SentryHandler( config.sentry_dsn )
+        sentry_handler.setLevel( logging.WARN )
+        root.addHandler( sentry_handler )
+

@@ -1870,6 +1870,9 @@ $.extend( CanvasManager.prototype, {
                 left: x,
                 top: y
             });
+            self.cv.css( { "background-position-x": x,
+                           "background-position-y": y
+            });
             self.update_viewport_overlay();
         };
         // Dragging within canvas background

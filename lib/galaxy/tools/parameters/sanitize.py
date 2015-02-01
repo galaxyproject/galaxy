@@ -12,7 +12,7 @@ class ToolParameterSanitizer( object ):
     """
     Handles tool parameter specific sanitizing.
 
-    >>> from elementtree.ElementTree import XML
+    >>> from xml.etree.ElementTree import XML
     >>> sanitizer = ToolParameterSanitizer.from_element( XML(
     ... '''
     ... <sanitizer invalid_char="">

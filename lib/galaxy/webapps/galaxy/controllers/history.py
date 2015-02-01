@@ -761,7 +761,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                         histories=histories,
                                         email=email,
                                         send_to_err=send_to_err )
-        histories, send_to_users, send_to_err = self._get_histories_and_users( trans, user, id, email )
+
+        histories = self._get_histories( trans, id )
+        send_to_users, send_to_err = self._get_users( trans, user, email )
         if not send_to_users:
             if not send_to_err:
                 send_to_err += "%s is not a valid Galaxy user.  %s" % ( email, err_msg )
@@ -769,14 +771,21 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                         histories=histories,
                                         email=email,
                                         send_to_err=send_to_err )
+
         if params.get( 'share_button', False ):
+
             # The user has not yet made a choice about how to share, so dictionaries will be built for display
             can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err = \
                 self._populate_restricted( trans, user, histories, send_to_users, None, send_to_err, unique=True )
+
             send_to_err += err_msg
             if cannot_change and not no_change_needed and not can_change:
                 send_to_err = "The histories you are sharing do not contain any datasets that can be accessed by the users with which you are sharing."
-                return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err )
+                return trans.fill_template( "/history/share.mako",
+                                            histories=histories,
+                                            email=email,
+                                            send_to_err=send_to_err )
+
             if can_change or cannot_change:
                 return trans.fill_template( "/history/share.mako",
                                             histories=histories,
@@ -785,12 +794,18 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                             can_change=can_change,
                                             cannot_change=cannot_change,
                                             no_change_needed=unique_no_change_needed )
+
             if no_change_needed:
                 return self._share_histories( trans, user, send_to_err, histories=no_change_needed )
+
             elif not send_to_err:
                 # User seems to be sharing an empty history
                 send_to_err = "You cannot share an empty history.  "
-        return trans.fill_template( "/history/share.mako", histories=histories, email=email, send_to_err=send_to_err )
+
+        return trans.fill_template( "/history/share.mako",
+                                    histories=histories,
+                                    email=email,
+                                    send_to_err=send_to_err )
 
     @web.expose
     @web.require_login( "share restricted histories with other users" )
@@ -807,7 +822,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                                                           share_button=True ) )
         user = trans.get_user()
         user_roles = user.all_roles()
-        histories, send_to_users, send_to_err = self._get_histories_and_users( trans, user, id, email )
+        histories = self._get_histories( trans, id )
+        send_to_users, send_to_err = self._get_users( trans, user, email )
         send_to_err = ''
         # The user has made a choice, so dictionaries will be built for sharing
         can_change, cannot_change, no_change_needed, unique_no_change_needed, send_to_err = \
@@ -856,31 +872,49 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                         histories_for_sharing[ send_to_user ].append( history )
         return self._share_histories( trans, user, send_to_err, histories=histories_for_sharing )
 
-    def _get_histories_and_users( self, trans, user, id, email ):
-        if not id:
+    def _get_histories( self, trans, ids ):
+        if not ids:
             # Default to the current history
-            id = trans.security.encode_id( trans.history.id )
-        id = galaxy.util.listify( id )
-        send_to_err = ""
+            ids = trans.security.encode_id( trans.history.id )
+        ids = galaxy.util.listify( ids )
         histories = []
-        for history_id in id:
+        for history_id in ids:
             histories.append( self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user ) )
+        return histories
+
+    def _get_users( self, trans, user, emails_or_ids ):
         send_to_users = []
-        for email_address in galaxy.util.listify( email ):
-            email_address = email_address.strip()
-            if email_address:
-                if email_address == user.email:
-                    send_to_err += "You cannot send histories to yourself.  "
-                else:
-                    send_to_user = trans.sa_session.query( trans.app.model.User ) \
-                                                   .filter( and_( trans.app.model.User.table.c.email==email_address,
-                                                                  trans.app.model.User.table.c.deleted==False ) ) \
-                                                   .first()
-                    if send_to_user:
-                        send_to_users.append( send_to_user )
-                    else:
-                        send_to_err += "%s is not a valid Galaxy user.  " % email_address
-        return histories, send_to_users, send_to_err
+        send_to_err = ""
+        for string in galaxy.util.listify( emails_or_ids ):
+            string = string.strip()
+            if not string:
+                continue
+
+            send_to_user = None
+            if '@' in string:
+                email_address = string
+                send_to_user = self.user_manager.by_email( trans, email_address,
+                    filters=[ trans.app.model.User.table.c.deleted == False ] )
+
+            else:
+                user_id = string
+                try:
+                    decoded_user_id = self.decode_id( string )
+                    send_to_user = self.user_manager.by_id( trans, decoded_user_id )
+                    if send_to_user.deleted:
+                        send_to_user = None
+                #TODO: in an ideal world, we would let this bubble up to web.expose which would handle it
+                except exceptions.MalformedId:
+                    send_to_user = None
+
+            if not send_to_user:
+                send_to_err += "%s is not a valid Galaxy user.  " % string
+            elif send_to_user == user:
+                send_to_err += "You cannot send histories to yourself.  "
+            else:
+                send_to_users.append( send_to_user )
+
+        return send_to_users, send_to_err
 
     def _populate( self, trans, histories_for_sharing, other, send_to_err ):
         # This method will populate the histories_for_sharing dictionary with the users and
@@ -1466,7 +1500,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.set_history( history )
             return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
         except exceptions.MessageException, msg_exc:
-            print type( msg_exc )
             trans.response.status = msg_exc.err_code.code
             return { 'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code }
 

@@ -134,7 +134,7 @@ def app_factory( global_conf, **kwargs ):
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
-    if kwargs.get( 'static_enabled', True ):
+    if asbool( kwargs.get( 'static_enabled', True ) ):
         webapp = wrap_in_static( webapp, global_conf, **kwargs )
     # Close any pooled database connections before forking
     try:
@@ -171,6 +171,14 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
+    # If sentry logging is enabled, log here before propogating up to
+    # the error middleware
+    # TODO sentry config is duplicated between tool_shed/galaxy, refactor this.
+    sentry_dsn = conf.get( 'sentry_dsn', None )
+    if sentry_dsn:
+        from galaxy.web.framework.middleware.sentry import Sentry
+        log.debug( "Enabling 'sentry' middleware" )
+        app = Sentry( app, sentry_dsn )
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
@@ -219,26 +227,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     return app
 
 def wrap_in_static( app, global_conf, **local_conf ):
-    from paste.urlmap import URLMap
-    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-    urlmap = URLMap()
-    # Merge the global and local configurations
-    conf = global_conf.copy()
-    conf.update(local_conf)
-    # Get cache time in seconds
-    cache_time = conf.get( "static_cache_time", None )
-    if cache_time is not None:
-        cache_time = int( cache_time )
-    # Send to dynamic app by default
-    urlmap["/"] = app
-    # Define static mappings from config
-    urlmap["/static"] = Static( conf.get( "static_dir", "./static/" ), cache_time )
-    urlmap["/images"] = Static( conf.get( "static_images_dir", "./static/images" ), cache_time )
-    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir", "./static/scripts/" ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir", "./static/style/blue" ), cache_time )
-    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir", "./static/favicon.ico" ), cache_time )
-    urlmap["/robots.txt"] = Static( conf.get( "static_robots_txt", "./static/robots.txt" ), cache_time )
-    # URL mapper becomes the root webapp
+    urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
 
 def build_template_error_formatters():

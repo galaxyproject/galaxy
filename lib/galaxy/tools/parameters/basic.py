@@ -8,7 +8,7 @@ import sys
 import os
 import os.path
 import urllib
-from elementtree.ElementTree import XML, Element
+from xml.etree.ElementTree import XML
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch

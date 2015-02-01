@@ -6,9 +6,8 @@ import logging
 import re
 
 from galaxy import eggs
-eggs.require( "elementtree" )
 
-from elementtree.ElementTree import Element
+from xml.etree.ElementTree import Element
 
 import galaxy.tools
 from galaxy import exceptions

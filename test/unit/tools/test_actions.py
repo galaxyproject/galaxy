@@ -6,7 +6,7 @@ from galaxy.tools import ToolOutput
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions import on_text_for_names
 from galaxy.tools.actions import determine_output_format
-from elementtree.ElementTree import XML
+from xml.etree.ElementTree import XML
 
 import tools_support
 

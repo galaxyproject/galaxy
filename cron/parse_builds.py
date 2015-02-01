@@ -8,12 +8,7 @@ build   description
 
 import sys
 import urllib
-if sys.version_info[:2] >= ( 2, 5 ):
-    import xml.etree.ElementTree as ElementTree
-else:
-    from galaxy import eggs
-    import pkg_resources; pkg_resources.require( "elementtree" )
-    from elementtree import ElementTree
+import xml.etree.ElementTree as ElementTree
 
 URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
 
@@ -38,7 +33,7 @@ def getbuilds(url):
     for dsn in tree:
         build = dsn.find("SOURCE").attrib['id']
         description = dsn.find("DESCRIPTION").text.replace(" - Genome at UCSC","").replace(" Genome at UCSC","")
-        
+
         fields = description.split(" ")
         temp = fields[0]
         for i in range(len(fields)-1):

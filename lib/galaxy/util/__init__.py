@@ -40,8 +40,7 @@ eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-eggs.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
+from xml.etree import ElementTree, ElementInclude
 
 eggs.require( "wchartype" )
 import wchartype
@@ -372,7 +371,7 @@ def pretty_print_time_interval( time = False, precise = False ):
                 if second_diff < 86400:
                     return str(second_diff / 3600) + " hours ago"
         if day_diff == 1:
-            return "Yesterday"
+            return "yesterday"
         if day_diff < 7:
             return str( day_diff ) + " days ago"
         if day_diff < 31:
@@ -382,16 +381,16 @@ def pretty_print_time_interval( time = False, precise = False ):
         return str( day_diff / 365 ) + " years ago"
     else:
         if day_diff == 0:
-            return "Today"
+            return "today"
         if day_diff == 1:
-            return "Yesterday"
+            return "yesterday"
         if day_diff < 7:
-            return "this week"
+            return "less than a week"
         if day_diff < 31:
-            return "this month"
+            return "less than a month"
         if day_diff < 365:
-            return "this year"
-        return str( day_diff / 365 ) + " years ago"
+            return "less than a year"
+        return "a few years ago"
 
 
 def pretty_print_json(json_data, is_json_string=False):
