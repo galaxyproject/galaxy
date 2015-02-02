@@ -21,6 +21,7 @@ from galaxy.util.bunch import Bunch
 class OpenObject( object ):
     pass
 
+
 class MockAppConfig( Bunch ):
     def __init__( self, **kwargs ):
         Bunch.__init__( self, **kwargs )
@@ -36,7 +37,10 @@ class MockAppConfig( Bunch ):
         self.user_activation_on = False
         self.new_user_dataset_access_role_default_private = False
 
+        self.expose_dataset_path = True
         self.allow_user_dataset_purge = True
+        self.enable_old_display_applications = True
+        
 
 class MockApp( object ):
     def __init__( self, **kwargs ):

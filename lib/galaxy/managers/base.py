@@ -31,6 +31,7 @@ import sqlalchemy
 
 from galaxy import exceptions
 from galaxy import model
+from galaxy import web
 from galaxy.model import tool_shed_install
 
 import logging
@@ -496,6 +497,8 @@ class ModelSerializer( object ):
         item_dict = MySerializer.serialize( trans, my_item, keys_to_serialize )
         # if a key to serialize is not listed in the Serializer.serializable_keys or serializers, it will not be added
     """
+    #: 'service' to use for getting urls - use class var to allow overriding when testing
+    url_for = web.url_for
 
     def __init__( self, app ):
         """
@@ -578,6 +581,7 @@ class ModelSerializer( object ):
             no `view` or `keys`: use the `default_view` if any
             `view` and `keys`: combine both into one list of keys
         """
+#TODO: default view + view makes no sense outside the API.index context - move default view there
         all_keys = []
         keys = keys or []
         # chose explicit over concise here

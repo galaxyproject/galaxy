@@ -19,8 +19,12 @@ from galaxy.util.bunch import Bunch
 
 import mock
 from test_ModelManager import BaseTestCase
+
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.histories import HistorySerializer
+from galaxy.managers.histories import HistoryDeserializer
 from galaxy.managers.histories import HistoryFilters
+from galaxy.managers import hdas
 
 
 # =============================================================================
@@ -305,10 +309,122 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( self.history_mgr.get_current( self.trans ), history1 )
 
 
+# =============================================================================
+# web.url_for doesn't work well in the framework
+testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
+HistorySerializer.url_for = testable_url_for
+hdas.HDASerializer.url_for = testable_url_for
+
+
+class HistorySerializerTestCase( BaseTestCase ):
+
+    def assertHasKeys( self, obj, key_list ):
+        self.assertEqual( sorted( obj.keys() ), sorted( key_list ) )
+
+    def set_up_managers( self ):
+        super( HistorySerializerTestCase, self ).set_up_managers()
+        self.history_mgr = HistoryManager( self.app )
+        self.hda_mgr = hdas.HDAManager( self.app )
+        self.history_serializer = HistorySerializer( self.app )
+
+    def test_views( self ):
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+
+        self.log( 'should have a summary view' )
+        summary_view = self.history_serializer.serialize_to_view( self.trans, history1, view='summary' )
+        self.assertHasKeys( summary_view, self.history_serializer.views[ 'summary' ] )
+
+        self.log( 'should have a detailed view' )
+        detailed_view = self.history_serializer.serialize_to_view( self.trans, history1, view='detailed' )
+        self.assertHasKeys( detailed_view, self.history_serializer.views[ 'detailed' ] )
+
+        self.log( 'should have a extended view' )
+        extended_view = self.history_serializer.serialize_to_view( self.trans, history1, view='extended' )
+        self.assertHasKeys( extended_view, self.history_serializer.views[ 'extended' ] )
+
+        self.log( 'should have the summary view as default view' )
+        default_view = self.history_serializer.serialize_to_view( self.trans, history1, default_view='summary' )
+        self.assertHasKeys( summary_view, self.history_serializer.views[ 'summary' ] )
+
+        self.log( 'should have a serializer for all serializable keys' )
+        need_no_serializers = ( basestring, bool, type( None ) )
+        for key in self.history_serializer.serializable_keys:
+            instantiated_attribute = getattr( history1, key, None )
+            if not ( ( key in self.history_serializer.serializers )
+                  or ( isinstance( instantiated_attribute, need_no_serializers ) ) ):
+                self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
+        else:
+            self.assertTrue( True, 'all serializable keys have a serializer' )
+
+    def test_views_and_keys( self ):
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+
+        self.log( 'should be able to use keys with views' )
+        serialized = self.history_serializer.serialize_to_view( self.trans, history1,
+            view='summary', keys=[ 'state_ids', 'user_id' ] )
+        self.assertHasKeys( serialized,
+            self.history_serializer.views[ 'summary' ] + [ 'state_ids', 'user_id' ] )
+
+        self.log( 'should be able to use keys on their own' )
+        serialized = self.history_serializer.serialize_to_view( self.trans, history1,
+            keys=[ 'state_ids', 'user_id' ] )
+        self.assertHasKeys( serialized, [ 'state_ids', 'user_id' ] )
+
+    def test_serializers( self ):
+        # size
+        # nice size
+        pass
+
+    def test_contents( self ):
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+
+        self.log( 'a history with no contents should be properly reflected in empty, etc.' )
+        keys = [ 'empty', 'count', 'state_ids', 'state_details', 'state' ]
+        serialized = self.history_serializer.serialize( self.trans, history1, keys )
+        self.assertEqual( serialized[ 'state' ], 'new' )
+        self.assertEqual( serialized[ 'empty' ], True )
+        self.assertEqual( serialized[ 'count' ], 0 )
+        self.assertEqual( sum( serialized[ 'state_details' ].values() ), 0 )
+        self.assertEqual( serialized[ 'state_ids' ][ 'ok' ], [] )
+
+        hda1 = self.hda_mgr.create( self.trans, history=history1, hid=1 )
+        self.hda_mgr.update( self.trans, hda1, dict( state='ok' ) )
+
+        serialized = self.history_serializer.serialize( self.trans, history1, keys )
+        self.assertEqual( serialized[ 'state' ], 'ok' )
+        self.assertEqual( serialized[ 'empty' ], False )
+        self.assertEqual( serialized[ 'count' ], 1 )
+        self.assertEqual( serialized[ 'state_details' ][ 'ok' ], 1 )
+        self.assertIsInstance( serialized[ 'state_ids' ][ 'ok' ], list )
+
+        #pprint.pprint( self.history_serializer.serialize( self.trans, history1, [ 'contents' ] ) )
+
+# =============================================================================
+class HistoryDeserializerTestCase( BaseTestCase ):
+
+    def set_up_managers( self ):
+        super( HistoryDeserializerTestCase, self ).set_up_managers()
+        self.history_mgr = HistoryManager( self.app )
+        self.history_deserializer = HistoryDeserializer( self.app )
+
+    def test_base( self ):
+        pass
+
+
+# =============================================================================
+class HistoryFiltersTestCase( BaseTestCase ):
+
+    def set_up_managers( self ):
+        super( HistoryFiltersTestCase, self ).set_up_managers()
+        self.history_mgr = HistoryManager( self.app )
+        self.filter_parser = HistoryFilters( self.app )
+
     # ---- functional and orm filter splitting and resolution
     def test_parse_filters( self ):
-        filter_parser = HistoryFilters( self.app )
-        filters = filter_parser.parse_filters([
+        filters = self.filter_parser.parse_filters([
             ( 'name', 'eq', 'wot' ),
             ( 'deleted', 'eq', 'True' ),
             ( 'annotation', 'has', 'hrrmm' )
@@ -320,36 +436,34 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( filters[1].right.value, True )
 
     def test_parse_filters_invalid_filters( self ):
-        filter_parser = HistoryFilters( self.app )
         self.log( 'should error on non-column attr')
-        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+        self.assertRaises( exceptions.RequestParameterInvalidException, self.filter_parser.parse_filters, [
             ( 'merp', 'eq', 'wot' ),
         ])
         self.log( 'should error on non-whitelisted attr')
-        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+        self.assertRaises( exceptions.RequestParameterInvalidException, self.filter_parser.parse_filters, [
             ( 'user_id', 'eq', 'wot' ),
         ])
         self.log( 'should error on non-whitelisted op')
-        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+        self.assertRaises( exceptions.RequestParameterInvalidException, self.filter_parser.parse_filters, [
             ( 'name', 'lt', 'wot' ),
         ])
         self.log( 'should error on non-listed fn op')
-        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+        self.assertRaises( exceptions.RequestParameterInvalidException, self.filter_parser.parse_filters, [
             ( 'annotation', 'like', 'wot' ),
         ])
         self.log( 'should error on val parsing error')
-        self.assertRaises( exceptions.RequestParameterInvalidException, filter_parser.parse_filters, [
+        self.assertRaises( exceptions.RequestParameterInvalidException, self.filter_parser.parse_filters, [
             ( 'deleted', 'eq', 'true' ),
         ])
 
     def test_orm_filter_parsing( self ):
-        filter_parser = HistoryFilters( self.app )
         user2 = self.user_mgr.create( self.trans, **user2_data )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
         history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
         history3 = self.history_mgr.create( self.trans, name='history3', user=user2 )
 
-        filters = filter_parser.parse_filters([
+        filters = self.filter_parser.parse_filters([
             ( 'name', 'like', 'history%' ),
         ])
         histories = self.history_mgr.list( self.trans, filters=filters )
@@ -357,23 +471,23 @@ class HistoryManagerTestCase( BaseTestCase ):
         #    print h.name
         self.assertEqual( histories, [ history1, history2, history3 ])
 
-        filters = filter_parser.parse_filters([ ( 'name', 'like', '%2' ), ])
+        filters = self.filter_parser.parse_filters([ ( 'name', 'like', '%2' ), ])
         self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history2 ])
 
-        filters = filter_parser.parse_filters([ ( 'name', 'eq', 'history2' ), ])
+        filters = self.filter_parser.parse_filters([ ( 'name', 'eq', 'history2' ), ])
         self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history2 ])
 
         self.history_mgr.update( self.trans, history1, dict( deleted=True ) )
-        filters = filter_parser.parse_filters([ ( 'deleted', 'eq', 'True' ), ])
+        filters = self.filter_parser.parse_filters([ ( 'deleted', 'eq', 'True' ), ])
         self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history1 ])
-        filters = filter_parser.parse_filters([ ( 'deleted', 'eq', 'False' ), ])
+        filters = self.filter_parser.parse_filters([ ( 'deleted', 'eq', 'False' ), ])
         self.assertEqual( self.history_mgr.list( self.trans, filters=filters ), [ history2, history3 ])
         self.assertEqual( self.history_mgr.list( self.trans ), [ history1, history2, history3 ])
 
         self.history_mgr.update( self.trans, history3, dict( deleted=True ) )
         self.history_mgr.update( self.trans, history1, dict( importable=True ) )
         self.history_mgr.update( self.trans, history2, dict( importable=True ) )
-        filters = filter_parser.parse_filters([
+        filters = self.filter_parser.parse_filters([
             ( 'deleted', 'eq', 'True' ),
             ( 'importable', 'eq', 'True' ),
         ])
@@ -381,13 +495,12 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual( self.history_mgr.list( self.trans ), [ history1, history2, history3 ])
 
     def test_fn_filter_parsing( self ):
-        filter_parser = HistoryFilters( self.app )
         user2 = self.user_mgr.create( self.trans, **user2_data )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
         history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
         history3 = self.history_mgr.create( self.trans, name='history3', user=user2 )
 
-        filters = filter_parser.parse_filters([ ( 'annotation', 'has', 'no play' ), ])
+        filters = self.filter_parser.parse_filters([ ( 'annotation', 'has', 'no play' ), ])
         anno_filter = filters[0]
 
         history3.add_item_annotation( self.trans.sa_session, user2, history3, "All work and no play" )
@@ -404,20 +517,19 @@ class HistoryManagerTestCase( BaseTestCase ):
         history1.add_item_annotation( self.trans.sa_session, user2, history1, "All work and no play" )
         self.trans.sa_session.flush()
 
-        shining_examples = self.history_mgr.list( self.trans, filters=filter_parser.parse_filters([
+        shining_examples = self.history_mgr.list( self.trans, filters=self.filter_parser.parse_filters([
             ( 'importable', 'eq', 'True' ),
             ( 'annotation', 'has', 'no play' ),
         ]))
         self.assertEqual( shining_examples, [ history3 ])
 
     def test_fn_filter_currying( self ):
-        filter_parser = HistoryFilters( self.app )
-        filter_parser.fn_filter_parsers = {
+        self.filter_parser.fn_filter_parsers = {
             'name_len' : { 'op': { 'lt' : lambda i, v: len( i.name ) < v }, 'val': int }
         }
         self.log( 'should be 2 filters now' )
-        self.assertEqual( len( filter_parser.fn_filter_parsers ), 1 )
-        filters = filter_parser.parse_filters([
+        self.assertEqual( len( self.filter_parser.fn_filter_parsers ), 1 )
+        filters = self.filter_parser.parse_filters([
             ( 'name_len', 'lt', '4' )
         ])
         self.log( 'should have parsed out a single filter' )
@@ -436,7 +548,6 @@ class HistoryManagerTestCase( BaseTestCase ):
         """
         Test limit and offset in conjunction with both orm and fn filtering.
         """
-        filter_parser = HistoryFilters( self.app )
         user2 = self.user_mgr.create( self.trans, **user2_data )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
         history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
@@ -491,7 +602,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         found = self.history_mgr.list( self.trans, filters=filters, offset=1, limit=1 )
         self.assertEqual( found, [ history2 ] )
 
-        filters = filter_parser.parse_filters([ ( 'annotation', 'has', test_annotation ) ])
+        filters = self.filter_parser.parse_filters([ ( 'annotation', 'has', test_annotation ) ])
         self.log( "fn filtered, no offset, no limit should work" )
         found = self.history_mgr.list( self.trans, filters=filters )
         self.assertEqual( found, [ history2, history3, history4 ] )
@@ -505,7 +616,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         found = self.history_mgr.list( self.trans, filters=filters, offset=1, limit=1 )
         self.assertEqual( found, [ history3 ] )
 
-        filters = filter_parser.parse_filters([
+        filters = self.filter_parser.parse_filters([
             ( 'deleted', 'eq', 'True' ),
             ( 'annotation', 'has', test_annotation )
         ])
@@ -534,8 +645,6 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.log( "orm and fn filtered, negative offset should return full list" )
         found = self.history_mgr.list( self.trans, filters=filters, offset=-1 )
         self.assertEqual( found, deleted_and_annotated )
-
-
 
 
 # =============================================================================

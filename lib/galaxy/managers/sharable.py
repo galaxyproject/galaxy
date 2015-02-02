@@ -326,19 +326,20 @@ class SharableModelSerializer( base.ModelSerializer,
     def serialize_username_and_slug( self, trans, item, key ):
         if not ( item.user and item.slug and self.SINGLE_CHAR_ABBR ):
             return None
+#TODO: self.url_for
         return ( '/' ).join(( 'u', item.user.username, self.SINGLE_CHAR_ABBR, item.slug ) )
 
-    # the only ones that needs any fns:
-    #   user/user_id
-    #   user_shares?
-    #   username_and_slug?
-    #def get_name_and_link_async( self, trans, id=None ):
     #def published_url( self, trans, item, key ):
     #    """
     #    """
     #    url = url_for(controller='history', action="display_by_username_and_slug",
     #        username=item.user.username, slug=item.slug )
     #    return url
+
+    # the only ones that needs any fns:
+    #   user/user_id
+    #   user_shares?
+    #   username_and_slug?
 
 
 class SharableModelDeserializer( base.ModelDeserializer,

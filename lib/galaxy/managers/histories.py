@@ -5,7 +5,6 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 
-import galaxy.web
 from galaxy import model
 from galaxy.managers import base
 from galaxy.managers import sharable
@@ -307,9 +306,9 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'size'          : lambda t, i, k: int( i.get_disk_size() ),
             'nice_size'     : lambda t, i, k: i.get_disk_size( nice_size=True ),
 
-            'url'           : lambda t, i, k: galaxy.web.url_for( 'history', id=t.security.encode_id( i.id ) ),
+            'url'           : lambda t, i, k: self.url_for( 'history', id=t.security.encode_id( i.id ) ),
             'contents_url'  : lambda t, i, k:
-                galaxy.web.url_for( 'history_contents', history_id=t.security.encode_id( i.id ) ),
+                self.url_for( 'history_contents', history_id=t.security.encode_id( i.id ) ),
             'empty'         : lambda t, i, k: len( i.datasets ) <= 0,
 
             'hdas'          : lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],

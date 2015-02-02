@@ -11,7 +11,6 @@ import gettext
 from galaxy import model
 from galaxy import exceptions
 from galaxy import datatypes
-import galaxy.web
 import galaxy.datatypes.metadata
 from galaxy import objectstore
 
@@ -436,11 +435,11 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             #TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
             #   see also: https://trello.com/c/5d6j4X5y
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
-            'url'           : lambda t, i, k: galaxy.web.url_for( 'history_content',
+            'url'           : lambda t, i, k: self.url_for( 'history_content',
                 history_id=t.security.encode_id( i.history_id ), id=t.security.encode_id( i.id ) ),
 
             'urls'          : self.serialize_urls,
-            'download_url'  : lambda t, i, k: galaxy.web.url_for( 'history_contents_display',
+            'download_url'  : lambda t, i, k: self.url_for( 'history_contents_display',
                 history_id=t.security.encode_id( i.history.id ),
                 history_content_id=t.security.encode_id( i.id ) ),
 
@@ -548,7 +547,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
         """
         Return web controller urls useful for this HDA.
         """
-        url_for = galaxy.web.url_for
+        url_for = self.url_for
         encoded_id = self.security.encode_id( hda.id )
         urls = {
             'purge'         : url_for( controller='dataset', action='purge_async', dataset_id=encoded_id ),
