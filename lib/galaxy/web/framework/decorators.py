@@ -206,7 +206,10 @@ def _future_expose_api( func, to_json=True, user_required=True ):
             # TODO: Document this branch, when can this happen,
             # I don't understand it.
             return __api_error_response( trans, err_msg=trans.error_message )
-        if user_required and trans.anonymous:
+        # error if user required and anon
+        # error if anon and no session
+        if ( ( trans.anonymous and user_required )
+          or ( trans.anonymous and not trans.galaxy_session ) ):
             error_code = error_codes.USER_NO_API_KEY
             # Use error codes default error message.
             err_msg = "API authentication required for this request"
@@ -219,8 +222,10 @@ def _future_expose_api( func, to_json=True, user_required=True ):
                 return __api_error_response( trans, status_code=400, err_code=error_code )
 
         trans.response.set_content_type( JSON_CONTENT_TYPE )
+
         # send 'do not cache' headers to handle IE's caching of ajax get responses
         trans.response.headers[ 'Cache-Control' ] = "max-age=0,no-cache,no-store"
+
         # TODO: Refactor next block out into a helper procedure.
         # Perform api_run_as processing, possibly changing identity
         if 'payload' in kwargs and 'run_as' in kwargs['payload']:
