@@ -44,9 +44,9 @@ fi
 
 if [ -n "$GALAXY_RUN_ALL" ]; then
     servers=`sed -n 's/^\[server:\(.*\)\]/\1/  p' $GALAXY_CONFIG_FILE | xargs echo`
-    daemon=`echo "$@" | grep -q daemon`
+    echo "$@" | grep -q 'daemon\|restart'
     if [ $? -ne 0 ]; then
-        echo 'ERROR: $GALAXY_RUN_ALL cannot be used without the `--daemon` or `--stop-daemon` arguments to run.sh'
+        echo 'ERROR: $GALAXY_RUN_ALL cannot be used without the `--daemon`, `--stop-daemon` or `restart` arguments to run.sh'
         exit 1
     fi
     for server in $servers; do
@@ -54,5 +54,6 @@ if [ -n "$GALAXY_RUN_ALL" ]; then
         python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $@
     done
 else
+    # Handle only 1 server, whose name can be specified with --server-name parameter (defaults to "main")
     python ./scripts/paster.py serve $GALAXY_CONFIG_FILE $@
 fi
