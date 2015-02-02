@@ -63,7 +63,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         """
         io_details = util.string_as_bool( kwd.get( 'io_details', False ) )
         link_details = util.string_as_bool( kwd.get( 'link_details', False ) )
-        tool = self._get_tool( id )
+        tool = self._get_tool( id, user=trans.user )
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
     @_future_expose_api_anonymous
@@ -89,7 +89,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
 
     @_future_expose_api_anonymous
     def citations( self, trans, id, **kwds ):
-        tool = self._get_tool( id )
+        tool = self._get_tool( id, user=trans.user )
         rval = []
         for citation in tool.citations:
             rval.append( citation.to_dict( 'bibtex' ) )
@@ -122,7 +122,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
 
         # Get tool.
         tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] ) if 'tool_id' in payload else None
-        if not tool:
+        if not tool or not tool.allow_user_access( trans.user ):
             trans.response.status = 404
             return { "message": { "type": "error", "text" : trans.app.model.Dataset.conversion_messages.NO_TOOL } }
 
@@ -212,10 +212,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
     #
     # -- Helper methods --
     #
-    def _get_tool( self, id ):
+    def _get_tool( self, id, user=None ):
         id = urllib.unquote_plus( id )
         tool = self.app.toolbox.get_tool( id )
-        if not tool:
+        if not tool or not tool.allow_user_access( user ):
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
         return tool
 
@@ -281,7 +281,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMix
         #
         original_job = self.get_hda_job( original_dataset )
         tool = trans.app.toolbox.get_tool( original_job.tool_id )
-        if not tool:
+        if not tool or not tool.allow_user_access( trans.user ):
             return trans.app.model.Dataset.conversion_messages.NO_TOOL
         tool_params = dict( [ ( p.name, p.value ) for p in original_job.parameters ] )
 

@@ -65,7 +65,7 @@ class ToolRunner( BaseUIController ):
                                                                              get_loaded_tools_by_lineage=False,
                                                                              set_selected=refreshed_on_change )
         # No tool matching the tool id, display an error (shouldn't happen)
-        if not tool:
+        if not tool or not tool.allow_user_access( trans.user ):
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             trans.response.status = 404
@@ -191,6 +191,8 @@ class ToolRunner( BaseUIController ):
             # This is expected so not an exception.
             tool_id_version_message = ''
             error( "This dataset was created by an obsolete tool (%s). Can't re-run." % tool_id )
+        if not tool.allow_user_access( trans.user ):
+            error( "The requested tool is unknown." )
         # Can't rerun upload, external data sources, et cetera. Workflow compatible will proxy this for now
         if not tool.is_workflow_compatible:
             error( "The '%s' tool does not currently support rerunning." % tool.name )

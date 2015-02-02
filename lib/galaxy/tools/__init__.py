@@ -1388,6 +1388,12 @@ class Tool( object, Dictifiable ):
                                     return section_id, section_name
         return None, None
 
+    def allow_user_access( self, user ):
+        """
+        :returns: bool -- Whether the user is allowed to access the tool.
+        """
+        return True
+
     def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -3392,6 +3398,7 @@ class DataManagerTool( OutputParameterJSONTool ):
             self.data_manager_id = self.id
 
     def exec_after_process( self, app, inp_data, out_data, param_dict, job=None, **kwds ):
+        assert self.allow_user_access( job.user ), "You must be an admin to access this tool."
         #run original exec_after_process
         super( DataManagerTool, self ).exec_after_process( app, inp_data, out_data, param_dict, job=job, **kwds )
         #process results of tool
@@ -3415,6 +3422,7 @@ class DataManagerTool( OutputParameterJSONTool ):
             return history
         user = trans.user
         assert user, 'You must be logged in to use this tool.'
+        assert self.allow_user_access( user ), "You must be an admin to access this tool."
         history = user.data_manager_histories
         if not history:
             #create
@@ -3434,6 +3442,17 @@ class DataManagerTool( OutputParameterJSONTool ):
                     history = None
         return history
 
+    def allow_user_access( self, user ):
+        """
+        :returns: bool -- Whether the user is allowed to access the tool.
+        Data Manager tools are only accessible to admins.
+        """
+        if super( DataManagerTool, self ).allow_user_access( user ) and self.app.config.is_admin_user( user ):
+            return True
+        if user:
+            user = user.id
+        log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id ) 
+        return False
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
