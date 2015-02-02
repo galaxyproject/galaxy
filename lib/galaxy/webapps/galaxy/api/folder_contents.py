@@ -315,14 +315,14 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         else:
             raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
 
-    @web.expose_api
+    @expose_api
     def show( self, trans, id, library_id, **kwd ):
         """
         GET /api/folders/{encoded_folder_id}/
         """
         raise exceptions.NotImplemented( 'Showing the library folder content is not implemented here.' )
 
-    @web.expose_api
+    @expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
         """
         PUT /api/folders/{encoded_folder_id}/contents

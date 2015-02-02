@@ -436,7 +436,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         except exceptions.httpexceptions.HTTPException:
             raise
         except Exception, exc:
-            log.exception( 'HDA API, delete: uncaught exception: %s, %s\n%s',
+            log.exception( 'library_contents API, delete: uncaught exception: %s, %s\n%s',
                            id, str( kwd ), str( exc ) )
             trans.response.status = 500
             rval.update({ 'error': str( exc ) })
