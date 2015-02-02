@@ -90,6 +90,7 @@ def app_factory( global_conf, **kwargs ):
         webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
         #webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=None, **kwargs )
     if asbool(kwargs.get('pack_scripts', False)):
+        log.warn( "The 'pack_scripts' option is deprecated" )
         pack_scripts()
     # Close any pooled database connections before forking
     try:
