@@ -312,14 +312,11 @@ class HistoryManagerTestCase( BaseTestCase ):
 # =============================================================================
 # web.url_for doesn't work well in the framework
 testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
-HistorySerializer.url_for = testable_url_for
-hdas.HDASerializer.url_for = testable_url_for
+HistorySerializer.url_for = staticmethod( testable_url_for )
+hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
 
 class HistorySerializerTestCase( BaseTestCase ):
-
-    def assertHasKeys( self, obj, key_list ):
-        self.assertEqual( sorted( obj.keys() ), sorted( key_list ) )
 
     def set_up_managers( self ):
         super( HistorySerializerTestCase, self ).set_up_managers()
@@ -333,15 +330,15 @@ class HistorySerializerTestCase( BaseTestCase ):
 
         self.log( 'should have a summary view' )
         summary_view = self.history_serializer.serialize_to_view( self.trans, history1, view='summary' )
-        self.assertHasKeys( summary_view, self.history_serializer.views[ 'summary' ] )
+        self.assertKeys( summary_view, self.history_serializer.views[ 'summary' ] )
 
         self.log( 'should have a detailed view' )
         detailed_view = self.history_serializer.serialize_to_view( self.trans, history1, view='detailed' )
-        self.assertHasKeys( detailed_view, self.history_serializer.views[ 'detailed' ] )
+        self.assertKeys( detailed_view, self.history_serializer.views[ 'detailed' ] )
 
         self.log( 'should have the summary view as default view' )
         default_view = self.history_serializer.serialize_to_view( self.trans, history1, default_view='summary' )
-        self.assertHasKeys( summary_view, self.history_serializer.views[ 'summary' ] )
+        self.assertKeys( summary_view, self.history_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
         need_no_serializers = ( basestring, bool, type( None ) )
@@ -360,13 +357,13 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.log( 'should be able to use keys with views' )
         serialized = self.history_serializer.serialize_to_view( self.trans, history1,
             view='summary', keys=[ 'state_ids', 'user_id' ] )
-        self.assertHasKeys( serialized,
+        self.assertKeys( serialized,
             self.history_serializer.views[ 'summary' ] + [ 'state_ids', 'user_id' ] )
 
         self.log( 'should be able to use keys on their own' )
         serialized = self.history_serializer.serialize_to_view( self.trans, history1,
             keys=[ 'state_ids', 'user_id' ] )
-        self.assertHasKeys( serialized, [ 'state_ids', 'user_id' ] )
+        self.assertKeys( serialized, [ 'state_ids', 'user_id' ] )
 
     def test_sharable( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
@@ -375,7 +372,7 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.log( 'should have a serializer for all SharableModel keys' )
         sharable_attrs = [ 'user_id', 'username_and_slug', 'importable', 'published', 'slug' ]
         serialized = self.history_serializer.serialize( self.trans, history1, sharable_attrs )
-        self.assertHasKeys( serialized, sharable_attrs )
+        self.assertKeys( serialized, sharable_attrs )
 
     def test_purgable( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
@@ -397,8 +394,6 @@ class HistorySerializerTestCase( BaseTestCase ):
         serialized = self.history_serializer.serialize( self.trans, history1, keys )
         self.assertEqual( serialized[ 'deleted' ], True )
         self.assertEqual( serialized[ 'purged' ], True )
-
-        #pprint.pprint( self.history_serializer.serialize( self.trans, history1, [ 'contents' ] ) )
 
     def test_history_serializers( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
@@ -435,6 +430,8 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.assertIsInstance( serialized[ 'hdas' ], list )
         self.assertIsInstance( serialized[ 'hdas' ][0], basestring )
 
+        serialized = self.history_serializer.serialize( self.trans, history1, [ 'contents' ] )
+        self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'peek', 'create_time' ])
 
 # =============================================================================
 class HistoryDeserializerTestCase( BaseTestCase ):

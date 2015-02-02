@@ -503,7 +503,7 @@ class ModelSerializer( object ):
         item_dict = MySerializer.serialize( trans, my_item, keys_to_serialize )
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
-    #url_service =
+    url_for = staticmethod( routes.url_for )
 
     def __init__( self, app ):
         """
@@ -544,7 +544,7 @@ class ModelSerializer( object ):
         If `include_keys_from` is a proper view name, extend `key_list` by
         the list in that view.
         """
-        key_list += self.views.get( include_keys_from, [] )
+        key_list = list( set( key_list + self.views.get( include_keys_from, [] ) ) )
         self.views[ view_name ] = key_list
         self.serializable_keyset.update( key_list )
         return key_list
@@ -589,10 +589,6 @@ class ModelSerializer( object ):
         """
         id = getattr( item, key )
         return self.app.security.encode_id( id ) if id is not None else None
-
-    @staticmethod
-    def url_for( *args, **kwargs ):
-        return routes.url_for( *args, **kwargs )
 
     # serializing to a view where a view is a predefied list of keys to serialize
     def serialize_to_view( self, trans, item, view=None, keys=None, default_view=None ):

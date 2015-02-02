@@ -75,6 +75,17 @@ class BaseTestCase( unittest.TestCase ):
     def log( self, *args, **kwargs ):
         print( *args, **kwargs )
 
+    # ---- additional test types
+    def assertKeys( self, obj, key_list ):
+        self.assertEqual( sorted( obj.keys() ), sorted( key_list ) )
+
+    def assertHasKeys( self, obj, key_list ):
+        for key in key_list:
+            if key not in obj:
+                self.fail( 'Missing key: ' + key )
+        else:
+            self.assertTrue( True, 'keys found in object' )
+
 
 # =============================================================================
 if __name__ == '__main__':

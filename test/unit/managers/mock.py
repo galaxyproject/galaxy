@@ -21,6 +21,14 @@ from galaxy.util.bunch import Bunch
 class OpenObject( object ):
     pass
 
+class MockApp( object ):
+    def __init__( self, **kwargs ):
+        self.config = MockAppConfig( **kwargs )
+        self.security = self.config.security
+        self.object_store = objectstore.build_object_store_from_config( self.config )
+        self.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store )
+        self.security_agent = self.model.security_agent
+        self.visualizations_registry = MockVisualizationsRegistry()
 
 class MockAppConfig( Bunch ):
     def __init__( self, **kwargs ):
@@ -40,15 +48,6 @@ class MockAppConfig( Bunch ):
         self.expose_dataset_path = True
         self.allow_user_dataset_purge = True
         self.enable_old_display_applications = True
-        
-
-class MockApp( object ):
-    def __init__( self, **kwargs ):
-        self.config = MockAppConfig( **kwargs )
-        self.security = self.config.security
-        self.object_store = objectstore.build_object_store_from_config( self.config )
-        self.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store )
-        self.security_agent = self.model.security_agent
 
 class MockWebapp( object ):
     def __init__( self, **kwargs ):
@@ -92,3 +91,7 @@ class MockTrans( object ):
         template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
         return template.render( **kwargs )
+
+class MockVisualizationsRegistry( object ):
+    def get_visualizations( self, trans, target ):
+        return []
