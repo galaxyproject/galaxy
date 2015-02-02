@@ -790,6 +790,11 @@ use_interactive = True
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
+# Separate tool command from rest of job script so tool dependencies
+# don't interfer with metadata generation (this will be the default
+# in a future release).
+#enable_beta_tool_command_isolation = False
+
 
 # Enable beta workflow modules that should not yet be considered part of Galaxy's
 # stable API.

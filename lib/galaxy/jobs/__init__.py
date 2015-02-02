@@ -765,6 +765,10 @@ class JobWrapper( object ):
     def get_parallelism(self):
         return self.tool.parallelism
 
+    @property
+    def commands_in_new_shell(self):
+        return self.app.config.commands_in_new_shell
+
     # legacy naming
     get_job_runner = get_job_runner_url
 
