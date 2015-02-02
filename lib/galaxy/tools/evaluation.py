@@ -154,7 +154,7 @@ class ToolEvaluator( object ):
             if isinstance( input, DataToolParameter ) and input.multiple:
                 dataset_instances = input_values[ input.name ]
                 if isinstance( dataset_instances, model.HistoryDatasetCollectionAssociation ):
-                    dataset_instances = dataset_instances.collection.dataset_instances[:]
+                    dataset_instances = dataset_instances.collection.dataset_elements[:]
                 input_values[ input.name ] = \
                     DatasetListWrapper( dataset_instances,
                                         dataset_paths=input_dataset_paths,
@@ -199,6 +199,9 @@ class ToolEvaluator( object ):
                     tool=self,
                     name=input.name
                 )
+                identifier_key = "%s|__identifier__" % input.name
+                if identifier_key in param_dict:
+                    wrapper_kwds["identifier"] = param_dict[identifier_key]
                 if dataset:
                     #A None dataset does not have a filename
                     real_path = dataset.file_name

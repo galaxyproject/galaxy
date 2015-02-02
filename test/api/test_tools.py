@@ -553,6 +553,93 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( output1_content.strip(), "123" )
         self.assertEquals( output2_content.strip(), "456" )
 
+    @skip_without_tool( "identifier_single" )
+    def test_identifier_in_map( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "input1": { 'batch': True, 'values': [ { 'src': 'hdca', 'id': hdca_id } ] },
+        }
+        create_response = self._run( "identifier_single", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 2 )
+        self.assertEquals( len( outputs ), 2 )
+        self.assertEquals( len( implicit_collections ), 1 )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
+        self.assertEquals( output1_content.strip(), "forward" )
+        self.assertEquals( output2_content.strip(), "reverse" )
+
+    @skip_without_tool( "identifier_single" )
+    def test_identifier_outside_map( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
+        inputs = {
+            "input1": { 'src': 'hda', 'id': new_dataset1["id"] },
+        }
+        create_response = self._run( "identifier_single", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        self.assertEquals( len( implicit_collections ), 0 )
+        output1 = outputs[ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        self.assertEquals( output1_content.strip(), "Pasted Entry" )
+
+    @skip_without_tool( "identifier_multiple" )
+    def test_identifier_in_multiple_reduce( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "input1": { 'src': 'hdca', 'id': hdca_id },
+        }
+        create_response = self._run( "identifier_multiple", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        self.assertEquals( len( implicit_collections ), 0 )
+        output1 = outputs[ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        self.assertEquals( output1_content.strip(), "forward\nreverse" )
+
+    @skip_without_tool( "identifier_multiple" )
+    def test_identifier_with_multiple_normal_datasets( self ):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset( history_id, content='123' )
+        new_dataset2 = self.dataset_populator.new_dataset( history_id, content='456' )
+        inputs = {
+            "input1": [
+                { 'src': 'hda', 'id': new_dataset1["id"] },
+                { 'src': 'hda', 'id': new_dataset2["id"] }
+            ]
+        }
+        create_response = self._run( "identifier_multiple", history_id, inputs )
+        self._assert_status_code_is( create_response, 200 )
+        create = create_response.json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 1 )
+        self.assertEquals( len( outputs ), 1 )
+        self.assertEquals( len( implicit_collections ), 0 )
+        output1 = outputs[ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        self.assertEquals( output1_content.strip(), "Pasted Entry\nPasted Entry" )
+
     @skip_without_tool( "cat1" )
     def test_map_over_nested_collections_legacy( self ):
         history_id = self.dataset_populator.new_history()

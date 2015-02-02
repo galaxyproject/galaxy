@@ -2685,6 +2685,16 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
         return instances
 
     @property
+    def dataset_elements( self ):
+        elements = []
+        for element in self.elements:
+            if element.is_collection:
+                elements.extend( element.child_collection.dataset_elements )
+            else:
+                elements.append( element )
+        return elements
+
+    @property
     def state( self ):
         # TODO: DatasetCollection state handling...
         return 'ok'

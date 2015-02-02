@@ -191,6 +191,10 @@ class DefaultToolAction( object ):
             if data.dbkey not in [None, '?']:
                 input_dbkey = data.dbkey
 
+            identifier = getattr( data, "element_identifier", None )
+            if identifier is not None:
+                incoming[ "%s|__identifier__" % name ] = identifier
+
         # Collect chromInfo dataset and add as parameters to incoming
         ( chrom_info, db_dataset ) = trans.app.genome_builds.get_chrom_info( input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len' )
         if db_dataset:

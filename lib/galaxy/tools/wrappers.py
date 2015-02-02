@@ -187,7 +187,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         def items( self ):
             return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
 
-    def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None ):
+    def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None, identifier=None ):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
@@ -205,6 +205,14 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         self.datatypes_registry = datatypes_registry
         self.false_path = getattr( dataset_path, "false_path", None )
         self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
+        self._element_identifier = identifier
+
+    @property
+    def element_identifier( self ):
+        identifier = self._element_identifier
+        if identifier is None:
+            identifier = self.name
+        return identifier
 
     @property
     def is_collection( self ):
@@ -270,6 +278,10 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
             datasets = [datasets]
 
         def to_wrapper( dataset ):
+            if hasattr(dataset, "element_identifier"):
+                element = dataset
+                dataset = element.dataset_instance
+                kwargs["identifier"] = element.element_identifier
             return self._dataset_wrapper( dataset, dataset_paths, **kwargs )
 
         list.__init__( self, map( to_wrapper, datasets ) )
