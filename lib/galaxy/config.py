@@ -318,6 +318,9 @@ class Configuration( object ):
             # Crummy, but PasteScript does not give you a way to determine this
             if arg.lower().startswith('--server-name='):
                 self.server_name = arg.split('=', 1)[-1]
+        # Allow explicit override of server name in confg params
+        if "server_name" in kwargs:
+            self.server_name = kwargs.get("server_name")
         # Store all configured server names
         self.server_names = []
         for section in global_conf_parser.sections():
