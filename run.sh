@@ -49,9 +49,31 @@ if [ -n "$GALAXY_RUN_ALL" ]; then
         echo 'ERROR: $GALAXY_RUN_ALL cannot be used without the `--daemon`, `--stop-daemon` or `restart` arguments to run.sh'
         exit 1
     fi
+    (echo "$@" | grep -q -e '--daemon\|restart') && (echo "$@" | grep -q -e '--wait')
+    WAIT=$?
+    ARGS=`echo "$@" | sed 's/--wait//'`
     for server in $servers; do
-        echo "Handling $server with log file $server.log..."
-        python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $@
+        if [ $WAIT -eq 0 ]; then
+            python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $ARGS
+            while true; do
+                sleep 1
+                printf "."
+                # Grab the current pid from the pid file
+                if ! current_pid_in_file=$(cat $server.pid); then
+                    echo "A Galaxy process died, interrupting" >&2
+                    exit 1
+                fi
+                # Search for all pids in the logs and tail for the last one
+                latest_pid=`egrep '^Starting server in PID [0-9]+\.$' $server.log -o | sed 's/Starting server in PID //g;s/\.$//g' | tail -n 1`
+                # If they're equivalent, then the current pid file agrees with our logs
+                # and we've succesfully started
+                [ -n "$latest_pid" ] && [ $latest_pid -eq $current_pid_in_file ] && break
+            done
+            echo
+        else
+            echo "Handling $server with log file $server.log..."
+            python ./scripts/paster.py serve $GALAXY_CONFIG_FILE --server-name=$server --pid-file=$server.pid --log-file=$server.log $@
+        fi
     done
 else
     # Handle only 1 server, whose name can be specified with --server-name parameter (defaults to "main")
