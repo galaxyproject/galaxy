@@ -196,7 +196,7 @@ def expose_api_anonymous( func, to_json=True ):
 
 # ----------------------------------------------------------------------------- (new) api decorators
 # TODO: rename as expose_api and make default.
-def _future_expose_api( func, to_json=True, user_required=True ):
+def _future_expose_api( func, to_json=True, user_required=True, user_or_session_required=True ):
     """
     Expose this function via the API.
     """
@@ -206,10 +206,11 @@ def _future_expose_api( func, to_json=True, user_required=True ):
             # TODO: Document this branch, when can this happen,
             # I don't understand it.
             return __api_error_response( trans, err_msg=trans.error_message )
+
         # error if user required and anon
         # error if anon and no session
         if ( ( trans.anonymous and user_required )
-          or ( trans.anonymous and not trans.galaxy_session ) ):
+          or ( trans.anonymous and user_or_session_required and not trans.galaxy_session ) ):
             error_code = error_codes.USER_NO_API_KEY
             # Use error codes default error message.
             err_msg = "API authentication required for this request"
@@ -325,17 +326,20 @@ def __api_error_response( trans, **kwds ):
     return dumps( error_dict )
 
 
-# TODO: rename as expose_api and make default.
 def _future_expose_api_anonymous( func, to_json=True ):
     """
     Expose this function via the API but don't require a set user.
     """
     return _future_expose_api( func, to_json=to_json, user_required=False )
 
+def _future_expose_api_anonymous_and_sessionless( func, to_json=True ):
+    """
+    Expose this function via the API but don't require a user or a galaxy_session.
+    """
+    return _future_expose_api( func, to_json=to_json, user_required=False, user_or_session_required=False )
 
 def _future_expose_api_raw( func ):
     return _future_expose_api( func, to_json=False, user_required=True )
-
 
 def _future_expose_api_raw_anonymous( func ):
     return _future_expose_api( func, to_json=False, user_required=False )
