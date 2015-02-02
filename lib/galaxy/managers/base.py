@@ -29,6 +29,9 @@ import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy
 
+pkg_resources.require("Routes")
+import routes
+
 from galaxy import exceptions
 from galaxy import model
 from galaxy import web
@@ -490,15 +493,17 @@ class ModelSerializer( object ):
     that should be called for those keys.
     E.g. { 'x' : lambda trans, item, key: item.x, ... }
 
+    Note: if a key to serialize is not listed in the Serializer.serializable_keyset
+    or serializers, it will not be returned.
+
     To serialize call:
         my_serializer = MySerializer( app )
         ...
         keys_to_serialize = [ 'id', 'name', 'attr1', 'attr2', ... ]
         item_dict = MySerializer.serialize( trans, my_item, keys_to_serialize )
-        # if a key to serialize is not listed in the Serializer.serializable_keys or serializers, it will not be added
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
-    url_for = web.url_for
+    #url_service =
 
     def __init__( self, app ):
         """
@@ -506,14 +511,17 @@ class ModelSerializer( object ):
         """
         self.app = app
 
-        # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
-        self.serializers = {}
         # a list of valid serializable keys that can use the default (string) serializer
         #   this allows us to: 'mention' the key without adding the default serializer
-        # NOTE: if a key is requested that is in neither serializable_keys or serializers, it is not returned
-        self.serializable_keys = []
+        # TODO: we may want to eventually error if a key is requested
+        #   that is in neither serializable_keyset or serializers
+        self.serializable_keyset = set([])
+        # a map of dictionary keys to the functions (often lambdas) that create the values for those keys
+        self.serializers = {}
         # add subclass serializers defined there
         self.add_serializers()
+        # update the keyset by the serializers (removing the responsibility from subclasses)
+        self.serializable_keyset.update( self.serializers.keys() )
 
         # views are collections of serializable attributes (a named array of keys)
         #   inspired by model.dict_{view}_visible_keys
@@ -527,6 +535,19 @@ class ModelSerializer( object ):
         """
         # to be overridden in subclasses
         pass
+
+    def add_view( self, view_name, key_list, include_keys_from=None ):
+        """
+        Add the list of serializable attributes `key_list` to the serializer's
+        view dictionary under the key `view_name`.
+
+        If `include_keys_from` is a proper view name, extend `key_list` by
+        the list in that view.
+        """
+        key_list += self.views.get( include_keys_from, [] )
+        self.views[ view_name ] = key_list
+        self.serializable_keyset.update( key_list )
+        return key_list
 
     def serialize( self, trans, item, keys ):
         """
@@ -542,7 +563,7 @@ class ModelSerializer( object ):
             # check both serializers and serializable keys
             if key in self.serializers:
                 returned[ key ] = self.serializers[ key ]( trans, item, key )
-            elif key in self.serializable_keys:
+            elif key in self.serializable_keyset:
                 returned[ key ] = self.default_serializer( trans, item, key )
             # ignore bad/unreg keys
         return returned
@@ -568,6 +589,10 @@ class ModelSerializer( object ):
         """
         id = getattr( item, key )
         return self.app.security.encode_id( id ) if id is not None else None
+
+    @staticmethod
+    def url_for( *args, **kwargs ):
+        return routes.url_for( *args, **kwargs )
 
     # serializing to a view where a view is a predefied list of keys to serialize
     def serialize_to_view( self, trans, item, view=None, keys=None, default_view=None ):
@@ -628,7 +653,7 @@ class ModelDeserializer( object ):
         self.app = app
 
         self.deserializers = {}
-        self.deserializable_keys = []
+        self.deserializable_keyset = set([])
         self.add_deserializers()
         # a sub object that can validate incoming values
         self.validate = ModelValidator( self.app )

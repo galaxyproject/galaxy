@@ -249,12 +249,13 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
     def __init__( self, app ):
         super( HistorySerializer, self ).__init__( app )
-        self.history_manager = HistoryManager( app )
 
+        self.history_manager = HistoryManager( app )
         self.hda_manager = hdas.HDAManager( app )
         self.hda_serializer = hdas.HDASerializer( app )
 
-        summary_view = [
+        self.default_view = 'summary'
+        self.add_view( 'summary', [
             'id',
             'model_class',
             'name',
@@ -266,9 +267,8 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'published',
             'annotation',
             'tags',
-        ]
-        # in the Historys' case, each of these views includes the keys from the previous
-        detailed_view = summary_view + [
+        ])
+        self.add_view( 'detailed', [
             'contents_url',
             #'hdas',
             'empty',
@@ -281,16 +281,8 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'state',
             'state_details',
             'state_ids',
-        ]
-        extended_view = detailed_view + [
-        ]
-        self.serializable_keys = extended_view + []
-        self.views = {
-            'summary'   : summary_view,
-            'detailed'  : detailed_view,
-            'extended'  : extended_view,
-        }
-        self.default_view = 'summary'
+        # in the Historys' case, each of these views includes the keys from the previous
+        ], include_keys_from='summary' )
 
     #assumes: outgoing to json.dumps and sanitized
     def add_serializers( self ):
@@ -300,19 +292,19 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         self.serializers.update({
             'model_class'   : lambda *a: 'History',
             'id'            : self.serialize_id,
-            'count'         : lambda trans, item, key: len( item.datasets ),
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
             'size'          : lambda t, i, k: int( i.get_disk_size() ),
             'nice_size'     : lambda t, i, k: i.get_disk_size( nice_size=True ),
+            'state'         : lambda t, i, k: self.history_manager.get_history_state( t, i ),
 
             'url'           : lambda t, i, k: self.url_for( 'history', id=t.security.encode_id( i.id ) ),
             'contents_url'  : lambda t, i, k:
                 self.url_for( 'history_contents', history_id=t.security.encode_id( i.id ) ),
-            'empty'         : lambda t, i, k: len( i.datasets ) <= 0,
 
+            'empty'         : lambda t, i, k: len( i.datasets ) <= 0,
+            'count'         : lambda trans, item, key: len( item.datasets ),
             'hdas'          : lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],
-            'state'         : lambda t, i, k: self.history_manager.get_history_state( t, i ),
             'state_details' : lambda t, i, k: self.history_manager.get_state_counts( t, i ),
             'state_ids'     : lambda t, i, k: self.history_manager.get_state_ids( t, i ),
             'contents'      : self.serialize_contents

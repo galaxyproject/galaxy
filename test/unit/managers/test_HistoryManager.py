@@ -339,17 +339,13 @@ class HistorySerializerTestCase( BaseTestCase ):
         detailed_view = self.history_serializer.serialize_to_view( self.trans, history1, view='detailed' )
         self.assertHasKeys( detailed_view, self.history_serializer.views[ 'detailed' ] )
 
-        self.log( 'should have a extended view' )
-        extended_view = self.history_serializer.serialize_to_view( self.trans, history1, view='extended' )
-        self.assertHasKeys( extended_view, self.history_serializer.views[ 'extended' ] )
-
         self.log( 'should have the summary view as default view' )
         default_view = self.history_serializer.serialize_to_view( self.trans, history1, default_view='summary' )
         self.assertHasKeys( summary_view, self.history_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
         need_no_serializers = ( basestring, bool, type( None ) )
-        for key in self.history_serializer.serializable_keys:
+        for key in self.history_serializer.serializable_keyset:
             instantiated_attribute = getattr( history1, key, None )
             if not ( ( key in self.history_serializer.serializers )
                   or ( isinstance( instantiated_attribute, need_no_serializers ) ) ):
@@ -372,24 +368,61 @@ class HistorySerializerTestCase( BaseTestCase ):
             keys=[ 'state_ids', 'user_id' ] )
         self.assertHasKeys( serialized, [ 'state_ids', 'user_id' ] )
 
-    def test_serializers( self ):
-        # size
-        # nice size
-        pass
+    def test_sharable( self ):
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+
+        self.log( 'should have a serializer for all SharableModel keys' )
+        sharable_attrs = [ 'user_id', 'username_and_slug', 'importable', 'published', 'slug' ]
+        serialized = self.history_serializer.serialize( self.trans, history1, sharable_attrs )
+        self.assertHasKeys( serialized, sharable_attrs )
+
+    def test_purgable( self ):
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+
+        self.log( 'deleted and purged should be returned in their default states' )
+        keys = [ 'deleted', 'purged' ]
+        serialized = self.history_serializer.serialize( self.trans, history1, keys )
+        self.assertEqual( serialized[ 'deleted' ], False )
+        self.assertEqual( serialized[ 'purged' ], False )
+
+        self.log( 'deleted and purged should return their current state' )
+        self.history_mgr.delete( self.trans, history1 )
+        serialized = self.history_serializer.serialize( self.trans, history1, keys )
+        self.assertEqual( serialized[ 'deleted' ], True )
+        self.assertEqual( serialized[ 'purged' ], False )
+
+        self.history_mgr.purge( self.trans, history1 )
+        serialized = self.history_serializer.serialize( self.trans, history1, keys )
+        self.assertEqual( serialized[ 'deleted' ], True )
+        self.assertEqual( serialized[ 'purged' ], True )
+
+        #pprint.pprint( self.history_serializer.serialize( self.trans, history1, [ 'contents' ] ) )
+
+    def test_history_serializers( self ):
+        user2 = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
+        
+        serialized = self.history_serializer.serialize( self.trans, history1, [ 'size', 'nice_size' ])
+        self.assertIsInstance( serialized[ 'size' ], int )
+        self.assertIsInstance( serialized[ 'nice_size' ], basestring )
 
     def test_contents( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
 
         self.log( 'a history with no contents should be properly reflected in empty, etc.' )
-        keys = [ 'empty', 'count', 'state_ids', 'state_details', 'state' ]
+        keys = [ 'empty', 'count', 'state_ids', 'state_details', 'state', 'hdas' ]
         serialized = self.history_serializer.serialize( self.trans, history1, keys )
         self.assertEqual( serialized[ 'state' ], 'new' )
         self.assertEqual( serialized[ 'empty' ], True )
         self.assertEqual( serialized[ 'count' ], 0 )
         self.assertEqual( sum( serialized[ 'state_details' ].values() ), 0 )
         self.assertEqual( serialized[ 'state_ids' ][ 'ok' ], [] )
+        self.assertIsInstance( serialized[ 'hdas' ], list )
 
+        self.log( 'a history with contents should be properly reflected in empty, etc.' )
         hda1 = self.hda_mgr.create( self.trans, history=history1, hid=1 )
         self.hda_mgr.update( self.trans, hda1, dict( state='ok' ) )
 
@@ -399,8 +432,9 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.assertEqual( serialized[ 'count' ], 1 )
         self.assertEqual( serialized[ 'state_details' ][ 'ok' ], 1 )
         self.assertIsInstance( serialized[ 'state_ids' ][ 'ok' ], list )
+        self.assertIsInstance( serialized[ 'hdas' ], list )
+        self.assertIsInstance( serialized[ 'hdas' ][0], basestring )
 
-        #pprint.pprint( self.history_serializer.serialize( self.trans, history1, [ 'contents' ] ) )
 
 # =============================================================================
 class HistoryDeserializerTestCase( BaseTestCase ):

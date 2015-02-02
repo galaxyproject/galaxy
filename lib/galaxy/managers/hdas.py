@@ -315,8 +315,8 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
         super( HDASerializer, self ).__init__( app )
         self.hda_manager = HDAManager( app )
 
-        # most of these views build/add to the previous view
-        summary_view = [
+        self.default_view = 'summary'
+        self.add_view( 'summary', [
             'id', 'name',
             'history_id', 'hid',
             # why include if model_class is there?
@@ -325,12 +325,8 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'state', 'extension',
             'deleted', 'purged', 'visible', 'resubmitted',
             'type', 'url'
-        ]
-        inaccessible = [
-            'id', 'name', 'history_id', 'hid', 'history_content_type',
-            'state', 'deleted', 'visible'
-        ]
-        detailed_view = summary_view + [
+        ])
+        self.add_view( 'detailed', [
             'model_class',
             'history_id', 'hid',
             # why include if model_class is there?
@@ -362,19 +358,17 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'annotation', 'tags',
 
             'api_type'
-        ]
-        extended_view = detailed_view + [
-            'tool_version', 'parent_id', 'designation',
-        ]
+        ], include_keys_from='summary' )
 
-        self.serializable_keys = extended_view + [
-        ]
-        self.views = {
-            'summary'   : summary_view,
-            'detailed'  : detailed_view,
-            'extended'  : extended_view,
-        }
-        self.default_view = 'summary'
+        self.add_view( 'extended', [
+            'tool_version', 'parent_id', 'designation',
+        ], include_keys_from='detailed' )
+
+        # keyset returned to create show a dataset where the owner has no access
+        self.add_view( 'inaccessible', [
+            'id', 'name', 'history_id', 'hid', 'history_content_type',
+            'state', 'deleted', 'visible'
+        ])
 
     def add_serializers( self ):
         super( HDASerializer, self ).add_serializers()
@@ -597,4 +591,4 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
             'importable'    : self.deserialize_bool,
 
         })
-        self.deserializable_keys.extend( self.deserializers.keys() )
+        self.deserializable_keyset.update( self.deserializers.keys() )

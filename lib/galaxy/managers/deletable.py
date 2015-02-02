@@ -35,7 +35,7 @@ class DeletableManagerMixin( object ):
 class DeletableSerializerMixin( object ):
 
     def add_serializers( self ):
-        pass
+        self.serializable_keyset.add( 'deleted' )
 
 
 # TODO: these are of questionable value if we don't want to enable users to delete/purge via update
@@ -87,6 +87,7 @@ class PurgableSerializerMixin( DeletableSerializerMixin ):
 
     def add_serializers( self ):
         DeletableSerializerMixin.add_serializers( self )
+        self.serializable_keyset.add( 'purged' )
 
 
 class PurgableDeserializerMixin( DeletableDeserializerMixin ):

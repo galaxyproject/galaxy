@@ -48,17 +48,9 @@ class VisualizationSerializer( sharable.SharableModelSerializer ):
         super( VisualizationSerializer, self ).__init__( app )
         self.visualizations_manager = VisualizationManager( app )
 
-        summary_view = [
-        ]
-        # in the Visualizations' case, each of these views includes the keys from the previous
-        detailed_view = summary_view + [
-        ]
-        self.serializable_keys = detailed_view + []
-        self.views = {
-            'summary'   : summary_view,
-            'detailed'  : detailed_view
-        }
         self.default_view = 'summary'
+        self.add_view( 'summary', [] )
+        self.add_view( 'detailed', [] )
 
     def add_serializers( self ):
         super( VisualizationSerializer, self ).add_serializers()
@@ -81,4 +73,4 @@ class VisualizationDeserializer( sharable.SharableModelDeserializer ):
         super( VisualizationDeserializer, self ).add_deserializers()
         self.deserializers.update({
         })
-        self.deserializable_keys = self.deserializers.keys()
+        self.deserializable_keyset.update( self.deserializers.keys() )

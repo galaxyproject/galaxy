@@ -202,28 +202,26 @@ class UserSerializer( base.ModelSerializer ):
         """
         super( UserSerializer, self ).__init__()
 
-        summary_view = [
-            'id', 'email', 'username'
-        ]
-        # in the Historys' case, each of these views includes the keys from the previous
-        detailed_view = summary_view + [
-            'update_time', 'create_time',
-            'total_disk_usage', 'nice_total_disk_usage',
-            'deleted', 'purged',
-            'active'
-        ]
-        extended_view = detailed_view + [
-            #'preferences',
-            #'tags', # all tags
-            #'annotations' # all annotations
-        ]
-        self.serializable_keys = extended_view
-        self.views = {
-            'summary'   : summary_view,
-            'detailed'  : detailed_view,
-            'extended'  : extended_view,
-        }
         self.default_view = 'summary'
+        self.add_view( 'summary', [
+            'id', 'email', 'username'
+        ])
+        self.add_view( 'detailed', [
+            'update_time',
+            'create_time',
+            'total_disk_usage',
+            'nice_total_disk_usage',
+            'deleted',
+            'purged',
+            'active'
+        ], include_keys_from='summary' )
+        #self.add_view( 'summary', [
+        #    'preferences',
+        #    # all tags
+        #    'tags',
+        #    # all annotations
+        #    'annotations'
+        #], include_keys_from='detailed' )
 
     def add_serializers( self ):
         self.serializers.update({

@@ -319,7 +319,7 @@ class SharableModelSerializer( base.ModelSerializer,
             'user_id'           : self.serialize_id,
             'username_and_slug' : self.serialize_username_and_slug
         })
-        self.serializable_keys.extend([
+        self.serializable_keyset.update([
             'importable', 'published', 'slug'
         ])
 

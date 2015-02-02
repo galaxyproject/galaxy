@@ -192,8 +192,8 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
     def __init__( self, app ):
         super( DatasetSerializer, self ).__init__( app )
 
-        # most of these views build/add to the previous view
-        summary_view = [
+        self.default_view = 'summary'
+        self.add_view( 'summary', [
             'id',
             'create_time', 'update_time',
             'state',
@@ -203,19 +203,13 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
             #'extra_files_path',
             'file_size', 'total_size',
             'uuid',
-        ]
+        ])
         # could do visualizations and/or display_apps
-
-        self.serializable_keys = summary_view + [
-        ]
-        self.views = {
-            'summary'   : summary_view,
-        }
-        self.default_view = 'summary'
 
     def add_serializers( self ):
         super( DatasetSerializer, self ).add_serializers()
         deletable.PurgableSerializerMixin.add_serializers( self )
+
         self.serializers.update({
             'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
