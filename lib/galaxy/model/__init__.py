@@ -1074,28 +1074,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
 
         return rval
 
-    def set_from_dict( self, new_data ):
-        #AKA: set_api_value
-        """
-        Set object attributes to the values in dictionary new_data limiting
-        to only those keys in dict_element_visible_keys.
-
-        Returns a dictionary of the keys, values that have been changed.
-        """
-        # precondition: keys are proper, values are parsed and validated
-        changed = {}
-        # unknown keys are ignored here
-        for key in [ k for k in new_data.keys() if k in self.dict_element_visible_keys ]:
-            new_val = new_data[ key ]
-            old_val = self.__getattribute__( key )
-            if new_val == old_val:
-                continue
-
-            self.__setattr__( key, new_val )
-            changed[ key ] = new_val
-
-        return changed
-
     @property
     def latest_export( self ):
         exports = self.exports
@@ -2119,36 +2097,6 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                 val = getattr( hda.datatype, name )
             rval['metadata_' + name] = val
         return rval
-
-    def set_from_dict( self, new_data ):
-        #AKA: set_api_value
-        """
-        Set object attributes to the values in dictionary new_data limiting
-        to only the following keys: name, deleted, visible, genome_build,
-        info, and blurb.
-
-        Returns a dictionary of the keys, values that have been changed.
-        """
-        # precondition: keys are proper, values are parsed and validated
-        #NOTE!: does not handle metadata
-        editable_keys = ( 'name', 'deleted', 'visible', 'dbkey', 'info', 'blurb' )
-
-        changed = {}
-        # unknown keys are ignored here
-        for key in [ k for k in new_data.keys() if k in editable_keys ]:
-            new_val = new_data[ key ]
-            old_val = self.__getattribute__( key )
-            if new_val == old_val:
-                continue
-
-            # special cases here
-            if key == 'deleted' and new_val is False and self.purged:
-                raise Exception( 'Cannot undelete a purged dataset' )
-
-            self.__setattr__( key, new_val )
-            changed[ key ] = new_val
-
-        return changed
 
     @property
     def history_content_type( self ):
