@@ -22,6 +22,7 @@
     <tool file="data_source/worm_modencode.xml" />
     <tool file="data_source/wormbase.xml" />
     <tool file="data_source/wormbase_test.xml" />
+    <tool file="data_source/zebrafishmine.xml" />
     <tool file="data_source/eupathdb.xml" />
     <tool file="data_source/hbvar.xml" />
     <tool file="genomespace/genomespace_file_browser_prod.xml" />
