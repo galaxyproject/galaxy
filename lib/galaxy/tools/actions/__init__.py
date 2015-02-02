@@ -155,6 +155,7 @@ class DefaultToolAction( object ):
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
+        assert tool.allow_user_access( trans.user ), "User (%s) is not allowed to access this tool." % ( trans.user )
         # Set history.
         if not history:
             history = tool.get_default_history_by_trans( trans, create=True )
