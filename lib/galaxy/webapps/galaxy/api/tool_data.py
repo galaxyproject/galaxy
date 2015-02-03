@@ -28,6 +28,19 @@ class ToolData( BaseAPIController ):
 
     @web.require_admin
     @expose_api
+    def reload( self, trans, id, **kwd ):
+        """
+        GET /api/tool_data/{id}/reload
+
+        Reloads a tool_data table.
+        """
+        decoded_tool_data_id = id
+        data_table = trans.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
+        return data_table.reload_from_files()
+
+
+    @web.require_admin
+    @expose_api
     def delete( self, trans, id, **kwd ):
         """
         DELETE /api/tool_data/{id}
