@@ -99,7 +99,7 @@ spaceghost.openHomePage().then( function(){
         "Id of last history (from index) DOES NOT appear: " + newFirstHistory.id );
 
     this.test.comment( 'calling index with delete=true should include the deleted history' );
-    newFirstHistory = this.api.histories.index( true )[0];
+    newFirstHistory = this.api.histories.index({ deleted: true })[0];
     //this.debug( 'newFirstHistory:\n' + this.jsonStr( newFirstHistory ) );
     this.test.assert( newFirstHistory.id === createdHistory.id,
         "Id of last history (from index) DOES appear using index( deleted=true ): " + newFirstHistory.id );
