@@ -55,7 +55,7 @@ spaceghost.test.begin( 'Test the workflows API', 0, function suite( test ){
             "uploaded workflow defaults to un-published: " + returned.published );
         this.test.assert( utils.isArray( returned.tags ) && returned.tags.length === 0,
             "upload returned an empty tag array: " + this.jsonStr( returned.tags ) );
-        this.test.assert( returned.url === '/' + utils.format( this.api.workflows.urlTpls.show, returned.id ),
+        this.test.assert( returned.url === utils.format( this.api.workflows.urlTpls.show, returned.id ),
             "url matches the show url: " + returned.url );
 
 
@@ -79,7 +79,7 @@ spaceghost.test.begin( 'Test the workflows API', 0, function suite( test ){
             "workflow is un-published: " + firstWorkflow.published );
         this.test.assert( utils.isArray( firstWorkflow.tags ) && firstWorkflow.tags.length === 0,
             "tag array is empty: " + this.jsonStr( firstWorkflow.tags ) );
-        this.test.assert( firstWorkflow.url === '/' + utils.format( this.api.workflows.urlTpls.show, firstWorkflow.id ),
+        this.test.assert( firstWorkflow.url === utils.format( this.api.workflows.urlTpls.show, firstWorkflow.id ),
             "url matches the show url: " + firstWorkflow.url );
 
 
@@ -99,7 +99,7 @@ spaceghost.test.begin( 'Test the workflows API', 0, function suite( test ){
             "workflow is un-published: " + workflowShow.published );
         this.test.assert( utils.isArray( workflowShow.tags ) && workflowShow.tags.length === 0,
             "tag array is empty: " + this.jsonStr( workflowShow.tags ) );
-        this.test.assert( workflowShow.url === '/' + utils.format( this.api.workflows.urlTpls.show, workflowShow.id ),
+        this.test.assert( workflowShow.url === utils.format( this.api.workflows.urlTpls.show, workflowShow.id ),
             "url matches the show url: " + workflowShow.url );
 
         this.test.comment( 'inputs from show should be an object (and, in this case, empty)' );
