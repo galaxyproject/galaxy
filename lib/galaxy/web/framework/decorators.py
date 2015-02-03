@@ -202,19 +202,20 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
     """
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
+        # errors passed in from trans._authenicate_api
         if trans.error_message:
-            # TODO: Document this branch, when can this happen,
-            # I don't understand it.
-            return __api_error_response( trans, err_msg=trans.error_message )
+            return __api_error_response( trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
+                                         err_msg=trans.error_message )
+        if trans.anonymous:
+            # error if anon and user required
+            if user_required:
+                return __api_error_response( trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
+                                             err_msg="API authentication required for this request" )
+            # error if anon and no session
+            if not trans.galaxy_session and user_or_session_required:
+                return __api_error_response( trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
+                                             err_msg="API authentication required for this request" )
 
-        # error if user required and anon
-        # error if anon and no session
-        if ( ( trans.anonymous and user_required )
-          or ( trans.anonymous and user_or_session_required and not trans.galaxy_session ) ):
-            error_code = error_codes.USER_NO_API_KEY
-            # Use error codes default error message.
-            err_msg = "API authentication required for this request"
-            return __api_error_response( trans, err_code=error_code, err_msg=err_msg, status_code=403 )
         if trans.request.body:
             try:
                 kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)
