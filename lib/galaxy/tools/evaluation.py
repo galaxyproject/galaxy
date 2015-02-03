@@ -345,6 +345,7 @@ class ToolEvaluator( object ):
             if table_name in self.app.tool_data_tables:
                 return self.app.tool_data_tables[ table_name ].get_entry( query_attr, query_val, return_attr )
 
+        param_dict['__tool_directory__'] = self.compute_environment.tool_directory()
         param_dict['__get_data_table_entry__'] = get_data_table_entry
 
         # We add access to app here, this allows access to app.config, etc

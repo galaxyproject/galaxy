@@ -32,6 +32,7 @@
   <tool file="validation_repeat.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
+  <tool file="tool_directory.xml" />
   <tool file="collection_paired_test.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />

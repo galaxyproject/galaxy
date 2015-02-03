@@ -1783,7 +1783,11 @@ class ComputeEnvironment( object ):
 
     @abstractmethod
     def new_file_path( self ):
-        """ Location to dump new files for this job on remote server. """
+        """ Absolute path to dump new files for this job on compute server. """
+
+    @abstractmethod
+    def tool_directory( self ):
+        """ Absolute path to tool files for this job on compute server. """
 
     @abstractmethod
     def version_path( self ):
@@ -1835,6 +1839,9 @@ class SharedComputeEnvironment( SimpleComputeEnvironment ):
 
     def version_path( self ):
         return self.job_wrapper.get_version_string_path()
+
+    def tool_directory( self ):
+        return os.path.abspath(self.job_wrapper.tool.tool_dir)
 
 
 class NoopQueue( object ):
