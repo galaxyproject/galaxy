@@ -13,6 +13,7 @@ var API = function API( spaceghost, apikey ){
     this.configuration = new ConfigurationAPI( this );
     this.histories  = new HistoriesAPI( this );
     this.hdas       = new HDAAPI( this );
+    this.datasets   = new DatasetsAPI( this );
     this.tools      = new ToolsAPI( this );
     this.workflows  = new WorkflowsAPI( this );
     this.users      = new UsersAPI( this );
@@ -80,7 +81,10 @@ API.prototype._ajax = function _ajax( url, options ){
             ( resp.responseJSON? this.spaceghost.jsonStr( resp.responseJSON ) : resp.responseText ) );
         throw new APIError( resp.responseText, resp.status );
     }
-    return JSON.parse( resp.responseText );
+    if( options.dataType === undefined || options.dataType === 'json' ){
+        return JSON.parse( resp.responseText );
+    }
+    return resp.responseText;
 };
 
 // =================================================================== TESTING
@@ -217,22 +221,34 @@ HistoriesAPI.prototype.urlTpls = {
     update  : '/api/histories/%s',
 };
 
-HistoriesAPI.prototype.index = function index( deleted ){
-    this.api.spaceghost.info( 'histories.index: ' + (( deleted )?( 'w deleted' ):( '(wo deleted)' )) );
-
-    deleted = deleted || false;
+HistoriesAPI.prototype.index = function index( params ){
+    var spaceghost = this.api.spaceghost;
+    spaceghost.info( 'histories.index:\n' + spaceghost.jsonStr( params ) );
+    if( params === undefined ){
+        params = { deleted: false };
+    }
+    if( params.deleted === undefined ){
+        params.deleted = false;
+    }
+    spaceghost.debug( 'params (now):' + spaceghost.jsonStr( params ) );
     return this.api._ajax( this.urlTpls.index, {
-        data : { deleted: deleted }
+        data : params
     });
 };
 
-HistoriesAPI.prototype.show = function show( id, deleted ){
-    this.api.spaceghost.info( 'histories.show: ' + [ id, (( deleted )?( 'w deleted' ):( '' )) ] );
-
-    id = ( id === 'most_recently_used' || id === 'current' )?( id ):( this.api.ensureId( id ) );
-    deleted = deleted || false;
+HistoriesAPI.prototype.show = function show( id, params ){
+    var spaceghost = this.api.spaceghost;
+    this.api.spaceghost.info( 'histories.show: ' + id + '\n' + spaceghost.jsonStr( params ) );
+    id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
+    if( params === undefined ){
+        params = { deleted: false };
+    }
+    if( params.deleted === undefined ){
+        params.deleted = false;
+    }
+    spaceghost.debug( 'params (now):' + spaceghost.jsonStr( params ) );
     return this.api._ajax( utils.format( this.urlTpls.show, id ), {
-        data : { deleted: deleted }
+        data : params
     });
 };
 
@@ -365,8 +381,55 @@ HDAAPI.prototype.delete_ = function create( historyId, id, purge ){
 //TODO: delete_
 
 
+// =================================================================== HDAS
+var DatasetsAPI = function DatasetsAPI( api ){
+    this.api = api;
+};
+DatasetsAPI.prototype.toString = function toString(){
+    return this.api + '.DatasetsAPI';
+};
+
+// -------------------------------------------------------------------
+DatasetsAPI.prototype.urlTpls = {
+    index   : '/api/datasets',
+    show    : '/api/datasets/%s',
+    // wut.
+    display : '/api/histories/%s/contents/%s/display'
+};
+
+DatasetsAPI.prototype.index = function index(){
+    this.api.spaceghost.info( 'datasets.index: ' );
+    var data = {};
+
+    return this.api._ajax( utils.format( this.urlTpls.index ), {
+        data : data
+    });
+};
+
+DatasetsAPI.prototype.show = function show( id ){
+    this.api.spaceghost.info( 'datasets.show: ' + [ id ] );
+    var data = {};
+
+    return this.api._ajax( utils.format( this.urlTpls.show, id ), {
+        data : data
+    });
+};
+
+DatasetsAPI.prototype.display = function show( historyId, id, params ){
+    this.api.spaceghost.info( 'datasets.display: ' + [ historyId, id ] );
+    if( params === undefined ){
+        params = {};
+    }
+    return this.api._ajax( utils.format( this.urlTpls.display, this.api.ensureId( historyId ), id ), {
+        data : params,
+        dataType : 'text'
+    });
+};
+
+
+
 // =================================================================== TOOLS
-var ToolsAPI = function HDAAPI( api ){
+var ToolsAPI = function ToolsAPI( api ){
     this.api = api;
 };
 ToolsAPI.prototype.toString = function toString(){
