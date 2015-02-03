@@ -12,6 +12,7 @@ import types
 import pkg_resources
 
 pkg_resources.require("Paste")
+pkg_resources.require("repoze.lru")  # used by Routes
 pkg_resources.require("Routes")
 pkg_resources.require("WebOb")
 

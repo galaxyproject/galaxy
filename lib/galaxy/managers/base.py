@@ -29,6 +29,7 @@ import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy
 
+pkg_resources.require("repoze.lru")  # used by Routes
 pkg_resources.require("Routes")
 import routes
 
@@ -853,7 +854,7 @@ class ModelFilterParser( object ):
             'create_time'   : { 'op': ( 'le', 'ge' ) },
             'update_time'   : { 'op': ( 'le', 'ge' ) },
         })
-        
+
     def parse_filters( self, filter_tuple_list ):
         """
         Parse string 3-tuples (attr, op, val) into orm or functional filters.
