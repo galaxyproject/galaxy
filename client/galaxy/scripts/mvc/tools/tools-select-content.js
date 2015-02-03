@@ -210,8 +210,9 @@ var View = Backbone.View.extend({
                     console.debug('tools-select-content::value() - Skipped.');
                 }
             } else {
-                this.current = 'single';
-                this.select_single.value('__null__');
+                this.select_single && this.select_single.value('__null__');
+                this.select_multiple && this.select_multiple.value('__null__');
+                this.select_collection && this.select_collection.value('__null__');
             }
             this.refresh();
         }
