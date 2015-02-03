@@ -353,8 +353,7 @@ class ToolEvaluator( object ):
         # More convienent access to app.config.new_file_path; we don't need to
         # wrap a string, but this method of generating additional datasets
         # should be considered DEPRECATED
-        # TODO: path munging for cluster/dataset server relocatability
-        param_dict['__new_file_path__'] = os.path.abspath(self.compute_environment.new_file_path())
+        param_dict['__new_file_path__'] = self.compute_environment.new_file_path()
         # The following points to location (xxx.loc) files which are pointers
         # to locally cached data
         param_dict['__tool_data_path__'] = param_dict['GALAXY_DATA_INDEX_DIR'] = self.app.config.tool_data_path
