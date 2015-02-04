@@ -30,9 +30,9 @@ database/openid_consumer_cache
 *.pyc
 
 # Galaxy Runtime Files
-paster.lock
-paster.log
-paster.pid
+*.lock
+*.log
+*.pid
 
 # Tool Shed Runtime Files
 tool_shed_webapp.lock
