@@ -621,6 +621,26 @@ class Registry( object ):
                     self.log.debug( "Adding inherited display application '%s' to datatype '%s'" % ( display_app.id, extension ) )
                     d_type1.add_display_application( display_app )
 
+    def reload_display_applications( self, display_application_ids=None ):
+        """
+        Reloads display applications: by id, or all if no ids provided
+        Returns tuple( [reloaded_ids], [failed_ids] )
+        """
+        if not display_application_ids:
+            display_application_ids = self.display_applications.keys()
+        elif not isinstance( display_application_ids, list ):
+            display_application_ids = [ display_application_ids ]
+        reloaded = []
+        failed = []
+        for display_application_id in display_application_ids:
+            try:
+                self.display_applications[ display_application_id ].reload()
+                reloaded.append( display_application_id )
+            except Exception, e:
+                self.log.debug( 'Requested to reload display application "%s", but failed: %s.', display_application_id, e  )
+                failed.append( display_application_id )
+        return ( reloaded, failed )
+
     def load_external_metadata_tool( self, toolbox ):
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated

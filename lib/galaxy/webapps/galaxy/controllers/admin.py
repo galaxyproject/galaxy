@@ -883,3 +883,21 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
         status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_data_tables_registry.mako', message=message, status=status )
+
+    @web.expose
+    @web.require_admin
+    def display_applications( self, trans, **kwd ):
+        return trans.fill_template( 'admin/view_display_applications.mako', display_applications=trans.app.datatypes_registry.display_applications )
+
+    @web.expose
+    @web.require_admin
+    def reload_display_application( self, trans, **kwd ):
+        reloaded, failed = trans.app.datatypes_registry.reload_display_applications( kwd.get( 'id' ) )
+        if not reloaded and failed:
+            return trans.show_error_message( 'Unable to reload any of the %i requested display applications ("%s").' % ( len( failed ), '", "'.join( failed ) ) )
+        if failed:
+            return trans.show_warn_message( 'Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
+                                             % ( len( reloaded ), '", "'.join( reloaded ), len( failed ), '", "'.join( failed ) ) )
+        if not reloaded:
+            return trans.show_warn_message( 'You need to request at least one display application to reload.' )
+        return trans.show_ok_message( 'Reloaded %i requested display applications ("%s").' % ( len( reloaded ), '", "'.join( reloaded ) ) )
