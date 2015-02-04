@@ -74,6 +74,7 @@ module.exports = function(grunt) {
       "ravenjs": [ "dist/raven.js", "raven.js" ],
       //"underscore": [ "underscore.js", "underscore.js" ],
       //"backbone": [ "backbone.js", "backbone/backbone.js" ],
+      "handlebars": [ "handlebars.runtime.js", "handlebars.runtime.js" ]
 
       // these need to be updated and tested
       //"require": [ "build/require.js", "require.js" ],
@@ -105,8 +106,6 @@ module.exports = function(grunt) {
       //  [ "", "jquery/jquery-ui.js" ]
       //],
 
-      // building the runtime library is not so simple
-      //"handlebars.js": [ "", "handlebars.runtime.js" ]
     }
 
   });
