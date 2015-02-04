@@ -29,6 +29,7 @@ from tools_support import UsesApp
 
 # To Test:
 # - param_file handling.
+TEST_TOOL_DIRECTORY = "/path/to/the/tool"
 
 
 class ToolEvaluatorTestCase(TestCase, UsesApp):
@@ -244,6 +245,9 @@ class TestComputeEnviornment( SimpleComputeEnvironment ):
             return self._path_rewriter
         else:
             return super(TestComputeEnviornment, self).unstructured_path_rewriter()
+
+    def tool_directory( self ):
+        return TEST_TOOL_DIRECTORY
 
 
 class MockTool( object ):
