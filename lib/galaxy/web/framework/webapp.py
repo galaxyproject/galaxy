@@ -211,7 +211,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
             if config.require_login:
                 self._ensure_logged_in_user( environ, session_cookie )
-            if config.session_duration and not self.environ.get('is_api_request', False):
+            if config.session_duration:
                 # TODO DBTODO Session-based API requests need to be handled
                 # correctly here.  Disabled for now.  The issue is that API
                 # request response error codes aren't handled in a consistent
@@ -228,7 +228,12 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 if expiration_time < now:
                     # Expiration time has passed.
                     self.handle_user_logout()
-                    self.response.send_redirect( url_for( controller='user',
+                    if self.environ.get('is_api_request', False):
+                        self.response.status = 401
+                        self.user = None
+                        self.galaxy_session = None
+                    else:
+                        self.response.send_redirect( url_for( controller='user',
                                                          action='login',
                                                          message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
                                                          status='info',
