@@ -212,14 +212,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             if config.require_login:
                 self._ensure_logged_in_user( environ, session_cookie )
             if config.session_duration:
-                # TODO DBTODO Session-based API requests need to be handled
-                # correctly here.  Disabled for now.  The issue is that API
-                # request response error codes aren't handled in a consistent
-                # way on the client side.  All ajax calls from the client need
-                # to go through a single point of control where we can do things
-                # like redirect/etc.  This is API calls as well as something
-                # like 40 @web.json requests that might not get handled well on
-                # the clientside.
+                # TODO DBTODO All ajax calls from the client need to go through
+                # a single point of control where we can do things like
+                # redirect/etc.  This is API calls as well as something like 40
+                # @web.json requests that might not get handled well on the
+                # clientside.
                 #
                 # Make sure we're not past the duration, and either log out or
                 # update timestamp.
