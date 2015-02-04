@@ -72,7 +72,7 @@ module.exports = function(grunt) {
 
       "traceKit": [ "tracekit.js", "tracekit.js" ],
       "ravenjs": [ "dist/raven.js", "raven.js" ],
-      //"underscore": [ "underscore.js", "underscore.js" ],
+      "underscore": [ "underscore.js", "underscore.js" ],
       //"backbone": [ "backbone.js", "backbone/backbone.js" ],
       "handlebars": [ "handlebars.runtime.js", "handlebars.runtime.js" ]
 
