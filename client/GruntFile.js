@@ -68,13 +68,13 @@ module.exports = function(grunt) {
     // where to move fetched bower components into the build structure (libName: [ bower-location, libs-location ])
     libraryLocations : {
       "jquery": [ "dist/jquery.js", "jquery/jquery.js" ],
-      "jquery-migrate-official": [ "index.js", "jquery/jquery.migrate.js" ],
+      "jquery-migrate": [ "jquery-migrate.js", "jquery/jquery.migrate.js" ],
 
       "traceKit": [ "tracekit.js", "tracekit.js" ],
       "ravenjs": [ "dist/raven.js", "raven.js" ],
       "underscore": [ "underscore.js", "underscore.js" ],
-      //"backbone": [ "backbone.js", "backbone/backbone.js" ],
       "handlebars": [ "handlebars.runtime.js", "handlebars.runtime.js" ]
+      //"backbone": [ "backbone.js", "backbone/backbone.js" ],
 
       // these need to be updated and tested
       //"require": [ "build/require.js", "require.js" ],
