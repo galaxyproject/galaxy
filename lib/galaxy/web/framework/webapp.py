@@ -231,10 +231,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                         self.galaxy_session = None
                     else:
                         self.response.send_redirect( url_for( controller='user',
-                                                         action='login',
-                                                         message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
-                                                         status='info',
-                                                         use_panels=True ) )
+                                                     action='login',
+                                                     message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
+                                                     status='info',
+                                                     use_panels=True ) )
                 else:
                     self.galaxy_session.update_time = datetime.datetime.now()
                     self.sa_session.add(self.galaxy_session)
