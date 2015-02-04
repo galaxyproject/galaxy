@@ -392,6 +392,13 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #inactivity_box_content = Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
 
+
+# Galaxy Session Timeout
+# This provides a timeout (in minutes) after which a user will have to log back in.
+# A duration of 0 disables this feature.
+#session_duration = 0
+
+
 # -- Analytics
 
 # You can enter tracking code here to track visitor's behavior

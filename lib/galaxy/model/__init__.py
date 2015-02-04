@@ -1335,7 +1335,7 @@ class Dataset( object ):
                     FAILED_METADATA = 'failed_metadata',
                     RESUBMITTED = 'resubmitted' )
     # failed_metadata and resubmitted are only valid as DatasetInstance states currently
-    
+
     non_ready_states = (
         states.UPLOAD,
         states.QUEUED,
@@ -2997,6 +2997,7 @@ class GalaxySession( object ):
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
         self.histories = []
+        self.last_action = galaxy.model.orm.now.now()
 
     def add_history( self, history, association=None ):
         if association is None:
