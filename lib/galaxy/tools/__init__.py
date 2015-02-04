@@ -2293,7 +2293,7 @@ class Tool( object, Dictifiable ):
                 job_params = job.get_param_values( trans.app, ignore_errors = True )
                 job_messages = self.check_and_update_param_values( job_params, trans, update_values=False )
                 tool_message = self._compare_tool_version(trans, job)
-                params_to_incoming( kwd, self.inputs, job_params, trans.app )
+                params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
             except Exception, exception:
                 trans.response.status = 500
                 return { 'error': str( exception ) }
@@ -2463,7 +2463,7 @@ class Tool( object, Dictifiable ):
                         sanitize(tool_dict, 'default_value')
 
                         # use default value
-                        if not tool_dict['value']:
+                        if tool_dict['value'] is None:
                             tool_dict['value'] = tool_dict['default_value']
 
                 # backup final input dictionary

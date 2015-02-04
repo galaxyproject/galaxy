@@ -105,7 +105,7 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
     return rval
 
 
-def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
+def params_to_incoming( incoming, inputs, input_values, app, name_prefix="", to_html=True ):
     """
     Given a tool's parameter definition (`inputs`) and a specific set of
     parameter `input_values` objects, populate `incoming` with the html values.
@@ -117,12 +117,15 @@ def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
             for i, d in enumerate( input_values[ input.name ] ):
                 index = d['__index__']
                 new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
-                params_to_incoming( incoming, input.inputs, d, app, new_name_prefix )
+                params_to_incoming( incoming, input.inputs, d, app, new_name_prefix, to_html=to_html)
         elif isinstance( input, Conditional ):
             values = input_values[ input.name ]
             current = values["__current_case__"]
             new_name_prefix = name_prefix + input.name + "|"
             incoming[ new_name_prefix + input.test_param.name ] = values[ input.test_param.name ]
-            params_to_incoming( incoming, input.cases[current].inputs, values, app, new_name_prefix )
+            params_to_incoming( incoming, input.cases[current].inputs, values, app, new_name_prefix, to_html=to_html )
         else:
-            incoming[ name_prefix + input.name ] = input.to_html_value( input_values.get( input.name ), app )
+            value = input_values.get( input.name )
+            if to_html:
+                value = input.to_html_value( value, app )
+            incoming[ name_prefix + input.name ] = value

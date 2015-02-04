@@ -9,7 +9,7 @@
         incoming = {
             '__is_dynamic__' : False
         }
-        params_to_incoming( incoming, tool.inputs, module.state.inputs, trans.app )
+        params_to_incoming( incoming, tool.inputs, module.state.inputs, trans.app, to_html=False)
         self.form_config = tool.to_json(trans, **incoming)
         self.form_config.update({
             'id'                : tool.id,

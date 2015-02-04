@@ -123,14 +123,15 @@ return Backbone.Model.extend({
                                 }
 
                                 // validate field value
-                                if (field.skip || (field.validate && !field.validate())) {
-                                    if (self.app.options.use_defaults) {
-                                        value = input.default_value;
-                                    } else {
-                                        value = null;
-                                    }
+                                if (field.skip) {
+                                    continue;
                                 }
-                             
+
+                                // validate field value
+                                if (field.validate && !field.validate()) {
+                                    value = null;
+                                }
+
                                 // ignore certain values
                                 if (input.ignore === undefined || (value !== null && input.ignore != value)) {
                                     // add value to submission
