@@ -310,7 +310,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'contents'      : self.serialize_contents
         })
 
-    def serialize_contents( self, trans, history, key ):
+    def serialize_contents( self, trans, history, *args ):
         contents_dictionaries = []
         for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
             contents_dict = {}

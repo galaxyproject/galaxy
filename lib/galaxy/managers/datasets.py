@@ -274,3 +274,15 @@ class DatasetAssociationDeserializer( base.ModelDeserializer, deletable.Purgable
     def add_deserializers( self ):
         super( DatasetAssociationDeserializer, self ).add_deserializers()
         deletable.PurgableDeserializerMixin.add_deserializers( self )
+
+class DatasetAssociationFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
+
+    def _add_parsers( self ):
+        super( DatasetAssociationFilters, self )._add_parsers()
+        deletable.PurgableFiltersMixin._add_parsers( self )
+
+        self.orm_filter_parsers.update({
+            'name'          : { 'op': ( 'eq', 'contains', 'like' ) },
+            'state'         : { 'op': ( 'eq', 'in' ) },
+        })
+        #self.fn_filter_parsers.update({})
