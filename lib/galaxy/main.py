@@ -36,7 +36,7 @@ except ImportError:
 
 # Vaguely Python 2.6 compatibile ArgumentParser import
 try:
-    from argparser import ArgumentParser
+    from argparse import ArgumentParser
 except ImportError:
     from optparse import OptionParser
 
@@ -202,9 +202,6 @@ class GalaxyConfigBuilder(object):
 
 
 def main():
-    if Daemonize is None:
-        raise ImportError(REQUIRES_DAEMONIZE_MESSAGE)
-
     arg_parser = ArgumentParser(description=DESCRIPTION)
     GalaxyConfigBuilder.populate_options(arg_parser)
     args = arg_parser.parse_args()
@@ -217,6 +214,9 @@ def main():
     log.setLevel(logging.DEBUG)
     log.propagate = False
     if args.daemonize:
+        if Daemonize is None:
+            raise ImportError(REQUIRES_DAEMONIZE_MESSAGE)
+
         keep_fds = []
         if args.daemon_log_file:
             fh = logging.FileHandler(args.daemon_log_file, "w")
