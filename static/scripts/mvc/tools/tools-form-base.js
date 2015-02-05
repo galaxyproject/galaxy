@@ -15,12 +15,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.optionsDefault = {
                 // uses dynamic fields instead of text fields
                 is_dynamic      : true,
-                // shows form in compact view mode
-                compact         : false,
+                // shows form in narrow view mode
+                narrow          : false,
                 // shows errors on start
-                initial_errors  : false,
-                // use default value for disabled fields
-                use_defaults    : false
+                initial_errors  : false
             };
     
             // configure options
@@ -58,9 +56,66 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             $(this.container).append(this.$el);
             
             // build this form
-            this._buildForm();
+            this.build(this.options);
         },
         
+        /** Main tool form build function. This function is called once a new model is available.
+        */
+        build: function(options) {
+            // link this
+            var self = this;
+            
+            // reset events
+            this.off('refresh');
+            this.off('reset');
+            
+            // reset field list, which contains the input field elements
+            this.field_list = {};
+            
+            // reset sequential input definition list, which contains the input definitions as provided from the api
+            this.input_list = {};
+            
+            // reset input element list, which contains the dom elements of each input element (includes also the input field)
+            this.element_list = {};
+            
+            // creates a tree/json data structure from the input form
+            this.tree = new ToolTree(this);
+            
+            // request history content and build form
+            this.content = new ToolContent(this);
+            
+            // update model data
+            self.options.inputs = options && options.inputs;
+                    
+            // create ui elements
+            this._renderForm(options);
+            
+            // rebuild the underlying data structure
+            this.tree.finalize();
+            
+            // show errors on startup
+            if (options.initial_errors) {
+                this._errors(options);
+            }
+            
+            // add refresh listener
+            this.on('refresh', function() {
+                // by using/resetting the deferred ajax queue the number of redundant calls is reduced
+                self.deferred.reset();
+                self.deferred.execute(function(){self._updateModel()});
+            });
+            
+            // add reset listener
+            this.on('reset', function() {
+                for (var i in this.element_list) {
+                    this.element_list[i].reset();
+                }
+            });
+            
+            // refresh
+            this.trigger('refresh');
+        },
+
         /** Shows the final message (usually upon successful job submission)
         */
         reciept: function($el) {
@@ -105,63 +160,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 }
             }
         },
-        
-        /** Main tool form build function. This function is called once a new model is available.
-        */
-        _buildForm: function() {
-            // link this
-            var self = this;
-            
-            // reset events
-            this.off('refresh');
-            this.off('reset');
-            
-            // reset field list, which contains the input field elements
-            this.field_list = {};
-            
-            // reset sequential input definition list, which contains the input definitions as provided from the api
-            this.input_list = {};
-            
-            // reset input element list, which contains the dom elements of each input element (includes also the input field)
-            this.element_list = {};
-            
-            // creates a tree/json data structure from the input form
-            this.tree = new ToolTree(this);
-            
-            // request history content and build form
-            this.content = new ToolContent(this);
-            
-            // link model options
-            var options = this.options;
-            
-            // create ui elements
-            this._renderForm(options);
-            
-            // rebuild the underlying data structure
-            this.tree.finalize();
-            
-            // show errors on startup
-            if (options.initial_errors) {
-                this._errors(options);
-            }
-            
-            // add refresh listener
-            this.on('refresh', function() {
-                // by using/resetting the deferred ajax queue the number of redundant calls is reduced
-                self.deferred.reset();
-                self.deferred.execute(function(){self._updateModel()});
-            });
-            
-            // add reset listener
-            this.on('reset', function() {
-                for (var i in this.element_list) {
-                    this.element_list[i].reset();
-                }
-            });
-            
-            // refresh
-            this.trigger('refresh');
-        },
 
         /** Renders the UI elements required for the form
         */
@@ -175,7 +173,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var requirements_button = new Ui.ButtonIcon({
                 icon    : 'fa-info-circle',
-                title   : (!options.compact && 'Requirements') || null,
+                title   : (!options.narrow && 'Requirements') || null,
                 tooltip : 'Display tool requirements',
                 onclick : function() {
                     if (!this.visible) {
@@ -200,7 +198,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
                 icon    : 'fa-cubes',
-                title   : (!options.compact && 'Versions') || null,
+                title   : (!options.narrow && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
             if (options.versions && options.versions.length > 1) {
@@ -213,8 +211,8 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                             icon    : 'fa-cube',
                             onclick : function() {
                                 // here we update the tool version (some tools encode the version also in the id)
-                                options.id = options.id.replace(options.version, this.version);
-                                options.version = this.version;
+                                self.options.id = self.options.id.replace(self.options.version, this.version);
+                                self.options.version = this.version;
                                 
                                 // rebuild the model and form
                                 self.deferred.reset();
@@ -230,7 +228,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             // button menu
             var menu_button = new Ui.ButtonMenu({
                 icon    : 'fa-caret-down',
-                title   : (!options.compact && 'Options') || null,
+                title   : (!options.narrow && 'Options') || null,
                 tooltip : 'View available options'
             });
             
@@ -306,7 +304,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             });
             
             // remove padding
-            if (options.compact) {
+            if (options.narrow) {
                 this.portlet.$content.css('padding', '0px');
             }
             

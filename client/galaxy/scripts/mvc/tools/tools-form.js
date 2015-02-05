@@ -24,7 +24,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
             }
             ToolFormBase.prototype.initialize.call(this, options);
         },
-        
+
         /** Builds a new model through api call and recreates the entire form
         */
         _buildModel: function() {
@@ -47,31 +47,28 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     }
                 }
             }
-            
+
             // register process
             var process_id = this.deferred.register();
-            
+
             // get initial model
             Utils.request({
                 type    : 'GET',
                 url     : model_url,
                 success : function(response) {
-                    // link model data update options
-                    self.options = response;
-                    
-                    // build form
-                    self._buildForm();
-                    
+                    // build new tool form
+                    self.build(response);
+
                     // notification
                     self.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
                     });
-                    
+
                     // process completed
                     self.deferred.done(process_id);
-                    
+
                     // log success
                     console.debug('tools-form::initialize() - Initial tool model ready.');
                     console.debug(response);
@@ -79,11 +76,11 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 error   : function(response) {
                     // process completed
                     self.deferred.done(process_id);
-                    
+
                     // log error
                     console.debug('tools-form::initialize() - Initial tool model request failed.');
                     console.debug(response);
-                    
+
                     // show error
                     var error_message = response.error || 'Uncaught error.';
                     self.modal.show({
@@ -98,7 +95,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 }
             });
         },
-        
+
         /** Request a new model for an already created tool form and updates the form inputs
         */
         _updateModel: function() {
@@ -112,11 +109,11 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     return null;
                 }
             });
-            
+
             // log tool state
             console.debug('tools-form::_refreshForm() - Refreshing states.');
             console.debug(current_state);
-            
+
             // activates/disables spinner for dynamic fields to indicate that they are currently being updated
             function wait(active) {
                 for (var i in self.input_list) {
@@ -131,10 +128,10 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     }
                 }
             }
-            
+
             // set wait mode
             wait(true);
-            
+
             // register process
             var process_id = this.deferred.register();
 
@@ -179,13 +176,13 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                             }
                         }
                     });
-            
+
                     // unset wait mode
                     wait(false);
-            
+
                     // process completed
                     self.deferred.done(process_id);
-            
+
                     // log success
                     console.debug('tools-form::_refreshForm() - States refreshed.');
                     console.debug(new_model);
@@ -193,7 +190,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 error   : function(response) {
                     // process completed
                     self.deferred.done(process_id);
-                    
+
                     // log error
                     console.debug('tools-form::_refreshForm() - Refresh request failed.');
                     console.debug(response);

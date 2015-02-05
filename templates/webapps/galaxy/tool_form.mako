@@ -9,8 +9,7 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
         ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
         ## This avoids making two separate requests since the classic form requires the mako anyway.
         params = dict(trans.request.params)
-        if 'id' in params:
-            params['dataset_id'] = params['id']
+        params['__dataset_id__'] = params.get('id', None)
         self.form_config = tool.to_json(trans, **params)
         self.form_config.update({
             'id'                : tool.id,
