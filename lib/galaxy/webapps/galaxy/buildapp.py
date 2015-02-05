@@ -10,6 +10,7 @@ import atexit
 from paste import httpexceptions
 import pkg_resources
 
+import galaxy.app
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
@@ -39,8 +40,8 @@ def app_factory( global_conf, **kwargs ):
         app = kwargs.pop( 'app' )
     else:
         try:
-            from galaxy.app import UniverseApplication
-            app = UniverseApplication( global_conf=global_conf, **kwargs )
+            app = galaxy.app.UniverseApplication( global_conf=global_conf, **kwargs )
+            galaxy.app.app = app
         except:
             import traceback
             traceback.print_exc()

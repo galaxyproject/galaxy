@@ -23,7 +23,7 @@ from tool_shed.galaxy_install import update_repository_manager
 
 import logging
 log = logging.getLogger( __name__ )
-
+app = None
 
 class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
     """Encapsulates the state of a Universe application"""
