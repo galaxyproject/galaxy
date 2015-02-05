@@ -206,7 +206,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
         """
         Convert a User and associated data to a dictionary representation.
         """
-        super( UserSerializer, self ).__init__()
+        super( UserSerializer, self ).__init__( app )
         self.user_manager = UserManager( app )
 
         self.default_view = 'summary'
