@@ -6,8 +6,6 @@ import sys
 import os
 import os.path
 import atexit
-import warnings
-import glob
 
 from paste import httpexceptions
 import pkg_resources
@@ -28,6 +26,7 @@ log = logging.getLogger( __name__ )
 class GalaxyWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
 
+
 def app_factory( global_conf, **kwargs ):
     """
     Return a wsgi application serving the root object
@@ -41,7 +40,7 @@ def app_factory( global_conf, **kwargs ):
     else:
         try:
             from galaxy.app import UniverseApplication
-            app = UniverseApplication( global_conf = global_conf, **kwargs )
+            app = UniverseApplication( global_conf=global_conf, **kwargs )
         except:
             import traceback
             traceback.print_exc()
@@ -65,8 +64,8 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
     webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param',
-        controller='dataset', action='display_application', dataset_id=None, user_id=None,
-        app_name = None, link_name = None, app_action = None, action_param = None )
+                      controller='dataset', action='display_application', dataset_id=None, user_id=None,
+                      app_name=None, link_name=None, app_action=None, action_param=None )
     webapp.add_route( '/u/:username/d/:slug/:filename', controller='dataset', action='display_by_username_and_slug', filename=None )
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
@@ -103,7 +102,6 @@ def app_factory( global_conf, **kwargs ):
             log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware.")
         else:
             webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
-            #webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=None, **kwargs )
     if asbool(kwargs.get('pack_scripts', False)):
         log.warn( "The 'pack_scripts' option is deprecated" )
         pack_scripts()
@@ -112,7 +110,6 @@ def app_factory( global_conf, **kwargs ):
         galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
     except:
         pass
-     # Close any pooled database connections before forking
     try:
         galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
     except:
@@ -137,32 +134,32 @@ def populate_api_routes( webapp, app ):
                             controller='history_contents',
                             path_prefix='/api/histories/:history_id/contents',
                             parent_resources=dict( member_name='history', collection_name='histories' ),
-                          )
+                            )
 
     # Legacy access to HDA details via histories/:history_id/contents/:hda_id
     webapp.mapper.resource( 'content',
-                                'contents',
-                                controller='history_contents',
-                                name_prefix='history_',
-                                path_prefix='/api/histories/:history_id',
-                                parent_resources=dict( member_name='history', collection_name='histories' ) )
-    webapp.mapper.connect("history_contents_display",
-                              "/api/histories/:history_id/contents/:history_content_id/display",
-                              controller="datasets",
-                              action="display",
-                              conditions=dict(method=["GET"]))
+                            'contents',
+                            controller='history_contents',
+                            name_prefix='history_',
+                            path_prefix='/api/histories/:history_id',
+                            parent_resources=dict( member_name='history', collection_name='histories' ) )
+    webapp.mapper.connect( "history_contents_display",
+                           "/api/histories/:history_id/contents/:history_content_id/display",
+                           controller="datasets",
+                           action="display",
+                           conditions=dict(method=["GET"]))
     webapp.mapper.resource( 'user',
-                                'users',
-                                controller='group_users',
-                                name_prefix='group_',
-                                path_prefix='/api/groups/:group_id',
-                                parent_resources=dict( member_name='group', collection_name='groups' ) )
+                            'users',
+                            controller='group_users',
+                            name_prefix='group_',
+                            path_prefix='/api/groups/:group_id',
+                            parent_resources=dict( member_name='group', collection_name='groups' ) )
     webapp.mapper.resource( 'role',
-                                'roles',
-                                controller='group_roles',
-                                name_prefix='group_',
-                                path_prefix='/api/groups/:group_id',
-                                parent_resources=dict( member_name='group', collection_name='groups' ) )
+                            'roles',
+                            controller='group_roles',
+                            name_prefix='group_',
+                            path_prefix='/api/groups/:group_id',
+                            parent_resources=dict( member_name='group', collection_name='groups' ) )
     _add_item_tags_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
@@ -173,17 +170,17 @@ def populate_api_routes( webapp, app ):
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
     _add_item_annotation_controller( webapp,
-                               name_prefix="history_content_",
-                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+                                     name_prefix="history_content_",
+                                     path_prefix='/api/histories/:history_id/contents/:history_content_id' )
     _add_item_annotation_controller( webapp,
-                               name_prefix="history_",
-                               path_prefix='/api/histories/:history_id' )
+                                     name_prefix="history_",
+                                     path_prefix='/api/histories/:history_id' )
     _add_item_annotation_controller( webapp,
-                               name_prefix="workflow_",
-                               path_prefix='/api/workflows/:workflow_id' )
+                                     name_prefix="workflow_",
+                                     path_prefix='/api/workflows/:workflow_id' )
     _add_item_provenance_controller( webapp,
-                               name_prefix="history_content_",
-                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+                                     name_prefix="history_content_",
+                                     path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.mapper.resource( 'tool_data', 'tool_data', path_prefix='/api' )
@@ -216,27 +213,28 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET', 'mapping' : 'GET', 'converters': 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
-    #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
     webapp.mapper.resource( 'page', 'pages', path_prefix="/api")
     webapp.mapper.resource( 'revision', 'revisions',
-                                path_prefix='/api/pages/:page_id',
-                                controller='page_revisions',
-                                parent_resources=dict( member_name='page', collection_name='pages' ) )
+                            path_prefix='/api/pages/:page_id',
+                            controller='page_revisions',
+                            parent_resources=dict( member_name='page', collection_name='pages' ) )
 
-    webapp.mapper.connect( "history_archive_export", "/api/histories/{id}/exports",
-        controller="histories", action="archive_export", conditions=dict( method=[ "PUT" ] ) )
-    webapp.mapper.connect( "history_archive_download", "/api/histories/{id}/exports/{jeha_id}",
-        controller="histories", action="archive_download", conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( "history_archive_export",
+                           "/api/histories/{id}/exports", controller="histories",
+                           action="archive_export", conditions=dict( method=[ "PUT" ] ) )
+    webapp.mapper.connect( "history_archive_download",
+                           "/api/histories/{id}/exports/{jeha_id}", controller="histories",
+                           action="archive_download", conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( "create_api_key", "/api/users/:user_id/api_key",
-        controller="users", action="api_key", user_id=None, conditions=dict( method=["POST"] ) )
+                           controller="users", action="api_key", user_id=None,
+                           conditions=dict( method=["POST"] ) )
 
     # visualizations registry generic template renderer
-    webapp.add_route( '/visualization/show/:visualization_name',
-        controller='visualization', action='render', visualization_name=None )
+    webapp.add_route( '/visualization/show/:visualization_name', controller='visualization', action='render', visualization_name=None )
 
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect( 'import_workflow_deprecated', '/api/workflows/upload', controller='workflows', action='import_new_workflow_deprecated', conditions=dict( method=['POST'] ) )
@@ -446,8 +444,8 @@ def populate_api_routes( webapp, app ):
                             parent_resources=dict( member_name="job", collection_name="jobs" ) )
 
     _add_item_extended_metadata_controller( webapp,
-                               name_prefix="history_dataset_",
-                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+                                            name_prefix="history_dataset_",
+                                            path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     # ====================
     # ===== TOOLSHED =====
@@ -463,18 +461,17 @@ def populate_api_routes( webapp, app ):
     # Galaxy API for tool shed features.
     webapp.mapper.resource( 'tool_shed_repository',
                             'tool_shed_repositories',
-                            member={ 'repair_repository_revision' : 'POST',
-                                     'exported_workflows' : 'GET',
-                                     'import_workflow' : 'POST',
-                                     'import_workflows' : 'POST' },
-                            collection={ 'get_latest_installable_revision' : 'POST',
-                                         'reset_metadata_on_installed_repositories' : 'POST' },
+                            member={ 'repair_repository_revision': 'POST',
+                                     'exported_workflows': 'GET',
+                                     'import_workflow': 'POST',
+                                     'import_workflows': 'POST' },
+                            collection={ 'get_latest_installable_revision': 'POST',
+                                         'reset_metadata_on_installed_repositories': 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',
-                            new={ 'install_repository_revision' : 'POST' },
+                            new={ 'install_repository_revision': 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
-
 
     # ==== Trace/Metrics Logger
     # Connect logger from app
@@ -482,26 +479,27 @@ def populate_api_routes( webapp, app ):
         webapp.trace_logger = app.trace_logger
 
     # metrics logging API
-    #webapp.mapper.connect( "index", "/api/metrics",
+    # webapp.mapper.connect( "index", "/api/metrics",
     #    controller="metrics", action="index", conditions=dict( method=["GET"] ) )
-    #webapp.mapper.connect( "show", "/api/metrics/{id}",
+    # webapp.mapper.connect( "show", "/api/metrics/{id}",
     #    controller="metrics", action="show", conditions=dict( method=["GET"] ) )
-    webapp.mapper.connect( "create", "/api/metrics",
-        controller="metrics", action="create", conditions=dict( method=["POST"] ) )
+    webapp.mapper.connect( "create", "/api/metrics", controller="metrics",
+                           action="create", conditions=dict( method=["POST"] ) )
 
 
 def pack_scripts():
     from glob import glob
     from subprocess import call
     cmd = "java -jar scripts/yuicompressor.jar --type js static/scripts/%(fname)s -o static/scripts/packed/%(fname)s"
-    raw_js= [os.path.basename(g) for g in glob( "static/scripts/*.js" )]
+    raw_js = [os.path.basename(g) for g in glob( "static/scripts/*.js" )]
     for fname in raw_js:
         if os.path.exists('static/scripts/packed/%s' % fname):
             if os.path.getmtime('static/scripts/packed/%s' % fname) > os.path.getmtime('static/scripts/%s' % fname):
-                continue # Skip, packed is newer than source.
+                continue  # Skip, packed is newer than source.
         d = dict( fname=fname )
         log.info("%(fname)s --> packed/%(fname)s" % d)
         call( cmd % d, shell=True )
+
 
 def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
     # Not just using map.resources because actions should be based on name not id
@@ -511,24 +509,24 @@ def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
     map = webapp.mapper
     # Allow view items' tags.
     map.connect(name, path,
-        controller=controller, action="index",
-        conditions=dict(method=["GET"]))
+                controller=controller, action="index",
+                conditions=dict(method=["GET"]))
     # Allow remove tag from item
     map.connect("%s_delete" % name, "%s/tags/:tag_name" % path_prefix,
-        controller=controller, action="delete",
-        conditions=dict(method=["DELETE"]))
+                controller=controller, action="delete",
+                conditions=dict(method=["DELETE"]))
     # Allow create a new tag with from name
     map.connect("%s_create" % name, "%s/tags/:tag_name" % path_prefix,
-        controller=controller, action="create",
-        conditions=dict(method=["POST"]))
+                controller=controller, action="create",
+                conditions=dict(method=["POST"]))
     # Allow update tag value
     map.connect("%s_update" % name, "%s/tags/:tag_name" % path_prefix,
-        controller=controller, action="update",
-        conditions=dict(method=["PUT"]))
+                controller=controller, action="update",
+                conditions=dict(method=["PUT"]))
     # Allow show tag by name
     map.connect("%s_show" % name, "%s/tags/:tag_name" % path_prefix,
-        controller=controller, action="show",
-        conditions=dict(method=["GET"]))
+                controller=controller, action="show",
+                conditions=dict(method=["GET"]))
 
 
 def _add_item_extended_metadata_controller( webapp, name_prefix, path_prefix, **kwd ):
@@ -536,10 +534,12 @@ def _add_item_extended_metadata_controller( webapp, name_prefix, path_prefix, **
     name = "%sextended_metadata" % name_prefix
     webapp.mapper.resource(name, "extended_metadata", path_prefix=path_prefix, controller=controller)
 
+
 def _add_item_annotation_controller( webapp, name_prefix, path_prefix, **kwd ):
     controller = "%sannotations" % name_prefix
     name = "%sannotation" % name_prefix
     webapp.mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
+
 
 def _add_item_provenance_controller( webapp, name_prefix, path_prefix, **kwd ):
     controller = "%sprovenance" % name_prefix
@@ -566,11 +566,11 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # upstream server
     if asbool(conf.get( 'use_remote_user', False )):
         from galaxy.web.framework.middleware.remoteuser import RemoteUser
-        app = RemoteUser( app, maildomain = conf.get( 'remote_user_maildomain', None ),
-                               display_servers = util.listify( conf.get( 'display_servers', '' ) ),
-                               admin_users = conf.get( 'admin_users', '' ).split( ',' ),
-                               remote_user_header = conf.get( 'remote_user_header', 'HTTP_REMOTE_USER' ),
-                               remote_user_secret_header = conf.get('remote_user_secret', None) )
+        app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
+                          display_servers=util.listify( conf.get( 'display_servers', '' ) ),
+                          admin_users=conf.get( 'admin_users', '' ).split( ',' ),
+                          remote_user_header=conf.get( 'remote_user_header', 'HTTP_REMOTE_USER' ),
+                          remote_user_secret_header=conf.get('remote_user_secret', None) )
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
     if asbool(conf.get('use_recursive', True)):
@@ -626,6 +626,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     log.debug( "Enabling 'Request ID' middleware" )
     return app
 
+
 def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
     urlmap, cache_time = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
@@ -642,6 +643,7 @@ def wrap_in_static( app, global_conf, plugin_frameworks=None, **local_conf ):
     # URL mapper becomes the root webapp
     return urlmap
 
+
 def build_template_error_formatters():
     """
     Build a list of template error formatters for WebError. When an error
@@ -651,6 +653,7 @@ def build_template_error_formatters():
     formatters = []
     # Formatter for mako
     import mako.exceptions
+
     def mako_html_data( exc_value ):
         if isinstance( exc_value, ( mako.exceptions.CompileException, mako.exceptions.SyntaxException ) ):
             return mako.exceptions.html_error_template().render( full=False, css=False )
