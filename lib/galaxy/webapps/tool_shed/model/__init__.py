@@ -1,7 +1,9 @@
 import logging
 import operator
 import os
+from datetime import datetime, timedelta
 from galaxy import util
+from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.model.item_attrs import Dictifiable
@@ -61,6 +63,16 @@ class User( object, Dictifiable ):
         self.password = new_secure_hash( text_type=cleartext )
 
 
+class PasswordResetToken( object ):
+    def __init__( self, user, token=None):
+        if token:
+            self.token = token
+        else:
+            self.token = unique_id()
+        self.user = user
+        self.expiration_time = datetime.now() + timedelta(hours=24)
+
+
 class Group( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name' )
     dict_element_visible_keys = ( 'id', 'name' )
@@ -85,7 +97,7 @@ class Role( object, Dictifiable ):
         self.description = description
         self.type = type
         self.deleted = deleted
-    
+
     @property
     def is_repository_admin_role( self ):
         # A repository admin role must always be associated with a repository. The mapper returns an

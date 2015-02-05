@@ -71,6 +71,4 @@ def get_image_ext ( file_path, image ):
         return 'pbm'
     if format == 'PGM':
         return 'pgm'
-    if format == 'EPS':
-        return 'eps'
     return None

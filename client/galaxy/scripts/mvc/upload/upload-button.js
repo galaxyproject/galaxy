@@ -20,24 +20,24 @@ var View = Backbone.View.extend({
     initialize : function(model) {
         // link this
         var self = this;
-        
+
         // create model
         this.model = model;
-        
+
         // get options
         this.options = this.model.attributes;
-            
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // add event
         $(this.el).on('click', this.options.onclick);
-        
+
         // add tooltip
         if (this.options.tooltip) {
             $(this.el).tooltip({title: this.options.tooltip, placement: 'bottom'});
         }
-        
+
         // events
         this.model.on('change:percentage', function() {
             self._percentage(self.model.get('percentage'));
@@ -45,7 +45,7 @@ var View = Backbone.View.extend({
         this.model.on('change:status', function() {
             self._status(self.model.get('status'));
         });
-        
+
         // unload event
         var self = this;
         $(window).on('beforeunload', function() {
@@ -58,7 +58,7 @@ var View = Backbone.View.extend({
             }
         });
     },
-    
+
     // set status
     _status: function(value) {
         var $el = this.$el.find('.progress-bar');
@@ -69,13 +69,13 @@ var View = Backbone.View.extend({
             $el.addClass('progress-bar-' + value);
         }
     },
-    
+
     // set percentage
     _percentage: function(value) {
         var $el = this.$el.find('.progress-bar');
         $el.css({ width : value + '%' });
     },
-    
+
     // template
     _template: function(options) {
         return  '<div style="float: right">' +

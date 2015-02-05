@@ -31,9 +31,8 @@ ${h.js( 'libs/jquery/jquery',
         'libs/backbone/backbone',
         'libs/d3',
         'libs/handlebars.runtime',
-        'mvc/ui',
-        'jq-plugins/ui/peek-column-selector',
-        'jq-plugins/ui/pagination',
+        'ui/peek-column-selector',
+        'ui/pagination',
         'mvc/visualization/visualization-model' )}
 
 ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot-edit.js' )}

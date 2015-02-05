@@ -116,7 +116,6 @@ class WorkflowSchedulingManager( object ):
         for plugin_element in plugins_element.getchildren():
             plugin_type = plugin_element.tag
             plugin_kwds = dict( plugin_element.items() )
-            plugin_kwds.update( self.extra_kwargs )
             workflow_scheduler_id = plugin_kwds.get( 'id', None )
             self.__init_plugin( plugin_type, workflow_scheduler_id, **plugin_kwds )
 

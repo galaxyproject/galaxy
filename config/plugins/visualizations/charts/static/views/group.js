@@ -254,7 +254,9 @@ return Backbone.View.extend({
         if (key_text === undefined) {
             key_text = '';
         }
-        this.group_key.value(key_text);
+        if (key_text != this.group_key.value()) {
+            this.group_key.value(key_text);
+        }
     }
 });
 

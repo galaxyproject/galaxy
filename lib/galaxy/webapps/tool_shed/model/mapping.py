@@ -37,6 +37,11 @@ User.table = Table( "galaxy_user", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
+PasswordResetToken.table = Table("password_reset_token", metadata,
+    Column( "token", String( 32 ), primary_key=True, unique=True, index=True ),
+    Column( "expiration_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
+
 Group.table = Table( "galaxy_group", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -203,6 +208,9 @@ mapper( User, User.table,
     properties=dict( active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      api_keys=relation( APIKeys, backref="user", order_by=desc( APIKeys.table.c.create_time ) ) ) )
+
+mapper( PasswordResetToken, PasswordResetToken.table,
+        properties=dict( user=relation( User, backref="reset_tokens") ) )
 
 mapper( APIKeys, APIKeys.table,
     properties = {} )

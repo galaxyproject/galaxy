@@ -24,6 +24,7 @@ import tempfile
 import threading
 
 from galaxy.util import json
+from datetime import datetime
 
 from email.MIMEText import MIMEText
 
@@ -39,8 +40,7 @@ eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-eggs.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
+from xml.etree import ElementTree, ElementInclude
 
 eggs.require( "wchartype" )
 import wchartype
@@ -336,6 +336,63 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
     return value
 
 
+def pretty_print_time_interval( time = False, precise = False ):
+    """
+    Get a datetime object or a int() Epoch timestamp and return a
+    pretty string like 'an hour ago', 'Yesterday', '3 months ago',
+    'just now', etc
+    credit: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
+    """
+    now = datetime.now()
+    if type( time ) is int:
+        diff = now - datetime.fromtimestamp( time )
+    elif isinstance( time, datetime ):
+        diff = now - time
+    elif not time:
+        diff = now - now
+    second_diff = diff.seconds
+    day_diff = diff.days
+
+    if day_diff < 0:
+        return ''
+
+    if precise:
+        if day_diff == 0:
+                if second_diff < 10:
+                    return "just now"
+                if second_diff < 60:
+                    return str(second_diff) + " seconds ago"
+                if second_diff < 120:
+                    return "a minute ago"
+                if second_diff < 3600:
+                    return str(second_diff / 60) + " minutes ago"
+                if second_diff < 7200:
+                    return "an hour ago"
+                if second_diff < 86400:
+                    return str(second_diff / 3600) + " hours ago"
+        if day_diff == 1:
+            return "yesterday"
+        if day_diff < 7:
+            return str( day_diff ) + " days ago"
+        if day_diff < 31:
+            return str( day_diff / 7 ) + " weeks ago"
+        if day_diff < 365:
+            return str( day_diff / 30 ) + " months ago"
+        return str( day_diff / 365 ) + " years ago"
+    else:
+        if day_diff == 0:
+            return "today"
+        if day_diff == 1:
+            return "yesterday"
+        if day_diff < 7:
+            return "less than a week"
+        if day_diff < 31:
+            return "less than a month"
+        if day_diff < 365:
+            return "less than a year"
+        return "a few years ago"
+
+
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:
         json_data = json.loads(json_data)
@@ -360,46 +417,57 @@ mapped_chars = { '>': '__gt__',
                  '#': '__pd__'}
 
 
-def restore_text(text):
+def restore_text( text, character_map=mapped_chars ):
     """Restores sanitized text"""
     if not text:
         return text
-    for key, value in mapped_chars.items():
+    for key, value in character_map.items():
         text = text.replace(value, key)
     return text
 
 
-def sanitize_text(text):
+def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """
     Restricts the characters that are allowed in text; accepts both strings
-    and lists of strings.
+    and lists of strings; non-string entities will be cast to strings.
     """
-    if isinstance( text, basestring ):
-        return _sanitize_text_helper(text)
-    elif isinstance( text, list ):
-        return [ _sanitize_text_helper(t) for t in text ]
+    if isinstance( text, list ):
+        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), text )
+    if not isinstance( text, basestring ):
+        text = smart_str( text )
+    return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
 
-
-def _sanitize_text_helper(text):
+def _sanitize_text_helper( text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """Restricts the characters that are allowed in a string"""
 
     out = []
     for c in text:
-        if c in valid_chars:
+        if c in valid_characters:
             out.append(c)
-        elif c in mapped_chars:
-            out.append(mapped_chars[c])
+        elif c in character_map:
+            out.append( character_map[c] )
         else:
-            out.append('X')  # makes debugging easier
+            out.append( invalid_character )  # makes debugging easier
     return ''.join(out)
 
 
-def sanitize_param(value):
+def sanitize_lists_to_string( values, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'  ):
+    if isinstance( values, list ):
+        rval = []
+        for value in values:
+            rval.append( sanitize_lists_to_string( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) )
+        values = ",".join( rval )
+    else:
+        values = sanitize_text( values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
+    return values
+
+
+def sanitize_param( value, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """Clean incoming parameters (strings or lists)"""
     if isinstance( value, basestring ):
-        return sanitize_text(value)
+        return sanitize_text( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
     elif isinstance( value, list ):
-        return map(sanitize_text, value)
+        return map( lambda x: sanitize_text( x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ), value )
     else:
         raise Exception('Unknown parameter type (%s)' % ( type( value ) ))
 
@@ -1003,8 +1071,12 @@ def nice_size(size):
     '95.4 MB'
     """
     words = [ 'bytes', 'KB', 'MB', 'GB', 'TB' ]
+    prefix = ''
     try:
         size = float( size )
+        if size < 0:
+            size = abs( size )
+            prefix = '-'
     except:
         return '??? bytes'
     for ind, word in enumerate(words):
@@ -1012,8 +1084,8 @@ def nice_size(size):
         if step > size:
             size = size / float(1024 ** ind)
             if word == 'bytes':  # No decimals for bytes
-                return "%d bytes" % size
-            return "%.1f %s" % (size, word)
+                return "%s%d bytes" % ( prefix, size )
+            return "%s%.1f %s" % ( prefix, size, word )
     return '??? bytes'
 
 
@@ -1119,6 +1191,8 @@ def move_merge( source, target ):
 
 
 def safe_str_cmp(a, b):
+    """safely compare two strings in a timing-attack-resistant manner
+    """
     if len(a) != len(b):
         return False
     rv = 0

@@ -120,6 +120,7 @@ def _expand_macro(element, expand_el, macros):
     # HACK for elementtree, newer implementations (etree/lxml) won't
     # require this parent_map data structure but elementtree does not
     # track parents or recongnize .find('..').
+    # TODO fix this now that we're not using elementtree
     parent_map = dict((c, p) for p in element.getiterator() for c in p)
     _xml_replace(expand_el, macro_def, parent_map)
 

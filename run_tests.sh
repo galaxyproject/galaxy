@@ -1,5 +1,7 @@
 #!/bin/sh
 
+./scripts/common_startup.sh
+
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log 
 
@@ -21,6 +23,12 @@ cat <<EOF
 '${0##*/} -unit testscriptath'      running particular tests scripts
 '${0##*/} -qunit'                   for running qunit JavaScript tests
 '${0##*/} -qunit testname'          for running single JavaScript test with given name
+
+Extra options:
+
+ --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
+ --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
+ --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
 EOF
 }
 
@@ -195,6 +203,16 @@ do
           else
               shift 1
           fi
+          ;;
+      --no_cleanup)
+          GALAXY_TEST_NO_CLEANUP=1
+          export GALAXY_TEST_NO_CLEANUP
+          TOOL_SHED_TEST_NO_CLEANUP=1
+          export TOOL_SHED_TEST_NO_CLEANUP
+          GALAXY_INSTALL_TEST_NO_CLEANUP=1
+          export GALAXY_INSTALL_TEST_NO_CLEANUP
+          echo "Skipping Python test clean up."
+          shift
           ;;
       -watch|--watch)
           # Have grunt watch test or directory for changes, only

@@ -56,13 +56,13 @@ def normalize_inputs(steps, inputs, inputs_by):
         possible_input_keys = []
         for inputs_by_el in inputs_by.split("|"):
             if inputs_by_el == "step_id":
-                possible_input_keys = [str( step.id )]
+                possible_input_keys.append(str( step.id ))
             elif inputs_by_el == "step_index":
-                possible_input_keys = [str( step.order_index )]
+                possible_input_keys.append(str( step.order_index ))
             elif inputs_by_el == "step_uuid":
-                possible_input_keys = [str( step.uuid )]
+                possible_input_keys.append(str( step.uuid ))
             elif inputs_by_el == "name":
-                possible_input_keys = [step.tool_inputs.get( 'name', None )]
+                possible_input_keys.append(step.tool_inputs.get( 'name', None ))
             else:
                 message = "Workflow cannot be run because unexpected inputs_by value specified."
                 raise exceptions.MessageException( message )
@@ -151,7 +151,7 @@ def _flatten_step_params( param_dict, prefix="" ):
         else:
             effective_key = key
         value = param_dict[key]
-        if isinstance(value, dict) and not ('src' in value and 'id' in value):
+        if isinstance(value, dict) and (not ('src' in value and 'id' in value) and key != "__POST_JOB_ACTIONS__"):
             new_params.update(_flatten_step_params( value, effective_key) )
         else:
             new_params[effective_key] = value
@@ -160,7 +160,7 @@ def _flatten_step_params( param_dict, prefix="" ):
 
 def build_workflow_run_config( trans, workflow, payload ):
     app = trans.app
-    history_manager = histories.HistoryManager()
+    history_manager = histories.HistoryManager( app )
 
     # Pull other parameters out of payload.
     param_map = payload.get( 'parameters', {} )
@@ -196,7 +196,7 @@ def build_workflow_run_config( trans, workflow, payload ):
         # Passing an existing history to use.
         encoded_history_id = history_param[ 8: ]
         history_id = __decode_id( trans, encoded_history_id, model_type="history" )
-        history = history_manager.get( trans, history_id, check_ownership=True )
+        history = history_manager.get_owned( trans, history_id, trans.user )
     else:
         # Send workflow outputs to new history.
         history = app.model.History(name=history_param, user=trans.user)
@@ -297,18 +297,8 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
             value=value,
             type=param_types.REPLACEMENT_PARAMETERS,
         )
-
     for step_id, content in run_config.inputs.iteritems():
-        if content.history_content_type == "dataset":
-            request_to_content = model.WorkflowRequestToInputDatasetAssociation()
-            request_to_content.dataset = content
-            request_to_content.workflow_step_id = step_id
-            workflow_invocation.input_datasets.append( request_to_content )
-        else:
-            request_to_content = model.WorkflowRequestToInputDatasetCollectionAssociation()
-            request_to_content.dataset_collection = content
-            request_to_content.workflow_step_id = step_id
-            workflow_invocation.input_dataset_collections.append( request_to_content )
+        workflow_invocation.add_input( content, step_id )
 
     for step in workflow.steps:
         state = step.state

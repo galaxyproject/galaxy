@@ -18,6 +18,7 @@ import json
 import socket
 import time
 import numbers
+from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 from string import Template
 from itertools import ifilter
@@ -31,7 +32,7 @@ from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 import galaxy.model.orm.now
 from galaxy.security import get_permitted_actions
 from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
-from galaxy.util import ready_name_for_url
+from galaxy.util import ready_name_for_url, unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.directory_hash import directory_hash_id
@@ -261,6 +262,14 @@ class User( object, Dictifiable ):
         environment = User.user_template_environment( user )
         return Template( in_string ).safe_substitute( environment )
 
+class PasswordResetToken( object ):
+    def __init__( self, user, token=None):
+        if token:
+            self.token = token
+        else:
+            self.token = unique_id()
+        self.user = user
+        self.expiration_time = datetime.now() + timedelta(hours=24)
 
 class BaseJobMetric( object ):
 
@@ -320,6 +329,7 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.input_datasets = []
         self.output_datasets = []
         self.input_dataset_collections = []
+        self.output_dataset_collection_instances = []
         self.output_dataset_collections = []
         self.input_library_datasets = []
         self.output_library_datasets = []
@@ -463,8 +473,10 @@ class Job( object, HasJobMetrics, Dictifiable ):
         self.output_datasets.append( JobToOutputDatasetAssociation( name, dataset ) )
     def add_input_dataset_collection( self, name, dataset ):
         self.input_dataset_collections.append( JobToInputDatasetCollectionAssociation( name, dataset ) )
-    def add_output_dataset_collection( self, name, dataset ):
-        self.output_dataset_collections.append( JobToOutputDatasetCollectionAssociation( name, dataset ) )
+    def add_output_dataset_collection( self, name, dataset_collection_instance ):
+        self.output_dataset_collection_instances.append( JobToOutputDatasetCollectionAssociation( name, dataset_collection_instance ) )
+    def add_implicit_output_dataset_collection( self, name, dataset_collection ):
+        self.output_dataset_collections.append( JobToImplicitOutputDatasetCollectionAssociation( name, dataset_collection ) )
     def add_input_library_dataset( self, name, dataset ):
         self.input_library_datasets.append( JobToInputLibraryDatasetAssociation( name, dataset ) )
     def add_output_library_dataset( self, name, dataset ):
@@ -520,9 +532,15 @@ class Job( object, HasJobMetrics, Dictifiable ):
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
-    def to_dict( self, view='collection' ):
+
+    def to_dict( self, view='collection', system_details=False ):
         rval = super( Job, self ).to_dict( view=view )
         rval['tool_id'] = self.tool_id
+        if system_details:
+            # System level details that only admins should have.
+            rval['external_id'] = self.job_runner_external_id
+            rval['command_line'] = self.command_line
+
         if view == 'element':
             param_dict = dict( [ ( p.name, p.value ) for p in self.parameters ] )
             rval['params'] = param_dict
@@ -719,7 +737,18 @@ class JobToInputDatasetCollectionAssociation( object ):
         self.dataset = dataset
 
 
+# Many jobs may map to one HistoryDatasetCollection using these for a given
+# tool output (if mapping over an input collection).
 class JobToOutputDatasetCollectionAssociation( object ):
+    def __init__( self, name, dataset_collection_instance ):
+        self.name = name
+        self.dataset_collection_instance = dataset_collection_instance
+
+
+# A DatasetCollection will be mapped to at most one job per tool output
+# using these. (You can think of many of these models as going into the
+# creation of a JobToOutputDatasetCollectionAssociation.)
+class JobToImplicitOutputDatasetCollectionAssociation( object ):
     def __init__( self, name, dataset_collection ):
         self.name = name
         self.dataset_collection = dataset_collection
@@ -1045,28 +1074,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
 
         return rval
 
-    def set_from_dict( self, new_data ):
-        #AKA: set_api_value
-        """
-        Set object attributes to the values in dictionary new_data limiting
-        to only those keys in dict_element_visible_keys.
-
-        Returns a dictionary of the keys, values that have been changed.
-        """
-        # precondition: keys are proper, values are parsed and validated
-        changed = {}
-        # unknown keys are ignored here
-        for key in [ k for k in new_data.keys() if k in self.dict_element_visible_keys ]:
-            new_val = new_data[ key ]
-            old_val = self.__getattribute__( key )
-            if new_val == old_val:
-                continue
-
-            self.__setattr__( key, new_val )
-            changed[ key ] = new_val
-
-        return changed
-
     @property
     def latest_export( self ):
         exports = self.exports
@@ -1105,15 +1112,16 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
     def active_datasets_children_and_roles( self ):
         if not hasattr(self, '_active_datasets_children_and_roles'):
             db_session = object_session( self )
-            query = db_session.query( HistoryDatasetAssociation ).filter( HistoryDatasetAssociation.table.c.history_id == self.id ). \
-                filter( not_( HistoryDatasetAssociation.deleted ) ). \
-                order_by( HistoryDatasetAssociation.table.c.hid.asc() ). \
-                options(
-                    joinedload("children"),
-                    joinedload("dataset"),
-                    joinedload("dataset.actions"),
-                    joinedload("dataset.actions.role"),
-                )
+            query = ( db_session.query( HistoryDatasetAssociation )
+                        .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                        .filter( not_( HistoryDatasetAssociation.deleted ) )
+                        .order_by( HistoryDatasetAssociation.table.c.hid.asc() )
+                        .options(
+                            joinedload("children"),
+                            joinedload("dataset"),
+                            joinedload("dataset.actions"),
+                            joinedload("dataset.actions.role"),
+                        ))
             self._active_datasets_children_and_roles = query.all()
         return self._active_datasets_children_and_roles
 
@@ -1328,6 +1336,14 @@ class Dataset( object ):
                     RESUBMITTED = 'resubmitted' )
     # failed_metadata and resubmitted are only valid as DatasetInstance states currently
 
+    non_ready_states = (
+        states.UPLOAD,
+        states.QUEUED,
+        states.RUNNING,
+        states.SETTING_METADATA
+    )
+    ready_states = tuple( set( states.__dict__.values() ) - set( non_ready_states ) )
+
     conversion_messages = Bunch( PENDING = "pending",
                                  NO_DATA = "no data",
                                  NO_CHROMOSOME = "no chromosome",
@@ -1355,6 +1371,9 @@ class Dataset( object ):
             self.uuid = uuid4()
         else:
             self.uuid = UUID(str(uuid))
+
+    def in_ready_state( self ):
+        return self.state in self.ready_states
 
     def get_file_name( self ):
         if not self.external_filename:
@@ -1493,6 +1512,8 @@ class DatasetInstance( object ):
         self.tool_version = tool_version
         self.extension = extension
         self.designation = designation
+        # set private variable to None here, since the attribute may be needed in by MetadataCollection.__init__
+        self._metadata = None
         self.metadata = metadata or dict()
         self.extended_metadata = extended_metadata
         if dbkey: #dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
@@ -1534,7 +1555,9 @@ class DatasetInstance( object ):
     def datatype( self ):
         return datatypes_registry.get_datatype_by_extension( self.extension )
     def get_metadata( self ):
-        if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self: #using weakref to store parent (to prevent circ ref), does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
+        # using weakref to store parent (to prevent circ ref),
+        #   does a Session.clear() cause parent to be invalidated, while still copying over this non-database attribute?
+        if not hasattr( self, '_metadata_collection' ) or self._metadata_collection.parent != self:
             self._metadata_collection = MetadataCollection( self )
         return self._metadata_collection
     def set_metadata( self, bunch ):
@@ -2061,6 +2084,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
             rval['extended_metadata'] = hda.extended_metadata.data
 
         rval[ 'peek' ] = to_unicode( hda.display_peek() )
+
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
@@ -2073,36 +2097,6 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
                 val = getattr( hda.datatype, name )
             rval['metadata_' + name] = val
         return rval
-
-    def set_from_dict( self, new_data ):
-        #AKA: set_api_value
-        """
-        Set object attributes to the values in dictionary new_data limiting
-        to only the following keys: name, deleted, visible, genome_build,
-        info, and blurb.
-
-        Returns a dictionary of the keys, values that have been changed.
-        """
-        # precondition: keys are proper, values are parsed and validated
-        #NOTE!: does not handle metadata
-        editable_keys = ( 'name', 'deleted', 'visible', 'dbkey', 'info', 'blurb' )
-
-        changed = {}
-        # unknown keys are ignored here
-        for key in [ k for k in new_data.keys() if k in editable_keys ]:
-            new_val = new_data[ key ]
-            old_val = self.__getattribute__( key )
-            if new_val == old_val:
-                continue
-
-            # special cases here
-            if key == 'deleted' and new_val is False and self.purged:
-                raise Exception( 'Cannot undelete a purged dataset' )
-
-            self.__setattr__( key, new_val )
-            changed[ key ] = new_val
-
-        return changed
 
     @property
     def history_content_type( self ):
@@ -2647,14 +2641,37 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
     """
     dict_collection_visible_keys = ( 'id', 'collection_type' )
     dict_element_visible_keys = ( 'id', 'collection_type' )
+    populated_states = Bunch(
+        NEW='new',  # New dataset collection, unpopulated elements
+        OK='ok',  # Collection elements populated (HDAs may or may not have errors)
+        FAILED='failed',  # some problem populating state, won't be populated
+    )
 
     def __init__(
         self,
         id=None,
         collection_type=None,
+        populated=True,
     ):
         self.id = id
         self.collection_type = collection_type
+        if not populated:
+            self.populated_state = DatasetCollection.populated_states.NEW
+
+    @property
+    def populated( self ):
+        return self.populated_state == DatasetCollection.populated_states.OK
+
+    @property
+    def waiting_for_elements( self ):
+        return self.populated_state == DatasetCollection.populated_states.NEW
+
+    def mark_as_populated( self ):
+        self.populated_state = DatasetCollection.populated_states.OK
+
+    def handle_population_failed( self, message ):
+        self.populated_state = DatasetCollection.populated_states.FAILED
+        self.populated_state_message = message
 
     @property
     def dataset_instances( self ):
@@ -2666,6 +2683,16 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
                 instance = element.dataset_instance
                 instances.append( instance )
         return instances
+
+    @property
+    def dataset_elements( self ):
+        elements = []
+        for element in self.elements:
+            if element.is_collection:
+                elements.extend( element.child_collection.dataset_elements )
+            else:
+                elements.append( element )
+        return elements
 
     @property
     def state( self ):
@@ -2970,6 +2997,7 @@ class GalaxySession( object ):
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
         self.histories = []
+        self.last_action = galaxy.model.orm.now.now()
 
     def add_history( self, history, association=None ):
         if association is None:
@@ -3224,6 +3252,27 @@ class WorkflowInvocation( object, Dictifiable ):
 
     def update( self ):
         self.update_time = galaxy.model.orm.now.now()
+
+    def add_input( self, content, step_id ):
+        if content.history_content_type == "dataset":
+            request_to_content = WorkflowRequestToInputDatasetAssociation()
+            request_to_content.dataset = content
+            request_to_content.workflow_step_id = step_id
+            self.input_datasets.append( request_to_content )
+        else:
+            request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
+            request_to_content.dataset_collection = content
+            request_to_content.workflow_step_id = step_id
+            self.input_dataset_collections.append( request_to_content )
+
+    def has_input_for_step( self, step_id ):
+        for content in self.input_datasets:
+            if content.workflow_step_id == step_id:
+                return True
+        for content in self.input_dataset_collections:
+            if content.workflow_step_id == step_id:
+                return True
+        return False
 
 
 class WorkflowInvocationStep( object, Dictifiable ):

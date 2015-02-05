@@ -196,21 +196,26 @@ def expose_api_anonymous( func, to_json=True ):
 
 # ----------------------------------------------------------------------------- (new) api decorators
 # TODO: rename as expose_api and make default.
-def _future_expose_api( func, to_json=True, user_required=True ):
+def _future_expose_api( func, to_json=True, user_required=True, user_or_session_required=True ):
     """
     Expose this function via the API.
     """
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
+        # errors passed in from trans._authenicate_api
         if trans.error_message:
-            # TODO: Document this branch, when can this happen,
-            # I don't understand it.
-            return __api_error_response( trans, err_msg=trans.error_message )
-        if user_required and trans.anonymous:
-            error_code = error_codes.USER_NO_API_KEY
-            # Use error codes default error message.
-            err_msg = "API authentication required for this request"
-            return __api_error_response( trans, err_code=error_code, err_msg=err_msg, status_code=403 )
+            return __api_error_response( trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
+                                         err_msg=trans.error_message )
+        if trans.anonymous:
+            # error if anon and user required
+            if user_required:
+                return __api_error_response( trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
+                                             err_msg="API authentication required for this request" )
+            # error if anon and no session
+            if not trans.galaxy_session and user_or_session_required:
+                return __api_error_response( trans, status_code=403, err_code=error_codes.USER_NO_API_KEY,
+                                             err_msg="API authentication required for this request" )
+
         if trans.request.body:
             try:
                 kwargs['payload'] = __extract_payload_from_request(trans, func, kwargs)
@@ -219,8 +224,10 @@ def _future_expose_api( func, to_json=True, user_required=True ):
                 return __api_error_response( trans, status_code=400, err_code=error_code )
 
         trans.response.set_content_type( JSON_CONTENT_TYPE )
+
         # send 'do not cache' headers to handle IE's caching of ajax get responses
         trans.response.headers[ 'Cache-Control' ] = "max-age=0,no-cache,no-store"
+
         # TODO: Refactor next block out into a helper procedure.
         # Perform api_run_as processing, possibly changing identity
         if 'payload' in kwargs and 'run_as' in kwargs['payload']:
@@ -320,17 +327,20 @@ def __api_error_response( trans, **kwds ):
     return dumps( error_dict )
 
 
-# TODO: rename as expose_api and make default.
 def _future_expose_api_anonymous( func, to_json=True ):
     """
     Expose this function via the API but don't require a set user.
     """
     return _future_expose_api( func, to_json=to_json, user_required=False )
 
+def _future_expose_api_anonymous_and_sessionless( func, to_json=True ):
+    """
+    Expose this function via the API but don't require a user or a galaxy_session.
+    """
+    return _future_expose_api( func, to_json=to_json, user_required=False, user_or_session_required=False )
 
 def _future_expose_api_raw( func ):
     return _future_expose_api( func, to_json=False, user_required=True )
-
 
 def _future_expose_api_raw_anonymous( func ):
     return _future_expose_api( func, to_json=False, user_required=False )

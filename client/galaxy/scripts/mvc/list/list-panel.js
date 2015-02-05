@@ -477,7 +477,10 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         // override to control where the view is added, how/whether it's rendered
         panel.views.push( view );
         panel.$list().append( view.render( 0 ).$el.hide() );
-        view.$el.slideDown( panel.fxSpeed );
+        panel.trigger( 'view:attached', view );
+        view.$el.slideDown( panel.fxSpeed, function(){
+            panel.trigger( 'view:attached:rendered' );
+        });
     },
 
     /** Remove a view from the panel (if found) */
@@ -487,6 +490,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             view = panel.viewFromModel( model );
         if( !view ){ return undefined; }
         panel.views = _.without( panel.views, view );
+        panel.trigger( 'view:removed', view );
 
         // potentially show the empty message if no views left
         // use anonymous queue here - since remove can happen multiple times
@@ -494,6 +498,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             function( next ){ view.$el.fadeOut( panel.fxSpeed, next ); },
             function( next ){
                 view.remove();
+                panel.trigger( 'view:removed:rendered' );
                 if( !panel.views.length ){
                     panel._renderEmptyMessage().fadeIn( panel.fxSpeed, next );
                 } else {
@@ -872,10 +877,10 @@ var ModelListPanel = ListPanel.extend({
         this.log( this + '._setUpModelListeners', this.model );
         // bounce model errors up to the panel
         this.model.on( 'error', function(){
-            //TODO: namespace?
-            //var args = Array.prototype.slice.call( arguments, 0 );
-            //args[0] = 'model:' + args[0];
-            this.trigger.apply( panel, arguments );
+            var args = Array.prototype.slice.call( arguments, 0 );
+            //args.unshift( 'model:error' );
+            args.unshift( 'error' );
+            this.trigger.apply( this, args );
         }, this );
         return this;
     },

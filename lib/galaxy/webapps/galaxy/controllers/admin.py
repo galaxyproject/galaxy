@@ -17,7 +17,7 @@ from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
-from markupsafe import escape
+from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
 
@@ -486,7 +486,8 @@ class ToolVersionListGrid( grids.Grid ):
     class ToolIdColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, tool_version ):
-            if tool_version.tool_id in trans.app.toolbox.tools_by_id:
+            toolbox = trans.app.toolbox
+            if toolbox.has_tool( tool_version.tool_id, exact=True ):
                 link = url_for( controller='tool_runner', tool_id=tool_version.tool_id )
                 link_str = '<a href="%s">' % link
                 return '<div class="count-box state-color-ok">%s%s</a></div>' % ( link_str, tool_version.tool_id )
@@ -497,8 +498,9 @@ class ToolVersionListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, tool_version ):
             tool_ids_str = ''
+            toolbox = trans.app.toolbox
             for tool_id in tool_version.get_version_ids( trans.app ):
-                if tool_id in trans.app.toolbox.tools_by_id:
+                if toolbox.has_tool( tool_id, exact=True ):
                     link = url_for( controller='tool_runner', tool_id=tool_version.tool_id )
                     link_str = '<a href="%s">' % link
                     tool_ids_str += '<div class="count-box state-color-ok">%s%s</a></div><br/>' % ( link_str, tool_id )
@@ -881,3 +883,21 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
         status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_data_tables_registry.mako', message=message, status=status )
+
+    @web.expose
+    @web.require_admin
+    def display_applications( self, trans, **kwd ):
+        return trans.fill_template( 'admin/view_display_applications.mako', display_applications=trans.app.datatypes_registry.display_applications )
+
+    @web.expose
+    @web.require_admin
+    def reload_display_application( self, trans, **kwd ):
+        reloaded, failed = trans.app.datatypes_registry.reload_display_applications( kwd.get( 'id' ) )
+        if not reloaded and failed:
+            return trans.show_error_message( 'Unable to reload any of the %i requested display applications ("%s").' % ( len( failed ), '", "'.join( failed ) ) )
+        if failed:
+            return trans.show_warn_message( 'Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
+                                             % ( len( reloaded ), '", "'.join( reloaded ), len( failed ), '", "'.join( failed ) ) )
+        if not reloaded:
+            return trans.show_warn_message( 'You need to request at least one display application to reload.' )
+        return trans.show_ok_message( 'Reloaded %i requested display applications ("%s").' % ( len( reloaded ), '", "'.join( reloaded ) ) )

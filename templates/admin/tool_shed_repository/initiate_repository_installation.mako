@@ -23,9 +23,6 @@
                 success : function ( data ) {
                     //alert( "Initializing repository installation succeeded" );
                 },
-                error: function() {
-                    alert( "Initializing repository installation failed" );
-                },
             });
         };
     </script>

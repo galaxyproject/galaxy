@@ -54,7 +54,7 @@ var View = Backbone.View.extend({
         }
         
         // add text field event
-        this.$text.on('change', function () {
+        this.$text.on('input', function () {
            self.value($(this).val());
         });
         

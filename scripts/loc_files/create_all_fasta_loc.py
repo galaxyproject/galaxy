@@ -1,5 +1,5 @@
 import optparse, os, sys
-import elementtree.ElementTree as etree
+from xml.etree.ElementTree import parse
 
 """
 Generates a loc file containing names of all the fasta files that match the
@@ -212,7 +212,7 @@ def __main__():
     # get column names
     col_values = []
     loc_path = None
-    tree = etree.parse( options.data_table_xml )
+    tree = parse( options.data_table_xml )
     tables = tree.getroot()
     for table in tables.getiterator():
         name = table.attrib.get( 'name' )

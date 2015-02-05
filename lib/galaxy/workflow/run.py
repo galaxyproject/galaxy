@@ -251,7 +251,24 @@ class WorkflowProgress( object ):
         step_outputs = self.outputs[ connection.output_step.id ]
         if step_outputs is STEP_OUTPUT_DELAYED:
             raise modules.DelayedWorkflowEvaluation()
-        return step_outputs[ connection.output_name ]
+        output_name = connection.output_name
+        try:
+            replacement = step_outputs[ output_name ]
+        except KeyError:
+            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+            message = template % ( output_name, step_outputs )
+            raise Exception( message )
+        if isinstance( replacement, model.HistoryDatasetCollectionAssociation ):
+            if not replacement.collection.populated:
+                if not replacement.collection.waiting_for_elements:
+                    # If we are not waiting for elements, there was some
+                    # problem creating the collection. Collection will never
+                    # be populated.
+                    # TODO: consider distinguish between cancelled and failed?
+                    raise modules.CancelWorkflowEvaluation()
+
+                raise modules.DelayedWorkflowEvaluation()
+        return replacement
 
     def set_outputs_for_input( self, step, outputs={} ):
         if self.inputs_by_step_id:

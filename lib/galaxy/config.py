@@ -83,6 +83,7 @@ class Configuration( object ):
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
+        self.toolbox_filter_base_modules = listify( kwargs.get( "toolbox_filter_base_modules", "galaxy.tools.filters,galaxy.tools.toolbox.filters" ) )
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
         self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ), do_strip=True )
@@ -135,6 +136,7 @@ class Configuration( object ):
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
+        self.remote_user_secret = kwargs.get( "remote_user_secret", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
@@ -144,7 +146,6 @@ class Configuration( object ):
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
-        self.workflow_schedulers_config_file = resolve_path( kwargs.get( 'workflow_schedulers_config_file', 'config/workflow_schedulers_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
@@ -162,7 +163,6 @@ class Configuration( object ):
             self.job_walltime_delta = timedelta( 0, s, 0, 0, m, h )
         self.admin_users = kwargs.get( "admin_users", "" )
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
-        self.reset_password_length = int( kwargs.get('reset_password_length', '15') )
         self.mailing_join_addr = kwargs.get('mailing_join_addr', 'galaxy-announce-join@bx.psu.edu')
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.activation_email = kwargs.get( 'activation_email', None )
@@ -173,6 +173,7 @@ class Configuration( object ):
         self.instance_resource_url = kwargs.get( 'instance_resource_url', None )
         self.registration_warning_message = kwargs.get( 'registration_warning_message', None )
         self.ga_code = kwargs.get( 'ga_code', None )
+        self.session_duration = int(kwargs.get( 'session_duration', 0 ))
         #  Get the disposable email domains blacklist file and its contents
         self.blacklist_location = kwargs.get( 'blacklist_file', None )
         self.blacklist_content = None
@@ -195,6 +196,7 @@ class Configuration( object ):
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool( kwargs.get( 'use_tasked_jobs', False ) )
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
+        self.commands_in_new_shell = string_as_bool( kwargs.get( 'enable_beta_tool_command_isolation', "False" ) )
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         # These workflow modules should not be considered part of Galaxy's
@@ -229,7 +231,6 @@ class Configuration( object ):
         self.external_chown_script = kwargs.get('external_chown_script', None)
         self.environment_setup_file = kwargs.get( 'environment_setup_file', None )
         self.use_heartbeat = string_as_bool( kwargs.get( 'use_heartbeat', 'False' ) )
-        self.use_memdump = string_as_bool( kwargs.get( 'use_memdump', 'False' ) )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
@@ -321,6 +322,9 @@ class Configuration( object ):
             # Crummy, but PasteScript does not give you a way to determine this
             if arg.lower().startswith('--server-name='):
                 self.server_name = arg.split('=', 1)[-1]
+        # Allow explicit override of server name in confg params
+        if "server_name" in kwargs:
+            self.server_name = kwargs.get("server_name")
         # Store all configured server names
         self.server_names = []
         for section in global_conf_parser.sections():
@@ -457,6 +461,7 @@ class Configuration( object ):
             shed_data_manager_config_file=[ 'shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml' ],
             shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
             tool_sheds_config_file=[ 'config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample' ],
+            workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
         )
 
         listify_defaults = dict(
@@ -709,10 +714,7 @@ class ConfiguresGalaxyMixin:
 
         from galaxy import tools
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
-        # Search support for tools
-        import galaxy.tools.search
-        index_help = getattr( self.config, "index_tool_help", True )
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
+        self.reindex_tool_search()
 
         from galaxy.tools.deps import containers
         galaxy_root_dir = os.path.abspath(self.config.root)
@@ -723,7 +725,13 @@ class ConfiguresGalaxyMixin:
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
         )
-        self.container_finder = galaxy.tools.deps.containers.ContainerFinder(app_info)
+        self.container_finder = containers.ContainerFinder(app_info)
+
+    def reindex_tool_search( self ):
+        # Call this when tools are added or removed.
+        import galaxy.tools.search
+        index_help = getattr( self.config, "index_tool_help", True )
+        self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox, index_help )
 
     def _configure_tool_data_tables( self, from_shed_config ):
         from galaxy.tools.data import ToolDataTableManager

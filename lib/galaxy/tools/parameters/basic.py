@@ -8,7 +8,7 @@ import sys
 import os
 import os.path
 import urllib
-from elementtree.ElementTree import XML, Element
+from xml.etree.ElementTree import XML
 from galaxy import config, datatypes, util
 from galaxy.web import form_builder
 from galaxy.util.bunch import Bunch
@@ -46,10 +46,12 @@ class ToolParameter( object, Dictifiable ):
         self.refresh_on_change_values = []
         self.name = input_source.get("name")
         self.type = input_source.get("type")
+        self.hidden = input_source.get("hidden", False)
+        self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
         sanitizer_elem = input_source.parse_sanitizer_elem()
-        if sanitizer_elem:
+        if sanitizer_elem is not None:
             self.sanitizer = ToolParameterSanitizer.from_element( sanitizer_elem )
         else:
             self.sanitizer = None
@@ -213,6 +215,8 @@ class ToolParameter( object, Dictifiable ):
 
         tool_dict[ 'model_class' ] = self.__class__.__name__
         tool_dict[ 'optional' ] = self.optional
+        tool_dict[ 'hidden' ] = self.hidden
+        tool_dict[ 'is_dynamic' ] = self.is_dynamic
         if hasattr( self, 'value' ):
             tool_dict[ 'value' ] = self.value
         return tool_dict
@@ -258,6 +262,19 @@ class TextToolParameter( ToolParameter ):
             return form_builder.TextArea( self.name, self.size, value )
         else:
             return form_builder.TextField( self.name, self.size, value )
+
+    def to_string( self, value, app ):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            return ''
+        else:
+            return str( value )
+
+    def to_html_value( self, value, app ):
+        if value is None:
+            return ''
+        else:
+            return self.to_string( value, app )
 
     def get_initial_value( self, trans, context, history=None ):
         return self.value
@@ -324,13 +341,6 @@ class IntegerToolParameter( TextToolParameter ):
             if not value and self.optional:
                 return ""
             raise ValueError( "An integer is required" )
-
-    def to_string( self, value, app ):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            return ""
-        else:
-            return str( value )
 
     def to_python( self, value, app ):
         try:
@@ -404,13 +414,6 @@ class FloatToolParameter( TextToolParameter ):
                 return ""
             raise ValueError( "A real number is required" )
 
-    def to_string( self, value, app ):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            return ""
-        else:
-            return str( value )
-
     def to_python( self, value, app ):
         try:
             return float( value )
@@ -470,7 +473,7 @@ class BooleanToolParameter( ToolParameter ):
             return [ 'true' ]
 
     def to_python( self, value, app ):
-        return ( value == 'True' )
+        return ( value in [ 'True', 'true' ])
 
     def get_initial_value( self, trans, context, history=None ):
         return self.checked
@@ -487,7 +490,7 @@ class BooleanToolParameter( ToolParameter ):
         d['truevalue'] = self.truevalue
         d['falsevalue'] = self.falsevalue
         return d
-    
+
     @property
     def legal_values( self ):
         return [ self.truevalue, self.falsevalue ]
@@ -630,6 +633,7 @@ class HiddenToolParameter( ToolParameter ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.value = input_source.get( 'value' )
+        self.hidden = True
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.HiddenField( self.name, self.value )
@@ -670,7 +674,7 @@ class BaseURLToolParameter( ToolParameter ):
     def get_label( self ):
         # BaseURLToolParameters are ultimately "hidden" parameters
         return None
-    
+
     def to_dict( self, trans, view='collection', value_mapper=None ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
         d['value'] = self.get_value( trans )
@@ -782,8 +786,11 @@ class SelectToolParameter( ToolParameter ):
         if self.options:
             return self.options.get_options( trans, other_values )
         elif self.dynamic_options:
+            call_other_values = {"__trans__": trans}
+            if other_values:
+                call_other_values.update( other_values.dict )
             try:
-                return eval( self.dynamic_options, self.tool.code_namespace, other_values )
+                return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
             except Exception:
                 return []
         else:
@@ -852,6 +859,8 @@ class SelectToolParameter( ToolParameter ):
                         value = value.split()
             return UnvalidatedValue( value )
         legal_values = self.get_legal_values( trans, context )
+        if not legal_values and self.optional:
+            return None
         assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
         if isinstance( value, list ):
             if not(self.repeat):
@@ -864,7 +873,7 @@ class SelectToolParameter( ToolParameter ):
             return rval
         else:
             value_is_none = ( value == "None" and "None" not in legal_values )
-            if value_is_none:
+            if value_is_none or not value:
                 if self.multiple:
                     if self.optional:
                         return []
@@ -931,7 +940,7 @@ class SelectToolParameter( ToolParameter ):
         # Old style dynamic options, no dependency information so there isn't
         # a lot we can do: if we're dealing with workflows, have to assume
         # late validation no matter what.
-        if self.dynamic_options is not None and ( trans is None or trans.workflow_building_mode ):
+        if (self.dynamic_options is not None or self.is_dynamic is not None) and ( trans is None or trans.workflow_building_mode ):
             return True
         # If we got this far, we can actually look at the dependencies
         # to see if their values will not be available until runtime.
@@ -1033,10 +1042,9 @@ class SelectToolParameter( ToolParameter ):
                     # Found selected option.
                     value = option[1]
             d[ 'value' ] = value
-            
+
         d['display'] = self.display
         d['multiple'] = self.multiple
-        d['is_dynamic'] = self.is_dynamic
 
         return d
 
@@ -1114,7 +1122,7 @@ class GenomeBuildParameter( SelectToolParameter ):
             'display'   : self.display,
             'multiple'  : self.multiple
         })
-        
+
         return d
 
     def _get_dbkey_names( self, trans=None ):
@@ -1316,10 +1324,10 @@ class ColumnListParameter( SelectToolParameter ):
 
         # add data reference
         d['data_ref'] = self.data_ref
-        
+
         # add numerical flag
         d['numerical'] = self.numerical
-        
+
         # return
         return d
 
@@ -1445,7 +1453,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             if not os.path.isabs( from_file ):
                 from_file = os.path.join( tool.app.config.tool_data_path, from_file )
             elem = XML( "<root>%s</root>" % open( from_file ).read() )
-        self.is_dynamic = False
         self.dynamic_options = elem.get( 'dynamic_options', None )
         if self.dynamic_options:
             self.is_dynamic = True
@@ -1535,6 +1542,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 else:
                     value = value.split( "\n" )
             return UnvalidatedValue( value )
+        if not value and not self.optional:
+            raise ValueError( "An invalid option was selected for %s, 'None', please verify" % (self.name) )
         if not value:
             return None
         if not isinstance( value, list ):
@@ -1657,9 +1666,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             # will sometimes error if self.is_dynamic and self.filtered
             #   bc we dont/cant fill out other_values above ({})
             pass
-        d[ 'options' ] = options
-        d[ 'display' ] = self.display
-        d[ 'is_dynamic' ] = self.is_dynamic
+        d['options'] = options
+        d['display'] = self.display
         return d
 
 
@@ -1762,6 +1770,7 @@ class DataToolParameter( BaseDataToolParameter ):
             self.validators.append( validation.MetadataValidator() )
         self._parse_formats( trans, tool, input_source )
         self.multiple = input_source.get_bool('multiple', False)
+        self.is_dynamic = True
         self._parse_options( input_source )
         # Load conversions required for the dataset input
         self.conversions = []
@@ -2082,7 +2091,6 @@ class DataToolParameter( BaseDataToolParameter ):
         for instance should I just be checking dynamic options).
         """
         allow = True
-        # TODO: allow should be false in some in cases...
         return allow
 
     def _options_filter_attribute( self, value ):
@@ -2109,9 +2117,8 @@ class DataToolParameter( BaseDataToolParameter ):
         d = super( DataToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
-        d['is_dynamic'] = True
         d['options'] = {'hda': [], 'hdca': []}
-        
+
         # return default content if context is not available
         if other_values is None:
             return d
@@ -2120,7 +2127,7 @@ class DataToolParameter( BaseDataToolParameter ):
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         history = trans.history
         multiple = self.multiple
-        
+
         # add datasets
         for hda in history.active_datasets_children_and_roles:
             match = dataset_matcher.hda_match( hda )
@@ -2133,7 +2140,7 @@ class DataToolParameter( BaseDataToolParameter ):
                     'name'          : m.name,
                     'src'           : 'hda'
                 })
-            
+
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher( dataset_matcher )
         for hdca in history.active_dataset_collections:
@@ -2164,6 +2171,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         self._parse_formats( trans, tool, input_source )
         self._collection_type = input_source.get("collection_type", None)
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
+        self.is_dynamic = True
         self._parse_options( input_source )  # TODO: Review and test.
 
     @property
@@ -2350,9 +2358,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
         d['multiple'] = self.multiple
-        d['is_dynamic'] = False
         d['options'] = {'hda': [], 'hdca': []}
-        
+
         # return default content if context is not available
         if other_values is None:
             return d
@@ -2360,7 +2367,7 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         # prepare dataset/collection matching
         dataset_matcher = DatasetMatcher( trans, self, None, other_values )
         history = trans.history
-        
+
         # append directly matched collections
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({
@@ -2417,7 +2424,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.LibraryField( self.name, value=value, trans=trans )
 
-    def get_initial_value( self, trans, context ):
+    def get_initial_value( self, trans, context, history=None ):
         return None
 
     def from_html( self, value, trans, other_values={} ):

@@ -20,7 +20,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         super( FoldersController, self ).__init__( app )
         self.folder_manager = folders.FolderManager()
 
-    @web.expose_api
+    @expose_api
     def index( self, trans, **kwd ):
         """
         *GET /api/folders/
@@ -29,7 +29,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         raise exceptions.NotImplemented( 'Listing all accessible library folders is not implemented.' )
 
-    @web.expose_api
+    @expose_api
     def show( self, trans, id, **kwd ):
         """
         show( self, trans, id, **kwd )
@@ -255,7 +255,7 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         folder_dict = self.folder_manager.get_folder_dict( trans, folder )
         return folder_dict
 
-    @web.expose_api
+    @expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
         """
         PUT /api/folders/{encoded_folder_id}

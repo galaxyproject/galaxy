@@ -346,7 +346,7 @@ class Registry( object ):
         """
         sniffer_elem_classes = [ e.attrib[ 'type' ] for e in self.sniffer_elems ]
         sniffers = root.find( 'sniffers' )
-        if sniffers:
+        if sniffers is not None:
             for elem in sniffers.findall( 'sniffer' ):
                 # Keep a status of the process steps to enable stopping the process of handling the sniffer if necessary.
                 ok = True
@@ -529,14 +529,13 @@ class Registry( object ):
                             converter.id = tool_dict[ 'guid' ]
                             break
                 if deactivate:
-                    if converter.id in toolbox.tools_by_id:
-                        del toolbox.tools_by_id[ converter.id ]
+                    toolbox.remove_tool_by_id( converter.id, remove_from_panel=False )
                     if source_datatype in self.datatype_converters:
                         if target_datatype in self.datatype_converters[ source_datatype ]:
                             del self.datatype_converters[ source_datatype ][ target_datatype ]
                     self.log.debug( "Deactivated converter: %s", converter.id )
                 else:
-                    toolbox.tools_by_id[ converter.id ] = converter
+                    toolbox.register_tool( converter )
                     if source_datatype not in self.datatype_converters:
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
@@ -622,6 +621,26 @@ class Registry( object ):
                     self.log.debug( "Adding inherited display application '%s' to datatype '%s'" % ( display_app.id, extension ) )
                     d_type1.add_display_application( display_app )
 
+    def reload_display_applications( self, display_application_ids=None ):
+        """
+        Reloads display applications: by id, or all if no ids provided
+        Returns tuple( [reloaded_ids], [failed_ids] )
+        """
+        if not display_application_ids:
+            display_application_ids = self.display_applications.keys()
+        elif not isinstance( display_application_ids, list ):
+            display_application_ids = [ display_application_ids ]
+        reloaded = []
+        failed = []
+        for display_application_id in display_application_ids:
+            try:
+                self.display_applications[ display_application_id ].reload()
+                reloaded.append( display_application_id )
+            except Exception, e:
+                self.log.debug( 'Requested to reload display application "%s", but failed: %s.', display_application_id, e  )
+                failed.append( display_application_id )
+        return ( reloaded, failed )
+
     def load_external_metadata_tool( self, toolbox ):
         """Adds a tool which is used to set external metadata"""
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
@@ -645,8 +664,7 @@ class Registry( object ):
         tmp_name = tempfile.NamedTemporaryFile()
         tmp_name.write( tool_xml_text )
         tmp_name.flush()
-        set_meta_tool = toolbox.load_tool( tmp_name.name )
-        toolbox.tools_by_id[ set_meta_tool.id ] = set_meta_tool
+        set_meta_tool = toolbox.load_hidden_tool( tmp_name.name )
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug( "Loaded external metadata tool: %s", self.set_external_metadata_tool.id )
 

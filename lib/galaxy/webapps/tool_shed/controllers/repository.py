@@ -6,7 +6,6 @@ from time import gmtime
 from time import strftime
 from datetime import date
 from datetime import datetime
-from markupsafe import escape
 
 from galaxy import util
 from galaxy import web
@@ -19,6 +18,7 @@ from galaxy.model.orm import and_
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
 
+from tool_shed.util.web_util import escape
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
@@ -1696,7 +1696,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     description_lines = []
                     # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
                     # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
-                    time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
+                    if repository_metadata.time_last_tested is None:
+                      time_tested = 'Thu, 01 Jan 1970 00:00:00 UT'
+                    else:
+                      time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
                     # Generate a citable URL for this repository with owner and changeset revision.
                     repository_citable_url = common_util.url_join( tool_shed_url,
                                                                    'view',

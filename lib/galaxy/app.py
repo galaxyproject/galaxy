@@ -7,7 +7,7 @@ import galaxy.model
 import galaxy.security
 from galaxy.managers.collections import DatasetCollectionManager
 import galaxy.quota
-from galaxy.tags.tag_handler import GalaxyTagHandler
+from galaxy.managers.tags import GalaxyTagManager
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.registry import VisualizationsRegistry
@@ -58,7 +58,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Security helper
         self._configure_security()
         # Tag handler
-        self.tag_handler = GalaxyTagHandler()
+        self.tag_handler = GalaxyTagManager( self )
         # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
 
@@ -107,10 +107,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
             self.quota_agent = galaxy.quota.QuotaAgent( self.model )
         else:
             self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )
-        # Heartbeat and memdump for thread / heap profiling
+        # Heartbeat for thread profiling
         self.heartbeat = None
-        self.memdump = None
-        self.memory_usage = None
         # Container for OpenID authentication routines
         if self.config.enable_openid:
             from galaxy.web.framework import openid_manager
@@ -125,11 +123,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                 self.heartbeat = heartbeat.Heartbeat( fname=self.config.heartbeat_log )
                 self.heartbeat.daemon = True
                 self.heartbeat.start()
-        # Enable the memdump signal catcher if configured and available
-        if self.config.use_memdump:
-            from galaxy.util import memdump
-            if memdump.Memdump:
-                self.memdump = memdump.Memdump()
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from galaxy.jobs import transfer_manager

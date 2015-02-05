@@ -83,7 +83,7 @@ return Backbone.View.extend({
         Tools.addZoom({
             xAxis       : this.xAxis,
             yAxis       : this.yAxis,
-            redraw      : function() { self.redraw() },
+            redraw      : function() { self.redraw(); },
             svg         : d3.select('#' + this.canvas_id)
         });
     },

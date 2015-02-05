@@ -4,7 +4,7 @@ define(['utils/utils',
         'mvc/upload/upload-settings',
         'mvc/ui/ui-popover',
         'mvc/ui/ui-select'],
-       
+
         function(   Utils,
                     UploadModel,
                     UploadSettings,
@@ -18,7 +18,7 @@ return Backbone.View.extend({
     options: {
         padding : 8
     },
-    
+
     // states
     status_classes : {
         init    : 'upload-icon-button fa fa-trash-o',
@@ -27,33 +27,33 @@ return Backbone.View.extend({
         success : 'upload-icon-button fa fa-check',
         error   : 'upload-icon-button fa fa-exclamation-triangle'
     },
-    
+
     // handle for settings popover
     settings: null,
-    
+
     // genome selector
     select_genome : null,
-    
+
     // extension selector
     select_extension : null,
-    
+
     // render
     initialize: function(app, options) {
         // link app
         this.app = app;
-        
+
         // link this
         var self = this;
-        
+
         // create model
         this.model = new UploadModel.Model(options);
-        
+
         // add upload item
         this.setElement(this._template(options));
 
         // link item
         var it = this.$el;
-        
+
         // append popup to settings icon
         this.settings = new Popover.View({
             title       : 'Upload configuration',
@@ -61,44 +61,57 @@ return Backbone.View.extend({
             placement   : 'bottom'
         });
 
+        // initialize default genome through default select field
+        var default_genome = this.app.select_genome.value();
+        
         // select genomes
         this.select_genome = new Select.View({
             css: 'genome',
-            onchange : function() {
-                self.model.set('genome', self.select_genome.value());
+            onchange : function(genome) {
+                self.model.set('genome', genome);
+                self.app.updateGenome(genome, true);
             },
             data: self.app.list_genomes,
             container: it.find('#genome'),
-            value: self.model.get('genome')
+            value: default_genome
         });
-        
-        // initialize genome
-        this.model.set('genome', self.select_genome.value());
 
+        // initialize genome
+        this.model.set('genome', default_genome);
+
+        // initialize default extension through default select field
+        var default_extension = this.app.select_extension.value();
+        
         // select extension
         this.select_extension = new Select.View({
             css: 'extension',
-            onchange : function() {
-                self.model.set('extension', self.select_extension.value());
+            onchange : function(extension) {
+                self.model.set('extension', extension);
+                self.app.updateExtension(extension, true);
             },
             data: self.app.list_extensions,
             container: it.find('#extension'),
-            value: self.model.get('extension')
+            value: default_extension
         });
-        
+
         // initialize extension
-        this.model.set('extension', self.select_extension.value());
+        this.model.set('extension', default_extension);
         
         //
         // ui events
         //
-        
+
         // handle click event
         it.find('#symbol').on('click', function() { self._removeRow(); });
-        
+
         // handle extension info popover
-        it.find('#extension-info').on('click' , function(e) { self._showExtensionInfo(); })
-                                  .on('mousedown', function(e) { e.preventDefault(); });
+        it.find('#extension-info').on('click' , function(e) {
+            self.app.showExtensionInfo({
+                $el         : $(e.target),
+                title       : self.select_extension.text(),
+                extension   : self.select_extension.value()
+            });
+        }).on('mousedown', function(e) { e.preventDefault(); });
 
         // handle settings popover
         it.find('#settings').on('click' , function(e) { self._showSettings(); })
@@ -109,12 +122,12 @@ return Backbone.View.extend({
             self.model.set('url_paste', $(e.target).val());
             self.model.set('file_size', $(e.target).val().length);
         });
-        
+
         // handle space to tabs button
         it.find('#space_to_tabs').on('change', function(e) {
             self.model.set('space_to_tabs', $(e.target).prop('checked'));
         });
-        
+
         //
         // model events
         //
@@ -130,6 +143,9 @@ return Backbone.View.extend({
         this.model.on('change:genome', function() {
             self._refreshGenome();
         });
+        this.model.on('change:extension', function() {
+            self._refreshExtension();
+        });
         this.model.on('change:file_size', function() {
             self._refreshFileSize();
         });
@@ -140,57 +156,58 @@ return Backbone.View.extend({
             self.remove();
         });
     },
-    
+
     // render
     render: function() {
         // read model
         var file_name   = this.model.get('file_name');
         var file_size   = this.model.get('file_size');
         var file_mode   = this.model.get('file_mode');
-        
+
         // link item
         var it = this.$el;
-        
+
         // update title
         it.find('#title').html(file_name);
-    
+
         // update info
         it.find('#size').html(Utils.bytesToString (file_size));
-        
+
         // remove mode class
-        it.find('#mode').removeClass()
-                        .addClass('mode');
-        
+        it.find('#mode')
+            .removeClass()
+            .addClass('mode');
+
         // activate text field if file is new
         if (file_mode == 'new') {
             // get text component
             var text = it.find('#text');
-            
+
             // get padding
             var padding = this.options.padding;
-            
+
             // get dimensions
             var width = it.width() - 2 * padding;
             var height = it.height() - padding;
-            
+
             // set dimensions
             text.css('width', width + 'px');
             text.css('top', height + 'px');
             it.height(height + text.height() + 2 * padding);
-            
+
             // show text field
             text.show();
-            
+
             // update icon
             it.find('#mode').addClass('fa fa-pencil');
         }
-        
+
         // file from local disk
         if (file_mode == 'local') {
             // update icon
             it.find('#mode').addClass('fa fa-laptop');
         }
-        
+
         // file from ftp
         if (file_mode == 'ftp') {
             // update icon
@@ -203,7 +220,7 @@ return Backbone.View.extend({
         // trigger remove event
         this.select_genome.remove();
         this.select_extension.remove();
-        
+
         // call the base class remove method
         Backbone.View.prototype.remove.apply(this);
     },
@@ -211,14 +228,17 @@ return Backbone.View.extend({
     //
     // handle model events
     //
-    
-    // genome
-    _refreshGenome: function() {
-        // update genome info on screen
-        var genome = this.model.get('genome');
-        this.select_genome.value(genome);
+
+    // update extension
+    _refreshExtension: function() {
+        this.select_extension.value(this.model.get('extension'));
     },
-        
+    
+    // update genome
+    _refreshGenome: function() {
+        this.select_genome.value(this.model.get('genome'));
+    },
+
     // progress
     _refreshInfo: function() {
         // write error message
@@ -229,7 +249,7 @@ return Backbone.View.extend({
             this.$el.find('#info').hide();
         }
     },
-            
+
     // progress
     _refreshPercentage : function() {
         var percentage = parseInt(this.model.get('percentage'));
@@ -239,29 +259,29 @@ return Backbone.View.extend({
         else
             this.$el.find('#percentage').html('Adding to history...');
     },
-    
+
     // status
     _refreshStatus : function() {
         // get element
         var it = this.$el;
-        
+
         // identify new status
         var status = this.model.get('status');
         var status_class = this.status_classes[status];
-        
+
         // identify symbol and reset classes
         var sy = this.$el.find('#symbol');
         sy.removeClass();
-        
+
         // set new status class
         sy.addClass(status_class);
-       
+
         // enable form fields
         if (status == 'init') {
             // select fields
             this.select_genome.enable();
             this.select_extension.enable();
-       
+
             // default fields
             it.find('#text-content').attr('disabled', false);
             it.find('#space_to_tabs').attr('disabled', false);
@@ -269,18 +289,18 @@ return Backbone.View.extend({
             // select fields
             this.select_genome.disable();
             this.select_extension.disable();
-       
+
             // default fields
             it.find('#text-content').attr('disabled', true);
             it.find('#space_to_tabs').attr('disabled', true);
         }
-        
+
         // success
         if (status == 'success') {
             it.addClass('success');
             it.find('#percentage').html('100%');
         }
-        
+
         // error
         if (status == 'error') {
             it.addClass('danger');
@@ -297,42 +317,15 @@ return Backbone.View.extend({
     //
     // handle ui events
     //
-    
+
     // remove row
     _removeRow: function() {
         // get current status
         var status = this.model.get('status');
-        
+
         // only remove from queue if not in processing line
         if (status == 'init' || status == 'success' || status == 'error') {
             this.app.collection.remove(this.model);
-        }
-    },
-    
-    // attach file info popup
-    _showExtensionInfo : function() {
-        // initialize
-        var $el = $(this.el).find('#extension-info');
-        var extension = this.model.get('extension');
-        var title = this.select_extension.text();
-        var description = _.findWhere(this.app.list_extensions, {'id': extension});
-        
-        // create popup
-        if (!this.extension_popup) {
-            this.extension_popup = new Popover.View({
-                placement: 'bottom',
-                container: $el
-            });
-        }
-        
-        // show / hide popup
-        if (!this.extension_popup.visible) {
-            this.extension_popup.title(title);
-            this.extension_popup.empty();
-            this.extension_popup.append(this._templateDescription(description));
-            this.extension_popup.show();
-        } else {
-            this.extension_popup.hide();
         }
     },
 
@@ -349,25 +342,12 @@ return Backbone.View.extend({
             this.settings.hide();
         }
     },
-    
-    // template
-    _templateDescription: function(options) {
-        if (options.description) {
-            var tmpl = options.description;
-            if (options.description_url) {
-                tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
-            }
-            return tmpl;
-        } else {
-            return 'There is no description available for this file extension.';
-        }
-    },
-    
+
     // template
     _template: function(options) {
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
-                        '<div style="position: relative;">' +
+                        '<div class="name-column">' +
                             '<div id="mode"></div>' +
                             '<div id="title" class="title"></div>' +
                             '<div id="text" class="text">' +
@@ -400,7 +380,7 @@ return Backbone.View.extend({
                     '</td>' +
                 '</tr>';
     }
-    
+
 });
 
 });

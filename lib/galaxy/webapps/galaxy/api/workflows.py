@@ -13,7 +13,6 @@ from galaxy.managers import histories
 from galaxy.managers import workflows
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke, queue_invoke
@@ -22,11 +21,11 @@ from galaxy.workflow.run_request import build_workflow_run_config
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations, SharableMixin):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
 
     def __init__( self, app ):
-        super( BaseAPIController, self ).__init__( app )
-        self.history_manager = histories.HistoryManager()
+        super( WorkflowsAPIController, self ).__init__( app )
+        self.history_manager = histories.HistoryManager( app )
         self.workflow_manager = workflows.WorkflowsManager( app )
         self.workflow_contents_manager = workflows.WorkflowContentsManager()
 
@@ -149,8 +148,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         if 'from_history_id' in payload:
             from_history_id = payload.get( 'from_history_id' )
-            history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
-            job_ids = map( trans.security.decode_id, payload.get( 'job_ids', [] ) )
+            from_history_id = self.decode_id( from_history_id )
+            history = self.history_manager.get_accessible( trans, from_history_id, trans.user )
+
+            job_ids = map( self.decode_id, payload.get( 'job_ids', [] ) )
             dataset_ids = payload.get( 'dataset_ids', [] )
             dataset_collection_ids = payload.get( 'dataset_collection_ids', [] )
             workflow_name = payload[ 'workflow_name' ]
@@ -241,7 +242,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         workflow_id = id
 
         try:
-            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
+            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
         except Exception, e:
             trans.response.status = 400
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
@@ -372,9 +373,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return item
 
     @expose_api
-    def workflow_request( self, trans, workflow_id, payload, **kwd ):
+    def invoke( self, trans, workflow_id, payload, **kwd ):
         """
-        POST /api/workflows/{encoded_workflow_id}/usage
+        POST /api/workflows/{encoded_workflow_id}/invocations
 
         Schedule the workflow specified by `workflow_id` to run.
         """
@@ -398,10 +399,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
 
     @expose_api
-    def workflow_usage(self, trans, workflow_id, **kwd):
+    def index_invocations(self, trans, workflow_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage
-        Get the list of the workflow usage
+        GET /api/workflows/{workflow_id}/invocations
+
+        Get the list of the workflow invocations
 
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
@@ -416,53 +418,53 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return out
 
     @expose_api
-    def workflow_usage_contents(self, trans, workflow_id, usage_id, **kwd):
+    def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage/{usage_id}
-        Get detailed description of workflow usage
+        GET /api/workflows/{workflow_id}/invocation/{invocation_id}
+        Get detailed description of workflow invocation
 
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
+        :param  workflow_id:        the workflow id (required)
+        :type   workflow_id:        str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the invocation id (required)
+        :type   invocation_id:      str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
+        decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
         if workflow_invocation:
             return self.__encode_invocation( trans, workflow_invocation )
         return None
 
     @expose_api
-    def cancel_workflow_invocation(self, trans, workflow_id, usage_id, **kwd):
+    def cancel_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        DELETE /api/workflows/{workflow_id}/usage/{usage_id}
+        DELETE /api/workflows/{workflow_id}/invocation/{invocation_id}
         Cancel the specified workflow invocation.
 
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the usage id (required)
+        :type   invocation_id:      str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
+        decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.cancel_invocation( trans, decoded_workflow_invocation_id )
         return self.__encode_invocation( trans, workflow_invocation )
 
     @expose_api
-    def workflow_invocation_step(self, trans, workflow_id, usage_id, step_id, **kwd):
+    def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}
+        GET /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
 
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
+        :param  workflow_id:        the workflow id (required)
+        :type   workflow_id:        str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the invocation id (required)
+        :type   invocation_id:      str
 
         :param  step_id:      encoded id of the WorkflowInvocationStep (required)
         :type   step_id:      str
@@ -472,7 +474,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_invocation_step_id = self.__decode_id( trans, step_id )
+        decoded_invocation_step_id = self.decode_id( step_id )
         invocation_step = self.workflow_manager.get_invocation_step(
             trans,
             decoded_invocation_step_id
@@ -480,9 +482,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return self.__encode_invocation_step( trans, invocation_step )
 
     @expose_api
-    def workflow_invocation_step_update(self, trans, workflow_id, usage_id, step_id, payload, **kwd):
+    def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):
         """
-        PUT /api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}
+        PUT /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
         Update state of running workflow step invocation - still very nebulous
         but this would be for stuff like confirming paused steps can proceed
         etc....
@@ -491,15 +493,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the usage id (required)
+        :type   invocation_id:      str
 
         :param  step_id:      encoded id of the WorkflowInvocationStep (required)
         :type   step_id:      str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_invocation_step_id = self.__decode_id( trans, step_id )
+        decoded_invocation_step_id = self.decode_id( step_id )
         action = payload.get( "action", None )
 
         invocation_step = self.workflow_manager.update_invocation_step(
@@ -538,7 +540,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             if stored_workflow is None:
                 raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
         else:
-            workflow_id = self.__decode_id( trans, workflow_id )
+            workflow_id = self.decode_id( workflow_id )
             query = trans.sa_session.query( trans.app.model.StoredWorkflow )
             stored_workflow = query.get( workflow_id )
         if stored_workflow is None:
@@ -551,10 +553,3 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             invocation.to_dict( view ),
             True
         )
-
-    def __decode_id( self, trans, workflow_id, model_type="workflow" ):
-        try:
-            return trans.security.decode_id( workflow_id )
-        except Exception:
-            message = "Malformed %s id ( %s ) specified, unable to decode" % ( model_type, workflow_id )
-            raise exceptions.MalformedId( message )

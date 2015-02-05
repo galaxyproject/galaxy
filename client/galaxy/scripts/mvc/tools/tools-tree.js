@@ -2,7 +2,7 @@
     This class maps the tool form dom to an api compatible javascript dictionary.
 */
 // dependencies
-define([], function() {
+define(['utils/utils'], function(Utils) {
 
 // tool form tree
 return Backbone.Model.extend({
@@ -108,22 +108,42 @@ return Backbone.Model.extend({
                                 convert(job_input_id, head[input.id + '-section-' + selectedCase]);
                             }
                             break;
+                        // handle custom sub sections
+                        case 'section':
+                            convert('', node);
+                            break;
                         default:
                             // get field
                             var field = self.app.field_list[input.id];
-                            
-                            // get and patch field value
-                            var value = field.value();
-                            if (patch[input.type]) {
-                                value = patch[input.type](value);
-                            }
-                            
-                            // handle default value
-                            if (!field.skip) {
-                                if (input.optional && field.validate && !field.validate()) {
+                            if (field && field.value) {
+                                // get and patch field value
+                                var value = field.value();
+                                if (patch[input.type]) {
+                                    value = patch[input.type](value);
+                                }
+
+                                // validate field value
+                                if (field.skip) {
+                                    continue;
+                                }
+
+                                // validate field value
+                                if (field.validate && !field.validate()) {
                                     value = null;
                                 }
-                                add (job_input_id, input.id, value);
+
+                                // ignore certain values
+                                if (input.ignore === undefined || (value !== null && input.ignore != value)) {
+                                    // add value to submission
+                                    add (job_input_id, input.id, value);
+
+                                    // add payload to submission
+                                    if (input.payload) {
+                                        for (var p_id in input.payload) {
+                                            add (p_id, input.id, input.payload[p_id]);
+                                        }
+                                    }
+                                }
                             }
                     }
                 }

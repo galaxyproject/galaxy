@@ -17,7 +17,7 @@
 
 ## An admin user may be creating a new user account, in which case we want to display the registration form.
 ## But if the current user is not an admin user, then don't display the registration form.
-%if trans.user_is_admin() or not trans.user:
+%if ( cntrller=='admin' and trans.user_is_admin() ) or not trans.user:
     ${render_registration_form()}
 
     %if trans.app.config.get( 'terms_url', None ) is not None:

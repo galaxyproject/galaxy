@@ -2,7 +2,7 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
- define( ["libs/underscore", "viz/trackster/util", "mvc/data" ], 
+ define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/lunr" ],
          function(_, util, data) {
 
 /**
@@ -14,7 +14,7 @@ var VisibilityMixin = {
     show: function() {
         this.set("hidden", false);
     },
-    
+
     hide: function() {
         this.set("hidden", true);
     },
@@ -22,7 +22,7 @@ var VisibilityMixin = {
     toggle: function() {
         this.set("hidden", !this.get("hidden"));
     },
-    
+
     is_visible: function() {
         return !this.attributes.hidden;
     }
@@ -88,7 +88,7 @@ var FloatToolParameter = IntegerToolParameter.extend({
     }
 });
 
-/** 
+/**
  * A select tool parameter.
  */
 var SelectToolParameter = ToolParameter.extend({
@@ -157,7 +157,7 @@ var Tool = Backbone.Model.extend({
             });
         tool.get('inputs').remove(incompatible_inputs);
     },
-    
+
     /**
      * Returns object copy, optionally including only inputs that can be sampled.
      */
@@ -177,12 +177,12 @@ var Tool = Backbone.Model.extend({
 
         return copy;
     },
-        
+
     apply_search_results: function(results) {
         ( _.indexOf(results, this.attributes.id) !== -1 ? this.show() : this.hide() );
         return this.is_visible();
     },
-    
+
     /**
      * Set a tool input's value.
      */
@@ -191,24 +191,24 @@ var Tool = Backbone.Model.extend({
             return input.get('name') === name;
         }).set('value', value);
     },
-    
+
     /**
      * Set many input values at once.
      */
     set_input_values: function(inputs_dict) {
         var self = this;
         _.each(_.keys(inputs_dict), function(input_name) {
-            self.set_input_value(input_name, inputs_dict[input_name]); 
+            self.set_input_value(input_name, inputs_dict[input_name]);
         });
     },
-    
+
     /**
      * Run tool; returns a Deferred that resolves to the tool's output(s).
      */
     run: function() {
         return this._run();
     },
-    
+
     /**
      * Rerun tool using regions and a target dataset.
      */
@@ -230,7 +230,7 @@ var Tool = Backbone.Model.extend({
         });
         return input_dict;
     },
-    
+
     /**
      * Run tool; returns a Deferred that resolves to the tool's output(s).
      * NOTE: this method is a helper method and should not be called directly.
@@ -259,7 +259,7 @@ var Tool = Backbone.Model.extend({
                 return response !== "pending";
             }
         });
-        
+
         // Run job and resolve run_deferred to tool outputs.
         $.when(ss_deferred.go()).then(function(result) {
             run_deferred.resolve(new data.DatasetCollection().reset(result));
@@ -296,20 +296,20 @@ var ToolSection = Backbone.Model.extend({
         elems: [],
         open: false
     },
-    
+
     clear_search_results: function() {
         _.each(this.attributes.elems, function(elt) {
             elt.show();
         });
-        
+
         this.show();
         this.set("open", false);
     },
-    
+
     apply_search_results: function(results) {
         var all_hidden = true,
             cur_label;
-        _.each(this.attributes.elems, function(elt) {            
+        _.each(this.attributes.elems, function(elt) {
             if (elt instanceof ToolSectionLabel) {
                 cur_label = elt;
                 cur_label.hide();
@@ -323,7 +323,7 @@ var ToolSection = Backbone.Model.extend({
                 }
             }
         });
-        
+
         if (all_hidden) {
             this.hide();
         }
@@ -340,6 +340,11 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * indicates that query was not run; if not null, results are from search using
  * query.
  */
+
+/**
+ * TODO: Integrate lunr search here with tools from API instead of making
+ * repeated requests.
+ */
 var ToolSearch = Backbone.Model.extend({
     defaults: {
         search_hint_string: "search tools",
@@ -353,23 +358,23 @@ var ToolSearch = Backbone.Model.extend({
         // ESC (27) will clear the input field and tool search filters
         clear_key: 27
     },
-    
+
     initialize: function() {
         this.on("change:query", this.do_search);
     },
-    
+
     /**
      * Do the search and update the results.
      */
     do_search: function() {
         var query = this.attributes.query;
-        
+
         // If query is too short, do not search.
         if (query.length < this.attributes.min_chars_for_search) {
             this.set("results", null);
             return;
         }
-        
+
         // Do search via AJAX.
         var q = query + '*';
         // Stop previous ajax-request
@@ -388,12 +393,12 @@ var ToolSearch = Backbone.Model.extend({
             }, "json" );
         }, 200 );
     },
-    
+
     clear_search: function() {
         this.set("query", "");
         this.set("results", null);
     }
-    
+
 });
 _.extend(ToolSearch.prototype, VisibilityMixin);
 
@@ -433,7 +438,7 @@ var ToolPanel = Backbone.Model.extend({
                     return new ToolSectionLabel(elt_dict);
                 }
             };
-        
+
         return _.map(response, parse_elt);
     },
 
@@ -448,14 +453,14 @@ var ToolPanel = Backbone.Model.extend({
             }
         });
     },
-    
+
     apply_search_results: function() {
         var results = this.get('tool_search').get('results');
         if (results === null) {
             this.clear_search_results();
             return;
         }
-        
+
         var cur_label = null;
         this.get('layout').each(function(panel_elt) {
             if (panel_elt instanceof ToolSectionLabel) {
@@ -479,13 +484,13 @@ var ToolPanel = Backbone.Model.extend({
 });
 
 /**
- * View classes for Galaxy tools and tool panel. 
- * 
+ * View classes for Galaxy tools and tool panel.
+ *
  * Views use precompiled Handlebars templates for rendering. Views update as needed
  * based on (a) model/collection events and (b) user interactions; in this sense,
  * they are controllers are well and the HTML is the real view in the MVC architecture.
  */
- 
+
 /**
  * Base view that handles visibility based on model's hidden attribute.
  */
@@ -496,9 +501,9 @@ var BaseView = Backbone.View.extend({
     },
     update_visible: function() {
         ( this.model.attributes.hidden ? this.$el.hide() : this.$el.show() );
-    }    
+    }
 });
- 
+
 /**
  * Link to a tool.
  */
@@ -509,7 +514,7 @@ var ToolLinkView = BaseView.extend({
         // create element
         var $link = $('<div/>');
         $link.append(Handlebars.templates.tool_link(this.model.toJSON()));
-        
+
         // open upload dialog for upload tool
         if (this.model.id === 'upload1') {
             $link.find('a').on('click', function(e) {
@@ -517,7 +522,7 @@ var ToolLinkView = BaseView.extend({
                 Galaxy.upload.show();
             });
         }
-        
+
         // add element
         this.$el.append($link);
         return this;
@@ -543,7 +548,7 @@ var ToolSectionLabelView = BaseView.extend({
 var ToolSectionView = BaseView.extend({
     tagName: 'div',
     className: 'toolSectionWrapper',
-    
+
     initialize: function() {
         BaseView.prototype.initialize.call(this);
         this.model.on("change:open", this.update_open, this);
@@ -552,7 +557,7 @@ var ToolSectionView = BaseView.extend({
     render: function() {
         // Build using template.
         this.$el.append( Handlebars.templates.panel_section(this.model.toJSON()) );
-        
+
         // Add tools to section.
         var section_body = this.$el.find(".toolSectionBody");
         _.each(this.model.attributes.elems, function(elt) {
@@ -572,25 +577,25 @@ var ToolSectionView = BaseView.extend({
         });
         return this;
     },
-    
+
     events: {
         'click .toolSectionTitle > a': 'toggle'
     },
-    
-    /** 
+
+    /**
      * Toggle visibility of tool section.
      */
     toggle: function() {
         this.model.set("open", !this.model.attributes.open);
     },
-    
+
     /**
      * Update whether section is open or close.
      */
     update_open: function() {
         (this.model.attributes.open ?
             this.$el.children(".toolSectionBody").slideDown("fast") :
-            this.$el.children(".toolSectionBody").slideUp("fast") 
+            this.$el.children(".toolSectionBody").slideUp("fast")
         );
     }
 });
@@ -599,13 +604,13 @@ var ToolSearchView = Backbone.View.extend({
     tagName: 'div',
     id: 'tool-search',
     className: 'bar',
-    
+
     events: {
         'click': 'focus_and_select',
         'keyup :input': 'query_changed',
         'click #search-clear-btn': 'clear'
     },
-    
+
     render: function() {
         this.$el.append( Handlebars.templates.tool_search(this.model.toJSON()) );
         if (!this.model.is_visible()) {
@@ -614,18 +619,18 @@ var ToolSearchView = Backbone.View.extend({
         this.$el.find('[title]').tooltip();
         return this;
     },
-    
+
     focus_and_select: function() {
         this.$el.find(":input").focus().select();
     },
-    
+
     clear: function() {
         this.model.clear_search();
         this.$el.find(":input").val(this.model.attributes.search_hint_string);
         this.focus_and_select();
         return false;
     },
-    
+
     query_changed: function( evData ) {
         // check for the 'clear key' (ESC) first
         if( ( this.model.attributes.clear_key ) &&
@@ -644,22 +649,22 @@ var ToolSearchView = Backbone.View.extend({
 var ToolPanelView = Backbone.View.extend({
     tagName: 'div',
     className: 'toolMenu',
-    
+
     /**
      * Set up view.
      */
     initialize: function() {
         this.model.get('tool_search').on("change:results", this.handle_search_results, this);
     },
-    
+
     render: function() {
         var self = this;
-        
+
         // Render search.
         var search_view = new ToolSearchView( { model: this.model.get('tool_search') } );
         search_view.render();
         self.$el.append(search_view.$el);
-        
+
         // Render panel.
         this.model.get('layout').each(function(panel_elt) {
             if (panel_elt instanceof ToolSection) {
@@ -678,20 +683,20 @@ var ToolPanelView = Backbone.View.extend({
                 self.$el.append(label_view.$el);
             }
         });
-        
+
         // Setup tool link click eventing.
         self.$el.find("a.tool-link").click(function(e) {
             // Tool id is always the first class.
-            var 
+            var
                 tool_id = $(this).attr('class').split(/\s+/)[0],
                 tool = self.model.get('tools').get(tool_id);
-                
+
             self.trigger("tool_link_click", e, tool);
         });
-        
+
         return this;
     },
-    
+
     handle_search_results: function() {
         var results = this.model.get('tool_search').get('results');
         if (results && results.length === 0) {
@@ -708,7 +713,7 @@ var ToolPanelView = Backbone.View.extend({
  */
 var ToolFormView = Backbone.View.extend({
     className: 'toolForm',
-    
+
     render: function() {
         this.$el.children().remove();
         this.$el.append( Handlebars.templates.tool_form(this.model.toJSON()) );
@@ -720,22 +725,22 @@ var ToolFormView = Backbone.View.extend({
  */
 var IntegratedToolMenuAndView = Backbone.View.extend({
     className: 'toolMenuAndView',
-    
+
     initialize: function() {
         this.tool_panel_view = new ToolPanelView({collection: this.collection});
         this.tool_form_view = new ToolFormView();
     },
-    
+
     render: function() {
         // Render and append tool panel.
         this.tool_panel_view.render();
         this.tool_panel_view.$el.css("float", "left");
         this.$el.append(this.tool_panel_view.$el);
-        
+
         // Append tool form view.
         this.tool_form_view.$el.hide();
         this.$el.append(this.tool_form_view.$el);
-        
+
         // On tool link click, show tool.
         var self = this;
         this.tool_panel_view.on("tool_link_click", function(e, tool) {
@@ -745,7 +750,7 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
             self.show_tool(tool);
         });
     },
-    
+
     /**
      * Fetch and display tool.
      */

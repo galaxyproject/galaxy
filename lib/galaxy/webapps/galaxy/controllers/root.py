@@ -7,7 +7,7 @@ import urllib
 
 from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
-from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.base.controller import BaseUIController
 from galaxy import managers
 
 from galaxy import web
@@ -20,15 +20,13 @@ from galaxy.util.json import dumps
 import logging
 log = logging.getLogger( __name__ )
 
-class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
+class RootController( BaseUIController, UsesAnnotations ):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
     def __init__( self, app ):
         super( RootController, self ).__init__( app )
-        self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager()
-        )
+        self.history_manager = managers.histories.HistoryManager( app )
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -128,7 +126,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         history_dictionary = {}
         hda_dictionaries = []
         try:
-            history_data = self.mgrs.histories._get_history_data( trans, trans.get_history( create=True ) )
+            history_data = self.history_manager._get_history_data( trans, trans.get_history( create=True ) )
             history_dictionary = history_data[ 'history' ]
             hda_dictionaries   = history_data[ 'contents' ]
 
@@ -170,7 +168,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 raise Exception( "No dataset with hid '%d'" % hid )
         else:
             if encoded_id and not id:
-                id = trans.security.decode_id( encoded_id )
+                id = self.decode_id( encoded_id )
             try:
                 data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             except:

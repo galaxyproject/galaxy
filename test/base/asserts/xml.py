@@ -1,10 +1,10 @@
-import elementtree.ElementTree
+import xml.etree
 import re
 
 
 # Helper functions used to work with XML output.
 def to_xml(output):
-    return elementtree.ElementTree.fromstring(output)
+    return xml.etree.fromstring(output)
 
 
 def xml_find_text(output, path):
@@ -31,8 +31,7 @@ def assert_is_valid_xml(output):
 def assert_has_element_with_path(output, path):
     """ Asserts the specified output has at least one XML element with a
     path matching the specified path argument. Valid paths are the
-    simplified subsets of XPath implemented by elementtree (currently
-    Galaxy makes use of elementtree 1.2). See
+    simplified subsets of XPath implemented by xml.etree;
     http://effbot.org/zone/element-xpath.htm for more information."""
     if xml_find(output, path) is None:
         errmsg = "Expected to find XML element matching expression %s, not such match was found." % path
@@ -74,13 +73,13 @@ def assert_attribute_matches(output, path, attribute, expression):
         errmsg = "Expected attribute '%s' on element with path '%s' to match '%s', instead attribute value was '%s'." % (attribute, path, expression, attribute_value)
         raise AssertionError(errmsg)
 
-  
+
 def assert_attribute_is(output, path, attribute, text):
     """ Asserts the specified attribute of the first element matching
     the specified path matches exactly the specified text."""
     assert_attribute_matches(output, path, attribute, re.escape(text))
 
-  
+
 def assert_element_text(output, path, verify_assertions_function, children):
     """ Recursively checks the specified assertions against the text of
     the first element matching the specified path."""

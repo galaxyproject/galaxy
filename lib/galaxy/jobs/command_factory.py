@@ -5,6 +5,7 @@ from os.path import abspath
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
+DEFAULT_SHELL = "/bin/sh"
 
 from logging import getLogger
 log = getLogger( __name__ )
@@ -45,28 +46,21 @@ def build_command(
     if not container:
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
 
-    if container:
-        # Stop now and build command before handling metadata and copying
-        # working directory files back. These should always happen outside
-        # of docker container - no security implications when generating
-        # metadata and means no need for Galaxy to be available to container
-        # and not copying workdir outputs back means on can be more restrictive
-        # of where container can write to in some circumstances.
-
-        local_container_script = join( job_wrapper.working_directory, "container.sh" )
-        fh = file( local_container_script, "w" )
-        fh.write( "#!/bin/sh\n%s" % commands_builder.build() )
-        fh.close()
-        chmod( local_container_script, 0755 )
-
-        compute_container_script = local_container_script
-        if 'working_directory' in remote_command_params:
-            compute_container_script = "/bin/sh %s" % join(remote_command_params['working_directory'], "container.sh")
-
-        run_in_container_command = container.containerize_command(
-            compute_container_script
-        )
-        commands_builder = CommandsBuilder( run_in_container_command )
+    if container or job_wrapper.commands_in_new_shell:
+        externalized_commands = __externalize_commands(job_wrapper, commands_builder, remote_command_params)
+        if container:
+            # Stop now and build command before handling metadata and copying
+            # working directory files back. These should always happen outside
+            # of docker container - no security implications when generating
+            # metadata and means no need for Galaxy to be available to container
+            # and not copying workdir outputs back means on can be more restrictive
+            # of where container can write to in some circumstances.
+            run_in_container_command = container.containerize_command(
+                externalized_commands
+            )
+            commands_builder = CommandsBuilder( run_in_container_command )
+        else:
+            commands_builder = CommandsBuilder( externalized_commands )
 
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
@@ -75,6 +69,20 @@ def build_command(
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
     return commands_builder.build()
+
+
+def __externalize_commands(job_wrapper, commands_builder, remote_command_params, script_name="tool_script.sh"):
+    local_container_script = join( job_wrapper.working_directory, script_name )
+    fh = file( local_container_script, "w" )
+    fh.write( "#!%s\n%s" % (DEFAULT_SHELL, commands_builder.build()))
+    fh.close()
+    chmod( local_container_script, 0755 )
+
+    commands = local_container_script
+    if 'working_directory' in remote_command_params:
+        commands = "%s %s" % (DEFAULT_SHELL, join(remote_command_params['working_directory'], script_name))
+    log.info("Built script [%s] for tool command[%s]" % (local_container_script, commands))
+    return commands
 
 
 def __handle_version_command(commands_builder, job_wrapper):

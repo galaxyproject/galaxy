@@ -31,9 +31,6 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    for table in TABLES:
-        __drop(table)
-
     __drop_column( "label", "workflow_step", metadata )
     __drop_column( "uuid", "workflow_step", metadata )
 

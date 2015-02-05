@@ -75,13 +75,17 @@ var HistoryPanelEdit = _super.extend(
 
     /** Override to handle history as drag-drop target */
     _setUpListeners : function(){
-        _super.prototype._setUpListeners.call( this );
+        var panel = this;
+        _super.prototype._setUpListeners.call( panel );
 
-        this.on( 'drop', function( ev, data ){
-            this.dataDropped( data );
+        panel.on( 'drop', function( ev, data ){
+            panel.dataDropped( data );
             // remove the drop target
-            this.dropTargetOff();
+            panel.dropTargetOff();
         });
+        panel.on( 'view:attached view:removed', function(){
+            panel._renderCounts();
+        }, panel );
     },
 
     // ------------------------------------------------------------------------ listeners
@@ -332,7 +336,10 @@ var HistoryPanelEdit = _super.extend(
         // override to control where the view is added, how/whether it's rendered
         panel.views.unshift( view );
         panel.$list().prepend( view.render( 0 ).$el.hide() );
-        view.$el.slideDown( panel.fxSpeed );
+        panel.trigger( 'view:attached', view );
+        view.$el.slideDown( panel.fxSpeed, function(){
+            panel.trigger( 'view:attached:rendered' );
+        });
     },
 
     /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */

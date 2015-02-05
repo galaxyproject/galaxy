@@ -1,5 +1,4 @@
 import logging
-import os
 
 from galaxy.model.orm import and_
 

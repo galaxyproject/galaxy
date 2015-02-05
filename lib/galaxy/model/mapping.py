@@ -68,6 +68,11 @@ model.UserOpenID.table = Table( "galaxy_user_openid", metadata,
     Column( "provider", TrimmedString( 255 ) ),
     )
 
+model.PasswordResetToken.table = Table("password_reset_token", metadata,
+    Column( "token", String( 32 ), primary_key=True, unique=True, index=True ),
+    Column( "expiration_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
+
 model.History.table = Table( "history", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -131,6 +136,7 @@ model.Dataset.table = Table( "dataset", metadata,
     Column( 'total_size', Numeric( 15, 0 ) ),
     Column( 'uuid', UUIDType() ) )
 
+# hda read access permission given by a user to a specific site (gen. for external display applications)
 model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_dataset_association_display_at_authorization", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -443,6 +449,12 @@ model.JobToInputDatasetCollectionAssociation.table = Table( "job_to_input_datase
     Column( "dataset_collection_id", Integer, ForeignKey( "history_dataset_collection_association.id" ), index=True ),
     Column( "name", Unicode(255) ) )
 
+model.JobToImplicitOutputDatasetCollectionAssociation.table = Table( "job_to_implicit_output_dataset_collection", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "dataset_collection_id", Integer, ForeignKey( "dataset_collection.id" ), index=True ),
+    Column( "name", Unicode(255) ) )
+
 model.JobToOutputDatasetCollectionAssociation.table = Table( "job_to_output_dataset_collection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -610,6 +622,8 @@ model.TransferJob.table = Table( "transfer_job", metadata,
 model.DatasetCollection.table = Table( "dataset_collection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "collection_type", Unicode(255), nullable=False ),
+    Column( "populated_state", TrimmedString( 64 ), default='ok', nullable=False ),
+    Column( "populated_state_message", TEXT ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
 )
@@ -972,10 +986,10 @@ model.Page.table = Table( "page", metadata,
     Column( "latest_revision_id", Integer,
             ForeignKey( "page_revision.id", use_alter=True, name='page_latest_revision_id_fk' ), index=True ),
     Column( "title", TEXT ),
-    Column( "slug", TEXT, unique=True, index=True ),
-    Column( "importable", Boolean, index=True, default=False ),
-    Column( "published", Boolean, index=True, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
+    Column( "importable", Boolean, index=True, default=False ),
+    Column( "slug", TEXT, unique=True, index=True ),
+    Column( "published", Boolean, index=True, default=False ),
     )
 
 model.PageRevision.table = Table( "page_revision", metadata,
@@ -1564,6 +1578,10 @@ mapper( model.User, model.User.table,
                      api_keys=relation( model.APIKeys, backref="user", order_by=desc( model.APIKeys.table.c.create_time ) ),
                      ) )
 
+mapper( model.PasswordResetToken, model.PasswordResetToken.table,
+        properties=dict( user=relation( model.User, backref="reset_tokens") ) )
+
+
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)
@@ -1800,8 +1818,13 @@ mapper( model.JobToInputDatasetCollectionAssociation,
 
 mapper( model.JobToOutputDatasetCollectionAssociation,
         model.JobToOutputDatasetCollectionAssociation.table, properties=dict(
+            job=relation( model.Job ), dataset_collection_instance=relation(
+                model.HistoryDatasetCollectionAssociation, lazy=False, backref="output_dataset_collection_instances" ) ) )
+
+mapper( model.JobToImplicitOutputDatasetCollectionAssociation,
+        model.JobToImplicitOutputDatasetCollectionAssociation.table, properties=dict(
             job=relation( model.Job ), dataset_collection=relation(
-                model.HistoryDatasetCollectionAssociation, lazy=False ) ) )
+                model.DatasetCollection, backref="output_dataset_collections" ) ) )
 
 mapper( model.JobToInputLibraryDatasetAssociation,
         model.JobToInputLibraryDatasetAssociation.table, properties=dict(
@@ -1886,6 +1909,8 @@ mapper( model.Job, model.Job.table,
                      parameters=relation( model.JobParameter, lazy=False ),
                      input_datasets=relation( model.JobToInputDatasetAssociation ),
                      output_datasets=relation( model.JobToOutputDatasetAssociation ),
+                     output_dataset_collection_instances=relation( model.JobToOutputDatasetCollectionAssociation ),
+                     output_dataset_collections=relation( model.JobToImplicitOutputDatasetCollectionAssociation ),
                      post_job_actions=relation( model.PostJobActionAssociation, lazy=False ),
                      input_library_datasets=relation( model.JobToInputLibraryDatasetAssociation ),
                      output_library_datasets=relation( model.JobToOutputLibraryDatasetAssociation ),

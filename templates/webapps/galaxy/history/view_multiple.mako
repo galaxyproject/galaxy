@@ -33,6 +33,11 @@
         display: -ms-flexbox;
         display: flex;
 
+        /* force ff to squish beyond content:
+           https://developer.mozilla.org/en-US/Firefox/Releases/34/Site_Compatibility#CSS */
+        min-width: 0px;
+        min-height: 0px;
+
         -webkit-align-items: stretch;
         -ms-align-items: stretch;
         align-items: stretch;

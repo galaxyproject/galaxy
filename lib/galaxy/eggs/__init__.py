@@ -385,8 +385,6 @@ class GalaxyConfig( object ):
                          "DRMAA_python":    lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "drmaa":           lambda: "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "pbs_python":      lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
-                         "threadframe":     lambda: self.config.get( "app:main", "use_heartbeat" ),
-                         "guppy":           lambda: self.config.get( "app:main", "use_memdump" ),
                          "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
                          "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "pysam":           lambda: check_pysam(),

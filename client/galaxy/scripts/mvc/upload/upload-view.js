@@ -6,58 +6,70 @@ define(["utils/utils",
         "mvc/upload/upload-ftp",
         "mvc/ui/ui-popover",
         "mvc/ui/ui-modal",
+        "mvc/ui/ui-select",
         "utils/uploadbox"],
-       
+
         function(   Utils,
                     UploadButton,
                     UploadModel,
                     UploadItem,
                     UploadFtp,
                     Popover,
-                    Modal
+                    Modal,
+                    Select
                 ) {
 
 // galaxy upload
 return Backbone.View.extend({
     // options
     options : {
-        nginx_upload_path : ''
+        nginx_upload_path   : ''
     },
-    
+
+    // default for selection fields
+    default_extension : 'auto',
+    default_genome : '?',
+
     // own modal
     modal : null,
-    
+
     // button
     ui_button : null,
-    
+
     // jquery uploadbox plugin
     uploadbox: null,
-    
+
     // current history
     current_history: null,
-    
+
+    // extension selector
+    select_extension : null,
+
+    // genome selector
+    select_genome: null,
+
     // current upload size
     upload_size: 0,
-    
+
     // extension types
     list_extensions :[],
-    
+
     // genomes
     list_genomes : [],
-    
+
     // datatype placeholder for auto-detection
     auto: {
         id          : 'auto',
         text        : 'Auto-detect',
         description : 'This system will try to detect the file type automatically. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.'
     },
-    
+
     // collection
     collection : new UploadModel.Collection(),
-    
+
     // ftp file viewer
     ftp : null,
-    
+
     // counter
     counter : {
         // stats
@@ -65,13 +77,13 @@ return Backbone.View.extend({
         success     : 0,
         error       : 0,
         running     : 0,
-        
+
         // reset stats
         reset : function() {
             this.announce = this.success = this.error = this.running = 0;
         }
     },
-                
+
     // initialize
     initialize : function(options) {
         // link this
@@ -81,7 +93,7 @@ return Backbone.View.extend({
         if (options) {
             this.options = _.defaults(options, this.options);
         }
-        
+
         // create model
         this.ui_button = new UploadButton.Model({
             icon        : 'fa-upload',
@@ -91,7 +103,7 @@ return Backbone.View.extend({
                 if (e) {
                     // prevent default
                     e.preventDefault();
-        
+
                     // show
                     self.show()
                 }
@@ -102,10 +114,10 @@ return Backbone.View.extend({
                 }
             }
         });
-        
+
         // define location
-        $('#left .unified-panel-header-inner').append((new UploadButton.View(this.ui_button)).$el);
-        
+        $('.with-upload-button').append((new UploadButton.View(this.ui_button)).$el);
+
         // load extension
         var self = this;
         Utils.get({
@@ -119,19 +131,19 @@ return Backbone.View.extend({
                         description_url : datatypes[key].description_url
                     });
                 }
-                
+
                 // sort
                 self.list_extensions.sort(function(a, b) {
-                    return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
                 });
-                
+
                 // add auto field
                 if (!self.options.datatypes_disable_auto) {
                     self.list_extensions.unshift(self.auto);
                 }
             }
         });
-            
+
         // load genomes
         Utils.get({
             url     : galaxy_config.root + "api/genomes",
@@ -142,32 +154,26 @@ return Backbone.View.extend({
                         text    : genomes[key][0]
                     });
                 }
-                    
+
                 // sort
                 self.list_genomes.sort(function(a, b) {
-                    return a.id > b.id ? 1 : a.id < b.id ? -1 : 0;
+                    if (a.id == self.default_genome) { return -1; }
+                    if (b.id == self.default_genome) { return 1; }
+                    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
                 });
             }
         });
-            
+
         // events
         this.collection.on('remove', function(item) {
             self._eventRemove(item);
         });
-        this.collection.on('change:genome', function(item) {
-            var genome = item.get('genome');
-            self.collection.each(function(item) {
-                if (item.get('status') == 'init' && item.get('genome') == '?') {
-                    item.set('genome', genome);
-                }
-            });
-        });
     },
-    
+
     //
     // event triggered by upload button
     //
-    
+
     // show/hide upload frame
     show: function () {
         // wait for galaxy history panel
@@ -176,7 +182,7 @@ return Backbone.View.extend({
             window.setTimeout(function() { self.show() }, 500)
             return;
         }
-        
+
         // create modal
         if (!this.modal) {
             // make modal
@@ -197,10 +203,10 @@ return Backbone.View.extend({
                 width               : '900',
                 closing_events      : true
             });
-        
+
             // set element
             this.setElement('#upload-box');
-            
+
             // file upload
             var self = this;
             this.uploadbox = this.$el.uploadbox({
@@ -211,34 +217,89 @@ return Backbone.View.extend({
                 error           : function(index, file, message) { self._eventError(index, file, message) },
                 complete        : function() { self._eventComplete() }
             });
-            
+
             // add ftp file viewer
             var button = this.modal.getButton('Choose FTP file');
             this.ftp = new Popover.View({
                 title       : 'FTP files',
                 container   : button
             });
+
+            // select extension
+            this.select_extension = new Select.View({
+                css         : 'header-selection',
+                data        : this.list_extensions,
+                container   : this.$el.parent().find('#header-extension'),
+                value       : this.default_extension,
+                onchange    : function(extension) {
+                    self.updateExtension(extension);
+                }
+            });
+
+            // handle extension info popover
+            self.$el.parent().find('#header-extension-info').on('click' , function(e) {
+                self.showExtensionInfo({
+                    $el         : $(e.target),
+                    title       : self.select_extension.text(),
+                    extension   : self.select_extension.value(),
+                    placement   : 'top'
+                });
+            }).on('mousedown', function(e) { e.preventDefault(); });
+            
+            // genome extension
+            this.select_genome = new Select.View({
+                css         : 'header-selection',
+                data        : this.list_genomes,
+                container   : this.$el.parent().find('#header-genome'),
+                value       : this.default_genome,
+                onchange    : function(genome) {
+                    self.updateGenome(genome);
+                }
+            });
         }
-        
+
         // show modal
         this.modal.show();
-        
+
         // refresh
         this._updateUser();
-        
+
         // setup info
         this._updateScreen();
+    },
+
+    showExtensionInfo : function(options) {
+        // initialize
+        var self = this;
+        var $el = options.$el;
+        var extension = options.extension;
+        var title = options.title;
+        var description = _.findWhere(self.list_extensions, {'id': extension});
+
+        // create popup
+        this.extension_popup && this.extension_popup.remove();
+        this.extension_popup = new Popover.View({
+            placement: options.placement || 'bottom',
+            container: $el,
+            destroy: true
+        });
+        
+        // add content and show popup
+        this.extension_popup.title(title);
+        this.extension_popup.empty();
+        this.extension_popup.append(this._templateDescription(description));
+        this.extension_popup.show();
     },
 
     //
     // events triggered by collection
     //
-    
+
     // remove item from upload list
     _eventRemove : function(item) {
         // update status
         var status = item.get('status');
-                
+
         // reduce counter
         if (status == 'success') {
             this.counter.success--;
@@ -247,26 +308,26 @@ return Backbone.View.extend({
         } else {
             this.counter.announce--;
         }
-        
+
         // show on screen info
         this._updateScreen();
-            
+
         // remove from queue
         this.uploadbox.remove(item.id);
     },
-    
+
     //
     // events triggered by the upload box plugin
     //
-    
+
     // a new file has been dropped/selected through the uploadbox plugin
     _eventAnnounce : function(index, file, message) {
         // update counter
         this.counter.announce++;
-        
+
         // update screen
         this._updateScreen();
-        
+
         // create view/model
         var upload_item = new UploadItem(this, {
             id          : index,
@@ -275,25 +336,25 @@ return Backbone.View.extend({
             file_mode   : file.mode,
             file_path   : file.path
         });
-        
+
         // add to collection
         this.collection.add(upload_item.model);
-        
+
         // add upload item element to table
         $(this.el).find('tbody:first').append(upload_item.$el);
-        
+
         // render
         upload_item.render();
     },
-    
+
     // the uploadbox plugin is initializing the upload for this file
     _eventInitialize : function(index, file, message) {
         // get element
         var it = this.collection.get(index);
-        
+
         // update status
         it.set('status', 'running');
-    
+
         // get configuration
         var file_name       = it.get('file_name');
         var file_path       = it.get('file_path');
@@ -303,113 +364,113 @@ return Backbone.View.extend({
         var url_paste       = it.get('url_paste');
         var space_to_tabs   = it.get('space_to_tabs');
         var to_posix_lines  = it.get('to_posix_lines');
-        
+
         // validate
         if (!url_paste && !(file.size > 0))
             return null;
-            
+
         // configure uploadbox
         this.uploadbox.configure({url : this.options.nginx_upload_path});
-        
+
         // local files
         if (file_mode == 'local') {
             this.uploadbox.configure({paramname : 'files_0|file_data'});
         } else {
             this.uploadbox.configure({paramname : null});
         }
-        
+
         // configure tool
         tool_input = {};
-        
+
         // new files
         if (file_mode == 'new') {
             tool_input['files_0|url_paste'] = url_paste;
         }
-        
+
         // files from ftp
         if (file_mode == 'ftp') {
             tool_input['files_0|ftp_files'] = file_path;
         }
-        
+
         // add common configuration
         tool_input['dbkey'] = genome;
         tool_input['file_type'] = extension;
         tool_input['files_0|type'] = 'upload_dataset';
-        tool_input['space_to_tabs'] = space_to_tabs;
-        tool_input['to_posix_lines'] = to_posix_lines;
-        
+        tool_input['files_0|space_to_tab'] = space_to_tabs && 'Yes' || null;
+        tool_input['files_0|to_posix_lines'] = to_posix_lines && 'Yes' || null;
+
         // setup data
         data = {};
         data['history_id'] = this.current_history;
         data['tool_id'] = 'upload1';
         data['inputs'] = JSON.stringify(tool_input);
-        
+
         // return additional data to be send with file
         return data;
     },
-    
+
     // progress
     _eventProgress : function(index, file, percentage) {
         // set progress for row
         var it = this.collection.get(index);
         it.set('percentage', percentage);
-        
+
         // update ui button
-        this.ui_button.set('percentage', this._upload_percentage(percentage, file.size));
+        this.ui_button.set('percentage', this._uploadPercentage(percentage, file.size));
     },
-    
+
     // success
     _eventSuccess : function(index, file, message) {
         // update status
         var it = this.collection.get(index);
         it.set('percentage', 100);
         it.set('status', 'success');
-        
+
         // file size
         var file_size = it.get('file_size');
-        
+
         // update ui button
-        this.ui_button.set('percentage', this._upload_percentage(100, file_size));
-        
+        this.ui_button.set('percentage', this._uploadPercentage(100, file_size));
+
         // update completed
         this.upload_completed += file_size * 100;
-        
+
         // update counter
         this.counter.announce--;
         this.counter.success++;
-        
+
         // update on screen info
         this._updateScreen();
-        
+
         // update galaxy history
         Galaxy.currHistoryPanel.refreshContents();
     },
-    
+
     // error
     _eventError : function(index, file, message) {
         // get element
         var it = this.collection.get(index);
-        
+
         // update status
         it.set('percentage', 100);
         it.set('status', 'error');
         it.set('info', message);
-        
+
         // update ui button
-        this.ui_button.set('percentage', this._upload_percentage(100, file.size));
+        this.ui_button.set('percentage', this._uploadPercentage(100, file.size));
         this.ui_button.set('status', 'danger');
-        
+
         // update completed
         this.upload_completed += file.size * 100;
-        
+
         // update counter
         this.counter.announce--;
         this.counter.error++;
-        
+
         // update on screen info
         this._updateScreen();
     },
-    
+
     // queue is done
     _eventComplete: function() {
         // reset queued upload to initial status
@@ -418,16 +479,16 @@ return Backbone.View.extend({
                 item.set('status', 'init');
             }
         });
-        
+
         // update running
         this.counter.running = 0;
         this._updateScreen();
     },
-    
+
     //
     // events triggered by this view
     //
-    
+
     _eventFtp: function() {
         // check if popover is visible
         if (!this.ftp.visible) {
@@ -456,7 +517,7 @@ return Backbone.View.extend({
         if (this.counter.announce == 0 || this.counter.running > 0) {
             return;
         }
-        
+
         // reset current size
         var self = this;
         this.upload_size = 0;
@@ -468,19 +529,19 @@ return Backbone.View.extend({
                 self.upload_size += item.get('file_size');
             }
         });
-        
+
         // reset progress
         this.ui_button.set('percentage', 0);
         this.ui_button.set('status', 'success');
-        
+
         // update running
         this.counter.running = this.counter.announce;
         this._updateScreen();
-        
+
         // initiate upload procedure in plugin
         this.uploadbox.start();
     },
-    
+
     // pause upload process
     _eventStop : function() {
         // check
@@ -493,32 +554,56 @@ return Backbone.View.extend({
 
         // request pause
         this.uploadbox.stop();
-        
+
         // set html content
         $('#upload-info').html('Queue will pause after completing the current file...');
     },
-    
+
     // remove all
     _eventReset : function() {
         // make sure queue is not running
         if (this.counter.running == 0){
             // reset collection
             this.collection.reset();
-            
+
             // reset counter
             this.counter.reset();
-        
+
             // show on screen info
             this._updateScreen();
-            
+
             // remove from queue
             this.uploadbox.reset();
-            
+
+            // reset value for universal type drop-down
+            this.select_extension.value(this.default_extension);
+            this.select_genome.value(this.default_genome);
+
             // reset button
             this.ui_button.set('percentage', 0);
         }
     },
-    
+
+    // update extension for all models
+    updateExtension: function(extension, defaults_only) {
+        var self = this;
+        this.collection.each(function(item) {
+            if (item.get('status') == 'init' && (item.get('extension') == self.default_extension || !defaults_only)) {
+                item.set('extension', extension);
+            }
+        });
+    },
+
+    // update genome for all models
+    updateGenome: function(genome, defaults_only) {
+        var self = this;
+        this.collection.each(function(item) {
+            if (item.get('status') == 'init' && (item.get('genome') == self.default_genome || !defaults_only)) {
+                item.set('genome', genome);
+            }
+        });
+    },
+
     // update uset
     _updateUser: function() {
         // backup current history
@@ -528,13 +613,13 @@ return Backbone.View.extend({
             this.current_history = Galaxy.currHistoryPanel.model.get('id');
         }
     },
-    
+
     // set screen
     _updateScreen: function () {
         /*
             update on screen info
         */
-        
+
         // check default message
         if(this.counter.announce == 0){
             if (this.uploadbox.compatible())
@@ -547,20 +632,20 @@ return Backbone.View.extend({
             else
                 message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
         }
-        
+
         // set html content
         $('#upload-info').html(message);
-        
+
         /*
             update button status
         */
-        
+
         // update reset button
         if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0)
             this.modal.enableButton('Reset');
         else
             this.modal.disableButton('Reset');
-            
+
         // update upload button
         if (this.counter.running == 0 && this.counter.announce > 0)
             this.modal.enableButton('Start');
@@ -572,7 +657,7 @@ return Backbone.View.extend({
             this.modal.enableButton('Pause');
         else
             this.modal.disableButton('Pause');
-        
+
         // select upload button
         if (this.counter.running == 0){
             this.modal.enableButton('Choose local file');
@@ -583,14 +668,14 @@ return Backbone.View.extend({
             this.modal.disableButton('Choose FTP file');
             this.modal.disableButton('Paste/Fetch data');
         }
-        
+
         // ftp button
         if (this.current_user && this.options.ftp_upload_dir && this.options.ftp_upload_site) {
             this.modal.showButton('Choose FTP file');
         } else {
             this.modal.hideButton('Choose FTP file');
         }
-        
+
         // table visibility
         if (this.counter.announce + this.counter.success + this.counter.error > 0) {
             $(this.el).find('#upload-table').show();
@@ -600,13 +685,29 @@ return Backbone.View.extend({
     },
 
     // calculate percentage of all queued uploads
-    _upload_percentage: function(percentage, size) {
+    _uploadPercentage: function(percentage, size) {
         return (this.upload_completed + (percentage * size)) / this.upload_size;
     },
 
+    // template for extensions description
+    _templateDescription: function(options) {
+        if (options.description) {
+            var tmpl = options.description;
+            if (options.description_url) {
+                tmpl += '&nbsp;(<a href="' + options.description_url + '" target="_blank">read more</a>)';
+            }
+            return tmpl;
+        } else {
+            return 'There is no description available for this file extension.';
+        }
+    },
+    
     // load html template
     _template: function(id, idInfo) {
-        return  '<div id="' + id + '" class="upload-box">' +
+        return  '<div class="upload-top">' +
+                    '<h6 id="' + idInfo + '" class="upload-info"></h6>' +
+                '</div>' +
+                '<div id="' + id + '" class="upload-box">' +
                     '<table id="upload-table" class="table table-striped" style="display: none;">' +
                         '<thead>' +
                             '<tr>' +
@@ -622,7 +723,13 @@ return Backbone.View.extend({
                         '<tbody></tbody>' +
                     '</table>' +
                 '</div>' +
-                '<h6 id="' + idInfo + '" class="upload-info"></h6>';
+                '<div id="upload-header" class="upload-header">' +
+                    '<span class="header-title">Type (set all):</span>' +
+                    '<span id="header-extension"/>' +
+                    '<span id="header-extension-info" class="upload-icon-button fa fa-search"/> ' +
+                    '<span class="header-title">Genome (set all):</span>' +
+                    '<span id="header-genome"/>' +
+                '</div>';
     }
 });
 

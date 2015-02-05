@@ -1,20 +1,18 @@
-from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
-from galaxy.dataset_collections.matching import MatchingCollections
-from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
-from galaxy.dataset_collections import builder
-
 from galaxy import model
-from galaxy.exceptions import MessageException
+from galaxy.dataset_collections import builder
+from galaxy.dataset_collections.matching import MatchingCollections
+from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
+from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
 from galaxy.exceptions import ItemAccessibilityException
+from galaxy.exceptions import MessageException
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import hdas  # TODO: Refactor all mixin use into managers.
 from galaxy.managers import histories
 from galaxy.managers import lddas
 from galaxy.managers import tags
 from galaxy.managers.collections_util import validate_input_element_identifiers
-from galaxy.util import validation
 from galaxy.util import odict
-
+from galaxy.util import validation
 import logging
 log = logging.getLogger( __name__ )
 
@@ -28,16 +26,18 @@ class DatasetCollectionManager( object ):
     Abstraction for interfacing with dataset collections instance - ideally abstarcts
     out model and plugin details.
     """
+    ELEMENTS_UNINITIALIZED = object()
 
     def __init__( self, app ):
         self.type_registry = DatasetCollectionTypesRegistry( app )
         self.collection_type_descriptions = CollectionTypeDescriptionFactory( self.type_registry )
         self.model = app.model
         self.security = app.security
-        self.hda_manager = hdas.HDAManager()
-        self.history_manager = histories.HistoryManager()
-        self.tag_manager = tags.TagsManager( app )
-        self.ldda_manager = lddas.LDDAManager( )
+
+        self.hda_manager = hdas.HDAManager( app )
+        self.history_manager = histories.HistoryManager( app )
+        self.tag_manager = tags.TagManager( app )
+        self.ldda_manager = lddas.LDDAManager( app )
 
     def create(
         self,
@@ -63,6 +63,7 @@ class DatasetCollectionManager( object ):
             element_identifiers=element_identifiers,
             elements=elements,
         )
+
         if isinstance( parent, model.History ):
             dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
@@ -72,25 +73,44 @@ class DatasetCollectionManager( object ):
                 for input_name, input_collection in implicit_collection_info[ "implicit_inputs" ]:
                     dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                 for output_dataset in implicit_collection_info.get( "outputs" ):
-                    output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
+                    if isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
+                        dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
+                    else:
+                        # dataset collection, don't need to do anything...
+                        pass
                     trans.sa_session.add( output_dataset )
 
                 dataset_collection_instance.implicit_output_name = implicit_collection_info[ "implicit_output_name" ]
+
             log.debug("Created collection with %d elements" % ( len( dataset_collection_instance.collection.elements ) ) )
             # Handle setting hid
             parent.add_dataset_collection( dataset_collection_instance )
+
         elif isinstance( parent, model.LibraryFolder ):
             dataset_collection_instance = self.model.LibraryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 folder=parent,
                 name=name,
             )
+
         else:
             message = "Internal logic error - create called with unknown parent type %s" % type( parent )
             log.exception( message )
             raise MessageException( message )
 
         return self.__persist( dataset_collection_instance )
+
+    def create_dataset_collection(
+        self,
+        trans,
+        collection_type,
+        elements=None,
+    ):
+        return self.__create_dataset_collection(
+            trans=trans,
+            collection_type=collection_type,
+            elements=elements,
+        )
 
     def __create_dataset_collection(
         self,
@@ -113,9 +133,24 @@ class DatasetCollectionManager( object ):
             elements = self.__load_elements( trans, element_identifiers )
         # else if elements is set, it better be an ordered dict!
 
-        type_plugin = collection_type_description.rank_type_plugin()
-        dataset_collection = builder.build_collection( type_plugin, elements )
+        if elements is not self.ELEMENTS_UNINITIALIZED:
+            type_plugin = collection_type_description.rank_type_plugin()
+            dataset_collection = builder.build_collection( type_plugin, elements )
+        else:
+            dataset_collection = model.DatasetCollection( populated=False )
         dataset_collection.collection_type = collection_type
+        return dataset_collection
+
+    def set_collection_elements( self, dataset_collection, dataset_instances ):
+        if dataset_collection.populated:
+            raise Exception("Cannot reset elements of an already populated dataset collection.")
+
+        collection_type = dataset_collection.collection_type
+        collection_type_description = self.collection_type_descriptions.for_collection_type( collection_type )
+        type_plugin = collection_type_description.rank_type_plugin()
+        builder.set_collection_elements( dataset_collection, type_plugin, dataset_instances )
+        dataset_collection.mark_as_populated()
+
         return dataset_collection
 
     def delete( self, trans, instance_type, id ):
@@ -154,8 +189,6 @@ class DatasetCollectionManager( object ):
         return source_hdca
 
     def _set_from_dict( self, trans, dataset_collection_instance, new_data ):
-        # Blatantly stolen from UsesHistoryDatasetAssociationMixin.set_hda_from_dict.
-
         # send what we can down into the model
         changed = dataset_collection_instance.set_from_dict( new_data )
         # the rest (often involving the trans) - do here
@@ -163,7 +196,7 @@ class DatasetCollectionManager( object ):
             dataset_collection_instance.add_item_annotation( trans.sa_session, trans.get_user(), dataset_collection_instance, new_data[ 'annotation' ] )
             changed[ 'annotation' ] = new_data[ 'annotation' ]
         if 'tags' in new_data.keys() and trans.get_user():
-            self.tag_manager.set_tags_from_list( trans, dataset_collection_instance, new_data[ 'tags' ], user=trans.user )
+            self.tag_manager.set_tags_from_list( trans.get_user(), dataset_collection_instance, new_data[ 'tags' ] )
 
         if changed.keys():
             trans.sa_session.flush()
@@ -223,7 +256,7 @@ class DatasetCollectionManager( object ):
         return elements
 
     def __load_element( self, trans, element_identifier ):
-        #if not isinstance( element_identifier, dict ):
+        # if not isinstance( element_identifier, dict ):
         #    # Is allowing this to just be the id of an hda too clever? Somewhat
         #    # consistent with other API methods though.
         #    element_identifier = dict( src='hda', id=str( element_identifier ) )
@@ -244,7 +277,7 @@ class DatasetCollectionManager( object ):
 
         if src_type == 'hda':
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )
-            element = self.hda_manager.get( trans, decoded_id, check_ownership=False )
+            element = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
         elif src_type == 'ldda':
             element = self.ldda_manager.get( trans, encoded_id )
         elif src_type == 'hdca':
@@ -278,7 +311,10 @@ class DatasetCollectionManager( object ):
     def __get_history_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):
         instance_id = int( trans.app.security.decode_id( id ) )
         collection_instance = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( instance_id )
-        self.history_manager.secure( trans, collection_instance.history, check_ownership=check_ownership, check_accessible=check_accessible )
+        if check_ownership:
+            self.history_manager.error_unless_owner( trans, collection_instance.history, trans.user )
+        if check_accessible:
+            self.history_manager.error_unless_accessible( trans, collection_instance.history, trans.user )
         return collection_instance
 
     def __get_library_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):

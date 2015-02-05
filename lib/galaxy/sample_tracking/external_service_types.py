@@ -4,7 +4,6 @@ from galaxy.util.bunch import Bunch
 from galaxy import util, jobs, model
 from galaxy.forms.forms import form_factory
 from galaxy.external_services.service import ExternalServiceActionsGroup
-from elementtree.ElementTree import XML
 from galaxy.sample_tracking.data_transfer import data_transfer_factories
 log = logging.getLogger( __name__ )
 

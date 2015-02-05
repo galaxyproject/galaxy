@@ -193,6 +193,12 @@ var ButtonIcon = Backbone.View.extend({
         this.disabled = false;
     },
     
+    // change icon
+    setIcon: function(icon_cls) {
+        this.$('i').removeClass(this.options.icon).addClass(icon_cls);
+        this.options.icon = icon_cls;
+    },
+    
     // template
     _template: function(options) {
         // width
@@ -412,7 +418,7 @@ var Hidden = Backbone.View.extend({
     initialize : function(options) {
         // configure options
         this.options = options;
-            
+        
         // create new element
         this.setElement(this._template(this.options));
         
@@ -425,14 +431,68 @@ var Hidden = Backbone.View.extend({
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
-            this.$el.val(new_val);
+            this.$('hidden').val(new_val);
         }
-        return this.$el.val();
+        return this.$('hidden').val();
     },
     
     // element
     _template: function(options) {
-        return '<hidden id="' + options.id + '" value="' + options.value + '"/>';
+        var tmpl =  '<div id="' + options.id + '" >';
+        if (options.info) {
+            tmpl +=     '<label>' + options.info + '</label>';
+        }
+        tmpl +=         '<hidden value="' + options.value + '"/>' +
+                    '</div>';
+        return tmpl;
+    }
+});
+
+// plugin
+var CheckButton = Backbone.View.extend({
+
+    // default options
+    optionsDefault: {
+        class_add       : 'fa fa-square-o',
+        class_remove    : 'fa fa-check-square-o',
+        class_partial   : 'fa fa-minus-square-o',
+        value           : false
+    },
+
+    // initialize
+    initialize : function(options) {
+        // configure options
+        this.options = Utils.merge(options, this.optionsDefault);
+
+        // create new element
+        this.setElement($('<div/>'));
+
+        // set initial value
+        this.value(Boolean(this.options.value));
+
+        // add event handler
+        var self = this;
+        this.$el.on('click', function() {
+            self.value(!self.current);
+        });
+    },
+
+    // value
+    value : function (new_val) {
+        if (new_val !== undefined) {
+            this.current = new_val;
+            if (new_val) {
+                this.$el.removeClass()
+                        .addClass('ui-checkbutton')
+                        .addClass(this.options.class_remove);
+            } else {
+                this.$el.removeClass()
+                        .addClass('ui-checkbutton')
+                        .addClass(this.options.class_add);
+            }
+            this.options.onchange && this.options.onchange(new_val);
+        }
+        return this.current;
     }
 });
 
@@ -451,6 +511,7 @@ return {
     RadioButton : Options.RadioButton,
     Checkbox    : Options.Checkbox,
     Radio       : Options.Radio,
+    CheckButton : CheckButton,
     Searchbox   : Searchbox,
     Select      : Select,
     Hidden      : Hidden,

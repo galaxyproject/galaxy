@@ -7,44 +7,34 @@ import glob
 import json
 import logging
 import os
-import pipes
 import re
 import shutil
-import sys
-import string
-import tarfile
-import tempfile
 import threading
-import traceback
 import types
 import urllib
+import copy
 
-from math import isinf
+from galaxy import eggs, util
 
-from galaxy import eggs
 eggs.require( "MarkupSafe" )  # MarkupSafe must load before mako
 eggs.require( "Mako" )
-eggs.require( "elementtree" )
 eggs.require( "Paste" )
 eggs.require( "SQLAlchemy >= 0.4" )
 
 from cgi import FieldStorage
-from elementtree import ElementTree
+from xml.etree import ElementTree
 from mako.template import Template
 from paste import httpexceptions
-from sqlalchemy import and_
 
-from galaxy import jobs, model
-from galaxy.jobs.error_level import StdioErrorLevel
+from galaxy import model
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
-from galaxy.jobs import ParallelismInfo
-from galaxy.tools import watcher
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import build_dependency_manager
-from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
+from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
@@ -54,26 +44,21 @@ from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repea
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
-from galaxy.tools.filters import FilterFactory
 from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
-from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
+from galaxy.tools.toolbox import AbstractToolBox
+from galaxy.util import rst_to_html, string_as_bool, string_to_object
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import hmac_new
-from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
-from galaxy.web.form_builder import SelectField
-from galaxy.web.framework.helpers import escape
 from galaxy.model.item_attrs import Dictifiable
-from galaxy.model import Workflow
-from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
-from .loader import load_tool, template_macro_params, raw_tool_xml_tree, imported_macro_paths
+from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 from .wrappers import (
     ToolParameterValueWrapper,
@@ -85,6 +70,7 @@ from .wrappers import (
     DatasetListWrapper,
     DatasetCollectionWrapper,
 )
+import galaxy.jobs
 
 
 log = logging.getLogger( __name__ )
@@ -108,645 +94,25 @@ class ToolNotFoundException( Exception ):
     pass
 
 
-def to_dict_helper( obj, kwargs ):
-    """ Helper function that provides the appropriate kwargs to to_dict an object. """
-
-    # Label.to_dict cannot have kwargs.
-    if isinstance( obj, ToolSectionLabel ):
-        kwargs = {}
-
-    return obj.to_dict( **kwargs )
-
-
-class ToolBox( object, Dictifiable ):
-    """Container for a collection of tools"""
+class ToolBox( AbstractToolBox ):
+    """ A derivative of AbstractToolBox with knowledge about Tool internals -
+    how to construct them, action types, dependency management, etc....
+    """
 
     def __init__( self, config_filenames, tool_root_dir, app ):
-        """
-        Create a toolbox from the config files named by `config_filenames`, using
-        `tool_root_dir` as the base directory for finding individual tool config files.
-        """
-        # The shed_tool_confs list contains dictionaries storing information about the tools defined in each
-        # shed-related shed_tool_conf.xml file.
-        self.shed_tool_confs = []
-        self.tools_by_id = {}
-        self.workflows_by_id = {}
-        # In-memory dictionary that defines the layout of the tool panel.
-        self.tool_panel = odict()
-        self.index = 0
-        self.data_manager_tools = odict()
-        # File that contains the XML section and tool tags from all tool panel config files integrated into a
-        # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
-        # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
-        self.integrated_tool_panel_config = app.config.integrated_tool_panel_config
-        # In-memory dictionary that defines the layout of the tool_panel.xml file on disk.
-        self.integrated_tool_panel = odict()
-        self.integrated_tool_panel_config_has_contents = os.path.exists( self.integrated_tool_panel_config ) and os.stat( self.integrated_tool_panel_config ).st_size > 0
-        if self.integrated_tool_panel_config_has_contents:
-            self.load_integrated_tool_panel_keys()
-        # The following refers to the tool_path config setting for backward compatibility.  The shed-related
-        # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
-        self.tool_root_dir = tool_root_dir
-        self.app = app
-        self.tool_watcher = watcher.get_watcher( self, app.config )
-        self.filter_factory = FilterFactory( self )
-        self.init_dependency_manager()
-        config_filenames = listify( config_filenames )
-        for config_filename in config_filenames:
-            if os.path.isdir( config_filename ):
-                directory_contents = sorted( os.listdir( config_filename ) )
-                directory_config_files = [ config_file for config_file in directory_contents if config_file.endswith( ".xml" ) ]
-                config_filenames.remove( config_filename )
-                config_filenames.extend( directory_config_files )
-        for config_filename in config_filenames:
-            try:
-                self.init_tools( config_filename )
-            except:
-                log.exception( "Error loading tools defined in config %s", config_filename )
-        if self.app.name == 'galaxy' and self.integrated_tool_panel_config_has_contents:
-            # Load self.tool_panel based on the order in self.integrated_tool_panel.
-            self.load_tool_panel()
-        if app.config.update_integrated_tool_panel:
-            # Write the current in-memory integrated_tool_panel to the integrated_tool_panel.xml file.
-            # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
-            # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
-            # will be False when things like functional tests are the caller.
-            self.fix_integrated_tool_panel_dict()
-            self.write_integrated_tool_panel_config_file()
+        super( ToolBox, self ).__init__(
+            config_filenames=config_filenames,
+            tool_root_dir=tool_root_dir,
+            app=app,
+        )
+        self._init_dependency_manager()
 
-    def fix_integrated_tool_panel_dict( self ):
-        # HACK: instead of fixing after the fact, I suggest some combination of:
-        #  1) adjusting init_tools() and called methods to get this right
-        #  2) redesigning the code and/or data structure used to read/write integrated_tool_panel.xml
-        for key, value in self.integrated_tool_panel.iteritems():
-            if isinstance( value, ToolSection ):
-                for section_key, section_value in value.elems.iteritems():
-                    if section_value is None:
-                        if isinstance( section_value, Tool ):
-                            tool_id = section_key[5:]
-                            value.elems[section_key] = self.tools_by_id.get( tool_id )
-                        elif isinstance( section_value, Workflow ):
-                            workflow_id = section_key[9:]
-                            value.elems[section_key] = self.workflows_by_id.get( workflow_id )
+    @property
+    def tools_by_id( self ):
+        # Deprecated method, TODO - eliminate calls to this in test/.
+        return self._tools_by_id
 
-    def init_tools( self, config_filename ):
-        """
-        Read the configuration file and load each tool.  The following tags are currently supported:
-
-        .. raw:: xml
-
-            <toolbox>
-                <tool file="data_source/upload.xml"/>            # tools outside sections
-                <label text="Basic Tools" id="basic_tools" />    # labels outside sections
-                <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
-                <section name="Get Data" id="getext">            # sections
-                    <tool file="data_source/biomart.xml" />      # tools inside sections
-                    <label text="In Section" id="in_section" />  # labels inside sections
-                    <workflow id="adb5f5c93f827949" />           # workflows inside sections
-                </section>
-            </toolbox>
-
-        """
-        if self.app.config.get_bool( 'enable_tool_tags', False ):
-            log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")" )
-            self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
-            self.sa_session.flush()
-        log.info( "Parsing the tool configuration %s" % config_filename )
-        tree = parse_xml( config_filename )
-        root = tree.getroot()
-        tool_path = root.get( 'tool_path' )
-        if tool_path:
-            # We're parsing a shed_tool_conf file since we have a tool_path attribute.
-            parsing_shed_tool_conf = True
-            # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
-            config_elems = []
-        else:
-            parsing_shed_tool_conf = False
-        tool_path = self.__resolve_tool_path(tool_path, config_filename)
-        # Only load the panel_dict under certain conditions.
-        load_panel_dict = not self.integrated_tool_panel_config_has_contents
-        for _, elem in enumerate( root ):
-            index = self.index
-            self.index += 1
-            if parsing_shed_tool_conf:
-                config_elems.append( elem )
-            if elem.tag == 'tool':
-                self.load_tool_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict, guid=elem.get( 'guid' ), index=index )
-            elif elem.tag == 'workflow':
-                self.load_workflow_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
-            elif elem.tag == 'section':
-                self.load_section_tag_set( elem, tool_path, load_panel_dict, index=index )
-            elif elem.tag == 'label':
-                self.load_label_tag_set( elem, self.tool_panel, self.integrated_tool_panel, load_panel_dict, index=index )
-            elif elem.tag == 'tool_dir':
-                self.load_tooldir_tag_set( elem, self.tool_panel, self.integrated_tool_panel, tool_path, load_panel_dict )
-
-        if parsing_shed_tool_conf:
-            shed_tool_conf_dict = dict( config_filename=config_filename,
-                                        tool_path=tool_path,
-                                        config_elems=config_elems )
-            self.shed_tool_confs.append( shed_tool_conf_dict )
-
-    def get_shed_config_dict_by_filename( self, filename, default=None ):
-        for shed_config_dict in self.shed_tool_confs:
-            if shed_config_dict[ 'config_filename' ] == filename:
-                return shed_config_dict
-        return default
-
-    def __resolve_tool_path(self, tool_path, config_filename):
-        if not tool_path:
-            # Default to backward compatible config setting.
-            tool_path = self.tool_root_dir
-        else:
-            # Allow use of __tool_conf_dir__ in toolbox config files.
-            tool_conf_dir = os.path.dirname(config_filename)
-            tool_path_vars = {"tool_conf_dir": tool_conf_dir}
-            tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
-        return tool_path
-
-    def __add_tool_to_tool_panel( self, tool, panel_component, section=False ):
-        # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
-        # will be a ToolSection (if the value of section=True) or self.tool_panel (if section=False).
-        tool_id = str( tool.id )
-        tool = self.tools_by_id[ tool_id ]
-        if section:
-            panel_dict = panel_component.elems
-        else:
-            panel_dict = panel_component
-        already_loaded = False
-        loaded_version_key = None
-        lineage_id = None
-        for lineage_id in tool.lineage_ids:
-            if lineage_id in self.tools_by_id:
-                loaded_version_key = 'tool_%s' % lineage_id
-                if loaded_version_key in panel_dict:
-                    already_loaded = True
-                    break
-        if already_loaded:
-            if tool.lineage_ids.index( tool_id ) > tool.lineage_ids.index( lineage_id ):
-                key = 'tool_%s' % tool.id
-                index = panel_dict.keys().index( loaded_version_key )
-                del panel_dict[ loaded_version_key ]
-                panel_dict.insert( index, key, tool )
-                log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
-        else:
-            inserted = False
-            key = 'tool_%s' % tool.id
-            # The value of panel_component is the in-memory tool panel dictionary.
-            for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
-                if key == integrated_panel_key:
-                    panel_dict.insert( index, key, tool )
-                    if not inserted:
-                        inserted = True
-            if not inserted:
-                # Check the tool's installed versions.
-                for lineage_id in tool.lineage_ids:
-                    lineage_id_key = 'tool_%s' % lineage_id
-                    for index, integrated_panel_key in enumerate( self.integrated_tool_panel.keys() ):
-                        if lineage_id_key == integrated_panel_key:
-                            panel_dict.insert( index, key, tool )
-                            if not inserted:
-                                inserted = True
-                if not inserted:
-                    if tool.guid is None or \
-                        tool.tool_shed is None or \
-                        tool.repository_name is None or \
-                        tool.repository_owner is None or \
-                        tool.installed_changeset_revision is None:
-                        # We have a tool that was not installed from the Tool Shed, but is also not yet defined in
-                        # integrated_tool_panel.xml, so append it to the tool panel.
-                        panel_dict[ key ] = tool
-                        log.debug( "Loaded tool id: %s, version: %s into tool panel.." % ( tool.id, tool.version ) )
-                    else:
-                        # We are in the process of installing the tool.
-                        tool_version = self.__get_tool_version( tool_id )
-                        tool_lineage_ids = tool_version.get_version_ids( self.app, reverse=True )
-                        for lineage_id in tool_lineage_ids:
-                            if lineage_id in self.tools_by_id:
-                                loaded_version_key = 'tool_%s' % lineage_id
-                                if loaded_version_key in panel_dict:
-                                    if not already_loaded:
-                                        already_loaded = True
-                        if not already_loaded:
-                            # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
-                            panel_dict[ key ] = tool
-                            log.debug( "Loaded tool id: %s, version: %s into tool panel...." % ( tool.id, tool.version ) )
-
-    def load_tool_panel( self ):
-        for key, val in self.integrated_tool_panel.items():
-            if isinstance( val, Tool ):
-                tool_id = key.replace( 'tool_', '', 1 )
-                if tool_id in self.tools_by_id:
-                    self.__add_tool_to_tool_panel( val, self.tool_panel, section=False )
-            elif isinstance( val, Workflow ):
-                workflow_id = key.replace( 'workflow_', '', 1 )
-                if workflow_id in self.workflows_by_id:
-                    workflow = self.workflows_by_id[ workflow_id ]
-                    self.tool_panel[ key ] = workflow
-                    log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
-            elif isinstance( val, ToolSectionLabel ):
-                self.tool_panel[ key ] = val
-            elif isinstance( val, ToolSection ):
-                elem = ElementTree.Element( 'section' )
-                elem.attrib[ 'id' ] = val.id or ''
-                elem.attrib[ 'name' ] = val.name or ''
-                elem.attrib[ 'version' ] = val.version or ''
-                section = ToolSection( elem )
-                log.debug( "Loading section: %s" % elem.get( 'name' ) )
-                for section_key, section_val in val.elems.items():
-                    if isinstance( section_val, Tool ):
-                        tool_id = section_key.replace( 'tool_', '', 1 )
-                        if tool_id in self.tools_by_id:
-                            self.__add_tool_to_tool_panel( section_val, section, section=True )
-                    elif isinstance( section_val, Workflow ):
-                        workflow_id = section_key.replace( 'workflow_', '', 1 )
-                        if workflow_id in self.workflows_by_id:
-                            workflow = self.workflows_by_id[ workflow_id ]
-                            section.elems[ section_key ] = workflow
-                            log.debug( "Loaded workflow: %s %s" % ( workflow_id, workflow.name ) )
-                    elif isinstance( section_val, ToolSectionLabel ):
-                        if section_val:
-                            section.elems[ section_key ] = section_val
-                            log.debug( "Loaded label: %s" % ( section_val.text ) )
-                self.tool_panel[ key ] = section
-
-    def load_integrated_tool_panel_keys( self ):
-        """
-        Load the integrated tool panel keys, setting values for tools and workflows to None.  The values will
-        be reset when the various tool panel config files are parsed, at which time the tools and workflows are
-        loaded.
-        """
-        tree = parse_xml( self.integrated_tool_panel_config )
-        root = tree.getroot()
-        for elem in root:
-            if elem.tag == 'tool':
-                key = 'tool_%s' % elem.get( 'id' )
-                self.integrated_tool_panel[ key ] = None
-            elif elem.tag == 'workflow':
-                key = 'workflow_%s' % elem.get( 'id' )
-                self.integrated_tool_panel[ key ] = None
-            elif elem.tag == 'section':
-                section = ToolSection( elem )
-                for section_elem in elem:
-                    if section_elem.tag == 'tool':
-                        key = 'tool_%s' % section_elem.get( 'id' )
-                        section.elems[ key ] = None
-                    elif section_elem.tag == 'workflow':
-                        key = 'workflow_%s' % section_elem.get( 'id' )
-                        section.elems[ key ] = None
-                    elif section_elem.tag == 'label':
-                        key = 'label_%s' % section_elem.get( 'id' )
-                        section.elems[ key ] = None
-                key = elem.get( 'id' )
-                self.integrated_tool_panel[ key ] = section
-            elif elem.tag == 'label':
-                key = 'label_%s' % elem.get( 'id' )
-                self.integrated_tool_panel[ key ] = None
-
-    def write_integrated_tool_panel_config_file( self ):
-        """
-        Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators
-        use this file to manage the tool panel, we'll not use xml_to_string() since it doesn't write XML quite right.
-        """
-        fd, filename = tempfile.mkstemp()
-        os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, '<toolbox>\n' )
-        for key, item in self.integrated_tool_panel.items():
-            if item:
-                if isinstance( item, Tool ):
-                    os.write( fd, '    <tool id="%s" />\n' % item.id )
-                elif isinstance( item, Workflow ):
-                    os.write( fd, '    <workflow id="%s" />\n' % item.id )
-                elif isinstance( item, ToolSectionLabel ):
-                    label_id = item.id or ''
-                    label_text = item.text or ''
-                    label_version = item.version or ''
-                    os.write( fd, '    <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-                elif isinstance( item, ToolSection ):
-                    section_id = item.id or ''
-                    section_name = item.name or ''
-                    section_version = item.version or ''
-                    os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
-                    for section_key, section_item in item.elems.items():
-                        if isinstance( section_item, Tool ):
-                            if section_item:
-                                os.write( fd, '        <tool id="%s" />\n' % section_item.id )
-                        elif isinstance( section_item, Workflow ):
-                            if section_item:
-                                os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
-                        elif isinstance( section_item, ToolSectionLabel ):
-                            if section_item:
-                                label_id = section_item.id or ''
-                                label_text = section_item.text or ''
-                                label_version = section_item.version or ''
-                                os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-                    os.write( fd, '    </section>\n' )
-        os.write( fd, '</toolbox>\n' )
-        os.close( fd )
-        shutil.move( filename, os.path.abspath( self.integrated_tool_panel_config ) )
-        os.chmod( self.integrated_tool_panel_config, 0644 )
-
-    def get_tool( self, tool_id, tool_version=None, get_all_versions=False ):
-        """Attempt to locate a tool in the tool box."""
-        if tool_id in self.tools_by_id and not get_all_versions:
-            #tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
-            return self.tools_by_id[ tool_id ]
-        #exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
-        rval = []
-        tv = self.__get_tool_version( tool_id )
-        if tv:
-            tool_version_ids = tv.get_version_ids( self.app )
-            for tool_version_id in tool_version_ids:
-                if tool_version_id in self.tools_by_id:
-                    rval.append( self.tools_by_id[ tool_version_id ] )
-        if not rval:
-            #still no tool, do a deeper search and try to match by old ids
-            for tool in self.tools_by_id.itervalues():
-                if tool.old_id == tool_id:
-                    rval.append( tool )
-        if rval:
-            if get_all_versions:
-                return rval
-            else:
-                if tool_version:
-                    #return first tool with matching version
-                    for tool in rval:
-                        if tool.version == tool_version:
-                            return tool
-                #No tool matches by version, simply return the first available tool found
-                return rval[0]
-        #We now likely have a Toolshed guid passed in, but no supporting database entries
-        #If the tool exists by exact id and is loaded then provide exact match within a list
-        if tool_id in self.tools_by_id:
-            return[ self.tools_by_id[ tool_id ] ]
-        return None
-
-    def get_loaded_tools_by_lineage( self, tool_id ):
-        """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
-        tv = self.__get_tool_version( tool_id )
-        if tv:
-            tool_version_ids = tv.get_version_ids( self.app )
-            available_tool_versions = []
-            for tool_version_id in tool_version_ids:
-                if tool_version_id in self.tools_by_id:
-                    available_tool_versions.append( self.tools_by_id[ tool_version_id ] )
-            return available_tool_versions
-        else:
-            if tool_id in self.tools_by_id:
-                tool = self.tools_by_id[ tool_id ]
-                return [ tool ]
-        return []
-
-    def __get_tool_version( self, tool_id ):
-        """Return a ToolVersion if one exists for the tool_id"""
-        return self.app.install_model.context.query( self.app.install_model.ToolVersion ) \
-                                             .filter( self.app.install_model.ToolVersion.table.c.tool_id == tool_id ) \
-                                             .first()
-
-    def __get_tool_shed_repository( self, tool_shed, name, owner, installed_changeset_revision ):
-        # We store only the port, if one exists, in the database.
-        tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
-        return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
-                              .filter( and_( self.app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-                                             self.app.install_model.ToolShedRepository.table.c.name == name,
-                                             self.app.install_model.ToolShedRepository.table.c.owner == owner,
-                                             self.app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
-                              .first()
-
-    def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
-        """
-        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
-        selection of a different version, the list of the tool's loaded versions, and the specified tool.
-        """
-        toolbox = self
-        tool_version_select_field = None
-        tools = []
-        tool = None
-        # Backwards compatibility for datasource tools that have default tool_id configured, but which
-        # are now using only GALAXY_URL.
-        tool_ids = listify( tool_id )
-        for tool_id in tool_ids:
-            if get_loaded_tools_by_lineage:
-                tools = toolbox.get_loaded_tools_by_lineage( tool_id )
-            else:
-                tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
-            if tools:
-                tool = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=False )
-                if len( tools ) > 1:
-                    tool_version_select_field = self.build_tool_version_select_field( tools, tool.id, set_selected )
-                break
-        return tool_version_select_field, tools, tool
-
-    def build_tool_version_select_field( self, tools, tool_id, set_selected ):
-        """Build a SelectField whose options are the ids for the received list of tools."""
-        options = []
-        refresh_on_change_values = []
-        for tool in tools:
-            options.insert( 0, ( tool.version, tool.id ) )
-            refresh_on_change_values.append( tool.id )
-        select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
-        for option_tup in options:
-            selected = set_selected and option_tup[ 1 ] == tool_id
-            if selected:
-                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ], selected=True )
-            else:
-                select_field.add_option( 'version %s' % option_tup[ 0 ], option_tup[ 1 ] )
-        return select_field
-
-    def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
-        try:
-            path = elem.get( "file" )
-            repository_id = None
-            if guid is None:
-                tool_shed_repository = None
-                can_load_into_panel_dict = True
-            else:
-                # The tool is contained in an installed tool shed repository, so load
-                # the tool only if the repository has not been marked deleted.
-                tool_shed = elem.find( "tool_shed" ).text
-                repository_name = elem.find( "repository_name" ).text
-                repository_owner = elem.find( "repository_owner" ).text
-                installed_changeset_revision_elem = elem.find( "installed_changeset_revision" )
-                if installed_changeset_revision_elem is None:
-                    # Backward compatibility issue - the tag used to be named 'changeset_revision'.
-                    installed_changeset_revision_elem = elem.find( "changeset_revision" )
-                installed_changeset_revision = installed_changeset_revision_elem.text
-                tool_shed_repository = self.__get_tool_shed_repository( tool_shed,
-                                                                        repository_name,
-                                                                        repository_owner,
-                                                                        installed_changeset_revision )
-                if tool_shed_repository:
-                    # Only load tools if the repository is not deactivated or uninstalled.
-                    can_load_into_panel_dict = not tool_shed_repository.deleted
-                    repository_id = self.app.security.encode_id( tool_shed_repository.id )
-                else:
-                    # If there is not yet a tool_shed_repository record, we're in the process of installing
-                    # a new repository, so any included tools can be loaded into the tool panel.
-                    can_load_into_panel_dict = True
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id )
-            if string_as_bool(elem.get( 'hidden', False )):
-                tool.hidden = True
-            key = 'tool_%s' % str( tool.id )
-            if can_load_into_panel_dict:
-                if guid is not None:
-                    tool.tool_shed = tool_shed
-                    tool.repository_name = repository_name
-                    tool.repository_owner = repository_owner
-                    tool.installed_changeset_revision = installed_changeset_revision
-                    tool.guid = guid
-                    tool.version = elem.find( "version" ).text
-                # Make sure the tool has a tool_version.
-                if not self.__get_tool_version( tool.id ):
-                    tool_version = self.app.install_model.ToolVersion( tool_id=tool.id, tool_shed_repository=tool_shed_repository )
-                    self.app.install_model.context.add( tool_version )
-                    self.app.install_model.context.flush()
-                # Load the tool's lineage ids.
-                tool.lineage_ids = tool.tool_version.get_version_ids( self.app )
-                if self.app.config.get_bool( 'enable_tool_tags', False ):
-                    tag_names = elem.get( "tags", "" ).split( "," )
-                    for tag_name in tag_names:
-                        if tag_name == '':
-                            continue
-                        tag = self.sa_session.query( self.app.model.Tag ).filter_by( name=tag_name ).first()
-                        if not tag:
-                            tag = self.app.model.Tag( name=tag_name )
-                            self.sa_session.add( tag )
-                            self.sa_session.flush()
-                            tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
-                            self.sa_session.add( tta )
-                            self.sa_session.flush()
-                        else:
-                            for tagged_tool in tag.tagged_tools:
-                                if tagged_tool.tool_id == tool.id:
-                                    break
-                            else:
-                                tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
-                                self.sa_session.add( tta )
-                                self.sa_session.flush()
-                self.__add_tool( tool, load_panel_dict, panel_dict )
-            # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
-            if key in integrated_panel_dict or index is None:
-                integrated_panel_dict[ key ] = tool
-            else:
-                integrated_panel_dict.insert( index, key, tool )
-        except IOError:
-            log.error( "Error reading tool configuration file from path: %s." % path )
-        except Exception:
-            log.exception( "Error reading tool from path: %s" % path )
-
-    def __add_tool( self, tool, load_panel_dict, panel_dict ):
-        # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle
-        # the case where the tool is contained in a repository installed from the tool shed, and the Galaxy
-        # administrator has retrieved updates to the installed repository.  In this case, the tool may have
-        # been updated, but the version was not changed, so the tool should always be reloaded here.  We used
-        # to only load the tool if it was not found in self.tools_by_id, but performing that check did
-        # not enable this scenario.
-        self.tools_by_id[ tool.id ] = tool
-        if load_panel_dict:
-            self.__add_tool_to_tool_panel( tool, panel_dict, section=isinstance( panel_dict, ToolSection ) )
-
-    def load_workflow_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
-        try:
-            # TODO: should id be encoded?
-            workflow_id = elem.get( 'id' )
-            workflow = self.load_workflow( workflow_id )
-            self.workflows_by_id[ workflow_id ] = workflow
-            key = 'workflow_' + workflow_id
-            if load_panel_dict:
-                panel_dict[ key ] = workflow
-            # Always load workflows into the integrated_panel_dict.
-            if key in integrated_panel_dict or index is None:
-                integrated_panel_dict[ key ] = workflow
-            else:
-                integrated_panel_dict.insert( index, key, workflow )
-        except:
-            log.exception( "Error loading workflow: %s" % workflow_id )
-
-    def load_label_tag_set( self, elem, panel_dict, integrated_panel_dict, load_panel_dict, index=None ):
-        label = ToolSectionLabel( elem )
-        key = 'label_' + label.id
-        if load_panel_dict:
-            panel_dict[ key ] = label
-        if key in integrated_panel_dict or index is None:
-            integrated_panel_dict[ key ] = label
-        else:
-            integrated_panel_dict.insert( index, key, label )
-
-    def load_section_tag_set( self, elem, tool_path, load_panel_dict, index=None ):
-        key = elem.get( "id" )
-        if key in self.tool_panel:
-            section = self.tool_panel[ key ]
-            elems = section.elems
-        else:
-            section = ToolSection( elem )
-            elems = section.elems
-        if key in self.integrated_tool_panel:
-            integrated_section = self.integrated_tool_panel[ key ]
-            integrated_elems = integrated_section.elems
-        else:
-            integrated_section = ToolSection( elem )
-            integrated_elems = integrated_section.elems
-        for sub_index, sub_elem in enumerate( elem ):
-            if sub_elem.tag == 'tool':
-                self.load_tool_tag_set( sub_elem, elems, integrated_elems, tool_path, load_panel_dict, guid=sub_elem.get( 'guid' ), index=sub_index )
-            elif sub_elem.tag == 'workflow':
-                self.load_workflow_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
-            elif sub_elem.tag == 'label':
-                self.load_label_tag_set( sub_elem, elems, integrated_elems, load_panel_dict, index=sub_index )
-            elif sub_elem.tag == 'tool_dir':
-                self.load_tooldir_tag_set( sub_elem, elems, tool_path, integrated_elems, load_panel_dict )
-        if load_panel_dict:
-            self.tool_panel[ key ] = section
-        # Always load sections into the integrated_tool_panel.
-        if key in self.integrated_tool_panel or index is None:
-            self.integrated_tool_panel[ key ] = integrated_section
-        else:
-            self.integrated_tool_panel.insert( index, key, integrated_section )
-
-    def load_tooldir_tag_set(self, sub_elem, elems, tool_path, integrated_elems, load_panel_dict):
-        directory = os.path.join( tool_path, sub_elem.attrib.get("dir") )
-        recursive = string_as_bool( sub_elem.attrib.get("recursive", True) )
-        self.__watch_directory( directory, elems, integrated_elems, load_panel_dict, recursive )
-
-    def __watch_directory( self, directory, elems, integrated_elems, load_panel_dict, recursive):
-
-        def quick_load( tool_file, async=True ):
-            try:
-                tool = self.load_tool( tool_file )
-                self.__add_tool( tool, load_panel_dict, elems )
-                # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
-                key = 'tool_%s' % str( tool.id )
-                integrated_elems[ key ] = tool
-
-                if async:
-                    self.load_tool_panel()
-
-                    if self.app.config.update_integrated_tool_panel:
-                        # Write the current in-memory integrated_tool_panel to the integrated_tool_panel.xml file.
-                        # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
-                        # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
-                        # will be False when things like functional tests are the caller.
-                        self.fix_integrated_tool_panel_dict()
-                        self.write_integrated_tool_panel_config_file()
-                return tool.id
-            except Exception:
-                log.exception("Failed to load potential tool %s." % tool_file)
-                return None
-
-        tool_loaded = False
-        for name in os.listdir( directory ):
-            child_path = os.path.join(directory, name)
-            if os.path.isdir(child_path) and recursive:
-                self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
-            elif name.endswith( ".xml" ):
-                quick_load( child_path, async=False )
-                tool_loaded = True
-        if tool_loaded:
-            self.tool_watcher.watch_directory( directory, quick_load )
-
-    def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
-        """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
-        # Parse XML configuration file and get the root element
+    def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
         # Allow specifying a different tool subclass to instantiate
         tool_module = tool_source.parse_tool_module()
@@ -763,13 +129,13 @@ class ToolBox( object, Dictifiable ):
             root = getattr( tool_source, "root", None )
             # TODO: mucking with the XML directly like this is terrible,
             # modify inputs directly post load if possible.
-            if root and hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
-                tool_id = root.get( 'id' ) if root else None
+            if root is not None and hasattr( self.app, "job_config" ):  # toolshed may not have job_config?
+                tool_id = root.get( 'id' )
                 parameters = self.app.job_config.get_tool_resource_parameters( tool_id )
                 if parameters:
                     inputs = root.find('inputs')
                     # If tool has not inputs, create some so we can insert conditional
-                    if not inputs:
+                    if inputs is None:
                         inputs = ElementTree.fromstring( "<inputs></inputs>")
                         root.append( inputs )
                     # Insert a conditional allowing user to specify resource parameters.
@@ -781,355 +147,17 @@ class ToolBox( object, Dictifiable ):
 
             ToolClass = Tool
         tool = ToolClass( config_file, tool_source, self.app, guid=guid, repository_id=repository_id, **kwds )
-        tool_id = tool.id
-        if not tool_id.startswith("__"):
-            # do not monitor special tools written to tmp directory - no reason
-            # to monitor such a large directory.
-            self.tool_watcher.watch_file( config_file, tool.id )
         return tool
 
-    def package_tool( self, trans, tool_id ):
-        """
-        Create a tarball with the tool's xml, help images, and test data.
-        :param trans: the web transaction
-        :param tool_id: the tool ID from app.toolbox
-        :returns: tuple of tarball filename, success True/False, message/None
-        """
-        message = ''
-        success = True
-        # Make sure the tool is actually loaded.
-        if tool_id not in self.tools_by_id:
-            return None, False, "No tool with id %s" % escape( tool_id )
-        else:
-            tool = self.tools_by_id[ tool_id ]
-            tarball_files = []
-            temp_files = []
-            tool_xml = file( os.path.abspath( tool.config_file ), 'r' ).read()
-            # Retrieve tool help images and rewrite the tool's xml into a temporary file with the path
-            # modified to be relative to the repository root.
-            image_found = False
-            if tool.help is not None:
-                tool_help = tool.help._source
-                # Check each line of the rendered tool help for an image tag that points to a location under static/
-                for help_line in tool_help.split( '\n' ):
-                    image_regex = re.compile( 'img alt="[^"]+" src="\${static_path}/([^"]+)"' )
-                    matches = re.search( image_regex, help_line )
-                    if matches is not None:
-                        tool_help_image = matches.group(1)
-                        tarball_path = tool_help_image
-                        filesystem_path = os.path.abspath( os.path.join( trans.app.config.root, 'static', tool_help_image ) )
-                        if os.path.exists( filesystem_path ):
-                            tarball_files.append( ( filesystem_path, tarball_path ) )
-                            image_found = True
-                            tool_xml = tool_xml.replace( '${static_path}/%s' % tarball_path, tarball_path )
-            # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
-            if image_found:
-                fd, new_tool_config = tempfile.mkstemp( suffix='.xml' )
-                os.close( fd )
-                file( new_tool_config, 'w' ).write( tool_xml )
-                tool_tup = ( os.path.abspath( new_tool_config ), os.path.split( tool.config_file )[-1]  )
-                temp_files.append( os.path.abspath( new_tool_config ) )
-            else:
-                tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
-            tarball_files.append( tool_tup )
-            # TODO: This feels hacky.
-            tool_command = tool.command.strip().split()[0]
-            tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
-            # Add the tool XML to the tuple that will be used to populate the tarball.
-            if os.path.exists( os.path.join( tool_path, tool_command ) ):
-                tarball_files.append( ( os.path.join( tool_path, tool_command ), tool_command ) )
-            # Find and add macros and code files.
-            for external_file in tool.get_externally_referenced_paths( os.path.abspath( tool.config_file ) ):
-                external_file_abspath = os.path.abspath( os.path.join( tool_path, external_file ) )
-                tarball_files.append( ( external_file_abspath, external_file ) )
-            if os.path.exists( os.path.join( tool_path, "Dockerfile" ) ):
-                tarball_files.append( ( os.path.join( tool_path, "Dockerfile" ), "Dockerfile" ) )
-            # Find tests, and check them for test data.
-            tests = tool.tests
-            if tests is not None:
-                for test in tests:
-                    # Add input file tuples to the list.
-                    for input in test.inputs:
-                        for input_value in test.inputs[ input ]:
-                            input_path = os.path.abspath( os.path.join( 'test-data', input_value ) )
-                            if os.path.exists( input_path ):
-                                td_tup = ( input_path, os.path.join( 'test-data', input_value ) )
-                                tarball_files.append( td_tup )
-                    # And add output file tuples to the list.
-                    for label, filename, _ in test.outputs:
-                        output_filepath = os.path.abspath( os.path.join( 'test-data', filename ) )
-                        if os.path.exists( output_filepath ):
-                            td_tup = ( output_filepath, os.path.join( 'test-data', filename ) )
-                            tarball_files.append( td_tup )
-            for param in tool.input_params:
-                # Check for tool data table definitions.
-                if hasattr( param, 'options' ):
-                    if hasattr( param.options, 'tool_data_table' ):
-                        data_table = param.options.tool_data_table
-                        if hasattr( data_table, 'filenames' ):
-                            data_table_definitions = []
-                            for data_table_filename in data_table.filenames:
-                                # FIXME: from_shed_config seems to always be False.
-                                if not data_table.filenames[ data_table_filename ][ 'from_shed_config' ]:
-                                    tar_file = data_table.filenames[ data_table_filename ][ 'filename' ] + '.sample'
-                                    sample_file = os.path.join( data_table.filenames[ data_table_filename ][ 'tool_data_path' ],
-                                                                tar_file )
-                                    # Use the .sample file, if one exists. If not, skip this data table.
-                                    if os.path.exists( sample_file ):
-                                        tarfile_path, tarfile_name = os.path.split( tar_file )
-                                        tarfile_path = os.path.join( 'tool-data', tarfile_name )
-                                        sample_name = tarfile_path + '.sample'
-                                        tarball_files.append( ( sample_file, tarfile_path ) )
-                                    data_table_definitions.append( data_table.xml_string )
-                            if len( data_table_definitions ) > 0:
-                                # Put the data table definition XML in a temporary file.
-                                table_definition = '<?xml version="1.0" encoding="utf-8"?>\n<tables>\n    %s</tables>'
-                                table_definition = table_definition % '\n'.join( data_table_definitions )
-                                fd, table_conf = tempfile.mkstemp()
-                                os.close( fd )
-                                file( table_conf, 'w' ).write( table_definition )
-                                tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
-                                temp_files.append( table_conf )
-            # Create the tarball.
-            fd, tarball_archive = tempfile.mkstemp( suffix='.tgz' )
-            os.close( fd )
-            tarball = tarfile.open( name=tarball_archive, mode='w:gz' )
-            # Add the files from the previously generated list.
-            for fspath, tarpath in tarball_files:
-                tarball.add( fspath, arcname=tarpath )
-            tarball.close()
-            # Delete any temporary files that were generated.
-            for temp_file in temp_files:
-                os.remove( temp_file )
-            return tarball_archive, True, None
-        return None, False, "An unknown error occurred."
-
-    def reload_tool_by_id( self, tool_id ):
-        """
-        Attempt to reload the tool identified by 'tool_id', if successful
-        replace the old tool.
-        """
-        if tool_id not in self.tools_by_id:
-            message = "No tool with id %s" % escape( tool_id )
-            status = 'error'
-        else:
-            old_tool = self.tools_by_id[ tool_id ]
-            new_tool = self.load_tool( old_tool.config_file )
-            # The tool may have been installed from a tool shed, so set the tool shed attributes.
-            # Since the tool version may have changed, we don't override it here.
-            new_tool.id = old_tool.id
-            new_tool.guid = old_tool.guid
-            new_tool.tool_shed = old_tool.tool_shed
-            new_tool.repository_name = old_tool.repository_name
-            new_tool.repository_owner = old_tool.repository_owner
-            new_tool.installed_changeset_revision = old_tool.installed_changeset_revision
-            new_tool.old_id = old_tool.old_id
-            # Replace old_tool with new_tool in self.tool_panel
-            tool_key = 'tool_' + tool_id
-            for key, val in self.tool_panel.items():
-                if key == tool_key:
-                    self.tool_panel[ key ] = new_tool
-                    break
-                elif key.startswith( 'section' ):
-                    if tool_key in val.elems:
-                        self.tool_panel[ key ].elems[ tool_key ] = new_tool
-                        break
-            self.tools_by_id[ tool_id ] = new_tool
-            message = "Reloaded the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % old_tool.name
-            message += "<b>id:</b> %s<br/>" % old_tool.id
-            message += "<b>version:</b> %s" % old_tool.version
-            status = 'done'
-        return message, status
-
-    def remove_tool_by_id( self, tool_id ):
-        """
-        Attempt to remove the tool identified by 'tool_id'.
-        """
-        if tool_id not in self.tools_by_id:
-            message = "No tool with id %s" % escape( tool_id )
-            status = 'error'
-        else:
-            tool = self.tools_by_id[ tool_id ]
-            del self.tools_by_id[ tool_id ]
-            tool_key = 'tool_' + tool_id
-            for key, val in self.tool_panel.items():
-                if key == tool_key:
-                    del self.tool_panel[ key ]
-                    break
-                elif key.startswith( 'section' ):
-                    if tool_key in val.elems:
-                        del self.tool_panel[ key ].elems[ tool_key ]
-                        break
-            if tool_id in self.data_manager_tools:
-                del self.data_manager_tools[ tool_id ]
-            #TODO: do we need to manually remove from the integrated panel here?
-            message = "Removed the tool:<br/>"
-            message += "<b>name:</b> %s<br/>" % tool.name
-            message += "<b>id:</b> %s<br/>" % tool.id
-            message += "<b>version:</b> %s" % tool.version
-            status = 'done'
-        return message, status
-
-    def load_workflow( self, workflow_id ):
-        """
-        Return an instance of 'Workflow' identified by `id`,
-        which is encoded in the tool panel.
-        """
-        id = self.app.security.decode_id( workflow_id )
-        stored = self.app.model.context.query( self.app.model.StoredWorkflow ).get( id )
-        return stored.latest_workflow
-
-    def init_dependency_manager( self ):
+    def _init_dependency_manager( self ):
         self.dependency_manager = build_dependency_manager( self.app.config )
 
-    @property
-    def sa_session( self ):
-        """
-        Returns a SQLAlchemy session
-        """
-        return self.app.model.context
-
-    def to_dict( self, trans, in_panel=True, **kwds ):
-        """
-        to_dict toolbox.
-        """
-
-        context = Bunch( toolbox=self, trans=trans, **kwds )
-        if in_panel:
-            panel_elts = [ val for val in self.tool_panel.itervalues() ]
-
-            filters = self.filter_factory.build_filters( trans, **kwds )
-
-            filtered_panel_elts = []
-            for index, elt in enumerate( panel_elts ):
-                elt = _filter_for_panel( elt, filters, context )
-                if elt:
-                    filtered_panel_elts.append( elt )
-            panel_elts = filtered_panel_elts
-
-            # Produce panel.
-            rval = []
-            kwargs = dict(
-                trans=trans,
-                link_details=True
-            )
-            for elt in panel_elts:
-                rval.append( to_dict_helper( elt, kwargs ) )
-        else:
-            tools = []
-            for id, tool in self.tools_by_id.items():
-                tools.append( tool.to_dict( trans, link_details=True ) )
-            rval = tools
-
-        return rval
-
-
-def _filter_for_panel( item, filters, context ):
-    """
-    Filters tool panel elements so that only those that are compatible
-    with provided filters are kept.
-    """
-    def _apply_filter( filter_item, filter_list ):
-        for filter_method in filter_list:
-            if not filter_method( context, filter_item ):
-                return False
-        return True
-    if isinstance( item, Tool ):
-        if _apply_filter( item, filters[ 'tool' ] ):
-            return item
-    elif isinstance( item, ToolSectionLabel ):
-        if _apply_filter( item, filters[ 'label' ] ):
-            return item
-    elif isinstance( item, ToolSection ):
-        # Filter section item-by-item. Only show a label if there are
-        # non-filtered tools below it.
-
-        if _apply_filter( item, filters[ 'section' ] ):
-            cur_label_key = None
-            tools_under_label = False
-            filtered_elems = item.elems.copy()
-            for key, section_item in item.elems.items():
-                if isinstance( section_item, Tool ):
-                    # Filter tool.
-                    if _apply_filter( section_item, filters[ 'tool' ] ):
-                        tools_under_label = True
-                    else:
-                        del filtered_elems[ key ]
-                elif isinstance( section_item, ToolSectionLabel ):
-                    # If there is a label and it does not have tools,
-                    # remove it.
-                    if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
-                        del filtered_elems[ cur_label_key ]
-
-                    # Reset attributes for new label.
-                    cur_label_key = key
-                    tools_under_label = False
-
-            # Handle last label.
-            if cur_label_key and not tools_under_label:
-                del filtered_elems[ cur_label_key ]
-
-            # Only return section if there are elements.
-            if len( filtered_elems ) != 0:
-                copy = item.copy()
-                copy.elems = filtered_elems
-                return copy
-
-    return None
-
-
-class ToolSection( object, Dictifiable ):
-    """
-    A group of tools with similar type/purpose that will be displayed as a
-    group in the user interface.
-    """
-
-    dict_collection_visible_keys = ( 'id', 'name', 'version' )
-
-    def __init__( self, elem=None ):
-        f = lambda elem, val: elem is not None and elem.get( val ) or ''
-        self.name = f( elem, 'name' )
-        self.id = f( elem, 'id' )
-        self.version = f( elem, 'version' )
-        self.elems = odict()
-
-    def copy( self ):
-        copy = ToolSection()
-        copy.name = self.name
-        copy.id = self.id
-        copy.version = self.version
-        copy.elems = self.elems.copy()
-        return copy
-
-    def to_dict( self, trans, link_details=False ):
-        """ Return a dict that includes section's attributes. """
-
-        section_dict = super( ToolSection, self ).to_dict()
-        section_elts = []
-        kwargs = dict(
-            trans=trans,
-            link_details=link_details
-        )
-        for elt in self.elems.values():
-            section_elts.append( to_dict_helper( elt, kwargs ) )
-        section_dict[ 'elems' ] = section_elts
-
-        return section_dict
-
-
-class ToolSectionLabel( object, Dictifiable ):
-    """
-    A label for a set of tools that can be displayed above groups of tools
-    and sections in the user interface
-    """
-
-    dict_collection_visible_keys = ( 'id', 'text', 'version' )
-
-    def __init__( self, elem ):
-        self.text = elem.get( "text" )
-        self.id = elem.get( "id" )
-        self.version = elem.get( "version" ) or ''
+    def handle_datatypes_changed( self ):
+        """ Refresh upload tools when new datatypes are added. """
+        for tool_id in self._tools_by_id:
+            tool = self._tools_by_id[ tool_id ]
+            if isinstance( tool.tool_action, UploadToolAction ):
+                self.reload_tool_by_id( tool_id )
 
 
 class DefaultToolState( object ):
@@ -1193,7 +221,18 @@ class DefaultToolState( object ):
         return new_state
 
 
-class ToolOutput( object, Dictifiable ):
+class ToolOutputBase( object, Dictifiable ):
+
+    def __init__( self, name, label=None, filters=None, hidden=False ):
+        super( ToolOutputBase, self ).__init__()
+        self.name = name
+        self.label = label
+        self.filters = filters or []
+        self.hidden = hidden
+        self.collection = False
+
+
+class ToolOutput( ToolOutputBase ):
     """
     Represents an output datasets produced by a tool. For backward
     compatibility this behaves as if it were the tuple::
@@ -1204,16 +243,18 @@ class ToolOutput( object, Dictifiable ):
     dict_collection_visible_keys = ( 'name', 'format', 'label', 'hidden' )
 
     def __init__( self, name, format=None, format_source=None, metadata_source=None,
-                  parent=None, label=None, filters=None, actions=None, hidden=False ):
-        self.name = name
+                  parent=None, label=None, filters=None, actions=None, hidden=False,
+                  implicit=False ):
+        super( ToolOutput, self ).__init__( name, label=label, filters=filters, hidden=hidden )
         self.format = format
         self.format_source = format_source
         self.metadata_source = metadata_source
         self.parent = parent
-        self.label = label
-        self.filters = filters or []
         self.actions = actions
-        self.hidden = hidden
+
+        # Initialize default values
+        self.change_format = []
+        self.implicit = implicit
 
     # Tuple emulation
 
@@ -1232,6 +273,137 @@ class ToolOutput( object, Dictifiable ):
 
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
+
+
+class ToolOutputCollection( ToolOutputBase ):
+    """
+    Represents a HistoryDatasetCollectionAssociation of  output datasets produced by a tool.
+    <outputs>
+      <dataset_collection type="list" label="${tool.name} on ${on_string} fasta">
+        <discover_datasets pattern="__name__" ext="fasta" visible="True" directory="outputFiles" />
+      </dataset_collection>
+      <dataset_collection type="paired" label="${tool.name} on ${on_string} paired reads">
+        <data name="forward" format="fastqsanger" />
+        <data name="reverse" format="fastqsanger"/>
+      </dataset_collection>
+    <outputs>
+    """
+
+    def __init__(
+        self,
+        name,
+        structure,
+        label=None,
+        filters=None,
+        hidden=False,
+        default_format="data",
+        default_format_source=None,
+        default_metadata_source=None,
+        inherit_format=False,
+        inherit_metadata=False
+    ):
+        super( ToolOutputCollection, self ).__init__( name, label=label, filters=filters, hidden=hidden )
+        self.collection = True
+        self.default_format = default_format
+        self.structure = structure
+        self.outputs = odict()
+
+        self.inherit_format = inherit_format
+        self.inherit_metadata = inherit_metadata
+
+        self.metadata_source = default_metadata_source
+        self.format_source = default_format_source
+        self.change_format = []  # TODO
+
+    def known_outputs( self, inputs, type_registry ):
+        if self.dynamic_structure:
+            return []
+
+        def to_part( ( element_identifier, output ) ):
+            return ToolOutputCollectionPart( self, element_identifier, output )
+
+        # This line is probably not right - should verify structured_like
+        # or have outputs and all outputs have name.
+        if len( self.outputs ) > 1:
+            outputs = self.outputs
+        else:
+            # either must have specified structured_like or something worse
+            if self.structure.structured_like:
+                collection_prototype = inputs[ self.structure.structured_like ].collection
+            else:
+                collection_prototype = type_registry.prototype( self.structure.collection_type )
+            # TODO: Handle nested structures.
+            outputs = odict()
+            for element in collection_prototype.elements:
+                name = element.element_identifier
+                format = self.default_format
+                if self.inherit_format:
+                    format = element.dataset_instance.ext
+                output = ToolOutput(
+                    name,
+                    format=format,
+                    format_source=self.format_source,
+                    metadata_source=self.metadata_source,
+                    implicit=True,
+                )
+                if self.inherit_metadata:
+                    output.metadata_source = element.dataset_instance
+
+                outputs[ element.element_identifier ] = output
+
+        return map( to_part, outputs.items() )
+
+    @property
+    def dynamic_structure(self):
+        return self.structure.dynamic
+
+    @property
+    def dataset_collectors(self):
+        if not self.dynamic_structure:
+            raise Exception("dataset_collectors called for output collection with static structure")
+        return self.structure.dataset_collectors
+
+
+class ToolOutputCollectionStructure( object ):
+
+    def __init__(
+        self,
+        collection_type,
+        structured_like,
+        dataset_collectors,
+    ):
+        self.collection_type = collection_type
+        self.structured_like = structured_like
+        self.dataset_collectors = dataset_collectors
+        if collection_type is None and structured_like is None and dataset_collectors is None:
+            raise ValueError( "Output collection types must be specify type of structured_like" )
+        if dataset_collectors and structured_like:
+            raise ValueError( "Cannot specify dynamic structure (discovered_datasets) and structured_like attribute." )
+        self.dynamic = dataset_collectors is not None
+
+
+class ToolOutputCollectionPart( object ):
+
+    def __init__( self, output_collection_def, element_identifier, output_def ):
+        self.output_collection_def = output_collection_def
+        self.element_identifier = element_identifier
+        self.output_def = output_def
+
+    @property
+    def effective_output_name( self ):
+        name = self.output_collection_def.name
+        part_name = self.element_identifier
+        effective_output_name = "%s|__part__|%s" % ( name, part_name )
+        return effective_output_name
+
+    @staticmethod
+    def is_named_collection_part_name( name ):
+        return "|__part__|" in name
+
+    @staticmethod
+    def split_output_name( name ):
+        assert ToolOutputCollectionPart.is_named_collection_part_name( name )
+        return name.split("|__part__|")
 
 
 class Tool( object, Dictifiable ):
@@ -1313,14 +485,6 @@ class Tool( object, Dictifiable ):
         return []
 
     @property
-    def tool_version_ids( self ):
-        # If we have versions, return a list of their tool_ids.
-        tool_version = self.tool_version
-        if tool_version:
-            return tool_version.get_version_ids( self.app )
-        return []
-
-    @property
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
@@ -1330,6 +494,10 @@ class Tool( object, Dictifiable ):
                                                                                                  self.repository_owner,
                                                                                                  self.installed_changeset_revision )
         return None
+
+    @property
+    def produces_collections( self ):
+        return any( o.collection for o in self.outputs.values() )
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
@@ -1380,20 +548,13 @@ class Tool( object, Dictifiable ):
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
     def get_panel_section( self ):
-        for key, item in self.app.toolbox.integrated_tool_panel.items():
-            if item:
-                if isinstance( item, Tool ):
-                    if item.id == self.id:
-                        return '', ''
-                if isinstance( item, ToolSection ):
-                    section_id = item.id or ''
-                    section_name = item.name or ''
-                    for section_key, section_item in item.elems.items():
-                        if isinstance( section_item, Tool ):
-                            if section_item:
-                                if section_item.id == self.id:
-                                    return section_id, section_name
-        return None, None
+        return self.app.toolbox.get_integrated_section_for_tool( self )
+
+    def allow_user_access( self, user ):
+        """
+        :returns: bool -- Whether the user is allowed to access the tool.
+        """
+        return True
 
     def parse( self, tool_source, guid=None ):
         """
@@ -1582,7 +743,7 @@ class Tool( object, Dictifiable ):
 
         root = tool_source.root
         conf_parent_elem = root.find("configfiles")
-        if conf_parent_elem:
+        if conf_parent_elem is not None:
             for conf_elem in conf_parent_elem.findall( "configfile" ):
                 name = conf_elem.get( "name" )
                 filename = conf_elem.get( "filename", None )
@@ -1692,9 +853,7 @@ class Tool( object, Dictifiable ):
         """
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
-        self.outputs = odict()
-        for output in tool_source.parse_outputs(self):
-            self.outputs[ output.name ] = output
+        self.outputs, self.output_collections = tool_source.parse_outputs(self)
 
     # TODO: Include the tool's name in any parsing warnings.
     def parse_stdio( self, tool_source ):
@@ -1716,7 +875,7 @@ class Tool( object, Dictifiable ):
         root = tool_source.root
         citations = []
         citations_elem = root.find("citations")
-        if not citations_elem:
+        if citations_elem is None:
             return citations
 
         for citation_elem in citations_elem:
@@ -1922,6 +1081,19 @@ class Tool( object, Dictifiable ):
         while len( self.__help_by_page ) < self.npages:
             self.__help_by_page.append( self.__help )
 
+    def find_output_def( self, name ):
+        # name is JobToOutputDatasetAssociation name.
+        # TODO: to defensive, just throw IndexError and catch somewhere
+        # up that stack.
+        if ToolOutputCollectionPart.is_named_collection_part_name( name ):
+            collection_name, part = ToolOutputCollectionPart.split_output_name( name )
+            collection_def = self.output_collections.get( collection_name, None )
+            if not collection_def:
+                return None
+            return collection_def.outputs.get( part, None )
+        else:
+            return self.outputs.get( name, None )
+
     def check_workflow_compatible( self, tool_source ):
         """
         Determine if a tool can be used in workflows. External tools and the
@@ -1936,10 +1108,15 @@ class Tool( object, Dictifiable ):
         if self.tool_type.startswith( 'data_source' ):
             return False
 
+        if self.produces_collections:
+            # Someday we will get there!
+            return False
+
         if hasattr( tool_source, "root"):
             root = tool_source.root
             if not string_as_bool( root.get( "workflow_compatible", "True" ) ):
                 return False
+
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
@@ -2101,6 +1278,7 @@ class Tool( object, Dictifiable ):
                         num_jobs=len( execution_tracker.successful_jobs ),
                         job_errors=execution_tracker.execution_errors,
                         jobs=execution_tracker.successful_jobs,
+                        output_collections=execution_tracker.output_collections,
                         implicit_collections=execution_tracker.implicit_collections,
                     )
                 else:
@@ -2114,14 +1292,14 @@ class Tool( object, Dictifiable ):
     def __should_refresh_state( self, incoming ):
         return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
 
-    def handle_single_execution( self, trans, rerun_remap_job_id, params, history ):
+    def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection ):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
             params = self.__remove_meta_properties( params )
-            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id )
+            job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection )
         except httpexceptions.HTTPFound, e:
             #if it's a paste redirect exception, pass it up the stack
             raise e
@@ -2837,7 +2015,8 @@ class Tool( object, Dictifiable ):
         """Return a list of commands to be run to populate the current environment to include this tools requirements."""
         return self.app.toolbox.dependency_manager.dependency_shell_commands(
             self.requirements,
-            installed_tool_dependencies=self.installed_tool_dependencies
+            installed_tool_dependencies=self.installed_tool_dependencies,
+            tool_dir=self.tool_dir,
         )
 
     @property
@@ -3038,6 +2217,11 @@ class Tool( object, Dictifiable ):
         """
         return output_collect.collect_primary_datasets( self, output, job_working_directory, input_ext )
 
+    def collect_dynamic_collections( self, output, **kwds ):
+        """ Find files corresponding to dynamically structured collections.
+        """
+        return output_collect.collect_dynamic_collections( self, output, **kwds )
+
     def to_dict( self, trans, link_details=False, io_details=False ):
         """ Returns dict of tool. """
 
@@ -3065,6 +2249,345 @@ class Tool( object, Dictifiable ):
         tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
         return tool_dict
+
+    def to_json (self, trans, **kwd):
+        """
+        Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
+        """
+        job_id = kwd.get('__job_id__', None)
+        dataset_id = kwd.get('__dataset_id__', None)
+        is_dynamic = string_as_bool(kwd.get('__is_dynamic__', True))
+
+        # load job details if provided
+        job = None
+        if job_id:
+            try:
+                job_id = trans.security.decode_id( job_id )
+                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+            except Exception, exception:
+                trans.response.status = 500
+                log.error('Failed to retrieve job.')
+                return { 'error': 'Failed to retrieve job.' }
+        elif dataset_id:
+            try:
+                dataset_id = trans.security.decode_id( dataset_id )
+                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
+                    trans.response.status = 500
+                    log.error('User has no access to dataset.')
+                    return { 'error': 'User has no access to dataset.' }
+                job = data.creating_job
+                if not job:
+                    trans.response.status = 500
+                    log.error('Creating job not found.')
+                    return { 'error': 'Creating job not found.' }
+            except Exception, exception:
+                trans.response.status = 500
+                log.error('Failed to get job information.')
+                return { 'error': 'Failed to get job information.' }
+
+        # load job parameters into incoming
+        tool_message = ''
+        if job:
+            try:
+                job_params = job.get_param_values( trans.app, ignore_errors = True )
+                job_messages = self.check_and_update_param_values( job_params, trans, update_values=False )
+                tool_message = self._compare_tool_version(trans, job)
+                params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
+            except Exception, exception:
+                trans.response.status = 500
+                return { 'error': str( exception ) }
+
+        # create parameter object
+        params = galaxy.util.Params( kwd, sanitize = False )
+
+        # convert value to jsonifiable value
+        def jsonify(v):
+            # check if value is numeric
+            isnumber = False
+            try:
+                float(v)
+                isnumber = True
+            except Exception:
+                pass
+
+            # fix hda parsing
+            if isinstance(v, trans.app.model.HistoryDatasetAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'src' : 'hda'
+                }
+            elif isinstance(v, bool):
+                if v is True:
+                    return 'true'
+                else:
+                    return 'false'
+            elif isinstance(v, basestring) or isnumber:
+                return v
+            else:
+                return None
+
+        # ensures that input dictionary is jsonifiable
+        def sanitize(dict, key='value'):
+            # get current value
+            value = dict[key] if key in dict else None
+
+            # jsonify by type
+            if dict['type'] in ['data']:
+                if isinstance(value, list):
+                    value = [ jsonify(v) for v in value ]
+                else:
+                    value = [ jsonify(value) ]
+                if None in value:
+                    value = None
+                else:
+                    value = { 'values': value }
+            elif isinstance(value, list):
+                value = [ jsonify(v) for v in value ]
+            else:
+                value = jsonify(value)
+
+            # update and return
+            dict[key] = value
+
+        # check the current state of a value and update it if necessary
+        def check_state(trans, input, default_value, context):
+            value = default_value
+            error = 'State validation failed.'
+
+            # skip dynamic fields if deactivated
+            if not is_dynamic and input.is_dynamic:
+                return [value, None]
+
+            # validate value content
+            try:
+                # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
+                if input.type == 'boolean' and isinstance(default_value, basestring):
+                    value, error = [string_as_bool(default_value), None]
+                else:
+                    value, error = check_param(trans, input, default_value, context)
+            except Exception, err:
+                log.error('Checking parameter failed. %s', str(err))
+                pass
+            return [value, error]
+
+        # populates state with incoming url parameters
+        def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):
+            context = ExpressionContext(state, context)
+            for input in inputs.itervalues():
+                state[input.name] = input.get_initial_value(trans, context)
+                key = prefix + input.name
+                if input.type == 'repeat':
+                    group_state = state[input.name]
+                    rep_index = 0
+                    del group_state[:]
+                    while True:
+                        rep_name = "%s_%d" % (key, rep_index)
+                        if not any([incoming_key.startswith(rep_name) for incoming_key in incoming.keys()]):
+                            break
+                        if rep_index < input.max:
+                            new_state = {}
+                            new_state['__index__'] = rep_index
+                            group_state.append(new_state)
+                            populate_state(trans, input.inputs, new_state, errors, incoming, prefix=rep_name + "|", context=context)
+                        rep_index += 1
+                elif input.type == 'conditional':
+                    group_state = state[input.name]
+                    group_prefix = "%s|" % ( key )
+                    test_param_key = group_prefix + input.test_param.name
+                    default_value = incoming.get(test_param_key, group_state.get(input.test_param.name, None))
+                    value, error = check_state(trans, input.test_param, default_value, context)
+                    if error:
+                        errors[test_param_key] = error
+                    else:
+                        try:
+                            current_case = input.get_current_case(value, trans)
+                            group_state = state[input.name] = {}
+                            populate_state( trans, input.cases[current_case].inputs, group_state, errors, incoming, prefix=group_prefix, context=context)
+                            group_state['__current_case__'] = current_case
+                        except Exception, e:
+                            errors[test_param_key] = 'The selected case is unavailable/invalid.'
+                            pass
+                    group_state[input.test_param.name] = value
+                else:
+                    default_value = incoming.get(key, state.get(input.name, None))
+                    value, error = check_state(trans, input, default_value, context)
+                    if error:
+                        errors[key] = error
+                    state[input.name] = value
+
+        # builds tool model including all attributes
+        def iterate(group_inputs, inputs, state_inputs, other_values=None):
+            other_values = ExpressionContext( state_inputs, other_values )
+            for input_index, input in enumerate( inputs.itervalues() ):
+                # create model dictionary
+                tool_dict = input.to_dict(trans)
+                if tool_dict is None:
+                    continue
+
+                # state for subsection/group
+                group_state = state_inputs[input.name]
+
+                # iterate and update values
+                if input.type == 'repeat':
+                    group_cache = tool_dict['cache'] = {}
+                    for i in range( len( group_state ) ):
+                        group_cache[i] = {}
+                        iterate( group_cache[i], input.inputs, group_state[i], other_values )
+                elif input.type == 'conditional':
+                    if 'test_param' in tool_dict:
+                        test_param = tool_dict['test_param']
+                        test_param['value'] = jsonify(group_state[test_param['name']])
+                        if '__current_case__' in group_state:
+                            i = group_state['__current_case__']
+                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, group_state, other_values)
+                else:
+                    # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
+                    try:
+                        tool_dict = input.to_dict(trans, other_values=other_values)
+                    except Exception:
+                        pass
+
+                    # identify name
+                    input_name = tool_dict.get('name')
+                    if input_name:
+                        # backup default value
+                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+
+                        # update input value from tool state
+                        if input_name in state_inputs:
+                            tool_dict['value'] = state_inputs[input_name]
+
+                        # sanitize values
+                        sanitize(tool_dict, 'value')
+                        sanitize(tool_dict, 'default_value')
+
+                        # use default value
+                        if tool_dict['value'] is None:
+                            tool_dict['value'] = tool_dict['default_value']
+
+                # backup final input dictionary
+                group_inputs[input_index] = tool_dict
+
+        # sanatization for the final tool state
+        def sanitize_state(state):
+            keys = None
+            if isinstance(state, dict):
+                keys = state
+            elif isinstance(state, list):
+                keys = range( len(state) )
+            if keys:
+                for k in keys:
+                    if isinstance(state[k], dict) or isinstance(state[k], list):
+                        sanitize_state(state[k])
+                    else:
+                        state[k] = jsonify(state[k])
+
+        # do param translation here, used by datasource tools
+        if self.input_translator:
+            self.input_translator.translate( params )
+
+        # initialize and populate tool state
+        state_inputs = {}
+        state_errors = {}
+        populate_state(trans, self.inputs, state_inputs, state_errors, params.__dict__)
+
+        # create basic tool model
+        tool_model = self.to_dict(trans)
+        tool_model['inputs'] = {}
+
+        # build tool model and tool state
+        iterate(tool_model['inputs'], self.inputs, state_inputs, '')
+
+        # sanitize tool state
+        sanitize_state(state_inputs)
+
+        # load tool help
+        tool_help = ''
+        if self.help:
+            tool_help = self.help
+            tool_help = tool_help.render( static_path=url_for( '/static' ), host_url=url_for('/', qualified=True) )
+            if type( tool_help ) is not unicode:
+                tool_help = unicode( tool_help, 'utf-8')
+
+        # check if citations exist
+        tool_citations = False
+        if self.citations:
+            tool_citations = True
+
+        # get tool versions
+        tool_versions = []
+        tools = self.app.toolbox.get_loaded_tools_by_lineage(self.id)
+        for t in tools:
+            tool_versions.append(t.version)
+
+        ## add information with underlying requirements and their versions
+        tool_requirements = []
+        if self.requirements:
+            for requirement in self.requirements:
+                tool_requirements.append({
+                    'name'      : requirement.name,
+                    'version'   : requirement.version
+                })
+
+        # add additional properties
+        tool_model.update({
+            'help'          : tool_help,
+            'citations'     : tool_citations,
+            'biostar_url'   : trans.app.config.biostar_url,
+            'message'       : tool_message,
+            'versions'      : tool_versions,
+            'requirements'  : tool_requirements,
+            'errors'        : state_errors,
+            'state_inputs'  : state_inputs
+        })
+
+        # check for errors
+        if 'error' in tool_message:
+            return tool_message
+
+        # return enriched tool model
+        return tool_model
+
+    def _compare_tool_version( self, trans, job ):
+        """
+        Compares a tool version with the tool version from a job (from ToolRunner).
+        """
+        tool_id = job.tool_id
+        tool_version = job.tool_version
+        message = ''
+        try:
+            select_field, tools, tool = self.app.toolbox.get_tool_components( tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True )
+            if tool is None:
+                trans.response.status = 500
+                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id }
+            if ( self.id != tool_id and self.old_id != tool_id ) or self.version != tool_version:
+                if self.id == tool_id:
+                    if tool_version == None:
+                        # for some reason jobs don't always keep track of the tool version.
+                        message = ''
+                    else:
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
+                        if len( tools ) > 1:
+                            message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                        else:
+                            message += 'You can re-run the job with this tool version, which is a derivation of the original tool.'
+                else:
+                    if len( tools ) > 1:
+                        message = 'This job was initially run with tool version "%s", which is currently not available.  ' % tool_version
+                        message += 'You can re-run the job with the selected tool or choose another derivation of the tool.'
+                    else:
+                        message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( tool_id, tool_version )
+                        message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
+        except Exception, error:
+            trans.response.status = 500
+            return { 'error': str (error) }
+
+        # can't rerun upload, external data sources, et cetera. workflow compatible will proxy this for now
+        #if not self.is_workflow_compatible:
+        #    trans.response.status = 500
+        #    return { 'error': 'The \'%s\' tool does currently not support re-running.' % self.name }
+        return message
 
     def get_default_history_by_trans( self, trans, create=False ):
         return trans.get_history( create=create )
@@ -3122,7 +2645,7 @@ class OutputParameterJSONTool( Tool ):
         json_params = {}
         json_params[ 'param_dict' ] = self._prepare_json_param_dict( param_dict )  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params[ 'output_data' ] = []
-        json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+        json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
         for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
             #use wrapped dataset to access certain values
@@ -3172,7 +2695,7 @@ class DataSourceTool( OutputParameterJSONTool ):
         json_params = {}
         json_params[ 'param_dict' ] = self._prepare_json_param_dict( param_dict )  # it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params[ 'output_data' ] = []
-        json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+        json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
         for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
             #use wrapped dataset to access certain values
@@ -3282,6 +2805,7 @@ class DataManagerTool( OutputParameterJSONTool ):
             self.data_manager_id = self.id
 
     def exec_after_process( self, app, inp_data, out_data, param_dict, job=None, **kwds ):
+        assert self.allow_user_access( job.user ), "You must be an admin to access this tool."
         #run original exec_after_process
         super( DataManagerTool, self ).exec_after_process( app, inp_data, out_data, param_dict, job=job, **kwds )
         #process results of tool
@@ -3305,6 +2829,7 @@ class DataManagerTool( OutputParameterJSONTool ):
             return history
         user = trans.user
         assert user, 'You must be logged in to use this tool.'
+        assert self.allow_user_access( user ), "You must be an admin to access this tool."
         history = user.data_manager_histories
         if not history:
             #create
@@ -3324,6 +2849,17 @@ class DataManagerTool( OutputParameterJSONTool ):
                     history = None
         return history
 
+    def allow_user_access( self, user ):
+        """
+        :returns: bool -- Whether the user is allowed to access the tool.
+        Data Manager tools are only accessible to admins.
+        """
+        if super( DataManagerTool, self ).allow_user_access( user ) and self.app.config.is_admin_user( user ):
+            return True
+        if user:
+            user = user.id
+        log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id ) 
+        return False
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
@@ -3420,6 +2956,15 @@ class TestCollectionDef( object ):
             else:
                 inputs.append( value )
         return inputs
+
+
+class TestCollectionOutputDef( object ):
+
+    def __init__( self, name, attrib, element_tests ):
+        self.name = name
+        self.collection_type = attrib.get( "type", None )
+        self.attrib = attrib
+        self.element_tests = element_tests
 
 
 def json_fix( val ):

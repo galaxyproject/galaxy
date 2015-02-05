@@ -12,6 +12,7 @@ from .interface import (
     InputSource,
 )
 from galaxy.util import string_as_bool, xml_text, xml_to_string
+from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
 import galaxy.tools
 from galaxy.tools.parameters import output_collect
@@ -78,7 +79,7 @@ class XmlToolSource(ToolSource):
 
     def parse_command(self):
         command_el = self._command_el
-        return (command_el is not None) and command_el.text
+        return ( ( command_el is not None ) and command_el.text ) or None
 
     def parse_interpreter(self):
         command_el = self._command_el
@@ -133,20 +134,85 @@ class XmlToolSource(ToolSource):
 
     def parse_outputs(self, tool):
         out_elem = self.root.find("outputs")
+        outputs = odict()
+        output_collections = odict()
         if out_elem is None:
-            return []
+            return outputs, output_collections
 
-        def _parse(data_elem):
-            return self._parse_output(data_elem, tool)
+        data_dict = odict()
 
-        return map(_parse, out_elem.findall("data"))
+        def _parse(data_elem, **kwds):
+            output_def = self._parse_output(data_elem, tool, **kwds)
+            data_dict[output_def.name] = output_def
+            return output_def
 
-    def _parse_output(self, data_elem, tool):
+        map(_parse, out_elem.findall("data"))
+
+        for collection_elem in out_elem.findall("collection"):
+            name = collection_elem.get( "name" )
+            default_format = collection_elem.get( "format", "data" )
+            collection_type = collection_elem.get( "type", None )
+            structured_like = collection_elem.get( "structured_like", None )
+            inherit_format = False
+            inherit_metadata = False
+            if structured_like:
+                inherit_format = string_as_bool( collection_elem.get( "inherit_format", None ) )
+                inherit_metadata = string_as_bool( collection_elem.get( "inherit_metadata", None ) )
+            default_format_source = collection_elem.get( "format_source", None )
+            default_metadata_source = collection_elem.get( "metadata_source", "" )
+
+            dataset_collectors = None
+            if collection_elem.find( "discover_datasets" ) is not None:
+                dataset_collectors = output_collect.dataset_collectors_from_elem( collection_elem )
+            structure = galaxy.tools.ToolOutputCollectionStructure(
+                collection_type=collection_type,
+                structured_like=structured_like,
+                dataset_collectors=dataset_collectors,
+            )
+            output_collection = galaxy.tools.ToolOutputCollection(
+                name,
+                structure,
+                default_format=default_format,
+                inherit_format=inherit_format,
+                inherit_metadata=inherit_metadata,
+                default_format_source=default_format_source,
+                default_metadata_source=default_metadata_source,
+            )
+            outputs[output_collection.name] = output_collection
+
+            for data_elem in collection_elem.findall("data"):
+                _parse(
+                    data_elem,
+                    default_format=default_format,
+                    default_format_source=default_format_source,
+                    default_metadata_source=default_metadata_source,
+                )
+
+            for data_elem in collection_elem.findall("data"):
+                output_name = data_elem.get("name")
+                data = data_dict[output_name]
+                assert data
+                del data_dict[output_name]
+                output_collection.outputs[output_name] = data
+            output_collections[ name ] = output_collection
+
+        for output_def in data_dict.values():
+            outputs[output_def.name] = output_def
+        return outputs, output_collections
+
+    def _parse_output(
+        self,
+        data_elem,
+        tool,
+        default_format="data",
+        default_format_source=None,
+        default_metadata_source="",
+    ):
         output = galaxy.tools.ToolOutput( data_elem.get("name") )
-        output.format = data_elem.get("format", "data")
+        output.format = data_elem.get("format", default_format)
         output.change_format = data_elem.findall("change_format")
-        output.format_source = data_elem.get("format_source", None)
-        output.metadata_source = data_elem.get("metadata_source", "")
+        output.format_source = data_elem.get("format_source", default_format_source)
+        output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
         output.parent = data_elem.get("parent", None)
         output.label = xml_text( data_elem, "label" )
         output.count = int( data_elem.get("count", 1) )
@@ -185,6 +251,7 @@ class XmlToolSource(ToolSource):
 def _test_elem_to_dict(test_elem, i):
     rval = dict(
         outputs=__parse_output_elems(test_elem),
+        output_collections=__parse_output_collection_elems(test_elem),
         inputs=__parse_input_elems(test_elem, i),
         command=__parse_assert_list_from_elem( test_elem.find("assert_command") ),
         stdout=__parse_assert_list_from_elem( test_elem.find("assert_stdout") ),
@@ -230,6 +297,29 @@ def __parse_output_elem( output_elem ):
 def __parse_command_elem( test_elem ):
     assert_elem = test_elem.find("command")
     return __parse_assert_list_from_elem( assert_elem )
+
+
+def __parse_output_collection_elems( test_elem ):
+    output_collections = []
+    for output_collection_elem in test_elem.findall( "output_collection" ):
+        output_collection_def = __parse_output_collection_elem( output_collection_elem )
+        output_collections.append( output_collection_def )
+    return output_collections
+
+
+def __parse_output_collection_elem( output_collection_elem ):
+    attrib = dict( output_collection_elem.attrib )
+    name = attrib.pop( 'name', None )
+    if name is None:
+        raise Exception( "Test output collection does not have a 'name'" )
+    element_tests = {}
+    for element in output_collection_elem.findall("element"):
+        element_attrib = dict( element.attrib )
+        identifier = element_attrib.pop( 'name', None )
+        if identifier is None:
+            raise Exception( "Test primary dataset does not have a 'identifier'" )
+        element_tests[ identifier ] = __parse_test_attributes( element, element_attrib )
+    return galaxy.tools.TestCollectionOutputDef( name, attrib, element_tests )
 
 
 def __parse_test_attributes( output_elem, attrib ):
@@ -604,7 +694,7 @@ class XmlPagesSource(PagesSource):
     def __init__(self, root):
         self.input_elem = root.find("inputs")
         page_sources = []
-        if self.input_elem:
+        if self.input_elem is not None:
             pages_elem = self.input_elem.findall( "page" )
             for page in ( pages_elem or [ self.input_elem ] ):
                 page_sources.append(XmlPageSource(page))

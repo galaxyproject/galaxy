@@ -10,7 +10,7 @@ from galaxy.tools.wrappers import InputValueWrapper
 from galaxy.tools.wrappers import DatasetFilenameWrapper
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.util.bunch import Bunch
-from elementtree.ElementTree import XML
+from xml.etree.ElementTree import XML
 from galaxy.datatypes.metadata import MetadataSpecCollection
 
 

@@ -4,16 +4,13 @@ ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
 ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
 
 ## skip new tool form code if disabled
-##%if trans.app.config.get('toolform_upgrade',  False):
+%if util.string_as_bool(trans.app.config.get('toolform_upgrade',  True)):
     <%
         ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
         ## This avoids making two separate requests since the classic form requires the mako anyway.
-        from galaxy.webapps.galaxy.api.tools import ToolsController
-        controller = ToolsController(trans.app)
         params = dict(trans.request.params)
-        if 'id' in params:
-            params['dataset_id'] = params['id']
-        self.form_config = controller._build_dict(trans, tool, params)
+        params['__dataset_id__'] = params.get('id', None)
+        self.form_config = tool.to_json(trans, **params)
         self.form_config.update({
             'id'                : tool.id,
             'job_id'            : trans.security.encode_id( job.id ) if job else None,
@@ -28,9 +25,9 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
         });
     </script>
     <div id="tool-form-classic" style="display: none;">
-##%else:
-##    <div id="tool-form-classic">
-##%endif
+%else:
+    <div id="tool-form-classic">
+%endif
 
     <%namespace file="/message.mako" import="render_msg" />
     <%namespace file="/base_panels.mako" import="overlay" />

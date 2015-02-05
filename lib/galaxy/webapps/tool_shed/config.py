@@ -2,11 +2,13 @@
 Universe configuration builder.
 """
 import os
+import re
 import sys
 import logging
 import logging.config
 from optparse import OptionParser
 import ConfigParser
+from galaxy import eggs
 from galaxy.util import string_as_bool, listify
 
 log = logging.getLogger( __name__ )
@@ -40,6 +42,9 @@ class Configuration( object ):
         self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
+        # Whoosh search
+        self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", False ) )
+        self.toolshed_whoosh_index_dir = kwargs.get( "toolshed_whoosh_index_dir", None )
         # Analytics
         self.ga_code = kwargs.get( "ga_code", None )
         # Where dataset files are stored
@@ -50,9 +55,6 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         # Tool stuff
-        self.tool_filters = listify( kwargs.get( "tool_filters", [] ) )
-        self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ) )
-        self.tool_section_filters = listify( kwargs.get( "tool_section_filters", [] ) )
         self.tool_path = resolve_path( kwargs.get( "tool_path", "tools" ), self.root )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
@@ -62,13 +64,6 @@ class Configuration( object ):
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Install and test framework for testing tools contained in repositories.
         self.num_tool_test_results_saved = kwargs.get( 'num_tool_test_results_saved', 5 )
-        # Location for dependencies
-        if 'tool_dependency_dir' in kwargs:
-            self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
-            self.use_tool_dependencies = True
-        else:
-            self.tool_dependency_dir = None
-            self.use_tool_dependencies = False
         self.update_integrated_tool_panel = False
         # Galaxy flavor Docker Image
         self.enable_galaxy_flavor_docker_image = string_as_bool( kwargs.get( "enable_galaxy_flavor_docker_image", "False" ) )
@@ -83,6 +78,7 @@ class Configuration( object ):
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
         self.remote_user_header = kwargs.get( "remote_user_header", 'HTTP_REMOTE_USER' )
         self.remote_user_logout_href = kwargs.get( "remote_user_logout_href", None )
+        self.remote_user_secret = kwargs.get( "remote_user_secret", None )
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
@@ -138,6 +134,19 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "database/tool_shed_citations/data" ), self.root )
         self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )
+
+    @property
+    def sentry_dsn_public( self ):
+        """
+        Sentry URL with private key removed for use in client side scripts,
+        sentry server will need to be configured to accept events
+        """
+        # TODO refactor this to a common place between toolshed/galaxy config, along
+        # with other duplicated methods.
+        if self.sentry_dsn:
+            return re.sub( r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn )
+        else:
+            return None
 
     def __parse_config_file_options( self, kwargs ):
         defaults = dict(
@@ -280,3 +289,11 @@ def configure_logging( config ):
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )
+    # If sentry is configured, also log to it
+    if config.sentry_dsn:
+        eggs.require( "raven" )
+        from raven.handlers.logging import SentryHandler
+        sentry_handler = SentryHandler( config.sentry_dsn )
+        sentry_handler.setLevel( logging.WARN )
+        root.addHandler( sentry_handler )
+

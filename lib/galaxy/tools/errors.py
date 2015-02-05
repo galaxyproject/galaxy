@@ -86,7 +86,7 @@ class ErrorReporter( object ):
         if user and user.email != email:
             email_str = "'%s' (providing preferred contact email '%s')" % (user.email, email)
         else:
-            email_str = "'%s'" % email
+            email_str = "'%s'" % (email or 'anonymously')
         self.report = string.Template( error_report_template ) \
             .safe_substitute( host=host,
                               dataset_id=hda.dataset_id,

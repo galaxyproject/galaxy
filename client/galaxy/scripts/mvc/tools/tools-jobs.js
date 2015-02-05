@@ -98,7 +98,7 @@ return Backbone.Model.extend({
             }
             
             // validate non-optional fields
-            if (!input_def.optional && input_field.validate && !input_field.validate()) {
+            if (!input_def.optional && input_value == null) {
                 this.app.highlight(input_id);
                 return false;
             }

@@ -2,6 +2,7 @@ import pipes
 from galaxy import exceptions
 from galaxy.util.none_like import NoneDataset
 from galaxy.util import odict
+from galaxy.util.object_wrapper import wrap_with_safe_string
 
 from logging import getLogger
 log = getLogger( __name__ )
@@ -162,10 +163,13 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
             if name in self.metadata.spec:
                 if rval is None:
                     rval = self.metadata.spec[name].no_value
-                rval = self.metadata.spec[name].param.to_string( rval )
+                rval = self.metadata.spec[ name ].param.to_safe_string( rval )
                 # Store this value, so we don't need to recalculate if needed
                 # again
                 setattr( self, name, rval )
+            else:
+                #escape string value of non-defined metadata value
+                rval = wrap_with_safe_string( rval )
             return rval
 
         def __nonzero__( self ):
@@ -183,20 +187,32 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         def items( self ):
             return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
 
-    def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None ):
+    def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None, identifier=None ):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
                 ext = tool.inputs[name].extensions[0]
             except:
                 ext = 'data'
-            self.dataset = NoneDataset( datatypes_registry=datatypes_registry, ext=ext )
+            self.dataset = wrap_with_safe_string( NoneDataset( datatypes_registry=datatypes_registry, ext=ext ), no_wrap_classes=ToolParameterValueWrapper )
         else:
-            self.dataset = dataset
+            # Tool wrappers should not normally be accessing .dataset directly, 
+            # so we will wrap it and keep the original around for file paths
+            # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
+            self.unsanitized = dataset
+            self.dataset = wrap_with_safe_string( dataset, no_wrap_classes=ToolParameterValueWrapper )
             self.metadata = self.MetadataWrapper( dataset.metadata )
         self.datatypes_registry = datatypes_registry
         self.false_path = getattr( dataset_path, "false_path", None )
         self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
+        self._element_identifier = identifier
+
+    @property
+    def element_identifier( self ):
+        identifier = self._element_identifier
+        if identifier is None:
+            identifier = self.name
+        return identifier
 
     @property
     def is_collection( self ):
@@ -210,7 +226,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         if self.false_path is not None:
             return self.false_path
         else:
-            return self.dataset.file_name
+            return self.unsanitized.file_name
 
     def __getattr__( self, key ):
         if self.false_path is not None and key == 'file_name':
@@ -230,7 +246,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 # object store to find the static location of this
                 # directory.
                 try:
-                    return self.dataset.extra_files_path
+                    return self.unsanitized.extra_files_path
                 except exceptions.ObjectNotFound:
                     # NestedObjectstore raises an error here
                     # instead of just returning a non-existent
@@ -254,7 +270,7 @@ class HasDatasets:
         return DatasetFilenameWrapper( dataset, **wrapper_kwds )
 
 
-class DatasetListWrapper( list, HasDatasets ):
+class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
     """
     """
     def __init__( self, datasets, dataset_paths=[], **kwargs ):
@@ -262,6 +278,10 @@ class DatasetListWrapper( list, HasDatasets ):
             datasets = [datasets]
 
         def to_wrapper( dataset ):
+            if hasattr(dataset, "element_identifier"):
+                element = dataset
+                dataset = element.dataset_instance
+                kwargs["identifier"] = element.element_identifier
             return self._dataset_wrapper( dataset, dataset_paths, **kwargs )
 
         list.__init__( self, map( to_wrapper, datasets ) )
@@ -269,7 +289,7 @@ class DatasetListWrapper( list, HasDatasets ):
         return ','.join( map( str, self ) )
 
 
-class DatasetCollectionWrapper( object, HasDatasets ):
+class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
 
     def __init__( self, has_collection, dataset_paths=[], **kwargs ):
         super(DatasetCollectionWrapper, self).__init__()
@@ -284,10 +304,13 @@ class DatasetCollectionWrapper( object, HasDatasets ):
             # It is a HistoryDatasetCollectionAssociation
             collection = has_collection.collection
             self.name = has_collection.name
-        else:
+        elif hasattr( has_collection, "child_collection" ):
             # It is a DatasetCollectionElement instance referencing another collection
             collection = has_collection.child_collection
             self.name = has_collection.element_identifier
+        else:
+            collection = has_collection
+            self.name = None
 
         elements = collection.elements
         element_instances = odict.odict()

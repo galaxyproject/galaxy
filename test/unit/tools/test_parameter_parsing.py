@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from galaxy.tools.parameters import basic
 from galaxy.util import bunch
-from elementtree.ElementTree import XML
+from xml.etree.ElementTree import XML
 
 import tools_support
 

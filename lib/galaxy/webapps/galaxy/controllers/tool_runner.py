@@ -65,7 +65,7 @@ class ToolRunner( BaseUIController ):
                                                                              get_loaded_tools_by_lineage=False,
                                                                              set_selected=refreshed_on_change )
         # No tool matching the tool id, display an error (shouldn't happen)
-        if not tool:
+        if not tool or not tool.allow_user_access( trans.user ):
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
             trans.log_event( "Tool id '%s' does not exist" % tool_id )
             trans.response.status = 404
@@ -80,14 +80,28 @@ class ToolRunner( BaseUIController ):
                                                           message=message,
                                                           status=status,
                                                           redirect=redirect ) )
-        params = galaxy.util.Params( kwd, sanitize = False ) #Sanitize parameters when substituting into command line via input wrappers
-        #do param translation here, used by datasource tools
-        if tool.input_translator:
-            tool.input_translator.translate( params )
+
+        def _validated_params_for( kwd ):
+            params = galaxy.util.Params( kwd, sanitize=False )  # Sanitize parameters when substituting into command line via input wrappers
+            #do param translation here, used by datasource tools
+            if tool.input_translator:
+                tool.input_translator.translate( params )
+            return params
+
+        params = _validated_params_for( kwd )
         # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
         # so make sure to create a new history if we've never had one before.
         history = tool.get_default_history_by_trans( trans, create=True )
-        template, vars = tool.handle_input( trans, params.__dict__ )
+        try:
+            template, vars = tool.handle_input( trans, params.__dict__ )
+        except KeyError:
+            # This error indicates (or at least can indicate) there was a
+            # problem with the stored tool_state - it is incompatible with
+            # this variant of the tool - possibly because the tool changed
+            # or because the tool version changed.
+            del kwd[ "tool_state" ]
+            params = _validated_params_for( kwd )
+            template, vars = tool.handle_input( trans, params.__dict__ )
         if len( params ) > 0:
             trans.log_event( "Tool params: %s" % ( str( params ) ), tool_id=tool_id )
         add_frame = AddFrameData()
@@ -177,6 +191,8 @@ class ToolRunner( BaseUIController ):
             # This is expected so not an exception.
             tool_id_version_message = ''
             error( "This dataset was created by an obsolete tool (%s). Can't re-run." % tool_id )
+        if not tool.allow_user_access( trans.user ):
+            error( "The requested tool is unknown." )
         # Can't rerun upload, external data sources, et cetera. Workflow compatible will proxy this for now
         if not tool.is_workflow_compatible:
             error( "The '%s' tool does not currently support rerunning." % tool.name )
