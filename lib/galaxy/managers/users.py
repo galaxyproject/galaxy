@@ -8,15 +8,17 @@ import sqlalchemy
 
 from galaxy import model
 from galaxy import exceptions
+from galaxy import util
 
 from galaxy.managers import base
+from galaxy.managers import deletable
 from galaxy.managers import api_keys
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class UserManager( base.ModelManager ):
+class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
     model_class = model.User
     foreign_key_name = 'user'
 
@@ -107,7 +109,7 @@ class UserManager( base.ModelManager ):
         """
         Return a list of admin email addresses from the config file.
         """
-        return [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]
+        return [ email.strip() for email in self.app.config.get( "admin_users", "" ).split( "," ) ]
 
     def admins( self, trans, filters=None, **kwargs ):
         """
@@ -193,14 +195,19 @@ class UserManager( base.ModelManager ):
         #TODO: not sure we need to go through sec agent... it's just the first role of type private
         return self.app.security_agent.get_private_user_role( user )
 
+    def quota( self, trans, user ):
+        #TODO: use quota manager
+        return self.app.quota_agent.get_percent( user=user )
 
-class UserSerializer( base.ModelSerializer ):
 
-    def __init__( self ):
+class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
+
+    def __init__( self, app ):
         """
         Convert a User and associated data to a dictionary representation.
         """
         super( UserSerializer, self ).__init__()
+        self.user_manager = UserManager( app )
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
@@ -209,23 +216,80 @@ class UserSerializer( base.ModelSerializer ):
         self.add_view( 'detailed', [
             'update_time',
             'create_time',
-            'total_disk_usage',
-            'nice_total_disk_usage',
+
             'deleted',
             'purged',
-            'active'
-        ], include_keys_from='summary' )
-        #self.add_view( 'summary', [
+            'active',
+
+            'total_disk_usage',
+            'nice_total_disk_usage',
+            'quota_percent'
         #    'preferences',
         #    # all tags
         #    'tags',
         #    # all annotations
         #    'annotations'
-        #], include_keys_from='detailed' )
+        ], include_keys_from='summary' )
 
     def add_serializers( self ):
+        super( UserSerializer, self ).add_serializers()
+        deletable.PurgableSerializerMixin.add_serializers( self )
+
         self.serializers.update({
             'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
+            'is_admin'      : lambda t, i, k: self.user_manager.is_admin( t, i ),
+            'quota_percent' : lambda t, i, k: self.user_manager.quota( t, i )
+        })
+
+    def serialize_current_anonymous_user( self, trans, user, keys ):
+        # use the current history if any to get usage stats for trans' anonymous user
+        #TODO: might be better as sep. Serializer class
+        history = trans.history
+        if not history:
+            raise exceptions.AuthenticationRequired( 'No history for anonymous user usage stats' );
+
+        usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
+        percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
+
+        # a very small subset of keys available
+        values = {
+            'id'                    : None,
+            'total_disk_usage'      : int( usage ),
+            'nice_total_disk_usage' : util.nice_size( usage ),
+            'quota_percent'         : percent,
+        }
+        serialized = {}
+        for key in keys:
+            if key in values:
+                serialized[ key ] = values[ key ]
+        return serialized
+
+    def serialize( self, trans, user, keys ):
+        """
+        Override to return at least some usage info if user is anonymous.
+        """
+        if self.user_manager.is_anonymous( user ):
+            return self.serialize_current_anonymous_user( trans, user, keys )
+        return super( UserSerializer, self ).serialize( trans, user, keys )
+
+
+class AdminUserFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
+    model_class = model.User
+
+    def _add_parsers( self ):
+        super( AdminUserFilters, self )._add_parsers()
+        deletable.PurgableFiltersMixin._add_parsers( self )
+
+        #PRECONDITION: user making the query has been verified as an admin
+        self.orm_filter_parsers.update({
+            'name'          : { 'op': ( 'eq', 'contains', 'like' ) },
+            'email'         : { 'op': ( 'eq', 'contains', 'like' ) },
+            'username'      : { 'op': ( 'eq', 'contains', 'like' ) },
+            'active'        : { 'op': ( 'eq' ) },
+            'disk_usage'    : { 'op': ( 'le', 'ge' ) }
+        })
+
+        self.fn_filter_parsers.update({
         })

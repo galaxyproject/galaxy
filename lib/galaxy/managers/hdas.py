@@ -592,3 +592,25 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
 
         })
         self.deserializable_keyset.update( self.deserializers.keys() )
+
+
+class HDAFilters( datasets.DatasetAssociationFilters ):
+    model_class = model.HistoryDatasetAssociation
+
+    def _add_parsers( self ):
+        super( HDAFilters, self )._add_parsers()
+
+        self.fn_filter_parsers.update({
+            #TODO: filter_string_attr_contains, filter_string_attr_eq
+            #'dbkey' : { 'op': { 'has' : self.filter_annotation_contains, } },
+
+            #TODO: add this in annotatable mixin
+            'annotation' : { 'op': { 'has' : self.filter_annotation_contains, } },
+            #TODO: add this in taggable mixin
+            'tag' : {
+                'op': {
+                    'eq' : self.filter_has_tag,
+                    'has': self.filter_has_partial_tag,
+                }
+            }
+        })
