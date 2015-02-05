@@ -684,8 +684,11 @@ class ToolModule( WorkflowModule ):
                         input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
         return input_dicts
 
-    def get_post_job_actions( self ):
-        return self.post_job_actions
+    def get_post_job_actions( self, incoming=None):
+        if incoming is None:
+            return self.post_job_actions
+        else:
+            return ActionBox.handle_incoming(incoming)
 
     def get_config_form( self ):
         self.add_dummy_datasets()

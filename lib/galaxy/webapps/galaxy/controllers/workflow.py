@@ -619,17 +619,25 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         } )
         
         # create tool model and default tool state (if missing)
-        tool_model = None
         if type == 'tool' and not tool_state:
             tool_model = module.tool.to_json(trans, **incoming)
             module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
+            return {
+                'tool_model': tool_model,
+                'tool_state': module.get_state(),
+                'data_inputs': module.get_data_inputs(),
+                'data_outputs': module.get_data_outputs(),
+                'tool_errors': module.get_errors(),
+                'form_html': module.get_config_form(),
+                'annotation': annotation,
+                'post_job_actions': module.get_post_job_actions(incoming)
+            }
         
         # update module state
         module.update_state( incoming )
         
         if type == 'tool':
             return {
-                'tool_model': tool_model,
                 'tool_state': module.get_state(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),

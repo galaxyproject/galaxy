@@ -263,8 +263,15 @@ class TextToolParameter( ToolParameter ):
         else:
             return form_builder.TextField( self.name, self.size, value )
 
+    def to_string( self, value, app ):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            return ''
+        else:
+            return str( value )
+
     def to_html_value( self, value, app ):
-        if not value:
+        if value is None:
             return ''
         else:
             return self.to_string( value, app )
@@ -334,13 +341,6 @@ class IntegerToolParameter( TextToolParameter ):
             if not value and self.optional:
                 return ""
             raise ValueError( "An integer is required" )
-
-    def to_string( self, value, app ):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            return ""
-        else:
-            return str( value )
 
     def to_python( self, value, app ):
         try:
@@ -414,13 +414,6 @@ class FloatToolParameter( TextToolParameter ):
                 return ""
             raise ValueError( "A real number is required" )
 
-    def to_string( self, value, app ):
-        """Convert a value to a string representation suitable for persisting"""
-        if value is None:
-            return ""
-        else:
-            return str( value )
-
     def to_python( self, value, app ):
         try:
             return float( value )
@@ -480,7 +473,7 @@ class BooleanToolParameter( ToolParameter ):
             return [ 'true' ]
 
     def to_python( self, value, app ):
-        return ( value == 'True' )
+        return ( value in [ 'True', 'true' ])
 
     def get_initial_value( self, trans, context, history=None ):
         return self.checked
