@@ -3,7 +3,7 @@
  */
 
  define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/lunr" ],
-         function(_, util, data) {
+         function(_, util, data, lunr) {
 
 /**
  * Mixin for tracking model visibility.
