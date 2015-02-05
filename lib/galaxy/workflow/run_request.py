@@ -284,18 +284,8 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
             value=value,
             type=param_types.REPLACEMENT_PARAMETERS,
         )
-
     for step_id, content in run_config.inputs.iteritems():
-        if content.history_content_type == "dataset":
-            request_to_content = model.WorkflowRequestToInputDatasetAssociation()
-            request_to_content.dataset = content
-            request_to_content.workflow_step_id = step_id
-            workflow_invocation.input_datasets.append( request_to_content )
-        else:
-            request_to_content = model.WorkflowRequestToInputDatasetCollectionAssociation()
-            request_to_content.dataset_collection = content
-            request_to_content.workflow_step_id = step_id
-            workflow_invocation.input_dataset_collections.append( request_to_content )
+        workflow_invocation.add_input( content, step_id )
 
     for step in workflow.steps:
         state = step.state

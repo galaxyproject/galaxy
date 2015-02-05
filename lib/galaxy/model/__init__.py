@@ -3202,6 +3202,27 @@ class WorkflowInvocation( object, Dictifiable ):
     def update( self ):
         self.update_time = galaxy.model.orm.now.now()
 
+    def add_input( self, content, step_id ):
+        if content.history_content_type == "dataset":
+            request_to_content = WorkflowRequestToInputDatasetAssociation()
+            request_to_content.dataset = content
+            request_to_content.workflow_step_id = step_id
+            self.input_datasets.append( request_to_content )
+        else:
+            request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
+            request_to_content.dataset_collection = content
+            request_to_content.workflow_step_id = step_id
+            self.input_dataset_collections.append( request_to_content )
+
+    def has_input_for_step( self, step_id ):
+        for content in self.input_datasets:
+            if content.workflow_step_id == step_id:
+                return True
+        for content in self.input_dataset_collections:
+            if content.workflow_step_id == step_id:
+                return True
+        return False
+
 
 class WorkflowInvocationStep( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'update_time', 'job_id', 'workflow_step_id', 'action' )
