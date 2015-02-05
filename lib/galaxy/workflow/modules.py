@@ -330,7 +330,9 @@ class InputModule( SimpleWorkflowModule ):
         # so do that now so dependent steps can be recalculated. In the future
         # everything should come in from the API and this can be eliminated.
         if not invocation.has_input_for_step( step.id ):
-            invocation.add_input( step_outputs.values()[ 0 ], step.id )
+            content = step_outputs.values()[ 0 ]
+            if content:
+                invocation.add_input( content, step.id )
         progress.set_outputs_for_input( step, step_outputs )
         return job
 
