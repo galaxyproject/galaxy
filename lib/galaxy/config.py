@@ -428,7 +428,7 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
         self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
-        # TEST FOR UWSGI -- TODO save this somewhere so we only have to do it once.
+        # TEST FOR UWSGI
         self.is_uwsgi = False
         try:
             # The uwsgi module is automatically injected by the parent uwsgi
