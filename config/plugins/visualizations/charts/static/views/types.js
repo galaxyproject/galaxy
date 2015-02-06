@@ -43,7 +43,7 @@ return Backbone.View.extend({
                     self._filter(value);
             }
         });
-        $el.append(this.library.$el.addClass('ui-bottom-margin'));
+        $el.append(this.library.$el.addClass('ui-margin-bottom'));
         
         // set element
         this.setElement($el);

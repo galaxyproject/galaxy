@@ -110,7 +110,7 @@ var View = Backbone.View.extend({
         
         // add elements to dom
         if (_.size(this.list) > 1) {
-            this.$el.append(this.button_type.$el.addClass('ui-bottom-margin'));
+            this.$el.append(this.button_type.$el.addClass('ui-margin-bottom'));
         }
         for (var i in this.list) {
             this.$el.append(this.list[i].field.$el);

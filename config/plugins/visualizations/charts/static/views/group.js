@@ -32,9 +32,9 @@ return Backbone.View.extend({
         // create element
         var $view = $('<div/>');
         $view.append((new Ui.Label({title: 'Provide a label:'})).$el);
-        $view.append(this.group_key.$el.addClass('ui-bottom-margin'));
-        $view.append((new Ui.Label({title: 'Select columns:'})).$el.addClass('ui-top-margin'));
-        $view.append(this.table.$el.addClass('ui-bottom-margin'));
+        $view.append(this.group_key.$el.addClass('ui-margin-bottom'));
+        $view.append((new Ui.Label({title: 'Select columns:'})).$el.addClass('ui-margin-top'));
+        $view.append(this.table.$el.addClass('ui-margin-bottom'));
         
         // add element
         this.setElement($view);

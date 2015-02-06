@@ -11,17 +11,17 @@
 @ui-margin-horizontal: 5px;
 
 // margins
-.ui-top-margin {
+.ui-margin-top {
     padding-top: @ui-margin-vertical !important;
 }
 
-.ui-bottom-margin {
+.ui-margin-bottom {
     margin-bottom: @ui-margin-vertical !important;
 }
 
-.ui-both-margin {
-    &:extend(.ui-top-margin);
-    &:extend(.ui-bottom-margin);
+.ui-margin-both {
+    &:extend(ui-margin-top);
+    &:extend(ui-margin-bottom);
 }
 
 // non-interactive elements

@@ -1396,8 +1396,8 @@ label{font-weight:normal}
 .upload-header .select2-choice{max-height:20px;line-height:18px;background:transparent;text-align:center;font-weight:normal}.upload-header .select2-choice .select2-arrow b{background-position:0 -3px}
 .upload-top{height:5%;text-align:center}.upload-top .upload-info{margin-top:0px;font-weight:normal;text-align:center}
 .no-highlight,.ui-button-icon,.ui-portlet,.ui-portlet-repeat,.ui-portlet-limited,.ui-portlet-section,.ui-portlet-narrow{-webkit-user-select:none;-moz-user-select:none;-khtml-user-select:none;-ms-user-select:none;}
-.ui-top-margin,.ui-both-margin{padding-top:5px !important}
-.ui-bottom-margin,.ui-both-margin{margin-bottom:5px !important}
+.ui-margin-top{padding-top:5px !important}
+.ui-margin-bottom{margin-bottom:5px !important}
 .ui-error{-moz-border-radius:3px;border-radius:3px;background:#f9c7c5;padding:5px}
 .ui-label{font-weight:bold}
 .ui-message{padding:2px 10px 2px 10px;margin:0px}
