@@ -11,21 +11,21 @@ var View = Backbone.View.extend({
         precise : false,
         split   : 10000
     },
-    
+
     // initialize
     initialize : function(options) {
         // link this
         var self = this;
-        
+
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
-        
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // determine wether to use the slider
         this.useslider = this.options.max !== null && this.options.min !== null && this.options.max > this.options.min;
-        
+
         // set default step size
         if (this.options.step === null) {
             this.options.step = 1;
@@ -33,7 +33,7 @@ var View = Backbone.View.extend({
                 this.options.step = (this.options.max - this.options.min) / this.options.split;
             }
         }
-        
+
         // create slider if min and max are defined properly
         if (this.useslider) {
             this.$slider = this.$el.find('#slider');
@@ -44,20 +44,20 @@ var View = Backbone.View.extend({
         } else {
             this.$el.find('.ui-form-slider-text').css('width', '100%');
         }
-        
+
         // link text input field
         this.$text = this.$el.find('#text');
-        
+
         // set initial value
         if (this.options.value !== undefined) {
             this.value(this.options.value);
         }
-        
+
         // add text field event
-        this.$text.on('input', function () {
-           self.value($(this).val());
+        this.$text.on('change', function () {
+            self.value($(this).val());
         });
-        
+
         // add text field event
         var pressed = [];
         this.$text.on('keyup', function(e) {
@@ -74,7 +74,7 @@ var View = Backbone.View.extend({
             }
         });
     },
-    
+
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
@@ -82,7 +82,7 @@ var View = Backbone.View.extend({
             if (isNaN(new_val)) {
                 new_val = 0;
             }
-            
+
             // apply limit
             if (this.options.max !== null) {
                 new_val = Math.min(new_val, this.options.max);
@@ -90,21 +90,21 @@ var View = Backbone.View.extend({
             if (this.options.min !== null) {
                 new_val = Math.max(new_val, this.options.min);
             }
-            
+
+            // set values
+            this.$slider && this.$slider.slider('value', new_val);
+            this.$text.val(new_val);
+
             // trigger on change event
             if (this.options.onchange) {
                 this.options.onchange(new_val);
             }
-        
-            // set values
-            this.$slider && this.$slider.slider('value', new_val);
-            this.$text.val(new_val);
         }
-        
+
         // return current value
         return this.$text.val();
     },
-    
+
     // element
     _template: function(options) {
         return  '<div id="' + options.id + '" class="ui-form-slider">' +
