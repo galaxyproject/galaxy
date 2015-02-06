@@ -1,9 +1,8 @@
-import calendar, operator, os, socket
+import calendar
 from datetime import datetime, date, timedelta
-from time import mktime, strftime, localtime
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
-from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_, not_, or_
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
@@ -11,37 +10,53 @@ import sqlalchemy as sa
 import logging
 log = logging.getLogger( __name__ )
 
+
 class SpecifiedDateListGrid( grids.Grid ):
+
     class JobIdColumn( grids.IntegerColumn ):
+
         def get_value( self, trans, grid, job ):
             return job.id
+
     class StateColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, job ):
             return '<div class="count-box state-color-%s">%s</div>' % ( job.state, job.state )
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'Unfinished':
                 return query.filter( not_( or_( model.Job.table.c.state == model.Job.states.OK,
                                                 model.Job.table.c.state == model.Job.states.ERROR,
                                                 model.Job.table.c.state == model.Job.states.DELETED ) ) )
             return query
+
     class ToolColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, job ):
             return job.tool_id
+
     class CreateTimeColumn( grids.DateTimeColumn ):
+
         def get_value( self, trans, grid, job ):
             return job.create_time.strftime("%b %d, %Y, %H:%M:%S")
+
     class UserColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, job ):
             if job.user:
                 return job.user.email
             return 'anonymous'
+
     class EmailColumn( grids.GridColumn ):
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
             return query.filter( and_( model.Job.table.c.user_id == model.User.table.c.id,
                                        model.User.table.c.email == column_filter ) )
+
     class SpecifiedDateColumn( grids.GridColumn ):
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
@@ -57,7 +72,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                 end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
 
             return query.filter( and_( self.model_class.table.c.create_time >= start_date,
-                                           self.model_class.table.c.create_time < end_date ) )
+                                       self.model_class.table.c.create_time < end_date ) )
 
     # Grid definition
     use_async = False
@@ -72,8 +87,8 @@ class SpecifiedDateListGrid( grids.Grid ):
                      attach_popup=False,
                      filterable="advanced" ),
         StateColumn( "State",
-                      key="state",
-                      attach_popup=False ),
+                     key="state",
+                     attach_popup=False ),
         ToolColumn( "Tool Id",
                     key="tool_id",
                     link=( lambda item: dict( operation="tool_per_month", id=item.id, webapp="reports" ) ),
@@ -105,7 +120,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     standard_filters = []
-    default_filter = { 'specified_date' : 'All' }
+    default_filter = { 'specified_date': 'All' }
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
@@ -119,7 +134,9 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .filter( model.Job.table.c.user_id != monitor_user_id )\
                                .enable_eagerloads( False )
 
+
 class Jobs( BaseUIController ):
+
     """
     Class contains functions for querying data requested by user via the webapp. It exposes the functions and
     responds to requests with the filled .mako templates.
@@ -198,15 +215,14 @@ class Jobs( BaseUIController ):
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
 
-
         month_jobs = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
-                             sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                           whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
-                                                  model.Job.table.c.create_time >= start_date,
-                                                  model.Job.table.c.create_time < end_date ),
-                           from_obj=[ model.Job.table ],
-                           group_by=[ 'date' ],
-                           order_by=[ sa.desc( 'date' ) ] )
+                                  sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
+                                                     model.Job.table.c.create_time >= start_date,
+                                                     model.Job.table.c.create_time < end_date ),
+                                from_obj=[ model.Job.table ],
+                                group_by=[ 'date' ],
+                                order_by=[ sa.desc( 'date' ) ] )
 
         jobs = []
         for row in month_jobs.execute():
@@ -214,7 +230,7 @@ class Jobs( BaseUIController ):
                            row.date.strftime( "%d" ),
                            row.total_jobs,
                            row.date
-                            ) )
+                           ) )
         return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
                                     month_label=month_label,
                                     year_label=year_label,
@@ -222,6 +238,7 @@ class Jobs( BaseUIController ):
                                     jobs=jobs,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
+
     @web.expose
     def specified_month_in_error( self, trans, **kwd ):
         """
@@ -244,14 +261,14 @@ class Jobs( BaseUIController ):
         year_label = start_date.strftime( "%Y" )
 
         month_jobs_in_error = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
-                             sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                           whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
-                                                  model.Job.table.c.state == 'error',
-                                                  model.Job.table.c.create_time >= start_date,
-                                                  model.Job.table.c.create_time < end_date ),
-                           from_obj=[ model.Job.table ],
-                           group_by=[ 'date' ],
-                           order_by=[ sa.desc( 'date' ) ] )
+                                           sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                         whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
+                                                              model.Job.table.c.state == 'error',
+                                                              model.Job.table.c.create_time >= start_date,
+                                                              model.Job.table.c.create_time < end_date ),
+                                         from_obj=[ model.Job.table ],
+                                         group_by=[ 'date' ],
+                                         order_by=[ sa.desc( 'date' ) ] )
 
         jobs = []
         for row in month_jobs_in_error.execute():
@@ -266,6 +283,7 @@ class Jobs( BaseUIController ):
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
+
     @web.expose
     def per_month_all( self, trans, **kwd ):
         """
@@ -280,25 +298,26 @@ class Jobs( BaseUIController ):
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
         jobs_by_month = sa.select( ( sa.func.date_trunc( 'month', model.Job.table.c.create_time ).label( 'date' ),
-                             sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                           whereclause=model.Job.table.c.user_id != monitor_user_id,
-                           from_obj=[ model.Job.table ],
-                           group_by=[ 'date' ],
-                           order_by=[ sa.desc( 'date' ) ] )
+                                     sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                   whereclause=model.Job.table.c.user_id != monitor_user_id,
+                                   from_obj=[ model.Job.table ],
+                                   group_by=[ 'date' ],
+                                   order_by=[ sa.desc( 'date' ) ] )
 
         jobs = []
         for row in jobs_by_month.execute():
-            jobs.append( ( 
-                           row.date.strftime( "%Y-%m" ),
-                           row.total_jobs,
-                           row.date.strftime( "%B" ),
-                           row.date.strftime( "%y" )
-                           ) )
+            jobs.append( (
+                row.date.strftime( "%Y-%m" ),
+                row.total_jobs,
+                row.date.strftime( "%B" ),
+                row.date.strftime( "%y" )
+            ) )
 
         return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako',
                                     jobs=jobs,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
+
     @web.expose
     def per_month_in_error( self, trans, **kwd ):
         """
@@ -314,11 +333,11 @@ class Jobs( BaseUIController ):
 
         jobs_in_error_by_month = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
                                               sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                                           whereclause=sa.and_ ( model.Job.table.c.state == 'error',
-                                                                  model.Job.table.c.user_id != monitor_user_id ),
-                                           from_obj=[ model.Job.table ],
-                                           group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
-                                           order_by=[ sa.desc( 'date' ) ] )
+                                            whereclause=sa.and_( model.Job.table.c.state == 'error',
+                                                                 model.Job.table.c.user_id != monitor_user_id ),
+                                            from_obj=[ model.Job.table ],
+                                            group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
+                                            order_by=[ sa.desc( 'date' ) ] )
 
         jobs = []
         for row in jobs_in_error_by_month.execute():
@@ -339,19 +358,19 @@ class Jobs( BaseUIController ):
 
         jobs = []
         jobs_per_user = sa.select( ( model.User.table.c.email.label( 'user_email' ),
-                         sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ],
-                       group_by=[ 'user_email' ],
-                       order_by=[ sa.desc( 'total_jobs' ), 'user_email' ] )
+                                     sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                   from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ],
+                                   group_by=[ 'user_email' ],
+                                   order_by=[ sa.desc( 'total_jobs' ), 'user_email' ] )
         for row in jobs_per_user.execute():
-            if ( row.user_email == None ):
-                jobs.append ( ( 'Anonymous',
-                              row.total_jobs ) )
+            if ( row.user_email is None ):
+                jobs.append( ( 'Anonymous',
+                               row.total_jobs ) )
             elif ( row.user_email == monitor_email ):
                 continue
             else:
                 jobs.append( ( row.user_email,
-                           row.total_jobs ) )
+                               row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_user.mako',
                                     jobs=jobs,
                                     message=message )
@@ -364,8 +383,8 @@ class Jobs( BaseUIController ):
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause=sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
-                                              model.GalaxySession.table.c.user_id == model.User.table.c.id,
-                                              model.User.table.c.email == email
+                                            model.GalaxySession.table.c.user_id == model.User.table.c.id,
+                                            model.User.table.c.email == email
                                             ),
                        from_obj=[ sa.join( model.Job.table, model.User.table ) ],
                        group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
@@ -420,7 +439,7 @@ class Jobs( BaseUIController ):
         q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause=sa.and_( model.Job.table.c.tool_id == tool_id,
-                                           model.Job.table.c.user_id != monitor_user_id ),
+                                            model.Job.table.c.user_id != monitor_user_id ),
                        from_obj=[ model.Job.table ],
                        group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
                        order_by=[ sa.desc( 'date' ) ] )
@@ -439,7 +458,6 @@ class Jobs( BaseUIController ):
 
     @web.expose
     def job_info( self, trans, **kwd ):
-        params = util.Params( kwd )
         message = ''
         job = trans.sa_session.query( model.Job ) \
                               .get( trans.security.decode_id( kwd.get( 'id', '' ) ) )
@@ -447,10 +465,12 @@ class Jobs( BaseUIController ):
                                     job=job,
                                     message=message )
 
-## ---- Utility methods -------------------------------------------------------
+# ---- Utility methods -------------------------------------------------------
+
 
 def get_job( trans, id ):
     return trans.sa_session.query( trans.model.Job ).get( trans.security.decode_id( id ) )
+
 
 def get_monitor_id( trans, monitor_email ):
     """
@@ -458,8 +478,8 @@ def get_monitor_id( trans, monitor_email ):
     """
     monitor_user_id = None
     monitor_row = trans.sa_session.query( trans.model.User.table.c.id ) \
-                                          .filter( trans.model.User.table.c.email == monitor_email ) \
-                                          .first()
+        .filter( trans.model.User.table.c.email == monitor_email ) \
+        .first()
     if monitor_row is not None:
         monitor_user_id = monitor_row[0]
     return monitor_user_id
