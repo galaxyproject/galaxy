@@ -124,6 +124,9 @@ def app_factory( global_conf, **kwargs ):
 def postfork_setup():
     from galaxy.app import app
     from galaxy.queue_worker import GalaxyQueueWorker
+    if app.config.is_uwsgi:
+        import uwsgi
+        app.config.server_name += ".%s" % uwsgi.worker_id()
     app.control_worker = GalaxyQueueWorker(app, galaxy.queues.control_queue_from_config(app.config),
                                            galaxy.queue_worker.control_message_to_task)
     app.control_worker.daemon = True

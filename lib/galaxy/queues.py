@@ -27,8 +27,12 @@ def all_control_queues_for_declare(config):
 
     Refactor later to actually persist this somewhere instead of building it repeatedly.
     """
-    return [Queue('control.%s' % q, galaxy_exchange, routing_key='control') for
-            q in config.server_names]
+    possible_uwsgi_queues = []
+    if config.is_uwsgi:
+        import uwsgi
+        possible_uwsgi_queues = [Queue("control.%s.%s" % (config.server_name, wkr['id']), galaxy_exchange, routing_key='control') for wkr in uwsgi.workers()]
+    return possible_uwsgi_queues + [Queue('c ntrol.%s' % q, galaxy_exchange, routing_key='control') for
+                                    q in config.server_names]
 
 
 def control_queue_from_config(config):
@@ -36,5 +40,10 @@ def control_queue_from_config(config):
     Returns a Queue instance with the correct name and routing key for this
     galaxy process's config
     """
-    return Queue("control.%s" % config.server_name, galaxy_exchange,
-                 routing_key='control')
+    if config.is_uwsgi:
+        import uwsgi
+        return Queue("control.%s.%s" % (config.server_name, uwsgi.worker_id()), galaxy_exchange,
+                     routing_key='control')
+    else:
+        return Queue("control.%s" % config.server_name, galaxy_exchange,
+                     routing_key='control')
