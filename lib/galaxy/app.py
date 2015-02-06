@@ -143,11 +143,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager( self )
 
         self.model.engine.dispose()
-        self.control_worker = GalaxyQueueWorker(self,
-                                                galaxy.queues.control_queue_from_config(self.config),
-                                                galaxy.queue_worker.control_message_to_task)
-        self.control_worker.daemon = True
-        self.control_worker.start()
 
     def shutdown( self ):
         self.workflow_scheduling_manager.shutdown()
