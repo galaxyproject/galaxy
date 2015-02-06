@@ -428,6 +428,18 @@ class Configuration( object ):
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
         self.citation_cache_lock_dir = self.resolve_path( kwargs.get( "citation_cache_lock_dir", "database/citations/locks" ) )
+        # TEST FOR UWSGI -- TODO save this somewhere so we only have to do it once.
+        self.is_uwsgi = False
+        try:
+            # The uwsgi module is automatically injected by the parent uwsgi
+            # process and only exists that way.  If anything works, this is a
+            # uwsgi-managed process.
+            import uwsgi
+            if uwsgi.numproc:
+                self.is_uwsgi = True
+        except ImportError:
+            # This is not a uwsgi process, or something went horribly wrong.
+            pass
 
     @property
     def sentry_dsn_public( self ):
