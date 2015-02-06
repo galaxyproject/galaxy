@@ -248,12 +248,28 @@ def populate_api_routes( webapp, app ):
     webapp.add_route( '/visualization/show/:visualization_name', controller='visualization', action='render', visualization_name=None )
 
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
-    webapp.mapper.connect( 'import_workflow_deprecated', '/api/workflows/upload', controller='workflows', action='import_new_workflow_deprecated', conditions=dict( method=['POST'] ) )
-    webapp.mapper.connect( 'workflow_dict', '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict( method=['GET'] ) )
+    webapp.mapper.connect( 'import_workflow_deprecated',
+                           '/api/workflows/upload',
+                           controller='workflows',
+                           action='import_new_workflow_deprecated',
+                           conditions=dict( method=['POST'] ) )
+    webapp.mapper.connect( 'workflow_dict',
+                           '/api/workflows/{workflow_id}/download',
+                           controller='workflows',
+                           action='workflow_dict',
+                           conditions=dict( method=['GET'] ) )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
-    webapp.mapper.connect( 'workflow_dict', '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict( method=['GET'] ) )
+    webapp.mapper.connect( 'workflow_dict',
+                           '/api/workflows/download/{workflow_id}',
+                           controller='workflows',
+                           action='workflow_dict',
+                           conditions=dict( method=['GET'] ) )
     # Deprecated in favor of POST /api/workflows with shared_workflow_id in payload.
-    webapp.mapper.connect( 'import_shared_workflow_deprecated', '/api/workflows/import', controller='workflows', action='import_shared_workflow_deprecated', conditions=dict( method=['POST'] ) )
+    webapp.mapper.connect( 'import_shared_workflow_deprecated',
+                           '/api/workflows/import',
+                           controller='workflows',
+                           action='import_shared_workflow_deprecated',
+                           conditions=dict( method=['POST'] ) )
 
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.
