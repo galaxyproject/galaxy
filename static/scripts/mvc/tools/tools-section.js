@@ -238,9 +238,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                 field   : repeat
             });
 
-            // displays as grouped subsection
-            input_element.$el.addClass('ui-table-form-section');
-
             // create table row
             this.table.add(input_element.$el);
 

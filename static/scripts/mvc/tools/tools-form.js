@@ -103,8 +103,12 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
             var self = this;
             var current_state = this.tree.finalize({
                 data : function(dict) {
-                    if (dict.values.length > 0 && dict.values[0] && dict.values[0].src === 'hda') {
-                        return self.content.get({id: dict.values[0].id, src: 'hda'}).id_uncoded;
+                    try {
+                        if (dict && dict.values[0].src === 'hda') {
+                            return self.content.get({id: dict.values[0].id, src: 'hda'}).id_uncoded;
+                        }
+                    } catch (err) {
+                        console.debug('tools-form::_updateModel - Invalid or empty data input value.');
                     }
                     return null;
                 }

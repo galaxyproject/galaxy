@@ -22,26 +22,30 @@
 .ui-table {
     &:extend(.grid);
 
-    tbody td {
-        &:extend(.grid tbody td);
-    }
-    
     tbody {
         cursor: pointer;
+        td {
+            &:extend(.grid tbody td);
+        }
+    }
+
+    .ui-table-form-section {
+        border-left: solid 3px @form-heading-bg;
+        border-radius: @border-radius-large !important;
+        padding-left: 10px;
     }
 }
 
 .ui-table-plain {
-    &:extend(.grid);
+    &:extend(.ui-table all);
     table-layout:fixed;
 
-    tbody td {
-        padding: 5px 0px 5px 0px !important;
-        border: none !important;
-    }
-    
     tbody {
         cursor: auto !important;
+        td {
+            padding: 5px 0px 5px 0px !important;
+            border: none !important;
+        }
     }
 }
 
@@ -54,12 +58,6 @@
     .ui-table-form-field {
         margin-top: 5px;
     }
-}
-
-.ui-table-form-section {
-    border-left: solid 3px @form-heading-bg;
-    border-radius: 5px !important;
-    padding-left: 10px;
 }
 
 .ui-table-form-title-strong {
@@ -92,7 +90,6 @@
 .ui-button-icon {
     &:extend(.icon-btn);
     &:extend(.no-highlight);
-    margin-right: 5px;
     height: auto !important;
     ul {
         i {
@@ -149,7 +146,7 @@
 .ui-portlet {
     &:extend(.no-highlight);
     border: solid @form-border 1px;
-    .border-radius(@panel-border-radius);
+    border-radius: @border-radius-base;
 
     position: relative;
     clear: both;
@@ -163,17 +160,21 @@
         overflow: visible;
         float: right;
         width:100%;
-
         .portlet-title {
             display: inline;
             vertical-align: middle;
             .portlet-title-text {
                 vertical-align: middle;
-                line-height: 20px;
+                line-height: 22px;
             }
             .icon {
                 font-size: 1.2em;
                 vertical-align: middle;
+            }
+        }
+        .portlet-operations {
+            .ui-button-icon {
+                margin-left: 5px;
             }
         }
     }
@@ -189,7 +190,7 @@
         clear: both;
 
         .content {
-            padding     : 10px;
+            padding     : 0px;
             height      : 100%;
             width       : 100%;
         
@@ -201,40 +202,72 @@
     }
 }
 
-.ui-portlet-slim {
-    &:extend(.ui-portlet all);
-    max-width: 900px;
-}
-
 .ui-portlet-repeat {
     &:extend(.ui-portlet);
     border: none;
     border-left: solid 3px @form-heading-bg;
-    border-radius: 5px;
+    border-radius: @border-radius-large;
     .portlet-header {
         background: @form-heading-bg;
-        border-radius: 3px;
+        border-radius: @border-radius-large;
         border-bottom-left-radius: 0px;
+        border-top-left-radius: 0px;
         padding: 0px 2px;
+        .portlet-title-text {
+            vertical-align: middle;
+            line-height: 20px !important;
+        }
     }
 
     .portlet-content {
-        padding: 0px;
-        .content {
-            padding     : 0px;
-            padding-left: 10px;
-        }
+        padding-left: 10px;
     }
 }
 
 .ui-portlet-section {
     &:extend(.ui-portlet-repeat all);
     border-left: solid 3px @side-panel-bg;
-    border-radius: 5px;
     .portlet-header {
         background: @side-panel-bg;
         border-bottom: solid darken(@side-panel-bg, 10%) 1px;
     }
+}
+
+.ui-portlet-narrow {
+    &:extend(.ui-portlet-limited all);
+    border: none;
+    .portlet-header {
+        border-radius: @border-radius-base;
+        margin-bottom: 5px;
+        .portlet-operations {
+            .ui-button-icon {
+                margin-left: 3px;
+            }
+        }
+    }
+    .portlet-content {
+        padding: 0px;
+    }
+    .ui-table-form-section {
+        padding-left: 5px;
+    }
+    .ui-portlet-repeat {
+        .portlet-header {
+            border-radius: @border-radius-large;
+            border-bottom-left-radius: 0px;
+            border-top-left-radius: 0px;
+            margin-bottom: 0px;
+        }
+        .portlet-content {
+            padding: 0px;
+            padding-left: 5px;
+        }
+    }
+}
+
+.ui-portlet-limited {
+    &:extend(.ui-portlet all);
+    max-width: 900px;
 }
 
 .ui-popover {
