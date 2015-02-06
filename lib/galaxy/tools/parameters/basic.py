@@ -782,13 +782,17 @@ class SelectToolParameter( ToolParameter ):
                 self.legal_values.add( value )
         self.is_dynamic = ( ( self.dynamic_options is not None ) or ( self.options is not None ) )
 
+    def _get_dynamic_options_call_other_values( self, trans, other_values ):
+        call_other_values = { "__trans__": trans }
+        if other_values:
+            call_other_values.update( other_values.dict )
+        return call_other_values
+
     def get_options( self, trans, other_values ):
         if self.options:
             return self.options.get_options( trans, other_values )
         elif self.dynamic_options:
-            call_other_values = {"__trans__": trans}
-            if other_values:
-                call_other_values.update( other_values.dict )
+            call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
             try:
                 return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
             except Exception:
@@ -805,8 +809,10 @@ class SelectToolParameter( ToolParameter ):
             return map( _get_UnvalidatedValue_value, set( v for _, v, _ in self.options.get_options( trans, other_values ) ) )
         elif self.dynamic_options:
             try:
-                return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, other_values ) )
-            except Exception:
+                call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
+                return set( v for _, v, _ in eval( self.dynamic_options, self.tool.code_namespace, call_other_values ) )
+            except Exception, e:
+                log.debug( 'Determining legal values failed for "%s": %s', self.name, e )
                 return set()
         else:
             return self.legal_values
