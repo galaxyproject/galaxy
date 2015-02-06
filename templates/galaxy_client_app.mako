@@ -49,12 +49,11 @@
     <%
         config_dict = {}
         try:
-            if 'configuration' in trans.webapp.api_controllers:
-                config_dict = ( trans.webapp.api_controllers[ 'configuration' ]
-                    .get_config_dict( trans.app.config, trans.user_is_admin() ) )
+            controller = trans.webapp.api_controllers.get( 'configuration', None )
+            if controller:
+                config_dict = controller.get_config_dict( trans, trans.user_is_admin() )
         except Exception, exc:
             pass
-            
         return config_dict
     %>
 </%def>
