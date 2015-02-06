@@ -23,6 +23,15 @@ from galaxy.util.properties import load_app_properties
 import logging
 log = logging.getLogger( __name__ )
 
+try:
+    from uwsgidecorators import postfork
+except:
+    # TODO:  Make this function more like flask's @before_first_request w/
+    # registered methods etc.
+    def pf_dec(func):
+        return func
+    postfork = pf_dec
+
 
 class GalaxyWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
@@ -104,8 +113,21 @@ def app_factory( global_conf, **kwargs ):
     except:
         pass
 
+    if not app.config.is_uwsgi:
+        postfork_setup()
+
     # Return
     return webapp
+
+
+@postfork
+def postfork_setup():
+    from galaxy.app import app
+    from galaxy.queue_worker import GalaxyQueueWorker
+    app.control_worker = GalaxyQueueWorker(app, galaxy.queues.control_queue_from_config(app.config),
+                                           galaxy.queue_worker.control_message_to_task)
+    app.control_worker.daemon = True
+    app.control_worker.start()
 
 
 def populate_api_routes( webapp, app ):
