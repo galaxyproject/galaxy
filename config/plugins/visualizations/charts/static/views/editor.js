@@ -107,11 +107,10 @@ return Backbone.View.extend({
         
         // append element
         var $main = $('<div/>');
-        $main.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
+        $main.append((new Ui.Label({ title : 'Provide a chart title:'}).$el));
         $main.append(this.title.$el);
         $main.append($('<div/>').addClass('ui-table-form-info').html('This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.'));
-        $main.append(Utils.wrap());
-        $main.append(Utils.wrap(this.types.$el));
+        $main.append(this.types.$el.addClass('ui-top-margin'));
         
         // add tab
         this.tabs.add({
@@ -135,8 +134,8 @@ return Backbone.View.extend({
         });
         
         // append tabs
-        this.portlet.append(this.message.$el);
-        this.portlet.append(this.tabs.$el);
+        this.portlet.append(this.message.$el.addClass('ui-top-margin'));
+        this.portlet.append(this.tabs.$el.addClass('ui-top-margin'));
         
         // elements
         this.setElement(this.portlet.$el);

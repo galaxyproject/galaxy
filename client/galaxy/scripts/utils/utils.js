@@ -219,16 +219,6 @@ function uuid(){
 };
 
 /**
- * Wrap an dom element into a paragraph
- * @param{Element}  $el - DOM element to be wrapped
- */
-function wrap($el) {
-    var wrapper = $('<p></p>');
-    wrapper.append($el);
-    return wrapper;
-};
-
-/**
  * Create a time stamp
  */
 function time() {
@@ -256,7 +246,6 @@ return {
     bytesToString: bytesToString,
     uuid: uuid,
     time: time,
-    wrap: wrap,
     request: request,
     sanitize: sanitize,
     textify: textify,

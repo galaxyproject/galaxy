@@ -44,7 +44,7 @@ var View = Backbone.View.extend({
         this.$el.append(this.table.$el);
         
         // add button
-        this.$el.append(Utils.wrap(this.button_new.$el));
+        this.$el.append($('<div/>').append(this.button_new.$el));
         
         // clear list
         this.list = {};

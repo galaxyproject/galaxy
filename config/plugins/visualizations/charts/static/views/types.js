@@ -32,7 +32,7 @@ return Backbone.View.extend({
         var $el = $('<div class="charts-grid"/>');
         
         // add label
-        $el.append(Utils.wrap((new Ui.Label({ title : 'How many data points would you like to analyze?'})).$el));
+        $el.append((new Ui.Label({ title : 'How many data points would you like to analyze?'})).$el);
         
         // construct chart type subset selection buttons
         this.library = new Ui.RadioButton.View({
@@ -43,7 +43,7 @@ return Backbone.View.extend({
                     self._filter(value);
             }
         });
-        $el.append(Utils.wrap(this.library.$el));
+        $el.append(this.library.$el.addClass('ui-bottom-margin'));
         
         // set element
         this.setElement($el);
