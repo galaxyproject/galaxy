@@ -28,7 +28,7 @@ return Backbone.View.extend({
         this.setElement($(this._template()));
         
         // use full screen for viewer
-        this._fullscreen(this.$el, 90);
+        this._fullscreen(this.$el, 50);
         
         // prevent window scrolling
         var initial_overflow = $('body').css('overflow');

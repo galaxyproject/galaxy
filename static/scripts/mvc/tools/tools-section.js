@@ -139,7 +139,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                 });
 
                 // displays as grouped subsection
-                sub_section.$el.addClass('ui-table-form-section');
+                sub_section.$el.addClass('ui-table-section');
 
                 // create table row
                 this.table.add(sub_section.$el);

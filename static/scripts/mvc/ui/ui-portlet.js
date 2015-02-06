@@ -84,12 +84,8 @@ var View = Backbone.View.extend({
     },
     
     // append
-    append: function($el, unwrapped) {
-        if (unwrapped) {
-            this.$content.append($el);
-        } else {
-            this.$content.append(Utils.wrap($el));
-        }
+    append: function($el) {
+        this.$content.append($el);
     },
         
     // content
