@@ -18,7 +18,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 // shows form in narrow view mode
                 narrow          : false,
                 // shows errors on start
-                initial_errors  : false
+                initial_errors  : false,
+                // portlet style
+                cls_portlet     : 'ui-portlet-limited'
             };
     
             // configure options
@@ -294,7 +296,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.portlet = new Portlet.View({
                 icon    : 'fa-wrench',
                 title   : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Tool Version ' + options.version + ')',
-                cls     : 'ui-portlet-slim',
+                cls     : this.options.cls_portlet,
                 operations: {
                     requirements    : requirements_button,
                     menu            : menu_button,
@@ -302,11 +304,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 },
                 buttons : this.buttons
             });
-            
-            // remove padding
-            if (options.narrow) {
-                this.portlet.$content.css('padding', '0px');
-            }
             
             // append message
             this.portlet.append(this.message.$el, true);

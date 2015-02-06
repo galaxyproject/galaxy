@@ -28,6 +28,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             this.options.is_dynamic     = false;
             this.options.narrow         = true;
             this.options.initial_errors = true;
+            this.options.cls_portlet    = 'ui-portlet-narrow';
 
             // declare fields as optional
             Utils.deepeach(options.inputs, function(item) {

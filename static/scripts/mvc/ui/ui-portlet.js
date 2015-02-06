@@ -67,7 +67,7 @@ var View = Backbone.View.extend({
         }
         
         // append operations
-        this.$operations = $(this.el).find('.operations');
+        this.$operations = $(this.el).find('.portlet-operations');
         if (this.options.operations) {
             // link functions
             var self = this;
@@ -157,7 +157,7 @@ var View = Backbone.View.extend({
         
         if (options.title) {
             tmpl +=     '<div class="portlet-header">' +
-                            '<div class="operations" style="float: ' + options.operations_flt + ';"></div>' +
+                            '<div class="portlet-operations" style="float: ' + options.operations_flt + ';"></div>' +
                             '<div class="portlet-title">';
                             
             if (options.icon)
