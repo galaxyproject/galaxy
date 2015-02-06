@@ -124,7 +124,7 @@ class Configuration( object ):
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
         self.enable_data_manager_user_view = string_as_bool( kwargs.get( "enable_data_manager_user_view", "False" ) )
-        self.galaxy_data_manager_data_path = kwargs.get( 'galaxy_data_manager_data_path',  self.tool_data_path )
+        self.galaxy_data_manager_data_path = kwargs.get( 'galaxy_data_manager_data_path', self.tool_data_path )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
@@ -381,7 +381,7 @@ class Configuration( object ):
             self.amqp_internal_connection = kwargs.get('amqp_internal_connection')
             # TODO Get extra amqp args as necessary for ssl
         elif 'database_connection' in kwargs:
-            self.amqp_internal_connection = "sqlalchemy+"+self.database_connection
+            self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path( "database/control.sqlite", self.root )
         self.biostar_url = kwargs.get( 'biostar_url', None )
@@ -485,7 +485,10 @@ class Configuration( object ):
             #      [0], probably moved their shed_tool_conf.xml as well
             # [2]: user has done nothing, use the old files
             # [3]: fresh install
-            tool_config_file=[ 'config/tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml,config/shed_tool_conf.xml', 'tool_conf.xml,shed_tool_conf.xml', 'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
+            tool_config_file=[ 'config/tool_conf.xml,shed_tool_conf.xml',
+                               'config/tool_conf.xml,config/shed_tool_conf.xml',
+                               'tool_conf.xml,shed_tool_conf.xml',
+                               'config/tool_conf.xml.sample,config/shed_tool_conf.xml' ]
         )
 
         for var, defaults in defaults.items():
