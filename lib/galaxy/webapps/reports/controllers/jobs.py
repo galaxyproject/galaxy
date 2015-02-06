@@ -7,6 +7,8 @@ from galaxy.model.orm import and_, not_, or_
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+
 import logging
 log = logging.getLogger( __name__ )
 
@@ -135,7 +137,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .enable_eagerloads( False )
 
 
-class Jobs( BaseUIController ):
+class Jobs( BaseUIController, ReportQueryBuilder ):
 
     """
     Class contains functions for querying data requested by user via the webapp. It exposes the functions and
@@ -297,11 +299,11 @@ class Jobs( BaseUIController ):
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
-        jobs_by_month = sa.select( ( sa.func.date_trunc( 'month', model.Job.table.c.create_time ).label( 'date' ),
+        jobs_by_month = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                                      sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                    whereclause=model.Job.table.c.user_id != monitor_user_id,
                                    from_obj=[ model.Job.table ],
-                                   group_by=[ 'date' ],
+                                   group_by=self.group_by_month( model.Job.table.c.create_time ),
                                    order_by=[ sa.desc( 'date' ) ] )
 
         jobs = []
@@ -331,12 +333,12 @@ class Jobs( BaseUIController ):
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
-        jobs_in_error_by_month = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
+        jobs_in_error_by_month = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                                               sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                             whereclause=sa.and_( model.Job.table.c.state == 'error',
                                                                  model.Job.table.c.user_id != monitor_user_id ),
                                             from_obj=[ model.Job.table ],
-                                            group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
+                                            group_by=self.group_by_month( model.Job.table.c.create_time ),
                                             order_by=[ sa.desc( 'date' ) ] )
 
         jobs = []
@@ -380,14 +382,14 @@ class Jobs( BaseUIController ):
         params = util.Params( kwd )
         message = ''
         email = util.restore_text( params.get( 'email', '' ) )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause=sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
                                             model.GalaxySession.table.c.user_id == model.User.table.c.id,
                                             model.User.table.c.email == email
                                             ),
                        from_obj=[ sa.join( model.Job.table, model.User.table ) ],
-                       group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
+                       group_by=self.group_by_month( model.Job.table.c.create_time ),
                        order_by=[ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():
@@ -436,12 +438,12 @@ class Jobs( BaseUIController ):
 
         tool_id = params.get( 'tool_id', 'Add a column1' )
         specified_date = params.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause=sa.and_( model.Job.table.c.tool_id == tool_id,
                                             model.Job.table.c.user_id != monitor_user_id ),
                        from_obj=[ model.Job.table ],
-                       group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.Job.table.c.create_time ) ) ],
+                       group_by=self.group_by_month( model.Job.table.c.create_time ),
                        order_by=[ sa.desc( 'date' ) ] )
         jobs = []
         for row in q.execute():

@@ -7,6 +7,7 @@ from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
 eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
 import logging
 log = logging.getLogger( __name__ )
@@ -106,7 +107,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .enable_eagerloads( False )
 
 
-class Workflows( BaseUIController ):
+class Workflows( BaseUIController, ReportQueryBuilder ):
 
     specified_date_list_grid = SpecifiedDateListGrid()
 
@@ -145,9 +146,9 @@ class Workflows( BaseUIController ):
     @web.expose
     def per_month_all( self, trans, **kwd ):
         message = ''
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ).label( 'date' ), sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
+        q = sa.select( ( self.select_month( model.StoredWorkflow.table.c.create_time ).label( 'date' ), sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
                        from_obj=[ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
-                       group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ) ],
+                       group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
                        order_by=[ sa.desc( 'date' ) ] )
         workflows = []
         for row in q.execute():
@@ -179,11 +180,11 @@ class Workflows( BaseUIController ):
         message = ''
         email = util.restore_text( params.get( 'email', '' ) )
         user_id = trans.security.decode_id( params.get( 'id', '' ) )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_month( model.StoredWorkflow.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
                        whereclause=model.StoredWorkflow.table.c.user_id == user_id,
                        from_obj=[ model.StoredWorkflow.table ],
-                       group_by=[ sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ) ],
+                       group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
                        order_by=[ sa.desc( 'date' ) ] )
         workflows = []
         for row in q.execute():

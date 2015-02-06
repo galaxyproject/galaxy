@@ -7,13 +7,14 @@ from galaxy import util
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 import logging
 from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
 
-class Users( BaseUIController ):
+class Users( BaseUIController, ReportQueryBuilder ):
 
     @web.expose
     def registered_users( self, trans, **kwd ):
@@ -24,10 +25,10 @@ class Users( BaseUIController ):
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_month( galaxy.model.User.table.c.create_time ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
                        from_obj=[ galaxy.model.User.table ],
-                       group_by=[ sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ) ],
+                       group_by=self.group_by_month( galaxy.model.User.table.c.create_time ),
                        order_by=[ sa.desc( 'date' ) ] )
         users = []
         for row in q.execute():
@@ -50,12 +51,12 @@ class Users( BaseUIController ):
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
-        q = sa.select( ( sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_day( galaxy.model.User.table.c.create_time ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
                        whereclause=sa.and_( galaxy.model.User.table.c.create_time >= start_date,
                                             galaxy.model.User.table.c.create_time < end_date ),
                        from_obj=[ galaxy.model.User.table ],
-                       group_by=[ sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ) ],
+                       group_by=self.group_by_day( galaxy.model.User.table.c.create_time ),
                        order_by=[ sa.desc( 'date' ) ] )
         users = []
         for row in q.execute():
@@ -82,7 +83,7 @@ class Users( BaseUIController ):
         day_label = start_date.strftime( "%A" )
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
-        q = sa.select( ( sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_day( galaxy.model.User.table.c.create_time ).label( 'date' ),
                          galaxy.model.User.table.c.email ),
                        whereclause=sa.and_( galaxy.model.User.table.c.create_time >= start_date,
                                             galaxy.model.User.table.c.create_time < end_date ),
