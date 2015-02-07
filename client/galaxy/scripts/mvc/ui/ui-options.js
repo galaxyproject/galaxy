@@ -286,12 +286,19 @@ RadioButton.View = Base.extend({
     /** Template for a single option
     */
     _templateOption: function(pair) {
+        var cls = 'fa ' + pair.icon;
+        if (!pair.label) {
+            cls += ' no-padding';
+        }
         var tmpl =  '<label class="btn btn-default">';
         if (pair.icon) {
-            tmpl +=     '<i class="fa ' + pair.icon + '"/>';
+            tmpl +=     '<i class="' + cls + '"/>';
         }
-        tmpl +=         '<input type="radio" name="' + this.options.id + '" value="' + pair.value + '">' + pair.label +
-                    '</label>';
+        tmpl +=         '<input type="radio" name="' + this.options.id + '" value="' + pair.value + '">';
+        if (pair.label) {
+            tmpl +=         pair.label;
+        }
+        tmpl +=     '</label>';
         return tmpl;
     },
 

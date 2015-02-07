@@ -48,7 +48,11 @@ var View = Backbone.View.extend({
 
         // add single dataset selector
         if (this.mode == 'single') {
-            radio_buttons.push({icon: 'fa-file-o', label: '', value: 'single', tooltip: 'Single dataset' });
+            radio_buttons.push({
+                icon    : 'fa-file-o',
+                value   : 'single',
+                tooltip : 'Single dataset'
+            });
             this.select_single = new Ui.Select.View({
                 optional    : options.optional,
                 error_text  : hda_error,
@@ -64,7 +68,11 @@ var View = Backbone.View.extend({
 
         // add multiple dataset selector
         if (this.mode == 'single' || this.mode == 'multiple') {
-            radio_buttons.push({icon: 'fa-files-o', label: '', value: 'multiple', tooltip: 'Multiple datasets' });
+            radio_buttons.push({
+                icon    : 'fa-files-o',
+                value   : 'multiple',
+                tooltip : 'Multiple datasets'
+            });
             this.select_multiple = new Ui.Select.View({
                 multiple    : true,
                 error_text  : hda_error,
@@ -80,7 +88,11 @@ var View = Backbone.View.extend({
 
         // add collection selector
         if (this.mode == 'single' || this.mode == 'collection') {
-            radio_buttons.push({icon: 'fa-folder-o', label: '', value: 'collection', tooltip: 'Dataset collection' });
+            radio_buttons.push({
+                icon    : 'fa-folder-o',
+                value   : 'collection',
+                tooltip : 'Dataset collection'
+            });
             this.select_collection = new Ui.Select.View({
                 error_text  : hdca_error,
                 optional    : options.optional,
@@ -108,13 +120,17 @@ var View = Backbone.View.extend({
         // add batch mode information
         this.$batch = $(ToolTemplate.batchMode());
 
-        // calculate button width (should be placed into css once its supported)
-        var button_width = (_.size(this.list) - 1) * 60 + 'px';
-
-        // add elements to dom
-        if (_.size(this.list) > 1) {
+        // number of radio buttons
+        var n_buttons = _.size(this.list);
+        
+        // add button to dom
+        var button_width = 0;
+        if (n_buttons > 1) {
             this.$el.append(this.button_type.$el);
+            button_width = Math.max(0, _.size(this.list) * 35) + 'px';
         }
+        
+        // append field elements
         for (var i in this.list) {
             this.$el.append(this.list[i].field.$el.css({
                 'margin-left': button_width
