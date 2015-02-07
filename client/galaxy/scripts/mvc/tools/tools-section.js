@@ -161,25 +161,25 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             // block index
             var block_index = 0;
 
+            // create repeat block element
+            var repeat = new Repeat.View({
+                title           : input_def.title,
+                title_new       : input_def.title,
+                min             : input_def.min,
+                max             : input_def.max,
+                onnew           : function() {
+                    // create
+                    create(input_def.inputs);
+                            
+                    // trigger refresh
+                    self.app.trigger('refresh');
+                }
+            });
+
             // helper function to create new repeat blocks
-            function create (inputs, deleteable) {
+            function create (inputs) {
                 // create id tag
                 var sub_section_id = input_def.id + '-section-' + (block_index++);
-
-                // enable/disable repeat delete button
-                var ondel = null;
-                if (deleteable) {
-                    ondel = function() {
-                        // delete repeat block
-                        repeat.del(sub_section_id);
-
-                        // retitle repeat block
-                        repeat.retitle(input_def.title);
-
-                        // trigger refresh
-                        self.app.trigger('refresh');
-                    }
-                }
 
                 // create sub section
                 var sub_section = new View(self.app, {
@@ -189,29 +189,16 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                 // add tab
                 repeat.add({
                     id      : sub_section_id,
-                    title   : input_def.title,
                     $el     : sub_section.$el,
-                    ondel   : ondel
+                    ondel   : function() {
+                        // delete repeat block
+                        repeat.del(sub_section_id);
+                        
+                        // trigger refresh
+                        self.app.trigger('refresh');
+                    }
                 });
-
-                // retitle repeat block
-                repeat.retitle(input_def.title);
             }
-
-            //
-            // create repeat block element
-            //
-            var repeat = new Repeat.View({
-                title_new       : input_def.title,
-                max             : input_def.max,
-                onnew           : function() {
-                    // create
-                    create(input_def.inputs, true);
-                            
-                    // trigger refresh
-                    self.app.trigger('refresh');
-                }
-            });
 
             //
             // add parsed/minimum number of repeat blocks
@@ -219,7 +206,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             var n_min   = input_def.min;
             var n_cache = _.size(input_def.cache);
             for (var i = 0; i < Math.max(n_cache, n_min); i++) {
-                // select input source
                 var inputs = null;
                 if (i < n_cache) {
                     inputs = input_def.cache[i];
@@ -228,7 +214,7 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
                 }
 
                 // create repeat block
-                create(inputs, i >= n_min);
+                create(inputs);
             }
 
             // create input field wrapper
