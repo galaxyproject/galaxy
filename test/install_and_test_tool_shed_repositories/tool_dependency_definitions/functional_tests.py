@@ -255,6 +255,9 @@ def main():
     else:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         galaxy_db_path = os.path.join( tempdir, 'database' )
+    # Checks that galaxy_db_path exists and if not, create it.
+    if not os.path.exists(galaxy_db_path):
+        os.makedirs(galaxy_db_path)
     # Configure the paths Galaxy needs to install and test tools.
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     galaxy_tempfiles = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
