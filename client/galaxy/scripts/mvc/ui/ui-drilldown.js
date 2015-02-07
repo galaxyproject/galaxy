@@ -90,7 +90,7 @@ var View = Options.Base.extend({
     /** Template for drill down view
     */
     _template: function(options) {
-        return '<div class="ui-options drilldown-container" id="' + options.id + '"/>';
+        return '<div class="ui-options-input drilldown-container" id="' + options.id + '"/>';
     }
 });
 

@@ -7,19 +7,19 @@ var View = Backbone.View.extend({
         // link app and options
         this.app = app;
         this.options = options;
-        
+
         // link this
         var self = this;
-        
+
         // add element
-        this.setElement('<div/>');
-        
+        this.setElement('<div class="ui-select-content"/>');
+
         // list of select fields
         this.list = {};
-        
+
         // radio button options
         var radio_buttons = [];
-        
+
         // identify selector type
         if (options.type == 'data_collection') {
             this.mode = 'collection';
@@ -30,11 +30,11 @@ var View = Backbone.View.extend({
                 this.mode = 'single';
             }
         }
-        
+
         // set initial state
         this.current = this.mode;
         this.list = {};
-        
+
         // error messages
         var extensions = Utils.textify(options.extensions);
         var hda_error = 'No dataset available.';
@@ -45,10 +45,10 @@ var View = Backbone.View.extend({
         if (extensions) {
             hdca_error = 'No ' + extensions + ' dataset collection available.';
         }
-        
+
         // add single dataset selector
         if (this.mode == 'single') {
-            radio_buttons.push({icon: 'fa-file-o', label : 'Single dataset', value : 'single'});
+            radio_buttons.push({icon: 'fa-file-o', label : '', value : 'single'});
             this.select_single = new Ui.Select.View({
                 optional    : options.optional,
                 error_text  : hda_error,
@@ -61,10 +61,10 @@ var View = Backbone.View.extend({
                 type : 'hda'
             };
         }
-        
+
         // add multiple dataset selector
         if (this.mode == 'single' || this.mode == 'multiple') {
-            radio_buttons.push({icon: 'fa-files-o', label : 'Multiple datasets', value : 'multiple'  });
+            radio_buttons.push({icon: 'fa-files-o', label : '', value : 'multiple'  });
             this.select_multiple = new Ui.Select.View({
                 multiple    : true,
                 error_text  : hda_error,
@@ -77,10 +77,10 @@ var View = Backbone.View.extend({
                 type : 'hda'
             };
         }
-        
+
         // add collection selector
         if (this.mode == 'single' || this.mode == 'collection') {
-            radio_buttons.push({icon: 'fa-folder-o', label : 'Dataset collection',  value : 'collection' });
+            radio_buttons.push({icon: 'fa-folder-o', label : '', value : 'collection' });
             this.select_collection = new Ui.Select.View({
                 error_text  : hdca_error,
                 optional    : options.optional,
@@ -93,7 +93,7 @@ var View = Backbone.View.extend({
                 type : 'hdca'
             };
         }
-        
+
         // create button
         this.button_type = new Ui.RadioButton.View({
             value   : this.current,
@@ -104,30 +104,37 @@ var View = Backbone.View.extend({
                 self.trigger('change');
             }
         });
-        
+
         // add batch mode information
         this.$batch = $(ToolTemplate.batchMode());
-        
+
+        // calculate button width (should be placed into css once its supported)
+        var button_width = (_.size(this.list) - 1) * 60 + 'px';
+
         // add elements to dom
         if (_.size(this.list) > 1) {
-            this.$el.append(this.button_type.$el.addClass('ui-margin-bottom'));
+            this.$el.append(this.button_type.$el);
         }
         for (var i in this.list) {
-            this.$el.append(this.list[i].field.$el);
+            this.$el.append(this.list[i].field.$el.css({
+                'margin-left': button_width
+            }));
         }
-        this.$el.append(this.$batch);
-        
+        this.$el.append(this.$batch.css({
+            'margin-left': button_width
+        }));
+
         // update options
         this.update(options.data);
-        
+
         // set initial value
         if (this.options.value !== undefined) {
             this.value(this.options.value);
         }
-        
+
         // refresh view
         this.refresh();
-        
+
         // add change event. fires on trigger
         this.on('change', function() {
             if (options.onchange) {
@@ -135,21 +142,21 @@ var View = Backbone.View.extend({
             }
         });
     },
-    
+
     /** Indicate that select fields are being updated */
     wait: function() {
         for (var i in this.list) {
             this.list[i].field.wait();
         }
     },
-    
+
     /** Indicate that the options update has been completed */
     unwait: function() {
         for (var i in this.list) {
             this.list[i].field.unwait();
         }
     },
-    
+
     /** Update content selector */
     update: function(options) {
         // identify dataset options
@@ -161,7 +168,7 @@ var View = Backbone.View.extend({
                 value: hda.id
             });
         }
-        
+
         // identify collection options
         var collection_options = [];
         for (var i in options.hdca) {
@@ -171,16 +178,16 @@ var View = Backbone.View.extend({
                 value: hdca.id
             });
         }
-        
+
         // update selection fields
         this.select_single && this.select_single.update(dataset_options);
         this.select_multiple && this.select_multiple.update(dataset_options);
         this.select_collection && this.select_collection.update(collection_options);
-        
+
         // add to content list
         this.app.content.add(options);
     },
-    
+
     /** Return the currently selected dataset values */
     value : function (new_value) {
         // update current value
@@ -216,19 +223,19 @@ var View = Backbone.View.extend({
             }
             this.refresh();
         }
-        
+
         // transform into an array
         var id_list = this._select().value();
         if (!(id_list instanceof Array)) {
             id_list = [id_list];
         }
-        
+
         // prepare result dict
         var result = {
             batch   : this.mode == 'single' && this.current != 'single',
             values  : []
         }
-        
+
         // append to dataset ids
         for (var i in id_list) {
             result.values.push({
@@ -236,17 +243,17 @@ var View = Backbone.View.extend({
                 src : this.list[this.current].type
             });
         }
-        
+
         // return
         return result;
     },
-    
+
     /** Validate current selection
     */
     validate: function() {
         return this._select().validate();
     },
-    
+
     /** Refreshes data selection view */
     refresh: function() {
         this.button_type.value(this.current);
@@ -264,7 +271,7 @@ var View = Backbone.View.extend({
             this.$batch.hide();
         }
     },
-    
+
     /** Assists in selecting the current field */
     _select: function() {
         return this.list[this.current].field;

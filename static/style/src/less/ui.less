@@ -316,8 +316,10 @@
 }
 
 .ui-options {
-    &:extend(.ui-input);
-    height: 100% !important;
+    .ui-options-input {
+        &:extend(.ui-input);
+        height: 100% !important;
+    }
 }
 
 
@@ -384,4 +386,11 @@
 
 .ui-select-multiple {
     &:extend(.ui-input);
+}
+
+.ui-select-content {
+    .ui-options {
+        float: left;
+        padding-top: 2px;
+    }
 }

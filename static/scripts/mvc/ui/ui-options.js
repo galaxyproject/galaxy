@@ -18,7 +18,7 @@ var Base = Backbone.View.extend({
         this.options = Utils.merge(options, this.optionsDefault);
     
         // create new element
-        this.setElement('<div/>');
+        this.setElement('<div class="ui-options"/>');
         
         // create elements
         this.$message = $('<div/>');
@@ -221,7 +221,7 @@ var Base = Backbone.View.extend({
     /** Main template function
     */
     _template: function() {
-        return '<div class="ui-options"/>';
+        return '<div class="ui-options-input"/>';
     }
 });
 
