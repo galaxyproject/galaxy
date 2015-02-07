@@ -48,7 +48,7 @@ var View = Backbone.View.extend({
 
         // add single dataset selector
         if (this.mode == 'single') {
-            radio_buttons.push({icon: 'fa-file-o', label : '', value : 'single'});
+            radio_buttons.push({icon: 'fa-file-o', label: '', value: 'single', tooltip: 'Single dataset' });
             this.select_single = new Ui.Select.View({
                 optional    : options.optional,
                 error_text  : hda_error,
@@ -64,7 +64,7 @@ var View = Backbone.View.extend({
 
         // add multiple dataset selector
         if (this.mode == 'single' || this.mode == 'multiple') {
-            radio_buttons.push({icon: 'fa-files-o', label : '', value : 'multiple'  });
+            radio_buttons.push({icon: 'fa-files-o', label: '', value: 'multiple', tooltip: 'Multiple datasets' });
             this.select_multiple = new Ui.Select.View({
                 multiple    : true,
                 error_text  : hda_error,
@@ -80,7 +80,7 @@ var View = Backbone.View.extend({
 
         // add collection selector
         if (this.mode == 'single' || this.mode == 'collection') {
-            radio_buttons.push({icon: 'fa-folder-o', label : '', value : 'collection' });
+            radio_buttons.push({icon: 'fa-folder-o', label: '', value: 'collection', tooltip: 'Dataset collection' });
             this.select_collection = new Ui.Select.View({
                 error_text  : hdca_error,
                 optional    : options.optional,

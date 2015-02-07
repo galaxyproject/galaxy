@@ -13,47 +13,47 @@ var Base = Backbone.View.extend({
             error_text  : 'No data available.',
             wait_text   : 'Please wait...'
         };
-    
+
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
-    
+
         // create new element
         this.setElement('<div class="ui-options"/>');
-        
+
         // create elements
         this.$message = $('<div/>');
         this.$options = $(this._template(options));
-        
+
         // append
         this.$el.append(this.$message);
         this.$el.append(this.$options);
-        
+
         // hide input field
         if (!this.options.visible) {
             this.$el.hide();
         }
-        
+
         // initialize data
         this.update(this.options.data);
-        
+
         // set initial value
         if (this.options.value !== undefined) {
             this.value(this.options.value);
         }
-        
+
         // add change event. fires on trigger
         var self = this;
         this.on('change', function() {
             self._change();
         });
     },
-    
+
     /** Update options
     */
     update: function(options) {
         // backup current value
         var current = this._getValue();
-        
+
         // remove all options
         this.$options.empty();
 
@@ -66,24 +66,25 @@ var Base = Backbone.View.extend({
             for (var key in options) {
                 var $option = $(this._templateOption(options[key]));
                 $option.addClass('ui-option');
+                $option.tooltip({title: options[key].tooltip, placement: 'bottom'});
                 this.$options.append($option);
             }
         }
-        
+
         // add change events
         var self = this;
         this.$el.find('input').on('change', function() {
             self.value(self._getValue());
             self._change();
         });
-        
+
         // refresh
         this._refresh();
-        
+
         // set previous value
         this.value(current);
     },
-    
+
     /** Return/Set current value
     */
     value: function (new_value) {
@@ -93,16 +94,16 @@ var Base = Backbone.View.extend({
             if (!(new_value instanceof Array)) {
                 new_value = [new_value];
             }
-            
+
             // reset selection
             this.$el.find('input').prop('checked', false);
-            
+
             // update to new selection
             for (var i in new_value) {
                 this.$el.find('input[value="' + new_value[i] + '"]').first().prop('checked', true);
             };
         }
-        
+
         // get and return value
         return this._getValue();
     },
@@ -122,7 +123,7 @@ var Base = Backbone.View.extend({
         }
         return false;
     },
-    
+
     /** Return first available option
     */
     first: function() {
@@ -133,13 +134,13 @@ var Base = Backbone.View.extend({
             return undefined;
         }
     },
-    
+
     /** Validate the selected option/options
     */
     validate: function() {
         return Utils.validate(this.value());
     },
-    
+
     /** Wait message during request processing
     */
     wait: function() {
@@ -148,14 +149,14 @@ var Base = Backbone.View.extend({
             this.$options.hide();
         }
     },
-    
+
     /** Hide wait message
     */
     unwait: function() {
         this._messageHide();
         this._refresh();
     },
-    
+
     /** Trigger custom onchange callback function
     */
     _change: function() {
@@ -163,7 +164,7 @@ var Base = Backbone.View.extend({
             this.options.onchange(this._getValue());
         }
     },
-    
+
     /** Refresh options view
     */
     _refresh: function() {
@@ -175,7 +176,7 @@ var Base = Backbone.View.extend({
             this.$options.css('display', 'inline-block');
         }
     },
-            
+
     /** Return current selection
     */
     _getValue: function() {
@@ -184,7 +185,7 @@ var Base = Backbone.View.extend({
         if (selected.length == 0) {
             return '__null__';
         }
-        
+
         // return multiple or single value
         if (this.options.multiple) {
             var values = [];
@@ -196,7 +197,7 @@ var Base = Backbone.View.extend({
             return selected.val();
         }
     },
-    
+
     /** Returns the number of options
     */
     _size: function() {
@@ -211,13 +212,13 @@ var Base = Backbone.View.extend({
         this.$message.addClass('ui-message alert alert-' + status);
         this.$message.html(text);
     },
-    
+
     /** Hide message
     */
     _messageHide: function() {
         this.$message.hide();
     },
-    
+
     /** Main template function
     */
     _template: function() {
@@ -250,7 +251,7 @@ Checkbox.View = Base.extend({
         options.multiple = true;
         Base.prototype.initialize.call(this, options);
     },
-    
+
     /** Template for a single option
     */
     _templateOption: function(pair) {
@@ -267,7 +268,7 @@ RadioButton.View = Base.extend({
     initialize: function(options) {
         Base.prototype.initialize.call(this, options);
     },
-    
+
     /** Return/Set current value
     */
     value: function (new_value) {
@@ -277,11 +278,11 @@ RadioButton.View = Base.extend({
             this.$el.find('label').removeClass('active');
             this.$el.find('[value="' + new_value + '"]').prop('checked', true).closest('label').addClass('active');
         }
-        
+
         // get and return value
         return this._getValue();
     },
-    
+
     /** Template for a single option
     */
     _templateOption: function(pair) {
@@ -293,7 +294,7 @@ RadioButton.View = Base.extend({
                     '</label>';
         return tmpl;
     },
-    
+
     /** Main template function
     */
     _template: function() {
