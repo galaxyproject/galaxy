@@ -47,6 +47,7 @@ def app_factory( global_conf, **kwargs ):
     # Create the Galaxy application unless passed in
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
+        galaxy.app.app = app
     else:
         try:
             app = galaxy.app.UniverseApplication( global_conf=global_conf, **kwargs )
