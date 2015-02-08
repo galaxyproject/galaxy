@@ -81,6 +81,13 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
    
    * A description of how to test the change.
 
+## Ideas
+
+Galaxy's [Trello board](http://bit.ly/gxytrello) is filled with bugs and ideas
+for enhancements, but we maintain a [card](https://trello.com/c/eFdPIdIB) with
+links to smaller issues we believe would make the best entry points for new
+developers.
+
 ## A Quick Note about Tools
 
   For the most part, Galaxy tools should be published to the
