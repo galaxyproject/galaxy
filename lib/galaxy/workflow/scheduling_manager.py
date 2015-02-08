@@ -31,11 +31,11 @@ class WorkflowSchedulingManager( object ):
         self.app = app
         self.__job_config = app.job_config
         self.workflow_schedulers = {}
-        self.active_workflow_schedulers = {}  # Passive workflow schedulers
-                                              # won't need to be monitored I
-                                              # guess.
+        self.active_workflow_schedulers = {}
+        # Passive workflow schedulers won't need to be monitored I guess.
+
         self.request_monitor = None
-        
+
         self.__plugin_classes = self.__plugins_dict()
         self.__init_schedulers()
 
@@ -67,7 +67,7 @@ class WorkflowSchedulingManager( object ):
             try:
                 self.request_monitor.shutdown()
             except Exception:
-                log.exception( "Failed to shutdown worklfow request monitor." )
+                log.exception( "Failed to shutdown workflow request monitor." )
 
     def queue( self, workflow_invocation, request_params ):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
@@ -133,7 +133,7 @@ class WorkflowSchedulingManager( object ):
         self.workflow_schedulers[ workflow_scheduler_id ] = workflow_scheduler
         if isinstance( workflow_scheduler, galaxy.workflow.schedulers.ActiveWorkflowSchedulingPlugin ):
             self.active_workflow_schedulers[ workflow_scheduler_id ] = workflow_scheduler
-            
+
     def __start_request_monitor( self ):
         self.request_monitor = WorkflowRequestMonitor( self.app, self )
 
