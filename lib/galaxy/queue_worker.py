@@ -30,10 +30,13 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
     handler, will have one of these used for dispatching so called 'control'
     tasks.
     """
-    def __init__(self, app, queue, task_mapping):
+    def __init__(self, app, queue, task_mapping, connection=None):
         super(GalaxyQueueWorker, self).__init__()
         log.info("Initalizing Galaxy Queue Worker on %s" % app.config.amqp_internal_connection)
-        self.connection = Connection(app.config.amqp_internal_connection)
+        if connection:
+            self.connection = connection
+        else:
+            self.connection = Connection(app.config.amqp_internal_connection)
         self.app = app
         # Eventually we may want different workers w/ their own queues and task
         # mappings.  Right now, there's only the one.
