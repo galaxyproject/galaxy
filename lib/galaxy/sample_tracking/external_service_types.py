@@ -96,9 +96,9 @@ class ExternalServiceType( object ):
     def parse_run_details( self, root ):
         self.run_details = {}
         run_details_elem = root.find( 'run_details' )
-        if run_details_elem:
+        if run_details_elem is not None:
             results_elem = run_details_elem.find( 'results' )
-            if results_elem:
+            if results_elem is not None:
                 # Get the list of resulting datatypes
                 # TODO: the 'results_urls' attribute is only useful if the transfer protocol is http(s), so check if that is the case.
                 self.run_details[ 'results' ], self.run_details[ 'results_urls' ] = self.parse_run_details_results( results_elem )

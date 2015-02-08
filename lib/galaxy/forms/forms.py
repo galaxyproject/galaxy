@@ -50,7 +50,7 @@ class FormDefinitionFactory( object ):
         #load fields
         fields = []
         fields_elem = elem.find( 'fields' )
-        if fields_elem:
+        if fields_elem is not None:
             for field_elem in fields_elem.findall( 'field' ):
                 field_type = field_elem.get( 'type' )
                 assert field_type in self.field_type_factories, 'Invalid form field type ( %s ).' % field_type
