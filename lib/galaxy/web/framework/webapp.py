@@ -221,7 +221,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 # Make sure we're not past the duration, and either log out or
                 # update timestamp.
                 now = datetime.datetime.now()
-                expiration_time = self.galaxy_session.update_time + datetime.timedelta(minutes=config.session_duration)
+                if self.galaxy_session.last_action:
+                    expiration_time = self.galaxy_session.last_action + datetime.timedelta(minutes=config.session_duration)
+                else:
+                    expiration_time = now
+                    self.galaxy_session.last_action = now - datetime.timedelta(seconds=1)
+                    self.sa_session.add(self.galaxy_session)
+                    self.sa_session.flush()
                 if expiration_time < now:
                     # Expiration time has passed.
                     self.handle_user_logout()
@@ -236,7 +242,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                                                      status='info',
                                                      use_panels=True ) )
                 else:
-                    self.galaxy_session.update_time = datetime.datetime.now()
+                    self.galaxy_session.last_action = now
                     self.sa_session.add(self.galaxy_session)
                     self.sa_session.flush()
 

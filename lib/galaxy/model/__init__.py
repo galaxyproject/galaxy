@@ -2986,7 +2986,8 @@ class GalaxySession( object ):
                   current_history=None,
                   session_key=None,
                   is_valid=False,
-                  prev_session_id=None ):
+                  prev_session_id=None,
+                  last_action=None ):
         self.id = id
         self.user = user
         self.remote_host = remote_host
@@ -2997,7 +2998,7 @@ class GalaxySession( object ):
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
         self.histories = []
-        self.last_action = galaxy.model.orm.now.now()
+        self.last_action = last_action or datetime.now()
 
     def add_history( self, history, association=None ):
         if association is None:

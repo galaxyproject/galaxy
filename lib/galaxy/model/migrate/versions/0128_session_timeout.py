@@ -21,7 +21,7 @@ def upgrade(migrate_engine):
     print __doc__
     metadata.reflect()
 
-    lastaction_column = Column( "last_action", DateTime, default=now )
+    lastaction_column = Column( "last_action", DateTime )
     __add_column( lastaction_column, "galaxy_session", metadata )
 
 
