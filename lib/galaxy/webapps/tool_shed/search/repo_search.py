@@ -33,6 +33,7 @@ try:
         full_last_updated = STORED )
 
 except ImportError, e:
+    log.error( 'There was an error while importing the Whoosh library.' )
     search_ready = False
     schema = None
 
