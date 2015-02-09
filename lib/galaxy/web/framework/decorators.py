@@ -344,3 +344,6 @@ def _future_expose_api_raw( func ):
 
 def _future_expose_api_raw_anonymous( func ):
     return _future_expose_api( func, to_json=False, user_required=False )
+
+def _future_expose_api_raw_anonymous_and_sessionless( func ):
+    return _future_expose_api( func, to_json=False, user_required=False, user_or_session_required=False )

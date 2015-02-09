@@ -19,6 +19,7 @@ from framework.decorators import _future_expose_api_anonymous
 from framework.decorators import _future_expose_api_raw
 from framework.decorators import _future_expose_api_raw_anonymous
 from framework.decorators import _future_expose_api_anonymous_and_sessionless
+from framework.decorators import _future_expose_api_raw_anonymous_and_sessionless
 
 from framework.formbuilder import form
 from framework.formbuilder import FormBuilder
