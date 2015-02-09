@@ -14,7 +14,7 @@ TODO:
 PROGRAMMATICALLY:
 currPanel.once( 'rendered', function(){
     currPanel.showSelectors();
-    currPanel.selectAllDatasets();
+    currPanel.selectAll();
     _.last( currPanel.actionsPopup.options ).func();
 });
 
@@ -31,17 +31,19 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         this.pair = attributes.pair || {};
     },
 
+    template : _.template([
+        '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
+        '<span class="pair-name-column flex-column">',
+            '<span class="pair-name"><%= pair.name %></span>',
+        '</span>',
+        '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
+    ].join('')),
+
     render : function(){
         this.$el
             .attr( 'draggable', true )
             .data( 'pair', this.pair )
-            .html( _.template([
-                '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
-                '<span class="pair-name-column flex-column">',
-                    '<span class="pair-name"><%= pair.name %></span>',
-                '</span>',
-                '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
-            ].join(''), { pair: this.pair }))
+            .html( this.template({ pair: this.pair }) )
             .addClass( 'flex-column-container' );
 
 //TODO: would be good to get the unpair-btn into this view - but haven't found a way with css
@@ -536,18 +538,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         return lcs || ( fwd.name + ' & ' + rev.name );
     },
 
-    ///** find datasets with fwdId and revID and pair them */
-    //_pairById : function( fwdId, revId, name ){
-    //    var both = this.unpaired.filter( function( unpaired ){
-    //            return unpaired.id === fwdId || unpaired.id === revId;
-    //        }),
-    //        fwd = both[0], rev = both[1];
-    //    if( both[0].id === revId ){
-    //        fwd = rev; rev = both[0];
-    //    }
-    //    return this._pair( fwd, rev, name );
-    //},
-
     /** unpair a pair, removing it from paired, and adding the fwd,rev datasets back into unpaired */
     _unpair : function( pair, options ){
         options = options || {};
@@ -994,6 +984,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         // footer
         'change .remove-extensions'                 : function( ev ){ this.toggleExtensions(); },
         'change .collection-name'                   : '_changeName',
+        'keydown .collection-name'                  : '_nameCheckForEnter',
         'click .cancel-create'                      : function( ev ){
             if( typeof this.oncancel === 'function' ){
                 this.oncancel.call( this );
@@ -1426,6 +1417,13 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** handle a collection name change */
     _changeName : function( ev ){
         this._validationWarning( 'name', !!this._getName() );
+    },
+
+    /** check for enter key press when in the collection name and submit */
+    _nameCheckForEnter : function( ev ){
+        if( ev.keyCode === 13 ){
+            this._clickCreate();
+        }
     },
 
     /** get the current collection name */
