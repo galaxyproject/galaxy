@@ -308,7 +308,7 @@ class Registry( object ):
         append_to_sniff_order()
 
     def load_build_sites( self, root ):
-        if root.find( 'build_sites' ):
+        if root.find( 'build_sites' ) is not None:
             for elem in root.find( 'build_sites' ).findall( 'site' ):
                 if not (elem.get( 'type' ) and elem.get( 'file' )):
                     self.log.exception( "Site is missing required 'type' and 'file' attributes: %s" )
