@@ -2711,12 +2711,16 @@ class DatasetCollection( object, Dictifiable, UsesAnnotations ):
         error_message = "Dataset collection has no %s with key %s." % ( get_by_attribute, key )
         raise KeyError( error_message )
 
-    def copy( self ):
+    def copy( self, destination=None, element_destination=None ):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
         )
         for element in self.elements:
-            element.copy_to_collection( new_collection )
+            element.copy_to_collection(
+                new_collection,
+                destination=destination,
+                element_destination=element_destination,
+            )
         object_session( self ).add( new_collection )
         object_session( self ).flush()
         return new_collection
@@ -2835,20 +2839,24 @@ class HistoryDatasetCollectionAssociation( DatasetCollectionInstance, Dictifiabl
                 break
         return matching_collection
 
-    def copy( self ):
+    def copy( self, element_destination=None ):
         """
         Create a copy of this history dataset collection association. Copy
         underlying collection.
         """
         hdca = HistoryDatasetCollectionAssociation(
             hid=self.hid,
-            collection=self.collection.copy(),
+            collection=None,
             visible=self.visible,
             deleted=self.deleted,
             name=self.name,
             copied_from_history_dataset_collection_association=self,
         )
-
+        collection_copy = self.collection.copy(
+            destination=hdca,
+            element_destination=element_destination,
+        )
+        hdca.collection = collection_copy
         object_session( self ).add( hdca )
         object_session( self ).flush()
         return hdca
@@ -2957,9 +2965,26 @@ class DatasetCollectionElement( object, Dictifiable ):
         else:
             return element_object
 
-    def copy_to_collection( self, collection ):
+    def copy_to_collection( self, collection, destination=None, element_destination=None ):
+        element_object = self.element_object
+        if element_destination:
+            if self.is_collection:
+                element_object = element_object.copy(
+                    destination=destination,
+                    element_destination=element_destination
+                )
+            else:
+                new_element_object = element_object.copy( copy_children=True )
+                if destination is not None and element_object.hidden_beneath_collection_instance:
+                    new_element_object.hidden_beneath_collection_instance = destination
+                # Ideally we would not need to give the following
+                # element an HID and it would exist in the history only
+                # as an element of the containing collection.
+                element_destination.add_dataset( new_element_object )
+                element_object = new_element_object
+
         new_element = DatasetCollectionElement(
-            element=self.element_object,
+            element=element_object,
             collection=collection,
             element_index=self.element_index,
             element_identifier=self.element_identifier,

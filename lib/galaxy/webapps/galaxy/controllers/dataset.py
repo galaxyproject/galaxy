@@ -1074,7 +1074,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                             if content.history_content_type == "dataset":
                                 hist.add_dataset( content.copy( copy_children=True ) )
                             else:
-                                hist.add_dataset_collection( content.copy( ) )
+                                copy_collected_datasets = True
+                                copy_kwds = {}
+                                if copy_collected_datasets:
+                                    copy_kwds["element_destination"] = hist
+                                hist.add_dataset_collection( content.copy( **copy_kwds ) )
                 if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
