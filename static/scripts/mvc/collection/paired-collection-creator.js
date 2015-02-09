@@ -150,6 +150,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         /** fn to call when the collection is created (scoped to this) */
         this.oncreate = attributes.oncreate;
 
+        /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
+        this.autoscrollDist = attributes.autoscrollDist || 24;
+
         /** is the unpaired panel shown? */
         this.unpairedPanelHidden = false;
         /** is the paired panel shown? */
@@ -1025,7 +1028,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** show an alert on the top of the interface containing message (alertClass is bootstrap's alert-*)*/
     _showAlert : function( message, alertClass ){
-        console.debug( 'alert:', message, alertClass );
         alertClass = alertClass || 'alert-danger';
         this.$( '.main-help' ).hide();
         this.$( '.header .alert' ).attr( 'class', 'alert alert-dismissable' ).addClass( alertClass ).show()
@@ -1340,27 +1342,41 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         //console.debug( '_dragoverPairedColumns:', ev );
         ev.preventDefault();
 
-        var $list = this.$( '.paired-columns .column-datasets' ),
-            offset = $list.offset();
+        var $list = this.$( '.paired-columns .column-datasets' );
+        this._checkForAutoscroll( $list, ev.originalEvent.clientY );
         //console.debug( ev.originalEvent.clientX, ev.originalEvent.clientY );
         var $nearest = this._getNearestPairedDatasetLi( ev.originalEvent.clientY );
-        //console.debug( ev.originalEvent.clientX - offset.left, ev.originalEvent.clientY - offset.top );
 
         $( '.paired-drop-placeholder' ).remove();
-        var $placeholder = $( '<div class="paired-drop-placeholder"></div>')
+        var $placeholder = $( '<div class="paired-drop-placeholder"></div>' );
         if( !$nearest.size() ){
             $list.append( $placeholder );
         } else {
             $nearest.before( $placeholder );
         }
     },
+
+    /** If the mouse is near enough to the list's top or bottom, scroll the list */
+    _checkForAutoscroll : function( $element, y ){
+        var AUTOSCROLL_SPEED = 2;
+        var offset = $element.offset(),
+            scrollTop = $element.scrollTop(),
+            upperDist = y - offset.top,
+            lowerDist = ( offset.top + $element.outerHeight() ) - y;
+        //console.debug( '_checkForAutoscroll:', scrollTop, upperDist, lowerDist );
+        if( upperDist >= 0 && upperDist < this.autoscrollDist ){
+            $element.scrollTop( scrollTop - AUTOSCROLL_SPEED );
+        } else if( lowerDist >= 0 && lowerDist < this.autoscrollDist ){
+            $element.scrollTop( scrollTop + AUTOSCROLL_SPEED );
+        }
+    },
+
     /** get the nearest *previous* paired dataset PairView based on the mouse's Y coordinate.
      *      If the y is at the end of the list, return an empty jQuery object.
      */
     _getNearestPairedDatasetLi : function( y ){
         var WIGGLE = 4,
             lis = this.$( '.paired-columns .column-datasets li' ).toArray();
-//TODO: better way?
         for( var i=0; i<lis.length; i++ ){
             var $li = $( lis[i] ),
                 top = $li.offset().top,

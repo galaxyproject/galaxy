@@ -152,6 +152,12 @@
                     currPanel.connectToQuotaMeter( Galaxy.quotaMeter );
                     currPanel.loadCurrentHistory();
                     Galaxy.currHistoryPanel = currPanel;
+
+currPanel.once( 'rendered', function(){
+    currPanel.showSelectors();
+    currPanel.selectAll();
+    _.last( currPanel.actionsPopup.options ).func();
+});
                 });
             });
         </script>
