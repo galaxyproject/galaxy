@@ -10,13 +10,13 @@ return Backbone.Model.extend({
     initialize: function(app) {
         this.app = app;
     },
-    
+
     /** Convert dictionary representation into tool api specific flat dictionary format.
     */
     finalize: function(patch) {
         // link this
         var self = this;
-        
+
         // dictionary with api specific identifiers
         this.map_dict = {};
 
@@ -24,24 +24,24 @@ return Backbone.Model.extend({
         if (!this.app.section) {
             return {};
         }
-        
+
         // ensure that dictionary with patching functions exists
         patch = patch || {};
-        
+
         // dictionary formatted for job submission or tool form update
         var result_dict = {};
 
         // prepare full dictionary
         var dict = {};
-        
+
         // fill dictionary from dom
         this._iterate(this.app.section.$el, dict);
-        
+
         // add identifier and value to job definition
         function add(job_input_id, input_id, input_value) {
             // add entry to result dictionary
             result_dict[job_input_id] = input_value;
-            
+
             // backup id mapping
             self.map_dict[job_input_id] = input_id;
         };
@@ -53,21 +53,21 @@ return Backbone.Model.extend({
                 if (node.input) {
                     // get node
                     var input = node.input;
-                    
+
                     // create identifier
                     var job_input_id = identifier;
                     if (identifier != '') {
                         job_input_id += '|';
                     }
                     job_input_id += input.name;
-                    
+
                     // process input type
                     switch (input.type) {
                         // handle repeats
                         case 'repeat':
                             // section identifier
                             var section_label = 'section-';
-                            
+
                             // collect repeat block identifiers
                             var block_indices = [];
                             var block_prefix = null;
@@ -81,10 +81,10 @@ return Backbone.Model.extend({
                                     }
                                 }
                             }
-                            
+
                             // sort repeat blocks
                             block_indices.sort(function(a,b) { return a - b; });
-                            
+
                             // add to response dictionary in created order
                             var index = 0;
                             for (var i in block_indices) {
@@ -98,10 +98,10 @@ return Backbone.Model.extend({
                             if (patch[input.test_param.type]) {
                                 value = patch[input.test_param.type](value);
                             }
-                            
+
                             // add conditional value
                             add (job_input_id + '|' + input.test_param.name, input.id, value);
-                            
+
                             // identify selected case
                             var selectedCase = self.matchCase(input, value);
                             if (selectedCase != -1) {
@@ -116,20 +116,15 @@ return Backbone.Model.extend({
                             // get field
                             var field = self.app.field_list[input.id];
                             if (field && field.value) {
-                                // get and patch field value
+                                // validate field value
                                 var value = field.value();
-                                if (patch[input.type]) {
-                                    value = patch[input.type](value);
-                                }
-
-                                // validate field value
-                                if (field.skip) {
-                                    continue;
-                                }
-
-                                // validate field value
                                 if (field.validate && !field.validate()) {
                                     value = null;
+                                }
+
+                                // get and patch field value
+                                if (patch[input.type]) {
+                                    value = patch[input.type](value);
                                 }
 
                                 // ignore certain values
@@ -149,20 +144,20 @@ return Backbone.Model.extend({
                 }
             }
         }
-        
+
         // start conversion
         convert('', dict);
-        
+
         // return result
         return result_dict;
     },
-    
+
     /** Match job definition identifier to input element identifier
     */
     match: function (job_input_id) {
         return this.map_dict && this.map_dict[job_input_id];
     },
-    
+
     /** Match conditional values to selected cases
     */
     matchCase: function(input, value) {
@@ -174,27 +169,27 @@ return Backbone.Model.extend({
                 value = input.test_param.falsevalue || 'false';
             }
         }
-        
+
         // find selected case
         for (var i in input.cases) {
             if (input.cases[i].value == value) {
                 return i;
             }
         }
-        
+
         // selected case not found
         return -1;
     },
-    
+
     /** Matches identifier from api model to input elements
     */
     matchModel: function(model, callback) {
         // final result dictionary
         var result = {};
-        
+
         // link this
         var self = this;
-        
+
         // search throughout response
         function search (id, head) {
             for (var i in head) {
@@ -224,23 +219,23 @@ return Backbone.Model.extend({
                 }
             }
         }
-        
+
         // match all ids and return messages
         search('', model.inputs);
 
         // return matched results
         return result;
     },
-    
+
     /** Matches identifier from api response to input elements
     */
     matchResponse: function(response) {
         // final result dictionary
         var result = {};
-        
+
         // link this
         var self = this;
-        
+
         // search throughout response
         function search (id, head) {
             if (typeof head === 'string') {
@@ -262,14 +257,14 @@ return Backbone.Model.extend({
                 }
             }
         }
-        
+
         // match all ids and return messages
         search('', response);
-        
+
         // return matched results
         return result;
     },
-    
+
     /** Iterate through the tool form dom and map it to the dictionary.
     */
     _iterate: function(parent, dict) {
@@ -279,15 +274,15 @@ return Backbone.Model.extend({
         children.each(function() {
             // get child element
             var child = this;
-            
+
             // get id
             var id = $(child).attr('id');
-            
+
             // create new branch
             if ($(child).hasClass('section-row')) {
                 // create sub dictionary
                 dict[id] = {};
-                
+
                 // add input element if it exists
                 var input = self.app.input_list[id];
                 if (input) {
@@ -295,7 +290,7 @@ return Backbone.Model.extend({
                         input : input
                     }
                 }
-                
+
                 // fill sub dictionary
                 self._iterate(child, dict[id]);
             } else {

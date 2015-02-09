@@ -1618,6 +1618,8 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             return UnvalidatedValue( None )
         initial_values = []
         recurse_options( initial_values, self.get_options( trans=trans, other_values=context ) )
+        if len( initial_values ) == 0:
+            initial_values = None
         return initial_values
 
     def value_to_display_text( self, value, app ):

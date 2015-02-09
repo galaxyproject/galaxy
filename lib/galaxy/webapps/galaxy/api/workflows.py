@@ -6,6 +6,8 @@ from __future__ import absolute_import
 
 import uuid
 import logging
+import copy
+import urllib
 from sqlalchemy import desc, or_, and_
 from galaxy import exceptions, util
 from galaxy.model.item_attrs import UsesAnnotations
@@ -17,6 +19,7 @@ from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_config
+from galaxy.workflow.modules import module_factory
 
 log = logging.getLogger(__name__)
 
@@ -304,6 +307,52 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException( message )
         return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
+
+    @expose_api
+    def build_module( self, trans, payload={}):
+        """
+        POST /api/workflows/build_module
+        Builds module details including a tool model for the workflow editor.
+        """
+        tool_id         = payload.get( 'tool_id', None )
+        tool_version    = payload.get( 'tool_version', None )
+        tool_inputs     = payload.get( 'inputs', None )
+        annotation      = payload.get( 'annotation', '' )
+        
+        # load tool
+        tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
+        
+        # initialize module
+        trans.workflow_building_mode = True
+        module = module_factory.from_dict( trans, {
+            'type'          : 'tool',
+            'tool_id'       : tool.id,
+            'tool_state'    : None
+        } )
+        
+        # create tool model and default tool state (if missing)
+        tool_model = module.tool.to_json(trans, tool_inputs, is_dynamic=False)
+        module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
+        return {
+            'tool_model'        : tool_model,
+            'tool_state'        : module.get_state(),
+            'data_inputs'       : module.get_data_inputs(),
+            'data_outputs'      : module.get_data_outputs(),
+            'tool_errors'       : module.get_errors(),
+            'form_html'         : module.get_config_form(),
+            'annotation'        : annotation,
+            'post_job_actions'  : module.get_post_job_actions(tool_inputs)
+        }
+
+    #
+    # -- Helper methods --
+    #
+    def _get_tool( self, id, tool_version=None, user=None ):
+        id = urllib.unquote_plus( id )
+        tool = self.app.toolbox.get_tool( id, tool_version )
+        if not tool or not tool.allow_user_access( user ):
+            raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
+        return tool
 
     def __api_import_new_workflow( self, trans, payload, **kwd ):
         data = payload['workflow']
