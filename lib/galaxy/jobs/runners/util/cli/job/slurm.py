@@ -7,7 +7,7 @@ try:
 except ImportError:
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
     from galaxy.util import enum
-    job_states = enum(RUNNING='running', OK='complete', QUEUED='queued')
+    job_states = enum(RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
 
 from ..job import BaseJobExec
 
@@ -59,10 +59,10 @@ class Slurm(BaseJobExec):
         return 'scancel %s' % job_id
 
     def get_status(self, job_ids=None):
-        return 'squeue -a -o \\"%A %t\\"'
+        return "squeue -a -o '%A %t'"
 
     def get_single_status(self, job_id):
-        return 'squeue -a -o \\"%A %t\\" -j ' + job_id
+        return "squeue -a -o '%A %t' -j " + job_id
 
     def parse_status(self, status, job_ids):
         # Get status for each job, skipping header.
@@ -80,6 +80,7 @@ class Slurm(BaseJobExec):
             # Job still on cluster and has state.
             id, state = status[1].split()
             return self._get_job_state(state)
+        # else line like "slurm_load_jobs error: Invalid job id specified"
         return job_states.OK
 
     def _get_job_state(self, state):
