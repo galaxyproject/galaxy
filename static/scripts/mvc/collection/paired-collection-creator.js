@@ -14,7 +14,7 @@ TODO:
 PROGRAMMATICALLY:
 currPanel.once( 'rendered', function(){
     currPanel.showSelectors();
-    currPanel.selectAllDatasets();
+    currPanel.selectAll();
     _.last( currPanel.actionsPopup.options ).func();
 });
 
@@ -27,21 +27,24 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     className   : 'dataset paired',
 
     initialize : function( attributes ){
-        //console.debug( 'PairView.initialize:', attributes );
+        console.debug( 'PairView.initialize:', attributes );
         this.pair = attributes.pair || {};
     },
 
+    template : _.template([
+        '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
+        '<span class="pair-name-column flex-column">',
+            '<span class="pair-name"><%= pair.name %></span>',
+        '</span>',
+        '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
+    ].join('')),
+
     render : function(){
+        console.debug( 'pair:', this.pair );
         this.$el
             .attr( 'draggable', true )
             .data( 'pair', this.pair )
-            .html( _.template([
-                '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
-                '<span class="pair-name-column flex-column">',
-                    '<span class="pair-name"><%= pair.name %></span>',
-                '</span>',
-                '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
-            ].join(''), { pair: this.pair }))
+            .html( this.template({ pair: this.pair }) )
             .addClass( 'flex-column-container' );
 
 //TODO: would be good to get the unpair-btn into this view - but haven't found a way with css
