@@ -143,7 +143,8 @@ class GalaxySession( object ):
                   current_history=None,
                   session_key=None,
                   is_valid=False,
-                  prev_session_id=None ):
+                  prev_session_id=None,
+                  last_action=None ):
         self.id = id
         self.user = user
         self.remote_host = remote_host
@@ -153,6 +154,7 @@ class GalaxySession( object ):
         self.session_key = session_key
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
+        self.last_action = last_action or datetime.now()
 
 
 class Repository( object, Dictifiable ):
