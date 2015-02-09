@@ -21,7 +21,10 @@
 
 from __future__ import print_function
 
-import argparse
+try:
+    import argparse
+except ImportError:
+    argparse = None
 import contextlib
 import json
 import glob
