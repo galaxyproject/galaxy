@@ -311,12 +311,15 @@ var HistoryPanelEdit = _super.extend(
                 });
             });
         } else {
-            //Galaxy.modal.show({
-            //    body : _l( 'No valid datasets were selected' ),
-            //    buttons : {
-            //        'Ok': function(){ Galaxy.modal.hide(); }
-            //    }
-            //});
+            Galaxy.modal.show({
+                title   : _l( 'No valid datasets were selected' ),
+                body    : _l([
+                              'Use the checkboxes at the left of the dataset names to select them.',
+                              'Selected datasets should be error-free and should have completed running.'
+                          ].join(' ')),
+                buttons : { 'Ok': function(){ Galaxy.modal.hide(); } },
+                closing_events: true
+            });
         }
     },
 
