@@ -294,16 +294,19 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             // get id
             var id = input_def.id;
 
+            // add regular/default value if missing
+            if (input_def.value === undefined) {
+                input_def.value = null;
+            }
+            if (input_def.default_value === undefined) {
+                input_def.default_value = input_def.value;
+            }
+            
             // create input field
             var field = this._createField(input_def);
 
             // add to field list
             this.app.field_list[id] = field;
-
-            // fix default value if missing
-            if (input_def.default_value === undefined) {
-                input_def.default_value = input_def.value;
-            }
 
             // create input field wrapper
             var input_element = new InputElement(this.app, {
