@@ -876,7 +876,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 filterChoice( '_1', '_2' ),
                 filterChoice( '_R1', '_R2' ),
             '</div>'
-        ].join(''), {}));
+        ].join(''))({}));
 
         return this.$( selector ).popover({
             container   : '.collection-creator',
