@@ -1307,8 +1307,10 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** rename a pair when the pair name is clicked */
     _clickPairName : function( ev ){
         ev.stopPropagation();
-        var $control = $( ev.currentTarget ),
-            pair = this.paired[ $control.parent().parent().index() / 2 ],
+        var $name = $( ev.currentTarget ),
+            $pair = $name.parent().parent(),
+            index = $pair.index( '.dataset.paired' ),
+            pair = this.paired[ index ],
             response = prompt( 'Enter a new name for the pair:', pair.name );
         if( response ){
             pair.name = response;
@@ -1316,7 +1318,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             //  when adding/removing extensions
             //TODO: kinda hacky
             pair.customizedName = true;
-            $control.text( pair.name );
+            $name.text( pair.name );
         }
     },
 
@@ -1324,7 +1326,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     _clickUnpair : function( ev ){
         //if( !ev.currentTarget ){ return true; }
         //TODO: this is a hack bc each paired rev now has two elems (dataset, button)
-        var pairIndex = Math.floor( $( ev.currentTarget ).index() / 2 );
+        var pairIndex = Math.floor( $( ev.currentTarget ).index( '.unpair-btn' ) );
         //this.debug( 'pair:', pairIndex );
         //TODO: animate
         this._unpair( this.paired[ pairIndex ] );
