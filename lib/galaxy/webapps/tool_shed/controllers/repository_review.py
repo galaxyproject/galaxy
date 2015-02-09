@@ -51,7 +51,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
             review.approved = approved_select_field_value
             trans.sa_session.add( review )
             trans.sa_session.flush()
-            message = 'Approved value <b>%s</b> saved for this revision.' % approved_select_field_value
+            message = 'Approved value <b>%s</b> saved for this revision.' % escape( approved_select_field_value )
         repository_id = trans.security.encode_id( review.repository_id )
         changeset_revision = review.changeset_revision
         return trans.response.send_redirect( web.url_for( controller='repository_review',
@@ -121,7 +121,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                 component = trans.app.model.Component( name=name, description=description )
                 trans.sa_session.add( component )
                 trans.sa_session.flush()
-                message = "Component '%s' has been created" % component.name
+                message = "Component '%s' has been created" % escape( component.name )
                 status = 'done'
                 trans.response.send_redirect( web.url_for( controller='repository_review',
                                                            action='manage_components',
@@ -151,7 +151,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                                                                                        repository_id=repository_id,
                                                                                        changeset_revision=changeset_revision,
                                                                                        user_id=trans.security.encode_id( trans.user.id ) ):
-                    message = "You have already created a review for revision <b>%s</b> of repository <b>%s</b>." % ( changeset_revision, repository.name )
+                    message = "You have already created a review for revision <b>%s</b> of repository <b>%s</b>." % ( changeset_revision, escape( repository.name ) )
                     status = "error"
                 else:
                     # See if there are any reviews for previous changeset revisions that the user can copy.
@@ -188,7 +188,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                                                                        status=status ) )
                     else:
                         message = "A new review cannot be created for revision <b>%s</b> of repository <b>%s</b>.  Select a valid revision and try again." \
-                            % ( changeset_revision, repository.name )
+                            % ( changeset_revision, escape( repository.name ) )
                         kwd[ 'message' ] = message
                         kwd[ 'status' ] = 'error'
             else:
@@ -218,7 +218,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                 component.description = new_description
                 trans.sa_session.add( component )
                 trans.sa_session.flush()
-                message = "The information has been saved for the component named <b>%s</b>" % ( component.name )
+                message = "The information has been saved for the component named <b>%s</b>" % escape( component.name )
                 status = 'done'
                 return trans.response.send_redirect( web.url_for( controller='repository_review',
                                                                   action='manage_components',

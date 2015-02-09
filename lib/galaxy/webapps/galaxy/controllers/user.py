@@ -569,7 +569,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             username = trans.user.username
         is_activation_sent = self.send_verification_email( trans, email, username )
         if is_activation_sent:
-            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % ( email, url_for( '/' ) )
+            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % ( escape( email ), url_for( '/' ) )
             status = 'error'
         else:
             message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.<br><a target="_top" href="%s">Return to the home page</a>.' % url_for( '/' )
@@ -673,7 +673,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         trans.log_event( "User created a new account" )
                         trans.log_event( "User logged in" )
                     if success and is_admin:
-                        message = 'Created new user account (%s)' % user.email
+                        message = 'Created new user account (%s)' % escape( user.email )
                         trans.response.send_redirect( web.url_for( controller='admin',
                                                                    action='users',
                                                                    cntrller=cntrller,
@@ -770,7 +770,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
                 is_activation_sent = self.send_verification_email( trans, email, username )
                 if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( escape( user.email ), url_for( '/' ) )
                     success = True
                 else:
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -778,7 +778,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         message += ' Contact: %s' % trans.app.config.error_email_to
                     success = False
             else:  # User activation is OFF, proceed without sending the activation email.
-                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( escape( user.email ), url_for( '/' ) )
                 success = True
         return ( message, status, user, success )
 
@@ -788,7 +788,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """
         if username is None:
             username = trans.user.username
-        activation_link = self.prepare_activation_link( trans, email )
+        activation_link = self.prepare_activation_link( trans, escape( email ) )
 
         body = ("Hello %s,\n\n"
                 "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
@@ -796,7 +796,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
                 "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
                 "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (username, email,
+                "Your Galaxy Team" % (escape( username ), escape( email ),
                                       datetime.utcnow().strftime( "%D"),
                                       trans.request.host, activation_link,
                                       trans.app.config.terms_url,
@@ -1155,7 +1155,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if not username:
                 return "A public user name is required in the tool shed."
             if username in [ 'repos' ]:
-                return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % username
+                return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % escape( username )
         message = "\n".join( [ validate_email( trans, email ),
                                validate_password( trans, password, confirm ),
                                validate_publicname( trans, username ) ] ).rstrip()
