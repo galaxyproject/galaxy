@@ -27,7 +27,7 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     className   : 'dataset paired',
 
     initialize : function( attributes ){
-        console.debug( 'PairView.initialize:', attributes );
+        //console.debug( 'PairView.initialize:', attributes );
         this.pair = attributes.pair || {};
     },
 
@@ -40,7 +40,6 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     ].join('')),
 
     render : function(){
-        console.debug( 'pair:', this.pair );
         this.$el
             .attr( 'draggable', true )
             .data( 'pair', this.pair )
@@ -539,18 +538,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         return lcs || ( fwd.name + ' & ' + rev.name );
     },
 
-    ///** find datasets with fwdId and revID and pair them */
-    //_pairById : function( fwdId, revId, name ){
-    //    var both = this.unpaired.filter( function( unpaired ){
-    //            return unpaired.id === fwdId || unpaired.id === revId;
-    //        }),
-    //        fwd = both[0], rev = both[1];
-    //    if( both[0].id === revId ){
-    //        fwd = rev; rev = both[0];
-    //    }
-    //    return this._pair( fwd, rev, name );
-    //},
-
     /** unpair a pair, removing it from paired, and adding the fwd,rev datasets back into unpaired */
     _unpair : function( pair, options ){
         options = options || {};
@@ -997,6 +984,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         // footer
         'change .remove-extensions'                 : function( ev ){ this.toggleExtensions(); },
         'change .collection-name'                   : '_changeName',
+        'keydown .collection-name'                  : '_nameCheckForEnter',
         'click .cancel-create'                      : function( ev ){
             if( typeof this.oncancel === 'function' ){
                 this.oncancel.call( this );
@@ -1429,6 +1417,13 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** handle a collection name change */
     _changeName : function( ev ){
         this._validationWarning( 'name', !!this._getName() );
+    },
+
+    /** check for enter key press when in the collection name and submit */
+    _nameCheckForEnter : function( ev ){
+        if( ev.keyCode === 13 ){
+            this._clickCreate();
+        }
     },
 
     /** get the current collection name */
