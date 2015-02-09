@@ -14,7 +14,7 @@ if sys.version_info < (2, 7, 0):
     eggs.require('importlib')
     eggs.require('ordereddict')
 eggs.require('kombu')
-from kombu import Exchange, Queue
+from kombu import Exchange, Queue, Connection
 
 ALL_CONTROL = "control.*"
 galaxy_exchange = Exchange('galaxy_core_exchange', type='topic')
@@ -40,3 +40,10 @@ def control_queue_from_config(config):
     galaxy process's config
     """
     return Queue("control.%s" % config.server_name, galaxy_exchange, routing_key='control')
+
+
+def connection_from_config(config):
+    if config.amqp_internal_connection:
+        return Connection(config.amqp_internal_connection)
+    else:
+        return None

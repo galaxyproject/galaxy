@@ -2857,7 +2857,7 @@ class DataManagerTool( OutputParameterJSONTool ):
             return True
         if user:
             user = user.id
-        log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id ) 
+        log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id )
         return False
 
 # Populate tool_type to ToolClass mappings

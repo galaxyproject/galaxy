@@ -32,7 +32,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
     """
     def __init__(self, app, queue, task_mapping, connection=None):
         super(GalaxyQueueWorker, self).__init__()
-        log.info("Initalizing Galaxy Queue Worker on %s" % app.config.amqp_internal_connection)
+        log.info("Initalizing Galaxy Queue Worker on %s", app.config.amqp_internal_connection)
         if connection:
             self.connection = connection
         else:
