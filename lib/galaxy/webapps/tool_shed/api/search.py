@@ -1,8 +1,8 @@
 """API for searching the toolshed repositories"""
 from galaxy import exceptions
 from galaxy import eggs
+from galaxy import util
 from galaxy.web import _future_expose_api as expose_api
-# from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_raw_anonymous as expose_api_raw_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
@@ -39,7 +39,7 @@ class SearchController ( BaseAPIController ):
             raise exceptions.RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
 
         page = kwd.get( 'page', 1 )
-        return_jsonp = kwd.get( 'jsonp', False )
+        return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
         callback = kwd.get( 'callback', 'callback' )
 
         repo_search = RepoSearch()
