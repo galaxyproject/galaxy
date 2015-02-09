@@ -47,6 +47,7 @@ class Configuration( object ):
         self.toolshed_whoosh_index_dir = kwargs.get( "toolshed_whoosh_index_dir", None )
         # Analytics
         self.ga_code = kwargs.get( "ga_code", None )
+        self.session_duration = int(kwargs.get( 'session_duration', 0 ))
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/community_files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
