@@ -1,12 +1,13 @@
 # Contributing
 
 This document briefly describes how to contribute to the
-galaxy-central core project - also checkout the video of our [2013
-Galaxy Community Conference
-presentation](http://vimeo.com/channels/581875/73486255) on the
-topic. For information on contributing more broadly to the Galaxy
-ecosystem and a deeper discussion of some of these points - please see
-the [Develop](https://wiki.galaxyproject.org/Develop/) section of the
+galaxy-central core project - also checkout our 2013 Galaxy Community
+Conference presentation] on the topic
+([video](http://vimeo.com/channels/581875/73486255),
+[presentation](https://wiki.galaxyproject.org/Documents/Presentations/GCC2013?action=AttachFile&do=view&target=BakerContribute.pdf)). For
+information on contributing more broadly to the Galaxy ecosystem and a
+deeper discussion of some of these points - please see the
+[Develop](https://wiki.galaxyproject.org/Develop/) section of the
 [Galaxy Wiki](https://wiki.galaxyproject.org/).
 
 ## Before you Begin
@@ -79,6 +80,13 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
    * A description of implementation of the change.
    
    * A description of how to test the change.
+
+## Ideas
+
+Galaxy's [Trello board](http://bit.ly/gxytrello) is filled with bugs and ideas
+for enhancements, but we maintain a [card](https://trello.com/c/eFdPIdIB) with
+links to smaller issues we believe would make the best entry points for new
+developers.
 
 ## A Quick Note about Tools
 

@@ -609,7 +609,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         This is used for the form shown in the right pane when a node
         is selected.
         """
-
         tool_state = incoming.pop('tool_state', None)
         trans.workflow_building_mode = True
         module = module_factory.from_dict( trans, {
@@ -617,22 +616,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             'tool_id': tool_id,
             'tool_state': tool_state
         } )
-        
-        # create tool model and default tool state (if missing)
-        if type == 'tool' and not tool_state:
-            tool_model = module.tool.to_json(trans, **incoming)
-            module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
-            return {
-                'tool_model': tool_model,
-                'tool_state': module.get_state(),
-                'data_inputs': module.get_data_inputs(),
-                'data_outputs': module.get_data_outputs(),
-                'tool_errors': module.get_errors(),
-                'form_html': module.get_config_form(),
-                'annotation': annotation,
-                'post_job_actions': module.get_post_job_actions(incoming)
-            }
-        
+
         # update module state
         module.update_state( incoming )
         
@@ -669,7 +653,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         module = module_factory.new( trans, type, **kwargs )
         tool_model = None
         if type == 'tool':
-            tool_model = module.tool.to_json(trans)
+            tool_model = module.tool.to_json(trans, is_dynamic=False)
+            module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
         return {
             'type': module.type,
             'name': module.get_name(),

@@ -76,14 +76,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         GET /api/tools/{tool_id}/build
         Returns a tool model including dynamic parameters and updated values, repeats block etc.
         """
-        tool_id = urllib.unquote_plus( id )
         tool_version = kwd.get( 'tool_version', None )
-        tool = self.app.toolbox.get_tool( tool_id, tool_version )
-        if not tool:
-            trans.response.status = 500
-            return { 'error': 'Could not find tool with id \'%s\'' % tool_id }
-        return tool.to_json(trans, **kwd)
-    
+        tool = self._get_tool( id, tool_version=tool_version, user=trans.user )
+        return tool.to_json(trans, kwd)
+
     @_future_expose_api
     @web.require_admin
     def reload( self, trans, tool_id, **kwd ):

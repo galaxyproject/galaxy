@@ -10,7 +10,7 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
         ## This avoids making two separate requests since the classic form requires the mako anyway.
         params = dict(trans.request.params)
         params['__dataset_id__'] = params.get('id', None)
-        self.form_config = tool.to_json(trans, **params)
+        self.form_config = tool.to_json(trans, params)
         self.form_config.update({
             'id'                : tool.id,
             'job_id'            : trans.security.encode_id( job.id ) if job else None,

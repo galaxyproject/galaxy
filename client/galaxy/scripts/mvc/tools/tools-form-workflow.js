@@ -275,10 +275,16 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
         /** Request a new model for an already created tool form and updates the form inputs
         */
         _updateModel: function() {
-            // create the request dictionary
+            // link self
             var self = this;
-            var current_state = this.tree.finalize();
-
+            
+            // create the request dictionary
+            var current_state = {
+                tool_id         : this.options.id,
+                tool_version    : this.options.version,
+                inputs          : this.tree.finalize()
+            }
+        
             // log tool state
             console.debug('tools-form-workflow::_refreshForm() - Refreshing states.');
             console.debug(current_state);
@@ -287,11 +293,11 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             var process_id = this.deferred.register();
 
             // build model url for request
-            var model_url = galaxy_config.root + 'workflow/editor_form_post?tool_id=' + this.options.id + '&__is_dynamic__=False';
+            var model_url = galaxy_config.root + 'api/workflows/build_module';
 
             // post job
             Utils.request({
-                type    : 'GET',
+                type    : 'POST',
                 url     : model_url,
                 data    : current_state,
                 success : function(data) {

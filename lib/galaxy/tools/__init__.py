@@ -2250,13 +2250,12 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json (self, trans, **kwd):
+    def to_json (self, trans, kwd={}, is_dynamic=True):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
         job_id = kwd.get('__job_id__', None)
         dataset_id = kwd.get('__dataset_id__', None)
-        is_dynamic = string_as_bool(kwd.get('__is_dynamic__', True))
 
         # load job details if provided
         job = None
