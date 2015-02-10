@@ -24,8 +24,8 @@
 
         <object_store type="s3">
             <auth access_key="...." secret_key="....." />
-            <bucket name="unique_bucket_name" use_reduced_redundancy="False" />
-            <connection host="" port="" is_secure="" conn_path="" />
+            <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
+            <connection host="" port="" is_secure="" conn_path="" multipart="True"/>
             <cache path="database/files/" size="100" />
         </object_store>
 
