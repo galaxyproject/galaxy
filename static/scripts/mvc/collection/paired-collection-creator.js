@@ -1,8 +1,9 @@
 define([
     "utils/levenshtein",
+    "utils/natural-sort",
     "mvc/base-mvc",
     "utils/localization"
-], function( levelshteinDistance, baseMVC, _l ){
+], function( levelshteinDistance, naturalSort, baseMVC, _l ){
 /* ============================================================================
 TODO:
     _adjPairedOnScrollBar

@@ -2,8 +2,7 @@ define([
     "mvc/collection/paired-collection-creator",
     "test-data/paired-collection-creator.data",
     "jquery",
-    "sinon-qunit",
-    "galaxy.base"
+    "sinon-qunit"
 ], function(
     PAIRED_COLLECTION_CREATOR,
     // why am I yelling?
