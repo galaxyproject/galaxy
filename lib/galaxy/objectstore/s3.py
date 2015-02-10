@@ -13,7 +13,7 @@ import time
 from datetime import datetime
 
 from galaxy.exceptions import ObjectNotFound
-from galaxy.util import umask_fix_perms
+from galaxy.util import umask_fix_perms, string_as_bool
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
@@ -76,7 +76,7 @@ class S3ObjectStore(ObjectStore):
             self.secret_key = a_xml.get('secret_key')
             b_xml = config_xml.findall('bucket')[0]
             self.bucket = b_xml.get('name')
-            self.use_rr = b_xml.get('use_reduced_redundancy', False)
+            self.use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
             cn_xml = config_xml.findall('connection')
             if not cn_xml:
                 cn_xml = {}
