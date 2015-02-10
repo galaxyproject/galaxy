@@ -1143,8 +1143,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 # workflow view, so we don't need to render the Galaxy panels.
                                 action = 'center'
                             else:
-                                return trans.show_error_message( message )
-
                                 # Another Galaxy panels hack: The request originated from the Galaxy
                                 # workflow view, so we need to render the Galaxy panels.
                                 action = 'index'
