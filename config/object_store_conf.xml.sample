@@ -20,15 +20,24 @@
             <extra_dir type="temp" path="database/tmp3"/>
             <extra_dir type="job_work" path="database/job_working_directory3"/>
         </object_store>
-        <!--  Sample S3 Object Store
 
+        <!--  Sample S3 Object Store
         <object_store type="s3">
             <auth access_key="...." secret_key="....." />
             <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
             <cache path="database/files/" size="1000" />
         </object_store>
-
         -->
+
+        <!--  Sample Swift Object Store
+         <object_store type="swift">
+             <auth access_key="...." secret_key="....." />
+             <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
+             <connection host="" port="" is_secure="" conn_path="" multipart="True"/>
+             <cache path="database/files/" size="1000" />
+         </object_store>
+         -->
+
     </backends>
 </object_store>
 
