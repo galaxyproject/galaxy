@@ -14,6 +14,7 @@ from datetime import datetime
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import umask_fix_perms, string_as_bool
+from galaxy.util import string_as_bool
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
@@ -77,6 +78,7 @@ class S3ObjectStore(ObjectStore):
             b_xml = config_xml.findall('bucket')[0]
             self.bucket = b_xml.get('name')
             self.use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
+            self.max_chunk_size = int(b_xml.get('max_chunk_size', 250))
             cn_xml = config_xml.findall('connection')
             if not cn_xml:
                 cn_xml = {}
@@ -84,11 +86,24 @@ class S3ObjectStore(ObjectStore):
                 cn_xml = cn_xml[0]
             self.host = cn_xml.get('host', None)
             self.port = int(cn_xml.get('port', 6000))
-            self.is_secure = cn_xml.get('is_secure', True)
+            self.multipart = string_as_bool(cn_xml.get('multipart', 'True'))
+            self.is_secure = string_as_bool(cn_xml.get('is_secure', 'True'))
             self.conn_path = cn_xml.get('conn_path', '/')
             c_xml = config_xml.findall('cache')[0]
             self.cache_size = float(c_xml.get('size', -1))
             self.cache_path = c_xml.get('path')
+
+            # for multipart upload
+            self.s3server = {'access_key': self.access_key,
+                             'secret_key': self.secret_key,
+                             'is_secure': self.is_secure,
+                             'max_chunk_size': self.max_chunk_size,
+                             'host': self.host,
+                             'port': self.port,
+                             'use_rr': self.use_rr,
+                             'conn_path': self.conn_path}
+
+
         except Exception:
             # Toss it back up after logging, we can't continue loading at this point.
             log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
@@ -328,14 +343,14 @@ class S3ObjectStore(ObjectStore):
                     start_time = datetime.now()
                     log.debug("Pushing cache file '%s' of size %s bytes to key '%s'" % (source_file, os.path.getsize(source_file), rel_path))
                     mb_size = os.path.getsize(source_file) / 1e6
-                    if mb_size < 10 or type(self) == SwiftObjectStore:
+                    if mb_size < 10 or (not self.multipart):
                         self.transfer_progress = 0  # Reset transfer progress counter
                         key.set_contents_from_filename(source_file,
                                                        reduced_redundancy=self.use_rr,
                                                        cb=self._transfer_cb,
                                                        num_cb=10)
                     else:
-                        multipart_upload(self.bucket, key.name, source_file, mb_size, self.access_key, self.secret_key, use_rr=self.use_rr)
+                        multipart_upload(self.s3server, self.bucket, key.name, source_file, mb_size)
                     end_time = datetime.now()
                     log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)" % (source_file, rel_path, os.path.getsize(source_file), end_time - start_time))
                 return True
