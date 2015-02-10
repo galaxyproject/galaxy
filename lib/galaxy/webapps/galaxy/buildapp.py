@@ -222,6 +222,9 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
+    webapp.mapper.connect( "configuration_version",
+                           "/api/version", controller="configuration",
+                           action="version", conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
