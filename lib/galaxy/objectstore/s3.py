@@ -472,7 +472,7 @@ class S3ObjectStore(ObjectStore):
         except S3ResponseError, ex:
             log.error("Could not delete key '%s' from S3: %s", rel_path, ex)
         except OSError, ex:
-            log.error('%s delete error %s', self._get_filename(obj, **kwargs), ex)
+            log.error('%s delete error %s', self.get_filename(obj, **kwargs), ex)
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
