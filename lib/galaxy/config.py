@@ -19,7 +19,7 @@ from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.formatting import expand_pretty_datetime_format
-
+from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
 
@@ -63,6 +63,7 @@ class Configuration( object ):
             # This is not a uwsgi process, or something went horribly wrong.
             pass
 
+        self.version_major = VERSION_MAJOR
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
         self.database_connection = kwargs.get( "database_connection", False )
