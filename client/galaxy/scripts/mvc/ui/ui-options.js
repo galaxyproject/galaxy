@@ -94,9 +94,6 @@ var Base = Backbone.View.extend({
             self._change();
         });
 
-        // refresh
-        this._refresh();
-
         // set previous value
         this.value(current);
     },
@@ -120,6 +117,9 @@ var Base = Backbone.View.extend({
             };
         }
 
+        // refresh
+        this._refresh();
+        
         // get and return value
         return this._getValue();
     },
@@ -163,13 +163,13 @@ var Base = Backbone.View.extend({
         if (this._size() == 0) {
             this._messageShow(this.options.wait_text, 'info');
             this.$options.hide();
+            this.$menu.hide();
         }
     },
 
     /** Hide wait message
     */
     unwait: function() {
-        this._messageHide();
         this._refresh();
     },
 
@@ -179,6 +179,22 @@ var Base = Backbone.View.extend({
         if (this.options.onchange) {
             this.options.onchange(this._getValue());
         }
+    },
+
+    /** Refresh options view
+    */
+    _refresh: function() {
+        // show/hide messages
+        if (this._size() == 0) {
+            this._messageShow(this.options.error_text, 'danger');
+            this.$options.hide();
+            this.$menu.hide();
+        } else {
+            this._messageHide();
+            this.$options.css('display', 'inline-block');
+            this.$menu.show();
+        }
+        // refresh select/unselect button
         if (this.select_button) {
             var total = this._size();
             var value = this._getValue();
@@ -191,20 +207,6 @@ var Base = Backbone.View.extend({
                     this.select_button.value(2);
                 }
             }
-        }
-    },
-
-    /** Refresh options view
-    */
-    _refresh: function() {
-        if (this._size() == 0) {
-            this._messageShow(this.options.error_text, 'danger');
-            this.$options.hide();
-            this.$menu.hide();
-        } else {
-            this._messageHide();
-            this.$options.css('display', 'inline-block');
-            this.$menu.show();
         }
     },
 
