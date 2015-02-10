@@ -176,9 +176,8 @@ var Base = Backbone.View.extend({
     /** Trigger custom onchange callback function
     */
     _change: function() {
-        var current = this._getValue();
         if (this.options.onchange) {
-            this.options.onchange(current);
+            this.options.onchange(this._getValue());
         }
         if (this.select_button) {
             var total = this._size();
