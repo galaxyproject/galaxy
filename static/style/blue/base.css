@@ -148,7 +148,7 @@ output{display:block;padding-top:5px;font-size:12px;line-height:1.428571429;colo
 .form-control::-moz-placeholder{color:#999}
 .form-control:-ms-input-placeholder{color:#999}
 .form-control::-webkit-input-placeholder{color:#999}
-.form-control,.ui-input,.ui-textarea,.ui-options .ui-options-input,.ui-form-slider .ui-form-slider-text,.ui-select-multiple{display:block;width:100%;height:27px;padding:4px 10px;font-size:12px;line-height:1.428571429;color:#555;vertical-align:middle;background-color:#fff;border:1px solid #aaa;border-radius:3px;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);-webkit-transition:border-color ease-in-out .15s, box-shadow ease-in-out .15s;transition:border-color ease-in-out .15s, box-shadow ease-in-out .15s}.form-control:focus{border-color:#66afe9;outline:0;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6)}
+.form-control,.ui-input,.ui-textarea,.ui-options .ui-options-list,.ui-form-slider .ui-form-slider-text,.ui-select-multiple{display:block;width:100%;height:27px;padding:4px 10px;font-size:12px;line-height:1.428571429;color:#555;vertical-align:middle;background-color:#fff;border:1px solid #aaa;border-radius:3px;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);-webkit-transition:border-color ease-in-out .15s, box-shadow ease-in-out .15s;transition:border-color ease-in-out .15s, box-shadow ease-in-out .15s}.form-control:focus{border-color:#66afe9;outline:0;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6)}
 .form-control[disabled],.form-control[readonly],fieldset[disabled] .form-control{cursor:not-allowed;background-color:#eee}
 textarea.form-control{height:auto}
 .form-group{margin-bottom:15px}
@@ -1435,9 +1435,15 @@ label{font-weight:normal}
 .ui-portlet-limited,.ui-portlet-narrow,.ui-portlet-narrow{max-width:900px}
 .ui-popover{max-width:700px;display:none}.ui-popover .popover-close{position:absolute;right:10px;top:7px;font-size:1.2em;cursor:pointer}
 .ui-popover .popover-title{padding:4px 10px}
-.ui-input,.ui-textarea,.ui-options .ui-options-input,.ui-form-slider .ui-form-slider-text,.ui-select-multiple,.ui-textarea,.ui-options .ui-options-input,.ui-form-slider .ui-form-slider-text,.ui-select-multiple{background:transparent}
+.ui-input,.ui-textarea,.ui-options .ui-options-list,.ui-form-slider .ui-form-slider-text,.ui-select-multiple,.ui-textarea,.ui-options .ui-options-list,.ui-form-slider .ui-form-slider-text,.ui-select-multiple{background:transparent}
 .ui-textarea{height:100px !important}
-.ui-options .ui-options-input{height:100% !important}
+.ui-options .ui-options-list{height:100% !important}.ui-options .ui-options-list input[type=checkbox],.ui-options .ui-options-list input[type=radio]{display:none}
+.ui-options .ui-options-list label{margin:0px;cursor:pointer}
+.ui-options .ui-options-list .ui-drilldown-button{position:relative;top:2px;left:-3px;margin-right:3px;cursor:pointer}
+.ui-options .ui-options-list input[type=checkbox]+label:before{font-family:FontAwesome;display:inline-block;font-style:normal;font-size:1.2em;margin-right:5px;position:relative;top:1px;width:10px;content:"\f096"}
+.ui-options .ui-options-list input[type=checkbox]:checked+label:before{content:"\f046"}
+.ui-options .ui-options-list input[type=radio]+label:before{font-family:FontAwesome;display:inline-block;font-style:normal;font-size:1.2em;margin-right:5px;position:relative;top:1px;width:10px;content:"\f1db"}
+.ui-options .ui-options-list input[type=radio]:checked+label:before{content:"\f192"}
 .ui-form-slider{display:inline-block;width:100%}.ui-form-slider .ui-form-slider-text{width:100px;float:left}
 .ui-form-slider .ui-form-slider-element{width:calc(100% - 110px);float:left;top:8px;left:10px}
 .ui-radiobutton{width:100%}.ui-radiobutton label{height:23px;line-height:1em}
