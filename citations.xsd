@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+
+  <xs:complexType name="Citations">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Tool files may declare one citations element. Each citations element can contain one or more citation tag elements - each of which specifies tool citation information using either a DOI or a BibTeX entry.
+</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="citation" type="Citation" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+ 
+</xs:schema>

@@ -1,572 +1,1217 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema
+<xs:schema 
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
-    elementFormDefault="qualified" attributeFormDefault="unqualified">
-
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified"
+    >
+  <xs:annotation>
+    <xs:appinfo>Galaxy Schema</xs:appinfo>
+    <xs:documentation xml:lang="en">A Galaxy XML tool wrapper</xs:documentation>
+  </xs:annotation>
+  
+   <xs:include schemaLocation="citation.xsd"/>
+   <xs:include schemaLocation="citations.xsd"/>
+  
   <xs:element name="tool">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">The outer-most tag set</xs:documentation>
+    </xs:annotation>
     <xs:complexType>
       <xs:all>
-        <xs:element name="requirements" type="Requirements" minOccurs="0" />
-        <xs:element name="description" type="xs:string" minOccurs="0" />
-        <xs:element name="parallelism" type="Parallelism" minOccurs="0" />
-        <xs:element name="command" type="Command" />
-        <xs:element name="configfiles" type="ConfigFiles" minOccurs="0" />
-        <xs:element name="outputs" type="Outputs" minOccurs="0" />
-        <xs:element name="inputs" type="Inputs" minOccurs="0" />
-	<xs:element name="tests" type="Tests" minOccurs="0" />
-	<xs:element name="stdio" type="Stdio" minOccurs="0" />
-        <xs:element name="help" type="xs:string" minOccurs="0" />
-	<xs:element name="code" type="Code" minOccurs="0" />
-	<xs:element name="uihints" type="UIhints" minOccurs="0" />
+        <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="description" type="xs:string" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">The value is displayed in the tool menu immediately following the hyperlink for the tool</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
+        <xs:element name="version_command" type="xs:string" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Specifies the command to be run in order to get the tool's version string. The resulting value will be found in the "Info" field of the history dataset.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="command" type="Command"/>
+        <xs:element name="configfiles" type="ConfigFiles" minOccurs="0"/>
+        <xs:element name="outputs" type="Outputs" minOccurs="0"/>
+        <xs:element name="inputs" type="Inputs" minOccurs="0"/>
+        <xs:element name="tests" type="Tests" minOccurs="0"/>
+        <xs:element name="stdio" type="Stdio" minOccurs="0"/>
+        <xs:element name="help" type="xs:string" minOccurs="0">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="code" type="Code" minOccurs="0"/>
+        <xs:element name="uihints" type="UIhints" minOccurs="0"/>
+        <xs:element name="citations" type="Citations" minOccurs="0"/>
       </xs:all>
-      <xs:attribute name="id" type="xs:string" use="required" />
-      <xs:attribute name="name" type="xs:string" use="required" />
-      <xs:attribute name="version" type="xs:string" default="1.0.0" />
-      <xs:attribute name="hidden" type="xs:boolean" default="false" />
-      <xs:attribute name="tool_type" type="ToolTypeType" />
-      <xs:attribute name="URL_method" type="URLmethodType" />
+      <xs:attribute name="id" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Must be unique across all tools; should be lowercase and contain only letters, numbers, and underscores. It allows for tool versioning and metrics of the number of times a tool is used, among other things.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This string is what is displayed as a hyperlink in the tool menu</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="version" type="xs:string" default="1.0.0">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This string defaults to "1.0.0' if it is not included in the tag. It allows for tool versioning and should be changed with each new version of the tool.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="hidden" type="xs:boolean" default="false">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"> Allows for tools to be loaded upon server startup, but not displayed in the tool menu </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="tool_type" type="ToolTypeType">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"> Allows for certain framework functionality to be performed on certain types of tools. This is currently only used in "data_source" tools, but will undoubtedly be used with other tools in the future. </xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="URL_method" type="URLmethodType">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Only if "tool_type" attribute value is "data_source" - defines the HTTP request method to use when communicating with an external data source application ( the default is "get" ).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
-
+  
   <xs:complexType name="Requirements">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">This is a container tag set for the 'requirement' tag set described below. </xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
+  
   <xs:complexType name="Requirement">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">This tag set is contained within the 'requirements' tag set. Third party programs or modules that the tool depends upon (and which are not distributed with Galaxy) are included in this tag set. The intention is that when Galaxy starts it can check whether the required programs or modules are available, and if not this tool will not be loaded. </xs:documentation>
+    </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
-	<xs:attribute name="type" type="RequirementType" use="required" />
-	<xs:attribute name="version" type="xs:string" />
+        <xs:attribute name="type" type="RequirementType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"> This value defines the which type of the 3rd party module required by this tool </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="version" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"> Required for package type requirements </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
+  
+  
   <xs:complexType name="Parallelism">
-    <xs:attribute name="method" type="MethodType"/>
-  </xs:complexType> 
-
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Parallelism</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="method" type="MethodType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for method</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Code">
-    <xs:attribute name="file" type="xs:string"/>
-  </xs:complexType> 
-
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Code</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="file" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="UIhints">
-    <xs:attribute name="minwidth" type="xs:integer"/>
-  </xs:complexType> 
-
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for UIhints</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="minwidth" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for minwidth</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Tests">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Tests</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="test" type="Test" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="test" type="Test" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="Test">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Test</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="param" type="TestParam" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="param" type="TestParam" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="TestParam">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for TestParam</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="embeddedValue" type="xs:string" minOccurs="0" />
+      <xs:element name="embeddedValue" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for embeddedValue</xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required" />
-    <xs:attribute name="value" type="xs:string" />
-    <xs:attribute name="ftype" type="xs:string" />
-    <xs:attribute name="dbkey" type="xs:string" /> <!-- undocumented -->
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ftype" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for ftype</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="dbkey" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for dbkey</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="TestOutput">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for TestOutput</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="embeddedValue" type="xs:string" minOccurs="0" />
+      <xs:element name="embeddedValue" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for embeddedValue</xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required" />
-    <xs:attribute name="file" type="xs:string" />
-    <xs:attribute name="ftype" type="xs:string" /> <!-- undocumented -->
-    <xs:attribute name="sort" type="PermissiveBoolean" /> <!-- undocumented -->
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="file" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ftype" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for ftype</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="sort" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for sort</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
+  
+  
   <xs:complexType name="Inputs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Consists of all tag sets that define the tool's input parameters. Each &lt;param&gt; tag within the &lt;inputs&gt; tag set maps to a command line parameter within the 'command' tag set described above.</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="action" type="xs:string" /> <!-- undocumented -->
-    <xs:attribute name="check_values" type="xs:boolean" /> <!-- undocumented -->
-    <xs:attribute name="method" type="URLmethodType" /> <!-- undocumented -->
-    <xs:attribute name="target" type="TargetType" /> <!-- undocumented -->
+    <xs:attribute name="action" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for action</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="check_values" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for check_values</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="method" type="URLmethodType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for method</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="target" type="TargetType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for target</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
+  
+  
   <xs:group name="InputElement">
     <xs:choice>
-      <xs:element name="param" type="Param" />
-      <xs:element name="repeat" type="Repeat" />
-      <xs:element name="conditional" type="Conditional" />
-      <xs:element name="display" type="xs:string" /> <!-- undocumented -->
+      <xs:element name="param" type="Param"/>
+      <xs:element name="repeat" type="Repeat"/>
+      <xs:element name="conditional" type="Conditional"/>
+      <xs:element name="display" type="xs:string">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for display</xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="InputType" abstract="true">
-    <xs:sequence />
-    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for InputType</xs:documentation>
+    </xs:annotation>
+    <xs:sequence/>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name for this element</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
+  
+  
   <xs:complexType name="Conditional">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">This is a container for conditional parameters in the tool ( must contain 'when' tag sets ) - the command line is wrapped in an if-else statement. </xs:documentation>
+    </xs:annotation>
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:group ref="InputElement" />
-          <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded" />
+          <xs:group ref="InputElement"/>
+          <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-
+  
+  
+  
   <xs:complexType name="ConditionalWhen">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ConditionalWhen</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="value" type="xs:string" use="required" />
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
+  
+  
   
   <xs:complexType name="Repeat">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">This is a container for any tag sets that can be contained within the 'inputs' tag set. When this is used, the tool will allow the user to add any number of additional sets of the contained parameters ( an "Add new 'title'" button will be displayed on the tool form ).</xs:documentation>
+    </xs:annotation>
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded" />
+          <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
-        <xs:attribute name="title" type="xs:string" />
-        <xs:attribute name="min" type="xs:integer" />
-        <xs:attribute name="max" type="xs:integer" />
+        <xs:attribute name="title" type="xs:string" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"> The title of the repeat section, which will be displayed on the tool form </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="min" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"> The minimum number of repeat units </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"> The maximum number of repeat units </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="default" type="xs:integer" default="1">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"> The default number of repeat units </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-
+  
+  
+  
   <xs:complexType name="Param">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Param</xs:documentation>
+    </xs:annotation>
     <xs:complexContent>
       <xs:extension base="InputType">
-	<xs:sequence>
-	  <xs:element name="label" type="xs:string" minOccurs="0" maxOccurs="1" />
-	  <xs:choice>
-	    <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded" />
-	    <xs:element name="options" type="Options" minOccurs="0" maxOccurs="1" />
-	  </xs:choice>
-	  <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="unbounded" />
-	  <xs:element name="sanitizer" type="Sanitizer" minOccurs="0" maxOccurs="1" />
-	</xs:sequence>
-	<xs:attribute name="type" type="ParamType" use="required" />
-	<xs:attribute name="label" type="xs:string" />
-	<xs:attribute name="help" type="xs:string" />
-	<xs:attribute name="value" type="xs:string" />
-	<xs:attribute name="optional" type="xs:string" default="false" />
-	<xs:attribute name="min" type="xs:integer" />
-	<xs:attribute name="max" type="xs:integer" />
-	<xs:attribute name="format" type="xs:string" />
-	<xs:attribute name="data_ref" type="xs:string" />
-	<xs:attribute name="accept_default" type="xs:boolean" /> <!-- Not in doc, still used? -->
-	<xs:attribute name="force_select" type="xs:boolean" />
-	<xs:attribute name="display" type="DisplayType" />
-	<xs:attribute name="multiple" type="PermissiveBoolean" />
-	<xs:attribute name="numerical" type="PermissiveBoolean" />
-	<xs:attribute name="hierarchy" type="HierarchyType" />
-	<xs:attribute name="checked" type="CheckedType" />
-	<xs:attribute name="truevalue" type="xs:string" />
-	<xs:attribute name="falsevalue" type="xs:string" />
-	<xs:attribute name="size" type="xs:int" />
-	<xs:attribute name="metadata_name" type="xs:string" /> <!-- undocumented -->
+        <xs:sequence>
+          <xs:element name="label" type="xs:string" minOccurs="0" maxOccurs="1">
+            <xs:annotation>
+              <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:choice>
+            <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="options" type="Options" minOccurs="0" maxOccurs="1"/>
+          </xs:choice>
+          <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="sanitizer" type="Sanitizer" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+        <xs:attribute name="type" type="ParamType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="label" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="help" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="value" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="optional" type="xs:string" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for optional</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="min" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for min</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="max" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for max</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="format" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="data_ref" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for data_ref</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="accept_default" type="xs:boolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for accept_default</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="force_select" type="xs:boolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for force_select</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="display" type="DisplayType">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for display</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="multiple" type="PermissiveBoolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for multiple</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="numerical" type="PermissiveBoolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for numerical</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="hierarchy" type="HierarchyType">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for hierarchy</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="checked" type="CheckedType">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for checked</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="truevalue" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for truevalue</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="falsevalue" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for falsevalue</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="size" type="xs:int">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for size</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="metadata_name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for metadata_name</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-
   <xs:simpleType name="ParamType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ParamType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="text" />
-      <xs:enumeration value="integer" />
-      <xs:enumeration value="float" />
-      <xs:enumeration value="boolean" />
-      <xs:enumeration value="genomebuild" />
-      <xs:enumeration value="select" />
-      <xs:enumeration value="data_column" />
-      <xs:enumeration value="hidden" />
-      <xs:enumeration value="baseurl" />
-      <xs:enumeration value="file" />
-      <xs:enumeration value="data" />
-      <xs:enumeration value="drill_down" />
+      <xs:enumeration value="text"/>
+      <xs:enumeration value="integer"/>
+      <xs:enumeration value="float"/>
+      <xs:enumeration value="boolean"/>
+      <xs:enumeration value="genomebuild"/>
+      <xs:enumeration value="select"/>
+      <xs:enumeration value="data_column"/>
+      <xs:enumeration value="hidden"/>
+      <xs:enumeration value="baseurl"/>
+      <xs:enumeration value="file"/>
+      <xs:enumeration value="data"/>
+      <xs:enumeration value="drill_down"/>
     </xs:restriction>
   </xs:simpleType>
-
+  
+  
   <xs:complexType name="Command">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">This tag specifies how Galaxy should invoke the tool's executable, passing its required input parameter values (the command line specification links the parameters supplied in the form with the actual tool executable). Any word inside it starting with a dollar sign ($) will be treated as a variable whose values can be acquired from one of three sources: parameters, metadata, or output files. After the substitution of variables with their values, the content is interpreted with Cheetah and finally given to the interpreter specified in the corresponding attribute (if any).</xs:documentation>
+    </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
-        <xs:attribute name="interpreter" type="xs:string" />
+        <xs:attribute name="interpreter" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
+  
+  
   <xs:complexType name="ParamOption">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ParamOption</xs:documentation>
+    </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
-        <xs:attribute name="value" type="xs:string" />
-        <xs:attribute name="selected" type="PermissiveBoolean" default="false" />
+        <xs:attribute name="value" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="selected" type="PermissiveBoolean" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for selected</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-
+  
+  
   <xs:complexType name="Options">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Options</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="from_dataset" type="xs:string" />
-    <xs:attribute name="from_file" type="xs:string" />
-    <xs:attribute name="from_data_table" type="xs:string" />
-    <xs:attribute name="from_parameter" type="xs:string" />
-    <xs:attribute name="options_filter_attribute" type="xs:string" /> <!-- undocumented -->
-    <xs:attribute name="transform_lines" type="xs:string" /> <!-- undocumented -->
-    <xs:attribute name="startswith" type="xs:string" /> <!-- undocumented -->
+    <xs:attribute name="from_dataset" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for from_dataset</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from_file" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for from_file</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from_data_table" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for from_data_table</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from_parameter" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for from_parameter</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="options_filter_attribute" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for options_filter_attribute</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="transform_lines" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for transform_lines</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="startswith" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for startswith</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:group name="OptionsElement">
     <xs:choice>
-      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1" />
-      <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="Column">
-    <xs:attribute name="name" type="xs:string" use="required" />
-    <xs:attribute name="index" type="xs:decimal" use="required" />
-  </xs:complexType> 
-
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Column</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="index" type="xs:decimal" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for index</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Validator">
-    <xs:attribute name="type" type="ValidatorType" use="required" />
-    <xs:attribute name="message" type="xs:string" />
-    <xs:attribute name="filename" type="xs:string" />
-    <xs:attribute name="metadata_name" type="xs:string" />
-    <xs:attribute name="metadata_column" type="xs:integer" />
-    <xs:attribute name="line_startswith" type="xs:string" />
-    <xs:attribute name="min" type="xs:decimal" />
-    <xs:attribute name="max" type="xs:decimal" />
-    <xs:attribute name="split" type="xs:string" />
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Validator</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="type" type="ValidatorType" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="message" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for message</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="filename" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for filename</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="metadata_name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for metadata_name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="metadata_column" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for metadata_column</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="line_startswith" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for line_startswith</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:decimal">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for min</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:decimal">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for max</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="split" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for split</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Sanitizer">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Sanitizer</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="valid" type="Valid" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="valid" type="Valid" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="sanitize" type="PermissiveBoolean" />
-    <xs:attribute name="invalid_char" type="xs:string" />
+    <xs:attribute name="sanitize" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for sanitize</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="invalid_char" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for invalid_char</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Valid">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Valid</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:group ref="ValidElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="ValidElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="initial" type="xs:string" />
+    <xs:attribute name="initial" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for initial</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="ValidElementType" abstract="true">
-    <xs:attribute name="preset" type="xs:string" />
-    <xs:attribute name="value" type="xs:string" />
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ValidElementType</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="preset" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for preset</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Add">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Add</xs:documentation>
+    </xs:annotation>
     <xs:complexContent>
-      <xs:extension base="ValidElementType" />
+      <xs:extension base="ValidElementType"/>
     </xs:complexContent>
   </xs:complexType>
-
   <xs:complexType name="Remove">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Remove</xs:documentation>
+    </xs:annotation>
     <xs:complexContent>
-      <xs:extension base="ValidElementType" />
+      <xs:extension base="ValidElementType"/>
     </xs:complexContent>
   </xs:complexType>
-
   <xs:group name="ValidElement">
     <xs:choice>
-      <xs:element name="add" type="Add" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="remove" type="Remove" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="add" type="Add" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="remove" type="Remove" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="Filter">
-    <xs:attribute name="type" type="FilterType" use="required" />
-    <xs:attribute name="name" type="xs:string" />
-    <xs:attribute name="column" type="xs:integer" use="required" />
-    <xs:attribute name="ref" type="xs:string" />
-    <xs:attribute name="key" type="xs:string" />
-    <xs:attribute name="separator" type="xs:string" />
-    <xs:attribute name="compare" type="CompareType" /><!-- undocumented -->
-    <xs:attribute name="keep" type="PermissiveBoolean" /><!-- undocumented -->
-    <xs:attribute name="value" type="xs:string" /><!-- undocumented -->
-    <xs:attribute name="ref_attribute" type="xs:string" /><!-- undocumented -->
-  </xs:complexType> 
-
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Filter</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="type" type="FilterType" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="column" type="xs:integer" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for column</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ref" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for ref</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="key" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for key</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="separator" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for separator</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="compare" type="CompareType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for compare</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="keep" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for keep</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="ref_attribute" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for ref_attribute</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Outputs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Outputs</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="data" type="Data" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="data" type="Data" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="Data">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Data</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="change_format" type="ChangeFormat" minOccurs="0" />
-      <xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
-      <xs:element name="actions" type="Actions" minOccurs="0" />
+      <xs:element name="change_format" type="ChangeFormat" minOccurs="0"/>
+      <xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation for filter</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="actions" type="Actions" minOccurs="0"/>
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required" />
-    <xs:attribute name="format" type="xs:string" use="required" />
-    <xs:attribute name="format_source" type="xs:string" />
-    <xs:attribute name="metadata_source" type="xs:string" />
-    <xs:attribute name="label" type="xs:string" />
-    <xs:attribute name="from_work_dir" type="xs:string" />
-    <xs:attribute name="hidden" type="xs:boolean" />
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="format" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="format_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for format_source</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="metadata_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for metadata_source</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from_work_dir" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for from_work_dir</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="hidden" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for hidden</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="Actions">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Actions</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:group ref="ActionsElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="ActionsElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:group name="ActionsElement">
     <xs:choice>
-      <xs:element name="action" type="Action" />
-      <xs:element name="conditional" type="ActionsConditional" />
+      <xs:element name="action" type="Action"/>
+      <xs:element name="conditional" type="ActionsConditional"/>
     </xs:choice>
   </xs:group>
-
   <xs:complexType name="Action">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Action</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="option" type="ActionsOption" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="option" type="ActionsOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="type" type="ActionType"/>
-    <xs:attribute name="name" type="xs:string"/>
-    <xs:attribute name="default" type="xs:string"/>
+    <xs:attribute name="type" type="ActionType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="default" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for default</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
- <xs:complexType name="ActionsOption">
+  <xs:complexType name="ActionsOption">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ActionsOption</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="type" type="ActionsOptionType"/>
-    <xs:attribute name="name" type="xs:string"/>
-    <xs:attribute name="column" type="xs:integer"/>
-    <xs:attribute name="offset" type="xs:integer"/>
-    <xs:attribute name="param_attribute" type="xs:string"/><!-- undocumented -->
+    <xs:attribute name="type" type="ActionsOptionType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="column" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for column</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="offset" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for offset</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="param_attribute" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for param_attribute</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="ActionsConditional">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ActionsConditional</xs:documentation>
+    </xs:annotation>
     <xs:complexContent>
       <xs:extension base="InputType">
-	<xs:sequence>
-	  <xs:element name="when" type="ActionsConditionalWhen" minOccurs="0" maxOccurs="unbounded" />
-	</xs:sequence>
+        <xs:sequence>
+          <xs:element name="when" type="ActionsConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
-
   <xs:complexType name="ActionsConditionalWhen">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ActionsConditionalWhen</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="action" type="Action" minOccurs="1" maxOccurs="unbounded" />
+      <xs:element name="action" type="Action" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="value" type="xs:string" use="required" />
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:complexType name="ConfigFiles">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ConfigFiles</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="configfile" minOccurs="0" maxOccurs="unbounded" type="ConfigFile" />
+      <xs:element name="configfile" minOccurs="0" maxOccurs="unbounded" type="ConfigFile"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ConfigFile">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ConfigFile</xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="name" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="type" type="ConfigFileType" default="template">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  
+  
+  <xs:complexType name="Stdio">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Galaxy currently supports using regular expressions to scan stdout and stderr, and it also allows exit codes to be scanned for ranges. The 'stdio' tag has two subtags, 'regex' and 'exit_code', to define regular expressions and exit code processing, respectively. </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="regex" minOccurs="0" maxOccurs="unbounded" type="Regex"/>
+      <xs:element name="exit_code" minOccurs="0" maxOccurs="unbounded" type="ExitCode"/>
     </xs:sequence>
   </xs:complexType>
   
-  <xs:complexType name="ConfigFile">
-    <xs:simpleContent>
-      <xs:extension base="xs:string">
-        <xs:attribute name="name" type="xs:string" />
-        <!-- This attribute doesn't appear in Galaxy version of XML, but it would
-             be nice to specify certain files as literal script files where the 
-             templating is not applied. Galaxy is certralized so simple scripts are
-             just placed in the data directory, the TINT version is decentralized so
-             such scripts must be attached to the job. 
-        -->
-        <xs:attribute name="type" type="ConfigFileType" default="template" />
-      </xs:extension>
-    </xs:simpleContent>
-  </xs:complexType>
-
-  <xs:complexType name="Stdio">
-    <xs:sequence>
-      <xs:element name="regex" minOccurs="0" maxOccurs="unbounded" type="Regex" />
-      <xs:element name="exit_code" minOccurs="0" maxOccurs="unbounded" type="ExitCode" />
-    </xs:sequence>
-  </xs:complexType>
-
+  
   <xs:complexType name="ExitCode">
-    <xs:attribute name="range" type="RangeType"/>
-    <xs:attribute name="level" type="LevelType"/>
-    <xs:attribute name="description" type="xs:string"/>
-  </xs:complexType> 
-
-  <xs:complexType name="Regex">
-    <xs:attribute name="source" type="SourceType"/>
-    <xs:attribute name="match" type="xs:string"/>
-    <xs:attribute name="level" type="LevelType"/>
-    <xs:attribute name="description" type="xs:string"/>
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ExitCode</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="range" type="RangeType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for range</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="level" type="LevelType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for level</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for description</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
+  
+  
+  <xs:complexType name="Regex">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">A regular expression defines a pattern of characters</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="source" type="SourceType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the follwing values: </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="match" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This is the regular expression that will be used to match against stdout and/or stderr. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="level" type="LevelType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This works very similarly to the 'exit_code' tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="description" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">an optional description of the regular expression that has matched.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  
+  
   <xs:simpleType name="ConfigFileType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ConfigFileType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="template" />
-      <xs:enumeration value="literal" />
+      <xs:enumeration value="template"/>
+      <xs:enumeration value="literal"/>
     </xs:restriction>
   </xs:simpleType>
-
+  
   <xs:complexType name="ChangeFormat">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ChangeFormat</xs:documentation>
+    </xs:annotation>
     <xs:sequence>
-      <xs:element name="when" type="WhenData" maxOccurs="unbounded" />
+      <xs:element name="when" type="WhenData" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
-
   <xs:complexType name="WhenData">
-    <xs:sequence /> 
-    <xs:attribute name="input" type="xs:string" use="required" />
-    <xs:attribute name="value" type="xs:string" use="required" />
-    <xs:attribute name="format" type="xs:string" use="required" />
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for WhenData</xs:documentation>
+    </xs:annotation>
+    <xs:sequence/>
+    <xs:attribute name="input" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for input</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="format" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
-
   <xs:simpleType name="RequirementType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for RequirementType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="python-module" />
-      <xs:enumeration value="binary" />
-      <xs:enumeration value="package" />
+      <xs:enumeration value="python-module"/>
+      <xs:enumeration value="binary"/>
+      <xs:enumeration value="package"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="ToolTypeType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ToolTypeType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="data_source" />
+      <xs:enumeration value="data_source"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="URLmethodType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for URLmethodType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="get" />
-      <xs:enumeration value="post" />
+      <xs:enumeration value="get"/>
+      <xs:enumeration value="post"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="TargetType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for TargetType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="_top" />
-      <xs:enumeration value="_parent" />
+      <xs:enumeration value="_top"/>
+      <xs:enumeration value="_parent"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="MethodType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for MethodType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="basic" />
-      <xs:enumeration value="multi" />
+      <xs:enumeration value="basic"/>
+      <xs:enumeration value="multi"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="DisplayType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for DisplayType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="checkboxes" />
-      <xs:enumeration value="radio" />
+      <xs:enumeration value="checkboxes"/>
+      <xs:enumeration value="radio"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="HierarchyType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for HierarchyType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="exact" />
-      <xs:enumeration value="recurse" />
+      <xs:enumeration value="exact"/>
+      <xs:enumeration value="recurse"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="CheckedType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for CheckedType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="yes" />
-      <xs:enumeration value="true" />
-      <xs:enumeration value="on" />
-      <xs:enumeration value="false" /> <!-- undocumented -->
-      <xs:enumeration value="False" /> <!-- undocumented -->
-      <xs:enumeration value="no" /> <!-- undocumented -->
+      <xs:enumeration value="yes"/>
+      <xs:enumeration value="true"/>
+      <xs:enumeration value="on"/>
+      <xs:enumeration value="false"/>
+      <xs:enumeration value="False"/>
+      <xs:enumeration value="no"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="ValidatorType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ValidatorType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="expression" />
-      <xs:enumeration value="regex" />
-      <xs:enumeration value="in_range" />
-      <xs:enumeration value="length" />
-      <xs:enumeration value="metadata" />
-      <xs:enumeration value="unspecified_build" />
-      <xs:enumeration value="no_options" />
-      <xs:enumeration value="empty_field" />
-      <xs:enumeration value="dataset_metadata_in_file" />
-      <xs:enumeration value="dataset_ok_validator" />
+      <xs:enumeration value="expression"/>
+      <xs:enumeration value="regex"/>
+      <xs:enumeration value="in_range"/>
+      <xs:enumeration value="length"/>
+      <xs:enumeration value="metadata"/>
+      <xs:enumeration value="unspecified_build"/>
+      <xs:enumeration value="no_options"/>
+      <xs:enumeration value="empty_field"/>
+      <xs:enumeration value="dataset_metadata_in_file"/>
+      <xs:enumeration value="dataset_ok_validator"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="FilterType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for FilterType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="data_meta" />
-      <xs:enumeration value="param_value" />
-      <xs:enumeration value="static_value" />
-      <xs:enumeration value="unique_value" />
-      <xs:enumeration value="multiple_splitter" />
-      <xs:enumeration value="add_value" />
-      <xs:enumeration value="sort_by" />
+      <xs:enumeration value="data_meta"/>
+      <xs:enumeration value="param_value"/>
+      <xs:enumeration value="static_value"/>
+      <xs:enumeration value="unique_value"/>
+      <xs:enumeration value="multiple_splitter"/>
+      <xs:enumeration value="add_value"/>
+      <xs:enumeration value="sort_by"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="ActionType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ActionType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="format" />
-      <xs:enumeration value="metadata" />
+      <xs:enumeration value="format"/>
+      <xs:enumeration value="metadata"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="ActionsOptionType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for ActionsOptionType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="from_data_table" />
-      <xs:enumeration value="from_param" />
-      <xs:enumeration value="from_file" />
+      <xs:enumeration value="from_data_table"/>
+      <xs:enumeration value="from_param"/>
+      <xs:enumeration value="from_file"/>
     </xs:restriction>
   </xs:simpleType>
-
-  <xs:simpleType name="CompareType"> <!-- undocumented -->
+  <xs:simpleType name="CompareType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for CompareType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="startswith" />
+      <xs:enumeration value="startswith"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="LevelType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for LevelType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="fatal" />
-      <xs:enumeration value="warning" />
-      <xs:enumeration value="log" />
+      <xs:enumeration value="fatal"/>
+      <xs:enumeration value="warning"/>
+      <xs:enumeration value="log"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="RangeType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for RangeType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:pattern value="(\d)*:?(\d)*"/>
     </xs:restriction>
   </xs:simpleType>
-
   <xs:simpleType name="SourceType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for SourceType</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="stdout" />
-      <xs:enumeration value="stderr" />
-      <xs:enumeration value="both" />
+      <xs:enumeration value="stdout"/>
+      <xs:enumeration value="stderr"/>
+      <xs:enumeration value="both"/>
     </xs:restriction>
   </xs:simpleType>
-
- <xs:simpleType name="PermissiveBoolean">
+  <xs:simpleType name="PermissiveBoolean">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for PermissiveBoolean</xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="0"/>
       <xs:enumeration value="1"/>
@@ -576,5 +1221,4 @@
       <xs:enumeration value="False"/>
     </xs:restriction>
   </xs:simpleType>
-
 </xs:schema>
