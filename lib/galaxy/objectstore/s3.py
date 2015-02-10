@@ -20,6 +20,7 @@ from .s3_multipart_upload import multipart_upload
 from ..objectstore import ObjectStore, convert_bytes
 
 try:
+    # Imports are done this way to allow objectstore code to be used outside of Galaxy.
     import boto
     from boto.s3.key import Key
     from boto.s3.connection import S3Connection
