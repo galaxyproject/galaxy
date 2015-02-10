@@ -236,14 +236,16 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     _splitByFilters : function( filters ){
         var fwd = [],
             rev = [];
-        this.unpaired.forEach( function( unpaired ){
+
+        function _addToFwdOrRev( unpaired ){
             if( this._filterFwdFn( unpaired ) ){
                 fwd.push( unpaired );
             }
             if( this._filterRevFn( unpaired ) ){
                 rev.push( unpaired );
             }
-        }.bind( this ) );
+        }
+        this.unpaired.forEach( _.bind( _addToFwdOrRev, this ) );
         return [ fwd, rev ];
     },
 
@@ -603,7 +605,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** create the collection via the API
      *  @returns {jQuery.xhr Object}    the jquery ajax request
      */
-    createList : function(){
+    createList : function( name ){
         var creator = this,
             url;
         if( creator.historyId ){
@@ -616,10 +618,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var ajaxData = {
             type            : 'dataset_collection',
             collection_type : 'list:paired',
-            name            : _.escape( creator.$( '.collection-name' ).val() ),
+            name            : _.escape( name || creator.$( '.collection-name' ).val() ),
             element_identifiers : creator.paired.map( function( pair ){
                 return creator._pairToJSON( pair );
             })
+
         };
         //this.debug( JSON.stringify( ajaxData ) );
         return jQuery.ajax( url, {
@@ -1732,6 +1735,8 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
 //=============================================================================
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datasets, options ){
+    console.log( datasets );
+
     options = _.defaults( options || {}, {
         datasets    : datasets,
         oncancel    : function(){ Galaxy.modal.hide(); },
