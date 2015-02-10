@@ -223,8 +223,8 @@ class S3ObjectStore(ObjectStore):
             key = self.bucket.get_key(rel_path)
             if key:
                 return key.size
-        except S3ResponseError, ex:
-            log.error("Could not get size of key '%s' from S3: %s", rel_path, ex)
+        except S3ResponseError:
+            log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 
     def _key_exists(self, rel_path):
@@ -241,8 +241,8 @@ class S3ObjectStore(ObjectStore):
             else:
                 key = Key(self.bucket, rel_path)
                 exists = key.exists()
-        except S3ResponseError, ex:
-            log.error("Trouble checking existence of S3 key '%s': %s", rel_path, ex)
+        except S3ResponseError:
+            log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
         if rel_path[0] == '/':
             raise
@@ -469,10 +469,10 @@ class S3ObjectStore(ObjectStore):
                     log.debug("Deleting key %s", key.name)
                     key.delete()
                     return True
-        except S3ResponseError, ex:
-            log.error("Could not delete key '%s' from S3: %s", rel_path, ex)
-        except OSError, ex:
-            log.error('%s delete error %s', self.get_filename(obj, **kwargs), ex)
+        except S3ResponseError:
+            log.exception("Could not delete key '%s' from S3", rel_path)
+        except OSError:
+            log.exception('%s delete error', self.get_filename(obj, **kwargs))
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
@@ -532,8 +532,8 @@ class S3ObjectStore(ObjectStore):
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)
-                except OSError, ex:
-                    log.error("Trouble copying source file '%s' to cache '%s': %s", source_file, cache_file, ex)
+                except OSError:
+                    log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on S3
