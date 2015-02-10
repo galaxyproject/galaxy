@@ -68,7 +68,7 @@ default_galaxy_test_host = "localhost"
 default_galaxy_test_port_min = 8000
 default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
-default_galaxy_test_file_dir = "test-data"
+default_galaxy_test_file_dir = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
 installed_tool_panel_configs = [ 'config/shed_tool_conf.xml' ]
 
