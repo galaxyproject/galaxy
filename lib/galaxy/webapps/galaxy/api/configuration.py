@@ -31,6 +31,10 @@ class ConfigurationController( BaseAPIController ):
         serialization_params = self._parse_serialization_params( kwd, 'all' )
         return self.get_config_dict( trans, is_admin, **serialization_params )
 
+    @expose_api_anonymous
+    def version( self, trans, **kwds ):
+        return {"version_major": self.app.config.version_major }
+
     def get_config_dict( self, trans, return_admin=False, view=None, keys=None, default_view='all' ):
         """
         Return a dictionary with (a subset of) current Galaxy settings.
@@ -97,6 +101,7 @@ class ConfigSerializer( base.ModelSerializer ):
             'nginx_upload_path'         : _defaults_to( self.url_for( controller='api', action='tools' ) ),
             'ftp_upload_dir'            : _defaults_to( None ),
             'ftp_upload_site'           : _defaults_to( None ),
+            'version_major'             : _defaults_to( None ),
         }
 
 
