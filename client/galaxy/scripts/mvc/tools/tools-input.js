@@ -77,7 +77,6 @@ define([], function() {
                 this.$field.fadeIn('fast');
                 this.$title_optional.html(this.text_disable);
             } else {
-                this.reset();
                 this.$field.hide();
                 this.$title_optional.html(this.text_enable);
                 this.field.value && this.field.value(this.default_value);

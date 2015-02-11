@@ -102,15 +102,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // add refresh listener
             this.on('refresh', function() {
-                var new_state = self.tree.finalize();
-                if (!_.isEqual(new_state, current_state)) {
-                    // backup current state
-                    current_state = new_state;
-                    
-                    // by using/resetting the deferred ajax queue the number of redundant calls is reduced
-                    self.deferred.reset();
-                    self.deferred.execute(function(){self._updateModel(current_state)});
-                }
+                // by using/resetting the deferred ajax queue the number of redundant calls is reduced
+                self.deferred.reset();
+                self.deferred.execute(function(){
+                    var new_state = self.tree.finalize();
+                    if (!_.isEqual(new_state, current_state)) {
+                        current_state = new_state;
+                        self._updateModel($.extend({}, current_state));
+                    }
+                });
             });
 
             // add reset listener
@@ -119,9 +119,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     this.element_list[i].reset();
                 }
             });
-
-            // refresh
-            this.trigger('refresh');
         },
 
         /** Shows the final message (usually upon successful job submission)

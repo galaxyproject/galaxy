@@ -98,25 +98,27 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
 
         /** Request a new model for an already created tool form and updates the form inputs
         */
-        _updateModel: function() {
+        _updateModel: function(current_state) {
             // create the request dictionary
             var self = this;
-            var current_state = this.tree.finalize({
-                data : function(dict) {
-                    try {
-                        if (dict && dict.values[0].src === 'hda') {
-                            return self.content.get({id: dict.values[0].id, src: 'hda'}).id_uncoded;
-                        }
-                    } catch (err) {
-                        console.debug('tools-form::_updateModel - Invalid or empty data input value.');
-                    }
-                    return null;
-                }
-            });
 
-            // log tool state
-            console.debug('tools-form::_refreshForm() - Sending current state (see below).');
-            console.debug(current_state);
+            // create the request dictionary
+            var current_state = {
+                tool_id         : this.options.id,
+                tool_version    : this.options.version,
+                inputs          : current_state
+            }
+
+            // patch data tool parameters
+            // TODO: This needs to be removed and handled in the api
+            for (var i in current_state.inputs) {
+                var dict = current_state.inputs[i];
+                try {
+                    if (dict && dict.values[0].src === 'hda') {
+                        current_state.inputs[i] = self.content.get({id: dict.values[0].id, src: 'hda'}).id_uncoded;
+                    }
+                } catch (err) {}
+            }
 
             // activates/disables spinner for dynamic fields to indicate that they are currently being updated
             function wait(active) {
@@ -139,12 +141,16 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
             // register process
             var process_id = this.deferred.register();
 
+            // log tool state
+            console.debug('tools-form::_refreshForm() - Sending current state (see below).');
+            console.debug(current_state);
+
             // build model url for request
-            var model_url = galaxy_config.root + 'api/tools/' + this.options.id + '/build?tool_version=' + this.options.version;
+            var model_url = galaxy_config.root + 'api/tools/' + this.options.id + '/build';
             
             // post job
             Utils.request({
-                type    : 'GET',
+                type    : 'POST',
                 url     : model_url,
                 data    : current_state,
                 success : function(new_model) {
@@ -184,12 +190,12 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     // unset wait mode
                     wait(false);
 
-                    // process completed
-                    self.deferred.done(process_id);
-
                     // log success
                     console.debug('tools-form::_refreshForm() - Received new model (see below).');
                     console.debug(new_model);
+                    
+                    // process completed
+                    self.deferred.done(process_id);
                 },
                 error   : function(response) {
                     // process completed
