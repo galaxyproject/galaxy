@@ -46,6 +46,11 @@ function historyCopyDialog( history, options ){
                 Galaxy.modal.hide();
             });
     }
+    function checkNameAndCopy(){
+        var name = Galaxy.modal.$( '#copy-modal-title' ).val();
+        if( !validateName( name ) ){ return; }
+        copyHistory( name );
+    }
 
     Galaxy.modal.show( _.extend({
         title   : _l( 'Copying history' ) + ' "' + historyName + '"',
@@ -58,14 +63,15 @@ function historyCopyDialog( history, options ){
             ].join('')),
         buttons : {
             'Cancel' : function(){ Galaxy.modal.hide(); },
-            'Copy'   : function(){
-                var name = Galaxy.modal.$( '#copy-modal-title' ).val();
-                if( !validateName( name ) ){ return; }
-                copyHistory( name );
-            }
+            'Copy'   : checkNameAndCopy
         }
     }, options ));
     $( '#copy-modal-title' ).focus().select();
+    $( '#copy-modal-title' ).on( 'keydown', function( ev ){
+        if( ev.keyCode === 13 ){
+            checkNameAndCopy();
+        }
+    });
 }
 
 
