@@ -2520,7 +2520,7 @@ class Tool( object, Dictifiable ):
         for t in tools:
             tool_versions.append(t.version)
 
-        ## add information with underlying requirements and their versions
+        # add information with underlying requirements and their versions
         tool_requirements = []
         if self.requirements:
             for requirement in self.requirements:
@@ -2529,11 +2529,17 @@ class Tool( object, Dictifiable ):
                     'version'   : requirement.version
                 })
 
+        # add toolshed url
+        sharable_url = None
+        if self.tool_shed_repository:
+            sharable_url = self.tool_shed_repository.get_sharable_url( trans.app )
+
         # add additional properties
         tool_model.update({
             'help'          : tool_help,
             'citations'     : tool_citations,
             'biostar_url'   : trans.app.config.biostar_url,
+            'sharable_url'  : sharable_url,
             'message'       : tool_message,
             'versions'      : tool_versions,
             'requirements'  : tool_requirements,
