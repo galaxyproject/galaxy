@@ -2763,7 +2763,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
                                                                      user=trans.user,
-                                                                     repository=repository )
+                                                                     repository=repository,
+                                                                     resetting_all_metadata_on_repository=True )
         rmm.reset_all_metadata_on_repository_in_tool_shed()
         rmm_metadata_dict = rmm.get_metadata_dict()
         rmm_invalid_file_tups = rmm.get_invalid_file_tups()
@@ -2784,7 +2785,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def reset_metadata_on_my_writable_repositories_in_tool_shed( self, trans, **kwd ):
-        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user, resetting_all_metadata_on_repository=True )
         if 'reset_metadata_on_selected_repositories_button' in kwd:
             message, status = rmm.reset_metadata_on_selected_repositories( **kwd )
         else:
