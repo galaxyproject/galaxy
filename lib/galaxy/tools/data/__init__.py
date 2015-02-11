@@ -495,7 +495,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 try:
                     data_table_fh = open( filename, 'r+b' )
                 except IOError, e:
-                    log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', self.filename, e )
+                    log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e )
                     data_table_fh = open( filename, 'wb' )
                 if os.stat( filename )[6] != 0:
                     # ensure last existing line ends with new line
