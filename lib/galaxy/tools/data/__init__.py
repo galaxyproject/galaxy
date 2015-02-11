@@ -335,11 +335,13 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
     def get_named_fields_list( self ):
         rval = []
-        named_colums = self.get_column_name_list()
+        named_columns = self.get_column_name_list()
         for fields in self.get_fields():
             field_dict = {}
             for i, field in enumerate( fields ):
-                field_name = named_colums[i]
+                if i == len( named_columns ):
+                    break
+                field_name = named_columns[i]
                 if field_name is None:
                     field_name = i #check that this is supposed to be 0 based.
                 field_dict[ field_name ] = field
@@ -366,6 +368,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 self.columns[ name ] = index
                 self.largest_index = index
         else:
+            self.largest_index = 0
             for column_elem in config_element.findall( 'column' ):
                 name = column_elem.get( 'name', None )
                 assert name is not None, "Required 'name' attribute missing from column def"
@@ -495,7 +498,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 try:
                     data_table_fh = open( filename, 'r+b' )
                 except IOError, e:
-                    log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', self.filename, e )
+                    log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e )
                     data_table_fh = open( filename, 'wb' )
                 if os.stat( filename )[6] != 0:
                     # ensure last existing line ends with new line
