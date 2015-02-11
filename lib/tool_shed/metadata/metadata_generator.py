@@ -853,7 +853,7 @@ class MetadataGenerator( object ):
                             if tool_path and relative_install_dir:
                                 if relative_path_to_sample_file.startswith( os.path.join( tool_path, relative_install_dir ) ):
                                     relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
-                            sample_file_metadata_paths.append( relative_path_to_sample_file )
+                        sample_file_metadata_paths.append( relative_path_to_sample_file )
         return sample_file_metadata_paths, sample_file_copy_paths
 
     def handle_repository_elem( self, repository_elem, only_if_compiling_contained_td=False ):
