@@ -93,7 +93,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this._renderForm(options);
 
             // rebuild the underlying data structure
-            this.tree.finalize();
+            var current_state = this.tree.finalize();
 
             // show errors on startup
             if (options.initial_errors) {
@@ -102,9 +102,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // add refresh listener
             this.on('refresh', function() {
-                // by using/resetting the deferred ajax queue the number of redundant calls is reduced
-                self.deferred.reset();
-                self.deferred.execute(function(){self._updateModel()});
+                var new_state = self.tree.finalize();
+                if (!_.isEqual(new_state, current_state)) {
+                    // backup current state
+                    current_state = new_state;
+                    
+                    // by using/resetting the deferred ajax queue the number of redundant calls is reduced
+                    self.deferred.reset();
+                    self.deferred.execute(function(){self._updateModel(current_state)});
+                }
             });
 
             // add reset listener

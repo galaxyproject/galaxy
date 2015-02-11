@@ -115,7 +115,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
             });
 
             // log tool state
-            console.debug('tools-form::_refreshForm() - Refreshing states.');
+            console.debug('tools-form::_refreshForm() - Sending current state (see below).');
             console.debug(current_state);
 
             // activates/disables spinner for dynamic fields to indicate that they are currently being updated
@@ -188,7 +188,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     self.deferred.done(process_id);
 
                     // log success
-                    console.debug('tools-form::_refreshForm() - States refreshed.');
+                    console.debug('tools-form::_refreshForm() - Received new model (see below).');
                     console.debug(new_model);
                 },
                 error   : function(response) {

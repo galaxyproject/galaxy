@@ -274,15 +274,15 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
 
         /** Request a new model for an already created tool form and updates the form inputs
         */
-        _updateModel: function() {
+        _updateModel: function(current_state) {
             // link self
             var self = this;
             
             // create the request dictionary
-            var current_state = {
+            current_state = {
                 tool_id         : this.options.id,
                 tool_version    : this.options.version,
-                inputs          : this.tree.finalize()
+                inputs          : current_state
             }
         
             // log tool state
