@@ -386,6 +386,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 self.columns[ name ] = index
                 self.largest_index = index
         else:
+            self.largest_index = 0
             for column_elem in config_element.findall( 'column' ):
                 name = column_elem.get( 'name', None )
                 assert name is not None, "Required 'name' attribute missing from column def"
