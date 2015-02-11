@@ -89,6 +89,7 @@ tool-data/*.loc
 tool-data/genome/*
 
 # Test output
+test-data-cache
 run_functional_tests.html
 test/tool_shed/tmp/*
 .coverage
