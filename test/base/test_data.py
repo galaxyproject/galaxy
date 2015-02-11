@@ -75,7 +75,7 @@ class GitDataResolver(FileDataResolver):
     def __init__(self, repository, environ):
         self.repository = repository
         self.updated = False
-        repo_cache = environ.get("GALAXY_TEST_DATA_REPO_CACHE", "test-data-repos")
+        repo_cache = environ.get("GALAXY_TEST_DATA_REPO_CACHE", "test-data-cache")
         m = hashlib.md5()
         m.update(repository)
         repo_path = os.path.join(repo_cache, m.hexdigest())
