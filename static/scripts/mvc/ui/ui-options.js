@@ -105,7 +105,7 @@ var Base = Backbone.View.extend({
         if (new_value !== undefined) {
             // reset selection
             this.$('input').prop('checked', false);
-    
+
             // set value
             if (new_value !== null) {
                 // check if its an array
@@ -122,7 +122,7 @@ var Base = Backbone.View.extend({
 
         // refresh
         this._refresh();
-        
+
         // get and return value
         return this._getValue();
     },
@@ -146,7 +146,7 @@ var Base = Backbone.View.extend({
     /** Return first available option
     */
     first: function() {
-        var options = this.$('input');
+        var options = this.$('input').first();
         if (options.length > 0) {
             return options.val();
         } else {

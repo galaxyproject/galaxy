@@ -87,21 +87,17 @@ var View = Backbone.View.extend({
         }
         
         // validate and return value
-        var val = this.$select.val();
-        if (!Utils.validate(val)) {
-            return null;
-        }
-        return val;
+        return this._getValue();
     },
     
     /** Return the first select option
     */
     first: function() {
-        var options = this.$select.find('option');
+        var options = this.$select.find('option').first();
         if (options.length > 0) {
             return options.val();
         } else {
-            return undefined;
+            return null;
         }
     },
     
@@ -182,7 +178,7 @@ var View = Backbone.View.extend({
     */
     update: function(options) {
         // backup current value
-        var current = this.$select.val();
+        var current = this._getValue();
         
         // remove all options
         this.$select.find('option').remove();
@@ -204,7 +200,7 @@ var View = Backbone.View.extend({
         this.$select.val(current);
         
         // check if any value was set
-        if (!this.$select.val()) {
+        if (this._getValue() === null) {
             this.$select.val(this.first());
         }
         
@@ -232,8 +228,17 @@ var View = Backbone.View.extend({
     */
     _change: function() {
         if (this.options.onchange) {
-            this.options.onchange(this.$select.val());
+            this.options.onchange(this._getValue());
         }
+    },
+    
+    /** Validate */
+    _getValue: function() {
+        var val = this.$select.val();
+        if (!Utils.validate(val)) {
+            return null;
+        }
+        return val;
     },
     
     /** Refresh the select view
