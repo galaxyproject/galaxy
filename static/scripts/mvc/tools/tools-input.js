@@ -49,6 +49,9 @@ define([], function() {
                 
                 // refresh view
                 self._refresh();
+                
+                // refresh state
+                self.app.trigger('refresh');
             });
         },
         
@@ -79,7 +82,6 @@ define([], function() {
                 this.$title_optional.html(this.text_enable);
                 this.field.value && this.field.value(this.default_value);
             }
-            this.app.trigger('refresh');
         },
         
         /** Main Template
