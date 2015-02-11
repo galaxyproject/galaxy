@@ -350,6 +350,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     message     : options.message
                 });
             }
+
+            // log
+            console.debug('tools-form-base::initialize() - Completed.');
         }
     });
 });
