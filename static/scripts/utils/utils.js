@@ -35,6 +35,9 @@ function validate (value) {
     if (!(value instanceof Array)) {
         value = [value];
     }
+    if (value.length === 0) {
+        return false;
+    }
     for (var i in value) {
         if (['__null__', '__undefined__', 'None', null, undefined].indexOf(value[i]) > -1) {
             return false;

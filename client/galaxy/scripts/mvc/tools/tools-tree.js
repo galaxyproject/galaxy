@@ -118,9 +118,6 @@ return Backbone.Model.extend({
                             if (field && field.value) {
                                 // validate field value
                                 var value = field.value();
-                                if (field.validate && !field.validate()) {
-                                    value = null;
-                                }
 
                                 // get and patch field value
                                 if (patch[input.type]) {
@@ -128,7 +125,7 @@ return Backbone.Model.extend({
                                 }
 
                                 // ignore certain values
-                                if (input.ignore === undefined || (value !== null && input.ignore != value)) {
+                                if (input.ignore === undefined || input.ignore != value) {
                                     // add value to submission
                                     add (job_input_id, input.id, value);
 

@@ -101,19 +101,22 @@ var Base = Backbone.View.extend({
     /** Return/Set current value
     */
     value: function (new_value) {
-        // set new value if provided
+        // set new value if available
         if (new_value !== undefined) {
-            // check if its an array
-            if (!(new_value instanceof Array)) {
-                new_value = [new_value];
-            }
-
             // reset selection
             this.$('input').prop('checked', false);
+    
+            // set value
+            if (new_value !== null) {
+                // check if its an array
+                if (!(new_value instanceof Array)) {
+                    new_value = [new_value];
+                }
 
-            // update to new selection
-            for (var i in new_value) {
-                this.$('input[value="' + new_value[i] + '"]').first().prop('checked', true);
+                // update to new selection
+                for (var i in new_value) {
+                    this.$('input[value="' + new_value[i] + '"]').first().prop('checked', true);
+                }
             };
         }
 
@@ -147,14 +150,8 @@ var Base = Backbone.View.extend({
         if (options.length > 0) {
             return options.val();
         } else {
-            return undefined;
+            return null;
         }
-    },
-
-    /** Validate the selected option/options
-    */
-    validate: function() {
-        return Utils.validate(this.value());
     },
 
     /** Wait message during request processing
@@ -213,21 +210,22 @@ var Base = Backbone.View.extend({
     /** Return current selection
     */
     _getValue: function() {
-        // get selected values
-        var selected = this.$(':checked');
-        if (selected.length == 0) {
-            return '__null__';
+        // track values in array
+        var selected = [];
+        this.$(':checked').each(function() {
+            selected.push($(this).val());
+        });
+        
+        // get selected elements
+        if (!Utils.validate(selected)) {
+            return null;
         }
-
+        
         // return multiple or single value
         if (this.options.multiple) {
-            var values = [];
-            selected.each(function() {
-                values.push($(this).val());
-            });
-            return values;
+            return selected;
         } else {
-            return selected.val();
+            return selected[0];
         }
     },
 

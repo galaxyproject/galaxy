@@ -75,13 +75,23 @@ var View = Backbone.View.extend({
     /** Return/Set current selection
     */
     value : function (new_value) {
+        // set new value
         if (new_value !== undefined) {
+            if (new_value === null) {
+                new_value = '__null__';
+            }
             this.$select.val(new_value);
             if (this.$select.select2) {
                 this.$select.select2('val', new_value);
             }
         }
-        return this.$select.val();
+        
+        // validate and return value
+        var val = this.$select.val();
+        if (!Utils.validate(val)) {
+            return null;
+        }
+        return val;
     },
     
     /** Return the first select option
@@ -93,12 +103,6 @@ var View = Backbone.View.extend({
         } else {
             return undefined;
         }
-    },
-    
-    /** Validate the current selection
-    */
-    validate: function() {
-        return Utils.validate(this.value());
     },
     
     /** Return the label/text of the current selection

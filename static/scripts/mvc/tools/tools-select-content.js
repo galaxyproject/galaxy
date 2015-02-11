@@ -233,17 +233,27 @@ var View = Backbone.View.extend({
                     console.debug('tools-select-content::value() - Skipped.');
                 }
             } else {
-                this.select_single && this.select_single.value('__null__');
-                this.select_multiple && this.select_multiple.value('__null__');
-                this.select_collection && this.select_collection.value('__null__');
+                this.select_single && this.select_single.value(null);
+                this.select_multiple && this.select_multiple.value(null);
+                this.select_collection && this.select_collection.value(null);
             }
             this.refresh();
         }
 
-        // transform into an array
+        // validate value
         var id_list = this._select().value();
+        if (id_list === null) {
+            return null;
+        }
+        
+        // transform into an array
         if (!(id_list instanceof Array)) {
             id_list = [id_list];
+        }
+        
+        // check if value exists
+        if (id_list.length === 0) {
+            return null;
         }
 
         // prepare result dict
@@ -262,12 +272,6 @@ var View = Backbone.View.extend({
 
         // return
         return result;
-    },
-
-    /** Validate current selection
-    */
-    validate: function() {
-        return this._select().validate();
     },
 
     /** Refreshes data selection view */
