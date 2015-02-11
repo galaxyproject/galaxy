@@ -188,6 +188,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** set up initial options, instance vars, behaviors, and autopair (if set to do so) */
     initialize : function( attributes ){
+        this.metric( 'PairedCollectionCreator.initialize', attributes );
         //this.debug( '-- PairedCollectionCreator:', attributes );
 
         attributes = _.defaults( attributes, {
@@ -584,6 +585,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         .done( function( response, message, xhr ){
             //this.info( 'ok', response, message, xhr );
             creator.trigger( 'collection:created', response, message, xhr );
+            creator.metric( 'collection:created', response );
             if( typeof creator.oncreate === 'function' ){
                 creator.oncreate.call( this, response, message, xhr );
             }
@@ -883,6 +885,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 this.$( '.forward-unpaired-filter input' ).val(),
                 this.$( '.reverse-unpaired-filter input' ).val()
             ];
+            this.metric( 'filter-change', this.filters );
             this._renderFilters();
             this._renderUnpaired();
         });
@@ -1028,12 +1031,14 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** unpair all paired and do other super neat stuff which I'm not really sure about yet... */
     _clickUnpairAll : function( ev ){
+        this.metric( 'unpairAll' );
         this.unpairAll();
     },
 
     /** attempt to autopair */
     _clickAutopair : function( ev ){
-        this.autoPair();
+        var paired = this.autoPair();
+        this.metric( 'autopair', paired.length, this.unpaired.length );
         this.trigger( 'autopair' );
     },
 
