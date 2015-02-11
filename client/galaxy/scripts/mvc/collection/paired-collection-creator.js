@@ -6,10 +6,6 @@ define([
 ], function( levenshteinDistance, naturalSort, baseMVC, _l ){
 /* ============================================================================
 TODO:
-    _adjPairedOnScrollBar
-    parition drag now doesn't stop when dragging down
-        can push footer out of modal
-        only *after* partition is all the way down once?
 
 
 PROGRAMMATICALLY:
@@ -84,6 +80,7 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 });
 
 
+// ============================================================================
 /** returns an autopair function that uses the provided options.match function */
 function autoPairFnBuilder( options ){
     options = options || {};
@@ -182,6 +179,7 @@ function autoPairFnBuilder( options ){
 }
 
 
+// ============================================================================
 /** An interface for building collections of paired datasets.
  */
 var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
@@ -254,8 +252,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** map of common filter pairs by name */
     commonFilters : {
-        none            : [ '', '' ],
-        illumina        : [ '_1', '_2' ]
+        illumina        : [ '_1', '_2' ],
+        Rs              : [ '_R1', '_R2' ]
     },
     /** which commonFilter to use by default */
     DEFAULT_FILTERS : 'illumina',
@@ -469,7 +467,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** create a pair from fwd and rev, removing them from unpaired, and placing the new pair in paired */
     _pair : function( fwd, rev, options ){
         options = options || {};
-        //TODO: eventing, options
         //this.debug( '_pair:', fwd, rev );
         var pair = this._createPair( fwd, rev, options.name );
         this.paired.push( pair );
@@ -493,19 +490,22 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** try to find a good pair name for the given fwd and rev datasets */
     _guessNameForPair : function( fwd, rev, removeExtensions ){
         removeExtensions = ( removeExtensions !== undefined )?( removeExtensions ):( this.removeExtensions );
-        var lcs = this._naiveStartingAndEndingLCS(
-//TODO: won't work with regex
-            fwd.name.replace( this.filters[0], '' ),
-            rev.name.replace( this.filters[1], '' )
-        );
+        var fwdName = fwd.name,
+            revName = rev.name,
+            lcs = this._naiveStartingAndEndingLCS(
+                fwdName.replace( this.filters[0], '' ),
+                revName.replace( this.filters[1], '' )
+            );
         if( removeExtensions ){
             var lastDotIndex = lcs.lastIndexOf( '.' );
             if( lastDotIndex > 0 ){
-                lcs = lcs.slice( 0, lastDotIndex );
+                var extension = lcs.slice( lastDotIndex, lcs.length );
+                lcs = lcs.replace( extension, '' );
+                fwdName = fwdName.replace( extension, '' );
+                revName = revName.replace( extension, '' );
             }
         }
-        //TODO: optionally remove extension
-        return lcs || ( fwd.name + ' & ' + rev.name );
+        return lcs || ( fwdName + ' & ' + revName );
     },
 
     /** unpair a pair, removing it from paired, and adding the fwd,rev datasets back into unpaired */
@@ -535,7 +535,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     // ------------------------------------------------------------------------ API
     /** convert a pair into JSON compatible with the collections API */
-    _pairToJSON : function( pair ){
+    _pairToJSON : function( pair, src ){
+        src = src || 'hda';
         //TODO: consider making this the pair structure when created instead
         return {
             collection_type : 'paired',
@@ -544,13 +545,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             element_identifiers : [{
                 name    : 'forward',
                 id      : pair.forward.id,
-                //TODO: isn't necessarily true
-                src     : 'hda'
+                src     : src
             }, {
                 name    : 'reverse',
                 id      : pair.reverse.id,
-                //TODO: isn't necessarily true
-                src     : 'hda'
+                src     : src
             }]
         };
     },
@@ -560,14 +559,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
      */
     createList : function( name ){
         var creator = this,
-            url;
-        if( creator.historyId ){
             url = '/api/histories/' + this.historyId + '/contents/dataset_collections';
-        //} else {
-        //
-        }
 
-//TODO:?? Can't we use ListPairedCollection.create()
+        //TODO: use ListPairedCollection.create()
         var ajaxData = {
             type            : 'dataset_collection',
             collection_type : 'list:paired',
@@ -647,7 +641,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var $middle = this.$( '.middle' ).empty().html( PairedCollectionCreator.templates.middle() );
 
         // (re-) hide the un/paired panels based on instance vars
-        //TODO: use replaceWith
         if( this.unpairedPanelHidden ){
             this.$( '.unpaired-columns' ).hide();
         } else if( this.pairedPanelHidden ){
@@ -701,7 +694,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             return;
         }
         // add to appropo cols
-        //TODO: not the best way to render
+        //TODO: not the best way to render - consider rendering the entire unpaired-columns section in a fragment
+        //  and swapping out that
         this.$( '.unpaired-columns .forward-column .column-datasets' ).append( $fwd )
             .add( this.$( '.unpaired-columns .paired-column .column-datasets' ).append( $prd ) )
             .add( this.$( '.unpaired-columns .reverse-column .column-datasets' ).append( $rev ) );
@@ -776,12 +770,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         this.$( '.paired-columns .column-datasets' ).empty();
         var creator = this;
         this.paired.forEach( function( pair, i ){
-//TODO: cache these?
+            //TODO: cache these?
             var pairView = new PairView({ pair: pair });
             creator.$( '.paired-columns .column-datasets' )
                 .append( pairView.render().$el )
                 .append([
-//TODO: data-index="i"
                     '<button class="unpair-btn">',
                         '<span class="fa fa-unlink" title="', _l( 'Unpair' ), '"></span>',
                     '</button>'
@@ -828,9 +821,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 '<div class="help">',
                     _l( 'Choose from the following filters to change which unpaired reads are shown in the display' ),
                 ':</div>',
-                //TODO: connect with common filters
-                filterChoice( '_1', '_2' ),
-                filterChoice( '_R1', '_R2' ),
+                _.values( this.commonFilters ).map( function( filterSet ){
+                    return filterChoice( filterSet[0], filterSet[1] );
+                }).join( '' ),
             '</div>'
         ].join(''))({}));
 
@@ -927,7 +920,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         'click .forward-column .column-title'       : '_clickShowOnlyUnpaired',
         'click .reverse-column .column-title'       : '_clickShowOnlyUnpaired',
         'click .unpair-all-link'                    : '_clickUnpairAll',
-        //TODO: this seems kinda backasswards
+        //TODO: this seems kinda backasswards - re-sending jq event as a backbone event, can we listen directly?
         'change .forward-unpaired-filter input'     : function( ev ){ this.trigger( 'filter-change' ); },
         'focus .forward-unpaired-filter input'      : function( ev ){ $( ev.currentTarget ).select(); },
         'click .autopair-link'                      : '_clickAutopair',
@@ -995,7 +988,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         this.$( '.header .alert' ).hide();
     },
 
-    //TODO: consolidate these
     /** toggle between showing only unpaired and split view */
     _clickShowOnlyUnpaired : function( ev ){
         //this.debug( 'click unpaired', ev.currentTarget );
@@ -1107,7 +1099,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             fwds = [],
             revs = [],
             pairs = [];
-        //TODO: could be made more concise
         creator.$( '.unpaired-columns .forward-column .dataset.selected' ).each( function(){
             fwds.push( $( this ).data( 'dataset' ) );
         });
@@ -1163,12 +1154,10 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             fwd = $( '.unpaired-columns .forward-column .dataset' ).eq( rowIndex ).data( 'dataset' ),
             rev = $( '.unpaired-columns .reverse-column .dataset' ).eq( rowIndex ).data( 'dataset' );
         //this.debug( 'row:', rowIndex, fwd, rev );
-        //TODO: animate
         this._pair( fwd, rev );
     },
 
     // ........................................................................ divider/partition
-//TODO: simplify
     /** start dragging the visible divider/partition between unpaired and paired panes */
     _startPartitionDrag : function( ev ){
         var creator = this,
@@ -1208,7 +1197,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         unpairedHi = Math.max( 10, unpairedHi + adj );
         pairedHi = pairedHi - adj;
 
-//TODO: seems like shouldn't need this (it should be part of the hide/show/splitView)
         var movingUpwards = adj < 0;
         // when the divider gets close to the top - lock into hiding the unpaired section
         if( movingUpwards ){
@@ -1272,7 +1260,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             pair.name = response;
             // set a flag (which won't be passed in json creation) for manual naming so we don't overwrite these
             //  when adding/removing extensions
-            //TODO: kinda hacky
+            //hackish
             pair.customizedName = true;
             $name.text( pair.name );
         }
@@ -1281,10 +1269,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** unpair this pair */
     _clickUnpair : function( ev ){
         //if( !ev.currentTarget ){ return true; }
-        //TODO: this is a hack bc each paired rev now has two elems (dataset, button)
         var pairIndex = Math.floor( $( ev.currentTarget ).index( '.unpair-btn' ) );
         //this.debug( 'pair:', pairIndex );
-        //TODO: animate
         this._unpair( this.paired[ pairIndex ] );
     },
 
@@ -1367,7 +1353,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** resync the creator's list of paired based on the DOM order of pairs */
     _syncPairsToDom : function(){
         var newPaired = [];
-//TODO: ugh
+        //TODO: doesn't seem wise to use the dom to store these - can't we sync another way?
         this.$( '.paired-columns .dataset.paired' ).each( function(){
             newPaired.push( $( this ).data( 'pair' ) );
         });
@@ -1702,7 +1688,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
         throw new Error( 'Galaxy or Galaxy.modal not found' );
     }
 
-    var creator = new PairedCollectionCreator( options ).render();
+    var creator = new PairedCollectionCreator( options );
     Galaxy.modal.show({
         title   : 'Create a collection of paired datasets',
         body    : creator.$el,
@@ -1710,6 +1696,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
         height  : '800px',
         closing_events: true
     });
+    creator.render();
     //TODO: remove modal header
     window.PCC = creator;
     return creator;
