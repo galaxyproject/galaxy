@@ -290,7 +290,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             if (this.options.sharable_url) {
                 menu_button.addMenu({
                     icon    : 'fa-external-link',
-                    title   : 'Open in Toolshed',
+                    title   : 'See in Tool Shed',
                     tooltip : 'Access the repository',
                     onclick : function() {
                         window.open(self.options.sharable_url);
