@@ -390,6 +390,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         return paired;
     },
 
+    /** autopair by exact match */
     autopairSimple : autoPairFnBuilder({
         scoreThreshold: function(){ return 1.0; },
         match : function _match( params ){
@@ -404,6 +405,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         }
     }),
 
+    /** autopair by levenshtein edit distance scoring */
     autopairLevenshtein : autoPairFnBuilder({
         scoreThreshold: function(){ return this.matchPercentage; },
         match : function _matches( params ){
@@ -420,6 +422,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         }
     }),
 
+    /** autopair by longest common substrings scoring */
     autopairLCS : autoPairFnBuilder({
         scoreThreshold: function(){ return this.matchPercentage; },
         match : function _matches( params ){

@@ -504,16 +504,6 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         return this.collection.create({ current: true });
     },
 
-    ///** delete the current history */
-    //deleteCurrent : function deleteCurrent(){
-    //    var multipanel = this,
-    //        currentColumn = multipanel.columnMap[ multipanel.currentHistoryId ];
-    //    currentColumn.model._delete()
-    //        .done( function(){
-    //            multipanel.create();
-    //        });
-    //},
-
     // ------------------------------------------------------------------------ columns
     /** create columns from collection */
     createColumns : function createColumns( columnOptions ){
@@ -877,7 +867,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /**  */
     events : {
         // will move to the server root (gen. Analyze data)
-        'click .done.btn'                                       : function(){ window.location = '/'; },
+        'click .done.btn'                                       : 'close',
         //TODO:?? could just go back - but that's not always correct/desired behav.
         //'click .done.btn'                                       : function(){ window.history.back(); },
         // creates a new empty history and makes it current
@@ -888,6 +878,17 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         'click .order .order-size'                              : function( e ){ this.setOrder( 'size' ); }
 
         //'dragstart .list-item .title-bar'                       : function( e ){ console.debug( 'ok' ); }
+    },
+
+    close : function( ev ){
+        //TODO: switch to pushState/router
+        var destination = '/';
+        if( Galaxy && Galaxy.options && Galaxy.options.root ){
+            destination = Galaxy.options.root;
+        } else if( galaxy_config && galaxy_config.root ){
+            destination = galaxy_config.root;
+        }
+        window.location = destination;
     },
 
     /** Include deleted histories in the collection */
