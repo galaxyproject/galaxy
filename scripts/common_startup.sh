@@ -34,7 +34,13 @@ if [ $COPY_SAMPLE_FILES -eq 1 ]; then
 	done
 fi
 
-: ${GALAXY_CONFIG_FILE:=config/galaxy.ini.sample}
+: ${GALAXY_CONFIG_FILE:=config/galaxy.ini}
+if [ ! -f $GALAXY_CONFIG_FILE ]; then
+    GALAXY_CONFIG_FILE=universe_wsgi.ini
+fi
+if [ ! -f $GALAXY_CONFIG_FILE ]; then
+    GALAXY_CONFIG_FILE=config/galaxy.ini.sample
+fi
 
 if [ $FETCH_EGGS -eq 1 ]; then
     python ./scripts/check_eggs.py -q -c $GALAXY_CONFIG_FILE
