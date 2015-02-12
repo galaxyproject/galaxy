@@ -295,7 +295,7 @@ return Backbone.View.extend({
                 return;
             }
             for (var key in chart_def.columns) {
-                if (group.attributes[key] == 'null') {
+                if (group.attributes[key] === '__undefined__') {
                     self.message.update({status: 'danger', message: 'This chart type requires column types not found in your tabular file.'});
                     self.tabs.show(group.id);
                     valid = false;
