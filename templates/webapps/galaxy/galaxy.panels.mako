@@ -35,11 +35,11 @@
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
+        'libs/handlebars.runtime',
         'libs/require',
         'libs/d3',
         'galaxy.base',
-        'galaxy.panels',
-        'libs/handlebars.runtime'
+        'galaxy.panels'
     )}
     
     ## send errors to Sntry server if configured
