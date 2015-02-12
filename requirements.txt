@@ -24,9 +24,6 @@
 # are trying to move away from our strict version dependency policy and this
 # would greatly help in our efforts.
 
-# not available in PyPI, must be installed by hand:
-#SVGFig
-
 Paste
 PasteDeploy
 docutils
@@ -64,3 +61,5 @@ simplejson
 bioblend
 Parsley
 WebError
+http://svgfig.googlecode.com/files/svgfig-1.1.6.tgz
+
