@@ -90,7 +90,7 @@ except:
 
 # find/import twill
 lib_dir = os.path.join( scripts_dir, "..", "lib" )
-sys.path.append( lib_dir )
+sys.path.insert( 1, lib_dir )
 from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "twill" )
