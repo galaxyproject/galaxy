@@ -125,6 +125,34 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # but prefixed with install_ are also available).
 #install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
+# -- Galaxy framework dependencies (eggs)
+
+# Options in this section can also be provided as environment variables in the
+# form `GALAXY_<OPTION_NAME>`, e.g. `GALAXY_ENABLE_EGGS=False`, etc.
+# Environment variables override the settings in this config.
+
+# For more details, see the `requirements.txt` file at the root of the Galaxy
+# source distribution.
+
+# Galaxy manages all of its dependent Python modules by downloading Python eggs
+# from the Galaxy eggs distribution server at https://eggs.galaxyproject.org.
+# You may choose to disable this and attempt to install dependencies by hand
+# (e.g. with pip), but beware that this may cause problems due to version
+# incompatibilities between Galaxy and its dependencies. Do not do this unless
+# you know what you're doing.
+#enable_eggs = True
+
+# You may choose to keep eggs enabled but disable fetching them automatically.
+# (hint: To do a one-time fetch, you can disable here and then use
+# `GALAXY_ENABLE_EGG_FETCH=True python ./scripts/fetch_eggs.py` from the root
+# of the Galaxy source.
+#enable_egg_fetch = True
+
+# If you'd like to prefer any dependencies found in your local environment
+# before (fetching and) using Galaxy's egg of that dependency, you can enable
+# the following option:
+#try_dependencies_from_env = False
+
 # -- Files and directories
 
 # Dataset files are stored in this directory.

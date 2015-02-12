@@ -61,6 +61,7 @@ class Egg( object ):
         self.distribution = None
         self.dir = None
         self.removed_location = None
+        self.enable_fetch = crate.galaxy_config.enable_egg_fetch
         if self.name is not None and self.version is not None:
             self.set_distribution()
 
@@ -191,7 +192,10 @@ class Egg( object ):
         try:
             rval = []
             # resolve this egg and its dependencies
-            dists = pkg_resources.working_set.resolve( ( self.distribution.as_requirement(), ), env, self.fetch )
+            if self.enable_fetch:
+                dists = pkg_resources.working_set.resolve( ( self.distribution.as_requirement(), ), env, self.fetch )
+            else:
+                dists = pkg_resources.working_set.resolve( ( self.distribution.as_requirement(), ), env, lambda x: None )
             for dist in dists:
                 # if any of the resolved dependencies should be managed eggs but are being pulled from the wrong path, fix them
                 if dist.project_name in self.crate.all_names and not os.path.realpath( dist.location ).startswith( os.path.realpath( self.dir ) ):
@@ -250,7 +254,10 @@ class Egg( object ):
         if egg:
             # Store the removed path so the fetch method can use it
             egg.removed_location = location
-            r = pkg_resources.working_set.resolve( ( dist.as_requirement(), ), env, egg.fetch )
+            if self.enable_fetch:
+                r = pkg_resources.working_set.resolve( ( dist.as_requirement(), ), env, egg.fetch )
+            else:
+                r = pkg_resources.working_set.resolve( ( dist.as_requirement(), ), env, lambda x: None )
             egg.removed_location = None
         else:
             r = pkg_resources.working_set.resolve( ( dist.as_requirement(), ), env )
@@ -374,31 +381,48 @@ class Crate( object ):
         """
         Try to resolve (e.g. fetch) all eggs in the crate.
         """
-        if all:
-            eggs = self.all_eggs
+        if self.galaxy_config.enable_eggs and not self.galaxy_config.try_dependencies_from_env:
+            if all:
+                eggs = self.all_eggs
+            else:
+                eggs = self.config_eggs
+            eggs = filter( lambda x: x.name not in self.no_auto, eggs )
+            missing = []
+            for egg in eggs:
+                try:
+                    egg.resolve()
+                except EggNotFetchable:
+                    missing.append( egg )
+            if missing:
+                raise EggNotFetchable( missing )
         else:
-            eggs = self.config_eggs
-        eggs = filter( lambda x: x.name not in self.no_auto, eggs )
-        missing = []
-        for egg in eggs:
-            try:
-                egg.resolve()
-            except EggNotFetchable:
-                missing.append( egg )
-        if missing:
-            raise EggNotFetchable( missing )
+            log.info('Dependencies will attempt to be loaded from the environment')
 
 
 class GalaxyConfig( object ):
     always_conditional = ( 'pysam', 'ctypes', 'python_daemon' )
 
     def __init__( self, config_file ):
+        self.enable_egg_fetch = False
+        self.enable_eggs = False
+        self.try_dependencies_from_env = False
         if config_file is None:
             self.config = None
         else:
             self.config = ConfigParser.ConfigParser()
             if self.config.read( config_file ) == []:
                 raise Exception( "error: unable to read Galaxy config from %s" % config_file )
+            self.enable_egg_fetch = True
+            self.enable_eggs = True
+            for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
+                try:
+                    setattr(self, opt, string_as_bool(self.config.get('app:main', opt)))
+                except:
+                    pass # use default
+        for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
+            var = 'GALAXY_' + opt.upper()
+            if var in os.environ:
+                setattr(self, opt, string_as_bool(os.environ[var]))
 
     def check_conditional( self, egg_name ):
         def check_pysam():
@@ -435,6 +459,13 @@ class GalaxyConfig( object ):
                 return False
 
 
+
+def string_as_bool( string ):
+    if str( string ).lower() in ( 'true', 'yes', 'on' ):
+        return True
+    else:
+        return False
+
 def get_env():
     env = pkg_resources.Environment( search_path='', platform=pkg_resources.get_platform() )
     for dist in pkg_resources.find_distributions( eggs_dir, False ):
@@ -446,6 +477,13 @@ env = get_env()
 def require( req_str ):
     c = Crate( None )
     req = pkg_resources.Requirement.parse( req_str )
+    if c.galaxy_config.try_dependencies_from_env or not c.galaxy_config.enable_eggs:
+        try:
+            return pkg_resources.working_set.require( req_str )
+        except Exception as exc:
+            if not c.galaxy_config.enable_eggs:
+                raise
+            log.info("%s not found in local environment, will try Galaxy egg: %s", (req_str, exc))
     # TODO: This breaks egg version requirements.  Not currently a problem, but
     # it could become one.
     try:
