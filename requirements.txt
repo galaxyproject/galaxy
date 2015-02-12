@@ -55,7 +55,7 @@ decorator
 Tempita
 sqlalchemy-migrate
 Beaker
-Whoosh
+Whoosh<2.5
 paramiko
 ssh
 Fabric
