@@ -399,7 +399,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             panel.trigger.apply( panel, args );
         });
 
-        // drag multiple - hijack ev.setData to add all selected datasets
+        // drag multiple - hijack ev.setData to add all selected items
         view.on( 'draggable:dragstart', function( ev, v ){
             //TODO: set multiple drag data here
             var json = {},
@@ -410,6 +410,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
                 json = [ v.model.toJSON() ];
             }
             ev.dataTransfer.setData( 'text', JSON.stringify( json ) );
+            //ev.dataTransfer.setDragImage( v.el, 60, 60 );
         }, this );
 
         // debugging

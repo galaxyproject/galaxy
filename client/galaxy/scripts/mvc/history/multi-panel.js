@@ -278,6 +278,9 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     renderPanel : function renderPanel( speed ){
         speed = ( speed !== undefined )?( speed ):( 'fast' );
         this.panel.setElement( this.$panel() ).render( speed );
+        if( this.currentHistory ){
+            this.panel.$list().before( this.panel._renderDropTargetHelp() );
+        }
         return this;
     },
 
@@ -953,7 +956,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         var currentColumn = this.columnMap[ this.currentHistoryId ];
         if( !currentColumn ){ return; }
         currentColumn.panel.dataDropped = HPANEL_EDIT.HistoryPanelEdit.prototype.dataDrop;
-        currentColumn.panel.dropTargetOff();
+        // slight override of dropTargetOff to not erase drop-target-help
+        currentColumn.panel.dropTarget = false;
+        currentColumn.panel.$( '.history-drop-target' ).remove();
     },
 
     // ------------------------------------------------------------------------ misc

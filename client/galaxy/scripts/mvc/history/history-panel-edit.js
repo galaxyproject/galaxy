@@ -445,6 +445,7 @@ var HistoryPanelEdit = _super.extend(
 
     /**  */
     _renderDropTarget : function(){
+        this.$( '.history-drop-target' ).remove();
         return $( '<div/>' ).addClass( 'history-drop-target' )
             .css({
                 'height': '64px',
@@ -456,6 +457,7 @@ var HistoryPanelEdit = _super.extend(
 
     /**  */
     _renderDropTargetHelp : function(){
+        this.$( '.history-drop-target-help' ).remove();
         return $( '<div/>' ).addClass( 'history-drop-target-help' )
             .css({
                 'margin'        : '10px 10px 4px 10px',
