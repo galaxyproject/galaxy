@@ -834,7 +834,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             if cloned_ok:
                 log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
                 self.set_changeset_revision( str( repo.changectx( changeset ) ) )
-                self.set_relative_install_dir( work_dir )
                 self.set_repository_files_dir( work_dir )
                 self.generate_metadata_for_changeset_revision()
                 if self.metadata_dict:
