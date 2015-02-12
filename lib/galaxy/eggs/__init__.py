@@ -403,8 +403,8 @@ class GalaxyConfig( object ):
     always_conditional = ( 'pysam', 'ctypes', 'python_daemon' )
 
     def __init__( self, config_file ):
-        self.enable_egg_fetch = False
-        self.enable_eggs = False
+        self.enable_egg_fetch = True
+        self.enable_eggs = True
         self.try_dependencies_from_env = False
         if config_file is None:
             self.config = None
@@ -412,13 +412,6 @@ class GalaxyConfig( object ):
             self.config = ConfigParser.ConfigParser()
             if self.config.read( config_file ) == []:
                 raise Exception( "error: unable to read Galaxy config from %s" % config_file )
-            self.enable_egg_fetch = True
-            self.enable_eggs = True
-            for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
-                try:
-                    setattr(self, opt, string_as_bool(self.config.get('app:main', opt)))
-                except:
-                    pass # use default
         for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
             var = 'GALAXY_CONFIG_' + opt.upper()
             if var in os.environ:

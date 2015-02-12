@@ -12,8 +12,7 @@
 # However, you may want to manage these dependencies on your own. If so, this
 # file can be used with pip to install all of the bare minimum dependencies for
 # starting a Galaxy server. Use this in conjunction with the
-# `enable_eggs = False` galaxy.ini option or `GALAXY_CONFIG_ENABLE_EGGS=False`
-# environment variable
+# `GALAXY_CONFIG_ENABLE_EGGS=False` environment variable.
 #
 # Note that except in the case of SQLAlchemy, all dependencies will be
 # installed at their newest versions. Galaxy has not been tested with these and
@@ -62,4 +61,3 @@ bioblend
 Parsley
 WebError
 http://svgfig.googlecode.com/files/svgfig-1.1.6.tgz
-

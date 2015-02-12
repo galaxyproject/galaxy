@@ -30,36 +30,6 @@ if 'LOG_TEMPFILES' in os.environ:
     _log_tempfile = TempFile()
     import tempfile
 
-try:
-    serve = sys.argv.index('serve')
-except:
-    print >>sys.stderr, "Galaxy does not use the real Paste Script, the only supported command is 'serve'"
-    sys.exit(1)
-
-# eggs.require() can be called inside the app without access to the Galaxy
-# config, so we need to push the egg options into the environment so they are
-# available to Crate instantiated in require()
-
-# locate the arg containing the path to the config file
-config = None
-p = configparser.ConfigParser()
-for arg in sys.argv:
-    try:
-        p.read(arg)
-        assert 'app:main' in p.sections()
-        config = arg
-        break
-    except (configparser.Error, AssertionError):
-        pass
-
-# find any egg options set in the config
-crate = eggs.Crate(config)
-for opt in ('enable_eggs', 'enable_egg_fetch', 'try_dependencies_from_env'):
-    env = 'GALAXY_CONFIG_' + opt.upper()
-    # don't overwrite existing env vars configured by the user
-    if env not in os.environ:
-        os.environ[env] = str(getattr(crate.galaxy_config, opt))
-
 eggs.require( "Paste" )
 eggs.require( "PasteDeploy" )
 
