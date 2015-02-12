@@ -36,7 +36,7 @@
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <% existing_emails = [ d.user.email for d in history.users_shared_with ] %>
+                    <% existing_emails = ','.join([ d.user.email for d in history.users_shared_with ]) %>
                     <label>Galaxy user emails with which to share histories</label>
                     <input type="hidden" id="email_select" name="email" value="${ existing_emails }" style="float: left; width: 250px; margin-right: 10px;">
                     </input>
