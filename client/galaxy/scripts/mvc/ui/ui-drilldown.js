@@ -57,8 +57,7 @@ var View = Options.BaseIcons.extend({
 
         // link data
         this.header_index = {};
-        this.header_list = [];
-
+        
         // attach event handler
         function attach($el, header_id) {
             var $button = $el.find('#button-' + header_id);
@@ -104,6 +103,9 @@ var View = Options.BaseIcons.extend({
                     $group.append($buttongroup);
                     iterate($subgroup, level.options, new_header);
                     $group.append($subgroup);
+
+                    // attach expand/collapse events
+                    attach($group, header_id);
                 } else {
                     // append child options
                     $group.append(self._templateOption({
@@ -118,16 +120,6 @@ var View = Options.BaseIcons.extend({
         // iterate through options and create dom
         var $tmpl = $('<div/>');
         iterate($tmpl, options);
-
-        // merge index to create a non-duplicate list of headers
-        for (var i in this.header_index) {
-            this.header_list = _.uniq(this.header_list.concat(this.header_index[i]));
-        }
-
-        // attach expand/collapse events
-        for (var i in this.header_list) {
-            attach($tmpl, this.header_list[i]);
-        }
 
         // return template
         return $tmpl;
