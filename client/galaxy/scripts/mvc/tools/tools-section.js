@@ -1,8 +1,14 @@
 /**
-    This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections. New input elements can be plugged in by adding cases to the switch block defined in the _createField() function.
+    This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections.
 */
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet', 'mvc/tools/tools-repeat', 'mvc/tools/tools-select-content', 'mvc/tools/tools-input'],
-    function(Utils, Table, Ui, Portlet, Repeat, SelectContent, InputElement) {
+define(['utils/utils',
+        'mvc/ui/ui-table',
+        'mvc/ui/ui-misc',
+        'mvc/ui/ui-portlet',
+        'mvc/tools/tools-repeat',
+        'mvc/tools/tools-input',
+        'mvc/tools/tools-parameters'],
+    function(Utils, Table, Ui, Portlet, Repeat, InputElement, Parameters) {
 
     // create form view
     var View = Backbone.View.extend({
@@ -23,6 +29,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             
             // create table
             this.table = new Table.View(options);
+            
+            // create parameter handler
+            this.parameters = new Parameters(app, options);
 
             // configure portlet and form table
             this.setElement(this.table.$el);
@@ -294,16 +303,8 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
             // get id
             var id = input_def.id;
 
-            // add regular/default value if missing
-            if (input_def.value === undefined) {
-                input_def.value = null;
-            }
-            if (input_def.default_value === undefined) {
-                input_def.default_value = input_def.value;
-            }
-            
             // create input field
-            var field = this._createField(input_def);
+            var field = this.parameters.create(input_def);
 
             // add to field list
             this.app.field_list[id] = field;
@@ -333,265 +334,6 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-misc', 'mvc/ui/ui-portlet',
 
             // return created field
             return field;
-        },
-
-        /** Returns an input field for a given field type
-        */
-        _createField: function(input_def) {
-            // field wrapper
-            var field = null;
-
-            // identify field type
-            switch(input_def.type) {
-                // text input field
-                case 'text' :
-                    field = this._fieldText(input_def);
-                    break;
-
-                // select field
-                case 'select' :
-                    field = this._fieldSelect(input_def);
-                    break;
-
-                // data selector
-                case 'data':
-                    field = this._fieldData(input_def);
-                    break;
-
-                // collection selector
-                case 'data_collection':
-                    field = this._fieldData(input_def);
-                    break;
-
-                // data column
-                case 'data_column':
-                    input_def.error_text = 'Missing columns in referenced dataset.';
-                    field = this._fieldSelect(input_def);
-                    break;
-
-                // hidden field
-                case 'hidden':
-                    field = this._fieldHidden(input_def);
-                    break;
-
-                // hidden data field
-                case 'hidden_data':
-                    field = this._fieldHidden(input_def);
-                    break;
-
-                // integer field
-                case 'integer':
-                    field = this._fieldSlider(input_def);
-                    break;
-                
-                // float field
-                case 'float':
-                    field = this._fieldSlider(input_def);
-                    break;
-
-                // boolean field
-                case 'boolean':
-                    field = this._fieldBoolean(input_def);
-                    break;
-
-                // genome field
-                case 'genomebuild':
-                    input_def.searchable = true;
-                    field = this._fieldSelect(input_def);
-                    break;
-
-                // drill down field
-                case 'drill_down':
-                    field = this._fieldDrilldown(input_def);
-                    break;
-
-                // base url field
-                case 'baseurl':
-                    field = this._fieldHidden(input_def);
-                    break;
-
-                // field not found
-                default:
-                    // flag
-                    this.app.incompatible = true;
-
-                    // with or without options
-                    if (input_def.options) {
-                        // assign select field
-                        field = this._fieldSelect(input_def);
-                    } else {
-                        // assign text field
-                        field = this._fieldText(input_def);
-                    }
-
-                    // log
-                    console.debug('tools-form::_addRow() : Auto matched field type (' + input_def.type + ').');
-            }
-
-            // set field value
-            if (input_def.value !== undefined) {
-                field.value(input_def.value);
-            }
-
-            // return field element
-            return field;
-        },
-
-        /** Data input field
-        */
-        _fieldData : function(input_def) {
-            if (!this.app.options.is_dynamic) {
-                input_def.info = 'Data input \'' + input_def.name + '\' (' + Utils.textify(input_def.extensions.toString()) + ')';
-                input_def.value = null;
-                return this._fieldHidden(input_def);
-            }
-            var self = this;
-            return new SelectContent.View(this.app, {
-                id          : 'field-' + input_def.id,
-                extensions  : input_def.extensions,
-                optional    : input_def.optional,
-                multiple    : input_def.multiple,
-                type        : input_def.type,
-                data        : input_def.options,
-                onchange    : function() {
-                    self.app.trigger('refresh');
-                }
-            });
-        },
-
-        /** Select/Checkbox/Radio options field
-        */
-        _fieldSelect : function (input_def) {
-            // show text field in if dynamic fields are disabled e.g. in workflow editor
-            if (!this.app.options.is_dynamic && input_def.is_dynamic) {
-                return this._fieldText(input_def);
-            }
-
-            // configure options fields
-            var options = [];
-            for (var i in input_def.options) {
-                var option = input_def.options[i];
-                options.push({
-                    label: option[0],
-                    value: option[1]
-                });
-            }
-
-            // identify display type
-            var SelectClass = Ui.Select;
-            switch (input_def.display) {
-                case 'checkboxes':
-                    SelectClass = Ui.Checkbox;
-                    break;
-                case 'radio':
-                    SelectClass = Ui.Radio;
-                    break;
-            }
-
-            // select field
-            var self = this;
-            return new SelectClass.View({
-                id          : 'field-' + input_def.id,
-                data        : options,
-                error_text  : input_def.error_text || 'No options available',
-                multiple    : input_def.multiple,
-                searchable  : input_def.searchable,
-                onchange    : function() {
-                    self.app.trigger('refresh');
-                }
-            });
-        },
-
-        /** Drill down options field
-        */
-        _fieldDrilldown : function (input_def) {
-            // show text field in if dynamic fields are disabled e.g. in workflow editor
-            if (!this.app.options.is_dynamic && input_def.is_dynamic) {
-                return this._fieldText(input_def);
-            }
-            
-            // create drill down field
-            var self = this;
-            return new Ui.Drilldown.View({
-                id          : 'field-' + input_def.id,
-                data        : input_def.options,
-                display     : input_def.display,
-                onchange    : function() {
-                    self.app.trigger('refresh');
-                }
-            });
-        },
-        
-        /** Text input field
-        */
-        _fieldText : function(input_def) {
-            // field replaces e.g. a select field
-            if (input_def.options) {
-                // show text area if selecting multiple entries is allowed
-                input_def.area = input_def.multiple;
-
-                // validate value
-                if (!Utils.validate(input_def.value)) {
-                    input_def.value = '';
-                } else {
-                    if (input_def.value instanceof Array) {
-                        input_def.value = value.toString();
-                    } else {
-                        input_def.value = String(input_def.value).replace(/[\[\]'"\s]/g, '');
-                        if (input_def.multiple) {
-                            input_def.value = input_def.value.replace(/,/g, '\n');
-                        }
-                    }
-                }
-            }
-
-            // create input element
-            var self = this;
-            return new Ui.Input({
-                id          : 'field-' + input_def.id,
-                area        : input_def.area,
-                onchange    : function() {
-                    self.app.trigger('refresh');
-                }
-            });
-        },
-
-        /** Slider field
-        */
-        _fieldSlider: function(input_def) {
-            var self = this;
-            return new Ui.Slider.View({
-                id          : 'field-' + input_def.id,
-                precise     : input_def.type == 'float',
-                min         : input_def.min,
-                max         : input_def.max,
-                onchange    : function() {
-                    self.app.trigger('refresh');
-                }
-            });
-        },
-
-        /** Hidden field
-        */
-        _fieldHidden : function(input_def) {
-            return new Ui.Hidden({
-                id          : 'field-' + input_def.id,
-                info        : input_def.info
-            });
-        },
-
-        /** Boolean field
-        */
-        _fieldBoolean : function(input_def) {
-            var self = this;
-            return new Ui.RadioButton.View({
-                id          : 'field-' + input_def.id,
-                data        : [ { label : 'Yes', value : 'true'  },
-                                { label : 'No',  value : 'false' }],
-                onchange    : function() {
-                    self.app.trigger('refresh');
-                }
-            });
         }
     });
 
