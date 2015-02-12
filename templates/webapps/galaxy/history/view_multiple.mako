@@ -148,7 +148,7 @@
     }
 
     .open-more-options {
-        padding: 0 4px 0 4px;
+        padding: 2px 6px 2px 6px;
         font-size: 150%;
     }
 
@@ -173,7 +173,7 @@
 
     .panel-controls {
         width: 100%;
-        height: ${controls_height}px;
+        height: ${controls_height + 4}px;
         border-radius: 3px;
         background-color: white;
         text-align: center;
@@ -203,6 +203,13 @@
     .panel-controls .pull-right .btn {
         margin-left: 4px;
     }
+    .panel-controls .panel-menu {
+        z-index: 1;
+    }
+    .panel-controls .panel-menu .dropdown-menu a {
+        text-align: left;
+    }
+
 
     /* ---------------------- footer */
     .footer {
@@ -214,7 +221,6 @@
     /* ---------------------- columns */
     .history-panel {
         width: 100%;
-        margin-top: 4px;
 
         border: ${border_width}px solid grey;
         border-radius: 3px;
@@ -225,7 +231,7 @@
 
     .history-column:first-child {
         position: fixed;
-        z-index : 1;
+        z-index : 2;
     }
     .history-column:first-child .history-panel {
         border: 1px solid black;
@@ -234,22 +240,6 @@
 
     .history-column:nth-child(2) {
         margin-left: ${( column_width + column_gap )}px;
-    }
-
-    .loading-overlay {
-        display: none;
-        position: absolute;
-        height: 100%;
-        width: 100%;
-        background-color: red;
-        opacity: 0.75;
-        z-index: 2;
-        text-align: center;
-    }
-    .loading-overlay-message {
-        margin-top: 6px;
-        font-style: italic;
-        vertical-align: middle;
     }
 
     .current-label {

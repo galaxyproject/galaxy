@@ -243,14 +243,9 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         data = data || {};
         var html = [
                 '<div class="panel-controls clear flex-row">',
-                    this.controlsLeftTemplate(),
+                    this.controlsLeftTemplate( data ),
                     //'<button class="btn btn-default">Herp</button>',
-                    '<div class="pull-right">',
-                        '<button class="delete-history btn btn-default">',
-                            data.deleted? _l( 'Undelete' ): _l( 'Delete' ),
-                        '</button>',
-                        '<button class="copy-history btn btn-default">', _l( 'Copy' ), '</button>',
-                    '</div>',
+                    this.controlsRightTemplate( data ),
                 '</div>',
                 '<div class="inner flex-row flex-column-container">',
                     '<div id="history-', data.id, '" class="history-column history-panel flex-column"></div>',
@@ -260,7 +255,7 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     },
 
     /** controls template displaying controls above the panel based on this.currentHistory */
-    controlsLeftTemplate : function(){
+    controlsLeftTemplate : function( data ){
         return ( this.currentHistory )?
             [
                 '<div class="pull-left">',
@@ -273,6 +268,39 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 '</div>'
             ].join( '' );
     },
+
+    /** controls template displaying controls above the panel based on this.currentHistory */
+    controlsRightTemplate : _.template([
+        '<div class="pull-right">',
+            '<% if( !history.purged ){ %>',
+                '<div class="panel-menu order btn-group">',
+                    '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                        '<span class="caret"></span>',
+                    '</button>',
+                    '<ul class="dropdown-menu pull-right" role="menu">',
+                        '<% if( !history.deleted ){ %>',
+                            '<li><a href="javascript:void(0);" class="copy-history">',
+                                _l( 'Copy' ),
+                            '</a></li>',
+                            //'<li><a href="javascript:void(0);" class="publish-history">',
+                            //    _l( 'Publish' ),
+                            //'</a></li>',
+                            '<li><a href="javascript:void(0);" class="delete-history">',
+                                _l( 'Delete' ),
+                            '</a></li>',
+                        '<% } else /* if is deleted */ { %>',
+                            '<li><a href="javascript:void(0);" class="undelete-history">',
+                                _l( 'Undelete' ),
+                            '</a></li>',
+                        '<% } %>',
+                        //'<li><a href="javascript:void(0);" class="purge-history">',
+                        //    _l( 'Purge' ),
+                        //'</a></li>',
+                    '</ul>',
+                '<% } %>',
+            '</div>',
+        '</div>'
+    ].join( '' ), { variable: 'history' }),
 
     /** render the panel contained in the column using speed for fx speed */
     renderPanel : function renderPanel( speed ){
@@ -289,25 +317,41 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     events : {
         // will make this the current history
         'click .switch-to.btn'      : function(){ this.model.setAsCurrent(); },
-        // toggles deleted here and on the server and re-renders
-        'click .delete-history.btn' : function(){
-                var column = this,
-                    xhr;
-                if( this.model.get( 'deleted' ) ){
-                    xhr = this.model.undelete();
-                } else {
-                    xhr = this.model._delete();
-                }
-//TODO: better error handler
-                xhr.fail( function( xhr, status, error ){
+        //TODO: remove boiler plate from next 3
+        'click .delete-history' : function(){
+            var column = this;
+            this.model._delete()
+                .fail( function( xhr, status, error ){
                     alert( _l( 'Could not delete the history' ) + ':\n' + error );
                 })
                 .done( function( data ){
                     column.render();
                 });
-            },
+        },
+        'click .undelete-history' : function(){
+            var column = this;
+            this.model.undelete()
+                .fail( function( xhr, status, error ){
+                    alert( _l( 'Could not undelete the history' ) + ':\n' + error );
+                })
+                .done( function( data ){
+                    column.render();
+                });
+        },
+        'click .purge-history' : function(){
+            if( confirm( _l( 'This will permanently remove the data. Are you sure?' ) ) ){
+                var column = this;
+                this.model.purge()
+                    .fail( function( xhr, status, error ){
+                        alert( _l( 'Could not purge the history' ) + ':\n' + error );
+                    })
+                    .done( function( data ){
+                        column.render();
+                    });
+            }
+        },
         // will copy this history and make the copy the current history
-        'click .copy-history.btn'   : 'copy'
+        'click .copy-history'       : 'copy'
     },
 
     // ------------------------------------------------------------------------ non-current controls
@@ -1030,7 +1074,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 _l( 'Include hidden datasets' ),
             '</label></div>',
         '</div>'
-    ].join(''), { variable: 'view' }),
+    ].join(''), { variable: 'view' })
 
 });
 
