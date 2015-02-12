@@ -293,9 +293,9 @@ class Crate( object ):
         self.py_platform = None
         if platform is not None:
             self.py_platform = platform.split( '-' )[0]
-        self.enable_egg_fetch = string_as_bool(os.environ.get('GALAXY_CONFIG_ENABLE_EGG_FETCH', True))
-        self.enable_eggs = string_as_bool(os.environ.get('GALAXY_CONFIG_ENABLE_EGGS', True))
-        self.try_dependencies_from_env = string_as_bool(os.environ.get('GALAXY_CONFIG_TRY_DEPENDENCIES_FROM_ENV', False))
+        self.enable_egg_fetch = string_as_bool(os.environ.get('GALAXY_ENABLE_EGG_FETCH', True))
+        self.enable_eggs = string_as_bool(os.environ.get('GALAXY_ENABLE_EGGS', True))
+        self.try_dependencies_from_env = string_as_bool(os.environ.get('GALAXY_TRY_DEPENDENCIES_FROM_ENV', False))
         self.galaxy_config = GalaxyConfig( galaxy_config_file )
         self.parse()
 

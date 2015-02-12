@@ -274,7 +274,7 @@ class BaseJobRunner( object ):
         env = []
         crate = galaxy.eggs.Crate()
         for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
-            env.append('GALAXY_CONFIG_%s="%s"; export GALAXY_CONFIG_%s' % (opt.upper(), getattr(crate, opt), opt.upper()))
+            env.append('GALAXY_%s="%s"; export GALAXY_%s' % (opt.upper(), getattr(crate, opt), opt.upper()))
         return env
 
     def get_job_file(self, job_wrapper, **kwds):
