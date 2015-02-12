@@ -87,7 +87,7 @@ def load_galaxy_app(
             log.exception("Failed to chdir")
             raise
         try:
-            sys.path.append(GALAXY_LIB_DIR)
+            sys.path.insert(1, GALAXY_LIB_DIR)
         except Exception:
             log.exception("Failed to add Galaxy to sys.path")
             raise
