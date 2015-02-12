@@ -12,6 +12,7 @@ import subprocess
 
 from Queue import Queue, Empty
 
+import galaxy.eggs
 import galaxy.jobs
 from galaxy.jobs.command_factory import build_command
 from galaxy import model
@@ -269,12 +270,20 @@ class BaseJobRunner( object ):
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
 
+    def _get_egg_env_opts(self):
+        env = []
+        crate = galaxy.eggs.Crate()
+        for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
+            env.append('GALAXY_CONFIG_%s="%s"; export GALAXY_CONFIG_%s' % (opt.upper(), getattr(crate, opt), opt.upper()))
+        return env
+
     def get_job_file(self, job_wrapper, **kwds):
         job_metrics = job_wrapper.app.job_metrics
         job_instrumenter = job_metrics.job_instrumenters[ job_wrapper.job_destination.id ]
 
         env_setup_commands = kwds.get( 'env_setup_commands', [] )
         env_setup_commands.append( job_wrapper.get_env_setup_clause() or '' )
+        env_setup_commands.extend( self._get_egg_env_opts() or [] )
         destination = job_wrapper.job_destination or {}
         envs = destination.get( "env", [] )
         for env in envs:
