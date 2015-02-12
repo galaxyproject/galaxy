@@ -13,7 +13,7 @@ parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config 
 def init():
 
     options.config = os.path.abspath( options.config )
-    sys.path.append( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
+    sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
 
     from galaxy import eggs
     import pkg_resources

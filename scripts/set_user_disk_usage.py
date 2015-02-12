@@ -21,7 +21,7 @@ def init():
     if options.email == 'all':
         options.email = None
 
-    sys.path.append( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
+    sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
 
     from galaxy import eggs
     import pkg_resources

@@ -44,7 +44,7 @@ root.setLevel( 10 )
 root.addHandler( logging.StreamHandler( sys.stdout ) )
 
 lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
-sys.path.append( lib )
+sys.path.insert( 1, lib )
 
 from galaxy.eggs.dist import DistScrambleCrate, ScrambleFailure
 from galaxy.eggs import EggNotFetchable
