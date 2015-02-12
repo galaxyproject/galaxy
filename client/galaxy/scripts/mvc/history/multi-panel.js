@@ -400,6 +400,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
         /** the order that the collection is rendered in */
         this.order = options.order || 'update';
+        this._initSortOrders();
 
         /** named ajax queue for loading hdas */
         this.hdaQueue = new ajaxQueue.NamedAjaxQueue( [], false );
@@ -414,6 +415,47 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         //TODO: why create here?
         this.createColumns( options.columnOptions );
         this.setUpListeners();
+    },
+
+    _initSortOrders : function(){
+        function _comparator( getter, options ){
+            return function __comparator( a, b, currentHistoryId ){
+                // current always first
+                if( a.id === currentHistoryId ){ return -1; }
+                if( b.id === currentHistoryId ){ return 1; }
+                // then compare by an attribute
+                a = getter( a );
+                b = getter( b );
+                return options.asc?
+                    ( ( a === b )?( 0 ):( a > b ?  1 : -1 ) ):
+                    ( ( a === b )?( 0 ):( a > b ? -1 :  1 ) );
+            };
+        }
+
+        this.sortOrders = {
+            // default
+            update : {
+                text: _l( 'most recent first' ),
+                fn: _comparator( function( h ){ return Date( h.get( 'update_time' ) ); }, { asc : false })
+            },
+            'name' : {
+                text: _l( 'name, a to z' ),
+                fn: _comparator( function( h ){ return h.get( 'name' ); }, { asc : true })
+            },
+            'name-dsc' : {
+                text: _l( 'name, z to a' ),
+                fn: _comparator( function( h ){ return h.get( 'name' ); }, { asc : false })
+            },
+            'size' : {
+                text: _l( 'size, large to small' ),
+                fn: _comparator( function( h ){ return h.get( 'size' ); }, { asc : false })
+            },
+            'size-dsc' : {
+                text: _l( 'size, small to large' ),
+                fn: _comparator( function( h ){ return h.get( 'size' ); }, { asc : true })
+            }
+        };
+        return this.sortOrders;
     },
 
     /** Set up reflexive listeners */
@@ -497,44 +539,21 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *      (sorting the collection will re-render the panel)
      */
     sortCollection : function( order, options ){
-        order = order || this.order;
-        var currentHistoryId = this.currentHistoryId;
-
-        //note: h.id !== currentHistoryId allows the sort to put the current history first
-        switch( order ){
-            case 'name':
-                //TODO: we can use a 2 arg version and return 1/0/-1
-                //this.collection.comparator = function( h1, h2 ){
-                this.collection.comparator = function( h ){
-                    //TODO: this won't do reverse order well
-                    return [ h.id !== currentHistoryId, h.get( 'name' ).toLowerCase() ];
-                };
-                break;
-            case 'size':
-                this.collection.comparator = function( h ){
-                    return [ h.id !== currentHistoryId, h.get( 'size' ) ];
-                };
-                break;
-            default:
-                this.collection.comparator = function( h ){
-                    return [ h.id !== currentHistoryId, Date( h.get( 'update_time' ) ) ];
-                };
-        }
-        //NOTE: auto fires 'sort' from collection
-        this.collection.sort( options );
-        return this.collection;
-    },
-
-    /** Set the sort order and re-sort */
-    setOrder : function( order ){
-        if( [ 'update', 'name', 'size' ].indexOf( order ) === -1 ){
+        if( !( order in this.sortOrders ) ){
             order = 'update';
         }
         this.order = order;
-        this.trigger( 'order:change', order, this );
-        this.$( '.current-order' ).text( order );
-        this.sortCollection();
-        return this;
+        var currentHistoryId = this.currentHistoryId,
+            sortOrder = this.sortOrders[ order ];
+
+        this.collection.comparator = function __comparator( a, b ){
+            return sortOrder.fn( a, b, currentHistoryId );
+        };
+        this.$( '.current-order' ).text( sortOrder.text );
+
+        //NOTE: auto fires 'sort' from collection
+        this.collection.sort( options );
+        return this.collection;
     },
 
     /** create a new history and set it to current */
@@ -806,13 +825,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         'click .done.btn'                                       : 'close',
         // creates a new empty history and makes it current
         'click .create-new.btn'                                 : 'create',
-
         'click #include-deleted'                                : '_clickToggleDeletedHistories',
         // these change the collection and column sort order
-        'click .order .order-update'                            : function( e ){ this.setOrder( 'update' ); },
-        'click .order .order-name'                              : function( e ){ this.setOrder( 'name' ); },
-        'click .order .order-size'                              : function( e ){ this.setOrder( 'size' ); },
-
+        'click .order .set-order'                               : '_chooseOrder',
         'click #toggle-deleted'                                 : '_clickToggleDeletedDatasets',
         'click #toggle-hidden'                                  : '_clickToggleHiddenDatasets'
 
@@ -866,6 +881,11 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 column.panel.toggleShowHidden( show, false );
             }, i * 200 );
         });
+    },
+
+    _chooseOrder : function( ev ){
+        var orderKey = $( ev.currentTarget ).data( 'order' );
+        this.sortCollection( orderKey );
     },
 
     /** Set up any view plugins */
@@ -1041,29 +1061,28 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     optionsPopoverTemplate : _.template([
         '<div class="more-options">',
+
+            '<div class="order btn-group">',
+                '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    _l( 'Order histories by' ) + ' ',
+                    '<span class="current-order"><%= view.sortOrders[ view.order ].text %></span> ',
+                    '<span class="caret"></span>',
+                '</button>',
+                '<ul class="dropdown-menu" role="menu">',
+                    '<% _.each( view.sortOrders, function( order, key ){ %>',
+                        '<li><a href="javascript:void(0);" class="set-order" data-order="<%= key %>">',
+                            '<%= order.text %>',
+                        '</a></li>',
+                    '<% }); %>',
+                '</ul>',
+            '</div>',
+
             '<div class="checkbox"><label><input id="include-deleted" type="checkbox"',
                 '<%= view.collection.includeDeleted? " checked" : "" %>>',
                 _l( 'Include deleted histories' ),
             '</label></div>',
 
-            '<div class="order btn-group">',
-                '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
-                    _l( 'Order histories by' ) + ' ',
-                    '<span class="current-order"><%= view.order %></span> ',
-                    '<span class="caret"></span>',
-                '</button>',
-                '<ul class="dropdown-menu" role="menu">',
-                    '<li><a href="javascript:void(0);" class="order-update">',
-                        _l( 'Time of last update' ),
-                    '</a></li>',
-                    '<li><a href="javascript:void(0);" class="order-name">',
-                        _l( 'Name' ),
-                    '</a></li>',
-                    '<li><a href="javascript:void(0);" class="order-size">',
-                        _l( 'Size' ),
-                    '</a></li>',
-                '</ul>',
-            '</div>',
+            '<hr />',
 
             '<div class="checkbox"><label><input id="toggle-deleted" type="checkbox">',
                 _l( 'Include deleted datasets' ),
