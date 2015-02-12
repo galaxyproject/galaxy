@@ -128,8 +128,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # -- Galaxy framework dependencies (eggs)
 
 # Options in this section can also be provided as environment variables in the
-# form `GALAXY_<OPTION_NAME>`, e.g. `GALAXY_ENABLE_EGGS=False`, etc.
-# Environment variables override the settings in this config.
+# form `GALAXY_CONFIG_<OPTION_NAME>`, e.g. `GALAXY_CONFIG_ENABLE_EGGS=False`,
+# etc.  Environment variables override the settings in this config.
 
 # For more details, see the `requirements.txt` file at the root of the Galaxy
 # source distribution.
@@ -144,8 +144,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 
 # You may choose to keep eggs enabled but disable fetching them automatically.
 # (hint: To do a one-time fetch, you can disable here and then use
-# `GALAXY_ENABLE_EGG_FETCH=True python ./scripts/fetch_eggs.py` from the root
-# of the Galaxy source.
+# `GALAXY_CONFIG_ENABLE_EGG_FETCH=True python ./scripts/fetch_eggs.py` from the
+# root of the Galaxy source.
 #enable_egg_fetch = True
 
 # If you'd like to prefer any dependencies found in your local environment

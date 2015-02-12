@@ -420,7 +420,7 @@ class GalaxyConfig( object ):
                 except:
                     pass # use default
         for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
-            var = 'GALAXY_' + opt.upper()
+            var = 'GALAXY_CONFIG_' + opt.upper()
             if var in os.environ:
                 setattr(self, opt, string_as_bool(os.environ[var]))
 
