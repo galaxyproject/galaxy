@@ -10,6 +10,30 @@ var View = Options.BaseIcons.extend({
         options.type     = options.display || 'checkbox';
         options.multiple = (options.display == 'checkbox');
         Options.BaseIcons.prototype.initialize.call(this, options);
+        this.initial = true;
+    },
+
+    // set expand states for initial value
+    value: function (new_val) {
+        var val = Options.BaseIcons.prototype.value.call(this, new_val);
+        if (this.initial && val !== null && this.header_index) {
+            this.initial = false;
+            var values = val;
+            if (!$.isArray(values)) {
+                values = [values];
+            }
+            var headers_merged = [];
+            for (var i in values) {
+                var list = this.header_index[values[i]]
+                if (list) {
+                    headers_merged = _.uniq(headers_merged.concat(list));
+                }
+            }
+            for (var i in headers_merged) {
+                this._setState(headers_merged[i], true);
+            }
+        }
+        return val;
     },
 
     /** Expand/collapse a sub group
@@ -81,6 +105,9 @@ var View = Options.BaseIcons.extend({
                     $group.append($buttongroup);
                     iterate($subgroup, level.options, new_header);
                     $group.append($subgroup);
+
+                    // keep track of header list
+                    self.header_index[level.value] = new_header;
                 } else {
                     // append child options
                     $group.append(self._templateOption({
