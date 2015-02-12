@@ -75,29 +75,36 @@
     .flex-column {
     }
 
+    /* ---------------------- header & footer */
     .header, .footer {
         width: 100%;
     }
 
+    /* ---------------------- header */
     .header {
         background-color: lightgrey;
         min-height: ${header_height}px;
         max-height: ${header_height}px;
     }
-    .header-control {
+    .control-column {
         margin-top: 4px;
     }
-    .header-control-right,
-    .header-control-left {
+
+    .control-column-right,
+    .control-column-left {
         margin-right: 8px;
         margin-left: 8px;
+        /*background-color: green;*/
     }
 
-    .header-control-left > * {
+    .control-column-left > * {
         margin: 0px 4px 4px 0px;
     }
+    .more-options input[type=checkbox] {
+        margin-top: 3px;
+    }
 
-    .header-control-center {
+    .control-column-center {
         text-align: center;
         max-height: 22px;
         -webkit-flex: 0 1 auto;
@@ -117,26 +124,35 @@
 
     }
 
-    .header-control-right {
+    .control-column-right {
         text-align: right;
     }
-    .header-control-right > * {
+    .control-column-right > * {
         margin: 0px 0px 4px 4px;
     }
 
-    .header-search {
+    .search-control {
         display: inline-block;
+        width: 40%;
     }
-    .header-search .search-clear,
-    .header-search .search-loading {
+    .search-control .search-clear,
+    .search-control .search-loading {
         margin-top: -22px;
     }
+    .footer input.search-query,
     .header input.search-query {
         font-size: 90%;
         height: 21px;
-        padding: 2px;
+        line-height: normal;
+        padding: 2px 2px 1px 2px;
     }
 
+    .open-more-options {
+        padding: 0 4px 0 4px;
+        font-size: 150%;
+    }
+
+    /* ---------------------- middle */
     .outer-middle {
         overflow: auto;
     }
@@ -169,12 +185,17 @@
         align-self: auto;
     }
     .header .btn,
+    .footer .btn,
     .panel-controls .btn {
-        height: ${controls_height}px;
-        line-height: ${controls_height - 2}px;
+        height: 20px;
+        /*line-height: ${controls_height - 2}px;*/
+        line-height: normal;
         font-size: 90%;
         padding-top: 0px;
         padding-bottom: 0px;
+    }
+    .header .btn {
+        height: 21px;
     }
     .panel-controls .pull-left .btn {
         margin-right: 4px;
@@ -183,13 +204,14 @@
         margin-left: 4px;
     }
 
+    /* ---------------------- footer */
     .footer {
         min-height: ${footer_height}px;
         max-height: ${footer_height}px;
-        background-color: grey;
+        background-color: lightgrey;
     }
 
-    /* ---- columns */
+    /* ---------------------- columns */
     .history-panel {
         width: 100%;
         margin-top: 4px;
@@ -230,6 +252,12 @@
         vertical-align: middle;
     }
 
+    .current-label {
+        display: inline-block;
+        color: grey;
+        padding-left: 2px;
+        margin-top: 2px;
+    }
     </style>
 
 </%def>
