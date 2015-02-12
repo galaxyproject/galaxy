@@ -463,7 +463,7 @@ def unpack_zipfile( filename, extract_dir, ignores=[] ):
     try:
         for info in z.infolist():
             name = info.filename
-            perm = (info.external_attr >> 16L) & 0777
+            mode = (info.external_attr >> 16L) & 0777
             # don't extract absolute paths or ones with .. in them
             if name.startswith('/') or '..' in name:
                 continue
