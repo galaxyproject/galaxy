@@ -2,17 +2,27 @@
 Manage Galaxy eggs
 """
 
-import os, sys, shutil, glob, urllib, urllib2, ConfigParser, HTMLParser, zipimport, zipfile
+import ConfigParser
+import glob
+import HTMLParser
+import os
+import pkg_resources
+import shutil
+import sys
+import urllib
+import urllib2
+import zipfile
+import zipimport
 
 import logging
 log = logging.getLogger( __name__ )
 log.addHandler( logging.NullHandler() )
 
-import pkg_resources
 
 galaxy_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', '..', '..' ) )
 eggs_dir = os.environ.get( 'GALAXY_EGGS_PATH', os.path.join( galaxy_dir, 'eggs' ) )
 py = 'py%s' % sys.version[:3]
+
 
 class EggNotFetchable( Exception ):
     def __init__( self, eggs ):
@@ -20,18 +30,22 @@ class EggNotFetchable( Exception ):
             self.eggs = eggs
         else:
             self.eggs = [ eggs ]
+
     def __str__( self ):
         return ' '.join( self.eggs )
+
 
 # need the options to remain case sensitive
 class CaseSensitiveConfigParser( ConfigParser.SafeConfigParser ):
     def optionxform( self, optionstr ):
         return optionstr
 
+
 # so we can actually detect failures
 class URLRetriever( urllib.FancyURLopener ):
     def http_error_default( *args ):
         urllib.URLopener.http_error_default( *args )
+
 
 class Egg( object ):
     """
@@ -49,11 +63,13 @@ class Egg( object ):
         self.removed_location = None
         if self.name is not None and self.version is not None:
             self.set_distribution()
+
     def set_dir( self ):
         global eggs_dir
         self.dir = eggs_dir
         if not os.path.exists( self.dir ):
             os.makedirs( self.dir )
+
     def set_distribution( self ):
         """
         Stores a pkg_resources Distribution object for reference later
@@ -62,7 +78,8 @@ class Egg( object ):
             self.set_dir()
         tag = self.tag or ''
         self.distribution = pkg_resources.Distribution.from_filename(
-                os.path.join( self.dir, '-'.join( ( self.name, self.version + tag, self.platform ) ) + '.egg' ) )
+            os.path.join( self.dir, '-'.join( ( self.name, self.version + tag, self.platform ) ) + '.egg' ) )
+
     @property
     def path( self ):
         """
@@ -71,6 +88,7 @@ class Egg( object ):
         if env[self.distribution.project_name]:
             return env[self.distribution.project_name][0].location
         return None
+
     def fetch( self, requirement ):
         """
         fetch() serves as the install method to pkg_resources.working_set.resolve()
@@ -86,9 +104,11 @@ class Egg( object ):
                 def __init__( self ):
                     HTMLParser.HTMLParser.__init__( self )
                     self.links = []
+
                 def handle_starttag( self, tag, attrs ):
                     if tag == 'a' and 'href' in dict( attrs ):
                         self.links.append( dict( attrs )['href'] )
+
             parser = LinkParser()
             try:
                 parser.feed( urllib2.urlopen( self.url + '/' ).read() )
@@ -106,6 +126,7 @@ class Egg( object ):
                         pkg_resources.compatible_platforms( tmp_dist.platform, pkg_resources.get_platform() ):
                     return file
             return None
+
         def _fetch():
             if self.url is None:
                 return False
@@ -148,14 +169,16 @@ class Egg( object ):
             sys.path.remove( self.removed_location )
         if rval is not None:
             global env
-            env = get_env() # reset the global Environment object now that we've obtained a new egg
+            env = get_env()  # reset the global Environment object now that we've obtained a new egg
         return rval
+
     def unpack_if_needed( self ):
         meta = pkg_resources.EggMetadata( zipimport.zipimporter( self.distribution.location ) )
         if meta.has_metadata( 'not-zip-safe' ):
             unpack_zipfile( self.distribution.location, self.distribution.location + "-tmp" )
             os.remove( self.distribution.location )
             os.rename( self.distribution.location + "-tmp", self.distribution.location )
+
     def remove_doppelgangers( self ):
         doppelgangers = glob.glob( os.path.join( self.dir, "%s-*-%s.egg" % ( self.name, self.platform ) ) )
         if self.distribution.location in doppelgangers:
@@ -163,6 +186,7 @@ class Egg( object ):
         for doppelganger in doppelgangers:
             remove_file_or_path( doppelganger )
             log.debug( "Removed conflicting egg: %s" % doppelganger )
+
     def resolve( self ):
         try:
             rval = []
@@ -195,6 +219,7 @@ class Egg( object ):
                 raise
             # there's a conflicting egg on the path, remove it
             return self.version_conflict( e.args[0], e.args[1] )
+
     def version_conflict( self, conflict_dist, conflict_req ):
         # since this conflict may be for a dependent egg, find the correct egg from the crate
         if conflict_dist.project_name == self.distribution.project_name:
@@ -234,6 +259,7 @@ class Egg( object ):
             pkg_resources.working_set.entries.append( location )
             sys.path.append( location )
         return r
+
     def require( self ):
         try:
             dists = self.resolve()
@@ -244,11 +270,13 @@ class Egg( object ):
         except:
             raise
 
+
 class Crate( object ):
     """
     Reads the eggs.ini file for use with checking and fetching.
     """
     config_file = os.path.join( galaxy_dir, 'eggs.ini' )
+
     def __init__( self, galaxy_config_file, platform=None ):
         self.eggs = {}
         self.config = CaseSensitiveConfigParser()
@@ -260,12 +288,14 @@ class Crate( object ):
             self.py_platform = platform.split( '-' )[0]
         self.galaxy_config = GalaxyConfig( galaxy_config_file )
         self.parse()
+
     def parse( self ):
         self.config.read( Crate.config_file )
         self.repo = self.config.get( 'general', 'repository' )
         self.no_auto = self.config.get( 'general', 'no_auto' ).split()
         self.parse_egg_section( self.config.items( 'eggs:platform' ), self.config.items( 'tags' ), True )
         self.parse_egg_section( self.config.items( 'eggs:noplatform' ), self.config.items( 'tags' ) )
+
     def parse_egg_section( self, eggs, tags, full_platform=False, egg_class=Egg ):
         for name, version in eggs:
             tag = dict( tags ).get( name, '' )
@@ -276,6 +306,7 @@ class Crate( object ):
                 platform = self.py_platform or py
             egg = egg_class( name=name, version=version, tag=tag, url=url, platform=platform, crate=self )
             self.eggs[name] = egg
+
     @property
     def config_missing( self ):
         """
@@ -286,6 +317,7 @@ class Crate( object ):
             if not egg.path:
                 return True
         return False
+
     @property
     def all_missing( self ):
         """
@@ -295,6 +327,7 @@ class Crate( object ):
             if not os.path.exists( egg.distribution.location ):
                 return True
         return False
+
     @property
     def config_names( self ):
         """
@@ -302,12 +335,14 @@ class Crate( object ):
         on the options set in the Galaxy config file.
         """
         return [ egg.name for egg in self.config_eggs ]
+
     @property
     def all_names( self ):
         """
         Return a list of names of all eggs in the crate.
         """
         return [ egg.name for egg in self.all_eggs ]
+
     @property
     def config_eggs( self ):
         """
@@ -315,6 +350,7 @@ class Crate( object ):
         options set in the Galaxy config file.
         """
         return [ egg for egg in self.eggs.values() if self.galaxy_config.check_conditional( egg.name ) ]
+
     @property
     def all_eggs( self ):
         """
@@ -326,12 +362,14 @@ class Crate( object ):
                 continue
             rval.append( egg )
         return rval
+
     def __getitem__( self, name ):
         """
         Return a specific egg.
         """
         name = name.replace( '-', '_' )
         return self.eggs[name]
+
     def resolve( self, all=False ):
         """
         Try to resolve (e.g. fetch) all eggs in the crate.
@@ -350,8 +388,10 @@ class Crate( object ):
         if missing:
             raise EggNotFetchable( missing )
 
+
 class GalaxyConfig( object ):
     always_conditional = ( 'pysam', 'ctypes', 'python_daemon' )
+
     def __init__( self, config_file ):
         if config_file is None:
             self.config = None
@@ -359,6 +399,7 @@ class GalaxyConfig( object ):
             self.config = ConfigParser.ConfigParser()
             if self.config.read( config_file ) == []:
                 raise Exception( "error: unable to read Galaxy config from %s" % config_file )
+
     def check_conditional( self, egg_name ):
         def check_pysam():
             # can't build pysam on solaris < 10
@@ -389,9 +430,10 @@ class GalaxyConfig( object ):
                          "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "pysam":           lambda: check_pysam(),
                          "PyRods":          lambda: self.config.get( "app:main", "object_store" ) == "irods"
-                       }.get( egg_name, lambda: True )()
+                         }.get( egg_name, lambda: True )()
             except:
                 return False
+
 
 def get_env():
     env = pkg_resources.Environment( search_path='', platform=pkg_resources.get_platform() )
@@ -399,6 +441,7 @@ def get_env():
         env.add( dist )
     return env
 env = get_env()
+
 
 def require( req_str ):
     c = Crate( None )
@@ -413,6 +456,7 @@ def require( req_str ):
     except EggNotFetchable, e:
         raise EggNotFetchable( str( [ egg.name for egg in e.eggs ] ) )
 pkg_resources.require = require
+
 
 def unpack_zipfile( filename, extract_dir, ignores=[] ):
     z = zipfile.ZipFile(filename)
@@ -436,7 +480,7 @@ def unpack_zipfile( filename, extract_dir, ignores=[] ):
                 # file
                 pkg_resources.ensure_directory(target)
                 data = z.read(info.filename)
-                f = open(target,'wb')
+                f = open(target, 'wb')
                 try:
                     f.write(data)
                 finally:
@@ -449,6 +493,7 @@ def unpack_zipfile( filename, extract_dir, ignores=[] ):
                     pass
     finally:
         z.close()
+
 
 def remove_file_or_path( f ):
     if os.path.isdir( f ):
