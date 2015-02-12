@@ -5,7 +5,7 @@ import sys
 import os
 
 __GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.append( __GALAXY_ROOT__ + 'lib' )
+sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
 
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
