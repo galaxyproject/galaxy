@@ -22,15 +22,11 @@ var View = Options.BaseIcons.extend({
             if (!$.isArray(values)) {
                 values = [values];
             }
-            var headers_merged = [];
             for (var i in values) {
                 var list = this.header_index[values[i]]
-                if (list) {
-                    headers_merged = _.uniq(headers_merged.concat(list));
+                for (var j in list) {
+                    this._setState(list[i], true);
                 }
-            }
-            for (var i in headers_merged) {
-                this._setState(headers_merged[i], true);
             }
         }
         return val;
