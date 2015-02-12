@@ -7,6 +7,8 @@ Lower level of visualization framework which does three main things:
 import os
 import shutil
 import glob
+from xml.etree import ElementTree
+from xml.etree import ElementInclude
 
 from galaxy import util
 import galaxy.model
@@ -82,6 +84,16 @@ def hasattr_recursive( item, attr_key ):
         return False
 
     return True
+
+def parse_xml( fname ):
+    # handle deprecation warning for XMLParsing a file with DOCTYPE
+    class DoctypeSafeCallbackTarget( ElementTree.TreeBuilder ):
+        def doctype( *args ):
+            pass
+    tree = ElementTree.ElementTree()
+    root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    ElementInclude.include( root )
+    return tree
 
 
 # ------------------------------------------------------------------- the registry
@@ -394,7 +406,7 @@ class VisualizationsConfigParser( object ):
         Parse the given XML file for visualizations data.
         :returns: visualization config dictionary
         """
-        xml_tree = galaxy.util.parse_xml( xml_filepath )
+        xml_tree = parse_xml( xml_filepath )
         visualization = self.parse_visualization( xml_tree.getroot() )
         return visualization
 
@@ -416,7 +428,7 @@ class VisualizationsConfigParser( object ):
 
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
-            log.info( '%s, plugin disabled: %s. Skipping...', self, returned[ 'name' ] )
+            log.info( 'Visualizations plugin disabled: %s. Skipping...', returned[ 'name' ] )
             return None
 
         # record the embeddable flag - defaults to false
