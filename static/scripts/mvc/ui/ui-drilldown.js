@@ -23,9 +23,9 @@ var View = Options.BaseIcons.extend({
                 values = [values];
             }
             for (var i in values) {
-                var list = this.header_index[values[i]]
+                var list = this.header_index[values[i]];
                 for (var j in list) {
-                    this._setState(list[i], true);
+                    this._setState(list[j], true);
                 }
             }
         }
@@ -80,6 +80,9 @@ var View = Options.BaseIcons.extend({
                 // copy current header list
                 var new_header = header.slice(0);
 
+                // keep track of header list
+                self.header_index[level.value] = new_header.slice(0);
+
                 // build template
                 var $group = $('<div/>');
                 if (has_options) {
@@ -101,18 +104,12 @@ var View = Options.BaseIcons.extend({
                     $group.append($buttongroup);
                     iterate($subgroup, level.options, new_header);
                     $group.append($subgroup);
-
-                    // keep track of header list
-                    self.header_index[level.value] = new_header;
                 } else {
                     // append child options
                     $group.append(self._templateOption({
                         label: level.name,
                         value: level.value
                     }));
-
-                    // keep track of header list
-                    self.header_index[level.value] = new_header;
                 }
                 $tmpl.append($group);
             }
