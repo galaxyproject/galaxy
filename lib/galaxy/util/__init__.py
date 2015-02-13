@@ -21,6 +21,7 @@ import string
 import sys
 import tempfile
 import threading
+import urlparse
 
 from galaxy.util import json
 from datetime import datetime
@@ -30,8 +31,6 @@ from email.MIMEText import MIMEText
 from os.path import relpath
 from hashlib import md5
 from itertools import izip
-
-from urlparse import urlparse
 
 from galaxy import eggs
 
@@ -501,6 +500,30 @@ def sanitize_for_filename( text, default=None ):
     return out
 
 
+def mask_password_from_url( url ):
+    """
+    Masks out passwords from connection urls like the database connection in galaxy.ini
+
+    >>> mask_password_from_url( 'sqlite+postgresql://user:password@localhost/' )
+    'sqlite+postgresql://user:********@localhost/'
+    >>> mask_password_from_url( 'amqp://user:amqp@localhost' )
+    'amqp://user:********@localhost'
+    >>> mask_password_from_url( 'amqp://localhost')
+    'amqp://localhost'
+    """
+    split = urlparse.urlsplit(url)
+    if split.password:
+        if url.count(split.password) == 1:
+            url = url.replace(split.password, "********")
+        else:
+            # This can manipulate the input other than just masking password,
+            # so the previous string replace method is preferred when the
+            # password doesn't appear twice in the url
+            split._replace(netloc=split.netloc.replace("%s:%s" % (split.username, split.password), '%s:********' % split.username))
+            url = urlparse.urlunsplit(split)
+    return url
+
+
 def ready_name_for_url( raw_name ):
     """ General method to convert a string (i.e. object name) to a URL-ready
     slug.
@@ -856,8 +879,8 @@ class ParamsWithSpecs( collections.defaultdict ):
 
 
 def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compare_path=True ):
-    url1 = urlparse( url1 )
-    url2 = urlparse( url2 )
+    url1 = urlparse.urlparse( url1 )
+    url2 = urlparse.urlparse( url2 )
     if compare_scheme and url1.scheme and url2.scheme and url1.scheme != url2.scheme:
         return False
     if compare_hostname and url1.hostname and url2.hostname and url1.hostname != url2.hostname:
