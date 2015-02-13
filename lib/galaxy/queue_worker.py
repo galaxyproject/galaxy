@@ -20,7 +20,7 @@ from kombu import Connection
 from kombu.mixins import ConsumerMixin
 from kombu.pools import producers
 
-
+logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
@@ -32,7 +32,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
     """
     def __init__(self, app, queue, task_mapping, connection=None):
         super(GalaxyQueueWorker, self).__init__()
-        log.info("Initalizing Galaxy Queue Worker on %s", app.config.amqp_internal_connection)
+        log.info("Initalizing Galaxy Queue Worker on %s", util.mask_password_from_url(app.config.amqp_internal_connection))
         if connection:
             self.connection = connection
         else:
