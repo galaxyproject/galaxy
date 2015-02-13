@@ -248,7 +248,7 @@ define(['utils/utils',
         */
         _fieldColor : function(input_def) {
             var self = this;
-            return new ColorPicker(this.app, {
+            return new ColorPicker({
                 id          : 'field-' + input_def.id,
                 onchange    : function() {
                     self.app.trigger('refresh');
