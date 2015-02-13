@@ -1,8 +1,11 @@
 /**
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
-define(['utils/utils','mvc/ui/ui-misc', 'mvc/tools/tools-select-content'],
-    function(Utils, Ui, SelectContent) {
+define(['utils/utils',
+        'mvc/ui/ui-misc',
+        'mvc/tools/tools-select-content',
+        'mvc/ui/ui-color-picker'],
+    function(Utils, Ui, SelectContent, ColorPicker) {
 
     // create form view
     return Backbone.Model.extend({
@@ -18,9 +21,10 @@ define(['utils/utils','mvc/ui/ui-misc', 'mvc/tools/tools-select-content'],
             'float'             : '_fieldSlider',
             'boolean'           : '_fieldBoolean',
             'drill_down'        : '_fieldDrilldown',
+            'color'             : '_fieldColor',
             'hidden'            : '_fieldHidden',
             'hidden_data'       : '_fieldHidden',
-            'baseurl'           : '_fieldHidden'
+            'baseurl'           : '_fieldHidden',
         },
         
         // initialize
@@ -234,6 +238,18 @@ define(['utils/utils','mvc/ui/ui-misc', 'mvc/tools/tools-select-content'],
                 id          : 'field-' + input_def.id,
                 data        : [ { label : 'Yes', value : 'true'  },
                                 { label : 'No',  value : 'false' }],
+                onchange    : function() {
+                    self.app.trigger('refresh');
+                }
+            });
+        },
+
+        /** Color picker field
+        */
+        _fieldColor : function(input_def) {
+            var self = this;
+            return new ColorPicker(this.app, {
+                id          : 'field-' + input_def.id,
                 onchange    : function() {
                     self.app.trigger('refresh');
                 }
