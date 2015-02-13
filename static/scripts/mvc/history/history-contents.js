@@ -186,20 +186,23 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     },
 
     /** copy an existing, accessible hda into this collection */
-    copy : function( id ){
-//TODO: incorp collections
-        var collection = this,
-            xhr = jQuery.post( this.url(), {
-                source  : 'hda',
+    copy : function( id, contentType ){
+        contentType = contentType || 'hda';
+        var type = ( contentType === 'hdca'? 'dataset_collection' : 'dataset' ),
+            collection = this;
+
+        var xhr = jQuery.post( this.url(), {
+                type    : type,
+                source  : contentType,
                 content : id
+            })
+            .done( function( json ){
+                collection.add([ json ]);
+            })
+            .fail( function( error, status, message ){
+                collection.trigger( 'error', collection, xhr, {},
+                                    'Error copying contents', { type: type, id: id, source: contentType });
             });
-        xhr.done( function( json ){
-            collection.add([ json ]);
-        });
-        xhr.fail( function( error, status, message ){
-//TODO: better distinction btwn not-allowed and actual ajax error
-            collection.trigger( 'error', collection, xhr, {}, 'Error copying dataset' );
-        });
         return xhr;
     },
 
