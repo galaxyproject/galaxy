@@ -1,4 +1,4 @@
 install:
-  - apt-get install libxml2-utils
+  - sudo apt-get install libxml2-utils
 script:
   - xmllint --noout *.xsd
