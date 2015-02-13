@@ -52,7 +52,7 @@ return Backbone.View.extend({
             if (self.visible) {
                 self.$view.fadeIn('fast');
             } else {
-                self.$view.hide();
+                self.$view.fadeOut('fast');
             }
         });
     },
