@@ -2097,6 +2097,34 @@ div.permissionContainer{padding-left:20px}
 .annotated-history-panel table.list-items>tbody>tr>td>.list-item{border:0px}
 .annotated-history-panel .empty-message{margin-top:8px}
 .current-history-panel .list-item.history-content.current-content{border-left:5px solid #4E5777}
+.multi-panel-history{display:flex;flex-direction:column;}.multi-panel-history .flex-row-container,.multi-panel-history .flex-column-container{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;min-width:0px;min-height:0px;-webkit-align-items:stretch;-ms-align-items:stretch;align-items:stretch;-webkit-align-content:stretch;-ms-align-content:stretch;align-content:stretch;-webkit-justify-content:flex-start;-ms-flex-pack:start;justify-content:flex-start}
+.multi-panel-history .flex-row-container{-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column}
+.multi-panel-history .flex-column-container{-webkit-flex-direction:row;-ms-flex-direction:row;flex-direction:row}
+.multi-panel-history .flex-row,.multi-panel-history .flex-column{-webkit-flex:1 1 auto;-ms-flex:1 1 auto;flex:1 1 auto;-webkit-align-self:auto;-ms-flex-item-align:auto;align-self:auto}
+.multi-panel-history .header,.multi-panel-history .footer{width:100%;background-color:lightgrey}.multi-panel-history .header .btn,.multi-panel-history .footer .btn{height:21px}
+.multi-panel-history .header{min-height:29px;max-height:29px}
+.multi-panel-history .footer{min-height:0;max-height:0}
+.multi-panel-history .smaller-btn{height:20px;line-height:normal;font-size:90%;padding-top:0px;padding-bottom:0px}
+.multi-panel-history .control-column{margin-top:4px}.multi-panel-history .control-column .btn{height:20px;line-height:normal;font-size:90%;padding-top:0px;padding-bottom:0px}
+.multi-panel-history .control-column .search-control{display:inline-block;width:40%}.multi-panel-history .control-column .search-control .search-clear,.multi-panel-history .control-column .search-control .search-loading{margin-top:-22px}
+.multi-panel-history .control-column input.search-query{font-size:90%;height:21px;line-height:normal;padding:2px 2px 1px 2px}
+.multi-panel-history .control-column .open-more-options{padding:2px 6px 2px 6px;font-size:100%}
+.multi-panel-history .control-column .more-options input[type=checkbox]{margin-top:2px}
+.multi-panel-history .control-column .header-info{display:inline-block;padding:2px 4px 2px 4px;color:grey}
+.multi-panel-history .control-column.control-column-right,.multi-panel-history .control-column.control-column-left{margin-right:8px;margin-left:8px}.multi-panel-history .control-column.control-column-right>*,.multi-panel-history .control-column.control-column-left>*{margin:0px 4px 4px 0px}
+.multi-panel-history .control-column.control-column-center{text-align:center;max-height:22px;-webkit-flex:0 1 auto;-ms-flex:0 1 auto;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-height:22px}
+.multi-panel-history .control-column.control-column-right{text-align:right}
+.multi-panel-history .outer-middle{overflow:auto}
+.multi-panel-history .middle{min-width:100%;margin:0px 0px 0px 0px;background-color:white;padding:8px}
+.multi-panel-history .history-column{width:312px;margin:0 8px 0 0}.multi-panel-history .history-column:first-child{position:fixed;z-index:2}.multi-panel-history .history-column:first-child .history-panel{border:1px solid black;box-shadow:4px 4px 4px rgba(96,96,96,0.3)}
+.multi-panel-history .history-column:nth-child(2){margin-left:320px}
+.multi-panel-history .history-column:last-child{margin-right:0px}
+.multi-panel-history .history-column .panel-controls{width:100%;height:24px;border-radius:3px;background-color:white;text-align:center;flex:0 0 auto;-webkit-align-self:auto;-ms-flex-item-align:auto;align-self:auto}.multi-panel-history .history-column .panel-controls .btn{height:20px;line-height:normal;font-size:90%;padding-top:0px;padding-bottom:0px}
+.multi-panel-history .history-column .panel-controls .pull-left .btn{margin-right:4px}
+.multi-panel-history .history-column .panel-controls .pull-right .btn{margin-left:4px}
+.multi-panel-history .history-column .panel-controls .panel-menu{z-index:1}.multi-panel-history .history-column .panel-controls .panel-menu .dropdown-menu a{text-align:left}
+.multi-panel-history .history-column .panel-controls .current-label{display:inline-block;color:grey;padding-left:2px;margin-top:2px}
+.multi-panel-history .history-column .history-panel{width:100%;border:1px solid #808080;border-radius:3px;background-color:#DFE5F9;overflow:auto}
 body.historyPage{background:#dfe5f9;color:#000;margin:5px;border:0;padding:0}
 div.historyLinks{margin:5px 5px}
 div.historyItem{margin:0 -5px;padding:8px 10px;border-top:solid #bfbfbf 1px;border-right:none;word-wrap:break-word;background:#eee}div.historyItem .state-icon{display:inline-block;vertical-align:middle;width:16px;height:16px;background-position:0 1px;background-repeat:no-repeat}

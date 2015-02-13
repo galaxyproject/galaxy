@@ -579,6 +579,235 @@
 }
 
 
+// ---------------------------------------------------------------------------- multi-view / multi-panel
+.multi-panel-history {
+    @mph-column_width: 312px;
+    @mph-border_width: 1px;
+    @mph-column_gap: 8px;
+    @mph-header_height: 29px;
+    @mph-footer_height: 0;
+    @mph-controls_height: 20px;
+
+    // for some reason, .flex-row-container below won't be applied to multi-panel-history since it's the enclosing node
+    // re-apply here
+    display: flex;
+    flex-direction: column;
+
+    .flex-row-container,
+    .flex-column-container {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: -ms-flexbox;
+        display: flex;
+
+        /* force ff to squish beyond content:
+           https://developer.mozilla.org/en-US/Firefox/Releases/34/Site_Compatibility#CSS */
+        min-width: 0px;
+        min-height: 0px;
+
+        -webkit-align-items: stretch;
+        -ms-align-items: stretch;
+        align-items: stretch;
+
+        -webkit-align-content: stretch;
+        -ms-align-content: stretch;
+        align-content: stretch;
+
+        -webkit-justify-content: flex-start;
+        -ms-flex-pack: start;
+        justify-content: flex-start;
+    }
+    .flex-row-container {
+        -webkit-flex-direction: column;
+        -ms-flex-direction: column;
+        flex-direction: column;
+    }
+    .flex-column-container {
+        -webkit-flex-direction: row;
+        -ms-flex-direction: row;
+        flex-direction: row;
+    }
+    .flex-row,
+    .flex-column {
+        -webkit-flex: 1 1 auto;
+        -ms-flex: 1 1 auto;
+        flex: 1 1 auto;
+
+        -webkit-align-self: auto;
+        -ms-flex-item-align: auto;
+        align-self: auto;
+    }
+
+    /* ---------------------- header & footer */
+    .header,
+    .footer {
+        width: 100%;
+        background-color: lightgrey;
+        .btn {
+            height: 21px;
+        }
+    }
+    .header {
+        min-height: @mph-header_height;
+        max-height: @mph-header_height;
+    }
+    .footer {
+        min-height: @mph-footer_height;
+        max-height: @mph-footer_height;
+    }
+
+    // make the buttons in the header/footers and the panel controls slightly smaller
+    .smaller-btn {
+        height: 20px;
+        line-height: normal;
+        font-size: 90%;
+        padding-top: 0px;
+        padding-bottom: 0px;
+    }
+
+    // the header/footers controls
+    .control-column {
+        margin-top: 4px;
+
+        .btn {
+            .smaller-btn;
+        }
+        .search-control {
+            display: inline-block;
+            width: 40%;
+
+            .search-clear,
+            .search-loading {
+                margin-top: -22px;
+            }
+        }
+        input.search-query {
+            font-size: 90%;
+            height: 21px;
+            line-height: normal;
+            padding: 2px 2px 1px 2px;
+        }
+        .open-more-options {
+            padding: 2px 6px 2px 6px;
+            font-size: 100%;
+        }
+        .more-options input[type=checkbox] {
+            margin-top: 2px;
+        }
+        .header-info {
+            display: inline-block;
+            padding: 2px 4px 2px 4px;
+            color: grey;
+        }
+
+        &.control-column-right,
+        &.control-column-left {
+            margin-right: 8px;
+            margin-left: 8px;
+            & > * {
+                margin: 0px 4px 4px 0px;
+            }
+        }
+        &.control-column-center {
+            text-align: center;
+            max-height: 22px;
+            -webkit-flex: 0 1 auto;
+            -ms-flex: 0 1 auto;
+            flex: 0 1 auto;
+
+            /* truncate */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-height: 22px;
+        }
+        &.control-column-right {
+            text-align: right;
+        }
+    }
+
+    /* ---------------------- middle */
+    .outer-middle {
+        overflow: auto;
+    }
+    .middle {
+        min-width: 100%;
+        margin: 0px 0px 0px 0px;
+        background-color: white;
+        padding: @mph-column_gap;
+    }
+
+    .history-column {
+        width: @mph-column_width;
+        margin: 0px @mph-column_gap 0px 0px;
+
+        // current history
+        &:first-child {
+            position: fixed;
+            z-index : 2;
+
+            // visually differentiate the current history
+            .history-panel {
+                border: 1px solid black;
+                box-shadow: 4px 4px 4px rgba( 96, 96, 96, 0.3 );
+            }
+        }
+        &:nth-child(2) {
+            // push the column after the current away from the left (since it's fixed)
+            margin-left: ( @mph-column_width + @mph-column_gap );
+        }
+        &:last-child {
+            margin-right: 0px;
+        }
+
+        .panel-controls {
+            width: 100%;
+            height: ( @mph-controls_height + 4 );
+            border-radius: 3px;
+            background-color: white;
+            text-align: center;
+
+            flex: 0 0 auto;
+
+            -webkit-align-self: auto;
+            -ms-flex-item-align: auto;
+            align-self: auto;
+
+            .btn {
+                .smaller-btn;
+            }
+            .pull-left .btn {
+                margin-right: 4px;
+            }
+            .pull-right .btn {
+                margin-left: 4px;
+            }
+            .panel-menu {
+                z-index: 1;
+                .dropdown-menu a {
+                    text-align: left;
+                }
+            }
+            .current-label {
+                display: inline-block;
+                color: grey;
+                padding-left: 2px;
+                margin-top: 2px;
+            }
+        }
+        .history-panel {
+            width: 100%;
+
+            border: @mph-border_width solid grey;
+            border-radius: 3px;
+            background-color: #DFE5F9;
+
+            overflow: auto;
+        }
+    }
+}
+
+
 // ---------------------------------------------------------------------------- older styles
 //TODO: these may still apply in mobile display, workflow stuff
 body.historyPage {

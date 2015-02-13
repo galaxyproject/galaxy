@@ -37,7 +37,7 @@ function historyCopyDialog( history, options ){
             .css( 'margin-top', '8px' );
         Galaxy.modal.$( '.modal-body' ).append( $copyIndicator );
         history.copy( true, name )
-//TODO: make this unneccessary with pub-sub error
+            //TODO: make this unneccessary with pub-sub error
             .fail( function(){
                 alert( _l( 'History could not be copied. Please contact a Galaxy administrator' ) );
             })
@@ -329,7 +329,7 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     controlsRightTemplate : _.template([
         '<div class="pull-right">',
             '<% if( !history.purged ){ %>',
-                '<div class="panel-menu order btn-group">',
+                '<div class="panel-menu btn-group">',
                     '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
                         '<span class="caret"></span>',
                     '</button>',
@@ -372,13 +372,16 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     //logger : console,
-    className : 'multi-history-columns',
+    className : 'multi-panel-history',
 
     // ------------------------------------------------------------------------ set up
     /** Set up internals, history collection, and columns to display the history */
     initialize : function initialize( options ){
         options = options || {};
         this.log( this + '.init', options );
+
+        // add the className here (since we gen. pass the el in options)
+        this.$el.addClass( this.className );
 
         // --- instance vars
         if( !options.currentHistoryId ){
@@ -549,7 +552,11 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         this.collection.comparator = function __comparator( a, b ){
             return sortOrder.fn( a, b, currentHistoryId );
         };
+        // set the sort order text
         this.$( '.current-order' ).text( sortOrder.text );
+        if( this.$( '.more-options' ).is( ':visible' ) ){
+            this.$( '.open-more-options.btn' ).popover( 'show' );
+        }
 
         //NOTE: auto fires 'sort' from collection
         this.collection.sort( options );
@@ -815,7 +822,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** put a text msg in the header */
     renderInfo : function( msg ){
-        this.$( '.header .header-info' ).text( msg );
+        return this.$( '.header .header-info' ).text( msg );
     },
 
     // ------------------------------------------------------------------------ events/behaviors
@@ -1061,7 +1068,6 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     optionsPopoverTemplate : _.template([
         '<div class="more-options">',
-
             '<div class="order btn-group">',
                 '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
                     _l( 'Order histories by' ) + ' ',
