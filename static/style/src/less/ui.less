@@ -152,6 +152,7 @@
     }
     margin-top: @ui-margin-vertical;
     margin-bottom: @ui-margin-vertical;
+    overflow: hidden;
 }
 
 .ui-table-form-title-strong {
@@ -465,17 +466,13 @@
         display: none;
         float: left;
         .ui-color-picker-panel {
-            height: 100%;
-            overflow: auto;
-            width: 230px;
+            width: 210px;
             .ui-color-picker-content {
-                clear: both;
                 margin-bottom: 15px;
                 .label {
                     padding-bottom: 2px;
                 }
                 .line {
-                    clear: both;
                     .ui-color-picker-box {
                         cursor: pointer;
                         float: left;
