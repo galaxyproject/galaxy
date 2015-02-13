@@ -1414,7 +1414,7 @@ label{font-weight:normal}
 .ui-table tbody,.ui-table-plain tbody{cursor:pointer}
 .ui-table-plain{table-layout:fixed}.ui-table-plain tbody{cursor:auto !important}.ui-table-plain tbody td{padding:0px !important;border:none !important}
 .ui-table-plain .ui-table-section{border-left:solid 3px #ebd9b2;border-radius:5px !important;margin-bottom:5px;padding-left:10px}
-.ui-table-form-element{margin-top:5px;margin-bottom:5px}.ui-table-form-element .ui-table-form-title-optional{font-weight:bold;text-decoration:underline;cursor:pointer}
+.ui-table-form-element{margin-top:5px;margin-bottom:5px;overflow:hidden}.ui-table-form-element .ui-table-form-title-optional{font-weight:bold;text-decoration:underline;cursor:pointer}
 .ui-table-form-element .ui-table-form-field{margin-top:5px}
 .ui-table-form-title-strong{font-weight:bold}
 .ui-table-form-info{clear:both !important}
@@ -1456,8 +1456,8 @@ label{font-weight:normal}
 .ui-color-picker .ui-color-picker-header{cursor:pointer}
 .ui-color-picker .ui-color-picker-value{float:left;border-radius:3px;border:solid 1px #000000;width:12px;height:12px;margin-bottom:10px;margin-right:5px}
 .ui-color-picker .ui-color-picker-label{float:left;line-height:1.2em}
-.ui-color-picker .ui-color-picker-view{height:100%;overflow:auto;display:none;float:left}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel{height:100%;overflow:auto;width:230px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content{clear:both;margin-bottom:15px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .label{padding-bottom:2px}
-.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line{clear:both}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box{cursor:pointer;float:left;margin-right:5px;border:solid 1px #c0c0c0;width:15px;height:15px;border-radius:2px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box .ui-color-picker-check{color:black;font-size:1.2em;position:relative;left:1px}
+.ui-color-picker .ui-color-picker-view{display:none;float:left;overflow:auto;height:100%}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel{width:210px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content{margin-bottom:15px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .label{padding-bottom:2px}
+.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box{cursor:pointer;float:left;margin-right:5px;border:solid 1px #c0c0c0;width:15px;height:15px;border-radius:2px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box .ui-color-picker-check{color:black;font-size:1.2em;position:relative;left:1px}
 .libraryRow{background-color:#ebd9b2}
 .datasetHighlighted{background-color:#f9f9f9}
 .libraryItemDeleted-True{font-style:italic}
