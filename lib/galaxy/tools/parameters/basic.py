@@ -661,7 +661,7 @@ class ColorToolParameter( ToolParameter ):
         return form_builder.HiddenField( self.name, self.value )
 
     def get_initial_value( self, trans, context, history=None ):
-        return self.value
+        return self.value.lower();
 
 ## This is clearly a HACK, parameters should only be used for things the user
 ## can change, there needs to be a different way to specify this. I'm leaving
