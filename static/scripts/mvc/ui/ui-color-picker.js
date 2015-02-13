@@ -45,7 +45,7 @@ return Backbone.View.extend({
         var self = this;
         this.$boxes.on('click', function() {
             self.value($(this).css('background-color'));
-            //self.$header.trigger('click');
+            self.$header.trigger('click');
         });
         this.$header.on('click', function() {
             self.visible = !self.visible;
