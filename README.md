@@ -1,5 +1,6 @@
 Galaxy-XSD
 ==========
+[![Build Status](https://travis-ci.org/JeanFred/Galaxy-XSD.svg)](http://travis-ci.org/JeanFred/Galaxy-XSD)
 
 A Galaxy XML tool wrapper __XML schema definition__ (__XSD__) 
 
