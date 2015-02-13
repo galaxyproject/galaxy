@@ -12,7 +12,6 @@ import errno
 import grp
 import logging
 import os
-import pickle
 import random
 import re
 import shutil
@@ -340,7 +339,7 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
     return value
 
 
-def pretty_print_time_interval( time = False, precise = False ):
+def pretty_print_time_interval( time=False, precise=False ):
     """
     Get a datetime object or a int() Epoch timestamp and return a
     pretty string like 'an hour ago', 'Yesterday', '3 months ago',
@@ -441,6 +440,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
 
+
 def _sanitize_text_helper( text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """Restricts the characters that are allowed in a string"""
 
@@ -459,7 +459,10 @@ def sanitize_lists_to_string( values, valid_characters=valid_chars, character_ma
     if isinstance( values, list ):
         rval = []
         for value in values:
-            rval.append( sanitize_lists_to_string( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) )
+            rval.append( sanitize_lists_to_string( value,
+                                                   valid_characters=valid_characters,
+                                                   character_map=character_map,
+                                                   invalid_character=invalid_character ) )
         values = ",".join( rval )
     else:
         values = sanitize_text( values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
@@ -614,7 +617,12 @@ class Params( object ):
     def __init__( self, params, sanitize=True ):
         if sanitize:
             for key, value in params.items():
-                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]:  # sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed.
+                # sanitize check both ungrouped and grouped parameters by
+                # name. Anything relying on NEVER_SANITIZE should be
+                # changed to not require this and NEVER_SANITIZE should be
+                # removed.
+                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for
+                                                                    nonsanitize_parameter in self.NEVER_SANITIZE ]:
                     self.__dict__[ key ] = sanitize_param( value )
                 else:
                     self.__dict__[ key ] = value
@@ -664,7 +672,9 @@ def rst_to_html( s ):
                 log.warn( str )
     return unicodify( docutils.core.publish_string( s,
                       writer=docutils.writers.html4css1.Writer(),
-                      settings_overrides={ "embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream() } ) )
+                      settings_overrides={ "embed_stylesheet": False,
+                                           "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
+                                           "warning_stream": FakeStream() } ) )
 
 
 def xml_text(root, name=None):
@@ -761,7 +771,7 @@ def roundify(amount, sfs=2):
     if len(amount) <= sfs:
         return amount
     else:
-        return amount[0:sfs] + '0'*(len(amount) - sfs)
+        return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
 def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None ):
@@ -912,7 +922,7 @@ def read_dbnames(filename):
     except Exception, e:
         print "ERROR: Unable to read builds file:", e
     if len(db_names) < 1:
-        db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
+        db_names = DBNames( [( db_names.default_value, db_names.default_name )] )
     return db_names
 
 
@@ -1109,11 +1119,11 @@ def size_to_bytes( size ):
     size = float( size_match.group(1) )
     multiple = size_match.group(2)
     if multiple.startswith( 't' ):
-        return int( size * 1024**4 )
+        return int( size * 1024 ** 4 )
     elif multiple.startswith( 'g' ):
-        return int( size * 1024**3 )
+        return int( size * 1024 ** 3 )
     elif multiple.startswith( 'm' ):
-        return int( size * 1024**2 )
+        return int( size * 1024 ** 2 )
     elif multiple.startswith( 'k' ):
         return int( size * 1024 )
     elif multiple.startswith( 'b' ):
