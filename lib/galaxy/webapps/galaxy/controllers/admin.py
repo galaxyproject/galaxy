@@ -2,6 +2,7 @@ import imp
 import logging
 import os
 
+import galaxy.queue_worker
 import galaxy.util
 from galaxy import model
 from galaxy.model import tool_shed_install as install_model
@@ -892,6 +893,10 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def reload_display_application( self, trans, **kwd ):
+        galaxy.queue_worker.send_control_task(trans,
+                                              'reload_display_application',
+                                              noop_self=True,
+                                              kwargs={'display_application_ids': kwd.get( 'id' )} )
         reloaded, failed = trans.app.datatypes_registry.reload_display_applications( kwd.get( 'id' ) )
         if not reloaded and failed:
             return trans.show_error_message( 'Unable to reload any of the %i requested display applications ("%s").' % ( len( failed ), '", "'.join( failed ) ) )
