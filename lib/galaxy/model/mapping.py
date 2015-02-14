@@ -1723,7 +1723,7 @@ mapper( model.LibraryFolder, model.LibraryFolder.table,
         active_folders=relation( model.LibraryFolder,
             primaryjoin=( ( model.LibraryFolder.table.c.parent_id == model.LibraryFolder.table.c.id ) & ( not_( model.LibraryFolder.table.c.deleted ) ) ),
             order_by=asc( model.LibraryFolder.table.c.name ),
-            lazy=True, #"""sqlalchemy.exceptions.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
+            lazy=True, #"""sqlalchemy.exc.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
             viewonly=True ),
         datasets=relation( model.LibraryDataset,
             primaryjoin=( ( model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id ) ),
