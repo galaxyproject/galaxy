@@ -548,7 +548,7 @@ def determine_output_format(output, parameter_context, input_datasets, random_in
             pass
 
     #process change_format tags
-    if output.change_format:
+    if output.change_format is not None:
         new_format_set = False
         for change_elem in output.change_format:
             for when_elem in change_elem.findall( 'when' ):
