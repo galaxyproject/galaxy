@@ -33,7 +33,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             // declare fields as optional
             Utils.deepeach(options.inputs, function(item) {
                 if (item.type) {
-                    item.optional = (['data', 'data_hidden', 'hidden', 'drill_down', 'repeat', 'conditional']).indexOf(item.type) == -1;
+                    item.optional = (['data', 'data_hidden', 'hidden', 'repeat', 'conditional']).indexOf(item.type) == -1;
                 }
             });
 
