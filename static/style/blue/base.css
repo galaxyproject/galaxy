@@ -1446,7 +1446,7 @@ label{font-weight:normal}
 .ui-form-slider .ui-form-slider-element{width:calc(100% - 110px);float:left;top:8px;left:10px}
 .ui-radiobutton{width:100%}.ui-radiobutton label{height:23px;line-height:1em}
 .ui-radiobutton i{padding-right:5px}
-.ui-checkbutton{font-size:1.2em;width:1.2em;cursor:pointer}
+.ui-button-check{font-size:1.2em;width:1.2em;cursor:pointer}
 .ui-select{position:relative}.ui-select .button{position:absolute;top:5px;right:5px}
 .ui-select .select2-container{width:100%}
 .ui-select select{position:relative;top:0px;height:27px;width:100%;padding-left:5px;padding-right:20px;cursor:pointer;background:transparent;-webkit-appearance:none;border:1px solid #bfbfbf;-moz-border-radius:3px;border-radius:3px}
