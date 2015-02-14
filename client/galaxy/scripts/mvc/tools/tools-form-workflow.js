@@ -21,8 +21,8 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             this.options = options;
 
             // set labels
-            this.options.text_enable    = 'In Advance';
-            this.options.text_disable   = 'At Runtime';
+            this.options.text_enable    = 'Set in Advance';
+            this.options.text_disable   = 'Set at Runtime';
 
             // configure workflow style
             this.options.is_dynamic     = false;

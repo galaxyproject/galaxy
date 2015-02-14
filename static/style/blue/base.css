@@ -1414,10 +1414,8 @@ label{font-weight:normal}
 .ui-table tbody,.ui-table-plain tbody{cursor:pointer}
 .ui-table-plain{table-layout:fixed}.ui-table-plain tbody{cursor:auto !important}.ui-table-plain tbody td{padding:0px !important;border:none !important}
 .ui-table-plain .ui-table-section{border-left:solid 3px #ebd9b2;border-radius:5px !important;margin-bottom:5px;padding-left:10px}
-.ui-table-form-element{margin-top:5px;margin-bottom:5px;overflow:hidden}.ui-table-form-element .ui-table-form-title-optional{font-weight:bold;text-decoration:underline;cursor:pointer}
-.ui-table-form-element .ui-table-form-field{margin-top:5px}
-.ui-table-form-title-strong{font-weight:bold}
-.ui-table-form-info{clear:both !important}
+.ui-table-form-element{margin-top:5px;margin-bottom:5px;overflow:hidden}.ui-table-form-element .ui-table-form-title{font-weight:bold}.ui-table-form-element .ui-table-form-title .ui-table-form-optional{cursor:pointer}.ui-table-form-element .ui-table-form-title .ui-table-form-optional .icon{margin-right:5px;font-size:1.2em}
+.ui-table-form-element .ui-table-form-field{margin-top:5px}.ui-table-form-element .ui-table-form-field .ui-table-form-info{clear:both !important}
 .ui-table-form-separator{font-weight:bold;font-size:0.9em}
 .ui-table-form-error{display:none}.ui-table-form-error .ui-table-form-error-text{padding-left:5px}
 .ui-portlet,.ui-portlet-repeat,.ui-portlet-limited,.ui-portlet-section,.ui-portlet-narrow,.ui-portlet-repeat,.ui-portlet-limited,.ui-portlet-section,.ui-portlet-narrow{border:solid #d6b161 1px;border-radius:3px;position:relative;clear:both;width:auto;height:100%}.ui-portlet .portlet-header,.ui-portlet-limited .portlet-header,.ui-portlet-narrow .portlet-header{background:#ebd9b2;border-bottom:solid #d6b161 1px;padding:2px 8px;overflow:visible;float:right;width:100%}.ui-portlet .portlet-header .portlet-title,.ui-portlet-limited .portlet-header .portlet-title,.ui-portlet-narrow .portlet-header .portlet-title{display:inline;vertical-align:middle}.ui-portlet .portlet-header .portlet-title .portlet-title-text,.ui-portlet-limited .portlet-header .portlet-title .portlet-title-text,.ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text{vertical-align:middle;line-height:22px}
@@ -1454,9 +1452,9 @@ label{font-weight:normal}
 .ui-select select{position:relative;top:0px;height:27px;width:100%;padding-left:5px;padding-right:20px;cursor:pointer;background:transparent;-webkit-appearance:none;border:1px solid #bfbfbf;-moz-border-radius:3px;border-radius:3px}
 .ui-select-content .ui-options{float:left;padding-top:2px}
 .ui-color-picker .ui-color-picker-header{cursor:pointer}
-.ui-color-picker .ui-color-picker-value{float:left;border-radius:3px;border:solid 1px #000000;width:12px;height:12px;margin-bottom:10px;margin-right:5px}
+.ui-color-picker .ui-color-picker-value{float:left;border-radius:3px;border:solid 1px #000000;width:12px;height:12px;margin-right:5px}
 .ui-color-picker .ui-color-picker-label{float:left;line-height:1.2em}
-.ui-color-picker .ui-color-picker-view{display:none;float:left;overflow:auto;height:100%}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel{width:210px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content{margin-bottom:15px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .label{padding-bottom:2px}
+.ui-color-picker .ui-color-picker-view{height:100%;overflow:auto;display:none;float:left;margin-top:10px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel{width:210px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content{margin-bottom:15px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .label{padding-bottom:2px}
 .ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box{cursor:pointer;float:left;margin-right:5px;border:solid 1px #c0c0c0;width:15px;height:15px;border-radius:2px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box .ui-color-picker-check{color:black;font-size:1.2em;position:relative;left:1px}
 .libraryRow{background-color:#ebd9b2}
 .datasetHighlighted{background-color:#f9f9f9}
@@ -1804,7 +1802,7 @@ div.form-row label.inline{display:inline}
 div.form-row-input{width:90%;float:left}
 div.form-row-input label{font-weight:normal;display:inline}
 div.form-row-error-message{width:300px;float:left;color:red;font-weight:bold;padding:3px 0}
-.form-row .help,.toolParamHelp,.ui-table-form-info{color:#666}.form-row .help a,.toolParamHelp a{color:#666}
+.form-row .help,.toolParamHelp,.ui-table-form-element .ui-table-form-field .ui-table-form-info{color:#666}.form-row .help a,.toolParamHelp a{color:#666}
 .form-row.form-actions{background:whiteSmoke;border-top:solid #ddd 1px;padding-top:10px;padding-bottom:10px;margin-top:5px}
 select{padding:2px;font-size:12px;line-height:1.428571429}
 select,input,textarea{font:inherit}
