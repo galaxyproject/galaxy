@@ -1454,7 +1454,7 @@ label{font-weight:normal}
 .ui-color-picker .ui-color-picker-header{cursor:pointer}
 .ui-color-picker .ui-color-picker-value{float:left;border-radius:3px;border:solid 1px #000000;width:12px;height:12px;margin-right:5px}
 .ui-color-picker .ui-color-picker-label{float:left;line-height:1.2em}
-.ui-color-picker .ui-color-picker-view{height:100%;overflow:auto;display:none;float:left;margin-top:10px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel{width:210px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content{margin-bottom:15px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .label{padding-bottom:2px}
+.ui-color-picker .ui-color-picker-view{height:100%;overflow:auto;display:none;float:left;margin-top:5px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel{width:210px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content{margin-bottom:15px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .label{padding-bottom:2px}
 .ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box{cursor:pointer;float:left;margin-right:5px;border:solid 1px #c0c0c0;width:15px;height:15px;border-radius:2px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box .ui-color-picker-check{color:black;font-size:1.2em;position:relative;left:1px}
 .libraryRow{background-color:#ebd9b2}
 .datasetHighlighted{background-color:#f9f9f9}
