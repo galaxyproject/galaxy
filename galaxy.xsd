@@ -175,6 +175,7 @@
       <xs:documentation xml:lang="en">Documentation for TestParam</xs:documentation>
     </xs:annotation>
     <xs:sequence>
+      <xs:element name="collection" type="TestCollection" minOccurs="0" maxOccurs="1" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -194,6 +195,19 @@
     <xs:attribute name="dbkey" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for dbkey</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="TestCollection">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Definition of a collection for test input.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="element" type="TestParam" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="type" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Type of collection to create.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -427,6 +441,11 @@
             <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="collection_type" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Restrict valid collection types for data_collection params (e.g. list, paired, list:paired, etc...).</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="data_ref" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Documentation for data_ref</xs:documentation>
@@ -507,6 +526,7 @@
       <xs:enumeration value="file"/>
       <xs:enumeration value="data"/>
       <xs:enumeration value="drill_down"/>
+      <xs:enumeration value="data_collection"/>
     </xs:restriction>
   </xs:simpleType>
   
