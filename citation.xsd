@@ -8,7 +8,7 @@
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
-        <xs:attribute name="type" type="RequirementType" use="required">
+        <xs:attribute name="type" type="CitationType" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">type of citation</xs:documentation>
           </xs:annotation>
@@ -16,5 +16,15 @@
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
+
+  <xs:simpleType name="CitationType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of citation represented.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="bibtex"/>
+      <xs:enumeration value="doi"/>
+    </xs:restriction>
+  </xs:simpleType>
  
 </xs:schema>

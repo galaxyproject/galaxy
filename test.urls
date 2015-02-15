@@ -1,3 +1,4 @@
+test/functional/tools/bibtex.xml
 tools/sr_assembly/velvetg.xml
 tools/sr_assembly/velveth.xml
 tools/data_source/microbial_import.xml
