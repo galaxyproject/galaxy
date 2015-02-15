@@ -28,6 +28,7 @@ $  ${JAVA_HOME}/bin/xjc -b galaxy.jxb galaxy.xsd
 
 * Jean-Frédéric @JeanFred
 * Pierre Lindenbaum @yokofakun
+* John Chilton @jmchilton
 
 # See also:
 
