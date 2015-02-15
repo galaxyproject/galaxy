@@ -447,7 +447,7 @@ var Hidden = Backbone.View.extend({
     _template: function(options) {
         var tmpl =  '<div id="' + options.id + '" >';
         if (options.info) {
-            tmpl +=     '<label>' + options.info + '</label>';
+            tmpl +=     '<div>' + options.info + '</div>';
         }
         tmpl +=         '<hidden value="' + options.value + '"/>' +
                     '</div>';

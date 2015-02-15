@@ -130,9 +130,9 @@ define([], function() {
                             '<div class="ui-table-form-field">';
 
             // add help
-            if (options.help) {
+            //if (options.help) {
                 tmp +=          '<div class="ui-table-form-info">' + options.help + '</div>';
-            }
+            //}
 
             // finalize
             tmp +=          '</div>' +
