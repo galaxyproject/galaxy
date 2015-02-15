@@ -84,6 +84,7 @@
     </xs:annotation>
     <xs:sequence>
       <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="container" type="Container" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
   
@@ -106,8 +107,22 @@
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
-  
-  
+  <xs:complexType name="Container">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">This tag set is contained within the 'requirements' tag set. Galaxy can be configured to run tools within Docker (https://www.docker.com/) containers - this tag allows the tool to suggest possible valid Docker containers for this tool.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="ContainerType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"> This value describes the type of container that the tool may be executed in and currently must be 'docker'. </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
   <xs:complexType name="Parallelism">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for Parallelism</xs:documentation>
@@ -1054,6 +1069,14 @@
       <xs:enumeration value="python-module"/>
       <xs:enumeration value="binary"/>
       <xs:enumeration value="package"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ContainerType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of container for tool execution.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="docker"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ToolTypeType">
