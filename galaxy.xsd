@@ -202,6 +202,7 @@
       <xs:documentation xml:lang="en">Documentation for TestOutput</xs:documentation>
     </xs:annotation>
     <xs:sequence>
+      <xs:element name="assert_contents" type="TestAssertions" minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -224,8 +225,27 @@
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  
-  
+  <xs:complexType name="TestAssertions">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for TestAssertion</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:group name="TestAssertion">
+    <xs:choice>
+      <xs:element name="has_line" type="TestAssertionHasLine"/>
+      <!-- TODO: implement something to auto generate rest of valid assetions from Python. -->
+    </xs:choice>
+  </xs:group>
+  <xs:complexType name="TestAssertionHasLine">
+    <xs:attribute name="line" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Line the test output must contain.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en">Consists of all tag sets that define the tool's input parameters. Each &lt;param&gt; tag within the &lt;inputs&gt; tag set maps to a command line parameter within the 'command' tag set described above.</xs:documentation>
