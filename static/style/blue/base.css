@@ -148,7 +148,7 @@ output{display:block;padding-top:5px;font-size:12px;line-height:1.428571429;colo
 .form-control::-moz-placeholder{color:#999}
 .form-control:-ms-input-placeholder{color:#999}
 .form-control::-webkit-input-placeholder{color:#999}
-.form-control,.ui-input,.ui-textarea,.ui-options .ui-options-list,.ui-form-slider .ui-form-slider-text,.ui-select-multiple{display:block;width:100%;height:27px;padding:4px 10px;font-size:12px;line-height:1.428571429;color:#555;vertical-align:middle;background-color:#fff;border:1px solid #aaa;border-radius:3px;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);-webkit-transition:border-color ease-in-out .15s, box-shadow ease-in-out .15s;transition:border-color ease-in-out .15s, box-shadow ease-in-out .15s}.form-control:focus{border-color:#66afe9;outline:0;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6)}
+.form-control{display:block;width:100%;height:27px;padding:4px 10px;font-size:12px;line-height:1.428571429;color:#555;vertical-align:middle;background-color:#fff;border:1px solid #aaa;border-radius:3px;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);-webkit-transition:border-color ease-in-out .15s, box-shadow ease-in-out .15s;transition:border-color ease-in-out .15s, box-shadow ease-in-out .15s}.form-control:focus{border-color:#66afe9;outline:0;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);box-shadow:inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6)}
 .form-control[disabled],.form-control[readonly],fieldset[disabled] .form-control{cursor:not-allowed;background-color:#eee}
 textarea.form-control{height:auto}
 .form-group{margin-bottom:15px}
@@ -1414,7 +1414,7 @@ label{font-weight:normal}
 .ui-table tbody,.ui-table-plain tbody{cursor:pointer}
 .ui-table-plain{table-layout:fixed}.ui-table-plain tbody{cursor:auto !important}.ui-table-plain tbody td{padding:0px !important;border:none !important}
 .ui-table-plain .ui-table-section{border-left:solid 3px #ebd9b2;border-radius:5px !important;margin-bottom:5px;padding-left:10px}
-.ui-table-form-element{margin-top:5px;margin-bottom:5px;overflow:hidden}.ui-table-form-element .ui-table-form-title{font-weight:bold}.ui-table-form-element .ui-table-form-title .ui-table-form-optional{cursor:pointer}.ui-table-form-element .ui-table-form-title .ui-table-form-optional .icon{margin-right:5px;font-size:1.2em}
+.ui-table-form-element{margin-top:5px;margin-bottom:5px;overflow:visible}.ui-table-form-element .ui-table-form-title{font-weight:bold}.ui-table-form-element .ui-table-form-title .ui-table-form-optional{cursor:pointer}.ui-table-form-element .ui-table-form-title .ui-table-form-optional .icon{margin-right:5px;font-size:1.2em}
 .ui-table-form-element .ui-table-form-field{margin-top:5px}.ui-table-form-element .ui-table-form-field .ui-table-form-info{clear:both !important}
 .ui-table-form-separator{font-weight:bold;font-size:0.9em}
 .ui-table-form-error{display:none}.ui-table-form-error .ui-table-form-error-text{padding-left:5px}
@@ -1433,7 +1433,7 @@ label{font-weight:normal}
 .ui-portlet-limited,.ui-portlet-narrow,.ui-portlet-narrow{max-width:900px}
 .ui-popover{max-width:700px;display:none}.ui-popover .popover-close{position:absolute;right:10px;top:7px;font-size:1.2em;cursor:pointer}
 .ui-popover .popover-title{padding:4px 10px}
-.ui-input,.ui-textarea,.ui-options .ui-options-list,.ui-form-slider .ui-form-slider-text,.ui-select-multiple,.ui-textarea,.ui-options .ui-options-list,.ui-form-slider .ui-form-slider-text,.ui-select-multiple{background:transparent}
+.ui-input,.ui-textarea,.ui-options .ui-options-list,.ui-form-slider .ui-form-slider-text,.ui-select-multiple{width:100%;display:block;height:27px;padding:4px 10px;font-size:12px;line-height:1.428571429;color:#555;border:1px solid #aaa;border-radius:3px;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);box-shadow:inset 0 1px 1px rgba(0,0,0,0.075)}.ui-input[disabled],.ui-input[readonly],fieldset[disabled] .ui-input{cursor:not-allowed;background-color:#eee}
 .ui-textarea{height:100px !important}
 .ui-options .ui-options-list{height:100% !important}.ui-options .ui-options-list input[type=checkbox],.ui-options .ui-options-list input[type=radio]{display:none}
 .ui-options .ui-options-list label{margin:0px;cursor:pointer}

@@ -164,7 +164,7 @@
     }
     margin-top: @ui-margin-vertical;
     margin-bottom: @ui-margin-vertical;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .ui-table-form-separator {
@@ -315,8 +315,22 @@
 
 // input elements
 .ui-input {
-    &:extend(.form-control);
-    background: transparent;
+    width: 100%;
+    display: block;
+    height: @input-height-base;
+    padding: @padding-base-vertical @padding-base-horizontal;
+    font-size: @font-size-base;
+    line-height: @line-height-base;
+    color: @input-color;
+    border: 1px solid @input-border;
+    border-radius: @input-border-radius;
+    .box-shadow(inset 0 1px 1px rgba(0,0,0,.075));
+    &[disabled],
+    &[readonly],
+    fieldset[disabled] & {
+        cursor: not-allowed;
+        background-color: @input-bg-disabled;
+    }
 }
 
 .ui-textarea {
@@ -372,7 +386,6 @@
         }
     }
 }
-
 
 .ui-form-slider {
     display: inline-block;
