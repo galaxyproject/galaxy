@@ -175,11 +175,6 @@
       <xs:documentation xml:lang="en">Documentation for TestParam</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="embeddedValue" type="xs:string" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation xml:lang="en">Documentation for embeddedValue</xs:documentation>
-        </xs:annotation>
-      </xs:element>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
@@ -207,11 +202,6 @@
       <xs:documentation xml:lang="en">Documentation for TestOutput</xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="embeddedValue" type="xs:string" minOccurs="0">
-        <xs:annotation>
-          <xs:documentation xml:lang="en">Documentation for embeddedValue</xs:documentation>
-        </xs:annotation>
-      </xs:element>
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
