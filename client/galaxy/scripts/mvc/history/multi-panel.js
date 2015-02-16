@@ -1047,21 +1047,19 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     mainTemplate : _.template([
         '<div class="header flex-column-container">',
             '<div class="control-column control-column-left flex-column">',
-                '<button class="create-new btn btn-default">', _l( 'Create new' ), '</button> ',
+                '<button class="create-new btn btn-default" tabindex="4">', _l( 'Create new' ), '</button> ',
                 '<div id="search-histories" class="search-control"></div>',
                 '<div id="search-datasets" class="search-control"></div>',
-                '<button class="open-more-options btn btn-default">',
-                    //TODO: tip not working
-                    '<span class="fa fa-ellipsis-h" title="More options"></span>',
-                '</button>',
+                '<a class="open-more-options btn btn-default" tabindex="3">',
+                    '<span class="fa fa-ellipsis-h"></span>',
+                '</a>',
             '</div>',
             // feedback
             '<div class="control-column control-column-center flex-column">',
-                '<div class="header-info">',
-                '</div>',
+                '<div class="header-info">', '</div>',
             '</div>',
             '<div class="control-column control-column-right flex-column">',
-                '<button class="done btn btn-default">', _l( 'Done' ), '</button>',
+                '<button class="done btn btn-default" tabindex="1">', _l( 'Done' ), '</button>',
             '</div>',
         '</div>',
         // middle - where the columns go

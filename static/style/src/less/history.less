@@ -650,6 +650,15 @@
     .header {
         min-height: @mph-header_height;
         max-height: @mph-header_height;
+        // popover containing sorting and filters
+        .more-options {
+            .btn {
+                height: 26px;
+            }
+            input[type=checkbox] {
+                margin-top: 1px;
+            }
+        }
     }
     .footer {
         min-height: @mph-footer_height;
@@ -690,9 +699,6 @@
         .open-more-options {
             padding: 2px 6px 2px 6px;
             font-size: 100%;
-        }
-        .more-options input[type=checkbox] {
-            margin-top: 2px;
         }
         .header-info {
             display: inline-block;
