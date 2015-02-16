@@ -965,7 +965,7 @@ class SelectToolParameter( ToolParameter ):
         # Old style dynamic options, no dependency information so there isn't
         # a lot we can do: if we're dealing with workflows, have to assume
         # late validation no matter what.
-        if (self.dynamic_options is not None or self.is_dynamic is not None) and ( trans is None or trans.workflow_building_mode ):
+        if self.dynamic_options is not None and ( trans is None or trans.workflow_building_mode ):
             return True
         # If we got this far, we can actually look at the dependencies
         # to see if their values will not be available until runtime.
