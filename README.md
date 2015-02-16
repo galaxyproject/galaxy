@@ -10,7 +10,8 @@ A Galaxy XML tool wrapper __XML schema definition__ (__XSD__)
 # History
 
 * Feb-2015 : Pierre Lindenbaum added doc, tests, Java-XML binding file (jxb) for java xml compiler (xjc)  ( https://docs.oracle.com/cd/E19575-01/819-3669/bnbal/index.html )
-* 2013 : initial xsd by Jean-Fred
+* 2013 : extraction to standalone and improvements by Jean-Fred
+* 2011 : Initial work by John Chilton
 
 # Validating a `tool.xml`
 
