@@ -116,8 +116,8 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
                 self.column_filters.append( parsed )
 
     def parse_filter( self, filter_param_str ):
-        split = filter_param_str.split( '-', 3 )
-        if not len( split ) == 3:
+        split = filter_param_str.split( '-', 2 )
+        if not len( split ) >= 3:
             return None
         column, op, val = split
 
