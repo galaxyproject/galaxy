@@ -63,11 +63,11 @@ class ConfigSerializer( base.ModelSerializer ):
         self.add_view( 'all', self.serializers.keys() )
 
     def default_serializer( self, trans, config, key ):
-        return config.get( key, None )
+        return getattr( config, key, None )
 
     def add_serializers( self ):
         def _defaults_to( default ):
-            return lambda t, i, k: i.get( k, default )
+            return lambda t, i, k: getattr( i, k, default )
 
         self.serializers = {
             #TODO: this is available from user data, remove
@@ -90,7 +90,6 @@ class ConfigSerializer( base.ModelSerializer ):
             'biostar_url_redirect'      : lambda *a: self.url_for( controller='biostar', action='biostar_redirect',
                                                                    qualified=True ),
 
-            'allow_user_creation'       : _defaults_to( False ),
             'use_remote_user'           : _defaults_to( None ),
             'remote_user_logout_href'   : _defaults_to( '' ),
             'enable_cloud_launch'       : _defaults_to( False ),
@@ -111,7 +110,7 @@ class AdminConfigSerializer( ConfigSerializer ):
     def add_serializers( self ):
         super( AdminConfigSerializer, self ).add_serializers()
         def _defaults_to( default ):
-            return lambda t, i, k: i.get( k, default )
+            return lambda t, i, k: getattr( i, k, default )
 
         self.serializers.update({
             #TODO: this is available from user data, remove
