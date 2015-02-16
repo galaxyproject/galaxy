@@ -3161,18 +3161,18 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             capsule_dict = irm.upload_capsule( **kwd )
             status = capsule_dict.get( 'status', 'error' )
             if status == 'error':
-                message = escape( capsule_dict.get( 'error_message', '' ) )
+                message = capsule_dict.get( 'error_message', '' )
             else:
                 capsule_dict = irm.extract_capsule_files( **capsule_dict )
                 capsule_dict = irm.validate_capsule( **capsule_dict )
-                status = escape( capsule_dict.get( 'status', 'error' ) )
+                status = capsule_dict.get( 'status', 'error' )
                 if status == 'ok':
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='import_capsule',
                                                                       **capsule_dict ) )
                 else:
                     message = 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
-                        escape( str( capsule_dict.get( 'error_message', '' ) ) )
+                        str( capsule_dict.get( 'error_message', '' ) )
         return trans.fill_template( '/webapps/tool_shed/repository/upload_capsule.mako',
                                     url=url,
                                     message=message,
