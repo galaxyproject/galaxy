@@ -205,6 +205,11 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         if( this.get( 'deleted' ) ){ return jQuery.when(); }
         return this.save( { deleted: true }, options );
     },
+    /** purge this history, _Mark_ing it as purged and removing all dataset data from the server */
+    purge : function( options ){
+        if( this.get( 'purged' ) ){ return jQuery.when(); }
+        return this.save( { purged: true }, options );
+    },
     /** save this history, _Mark_ing it as undeleted */
     undelete : function( options ){
         if( !this.get( 'deleted' ) ){ return jQuery.when(); }

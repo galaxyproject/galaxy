@@ -105,7 +105,7 @@ class PurgableDeserializerMixin( DeletableDeserializerMixin ):
             return item.purged
         if new_purged:
             self.manager.purge( trans, item, flush=False )
-        return self.purged
+        return item.purged
 
 
 class PurgableFiltersMixin( DeletableFiltersMixin ):

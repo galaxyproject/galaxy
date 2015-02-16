@@ -260,7 +260,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'model_class',
             'name',
             'deleted',
-            #'purged',
+            'purged',
             #'count'
             'url',
             #TODO: why these?

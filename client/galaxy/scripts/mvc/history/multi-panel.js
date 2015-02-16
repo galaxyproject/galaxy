@@ -128,12 +128,9 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** set up passed-in panel (if any) and listeners */
     initialize : function initialize( options ){
         options = options || {};
-
-        //this.log( this + '.init', options );
-        // if model, set up model
-            // create panel sub-view
-//TODO: use current-history-panel for current
+        this.purgeAllowed = !_.isUndefined( options.purgeAllowed )? options.purgeAllowed: false;
         this.panel = options.panel || this.createPanel( options );
+
         this.setUpListeners();
     },
 
@@ -143,6 +140,7 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             model       : this.model,
             //el          : this.$panel(),
             // non-current panels should set their hdas to draggable
+            purgeAllowed: this.purgeAllowed,
             dragItems   : true
         }, panelOptions );
         //this.log( 'panelOptions:', panelOptions );
@@ -245,9 +243,9 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         });
         return $([
             '<div class="panel-controls clear flex-row">',
-                this.controlsLeftTemplate( data ),
+                this.controlsLeftTemplate({ history: data, view: this }),
                 //'<button class="btn btn-default">Herp</button>',
-                this.controlsRightTemplate( data ),
+                this.controlsRightTemplate({ history: data, view: this }),
             '</div>',
             '<div class="inner flex-row flex-column-container">',
                 '<div id="history-', data.id, '" class="history-column history-panel flex-column"></div>',
@@ -317,24 +315,24 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** controls template displaying controls above the panel based on this.currentHistory */
     controlsLeftTemplate : _.template([
         '<div class="pull-left">',
-            '<% if( history.isCurrentHistory ){ %>',
+            '<% if( data.history.isCurrentHistory ){ %>',
                 '<strong class="current-label">', _l( 'Current History' ), '</strong>',
             '<% } else { %>',
                 '<button class="switch-to btn btn-default">', _l( 'Switch to' ), '</button>',
             '<% } %>',
         '</div>'
-    ].join( '' ), { variable : 'history' }),
+    ].join( '' ), { variable : 'data' }),
 
     /** controls template displaying controls above the panel based on this.currentHistory */
     controlsRightTemplate : _.template([
         '<div class="pull-right">',
-            '<% if( !history.purged ){ %>',
+            '<% if( !data.history.purged ){ %>',
                 '<div class="panel-menu btn-group">',
                     '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
                         '<span class="caret"></span>',
                     '</button>',
                     '<ul class="dropdown-menu pull-right" role="menu">',
-                        '<% if( !history.deleted ){ %>',
+                        '<% if( !data.history.deleted ){ %>',
                             '<li><a href="javascript:void(0);" class="copy-history">',
                                 _l( 'Copy' ),
                             '</a></li>',
@@ -349,14 +347,16 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                                 _l( 'Undelete' ),
                             '</a></li>',
                         '<% } %>',
-                        //'<li><a href="javascript:void(0);" class="purge-history">',
-                        //    _l( 'Purge' ),
-                        //'</a></li>',
+                        '<% if( data.view.purgeAllowed ){ %>',
+                            '<li><a href="javascript:void(0);" class="purge-history">',
+                                _l( 'Purge' ),
+                            '</a></li>',
+                        '<% } %>',
                     '</ul>',
                 '<% } %>',
             '</div>',
         '</div>'
-    ].join( '' ), { variable: 'history' }),
+    ].join( '' ), { variable: 'data' }),
 
     // ------------------------------------------------------------------------ misc
     /** String rep */
@@ -491,7 +491,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             // handle setting a history as current, triggered by history.setAsCurrent
             'set-as-current': multipanel.setCurrentHistory,
             // handle deleting a history (depends on whether panels is including deleted or not)
-            'change:deleted': multipanel.handleDeletedHistory,
+            'change:deleted change:purged': multipanel.handleDeletedHistory,
 
             'sort' : function(){ multipanel.renderColumns( 0 ); }
         });
@@ -519,7 +519,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *      based on collection.includeDeleted
      */
     handleDeletedHistory : function handleDeletedHistory( history ){
-        if( history.get( 'deleted' ) ){
+        if( history.get( 'deleted' ) || history.get( 'purged' ) ){
             this.log( 'handleDeletedHistory', this.collection.includeDeleted, history );
             var multipanel = this;
                 column = multipanel.columnMap[ history.id ];
@@ -584,7 +584,10 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** create a column and its panel and set up any listeners to them */
     createColumn : function createColumn( history, options ){
         // options passed can be re-used, so extend them before adding the model to prevent pollution for the next
-        options = _.extend( {}, options, { model: history });
+        options = _.extend( {}, options, {
+            model       : history,
+            purgeAllowed: Galaxy.config.allow_user_dataset_purge
+        });
         var column = new HistoryPanelColumn( options );
         if( history.id === this.currentHistoryId ){ column.currentHistory = true; }
         this.setUpColumnListeners( column );
