@@ -1,6 +1,7 @@
 Galaxy-XSD
 ==========
 [![Build Status](https://travis-ci.org/JeanFred/Galaxy-XSD.svg)](http://travis-ci.org/JeanFred/Galaxy-XSD)
+[![License](http://img.shields.io/badge/license-MIT-orange.svg?style=flat)](http://opensource.org/licenses/MIT)
 
 A Galaxy XML tool wrapper __XML schema definition__ (__XSD__) 
 
@@ -29,6 +30,12 @@ $  ${JAVA_HOME}/bin/xjc -b galaxy.jxb galaxy.xsd
 * Jean-Frédéric @JeanFred
 * Pierre Lindenbaum @yokofakun
 * John Chilton @jmchilton
+
+
+# Licence
+
+This code is free software released under the terms of the MIT license.
+
 
 # See also:
 
