@@ -157,10 +157,6 @@
     }
     .ui-table-form-field {
         margin-top: @ui-margin-vertical;
-        .ui-table-form-info {
-            &:extend(.toolParamHelp);
-            clear: both !important;
-        }
     }
     margin-top: @ui-margin-vertical;
     margin-bottom: @ui-margin-vertical;
@@ -170,6 +166,11 @@
 .ui-table-form-separator {
 	font-weight: bold;
 	font-size: 0.9em;
+}
+
+.ui-table-form-info {
+        &:extend(.toolParamHelp);
+        clear: both !important;
 }
 
 .ui-table-form-error {
