@@ -259,23 +259,23 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :type   id:     str
         :param  id:     the encoded id of the history to delete
         :type   kwd:    dict
-        :param  kwd:    (optional) dictionary structure containing:
+        :param  kwd:    (optional) dictionary structure containing extra parameters
 
-            * payload:     a dictionary itself containing:
-                * purge:   if True, purge the history and all of its HDAs
+        You can purge a history, removing all it's datasets from disk (if unshared),
+        by passing in ``purge=True`` in the url.
 
         :param  keys: same as the use of `keys` in the `index` function above
         :param  view: same as the use of `view` in the `index` function above
 
         :rtype:     dict
-        :returns:   an error object if an error occurred or a dictionary containing:
-            * id:         the encoded id of the history,
-            * deleted:    if the history was marked as deleted,
-            * purged:     if the history was purged
+        :returns:   the deleted or purged history
         """
         history_id = id
         # a request body is optional here
         purge = False
+        if 'purge' in kwd:
+            purge = string_as_bool( kwd.get( 'purge' ) )
+        # for backwards compat, keep the payload sub-dictionary
         if kwd.get( 'payload', None ):
             purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 

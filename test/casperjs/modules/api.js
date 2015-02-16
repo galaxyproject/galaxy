@@ -267,10 +267,12 @@ HistoriesAPI.prototype.delete_ = function delete_( id, purge ){
     this.api.spaceghost.info( 'histories.delete: ' + [ id, (( purge )?( '(purge!)' ):( '' )) ] );
 
     // py.payload <-> ajax.data
-    var payload = ( purge )?({ purge: true }):({});
-    return this.api._ajax( utils.format( this.urlTpls.delete_, this.api.ensureId( id ) ), {
-        type : 'DELETE',
-        data : payload
+    var url = utils.format( this.urlTpls.delete_, this.api.ensureId( id ) );
+    if( purge ){
+        url += '?purge=True';
+    }
+    return this.api._ajax( url, {
+        type : 'DELETE'
     });
 };
 
