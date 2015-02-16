@@ -35,7 +35,7 @@ return Backbone.View.extend({
         if (new_val !== undefined) {
             this.current = new_val;
             this.$el.removeClass()
-                    .addClass('ui-checkbutton')
+                    .addClass('ui-button-check')
                     .addClass(this.options.icons[new_val]);
             this.options.onchange && this.options.onchange(new_val);
         }

@@ -21,8 +21,8 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             this.options = options;
 
             // set labels
-            this.options.text_enable    = 'In Advance';
-            this.options.text_disable   = 'At Runtime';
+            this.options.text_enable    = 'Set in Advance';
+            this.options.text_disable   = 'Set at Runtime';
 
             // configure workflow style
             this.options.is_dynamic     = false;
@@ -33,7 +33,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             // declare fields as optional
             Utils.deepeach(options.inputs, function(item) {
                 if (item.type) {
-                    item.optional = (['data', 'data_hidden', 'hidden', 'drill_down', 'repeat', 'conditional']).indexOf(item.type) == -1;
+                    item.optional = (['data', 'data_hidden', 'hidden', 'repeat', 'conditional']).indexOf(item.type) == -1;
                 }
             });
 
