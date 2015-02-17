@@ -248,7 +248,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             trans.sa_session.refresh( library )
             # Copy the permissions to the root folder
             trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
-            message = "Permissions updated for library '%s'." % library.name
+            message = "Permissions updated for library '%s'." % escape( library.name )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='library_permissions',
                                                               cntrller=cntrller,
@@ -310,7 +310,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if info_association and ( not( inherited ) or info_association.inheritable ):
                 widgets = new_folder.get_template_widgets( trans )
             if info_association:
-                message = "The new folder named '%s' has been added to the data library.  " % new_folder.name
+                message = "The new folder named '%s' has been added to the data library.  " % escape( new_folder.name )
                 message += "Additional information about this folder may be added using the inherited template."
                 return trans.fill_template( '/library/common/folder_info.mako',
                                             cntrller=cntrller,
@@ -325,7 +325,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             message=escape( message ),
                                             status='done' )
             # If not inheritable info_association, redirect to the library.
-            message = "The new folder named '%s' has been added to the data library." % new_folder.name
+            message = "The new folder named '%s' has been added to the data library." % escape( new_folder.name )
             # SM: This is the second place where the API controller would
             # reference the library id:
             return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -373,7 +373,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 folder.description = new_description
                 trans.sa_session.add( folder )
                 trans.sa_session.flush()
-                message = "Information updated for folder '%s'." % folder.name
+                message = "Information updated for folder '%s'." % escape( folder.name )
                 return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                   action='folder_info',
                                                                   cntrller=cntrller,
@@ -429,7 +429,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
             trans.app.security_agent.set_all_library_permissions( trans, folder, permissions )
             trans.sa_session.refresh( folder )
-            message = "Permissions updated for folder '%s'." % folder.name
+            message = "Permissions updated for folder '%s'." % escape( folder.name )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='folder_permissions',
                                                               cntrller=cntrller,
@@ -498,10 +498,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 if ldda.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension( kwd.get( 'datatype' ) ).allow_datatype_change:
                     trans.app.datatypes_registry.change_datatype( ldda, kwd.get( 'datatype' ) )
                     trans.sa_session.flush()
-                    message = "Data type changed for library dataset '%s'." % ldda.name
+                    message = "Data type changed for library dataset '%s'." % escape( ldda.name )
                     status = 'done'
                 else:
-                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( ldda.extension, kwd.get( 'datatype' ) )
+                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % ( escape( ldda.extension ), escape( kwd.get( 'datatype' ) ) )
                     status = 'error'
             else:
                 message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
@@ -532,7 +532,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                             setattr( ldda.metadata, name, spec.unwrap( kwd.get( name, None ) ) )
                     ldda.metadata.dbkey = dbkey
                     ldda.datatype.after_setting_metadata( ldda )
-                    message = "Attributes updated for library dataset '%s'." % ldda.name
+                    message = "Attributes updated for library dataset '%s'." % escape( ldda.name )
                     status = 'done'
                 else:
                     message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
@@ -546,7 +546,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     if name not in [ 'name', 'info', 'dbkey' ]:
                         if spec.get( 'default' ):
                             setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                message = "Attributes have been queued to be updated for library dataset '%s'." % ldda.name
+                message = "Attributes have been queued to be updated for library dataset '%s'." % escape( ldda.name )
                 status = 'done'
                 trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':ldda } )
             else:
@@ -570,7 +570,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                             self.delete_extended_metadata(trans, ex_obj)
                         ex_obj = self.create_extended_metadata(trans, payload)
                         self.set_item_extended_metadata_obj(trans, ldda, ex_obj)
-                        message = "Updated Extended metadata '%s'." % ldda.name
+                        message = "Updated Extended metadata '%s'." % escape( ldda.name )
                         status = 'done'
                     else:
                         message = "LDDA not found"
@@ -581,7 +581,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     if ex_obj is not None:
                         self.unset_item_extended_metadata_obj(trans, ldda)
                         self.delete_extended_metadata(trans, ex_obj)
-                message = "Deleted Extended metadata '%s'." % ldda.name
+                message = "Deleted Extended metadata '%s'." % escape( ldda.name )
                 status = 'done'
 
 
@@ -658,7 +658,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
 
     @web.expose
     def ldda_permissions( self, trans, cntrller, library_id, folder_id, id, **kwd ):
-        message = escape( kwd.get( 'message', '' ) )
+        message = str( escape( kwd.get( 'message', '' ) ) )
         status = kwd.get( 'status', 'done' )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -744,7 +744,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         trans.app.security_agent.set_all_library_permissions( trans, ldda, permissions )
                         trans.sa_session.refresh( ldda )
                 if len( lddas ) == 1:
-                    message = "Permissions updated for dataset '%s'." % ldda.name
+                    message = "Permissions updated for dataset '%s'." % escape( ldda.name )
                 else:
                     message = 'Permissions updated for %d datasets.' % len( lddas )
                 status= 'done'
@@ -937,13 +937,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     ldda_id_list = [ str( v.id ) for k, v in created_outputs_dict.items() ]
                     created_ldda_ids=",".join( ldda_id_list )
                     if replace_dataset:
-                        message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset_name, folder.name )
+                        message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, escape( replace_dataset_name ), escape( folder.name ) )
                     else:
                         if not folder.parent:
                             # Libraries have the same name as their root_folder
-                            message = "Added %d datasets to the library '%s' (each is selected).  " % ( total_added, folder.name )
+                            message = "Added %d datasets to the library '%s' (each is selected).  " % ( total_added, escape( folder.name ) )
                         else:
-                            message = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, folder.name )
+                            message = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, escape( folder.name ) )
                         if cntrller == 'library_admin':
                             message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                             status='done'
@@ -1399,13 +1399,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     ldda_id_list = created_ldda_ids.split( ',' )
                     total_added = len( ldda_id_list )
                     if replace_dataset:
-                        message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, replace_dataset.name, folder.name )
+                        message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, escape( replace_dataset.name ), escape( folder.name ) )
                     else:
                         if not folder.parent:
                             # Libraries have the same name as their root_folder
-                            message = "Added %d datasets to the library '%s' (each is selected).  " % ( total_added, folder.name )
+                            message = "Added %d datasets to the library '%s' (each is selected).  " % ( total_added, escape( folder.name ) )
                         else:
-                            message = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, folder.name )
+                            message = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, escape( folder.name ) )
                         if cntrller == 'library_admin':
                             message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
                         else:
@@ -1591,7 +1591,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 library_dataset.info = new_info
                 trans.sa_session.add( library_dataset )
                 trans.sa_session.flush()
-                message = "Information updated for library dataset '%s'." % library_dataset.name
+                message = "Information updated for library dataset '%s'." % escape( library_dataset.name )
                 status = 'done'
         # See if we have any associated templates
         widgets = []
@@ -1648,7 +1648,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 # Set the LIBRARY permissions on the LibraryDatasetDatasetAssociation
                 trans.app.security_agent.set_all_library_permissions( trans, library_dataset.library_dataset_dataset_association, permissions )
                 trans.sa_session.refresh( library_dataset.library_dataset_dataset_association )
-                message = "Permisisons updated for library dataset '%s'." % library_dataset.name
+                message = "Permisisons updated for library dataset '%s'." % escape( library_dataset.name )
                 status = 'done'
         roles = trans.app.security_agent.get_legitimate_roles( trans, library_dataset, cntrller )
         return trans.fill_template( '/library/common/library_dataset_permissions.mako',
@@ -1677,23 +1677,23 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             contents = util.string_as_bool( kwd.get( 'contents', 'False' ) )
             trans.app.security_agent.make_library_public( library, contents=contents )
             if contents:
-                message = "The data library (%s) and all its contents have been made publicly accessible." % library.name
+                message = "The data library (%s) and all its contents have been made publicly accessible." % escape( library.name )
             else:
-                message = "The data library (%s) has been made publicly accessible, but access to its contents has been left unchanged." % library.name
+                message = "The data library (%s) has been made publicly accessible, but access to its contents has been left unchanged." % escape( library.name )
         elif item_type == 'folder':
             folder = trans.sa_session.query( trans.model.LibraryFolder ).get( trans.security.decode_id( id ) )
             self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             self._check_manage( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             trans.app.security_agent.make_folder_public( folder )
-            message = "All of the contents of folder (%s) have been made publicly accessible." % folder.name
+            message = "All of the contents of folder (%s) have been made publicly accessible." % escape( folder.name )
         elif item_type == 'ldda':
             ldda = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( id ) )
             self._check_access( trans, cntrller, is_admin, ldda.library_dataset, current_user_roles, use_panels, library_id, show_deleted )
             self._check_manage( trans, cntrller, is_admin, ldda.library_dataset, current_user_roles, use_panels, library_id, show_deleted )
             trans.app.security_agent.make_dataset_public( ldda.dataset )
-            message = "The libary dataset (%s) has been made publicly accessible." % ldda.name
+            message = "The libary dataset (%s) has been made publicly accessible." % escape( ldda.name )
         else:
-            message = "Invalid item_type (%s) received." % str( item_type )
+            message = "Invalid item_type (%s) received." % escape( str( item_type ) )
             status = 'error'
         return trans.response.send_redirect( web.url_for( controller='library_common',
                                                           action='browse_library',
@@ -1803,7 +1803,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 if invalid_lddas:
                     message += "You are not authorized to manage permissions on %s: " % inflector.cond_plural( len( invalid_lddas ), "dataset" )
                     for ldda in invalid_lddas:
-                        message += '(%s)' % ldda.name
+                        message += '(%s)' % escape( ldda.name )
                     message += '.  '
                 if valid_ldda_ids:
                     encoded_ldda_ids = [ trans.security.encode_id( ldda_id ) for ldda_id in valid_ldda_ids ]
@@ -1967,7 +1967,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                             return archive.stream
             else:
                 status = 'error'
-                message = 'Invalid action (%s) specified.' % str( action )
+                message = 'Invalid action (%s) specified.' % escape( str( action ) )
         if library_id:
             # If we have a library_id, browse the associated library
             return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -2053,11 +2053,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         status = 'error'
                         invalid_datasets += 1
                     elif ldda.dataset.state not in [ trans.model.Dataset.states.OK, trans.model.Dataset.states.ERROR ]:
-                        message += "You cannot import dataset '%s' since its state is '%s'.  " % ( ldda.name, ldda.dataset.state )
+                        message += "You cannot import dataset '%s' since its state is '%s'.  " % ( escape( ldda.name ), ldda.dataset.state )
                         status = 'error'
                         invalid_datasets += 1
                     elif not ldda.has_data():
-                        message += "You cannot import empty dataset '%s'.  " % ldda.name
+                        message += "You cannot import empty dataset '%s'.  " % escape( ldda.name )
                         status = 'error'
                         invalid_datasets += 1
                     else:
@@ -2140,7 +2140,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         except ValueError:
             return None
         if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
-            message = "You are not authorized to modify %s '%s'." % ( item_desc, item.name )
+            message = "You are not authorized to modify %s '%s'." % ( escape( item_desc ), escape( item.name ) )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,
@@ -2151,9 +2151,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         info_association, inherited = item.get_info_association( restrict=True )
         if info_association:
             if info_association.inheritable:
-                message = "The template for this %s will no longer be inherited to contained folders and datasets." % item_desc
+                message = "The template for this %s will no longer be inherited to contained folders and datasets." % escape( item_desc )
             else:
-                message = "The template for this %s will now be inherited to contained folders and datasets." % item_desc
+                message = "The template for this %s will now be inherited to contained folders and datasets." % escape( item_desc )
             info_association.inheritable = not( info_association.inheritable )
             trans.sa_session.add( info_association )
             trans.sa_session.flush()
@@ -2260,7 +2260,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     elif invalid_lddas:
                         message += "You are not authorized to move %s: " % inflector.cond_plural( len( invalid_lddas ), "dataset" )
                         for ldda in invalid_lddas:
-                            message += '(%s)' % ldda.name
+                            message += '(%s)' % escape( ldda.name )
                         message += '.  '
                     num_source = len( move_ldda_ids ) - invalid_items
                     message = "%i %s moved to folder (%s) within data library (%s)" % ( num_source,
@@ -2278,9 +2278,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         move_folder.parent = target_folder
                         trans.sa_session.add( move_folder )
                         flush_required = True
-                    message = "Moved folder (%s) to folder (%s) within data library (%s) " % ( move_folder.name,
-                                                                                               target_folder.name,
-                                                                                               target_library.name )
+                    message = "Moved folder (%s) to folder (%s) within data library (%s) " % ( escape( move_folder.name ),
+                                                                                               escape( target_folder.name ),
+                                                                                               escape( target_library.name ) )
                 if flush_required:
                     trans.sa_session.flush()
         if target_library:
@@ -2400,7 +2400,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
         current_user_roles = trans.get_current_user_roles()
         if item_type not in item_types:
-            message = 'Bad item_type specified: %s' % str( item_type )
+            message = 'Bad item_type specified: %s' % escape( str( item_type ) )
             status = 'error'
         else:
             if item_type == 'library_dataset':
@@ -2430,12 +2430,12 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if flush_needed:
                 trans.sa_session.flush()
             if valid_items:
-                message += "%d %s marked deleted.  " % ( valid_items, inflector.cond_plural( valid_items, item_desc ) )
+                message += "%d %s marked deleted.  " % ( valid_items, escape( inflector.cond_plural( valid_items, item_desc ) ) )
             if invalid_items:
-                message += '%d invalid %s specifield.  ' % ( invalid_items, inflector.cond_plural( invalid_items, item_desc ) )
+                message += '%d invalid %s specifield.  ' % ( invalid_items, escape( inflector.cond_plural( invalid_items, item_desc ) ) )
                 status = 'error'
             if not_authorized_items:
-                message += 'You are not authorized to delete %d %s.  ' % ( not_authorized_items, inflector.cond_plural( not_authorized_items, item_desc ) )
+                message += 'You are not authorized to delete %d %s.  ' % ( not_authorized_items, escape( inflector.cond_plural( not_authorized_items, item_desc ) ) )
                 status = 'error'
         if item_type == 'library':
             return trans.response.send_redirect( web.url_for( controller=cntrller,
@@ -2462,7 +2462,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
         current_user_roles = trans.get_current_user_roles()
         if item_type not in item_types:
-            message = 'Bad item_type specified: %s' % str( item_type )
+            message = 'Bad item_type specified: %s' % escape( str( item_type ) )
             status = 'error'
         else:
             if item_type == 'library_dataset':
@@ -2496,15 +2496,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if flush_needed:
                 trans.sa_session.flush()
             if valid_items:
-                message += "%d %s marked undeleted.  " % ( valid_items, inflector.cond_plural( valid_items, item_desc ) )
+                message += "%d %s marked undeleted.  " % ( valid_items, escape( inflector.cond_plural( valid_items, item_desc ) ) )
             if invalid_items:
-                message += '%d invalid %s specifield.  ' % ( invalid_items, inflector.cond_plural( invalid_items, item_desc ) )
+                message += '%d invalid %s specifield.  ' % ( invalid_items, escape( inflector.cond_plural( invalid_items, item_desc ) ) )
                 status = 'error'
             if not_authorized_items:
-                message += 'You are not authorized to undelete %d %s.  ' % ( not_authorized_items, inflector.cond_plural( not_authorized_items, item_desc ) )
+                message += 'You are not authorized to undelete %d %s.  ' % ( not_authorized_items, escape( inflector.cond_plural( not_authorized_items, item_desc ) ) )
                 status = 'error'
             if purged_items:
-                message += '%d %s marked purged, so cannot be undeleted.  ' % ( purged_items, inflector.cond_plural( purged_items, item_desc ) )
+                message += '%d %s marked purged, so cannot be undeleted.  ' % ( purged_items, escape( inflector.cond_plural( purged_items, item_desc ) ) )
                 status = 'error'
         if item_type == 'library':
             return trans.response.send_redirect( web.url_for( controller=cntrller,
@@ -2525,7 +2525,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         if isinstance( item, trans.model.HistoryDatasetAssociation ):
             # Make sure the user has the DATASET_ACCESS permission on the history_dataset_association.
             if not item:
-                message = "Invalid history dataset (%s) specified." % str( item )
+                message = "Invalid history dataset (%s) specified." % escape( str( item ) )
                 can_access = False
             elif not trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ) and item.history.user==trans.user:
                 message = "You do not have permission to access the history dataset with id (%s)." % str( item.id )
@@ -2533,7 +2533,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         else:
             # Make sure the user has the LIBRARY_ACCESS permission on the library item.
             if not item:
-                message = "Invalid library item (%s) specified." % str( item )
+                message = "Invalid library item (%s) specified." % escape( str( item ) )
                 can_access = False
             elif not ( is_admin or trans.app.security_agent.can_access_library_item( current_user_roles, item, trans.user ) ):
                 if isinstance( item, trans.model.Library ):
@@ -2542,7 +2542,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     item_type = 'folder'
                 else:
                     item_type = '(unknown item type)'
-                message = "You do not have permission to access the %s with id (%s)." % ( item_type, str( item.id ) )
+                message = "You do not have permission to access the %s with id (%s)." % ( escape( item_type ), str( item.id ) )
                 can_access = False
         if not can_access:
             if cntrller == 'api':
@@ -2566,7 +2566,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     def _check_add( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         # Deny access if the user is not an admin and does not have the LIBRARY_ADD permission.
         if not ( is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, item ) ):
-            message = "You are not authorized to add an item to (%s)." % item.name
+            message = "You are not authorized to add an item to (%s)." % escape( item.name )
             # Redirect to the real parent library since we know we have access to it.
             if cntrller == 'api':
                 return 403, message
@@ -2585,7 +2585,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if not ( is_admin or \
                      ( trans.app.security_agent.can_manage_library_item( current_user_roles, item ) and
                        trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset ) ) ):
-                message = "You are not authorized to manage permissions on library dataset (%s)." % library_dataset.name
+                message = "You are not authorized to manage permissions on library dataset (%s)." % escape( library_dataset.name )
                 if cntrller == 'api':
                     return 403, message
                 return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -2597,7 +2597,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                                   status='error' ) )
         # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE permission.
         if not ( is_admin or trans.app.security_agent.can_manage_library_item( current_user_roles, item ) ):
-            message = "You are not authorized to manage permissions on (%s)." % item.name
+            message = "You are not authorized to manage permissions on (%s)." % escape( item.name )
             if cntrller == 'api':
                 return 403, message
             return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -2611,7 +2611,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     def _check_modify( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         # Deny modification if the user is not an admin and does not have the LIBRARY_MODIFY permission.
         if not ( is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, item ) ):
-            message = "You are not authorized to modify (%s)." % item.name
+            message = "You are not authorized to modify (%s)." % escape( item.name )
             if cntrller == 'api':
                 return 403, message
             return trans.response.send_redirect( web.url_for( controller='library_common',

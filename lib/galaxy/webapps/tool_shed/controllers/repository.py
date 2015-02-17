@@ -1126,11 +1126,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if mark_deprecated:
             # Update the repository registry.
             trans.app.repository_registry.remove_entry( repository )
-            message = 'The repository <b>%s</b> has been marked as deprecated.' % repository.name
+            message = 'The repository <b>%s</b> has been marked as deprecated.' % escape( repository.name )
         else:
             # Update the repository registry.
             trans.app.repository_registry.add_entry( repository )
-            message = 'The repository <b>%s</b> has been marked as not deprecated.' % repository.name
+            message = 'The repository <b>%s</b> has been marked as not deprecated.' % escape( repository.name )
         trans.response.send_redirect( web.url_for( controller='repository',
                                                    action='browse_repositories',
                                                    operation='repositories_i_own',
@@ -1388,8 +1388,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 else:
                     kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
                         ( basic_util.stringify( tool_ids ),
-                          basic_util.stringify( tool_names ),
-                          basic_util.stringify( tool_versions ),
+                          escape( basic_util.stringify( tool_names ) ),
+                          escape( basic_util.stringify( tool_versions ) ),
                           str( exact_matches_checked ) )
                     self.matched_repository_grid.title = "Repositories with matching tools"
                     return self.matched_repository_grid( trans, **kwd )
@@ -1479,7 +1479,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     return self.install_matched_repository_grid( trans, **kwd )
                 else:
                     kwd[ 'message' ] = "workflow name: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        ( basic_util.stringify( workflow_names ), str( exact_matches_checked ) )
+                        ( escape( basic_util.stringify( workflow_names ) ), str( exact_matches_checked ) )
                     self.matched_repository_grid.title = "Repositories with matching workflows"
                     return self.matched_repository_grid( trans, **kwd )
             else:
@@ -3076,7 +3076,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   changeset_revision=changeset_revision ) )
             else:
                 message = "The change log for the repository named <b>%s</b> owned by <b>%s</b> does not include revision <b>%s</b>." % \
-                    ( str( name ), str( owner ), str( changeset_revision ) )
+                    ( escape( str( name ) ), escape( str( owner ) ), escape( str( changeset_revision ) ) )
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='index',
                                                                   repository_id=repository_id,

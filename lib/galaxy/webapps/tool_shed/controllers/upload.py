@@ -256,7 +256,7 @@ class UploadController( BaseUIController ):
                             source_type = "file"
                             source = uploaded_file_filename
                         message = "The %s <b>%s</b> has been successfully%suploaded to the repository.  " % \
-                            ( source_type, source, uncompress_str )
+                            ( source_type, escape( source ), uncompress_str )
                         if istar and ( undesirable_dirs_removed or undesirable_files_removed ):
                             items_removed = undesirable_dirs_removed + undesirable_files_removed
                             message += "  %d undesirable items (.hg .svn .git directories, .DS_Store, hgrc files, etc) " % items_removed

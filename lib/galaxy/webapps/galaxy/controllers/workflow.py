@@ -826,7 +826,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         url = kwd.get( 'url', '' )
         workflow_text = kwd.get( 'workflow_text', '' )
-        message = escape( kwd.get( 'message', '' ) )
+        message = str( escape( kwd.get( 'message', '' ) ) )
         status = kwd.get( 'status', 'done' )
         import_button = kwd.get( 'import_button', False )
         # The special Galaxy integration landing page's URL on myExperiment

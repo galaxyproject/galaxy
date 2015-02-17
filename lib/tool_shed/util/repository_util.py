@@ -167,7 +167,7 @@ def create_repository( app, name, type, description, long_description, user_id, 
         sa_session.flush()
     # Update the repository registry.
     app.repository_registry.add_entry( repository )
-    message = "Repository <b>%s</b> has been created." % str( repository.name )
+    message = "Repository <b>%s</b> has been created." % escape( str( repository.name ) )
     return repository, message
 
 def create_repository_admin_role( app, repository ):
@@ -285,7 +285,7 @@ def handle_role_associations( app, role, repository, **kwd ):
                                                                repositories=in_repositories  )
         sa_session.refresh( role )
         message += "Role <b>%s</b> has been associated with %d users, %d groups and %d repositories.  " % \
-            ( str( role.name ), len( in_users ), len( in_groups ), len( in_repositories ) )
+            ( escape( str( role.name ) ), len( in_users ), len( in_groups ), len( in_repositories ) )
     in_users = []
     out_users = []
     in_groups = []

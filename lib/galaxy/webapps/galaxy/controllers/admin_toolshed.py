@@ -443,7 +443,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def import_workflow( self, trans, workflow_name, repository_id, **kwd ):
         """Import a workflow contained in an installed tool shed repository into Galaxy."""
-        message = escape( kwd.get( 'message', '' ) )
+        message = str( escape( kwd.get( 'message', '' ) ) )
         status = kwd.get( 'status', 'done' )
         if workflow_name:
             workflow_name = encoding_util.tool_shed_decode( workflow_name )
@@ -480,7 +480,7 @@ class AdminToolshed( AdminGalaxy ):
         tool shed repository.
         """
         # Get the tool_shed_repository from one of the tool_dependencies.
-        message = escape( kwd.get( 'message', '' ) )
+        message = str( escape( kwd.get( 'message', '' ) ) )
         status = kwd.get( 'status', 'done' )
         err_msg = ''
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
