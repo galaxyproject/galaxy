@@ -14,14 +14,14 @@
 # starting a Galaxy server. Use this in conjunction with the
 # `GALAXY_ENABLE_EGGS=False` environment variable.
 #
-# Note that except in the case of SQLAlchemy and Whoosh, all dependencies will
-# be installed at their newest versions. Galaxy has not been tested with these
-# and you may (likely?) run into problems! The Galaxy Team does not support
-# using Galaxy with dependency versions other than those in eggs.ini, however,
-# if you do find an incompatibility between Galaxy and the latest version, we
-# would appreciate if you would investigate and provide a code fix for the
-# issue. We are trying to move away from our strict version dependency policy
-# and this would greatly help in our efforts.
+# Note that except in the case of Whoosh, all dependencies will be installed at
+# their newest versions. Galaxy has not been tested with these and you may
+# (likely?) run into problems! The Galaxy Team does not support using Galaxy
+# with dependency versions other than those in eggs.ini, however, if you do
+# find an incompatibility between Galaxy and the latest version, we would
+# appreciate if you would investigate and provide a code fix for the issue. We
+# are trying to move away from our strict version dependency policy and this
+# would greatly help in our efforts.
 
 Paste
 PasteDeploy
@@ -32,7 +32,7 @@ amqp
 repoze.lru
 Routes
 WebOb
-SQLAlchemy<0.8
+SQLAlchemy
 Cheetah
 pycrypto
 MarkupSafe
