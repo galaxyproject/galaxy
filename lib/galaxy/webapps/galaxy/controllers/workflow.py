@@ -652,9 +652,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.workflow_building_mode = True
         module = module_factory.new( trans, type, **kwargs )
         tool_model = None
-        if type == 'tool':
-            tool_model = module.tool.to_json(trans, is_dynamic=False)
-            module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
         return {
             'type': module.type,
             'name': module.get_name(),

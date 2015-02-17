@@ -36,73 +36,75 @@ ${h.js( 'libs/jquery/jquery',
         'mvc/visualization/visualization-model' )}
 
 ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot-edit.js' )}
+
+<script type="text/javascript">
+function getModel(){
+    return new ScatterplotModel({
+        id      : ${h.dumps( visualization_id )} || undefined,
+        title   : "${title}",
+        config  : ${h.dumps( config, indent=2 )}
+    });
+}
+function getHDAJSON(){
+    return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
+}
+</script>
+
 </head>
 
 ## ----------------------------------------------------------------------------
 <body>
-%if embedded and saved_visualization:
-<figcaption>
-    <span class="title">${title}</span>
-    <span class="title-info">${info}</span>
-</figcaption>
-<figure class="scatterplot-display"></div>
+    %if embedded and saved_visualization:
+        <figcaption>
+            <span class="title">${title}</span>
+            <span class="title-info">${info}</span>
+        </figcaption>
+        <figure class="scatterplot-display"></figure>
 
-<script type="text/javascript">
-$(function(){
-    var model = new ScatterplotModel({
-            id      : ${h.dumps( visualization_id )} || undefined,
-            title   : "${title}",
-            config  : ${h.dumps( config, indent=2 )}
+        <script type="text/javascript">
+        $(function(){
+            var display = new ScatterplotDisplay({
+                    el      : $( '.scatterplot-display' ).attr( 'id', 'scatterplot-display-' + '${visualization_id}' ),
+                    model   : getModel(),
+                    dataset : getHDAJSON(),
+                    embedded: "${embedded}"
+                }).render();
+            display.fetchData();
+            //window.model = model;
+            //window.display = display;
         });
-        hdaJson = ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )},
-        display = new ScatterplotDisplay({
-            el      : $( '.scatterplot-display' ).attr( 'id', 'scatterplot-display-' + '${visualization_id}' ),
-            model   : model,
-            dataset : hdaJson,
-            embedded: "${embedded}"
-        }).render();
-    display.fetchData();
-    //window.model = model;
-    //window.display = display;
-});
+        </script>
 
-</script>
+    %else:
+        <div class="chart-header">
+            <h2>${title or default_title}</h2>
+            <p>${info}</p>
+        </div>
 
-%else:
-<div class="chart-header">
-    <h2>${title or default_title}</h2>
-    <p>${info}</p>
-</div>
+        <div class="scatterplot-editor"></div>
+        <script type="text/javascript">
+        $(function(){
+            var model = getModel(),
+                hdaJSON = getHDAJSON(),
+                editor  = new ScatterplotConfigEditor({
+                    el      : $( '.scatterplot-editor' ).attr( 'id', 'scatterplot-editor-hda-' + hdaJSON.id ),
+                    model   : getModel(),
+                    dataset : hdaJSON
+                }).render();
+            window.editor = editor;
 
-<div class="scatterplot-editor"></div>
-<script type="text/javascript">
-$(function(){
-    var model   = new ScatterplotModel({
-            id      : ${h.dumps( visualization_id )} || undefined,
-            title   : "${title or default_title}",
-            config  : ${h.dumps( config, indent=2 )}
-        }),
-        hdaJson = ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )},
-        editor  = new ScatterplotConfigEditor({
-            el      : $( '.scatterplot-editor' ).attr( 'id', 'scatterplot-editor-hda-' + hdaJson.id ),
-            model   : model,
-            dataset : hdaJson
-        }).render();
-    window.editor = editor;
-
-    $( '.chart-header h2' ).click( function(){
-        var returned = prompt( 'Enter a new title:' );
-        if( returned ){
-            model.set( 'title', returned );
-        }
-    });
-    model.on( 'change:title', function(){
-        $( '.chart-header h2' ).text( model.get( 'title' ) );
-        document.title = model.get( 'title' ) + ' | ' + '${visualization_display_name}';
-    })
-});
-
-</script>
-%endif
+            $( '.chart-header h2' ).click( function(){
+                var returned = prompt( 'Enter a new title:' );
+                if( returned ){
+                    model.set( 'title', returned );
+                }
+            });
+            model.on( 'change:title', function(){
+                $( '.chart-header h2' ).text( model.get( 'title' ) );
+                document.title = model.get( 'title' ) + ' | ' + '${visualization_display_name}';
+            })
+        });
+        </script>
+    %endif
 
 </body>

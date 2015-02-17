@@ -64,7 +64,10 @@ module.exports = function(grunt) {
 
     // remove tmp files
     clean: {
-      clean : [ fmt('%s/tmp-site-config.less', out) ]
+      clean : [
+        fmt( '%s/tmp-site-config.less', out ),
+        fmt( '%s/jstree.css', out )
+      ]
     }
   });
 

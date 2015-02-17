@@ -118,7 +118,7 @@ spaceghost.openHomePage().then( function(){
         "Id of last history (from index) DOES appear after undeletion: " + newFirstHistory.id );
 
     //TODO: show, deleted flag
-    //TODO: delete, purge flag
+
 
     // ------------------------------------------------------------------------------------------- UPDATE
     // ........................................................................................... name
@@ -294,6 +294,28 @@ spaceghost.openHomePage().then( function(){
     //this.test.comment( 'calling show with /deleted should raise a bad request' );
 /*
 */
+
+    // ------------------------------------------------------------------------------------------- PURGE
+    var newHistoryId = null;
+    spaceghost.then( function(){
+        this.test.comment( 'calling purge should mark a history, its datasets, and remove the files' );
+        // create new history
+        var newHistory = this.api.histories.create({ name: 'To Purge' });
+        newHistoryId = newHistory.id;
+    });
+    spaceghost.openHomePage().api.tools.thenUploadToCurrent({
+        filepath: '../../test-data/1.sam'
+    });
+    spaceghost.then( function(){
+        var recent = this.api.histories.show( newHistoryId );
+        this.debug( 'size:\n' + recent.size );
+
+        this.api.assertRaises( function(){
+            this.api.histories.delete_( recent.id, true );
+        }, 403, 'This instance does not allow user dataset purging', 'Config does not allow thrown' );
+    });
+    //TODO: a way to set the config to allow user purging and then being able to test this would be good.
+
     //this.debug( this.jsonStr( historyShow ) );
 });
 

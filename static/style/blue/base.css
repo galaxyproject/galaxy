@@ -2101,14 +2101,14 @@ div.permissionContainer{padding-left:20px}
 .multi-panel-history .flex-column-container{-webkit-flex-direction:row;-ms-flex-direction:row;flex-direction:row}
 .multi-panel-history .flex-row,.multi-panel-history .flex-column{-webkit-flex:1 1 auto;-ms-flex:1 1 auto;flex:1 1 auto;-webkit-align-self:auto;-ms-flex-item-align:auto;align-self:auto}
 .multi-panel-history .header,.multi-panel-history .footer{width:100%;background-color:lightgrey}.multi-panel-history .header .btn,.multi-panel-history .footer .btn{height:21px}
-.multi-panel-history .header{min-height:29px;max-height:29px}
+.multi-panel-history .header{min-height:29px;max-height:29px}.multi-panel-history .header .more-options .btn{height:26px}
+.multi-panel-history .header .more-options input[type=checkbox]{margin-top:1px}
 .multi-panel-history .footer{min-height:0;max-height:0}
 .multi-panel-history .smaller-btn{height:20px;line-height:normal;font-size:90%;padding-top:0px;padding-bottom:0px}
 .multi-panel-history .control-column{margin-top:4px}.multi-panel-history .control-column .btn{height:20px;line-height:normal;font-size:90%;padding-top:0px;padding-bottom:0px}
 .multi-panel-history .control-column .search-control{display:inline-block;width:40%}.multi-panel-history .control-column .search-control .search-clear,.multi-panel-history .control-column .search-control .search-loading{margin-top:-22px}
 .multi-panel-history .control-column input.search-query{font-size:90%;height:21px;line-height:normal;padding:2px 2px 1px 2px}
 .multi-panel-history .control-column .open-more-options{padding:2px 6px 2px 6px;font-size:100%}
-.multi-panel-history .control-column .more-options input[type=checkbox]{margin-top:2px}
 .multi-panel-history .control-column .header-info{display:inline-block;padding:2px 4px 2px 4px;color:grey}
 .multi-panel-history .control-column.control-column-right,.multi-panel-history .control-column.control-column-left{margin-right:8px;margin-left:8px}.multi-panel-history .control-column.control-column-right>*,.multi-panel-history .control-column.control-column-left>*{margin:0px 4px 4px 0px}
 .multi-panel-history .control-column.control-column-center{text-align:center;max-height:22px;-webkit-flex:0 1 auto;-ms-flex:0 1 auto;flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-height:22px}

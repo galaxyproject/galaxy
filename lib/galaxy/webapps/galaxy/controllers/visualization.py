@@ -801,7 +801,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             raise HTTPNotFound( 'No visualization registry (possibly disabled in galaxy.ini)' )
         if visualization_name not in registry.plugins:
             raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
-            # or redirect to list?
         plugin = registry.plugins[ visualization_name ]
 
         returned = None
@@ -824,15 +823,21 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             # look up template and render
             template_path = plugin.config[ 'template' ]
             returned = registry.fill_template( trans, plugin, template_path,
-                visualization_name=visualization_name, visualization_display_name=visualization_display_name,
-                title=title, saved_visualization=visualization, visualization_id=encoded_visualization_id,
-                embedded=embedded, query=kwargs, vars={}, config=config, **resources )
-            #NOTE: passing *unparsed* kwargs as query
-            #NOTE: vars is a dictionary for shared data in the template
-            #   this feels hacky to me but it's what mako recommends:
-            #   http://docs.makotemplates.org/en/latest/runtime.html
-            #TODO: should vars contain all the passed in arguments? is that even necessary?
-            #TODO: embedded
+                visualization_name=visualization_name,
+                visualization_display_name=visualization_display_name,
+                title=title,
+                saved_visualization=visualization,
+                visualization_id=encoded_visualization_id,
+                embedded=embedded,
+                #NOTE: passing *unparsed* kwargs as query
+                query=kwargs,
+                #NOTE: vars is a dictionary for shared data in the template
+                #   this feels hacky to me but it's what mako recommends:
+                #   http://docs.makotemplates.org/en/latest/runtime.html
+                vars={},
+                config=config,
+                **resources
+            )
 
         except Exception, exception:
             log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
