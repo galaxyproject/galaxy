@@ -2007,7 +2007,8 @@ div.permissionContainer{padding-left:20px}
 .list-panel .controls .list-actions:after{clear:both}
 .list-panel .controls .list-actions:before,.list-panel .controls .list-actions:after{content:" ";display:table;}
 .list-panel .controls .list-actions:after{clear:both}
-.list-panel .controls .list-actions .btn{padding-top:2px;padding-bottom:2px;font-size:90%}
+.list-panel .controls .list-actions .btn{padding-top:2px;padding-bottom:2px;font-size:90%;z-index:inherit}
+.list-panel .controls .list-actions .list-action-menu{float:right}.list-panel .controls .list-actions .list-action-menu .dropdown-menu{z-index:inherit}
 .list-panel .list-items .list-item:not(:last-child){border-bottom-width:0px}
 .list-panel .empty-message{display:none;margin:0px}
 .list-item .details .list-panel{margin-top:8px;border-radius:3px;background:white;padding:4px}.list-item .details .list-panel .list-items{border:1px solid #bfbfbf;border-radius:3px}.list-item .details .list-panel .list-items .list-item:first-child{border-top-width:0px;border-radius:3px 3px 0px 0px}
@@ -2078,7 +2079,6 @@ div.permissionContainer{padding-left:20px}
 .history-panel .controls .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-wrap;overflow:auto}
 .history-panel .controls .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
 .history-panel .controls .annotation-display textarea{margin:0px 0px 2px 0px;border-radius:3px;width:100%}
-.history-panel .controls .list-actions .list-action-popup-btn{float:right}
 .history-panel .list-item.history-content{border-width:1px 0px 0px 0px}.history-panel .list-item.history-content:last-child{border-width:1px 0px 1px 0px}
 .history-panel .empty-message{margin:0px 10px 0px 10px}
 .history-panel .dataset-collection .subtitle{margin-top:2px}

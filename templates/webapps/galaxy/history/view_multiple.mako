@@ -43,7 +43,6 @@ define( 'app', function(){
             multipanel = new MULTI_PANEL.MultiPanelColumns({
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
-                //historiesJSON            : historiesJSON,
                 order                       : bootstrapped.order,
                 currentHistoryId            : '${current_history_id}'
             }).render( 0 );

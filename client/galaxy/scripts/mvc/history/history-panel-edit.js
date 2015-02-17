@@ -69,8 +69,6 @@ var HistoryPanelEdit = _super.extend(
         /** is the panel currently showing the dataset selection controls? */
         this.annotationEditorShown  = attributes.annotationEditorShown || false;
         this.tagsEditorShown  = attributes.tagsEditorShown || false;
-
-        this.multiselectActions = attributes.multiselectActions || this._getActions();
     },
 
     /** Override to handle history as drag-drop target */
@@ -210,11 +208,6 @@ var HistoryPanelEdit = _super.extend(
         _super.prototype._setUpBehaviors.call( this, $where );
         if( !this.model ){ return; }
 
-        // set up the pupup for actions available when multi selecting
-        if( this.multiselectActions.length ){
-            this.actionsPopup = new PopupMenu( $where.find( '.list-action-popup-btn' ), this.multiselectActions );
-        }
-
         // anon users shouldn't have access to any of the following
         if( ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )
         ||  ( Galaxy.currUser.id !== this.model.get( 'user_id' ) ) ){
@@ -245,7 +238,7 @@ var HistoryPanelEdit = _super.extend(
     /** return a new popup menu for choosing a multi selection action
      *  ajax calls made for multiple datasets are queued
      */
-    _getActions : function(){
+    multiselectActions : function(){
         var panel = this,
             actions = [
                 {   html: _l( 'Hide datasets' ), func: function(){
