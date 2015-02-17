@@ -681,7 +681,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             # check user is allowed to register
             message = ''
             if trans.app.config.enable_customauth:
-                message, status = galaxy.customauth.check_registration_allowed(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
+                message, status = galaxy.customauth.check_registration_allowed(email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
             if message == '':
                 if not refresh_frames:
                     if trans.webapp.name == 'galaxy':
