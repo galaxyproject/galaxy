@@ -515,32 +515,28 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
         if trans.app.config.customauth_debug:
-            print ("trans.app.config.enable_customauth: %s" % trans.app.config.enable_customauth)
             print ("trans.app.config.customauth_config_file: %s" % trans.app.config.customauth_config_file)
             print ("trans.app.config.customauth_debug: %s WARNING: don't use in production" % trans.app.config.customauth_debug)
         if not user:
-            if trans.app.config.enable_customauth:
-                autoreg = galaxy.customauth.check_auto_registration(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
-                if autoreg[0]:
-                    kwd['username'] = autoreg[1]
-                    params = util.Params( kwd )
-                    message = validate_email( trans, email )  #self.__validate( trans, params, email, password, password, username )
-                    if not message:
-                        message, status, user, success = self.__register( trans, 'user', False, **kwd )
-                        if success:
-                            # The handle_user_login() method has a call to the history_set_default_permissions() method
-                            # (needed when logging in with a history), user needs to have default permissions set before logging in
-                            trans.handle_user_login( user )
-                            trans.log_event( "User (auto) created a new account" )
-                            trans.log_event( "User logged in" )
-                        else:
-                            message = "Auto-registration failed, contact your local Galaxy administrator. %s" %message
+            autoreg = galaxy.customauth.check_auto_registration(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
+            if autoreg[0]:
+                kwd['username'] = autoreg[1]
+                params = util.Params( kwd )
+                message = validate_email( trans, email )  #self.__validate( trans, params, email, password, password, username )
+                if not message:
+                    message, status, user, success = self.__register( trans, 'user', False, **kwd )
+                    if success:
+                        # The handle_user_login() method has a call to the history_set_default_permissions() method
+                        # (needed when logging in with a history), user needs to have default permissions set before logging in
+                        trans.handle_user_login( user )
+                        trans.log_event( "User (auto) created a new account" )
+                        trans.log_event( "User logged in" )
                     else:
-                        message = "Auto-registration failed, contact your local Galaxy administrator. %s" %message
+                        message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
                 else:
-                    message = "No such user or invalid password"
+                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
             else:
-                message = "No such user (please note that login is case sensitive)"
+                message = "No such user or invalid password"
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
@@ -549,8 +545,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
-        elif not trans.app.config.enable_customauth and not user.check_password( password ) or \
-                trans.app.config.enable_customauth and not galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug):
+        elif not galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug):
             message = "Invalid password"
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if ( trans.app.config.activation_grace_period != 0 ):  # grace period is ON
@@ -679,9 +674,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             status = 'error'
         else:
             # check user is allowed to register
-            message = ''
-            if trans.app.config.enable_customauth:
-                message, status = galaxy.customauth.check_registration_allowed(email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
+            message, status = galaxy.customauth.check_registration_allowed(email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
             if message == '':
                 if not refresh_frames:
                     if trans.webapp.name == 'galaxy':
@@ -1132,16 +1125,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
             else:
                 # The user is changing their own password, validate their current password
-                if trans.app.config.enable_customauth:
-                    (ok, message) = galaxy.customauth.check_change_password(trans.user, current, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
-                    if ok:
-                        user = trans.user
-                    else:
-                        status = "error"
-                elif trans.user.check_password( current ):
+                (ok, message) = galaxy.customauth.check_change_password(trans.user, current, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
+                if ok:
                     user = trans.user
                 else:
-                    message = 'Invalid current password'
                     status = 'error'
             if user:
                 # Validate the new password

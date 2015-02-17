@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<customauth>
+  <authenticator>
+    <type>localdb</type>
+  </authenticator>
+</customauth>

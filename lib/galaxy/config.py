@@ -442,8 +442,6 @@ class Configuration( object ):
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
         # customauth
-        self.enable_customauth = string_as_bool( kwargs.get( 'enable_customauth', False ) )
-        self.customauth_config_file = resolve_path( kwargs.get( 'customauth_config_file', 'config/customauth_conf.xml' ), self.root )
         self.customauth_debug = string_as_bool( kwargs.get( 'customauth_debug', False ) )
 
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
@@ -466,6 +464,7 @@ class Configuration( object ):
         Backwards compatibility for config files moved to the config/ dir.
         """
         defaults = dict(
+            customauth_config_file=[ 'config/customauth_conf.xml', 'config/customauth_conf.xml.sample' ],
             data_manager_config_file=[ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
             datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
