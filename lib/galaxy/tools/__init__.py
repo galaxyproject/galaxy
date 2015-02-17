@@ -2947,7 +2947,7 @@ class TestCollectionDef( object ):
             element_attrib = dict( element.attrib )
             element_identifier = element_attrib[ "name" ]
             nested_collection_elem = element.find( "collection" )
-            if nested_collection_elem:
+            if nested_collection_elem is not None:
                 self.elements.append( ( element_identifier, TestCollectionDef( nested_collection_elem, parse_param_elem ) ) )
             else:
                 self.elements.append( ( element_identifier, parse_param_elem( element ) ) )
