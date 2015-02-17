@@ -1457,7 +1457,8 @@ simple_mapping( model.HistoryDatasetAssociation,
         backref=backref( "parent", primaryjoin=( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ), remote_side=[model.HistoryDatasetAssociation.table.c.id], uselist=False ) ),
     visible_children=relation(
         model.HistoryDatasetAssociation,
-        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ) & ( model.HistoryDatasetAssociation.table.c.visible == True ) ) ),
+        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ) & ( model.HistoryDatasetAssociation.table.c.visible == True ) ),
+        remote_side=[model.HistoryDatasetAssociation.table.c.id] ),
     tags=relation( model.HistoryDatasetAssociationTagAssociation, order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id, backref='history_tag_associations' ),
     annotations=relation( model.HistoryDatasetAssociationAnnotationAssociation, order_by=model.HistoryDatasetAssociationAnnotationAssociation.table.c.id, backref="hdas" ),
     ratings=relation( model.HistoryDatasetAssociationRatingAssociation, order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id, backref="hdas" ),
@@ -1784,7 +1785,8 @@ mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoc
             backref=backref( "parent", primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id] ) ),
         visible_children=relation(
             model.LibraryDatasetDatasetAssociation,
-            primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( model.LibraryDatasetDatasetAssociation.table.c.visible == True ) ) ),
+            primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( model.LibraryDatasetDatasetAssociation.table.c.visible == True ) ),
+            remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id]),
         extended_metadata=relation(
             model.ExtendedMetadata,
             primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
