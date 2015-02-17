@@ -444,7 +444,7 @@ class Configuration( object ):
         # customauth
         self.enable_customauth = string_as_bool( kwargs.get( 'enable_customauth', False ) )
         self.customauth_config_file = resolve_path( kwargs.get( 'customauth_config_file', 'config/customauth_conf.xml' ), self.root )
-        self.enable_customauth_echo = string_as_bool( kwargs.get( 'enable_customauth_echo', False ) )
+        self.customauth_debug = string_as_bool( kwargs.get( 'customauth_debug', False ) )
 
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )
