@@ -844,6 +844,13 @@ use_interactive = True
 #openid_config_file = config/openid_conf.xml
 #openid_consumer_cache_path = database/openid_consumer_cache
 
+# Enable the use of custom authentication providers.  Allows users to use their
+# Active Directory (or other) account instead of local authentication
+#enable_customauth = False
+#customauth_config_file = config/customauth_conf.xml
+# print debugging info for customauth
+#enable_customauth_echo = True
+
 # Optional list of email addresses of API users who can make calls on behalf of
 # other users
 #api_allow_run_as = None
