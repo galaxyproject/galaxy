@@ -53,10 +53,7 @@ class AuthenticationController( BaseAPIController ):
             raise exceptions.InconsistentDatabase( 'An error occured, please contact your administrator.' )
         else:
             user = user[0]
-            if trans.app.config.enable_customauth:
-                is_valid_user = galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
-            else:
-                is_valid_user = user.check_password( password )
+            is_valid_user = galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
         if is_valid_user:
             key = self.api_keys_manager.get_or_create_api_key( user )
             return dict( api_key=key )
