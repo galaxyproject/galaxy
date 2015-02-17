@@ -224,6 +224,8 @@ def main():
             # cases (namely tool shed tests expecting clean database).
             __copy_database_template(os.environ['GALAXY_TEST_DB_TEMPLATE'], db_path)
             galaxy_database_auto_migrate = True
+        if not os.path.exists(galaxy_db_path):
+            os.makedirs(galaxy_db_path)
         galaxy_database_connection = 'sqlite:///%s' % db_path
     if 'GALAXY_TEST_INSTALL_DBURI' in os.environ:
         install_galaxy_database_connection = os.environ[ 'GALAXY_TEST_INSTALL_DBURI' ]
