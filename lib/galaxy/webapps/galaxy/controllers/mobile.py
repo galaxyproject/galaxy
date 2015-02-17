@@ -60,7 +60,7 @@ class Mobile( BaseUIController ):
         # user = trans.sa_session.query( model.User ).filter_by( email = email ).first()
         # if not user:
         #     if trans.app.config.enable_customauth:
-        #         autoreg = galaxy.customauth.check_auto_registration(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo)
+        #         autoreg = galaxy.customauth.check_auto_registration(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
         #         if autoreg[0]:
         #             kwd = {}
         #             kwd['username'] = autoreg[1]
@@ -87,7 +87,7 @@ class Mobile( BaseUIController ):
         # elif user.external:
         #     error = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
         # elif not trans.app.config.enable_customauth and not user.check_password( password ) or \
-        #         trans.app.config.enable_customauth and not galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo):
+        #         trans.app.config.enable_customauth and not galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug):
         #     error = "Invalid password"
         # else:
         #     trans.handle_user_login( user )

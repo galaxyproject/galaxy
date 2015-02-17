@@ -514,13 +514,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
-        if trans.app.config.enable_customauth_echo:
+        if trans.app.config.customauth_debug:
             print ("trans.app.config.enable_customauth: %s" % trans.app.config.enable_customauth)
             print ("trans.app.config.customauth_config_file: %s" % trans.app.config.customauth_config_file)
-            print ("trans.app.config.enable_customauth_echo: %s WARNING: don't use in production" % trans.app.config.enable_customauth_echo)
+            print ("trans.app.config.customauth_debug: %s WARNING: don't use in production" % trans.app.config.customauth_debug)
         if not user:
             if trans.app.config.enable_customauth:
-                autoreg = galaxy.customauth.check_auto_registration(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo)
+                autoreg = galaxy.customauth.check_auto_registration(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
                 if autoreg[0]:
                     kwd['username'] = autoreg[1]
                     params = util.Params( kwd )
@@ -550,7 +550,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
         elif not trans.app.config.enable_customauth and not user.check_password( password ) or \
-                trans.app.config.enable_customauth and not galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo):
+                trans.app.config.enable_customauth and not galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug):
             message = "Invalid password"
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if ( trans.app.config.activation_grace_period != 0 ):  # grace period is ON
@@ -681,7 +681,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             # check user is allowed to register
             message = ''
             if trans.app.config.enable_customauth:
-                message, status = galaxy.customauth.check_registration_allowed(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo)
+                message, status = galaxy.customauth.check_registration_allowed(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
             if message == '':
                 if not refresh_frames:
                     if trans.webapp.name == 'galaxy':
@@ -1133,7 +1133,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             else:
                 # The user is changing their own password, validate their current password
                 if trans.app.config.enable_customauth:
-                    (ok, message) = galaxy.customauth.check_change_password(trans.user, current, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo)
+                    (ok, message) = galaxy.customauth.check_change_password(trans.user, current, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
                     if ok:
                         user = trans.user
                     else:

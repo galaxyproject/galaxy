@@ -54,7 +54,7 @@ class AuthenticationController( BaseAPIController ):
         else:
             user = user[0]
             if (trans.app.config.enable_customauth):
-                is_valid_user = galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo)
+                is_valid_user = galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
             else:
                 is_valid_user = user.check_password( password )
         if ( is_valid_user ):
