@@ -1,6 +1,6 @@
-'''
-Contains implementations of custom auth logic
-'''
+"""
+Contains implementations of custom auth logic.
+"""
 
 import traceback
 import xml.etree.ElementTree
@@ -31,14 +31,11 @@ logging.basicConfig(level=logging.DEBUG)
 #     ...
 # </customauth>
 
-
-def check_registration_allowed(trans, email, password, configfile, debug=False):
-    '''Checks if the provided email is allowed to register.'''
-    
+def check_registration_allowed(email, password, configfile, debug=False):
+    """Checks if the provided email is allowed to register."""
     message = ''
     status = 'done'
-    
-    for provider,options in activeAuthProviderGenerator(email, password, configfile, debug):
+    for provider, options in activeAuthProviderGenerator(email, password, configfile, debug):
         allowreg = _getTriState(options, 'allow-register', True)
         if allowreg is None: # i.e. challenge
             authresult, msg = provider.authenticate(email, password, options, debug)
@@ -54,15 +51,13 @@ def check_registration_allowed(trans, email, password, configfile, debug=False):
             message = 'Account registration not required for your account.  Please simply login.'
             status = 'error'
             break
-    
     return message, status
-    
 
 def check_auto_registration(trans, email, password, configfile, debug=False):
-    '''Checks the email/password using custom auth providers and if matches returns 
-    the 'auto-register' option for that provider'''
-    
-    for provider,options in activeAuthProviderGenerator(email, password, configfile, debug):
+    """Checks the email/password using custom auth providers and if matches
+    returns the 'auto-register' option for that provider.
+    """
+    for provider, options in activeAuthProviderGenerator(email, password, configfile, debug):
         if provider is None:
             if debug:
                 print "Unable to find module: %s" % options
@@ -86,18 +81,14 @@ def check_auto_registration(trans, email, password, configfile, debug=False):
             elif authresult is None:
                 print "Email: %s, stopping due to failed non-continue" % (email)
                 break # end authentication (skip rest)
-    
     return (False, '')
 
-
 def check_password(user, password, configfile, debug=False):
-    '''Checks the email/password using custom auth providers'''
-    
+    """Checks the email/password using custom auth providers."""
     if debug:
         print ("Checking with CustomAuth")
-    
-    
-    for provider,options in activeAuthProviderGenerator(user.email, password, configfile, debug):
+
+    for provider, options in activeAuthProviderGenerator(user.email, password, configfile, debug):
         if provider is None:
             if debug:
                 print "Unable to find module: %s" % options
@@ -107,16 +98,15 @@ def check_password(user, password, configfile, debug=False):
                 return True # accept user
             elif authresult is None:
                 break # end authentication (skip rest)
-    
     return False
 
 def check_change_password(user, current_password, configfile, debug=False):
-    '''Checks that provider allows password changes and current_password matches'''
-    
+    """Checks that provider allows password changes and current_password
+    matches.
+    """
     if debug:
         print ("Checking password change with CustomAuth")
-    
-    for provider,options in activeAuthProviderGenerator(user.email, current_password, configfile, debug):
+    for provider, options in activeAuthProviderGenerator(user.email, current_password, configfile, debug):
         if provider is None:
             if debug:
                 print "Unable to find module: %s" % options
@@ -130,31 +120,30 @@ def check_change_password(user, current_password, configfile, debug=False):
             else:
                 return (False, 'Password change not supported')
     return (False, 'Invalid current password')
-    
-
 
 def activeAuthProviderGenerator(username, password, configfile, debug):
-    '''Yields CustomAuthProvider instances for the provided configfile that match the filters'''
-    
+    """Yields CustomAuthProvider instances for the provided configfile that
+    match the filters.
+    """
     try:
         # load the yapsy plugins
         manager = PluginManager()
-        manager.setPluginPlaces(["lib/galaxy/customauth/providers"]) 
+        manager.setPluginPlaces(["lib/galaxy/customauth/providers"])
         manager.collectPlugins()
-        
+
         if debug:
             print ("Plugins found:")
             for plugin in manager.getAllPlugins():
                 print ("- %s" % (plugin.path))
-        
+
         # parse XML
         ct = xml.etree.ElementTree.parse(configfile)
         confroot = ct.getroot()
-        
+
         # process authenticators
         for authelem in confroot.getchildren():
             typeelem = authelem.iter('type').next()
-            
+
             # check filterelem
             filterelem = _getChildElement(authelem, 'filter')
             if filterelem is not None:
@@ -163,14 +152,14 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
                     print ("Filter: %s == %s" % (filterstr, eval(filterstr, {"__builtins__":None},{'str':str})))
                 if not eval(filterstr, {"__builtins__":None},{'str':str}):
                     continue # skip to next
-            
+
             # extract options
             optionselem = _getChildElement(authelem, 'options')
             options = {}
             if optionselem is not None:
                 for opt in optionselem:
                     options[opt.tag] = opt.text
-            
+
             # get the instance
             plugin = manager.getPluginByName(typeelem.text)
             yield (plugin.plugin_object, options)  # excepts if type is spelled incorrectly
@@ -180,7 +169,6 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
         if debug:
             print ('CustomAuth: Exception:\n%s' % (traceback.format_exc(),))
 
-
 def _getBool(d, k, o):
     if k in d:
         if d[k] in ('True', 'true', 'Yes', 'yes', '1', 1, True):
@@ -189,7 +177,7 @@ def _getBool(d, k, o):
             return False
     else:
         return o
-    
+
 def _getTriState(d, k, o):
     if k in d:
         if d[k] in ('True', 'true', 'Yes', 'yes', '1', 1, True):
