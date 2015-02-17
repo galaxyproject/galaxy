@@ -1,0 +1,8 @@
+[Core]
+Name = ActiveDirectory
+Module = activedirectory
+
+[Documentation]
+Author = Andrew Robinson
+Version = 0.1
+Description = Custom Authentication Provider that authenticates against an ActiveDirectory (via LDAP).  Requires python-ldap module.

@@ -1,6 +1,7 @@
 from galaxy import web
 from galaxy.web.base.controller import *
 
+import galaxy.customauth
 
 class Mobile( BaseUIController ):
 
@@ -58,12 +59,35 @@ class Mobile( BaseUIController ):
         # error = password_error = None
         # user = trans.sa_session.query( model.User ).filter_by( email = email ).first()
         # if not user:
-        #     error = "No such user (please note that login is case sensitive)"
+        #     if trans.app.config.enable_customauth:
+        #         autoreg = galaxy.customauth.check_auto_registration(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo)
+        #         if autoreg[0]:
+        #             kwd = {}
+        #             kwd['username'] = autoreg[1]
+        #             params = util.Params( kwd )
+        #             message = validate_email( trans, email )
+        #             if not message:
+        #                 message, status, user, success = self.__register( trans, 'user', False, **kwd )
+        #                 if success:
+                            # The handle_user_login() method has a call to the history_set_default_permissions() method
+                            # (needed when logging in with a history), user needs to have default permissions set before logging in
+        #                     trans.handle_user_login( user )
+        #                     trans.log_event( "User (auto) created a new account" )
+        #                     trans.log_event( "User logged in" )
+        #                 else:
+        #                     message = "Auto-registration failed, contact your local Galaxy administrator. %s" %message
+        #             else:
+        #                 message = "Auto-registration failed, contact your local Galaxy administrator. %s" %message
+        #         else:
+        #             message = "No such user (please note that login is case sensitive)"
+        #     else:
+        #         message = "No such user (please note that login is case sensitive)"
         # elif user.deleted:
         #     error = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
         # elif user.external:
         #     error = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-        # elif not user.check_password( password ):
+        # elif not trans.app.config.enable_customauth and not user.check_password( password ) or \
+        #         trans.app.config.enable_customauth and not galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.enable_customauth_echo):
         #     error = "Invalid password"
         # else:
         #     trans.handle_user_login( user )
