@@ -25,7 +25,6 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
-        //console.debug( 'HistoryContents.model:', attrs, options );
 
 //TODO: can we move the type_id stuff here?
         //attrs.type_id = typeIdStr( attrs );
@@ -185,16 +184,36 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         return deferred;
     },
 
-    /** copy an existing, accessible hda into this collection */
-    copy : function( id, contentType ){
-        contentType = contentType || 'hda';
-        var type = ( contentType === 'hdca'? 'dataset_collection' : 'dataset' ),
-            collection = this;
+    isCopyable : function( contentsJSON ){
+        var copyableModelClasses = [
+            'HistoryDatasetAssociation',
+            'HistoryDatasetCollectionAssociation'
+        ];
+        return ( ( _.isObject( contentsJSON ) && contentsJSON.id )
+              && ( _.contains( copyableModelClasses, contentsJSON.model_class ) ) );
+    },
 
-        var xhr = jQuery.post( this.url(), {
-                type    : type,
+    /** copy an existing, accessible hda into this collection */
+    copy : function( json ){
+        var id, type, contentType;
+        if( _.isString( json ) ){
+            id = json;
+            contentType = 'hda';
+            type = 'dataset';
+        } else {
+            id = json.id;
+            contentType = ({
+                'HistoryDatasetAssociation' : 'hda',
+                'LibraryDatasetDatasetAssociation' : 'ldda',
+                'HistoryDatasetCollectionAssociation' : 'hdca'
+            })[ json.model_class ] || 'hda';
+            type = ( contentType === 'hdca'? 'dataset_collection' : 'dataset' );
+        }
+        var collection = this,
+            xhr = jQuery.post( this.url(), {
+                content : id,
                 source  : contentType,
-                content : id
+                type    : type
             })
             .done( function( json ){
                 collection.add([ json ]);

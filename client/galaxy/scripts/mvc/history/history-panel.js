@@ -7,6 +7,7 @@ define([
     "mvc/collection/collection-panel",
     "mvc/user/user-model",
     "ui/fa-icon-button",
+    "mvc/ui/popup-menu",
     "mvc/base-mvc",
     "utils/localization",
     "ui/search-input"
@@ -19,6 +20,7 @@ define([
     COLLECTION_PANEL,
     USER,
     faIconButton,
+    PopupMenu,
     BASE_MVC,
     _l
 ){
@@ -302,7 +304,8 @@ var HistoryPanel = _super.extend(
     /** In this override, add a btn to toggle the selectors */
     _buildNewRender : function(){
         var $newRender = _super.prototype._buildNewRender.call( this );
-        if( this.multiselectActions.length ){
+        //if( this.views.length && this.multiselectActions().length ){
+        if( this.multiselectActions().length ){
             $newRender.find( '.controls .actions' ).prepend( this._renderSelectButton() );
         }
         return $newRender;
@@ -617,9 +620,17 @@ HistoryPanel.prototype.templates = (function(){
             '<div class="actions"></div>',
 
             '<div class="messages">',
-                '<% if( history.deleted ){ %>',
+                '<% if( history.deleted && history.purged ){ %>',
+                    '<div class="deleted-msg warningmessagesmall">',
+                        _l( 'This history has been purged and deleted' ),
+                    '</div>',
+                '<% } else if( history.deleted ){ %>',
                     '<div class="deleted-msg warningmessagesmall">',
                         _l( 'This history has been deleted' ),
+                    '</div>',
+                '<% } else if( history.purged ){ %>',
+                    '<div class="deleted-msg warningmessagesmall">',
+                        _l( 'This history has been purged' ),
                     '</div>',
                 '<% } %>',
 
@@ -646,8 +657,8 @@ HistoryPanel.prototype.templates = (function(){
                     '<button class="deselect-all btn btn-default"',
                             'data-mode="select">', _l( 'None' ), '</button>',
                 '</div>',
-                '<button class="list-action-popup-btn btn btn-default">',
-                    _l( 'For all selected' ), '...</button>',
+                '<div class="list-action-menu btn-group">',
+                '</div>',
             '</div>',
         '</div>'
     ], 'history' );

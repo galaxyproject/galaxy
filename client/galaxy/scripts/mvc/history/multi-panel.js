@@ -353,8 +353,8 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                             '</a></li>',
                         '<% } %>',
                     '</ul>',
-                '<% } %>',
-            '</div>',
+                '</div>',
+            '<% } %>',
         '</div>'
     ].join( '' ), { variable: 'data' }),
 
@@ -669,11 +669,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** set up listeners for a column and it's panel - handling: hda lazy-loading, drag and drop */
     setUpColumnListeners : function setUpColumnListeners( column ){
-        var multipanel = this,
-            modelClassToSource = {
-                'HistoryDatasetAssociation'             : 'hda',
-                'HistoryDatasetCollectionAssociation'   : 'hdca'
-            };
+        var multipanel = this;
         multipanel.listenTo( column, {
             //'all': function(){ console.info( 'column ' + column + ':', arguments ) },
             'in-view': multipanel.queueHdaFetch
@@ -691,20 +687,18 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 multipanel.currentColumnDropTargetOff();
             },
            'droptarget:drop': function( ev, data, panel ){
-                //note: this will bad copy sources fail silently
+                //note: bad copy sources fail silently
                 var toCopy = multipanel._dropData.filter( function( json ){
-                    return ( ( _.isObject( json ) && json.id  )
-                          && ( _.contains( _.keys( modelClassToSource ), json.model_class ) ) );
+                    return panel.model.contents.isCopyable( json );
                 });
                 multipanel._dropData = null;
 
                 var queue = new ajaxQueue.NamedAjaxQueue();
                 toCopy.forEach( function( content ){
-                    var contentType = modelClassToSource[ content.model_class ];
                     queue.add({
                         name : 'copy-' + content.id,
                         fn : function(){
-                            return panel.model.contents.copy( content.id, contentType );
+                            return panel.model.contents.copy( content );
                         }
                     });
                 });
@@ -714,7 +708,6 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 });
             }
          });
-
     },
 
     /** conv. fn to count the columns in columnMap */

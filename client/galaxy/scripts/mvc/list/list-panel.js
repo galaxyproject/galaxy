@@ -46,9 +46,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     /** string used for search placeholder */
     searchPlaceholder   : _l( 'search' ),
 
-    /** actions available for multiselected items */
-    multiselectActions  : [],
-
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HistoryContents events
      *  @param {Object} attributes optional settings for the list
@@ -102,11 +99,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 //TODO: remove
         this.title = attributes.title || '';
         this.subtitle = attributes.subtitle || '';
-
-        // allow override of multiselectActions through attributes
-        this.multiselectActions = attributes.multiselectActions || this.multiselectActions;
-        /** the popup displayed when 'for all selected...' is clicked */
-        this.actionsPopup = null;
 
         this._setUpListeners();
     },
@@ -288,7 +280,43 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
         $where.find( '.controls [title]' ).tooltip({ placement: 'bottom' });
+        // set up the pupup for actions available when multi selecting
+        this._renderMultiselectActionMenu( $where );
         return this;
+    },
+
+    /** render a menu containing the actions available to sets of selected items */
+    _renderMultiselectActionMenu : function( $where ){
+        $where = $where || this.$el;
+        var $menu = $where.find( '.list-action-menu' ),
+            actions = this.multiselectActions();
+        if( !actions.length ){
+            return $menu.empty();
+        }
+
+        var $newMenu = $([
+            '<div class="list-action-menu btn-group">',
+                '<button class="list-action-menu-btn btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    _l( 'For all selected' ), '...',
+                '</button>',
+                '<ul class="dropdown-menu pull-right" role="menu">', '</ul>',
+            '</div>'
+        ].join(''));
+        var $actions = actions.map( function( action ){
+            var html = [ '<li><a href="javascript:void(0);">', action.html, '</a></li>' ].join( '' );
+            return $( html ).click( action.func );
+        });
+        $newMenu.find( 'ul' ).append( $actions );
+        $menu.replaceWith( $newMenu );
+        return $newMenu;
+    },
+
+    /** return a list of plain objects used to render multiselect actions menu. Each object should have:
+     *      html: an html string used as the anchor contents
+     *      func: a function called when the anchor is clicked (passed the click event)
+     */
+    multiselectActions : function(){
+        return [];
     },
 
     // ------------------------------------------------------------------------ sub-$element shortcuts
@@ -790,9 +818,8 @@ ListPanel.prototype.templates = (function(){
                     '<button class="deselect-all btn btn-default"',
                             'data-mode="select">', _l( 'None' ), '</button>',
                 '</div>',
-                //'<button class="list-action-popup-btn btn btn-default">',
-                //    _l( 'For all selected' ), '...',
-                //'</button>',
+                '<div class="list-action-menu btn-group">',
+                '</div>',
             '</div>',
         '</div>'
     ]);
@@ -929,9 +956,8 @@ ModelListPanel.prototype.templates = (function(){
                     '<button class="deselect-all btn btn-default"',
                             'data-mode="select">', _l( 'None' ), '</button>',
                 '</div>',
-                //'<button class="list-action-popup-btn btn btn-default">',
-                //    _l( 'For all selected' ), '...',
-                //'</button>',
+                '<div class="list-action-menu btn-group">',
+                '</div>',
             '</div>',
         '</div>'
     ]);
