@@ -1,8 +1,0 @@
-[Core]
-Name = AlwaysAccept
-Module = alwaysaccept
-
-[Documentation]
-Author = Andrew Robinson
-Version = 0.1
-Description = Custom Authentication Provider that is used for whitelisting usernames (i.e. accept any password)
